@@ -5,13 +5,34 @@ import (
 	"net/url"
 )
 
+// OptimizelyClient is the client to interface with the Optimizely server
+// side APIs.
+type OptimizelyClient struct {
+	account_id     string
+	project_config ProjectConfig
+}
+
+// GetOptimizelyClient returns a client that can be used to interface
+// with Optimizely
+func GetOptimizelyClient(account_id string) (*OptimizelyClient, error) {
+	client := OptimizelyClient{}
+	project_config, err := FetchProjectConfig(account_id)
+	if err != nil {
+		return &client, err
+	}
+	client.account_id = account_id
+	client.project_config = project_config
+	return &client, nil
+
+}
+
 // Track tracks a conversion event for a user_id
 // Logs the conversion
 // event_key: goal key representing the event which needs to be recorded
 // user_id: ID for user.
 // attributes: Dict representing visitor attributes and values which need to be recorded.
 // event_value: Value associated with the event. Can be used to represent revenue in cents.
-func Track(
+func (client *OptimizelyClient) Track(
 	event_key string,
 	user_id string,
 	attributes []AttributeEntity,
@@ -62,13 +83,13 @@ func Track(
 // experiment_key: experiment which needs to be activated
 // user_id: ID for user
 // attributes: optional list representing visitor attributes and values
-func Activate(experiment_key string, user_id string, attributes []AttributeEntity) {
+func (client *OptimizelyClient) Activate(experiment_key string, user_id string, attributes []AttributeEntity) {
 
 }
 
 // GetVariation gets the variation where the visitor will be bucketed
 // Experiment_key: experiment which needs to be activated
 // User_id: ID for user
-func GetVariation(experient_key string, user_id string) {
+func (client *OptimizelyClient) GetVariation(experient_key string, user_id string) {
 
 }
