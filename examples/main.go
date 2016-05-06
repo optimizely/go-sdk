@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/optimizely/go-sdk/optimizely"
 )
+
+import optimizely "github.com/optimizely/go-sdk/optimizely"
 
 func main() {
 	OPTIMIZELY_ACCOUNT_ID := "12345"
