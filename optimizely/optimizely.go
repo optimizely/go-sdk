@@ -36,8 +36,7 @@ func (client *OptimizelyClient) Track(
 	event_key string,
 	user_id string,
 	attributes []AttributeEntity,
-	event_value string,
-	project_config ProjectConfig) {
+	event_value string) {
 
 	var Url *url.URL
 	Url, err := url.Parse("http://www.example.com")
@@ -46,23 +45,23 @@ func (client *OptimizelyClient) Track(
 	}
 
 	end_user_id := fmt.Sprintf(END_USER_ID_TEMPLATE, user_id)
-	goal_id := GetGoalIdFromProjectConfig(event_key, project_config)
+	goal_id := GetGoalIdFromProjectConfig(event_key, client.project_config)
 
 	// build string to make GET request with
 	parameters := url.Values{}
-	parameters.Add(ACCOUNT_ID, project_config.AccountId)
-	parameters.Add(PROJECT_ID, project_config.ProjectId)
+	parameters.Add(ACCOUNT_ID, client.account_id)
+	parameters.Add(PROJECT_ID, client.project_config.ProjectId)
 	parameters.Add(GOAL_NAME, event_key)
 	parameters.Add(GOAL_ID, goal_id)
 	parameters.Add(END_USER_ID, end_user_id)
 
 	// Set experiment and corresponding variation
 	BuildExperimentVariationParams(
-		project_config, event_key, project_config.Experiments, user_id, parameters)
+		client.project_config, event_key, client.project_config.Experiments, user_id, parameters)
 
 	// Set attribute params if any
 	if len(attributes) > 0 {
-		BuildAttributeParams(project_config, attributes, parameters)
+		BuildAttributeParams(client.project_config, attributes, parameters)
 	}
 
 	// Set event_value if set and also append the revenue goal ID
