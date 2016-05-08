@@ -5,13 +5,6 @@ import (
 	"net/url"
 )
 
-// OptimizelyClient is the client to interface with the Optimizely server
-// side APIs.
-type OptimizelyClient struct {
-	account_id     string
-	project_config ProjectConfig
-}
-
 // GetOptimizelyClient returns a client that can be used to interface
 // with Optimizely
 func GetOptimizelyClient(account_id string) (*OptimizelyClient, error) {

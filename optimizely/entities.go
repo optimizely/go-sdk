@@ -56,3 +56,10 @@ type ProjectConfig struct {
 	Attributes  []AttributeEntity  `json:"attributes"`
 	Audiences   []AudienceEntity   `json:"audiences"`
 }
+
+// OptimizelyClient is the client to interface with the Optimizely server
+// side APIs.
+type OptimizelyClient struct {
+	account_id     string
+	project_config ProjectConfig
+}
