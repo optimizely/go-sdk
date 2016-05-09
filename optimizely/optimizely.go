@@ -77,6 +77,37 @@ func (client *OptimizelyClient) Track(
 // user_id: ID for user
 // attributes: optional list representing visitor attributes and values
 func (client *OptimizelyClient) Activate(experiment_key string, user_id string, attributes []AttributeEntity) {
+	var valid_experiment = false
+	var experiment_id = ""
+	for i := 0; i < len(client.project_config.Experiments); i++ {
+		if client.project_config.Experiments[i].Key == experiment_key {
+			if ExperimentIsRunning(client.project_config.Experiments[i]) {
+				valid_experiment = true
+				experiment_id = client.project_config.Experiments[i].Id
+			}
+		}
+	}
+
+	if !valid_experiment {
+		return
+	}
+
+	end_user_id := fmt.Sprintf(END_USER_ID_TEMPLATE, user_id)
+	//variation_id := client.Bucket(experiment_key, user_id)
+
+	parameters := url.Values{}
+	parameters.Add(ACCOUNT_ID, client.account_id)
+	parameters.Add(PROJECT_ID, client.project_config.ProjectId)
+	parameters.Add(GOAL_NAME, "TODO")
+	parameters.Add(GOAL_ID, experiment_id)
+	parameters.Add(END_USER_ID, end_user_id)
+
+	// Set attribute params if any
+	if len(attributes) > 0 {
+		BuildAttributeParams(client.project_config, attributes, parameters)
+	}
+
+	// TODO dispatch event
 
 }
 

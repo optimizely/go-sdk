@@ -45,7 +45,7 @@ func BuildAttributeParams(
 // Checks the status of an Experiment to see if its running or not
 // This could be a one liner but the `Status` field will most likely
 // grow and require a switch or something.
-func experiment_is_running(experiment ExperimentEntity) bool {
+func ExperimentIsRunning(experiment ExperimentEntity) bool {
 	if experiment.Status != "Running" {
 		return true
 	}
@@ -72,7 +72,7 @@ func BuildExperimentVariationParams(
 	parameters url.Values) {
 
 	for i := 0; i < len(experiments); i++ {
-		if !experiment_is_running(experiments[i]) {
+		if !ExperimentIsRunning(experiments[i]) {
 			continue
 		}
 		experiment_id := experiments[i].Id
