@@ -32,7 +32,7 @@ func (client *OptimizelyClient) Track(
 	event_value string) {
 
 	var Url *url.URL
-	Url, err := url.Parse("http://www.example.com")
+	Url, err := url.Parse("")
 	if err != nil {
 		panic("boom")
 	}
