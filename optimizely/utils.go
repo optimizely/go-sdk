@@ -85,3 +85,19 @@ func BuildExperimentVariationParams(
 		}
 	}
 }
+
+// Gets variation key given experiment key and variation id
+// experiment_key: key representing parent experiment of variation
+// variation_id: ID of the variation
+// experiments: Array of ExperimentEntities
+// Returns: variation key (string)
+func GetVariationKeyFromId(experiment_key string, variation_id string, experiments []ExperimentEntity) string {
+	for i := 0; i < len(experiments); i++ {
+		for j := 0; j < len(experiments[i].Variations); j++ {
+			if experiments[i].Variations[j].Id == variation_id {
+				return experiments[i].Variations[j].Key
+			}
+		}
+	}
+	return ""
+}

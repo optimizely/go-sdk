@@ -80,11 +80,13 @@ func (client *OptimizelyClient) Activate(experiment_key string, user_id string, 
 
 }
 
-// GetVariation gets the variation where the visitor will be bucketed
+// GetVariation gets the variation key where the visitor will be bucketed
 // Experiment_key: experiment which needs to be activated
 // User_id: ID for user
 // Returns: variation key representing the variation the user will be
 // bucketed into
-func (client *OptimizelyClient) GetVariation(experient_key string, user_id string) {
-
+func (client *OptimizelyClient) GetVariation(experiment_key string, user_id string) string {
+	variation_id := client.Bucket(experiment_key, user_id)
+	variation_key := GetVariationKeyFromId(experiment_key, variation_id, client.project_config.Experiments)
+	return variation_key
 }
