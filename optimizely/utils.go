@@ -3,7 +3,10 @@ package optimizely
 import (
 	"fmt"
 	"net/url"
+	"strings"
 )
+
+const REVENUE_GOAL_KEY = "Total Revenue"
 
 // GetGoalIdFromProjectConfig returns the goal that matches the event key
 // The wording here is a bit confusing
@@ -100,4 +103,21 @@ func GetVariationKeyFromId(experiment_key string, variation_id string, experimen
 		}
 	}
 	return ""
+}
+
+// Gets a list of all goal keys in the project except "Total Revenue"
+func GetGoalKeys(events []EventEntity) []string {
+	var goal_keys = make([]string, 0)
+	for i := 0; i < len(events); i++ {
+		if events[i].Key != REVENUE_GOAL_KEY {
+			goal_keys = append(goal_keys, events[i].Key)
+		}
+	}
+	return goal_keys
+}
+
+// Generates a Goal Name for `Activate`
+func GenerateGoalName(events []EventEntity) string {
+	var goal_name = strings.Join(GetGoalKeys(events), ",")
+	return goal_name
 }
