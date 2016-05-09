@@ -93,12 +93,13 @@ func (client *OptimizelyClient) Activate(experiment_key string, user_id string, 
 	}
 
 	end_user_id := fmt.Sprintf(END_USER_ID_TEMPLATE, user_id)
-	//variation_id := client.Bucket(experiment_key, user_id)
+	variation_id := client.Bucket(experiment_key, user_id)
 
 	parameters := url.Values{}
 	parameters.Add(ACCOUNT_ID, client.account_id)
 	parameters.Add(PROJECT_ID, client.project_config.ProjectId)
-	parameters.Add(GOAL_NAME, "TODO")
+	parameters.Add(GOAL_NAME, GenerateGoalName(client.project_config.Events))
+	parameters.Add(fmt.Sprintf("{%v}{%v}", EXPERIMENT, experiment_id), variation_id)
 	parameters.Add(GOAL_ID, experiment_id)
 	parameters.Add(END_USER_ID, end_user_id)
 
