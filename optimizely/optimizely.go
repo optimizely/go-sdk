@@ -60,7 +60,8 @@ func (client *OptimizelyClient) Track(
 	// Set event_value if set and also append the revenue goal ID
 	if len(event_value) != 0 {
 		parameters.Add(REVENUE, event_value)
-		//parameters.Add(GOAL_ID, fmt.Sprintf("{%v},{%v}", goal_id, GetRevenueGoalFromProjectConfig())
+		//parameters.Add(GOAL_ID, fmt.Sprintf(
+		//"{%v},{%v}", goal_id, GetRevenueGoalFromProjectConfig())
 	}
 
 	// Dispatch event
@@ -82,6 +83,8 @@ func (client *OptimizelyClient) Activate(experiment_key string, user_id string, 
 // GetVariation gets the variation where the visitor will be bucketed
 // Experiment_key: experiment which needs to be activated
 // User_id: ID for user
+// Returns: variation key representing the variation the user will be
+// bucketed into
 func (client *OptimizelyClient) GetVariation(experient_key string, user_id string) {
 
 }
