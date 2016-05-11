@@ -2,7 +2,6 @@ package optimizely
 
 var OFFLINE_API_PATH = "https://%v.log.optimizely.com/event" // project_id
 var END_USER_ID_TEMPLATE = "oeu-%v"                          // user_id
-var REQUEST_TIMEOUT = 10
 
 const (
 	ACCOUNT_ID  = "d"
