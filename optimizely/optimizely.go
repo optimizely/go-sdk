@@ -1,10 +1,5 @@
 package optimizely
 
-import (
-	"fmt"
-	"net/url"
-)
-
 // GetOptimizelyClient returns a client that can be used to interface
 // with Optimizely
 func GetOptimizelyClient(account_id string) (*OptimizelyClient, error) {
@@ -31,46 +26,6 @@ func (client *OptimizelyClient) Track(
 	attributes []AttributeEntity,
 	event_value string) {
 
-	// Create and distpatch conversion event
-
-	var Url *url.URL
-	Url, err := url.Parse("")
-	if err != nil {
-		panic("boom")
-	}
-
-	end_user_id := fmt.Sprintf(END_USER_ID_TEMPLATE, user_id)
-	goal_id := GetGoalIdFromProjectConfig(event_key, client.project_config)
-
-	// build string to make GET request with
-	parameters := url.Values{}
-	parameters.Add(ACCOUNT_ID, client.account_id)
-	parameters.Add(PROJECT_ID, client.project_config.ProjectId)
-	parameters.Add(GOAL_NAME, event_key)
-	parameters.Add(GOAL_ID, goal_id)
-	parameters.Add(END_USER_ID, end_user_id)
-
-	// Set experiment and corresponding variation
-	BuildExperimentVariationParams(
-		client.project_config, event_key, client.project_config.Experiments, user_id, parameters)
-
-	// Set attribute params if any
-	if len(attributes) > 0 {
-		BuildAttributeParams(client.project_config, attributes, parameters)
-	}
-
-	// Set event_value if set and also append the revenue goal ID
-	if len(event_value) != 0 {
-		parameters.Add(REVENUE, event_value)
-		//parameters.Add(GOAL_ID, fmt.Sprintf(
-		//"{%v},{%v}", goal_id, GetRevenueGoalFromProjectConfig())
-	}
-
-	// Dispatch event
-	Url.RawQuery = parameters.Encode()
-	tracking_url := Url.String()
-	fmt.Print(tracking_url)
-
 }
 
 // Activate buckets visitor and sends impression event to Optimizely
@@ -80,12 +35,10 @@ func (client *OptimizelyClient) Track(
 // attributes: optional list representing visitor attributes and values
 func (client *OptimizelyClient) Activate(experiment_key string, user_id string, attributes []AttributeEntity) {
 	var valid_experiment = false
-	var experiment_id = ""
 	for i := 0; i < len(client.project_config.Experiments); i++ {
 		if client.project_config.Experiments[i].Key == experiment_key {
 			if ExperimentIsRunning(client.project_config.Experiments[i]) {
 				valid_experiment = true
-				experiment_id = client.project_config.Experiments[i].Id
 			}
 		}
 	}
@@ -94,23 +47,9 @@ func (client *OptimizelyClient) Activate(experiment_key string, user_id string, 
 		return
 	}
 
-	end_user_id := fmt.Sprintf(END_USER_ID_TEMPLATE, user_id)
-	variation_id := client.Bucket(experiment_key, user_id)
-
-	parameters := url.Values{}
-	parameters.Add(ACCOUNT_ID, client.account_id)
-	parameters.Add(PROJECT_ID, client.project_config.ProjectId)
-	parameters.Add(GOAL_NAME, GenerateGoalName(client.project_config.Events))
-	parameters.Add(fmt.Sprintf("{%v}{%v}", EXPERIMENT, experiment_id), variation_id)
-	parameters.Add(GOAL_ID, experiment_id)
-	parameters.Add(END_USER_ID, end_user_id)
-
-	// Set attribute params if any
-	if len(attributes) > 0 {
-		BuildAttributeParams(client.project_config, attributes, parameters)
-	}
-
-	// TODO dispatch event
+	variation_id := ""
+	impression_event := CreateImpressionEvent(
+		client, experiment_key, variation_id, user_id, attributes)
 
 }
 

@@ -34,14 +34,27 @@ type Event struct {
 // Add experiment to variation mapping to the impression event
 // experiment_key: Experiment which is being activated
 // variation_id: id for variation which would be presented to the user
-func (event *Event) add_experiment(experiment_key string, variation_id string) {
-
+func (event *Event) add_experiment(project_config ProjectConfig, experiment_key string, variation_id string) {
+	experiment_id := ""
+	for i := 0; i < len(project_config.Experiments); i++ {
+		if project_config.Experiments[i].Key == experiment_key {
+			experiment_id = project_config.Experiments[i].Id
+		}
+	}
+	event.params.Add(fmt.Sprintf("{%v}{%v}", EXPERIMENT, experiment_id), variation_id)
 }
 
 // Add imp[ression goal information to the event
 // experiment_key: Experiment which is being activated
-func (event *Event) add_impression_goal(experiment_key string) {
-
+func (event *Event) add_impression_goal(project_config ProjectConfig, experiment_key string) {
+	experiment_id := ""
+	for i := 0; i < len(project_config.Experiments); i++ {
+		if project_config.Experiments[i].Key == experiment_key {
+			experiment_id = project_config.Experiments[i].Id
+		}
+	}
+	event.params.Add(GOAL_ID, experiment_id)
+	event.params.Add(GOAL_NAME, "visitor-event")
 }
 
 // Get segment Id for the provided attribute key
@@ -85,7 +98,10 @@ func (event *Event) add_common_params(client *OptimizelyClient, user_id string, 
 // user_id: ID for user.
 // attributes: Dict representing user attributes and values which need to be recorded.
 // Returns: Event object encapsulating the impression event.
-func CreateImpressionEvent(client *OptimizelyClient, experiment_key string, variation_id string, user_id string, attributes []AttributeEntity) {
+func CreateImpressionEvent(client *OptimizelyClient, experiment_key string, variation_id string, user_id string, attributes []AttributeEntity) *Event {
 	event := &Event{}
 	event.add_common_params(client, user_id, attributes)
+	event.add_impression_goal(client.project_config, experiment_key)
+	event.add_experiment(client.project_config, experiment_key, variation_id)
+	return event
 }
