@@ -31,6 +31,8 @@ func (client *OptimizelyClient) Track(
 	attributes []AttributeEntity,
 	event_value string) {
 
+	// Create and distpatch conversion event
+
 	var Url *url.URL
 	Url, err := url.Parse("")
 	if err != nil {
