@@ -19,19 +19,6 @@ func GetGoalIdFromProjectConfig(event_key string, project_config ProjectConfig) 
 	return ""
 }
 
-// Get segment Id for the provided attribute key
-// project_config: the project_Config
-// attributes: the attributes to search through
-// attribute_key: the attribute key for which segment ID is to be determined
-func GetSementId(project_config ProjectConfig, attributes []AttributeEntity, attribute_key string) string {
-	for i := 0; i < len(attributes); i++ {
-		if attributes[i].Key == attribute_key {
-			return attributes[i].SegmentId
-		}
-	}
-	return ""
-}
-
 // BuildAttributeParams adds attribute parameters to the URL Value Map
 func BuildAttributeParams(
 	project_config ProjectConfig,
