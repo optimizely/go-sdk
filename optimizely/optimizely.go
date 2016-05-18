@@ -50,6 +50,7 @@ func (client *OptimizelyClient) Activate(experiment_key string, user_id string, 
 	variation_id := ""
 	impression_event := CreateImpressionEvent(
 		client, experiment_key, variation_id, user_id, attributes)
+	impression_event_url := GetUrlForImpressionEvent(client.project_config.ProjectId)
 
 }
 

@@ -31,6 +31,13 @@ type Event struct {
 	params url.Values
 }
 
+// GetURLForImpressionEvent returns an url for sending impression / conversion
+// events.
+// project_id: ID for the project
+func GetUrlForImpressionEvent(project_id string) string {
+	return fmt.Sprintf(OFFLINE_API_PATH, project_id)
+}
+
 // Add experiment to variation mapping to the impression event
 // experiment_key: Experiment which is being activated
 // variation_id: id for variation which would be presented to the user
