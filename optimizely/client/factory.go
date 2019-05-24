@@ -22,7 +22,7 @@ type OptimizelyFactory struct {
 }
 
 // Client returns a client initialized with the defaults
-func (*OptimizelyFactory) Client() OptimizelyClient {
+func (OptimizelyFactory) Client() OptimizelyClient {
 	client := OptimizelyClient{}
 	return client
 }

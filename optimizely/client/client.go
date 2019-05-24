@@ -20,6 +20,7 @@ package client
 type OptimizelyClient struct {
 }
 
+// IsFeatureEnabled returns true if the feature is enabled for the given user
 func (*OptimizelyClient) IsFeatureEnabled(featureKey string) bool {
-	return &featureKey != nil
+	return featureKey != ""
 }
