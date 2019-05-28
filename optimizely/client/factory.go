@@ -16,11 +16,13 @@
 
 package client
 
-// OptimizelyClient is the entry point to the Optimizely SDK
-type OptimizelyClient struct {
+// OptimizelyFactory is used to construct an instance of the OptimizelyClient
+type OptimizelyFactory struct {
+	SDKKey string
 }
 
-// IsFeatureEnabled returns true if the feature is enabled for the given user
-func (*OptimizelyClient) IsFeatureEnabled(featureKey string) bool {
-	return featureKey != ""
+// Client returns a client initialized with the defaults
+func (OptimizelyFactory) Client() OptimizelyClient {
+	client := OptimizelyClient{}
+	return client
 }
