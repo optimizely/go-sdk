@@ -16,11 +16,15 @@
 
 package client
 
+import "github.com/optimizely/go-sdk/optimizely/decision"
+
 // OptimizelyClient is the entry point to the Optimizely SDK
 type OptimizelyClient struct {
+	decisionEngine decision.Engine
 }
 
 // IsFeatureEnabled returns true if the feature is enabled for the given user
-func (*OptimizelyClient) IsFeatureEnabled(featureKey string) bool {
-	return featureKey != ""
+func (optly *OptimizelyClient) IsFeatureEnabled(featureKey string, userID string) bool {
+	featureDecision := optly.decisionEngine.GetFeatureDecision(featureKey, userID)
+	return featureDecision.FeatureEnabled
 }

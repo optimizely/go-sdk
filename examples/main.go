@@ -11,5 +11,5 @@ func main() {
 		SDKKey: "ABC",
 	}
 	client := optimizelyFactory.Client()
-	fmt.Printf("Is feature enabled? %v", client.IsFeatureEnabled("go_sdk"))
+	fmt.Printf("Is feature enabled? %v", client.IsFeatureEnabled("go_sdk", "mike"))
 }
