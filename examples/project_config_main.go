@@ -9,22 +9,33 @@ import (
 )
 
 func main() {
-	projectConfig := project_config.ProjectConfig{}
 
-	parser := func(fileName string) {
+	parser := func(fileName string) project_config.ProjectConfig {
+		projectConfig := project_config.ProjectConfig{}
 		file, err := ioutil.ReadFile(fileName)
 		if err != nil {
 			fmt.Println(err)
-			return
+			return project_config.ProjectConfig{}
 		}
 		err = json.Unmarshal(file, &projectConfig)
 		if err != nil {
 			fmt.Println(err)
-			return
+			return project_config.ProjectConfig{}
 		}
-		fmt.Println(projectConfig)
+		return projectConfig
 	}
 
-	parser("examples/test1.json")
-	parser("examples/test.json")
+	projectConfig := parser("examples/test1.json")
+
+	typedAudiences := projectConfig.TypedAudiences
+
+	for _, audience := range typedAudiences {
+
+		if err := audience.PopulateTypedConditions(); err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(audience.Criteria)
+		fmt.Println(audience.LogicalOperators)
+
+	}
 }
