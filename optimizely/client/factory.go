@@ -16,6 +16,10 @@
 
 package client
 
+import (
+	"github.com/optimizely/go-sdk/optimizely/decision"
+)
+
 // OptimizelyFactory is used to construct an instance of the OptimizelyClient
 type OptimizelyFactory struct {
 	SDKKey string
@@ -23,6 +27,9 @@ type OptimizelyFactory struct {
 
 // Client returns a client initialized with the defaults
 func (OptimizelyFactory) Client() OptimizelyClient {
-	client := OptimizelyClient{}
+	decisionEngine := &decision.DefaultDecisionEngine{}
+	client := OptimizelyClient{
+		decisionEngine: decisionEngine,
+	}
 	return client
 }
