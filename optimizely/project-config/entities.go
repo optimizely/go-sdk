@@ -16,8 +16,7 @@ type Audience struct {
 	Name       string      `json:"name"`
 	Conditions interface{} `json:"conditions"`
 
-	LogicalOperators []string    `json:"-"`
-	Criteria         []Criterion `json:"-"`
+	ConditionTree Tree `json:"-"`
 }
 
 type Variation struct {
@@ -96,9 +95,17 @@ type Criterion struct {
 	Type  string      `json:"type"`
 	Value interface{} `json:"value"`
 }
-type Conditions struct {
-	LogicalOperators []string    `json:"-"`
-	Criteria         []Criterion `json:"-"`
+
+type Node struct {
+	Element          interface{}
+	ComplexCondition Criterion
+	SimpleCondition  string
+
+	Nodes []*Node
+}
+
+type Tree struct {
+	Root *Node
 }
 
 func (s *Audience) PopulateTypedConditions() error {
@@ -107,10 +114,12 @@ func (s *Audience) PopulateTypedConditions() error {
 	visited := make(map[interface{}]bool)
 	var retErr error
 
-	var populateConditions func(v reflect.Value)
-	populateConditions = func(v reflect.Value) {
+	s.ConditionTree = Tree{}
+	s.ConditionTree.Root = &Node{Element: value.Interface()}
 
-		// Drill down through pointers and interfaces to get a value we can print.
+	var populateConditions func(v reflect.Value, root *Node)
+	populateConditions = func(v reflect.Value, root *Node) {
+
 		for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
 			if v.Kind() == reflect.Ptr {
 				// Check for recursive data
@@ -124,40 +133,42 @@ func (s *Audience) PopulateTypedConditions() error {
 
 		switch v.Kind() {
 		case reflect.Slice, reflect.Array:
+			//fmt.Printf("%d elements\n", v.Len())
 			for i := 0; i < v.Len(); i++ {
-				populateConditions(v.Index(i))
+				//fmt.Printf("%s%d: ", prefix, i)
+				n := &Node{Element: v.Index(i).Interface(), Nodes: []*Node{}}
+				typedV := v.Index(i).Interface()
+				switch typedV.(type) {
+				case string:
+					n.SimpleCondition = typedV.(string)
+
+				case map[string]interface{}:
+					jsonbody, err := json.Marshal(typedV)
+					if err != nil {
+						// do error check
+						fmt.Println(err)
+						retErr = err
+						return
+					}
+					criterias := Criterion{}
+					if err := json.Unmarshal(jsonbody, &criterias); err != nil {
+						// do error check
+						fmt.Println(err)
+						retErr = err
+						//return
+					}
+
+					n.ComplexCondition = criterias
+				}
+
+				root.Nodes = append(root.Nodes, n)
+				//fmt.Println("Node", n)
+				populateConditions(v.Index(i), n)
+
 			}
-		case reflect.Struct:
-			t := v.Type()
-			for i := 0; i < t.NumField(); i++ {
-				populateConditions(v.Field(i))
-			}
-		case reflect.Invalid:
-			fmt.Printf("nil\n")
-		case reflect.String:
-			s.LogicalOperators = append(s.LogicalOperators, v.Interface().(string))
-		case reflect.Map:
-			jsonbody, err := json.Marshal(v.Interface())
-			if err != nil {
-				// do error check
-				fmt.Println(err)
-				retErr = err
-				return
-			}
-			criterias := Criterion{}
-			if err := json.Unmarshal(jsonbody, &criterias); err != nil {
-				// do error check
-				fmt.Println(err)
-				retErr = err
-				return
-			}
-			s.Criteria = append(s.Criteria, criterias)
-		default:
-			fmt.Printf("%v\n", v.Interface())
-			retErr = fmt.Errorf("Cannot parse %v\n", v.Interface())
 		}
 	}
 
-	populateConditions(value)
+	populateConditions(value, s.ConditionTree.Root)
 	return retErr
 }

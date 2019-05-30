@@ -34,8 +34,53 @@ func main() {
 		if err := audience.PopulateTypedConditions(); err != nil {
 			fmt.Println(err)
 		}
-		fmt.Println(audience.Criteria)
-		fmt.Println(audience.LogicalOperators)
 
 	}
+
+	// test
+	conditions := "[\"and\", [\"or\",  [\"or\", [\"or\", {\"type\": \"custom_attribute\", \"name\": \"string_attribute\", \"value\": \"exact_match\"}], \"or\", [\"and\",{\"sd\": 1}]]], [\"or\", [\"or\", {\"type\": \"custom_attribute1\", \"name\": \"string_attribute\", \"value\": \"exact_match\"}]]]"
+
+	var v interface{}
+	json.Unmarshal([]byte(conditions), &v)
+	typedAudience := project_config.Audience{Conditions: v}
+
+	typedAudience.PopulateTypedConditions()
+
+	tree := typedAudience.ConditionTree
+
+	//// first level
+	fmt.Println("Tree:", tree.Root.Nodes[0].SimpleCondition)
+	fmt.Println("Tree:", tree.Root.Nodes[1].Element)
+	fmt.Println("Tree:", tree.Root.Nodes[2].Element)
+	fmt.Println(len(tree.Root.Nodes))
+
+	// second level
+	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[0].SimpleCondition)
+	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[1].Element)
+	fmt.Println(len(tree.Root.Nodes[1].Nodes))
+
+	fmt.Println("Tree:", tree.Root.Nodes[2].Nodes[0].SimpleCondition)
+	fmt.Println("Tree:", tree.Root.Nodes[2].Nodes[1].Element)
+	fmt.Println(len(tree.Root.Nodes[2].Nodes))
+
+	// third level
+	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[1].Nodes[0].SimpleCondition)
+	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[1].Nodes[1].Element)
+	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[1].Nodes[2].SimpleCondition)
+	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[1].Nodes[3].Element)
+	fmt.Println(len(tree.Root.Nodes[1].Nodes[1].Nodes))
+
+	fmt.Println("Tree:", tree.Root.Nodes[2].Nodes[1].Nodes[0].Element)
+	fmt.Println("Tree:", tree.Root.Nodes[2].Nodes[1].Nodes[1].ComplexCondition)
+	fmt.Println(len(tree.Root.Nodes[2].Nodes[1].Nodes))
+
+	//4th level
+	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[1].Nodes[1].Nodes[0].Element)
+	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[1].Nodes[1].Nodes[1].ComplexCondition)
+	fmt.Println(len(tree.Root.Nodes[1].Nodes[1].Nodes[1].Nodes))
+
+	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[1].Nodes[3].Nodes[0].Element)
+	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[1].Nodes[3].Nodes[1].ComplexCondition)
+	fmt.Println(len(tree.Root.Nodes[1].Nodes[1].Nodes[3].Nodes))
+
 }
