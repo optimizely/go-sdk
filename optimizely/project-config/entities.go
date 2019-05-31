@@ -146,7 +146,9 @@ func nodeEvaluator(n *Node, m map[string]interface{}) bool {
 		conditionValueType := reflect.TypeOf(n.Condition.Value)
 		//fmt.Println(valueType, conditionValueType)
 
-		if n.Condition.Match == "exact" {
+		switch n.Condition.Match {
+
+		case "exact":
 			//fmt.Println(reflect.ValueOf(value), reflect.ValueOf(n.Condition.Value))
 			if valueType == conditionValueType {
 				if valueType.String() == "float64" {
@@ -157,21 +159,23 @@ func nodeEvaluator(n *Node, m map[string]interface{}) bool {
 					any = append(any, name == n.Condition.Name && reflect.DeepEqual(reflect.ValueOf(value), reflect.ValueOf(n.Condition.Value)))
 				}
 			}
-		} else if n.Condition.Match == "gt" {
+		case "gt":
 			if valueType == conditionValueType {
 				any = append(any, name == n.Condition.Name && reflect.ValueOf(value).Float() > reflect.ValueOf(n.Condition.Value).Float())
 			}
 
 			//fmt.Println(reflect.ValueOf(value), reflect.ValueOf(n.Condition.Value))
 
-		} else if n.Condition.Match == "lt" {
-
+		case "lt":
 			if valueType == conditionValueType {
 				//fmt.Println(reflect.ValueOf(value), reflect.ValueOf(n.Condition.Value), reflect.ValueOf(value).Float() < reflect.ValueOf(n.Condition.Value).Float())
 				any = append(any, name == n.Condition.Name && reflect.ValueOf(value).Float() < reflect.ValueOf(n.Condition.Value).Float())
 			}
-		}
+		default:
+			fmt.Println("match is not implemented")
+		} // end case
 	}
+
 	if len(any) == 0 {
 		fmt.Println("log (just warning): types not matched - cannot evaluate one of the condition instances properly")
 	}
@@ -250,7 +254,7 @@ func (s *Audience) PopulateTypedConditions() error {
 					continue
 
 				case map[string]interface{}:
-					jsonbody, err := json.Marshal(typedV)
+					jsonBody, err := json.Marshal(typedV)
 					if err != nil {
 						// do error check
 						fmt.Println(err)
@@ -258,17 +262,15 @@ func (s *Audience) PopulateTypedConditions() error {
 						return
 					}
 					condition := Condition{}
-					if err := json.Unmarshal(jsonbody, &condition); err != nil {
+					if err := json.Unmarshal(jsonBody, &condition); err != nil {
 						// do error check
 						fmt.Println(err)
 						retErr = err
-						//return
+						return
 					}
-
 					n.Condition = condition
 				}
 
-				//root.Nodes = append(root.Nodes, n)
 				if root.Left == nil {
 					root.Left = n
 				} else if root.Right == nil {
@@ -278,7 +280,6 @@ func (s *Audience) PopulateTypedConditions() error {
 				}
 				//fmt.Println("Node", n)
 				populateConditions(v.Index(i), n)
-
 			}
 		}
 	}
