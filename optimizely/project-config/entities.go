@@ -6,11 +6,13 @@ import (
 	"reflect"
 )
 
+//Attribute has atribute info
 type Attribute struct {
 	ID  string `json:"id"`
 	Key string `json:"key"`
 }
 
+//Audience has audience info
 type Audience struct {
 	ID         string      `json:"id"`
 	Name       string      `json:"name"`
@@ -19,6 +21,7 @@ type Audience struct {
 	ConditionTree Tree `json:"-"`
 }
 
+//Variation has variation info
 type Variation struct {
 	ID             string   `json:"id"`
 	Variables      []string `json:"variables"`
@@ -26,17 +29,20 @@ type Variation struct {
 	FeatureEnabled bool     `json:"featureEnabled"`
 }
 
+//Event has event info
 type Event struct {
 	ID            string   `json:"id"`
 	Key           string   `json:"key"`
 	ExperimentIDs []string `json:"experimentIds"`
 }
 
+//TrafficAllocation has trafficAllocation info
 type TrafficAllocation struct {
 	EntityID   string `json:"entityId"`
 	EndOfRange int    `json:"endOfRange"`
 }
 
+//Experiment has experiment info
 type Experiment struct {
 	ID                string              `json:"id"`
 	LayerID           string              `json:"layerId"`
@@ -50,6 +56,7 @@ type Experiment struct {
 	GroupPolicy       string              `json:"-"`
 }
 
+//FeatureFlag has feature flagging info
 type FeatureFlag struct {
 	ID            string   `json:"id"`
 	RolloutID     string   `json:"rolloutId"`
@@ -58,6 +65,7 @@ type FeatureFlag struct {
 	Variables     []string `json:"variables"`
 }
 
+//Group has group info
 type Group struct {
 	ID                string              `json:"id"`
 	Policy            string              `json:"policy"`
@@ -65,6 +73,7 @@ type Group struct {
 	TrafficAllocation []TrafficAllocation `json:"trafficAllocation"`
 }
 
+// Rollout has rollout info
 type Rollout struct {
 	ID          string       `json:"id"`
 	Experiments []Experiment `json:"experiments"`
@@ -89,25 +98,121 @@ type ProjectConfig struct {
 	Revision       string        `json:"revision"`
 }
 
-type Criterion struct {
+//Condition has condition info
+type Condition struct {
 	Name  string      `json:"name"`
 	Match string      `json:"match"`
 	Type  string      `json:"type"`
 	Value interface{} `json:"value"`
 }
 
+//Node in a condition tree
 type Node struct {
-	Element          interface{}
-	ComplexCondition Criterion
-	SimpleCondition  string
+	Element   interface{}
+	Condition Condition
+	Operator  string
 
-	Nodes []*Node
+	Left  *Node
+	Right *Node
 }
 
+//Tree is used to create condition tree
 type Tree struct {
 	Root *Node
 }
 
+func nodeEvaluator(n *Node, m map[string]interface{}) bool {
+
+	any := []bool{}
+
+	int2float := func(value interface{}) interface{} {
+		var floatType = reflect.TypeOf(float64(0))
+		v := reflect.ValueOf(value)
+		v = reflect.Indirect(v)
+
+		if v.Type().String() == "float64" || v.Type().ConvertibleTo(floatType) {
+			value = v.Convert(floatType).Float()
+		}
+
+		return value
+	}
+
+	for name, value := range m {
+
+		value = int2float(value)
+		n.Condition.Value = int2float(n.Condition.Value)
+
+		valueType := reflect.TypeOf(value)
+		conditionValueType := reflect.TypeOf(n.Condition.Value)
+		//fmt.Println(valueType, conditionValueType)
+
+		if n.Condition.Match == "exact" {
+			//fmt.Println(reflect.ValueOf(value), reflect.ValueOf(n.Condition.Value))
+			if valueType == conditionValueType {
+				if valueType.String() == "float64" {
+					any = append(any, name == n.Condition.Name && reflect.ValueOf(value).Float() == reflect.ValueOf(n.Condition.Value).Float())
+				} else if valueType.String() == "string" {
+					any = append(any, name == n.Condition.Name && reflect.DeepEqual(reflect.ValueOf(value).String(), reflect.ValueOf(n.Condition.Value).String()))
+				} else {
+					any = append(any, name == n.Condition.Name && reflect.DeepEqual(reflect.ValueOf(value), reflect.ValueOf(n.Condition.Value)))
+				}
+			}
+		} else if n.Condition.Match == "gt" {
+			if valueType == conditionValueType {
+				any = append(any, name == n.Condition.Name && reflect.ValueOf(value).Float() > reflect.ValueOf(n.Condition.Value).Float())
+			}
+
+			//fmt.Println(reflect.ValueOf(value), reflect.ValueOf(n.Condition.Value))
+
+		} else if n.Condition.Match == "lt" {
+
+			if valueType == conditionValueType {
+				//fmt.Println(reflect.ValueOf(value), reflect.ValueOf(n.Condition.Value), reflect.ValueOf(value).Float() < reflect.ValueOf(n.Condition.Value).Float())
+				any = append(any, name == n.Condition.Name && reflect.ValueOf(value).Float() < reflect.ValueOf(n.Condition.Value).Float())
+			}
+		}
+	}
+	if len(any) == 0 {
+		fmt.Println("log (just warning): types not matched - cannot evaluate one of the condition instances properly")
+	}
+	for _, x := range any {
+		if x == true {
+			return true
+		}
+	}
+	return false
+}
+
+//Evaluate is the main function to evaluate an input condition
+func Evaluate(root *Node, m map[string]interface{}) bool {
+
+	if root.Left == nil && root.Right == nil {
+		//fmt.Println(nodeEvaluator(root, m))
+		return nodeEvaluator(root, m)
+	}
+
+	leftLogic := Evaluate(root.Left, m)
+
+	var rightLogic bool
+	if root.Right == nil {
+		rightLogic = leftLogic
+	} else {
+		rightLogic = Evaluate(root.Right, m)
+	}
+
+	if root.Operator == "and" {
+		//fmt.Println(rightLogic, leftLogic)
+		return rightLogic && leftLogic
+	}
+	if root.Operator == "or" {
+		//fmt.Println(rightLogic)
+		return rightLogic || leftLogic
+	}
+	return false
+}
+
+//PopulateTypedConditions if used to build condition tree
+// not sure if we can reuse it, if so  then it does not belong here
 func (s *Audience) PopulateTypedConditions() error {
 
 	value := reflect.ValueOf(&s.Conditions)
@@ -136,11 +241,13 @@ func (s *Audience) PopulateTypedConditions() error {
 			//fmt.Printf("%d elements\n", v.Len())
 			for i := 0; i < v.Len(); i++ {
 				//fmt.Printf("%s%d: ", prefix, i)
-				n := &Node{Element: v.Index(i).Interface(), Nodes: []*Node{}}
+				n := &Node{Element: v.Index(i).Interface()}
 				typedV := v.Index(i).Interface()
 				switch typedV.(type) {
 				case string:
-					n.SimpleCondition = typedV.(string)
+					n.Operator = typedV.(string)
+					root.Operator = n.Operator
+					continue
 
 				case map[string]interface{}:
 					jsonbody, err := json.Marshal(typedV)
@@ -150,18 +257,25 @@ func (s *Audience) PopulateTypedConditions() error {
 						retErr = err
 						return
 					}
-					criterias := Criterion{}
-					if err := json.Unmarshal(jsonbody, &criterias); err != nil {
+					condition := Condition{}
+					if err := json.Unmarshal(jsonbody, &condition); err != nil {
 						// do error check
 						fmt.Println(err)
 						retErr = err
 						//return
 					}
 
-					n.ComplexCondition = criterias
+					n.Condition = condition
 				}
 
-				root.Nodes = append(root.Nodes, n)
+				//root.Nodes = append(root.Nodes, n)
+				if root.Left == nil {
+					root.Left = n
+				} else if root.Right == nil {
+					root.Right = n
+				} else {
+					retErr = fmt.Errorf("Cannot populate tree nodes")
+				}
 				//fmt.Println("Node", n)
 				populateConditions(v.Index(i), n)
 

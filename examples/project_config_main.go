@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"runtime"
+	"time"
 
 	"go-sdk/optimizely/project-config"
 )
@@ -38,49 +40,42 @@ func main() {
 	}
 
 	// test
-	conditions := "[\"and\", [\"or\",  [\"or\", [\"or\", {\"type\": \"custom_attribute\", \"name\": \"string_attribute\", \"value\": \"exact_match\"}], \"or\", [\"and\",{\"sd\": 1}]]], [\"or\", [\"or\", {\"type\": \"custom_attribute1\", \"name\": \"string_attribute\", \"value\": \"exact_match\"}]]]"
+	var m1, m2 runtime.MemStats
 
-	var v interface{}
-	json.Unmarshal([]byte(conditions), &v)
-	typedAudience := project_config.Audience{Conditions: v}
+	runtime.ReadMemStats(&m1)
+	start := time.Now()
+	for i := 0; i < 1; i++ {
 
-	typedAudience.PopulateTypedConditions()
+		conditions := "[\"and\", [\"or\",  [\"or\", [\"or\", {\"type\": \"custom_attribute\", \"name\": \"string_attribute\", \"value\": \"exact_match\"}], \"or\", [\"and\",{\"sd\": 1}]]], [\"or\", [\"or\", {\"type\": \"custom_attribute1\", \"name\": \"string_attribute\", \"value\": \"exact_match\"}]]]"
+		conditions = "[ \"and\", [ \"or\", [ \"or\", { \"type\": \"custom_attribute\", \"name\": \"s_foo\", \"match\": \"exact\", \"value\": \"foo\" }, { \"type\": \"custom_attribute\", \"name\": \"s_bar\", \"match\": \"exact\", \"value\": \"bar\" } ] ] ]"
+		conditions = "[ \"and\", [ \"or\", [ \"or\", { \"type\": \"custom_attribute\", \"name\": \"i_42\", \"match\": \"lt\", \"value\": 43 } ] ], [ \"or\", [ \"or\", { \"type\": \"custom_attribute\", \"name\": \"i_42\", \"match\": \"gt\", \"value\": 41 } ] ] ]"
+		//conditions = "[ \"and\", [ \"or\", [ \"or\", { \"type\": \"custom_attribute\", \"name\": \"i_42\", \"match\": \"exact\", \"value\": 23.0} ] ] ]"
 
-	tree := typedAudience.ConditionTree
+		var v interface{}
+		json.Unmarshal([]byte(conditions), &v)
+		typedAudience := project_config.Audience{Conditions: v}
 
-	//// first level
-	fmt.Println("Tree:", tree.Root.Nodes[0].SimpleCondition)
-	fmt.Println("Tree:", tree.Root.Nodes[1].Element)
-	fmt.Println("Tree:", tree.Root.Nodes[2].Element)
-	fmt.Println(len(tree.Root.Nodes))
+		typedAudience.PopulateTypedConditions()
 
-	// second level
-	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[0].SimpleCondition)
-	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[1].Element)
-	fmt.Println(len(tree.Root.Nodes[1].Nodes))
+		tree := typedAudience.ConditionTree
 
-	fmt.Println("Tree:", tree.Root.Nodes[2].Nodes[0].SimpleCondition)
-	fmt.Println("Tree:", tree.Root.Nodes[2].Nodes[1].Element)
-	fmt.Println(len(tree.Root.Nodes[2].Nodes))
+		m := map[string]interface{}{}
 
-	// third level
-	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[1].Nodes[0].SimpleCondition)
-	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[1].Nodes[1].Element)
-	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[1].Nodes[2].SimpleCondition)
-	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[1].Nodes[3].Element)
-	fmt.Println(len(tree.Root.Nodes[1].Nodes[1].Nodes))
+		//m["s_foo"] = "foo"
+		//m["s_bar"] = "not_bar"
+		m["i_42"] = 42.9999999
 
-	fmt.Println("Tree:", tree.Root.Nodes[2].Nodes[1].Nodes[0].Element)
-	fmt.Println("Tree:", tree.Root.Nodes[2].Nodes[1].Nodes[1].ComplexCondition)
-	fmt.Println(len(tree.Root.Nodes[2].Nodes[1].Nodes))
+		b, _ := json.Marshal(m)
 
-	//4th level
-	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[1].Nodes[1].Nodes[0].Element)
-	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[1].Nodes[1].Nodes[1].ComplexCondition)
-	fmt.Println(len(tree.Root.Nodes[1].Nodes[1].Nodes[1].Nodes))
+		project_config.Evaluate(tree.Root, m)
+		fmt.Println("conditions:", conditions)
+		fmt.Println("input:", string(b))
+		fmt.Println("evaluation:", project_config.Evaluate(tree.Root, m))
 
-	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[1].Nodes[3].Nodes[0].Element)
-	fmt.Println("Tree:", tree.Root.Nodes[1].Nodes[1].Nodes[3].Nodes[1].ComplexCondition)
-	fmt.Println(len(tree.Root.Nodes[1].Nodes[1].Nodes[3].Nodes))
+	}
+
+	fmt.Println("\nTotal time:", time.Now().Sub(start))
+	runtime.ReadMemStats(&m2)
+	fmt.Println("Bytes allocated:", m2.TotalAlloc-m1.TotalAlloc)
 
 }
