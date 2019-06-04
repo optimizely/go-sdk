@@ -48,14 +48,20 @@ func main() {
 
 		conditions := "[\"and\", [\"or\",  [\"or\", [\"or\", {\"type\": \"custom_attribute\", \"name\": \"string_attribute\", \"value\": \"exact_match\"}], \"or\", [\"and\",{\"sd\": 1}]]], [\"or\", [\"or\", {\"type\": \"custom_attribute1\", \"name\": \"string_attribute\", \"value\": \"exact_match\"}]]]"
 		conditions = "[ \"and\", [ \"or\", [ \"or\", { \"type\": \"custom_attribute\", \"name\": \"s_foo\", \"match\": \"exact\", \"value\": \"foo\" }, { \"type\": \"custom_attribute\", \"name\": \"s_bar\", \"match\": \"exact\", \"value\": \"bar\" } ] ] ]"
-		conditions = "[ \"and\", [ \"or\", [ \"or\", { \"type\": \"custom_attribute\", \"name\": \"i_42\", \"match\": \"lt\", \"value\": 43 } ] ], [ \"or\", [ \"or\", { \"type\": \"custom_attribute\", \"name\": \"i_42\", \"match\": \"gt\", \"value\": 41 } ] ] ]"
+		conditions = "[ \"and\", [ \"or\", [ \"or\", { \"type\": \"custom_attribute\", \"name\": \"i_42\", \"match\": \"lt\", \"value\": 43 } ,  \"or\", [ \"or\", { \"type\": \"custom_attribute\", \"name\": \"i_43\", \"match\": \"gt\", \"value\": 41 }, { \"type\": \"custom_attribute\", \"name\": \"i_47\", \"match\": \"gt\", \"value\": 41 }, { \"type\": \"custom_attribute\", \"name\": \"i_48\", \"match\": \"gt\", \"value\": 41 } ] ]]]"
+
+		conditions = "[ \"and\", [ \"or\", [ \"not\", { \"type\": \"custom_attribute\", \"name\": \"i_42\", \"match\": \"lt\", \"value\": 43 } ,  [\"pawel\", [ \"or\", { \"type\": \"custom_attribute\", \"name\": \"i_43\", \"match\": \"gt\", \"value\": 41 }, " +
+			"{ \"type\": \"custom_attribute\", \"name\": \"i_47\", \"match\": \"gt\", \"value\": 41 }, { \"type\": \"custom_attribute\", \"name\": \"i_48\", \"match\": \"gt\", \"value\": 41 }, [ \"or\", [ \"not\", { \"type\": \"custom_attribute\", \"name\": \"i_42\", \"match\": \"lt\", \"value\": 43 } ]] ] ]]]]"
+
 		//conditions = "[ \"and\", [ \"or\", [ \"or\", { \"type\": \"custom_attribute\", \"name\": \"i_42\", \"match\": \"exact\", \"value\": 23.0} ] ] ]"
+
+		//conditions = "[ \"and\", [ \"or\", [ \"or\", { \"type\": \"custom_attribute\", \"name\": \"i_42\", \"match\": \"exact\", \"value\": 23.0} ,  \"or\", { \"type\": \"custom_attribute\", \"name\": \"i_42\", \"match\": \"exact\", \"value\": 23.0}] ] ]"
 
 		var v interface{}
 		json.Unmarshal([]byte(conditions), &v)
 		typedAudience := project_config.Audience{Conditions: v}
 
-		typedAudience.PopulateTypedConditions()
+		typedAudience.PopulateNodeConditions()
 
 		tree := typedAudience.ConditionTree
 
@@ -64,6 +70,7 @@ func main() {
 		//m["s_foo"] = "foo"
 		//m["s_bar"] = "not_bar"
 		m["i_42"] = 42.9999999
+		m["i_43"] = 41.01
 
 		b, _ := json.Marshal(m)
 

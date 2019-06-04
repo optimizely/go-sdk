@@ -112,6 +112,7 @@ type Node struct {
 	Condition Condition
 	Operator  string
 
+	Nodes []*Node
 	Left  *Node
 	Right *Node
 }
@@ -270,6 +271,81 @@ func (s *Audience) PopulateTypedConditions() error {
 					}
 					n.Condition = condition
 				}
+
+				if root.Left == nil {
+					root.Left = n
+				} else if root.Right == nil {
+					root.Right = n
+				} else {
+					retErr = fmt.Errorf("Cannot populate tree nodes")
+				}
+				//fmt.Println("Node", n)
+				populateConditions(v.Index(i), n)
+			}
+		}
+	}
+
+	populateConditions(value, s.ConditionTree.Root)
+	return retErr
+}
+
+func (s *Audience) PopulateNodeConditions() error {
+
+	value := reflect.ValueOf(&s.Conditions)
+	visited := make(map[interface{}]bool)
+	var retErr error
+
+	s.ConditionTree = Tree{}
+	s.ConditionTree.Root = &Node{Element: value.Interface()}
+
+	var populateConditions func(v reflect.Value, root *Node)
+	populateConditions = func(v reflect.Value, root *Node) {
+
+		for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+			if v.Kind() == reflect.Ptr {
+				// Check for recursive data
+				if visited[v.Interface()] {
+					return
+				}
+				visited[v.Interface()] = true
+			}
+			v = v.Elem()
+		}
+
+		fmt.Println(v, v.Kind())
+		switch v.Kind() {
+
+		case reflect.Slice, reflect.Array:
+			//fmt.Printf("%d elements\n", v.Len())
+			for i := 0; i < v.Len(); i++ {
+				//fmt.Printf("%s%d: ", prefix, i)
+				n := &Node{Element: v.Index(i).Interface()}
+				typedV := v.Index(i).Interface()
+				switch typedV.(type) {
+				case string:
+					n.Operator = typedV.(string)
+					root.Operator = n.Operator
+					continue
+
+				case map[string]interface{}:
+					jsonBody, err := json.Marshal(typedV)
+					if err != nil {
+						// do error check
+						fmt.Println(err)
+						retErr = err
+						return
+					}
+					condition := Condition{}
+					if err := json.Unmarshal(jsonBody, &condition); err != nil {
+						// do error check
+						fmt.Println(err)
+						retErr = err
+						return
+					}
+					n.Condition = condition
+				}
+
+				root.Nodes = append(root.Nodes, n)
 
 				if root.Left == nil {
 					root.Left = n
