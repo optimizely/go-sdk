@@ -4,7 +4,7 @@ package entities
 type Feature struct {
 	ID                 string
 	Key                string
-	FeatureExperiments map[string]Experiment
+	FeatureExperiments []Experiment
 	RolloutExperiments []Experiment
 	Variables          map[string]FeatureVariable
 }

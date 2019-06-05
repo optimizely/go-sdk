@@ -12,5 +12,12 @@ type Variation struct {
 type Experiment struct {
 	ID         string
 	Key        string
-	Variations []Variation
+	Variations map[string]Variation
+	GroupID    string
+}
+
+// Range represents bucketing range that the specify entityID falls into
+type Range struct {
+	EntityID   string
+	EndOfRange int
 }
