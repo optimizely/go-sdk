@@ -108,13 +108,11 @@ type Condition struct {
 
 //Node in a condition tree
 type Node struct {
-	Element   interface{}
+	Element   interface{} // not really needed
 	Condition Condition
 	Operator  string
 
 	Nodes []*Node
-	Left  *Node
-	Right *Node
 }
 
 //Tree is used to create condition tree
@@ -188,31 +186,40 @@ func nodeEvaluator(n *Node, m map[string]interface{}) bool {
 	return false
 }
 
-//Evaluate is the main function to evaluate an input condition
-func Evaluate(root *Node, m map[string]interface{}) bool {
+func evaluator(nodes []*Node, operator string, m map[string]interface{}) bool {
 
-	if root.Left == nil && root.Right == nil {
-		//fmt.Println(nodeEvaluator(root, m))
+	for _, x := range nodes {
+
+		results := Evaluate(x, m)
+		switch operator {
+		case "and":
+			if results == false {
+				return false
+			}
+		case "or":
+			if results == true {
+				return true
+			}
+		}
+	}
+
+	if operator == "and" {
+		return true
+	}
+
+	return false
+}
+
+//Evaluate is the main function to evaluate an input condition
+func Evaluate(root *Node, m map[string]interface{}) bool { // post order traversal
+
+	//fmt.Println(root.Operator, root.Condition, root.Nodes)
+	if root.Nodes != nil {
+		return evaluator(root.Nodes, root.Operator, m)
+	} else {
 		return nodeEvaluator(root, m)
 	}
-
-	leftLogic := Evaluate(root.Left, m)
-
-	var rightLogic bool
-	if root.Right == nil {
-		rightLogic = leftLogic
-	} else {
-		rightLogic = Evaluate(root.Right, m)
-	}
-
-	if root.Operator == "and" {
-		//fmt.Println(rightLogic, leftLogic)
-		return rightLogic && leftLogic
-	}
-	if root.Operator == "or" {
-		//fmt.Println(rightLogic)
-		return rightLogic || leftLogic
-	}
+	fmt.Println("cannot evaluate")
 	return false
 }
 
@@ -241,78 +248,6 @@ func (s *Audience) PopulateTypedConditions() error {
 			v = v.Elem()
 		}
 
-		switch v.Kind() {
-		case reflect.Slice, reflect.Array:
-			//fmt.Printf("%d elements\n", v.Len())
-			for i := 0; i < v.Len(); i++ {
-				//fmt.Printf("%s%d: ", prefix, i)
-				n := &Node{Element: v.Index(i).Interface()}
-				typedV := v.Index(i).Interface()
-				switch typedV.(type) {
-				case string:
-					n.Operator = typedV.(string)
-					root.Operator = n.Operator
-					continue
-
-				case map[string]interface{}:
-					jsonBody, err := json.Marshal(typedV)
-					if err != nil {
-						// do error check
-						fmt.Println(err)
-						retErr = err
-						return
-					}
-					condition := Condition{}
-					if err := json.Unmarshal(jsonBody, &condition); err != nil {
-						// do error check
-						fmt.Println(err)
-						retErr = err
-						return
-					}
-					n.Condition = condition
-				}
-
-				if root.Left == nil {
-					root.Left = n
-				} else if root.Right == nil {
-					root.Right = n
-				} else {
-					retErr = fmt.Errorf("Cannot populate tree nodes")
-				}
-				//fmt.Println("Node", n)
-				populateConditions(v.Index(i), n)
-			}
-		}
-	}
-
-	populateConditions(value, s.ConditionTree.Root)
-	return retErr
-}
-
-func (s *Audience) PopulateNodeConditions() error {
-
-	value := reflect.ValueOf(&s.Conditions)
-	visited := make(map[interface{}]bool)
-	var retErr error
-
-	s.ConditionTree = Tree{}
-	s.ConditionTree.Root = &Node{Element: value.Interface()}
-
-	var populateConditions func(v reflect.Value, root *Node)
-	populateConditions = func(v reflect.Value, root *Node) {
-
-		for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
-			if v.Kind() == reflect.Ptr {
-				// Check for recursive data
-				if visited[v.Interface()] {
-					return
-				}
-				visited[v.Interface()] = true
-			}
-			v = v.Elem()
-		}
-
-		fmt.Println(v, v.Kind())
 		switch v.Kind() {
 
 		case reflect.Slice, reflect.Array:
@@ -347,13 +282,6 @@ func (s *Audience) PopulateNodeConditions() error {
 
 				root.Nodes = append(root.Nodes, n)
 
-				if root.Left == nil {
-					root.Left = n
-				} else if root.Right == nil {
-					root.Right = n
-				} else {
-					retErr = fmt.Errorf("Cannot populate tree nodes")
-				}
 				//fmt.Println("Node", n)
 				populateConditions(v.Index(i), n)
 			}
