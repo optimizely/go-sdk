@@ -4,20 +4,24 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-// DefaultFeatureDecisionService is the default out-of-the-box feature decision service
-type DefaultFeatureDecisionService struct {
-	experimentDecisionService ExperimentDecisionService
+// CompositeFeatureService is the default out-of-the-box feature decision service
+type CompositeFeatureService struct {
+	experimentDecisionService        ExperimentDecisionService
+	rolloutExperimentDecisionService ExperimentDecisionService
 }
 
-// NewDefaultFeatureDecisionService returns a new instance of the DefaultFeatureDecisionService
-func NewDefaultFeatureDecisionService() DefaultFeatureDecisionService {
-	return DefaultFeatureDecisionService{
-		experimentDecisionService: NewDefaultExperimentDecisionService(),
+// NewCompositeFeatureService returns a new instance of the CompositeFeatureService
+func NewCompositeFeatureService(experimentDecisionService ExperimentDecisionService) *CompositeFeatureService {
+	if experimentDecisionService == nil {
+		experimentDecisionService = NewExperimentBucketerService()
+	}
+	return &CompositeFeatureService{
+		experimentDecisionService: experimentDecisionService,
 	}
 }
 
 // GetDecision returns a decision for the given feature and user context
-func (featureService DefaultFeatureDecisionService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (*FeatureDecision, error) {
+func (featureService *CompositeFeatureService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
 	featureEnabled := false
 	feature := decisionContext.Feature
 
@@ -28,11 +32,11 @@ func (featureService DefaultFeatureDecisionService) GetDecision(decisionContext 
 
 	experimentDecision, err := featureService.experimentDecisionService.GetDecision(experimentDecisionContext, userContext)
 	if err != nil {
-
+		// @TODO(mng): handle error here
 	}
 	featureEnabled = experimentDecision.Variation.FeatureEnabled
 
-	return &FeatureDecision{
+	return FeatureDecision{
 		FeatureEnabled: featureEnabled,
 	}, nil
 }

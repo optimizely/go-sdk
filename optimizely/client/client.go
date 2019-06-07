@@ -23,7 +23,7 @@ import (
 
 // OptimizelyClient is the entry point to the Optimizely SDK
 type OptimizelyClient struct {
-	decisionEngine decision.Engine
+	decisionService decision.DecisionService
 }
 
 // IsFeatureEnabled returns true if the feature is enabled for the given user
@@ -40,7 +40,7 @@ func (optly *OptimizelyClient) IsFeatureEnabled(featureKey string, userID string
 		Feature: feature,
 	}
 
-	featureDecision, err := optly.decisionEngine.GetFeatureDecision(featureDecisionContext, userContext)
+	featureDecision, err := optly.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
 	if err != nil {
 		// @TODO(mng): log error
 		return false

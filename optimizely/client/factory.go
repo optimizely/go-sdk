@@ -27,9 +27,9 @@ type OptimizelyFactory struct {
 
 // Client returns a client initialized with the defaults
 func (OptimizelyFactory) Client() OptimizelyClient {
-	decisionEngine := decision.NewDefaultDecisionEngine()
+	decisionService := decision.NewCompositeService()
 	client := OptimizelyClient{
-		decisionEngine: decisionEngine,
+		decisionService: decisionService,
 	}
 	return client
 }

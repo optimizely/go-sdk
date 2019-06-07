@@ -14,13 +14,19 @@ type FeatureDecisionContext struct {
 	Group   entities.Group
 }
 
+type Decision struct {
+	DecisionMade bool
+}
+
 // FeatureDecision contains the decision information about a feature
 type FeatureDecision struct {
+	Decision
 	Type           string
 	FeatureEnabled bool
 }
 
 // ExperimentDecision contains the decision information about an experiment
 type ExperimentDecision struct {
-	Variation entities.Variation
+	Decision
+	Variation *entities.Variation
 }
