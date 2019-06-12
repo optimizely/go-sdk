@@ -16,7 +16,10 @@
 
 package client
 
-import "github.com/optimizely/go-sdk/optimizely/decision"
+import (
+	"github.com/optimizely/go-sdk/optimizely/decision"
+	"github.com/optimizely/go-sdk/optimizely/entities"
+)
 
 // OptimizelyClient is the entry point to the Optimizely SDK
 type OptimizelyClient struct {
@@ -24,7 +27,10 @@ type OptimizelyClient struct {
 }
 
 // IsFeatureEnabled returns true if the feature is enabled for the given user
-func (optly *OptimizelyClient) IsFeatureEnabled(featureKey string, userID string) bool {
-	featureDecision := optly.decisionEngine.GetFeatureDecision(featureKey, userID)
+func (optly *OptimizelyClient) IsFeatureEnabled(featureKey string, userID string, attributes map[string]interface{}) bool {
+	// @TODO(mng): we should fetch the Feature entity from the config service instead of manually creating it here
+	feature := entities.Feature{Key: featureKey}
+	userContext := entities.UserContext{ID: userID, Attributes: attributes}
+	featureDecision := optly.decisionEngine.GetFeatureDecision(feature, userContext)
 	return featureDecision.FeatureEnabled
 }
