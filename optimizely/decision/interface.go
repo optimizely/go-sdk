@@ -14,26 +14,23 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package entities
+package decision
 
-// Variation represents a variation in the experiment
-type Variation struct {
-	ID             string
-	Key            string
-	FeatureEnabled bool
-	Variables      map[string]FeatureVariable
+import (
+	"github.com/optimizely/go-sdk/optimizely/entities"
+)
+
+// DecisionService interface is used to make a decision for a given feature or experiment
+type DecisionService interface {
+	GetFeatureDecision(FeatureDecisionContext, entities.UserContext) (FeatureDecision, error)
 }
 
-// Experiment represents an experiment
-type Experiment struct {
-	ID         string
-	Key        string
-	Variations map[string]Variation
-	GroupID    string
+// ExperimentDecisionService can make a decision about an experiment
+type ExperimentDecisionService interface {
+	GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error)
 }
 
-// Range represents bucketing range that the specify entityID falls into
-type Range struct {
-	EntityID   string
-	EndOfRange int
+// FeatureDecisionService can make a decision about a Feature Flag (can be feature test or rollout)
+type FeatureDecisionService interface {
+	GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error)
 }

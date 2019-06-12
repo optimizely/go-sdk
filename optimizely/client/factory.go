@@ -42,10 +42,10 @@ func (factory OptimizelyFactory) Client() OptimizelyClient {
 		}
 	}
 
-	decisionEngine := &decision.DefaultDecisionEngine{}
+	decisionService := decision.NewCompositeService()
 	client := OptimizelyClient{
-		decisionEngine: decisionEngine,
-		configManager:  configManager,
+		decisionService: decisionService,
+		configManager:   configManager,
 	}
 	return client
 }

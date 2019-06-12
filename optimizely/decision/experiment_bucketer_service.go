@@ -14,26 +14,29 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package entities
+package decision
 
-// Variation represents a variation in the experiment
-type Variation struct {
-	ID             string
-	Key            string
-	FeatureEnabled bool
-	Variables      map[string]FeatureVariable
+import (
+	"github.com/optimizely/go-sdk/optimizely/entities"
+)
+
+// ExperimentBucketerService is the default out-of-the-box experiment decision service
+type ExperimentBucketerService struct {
+	overrides []ExperimentDecisionService
 }
 
-// Experiment represents an experiment
-type Experiment struct {
-	ID         string
-	Key        string
-	Variations map[string]Variation
-	GroupID    string
+// NewExperimentBucketerService returns a new instance of the ExperimentBucketerService
+func NewExperimentBucketerService() *ExperimentBucketerService {
+	// @TODO(mng): add experiment override service
+	return &ExperimentBucketerService{
+		overrides: []ExperimentDecisionService{},
+	}
 }
 
-// Range represents bucketing range that the specify entityID falls into
-type Range struct {
-	EntityID   string
-	EndOfRange int
+// GetDecision returns a decision for the given experiment and user context
+func (service *ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
+	// @TODO(mng): use audience evaluator + bucketer to determine the variation to return
+	return ExperimentDecision{
+		Variation: &entities.Variation{FeatureEnabled: true},
+	}, nil
 }
