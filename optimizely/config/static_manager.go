@@ -21,19 +21,19 @@ import "sync"
 // StaticProjectConfigManager maintains a static copy of the project config
 type StaticProjectConfigManager struct {
 	projectConfig ProjectConfig
-	mutex         *sync.Mutex
+	configLock    *sync.Mutex
 }
 
 // GetConfig returns the project config
-func (configManager StaticProjectConfigManager) GetConfig() ProjectConfig {
-	configManager.mutex.Lock()
-	defer configManager.mutex.Unlock()
-	return configManager.projectConfig
+func (cm StaticProjectConfigManager) GetConfig() ProjectConfig {
+	cm.configLock.Lock()
+	defer cm.configLock.Unlock()
+	return cm.projectConfig
 }
 
 // SetConfig sets the project config
-func (configManager *StaticProjectConfigManager) SetConfig(config ProjectConfig) {
-	configManager.mutex.Lock()
-	defer configManager.mutex.Unlock()
-	configManager.projectConfig = config
+func (cm *StaticProjectConfigManager) SetConfig(config ProjectConfig) {
+	cm.configLock.Lock()
+	defer cm.configLock.Unlock()
+	cm.projectConfig = config
 }
