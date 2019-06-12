@@ -21,7 +21,6 @@ type Feature struct {
 	ID                 string
 	Key                string
 	FeatureExperiments []Experiment
-	RolloutExperiments []Experiment
 	Variables          map[string]FeatureVariable
 }
 

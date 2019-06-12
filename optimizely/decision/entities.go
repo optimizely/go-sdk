@@ -30,6 +30,7 @@ type FeatureDecisionContext struct {
 	Group   entities.Group
 }
 
+// Decision contains base information about a decision
 type Decision struct {
 	DecisionMade bool
 }
@@ -37,7 +38,6 @@ type Decision struct {
 // FeatureDecision contains the decision information about a feature
 type FeatureDecision struct {
 	Decision
-	Type           string
 	FeatureEnabled bool
 }
 
