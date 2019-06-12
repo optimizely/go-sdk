@@ -14,38 +14,38 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package client
+package datafileProjectConfig
 
 import (
-	"github.com/optimizely/go-sdk/optimizely/config"
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig"
-	"github.com/optimizely/go-sdk/optimizely/decision"
+	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-// OptimizelyFactory is used to construct an instance of the OptimizelyClient
-type OptimizelyFactory struct {
-	SDKKey   string
-	Datafile []byte
-}
+func TestParseDatafilePasses(t *testing.T) {
+	testFeatureKey := "feature_test_1"
+	testFeatureID := "feature_id_123"
+	datafileString := fmt.Sprintf(`{
+		"projectId": "1337",
+		"featureFlags": [
+			{
+				"key": "%s",
+				"id" : "%s"
+			}
+		]
+	}`, testFeatureKey, testFeatureID)
 
-// Client returns a client initialized with the defaults
-func (factory OptimizelyFactory) Client() OptimizelyClient {
-	var projectConfig config.ProjectConfig
-	var configManager config.ProjectConfigManager
-	if factory.Datafile != nil {
-		projectConfig = datafileProjectConfig.NewDatafileProjectConfig(factory.Datafile)
-
-		if factory.SDKKey == "" {
-			staticConfigManager := config.StaticProjectConfigManager{}
-			staticConfigManager.SetConfig(projectConfig)
-			configManager = staticConfigManager
-		}
+	rawDatafile := []byte(datafileString)
+	parser := DatafileJSONParser{}
+	projectConfig, err := parser.Parse(rawDatafile)
+	if err != nil {
+		assert.Fail(t, err.Error())
+	}
+	feature, err := projectConfig.GetFeatureByKey("feature_test_1")
+	if err != nil {
+		assert.Fail(t, err.Error())
 	}
 
-	decisionEngine := &decision.DefaultDecisionEngine{}
-	client := OptimizelyClient{
-		decisionEngine: decisionEngine,
-		configManager:  configManager,
-	}
-	return client
+	assert.Equal(t, "feature_id_123", feature.ID)
 }

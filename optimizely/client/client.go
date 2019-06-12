@@ -17,6 +17,7 @@
 package client
 
 import (
+	"github.com/optimizely/go-sdk/optimizely/config"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
@@ -24,6 +25,7 @@ import (
 // OptimizelyClient is the entry point to the Optimizely SDK
 type OptimizelyClient struct {
 	decisionEngine decision.Engine
+	configManager  config.ProjectConfigManager
 }
 
 // IsFeatureEnabled returns true if the feature is enabled for the given user

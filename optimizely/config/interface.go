@@ -14,38 +14,18 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package client
+package config
 
 import (
-	"github.com/optimizely/go-sdk/optimizely/config"
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig"
-	"github.com/optimizely/go-sdk/optimizely/decision"
+	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-// OptimizelyFactory is used to construct an instance of the OptimizelyClient
-type OptimizelyFactory struct {
-	SDKKey   string
-	Datafile []byte
+// ProjectConfig contains the parsed project entities
+type ProjectConfig interface {
+	GetFeatureByKey(string) (entities.Feature, error)
 }
 
-// Client returns a client initialized with the defaults
-func (factory OptimizelyFactory) Client() OptimizelyClient {
-	var projectConfig config.ProjectConfig
-	var configManager config.ProjectConfigManager
-	if factory.Datafile != nil {
-		projectConfig = datafileProjectConfig.NewDatafileProjectConfig(factory.Datafile)
-
-		if factory.SDKKey == "" {
-			staticConfigManager := config.StaticProjectConfigManager{}
-			staticConfigManager.SetConfig(projectConfig)
-			configManager = staticConfigManager
-		}
-	}
-
-	decisionEngine := &decision.DefaultDecisionEngine{}
-	client := OptimizelyClient{
-		decisionEngine: decisionEngine,
-		configManager:  configManager,
-	}
-	return client
+// ProjectConfigManager manages the config
+type ProjectConfigManager interface {
+	GetConfig() ProjectConfig
 }
