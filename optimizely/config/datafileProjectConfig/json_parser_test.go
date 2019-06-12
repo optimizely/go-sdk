@@ -14,38 +14,38 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package client
+package datafileProjectConfig
 
 import (
-	"github.com/optimizely/go-sdk/optimizely/config"
-	"github.com/optimizely/go-sdk/optimizely/decision"
-	"github.com/optimizely/go-sdk/optimizely/entities"
+	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-// OptimizelyClient is the entry point to the Optimizely SDK
-type OptimizelyClient struct {
-	decisionService decision.DecisionService
-	configManager   config.ProjectConfigManager
-}
+func TestParseDatafilePasses(t *testing.T) {
+	testFeatureKey := "feature_test_1"
+	testFeatureID := "feature_id_123"
+	datafileString := fmt.Sprintf(`{
+		"projectId": "1337",
+		"featureFlags": [
+			{
+				"key": "%s",
+				"id" : "%s"
+			}
+		]
+	}`, testFeatureKey, testFeatureID)
 
-// IsFeatureEnabled returns true if the feature is enabled for the given user
-func (optly *OptimizelyClient) IsFeatureEnabled(featureKey string, userID string, attributes map[string]interface{}) bool {
-	userContext := entities.UserContext{ID: userID, Attributes: attributes}
-
-	// @TODO(mng): we should fetch the Feature entity from the config service instead of manually creating it here
-	featureExperiment := entities.Experiment{}
-	feature := entities.Feature{
-		Key:                featureKey,
-		FeatureExperiments: []entities.Experiment{featureExperiment},
-	}
-	featureDecisionContext := decision.FeatureDecisionContext{
-		Feature: feature,
-	}
-
-	featureDecision, err := optly.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
+	rawDatafile := []byte(datafileString)
+	parser := DatafileJSONParser{}
+	projectConfig, err := parser.Parse(rawDatafile)
 	if err != nil {
-		// @TODO(mng): log error
-		return false
+		assert.Fail(t, err.Error())
 	}
-	return featureDecision.FeatureEnabled
+	feature, err := projectConfig.GetFeatureByKey("feature_test_1")
+	if err != nil {
+		assert.Fail(t, err.Error())
+	}
+
+	assert.Equal(t, "feature_id_123", feature.ID)
 }

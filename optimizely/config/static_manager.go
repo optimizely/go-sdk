@@ -14,38 +14,26 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package client
+package config
 
-import (
-	"github.com/optimizely/go-sdk/optimizely/config"
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig"
-	"github.com/optimizely/go-sdk/optimizely/decision"
-)
+import "sync"
 
-// OptimizelyFactory is used to construct an instance of the OptimizelyClient
-type OptimizelyFactory struct {
-	SDKKey   string
-	Datafile []byte
+// StaticProjectConfigManager maintains a static copy of the project config
+type StaticProjectConfigManager struct {
+	projectConfig ProjectConfig
+	configLock    *sync.Mutex
 }
 
-// Client returns a client initialized with the defaults
-func (factory OptimizelyFactory) Client() OptimizelyClient {
-	var projectConfig config.ProjectConfig
-	var configManager config.ProjectConfigManager
-	if factory.Datafile != nil {
-		projectConfig = datafileProjectConfig.NewDatafileProjectConfig(factory.Datafile)
+// GetConfig returns the project config
+func (cm StaticProjectConfigManager) GetConfig() ProjectConfig {
+	cm.configLock.Lock()
+	defer cm.configLock.Unlock()
+	return cm.projectConfig
+}
 
-		if factory.SDKKey == "" {
-			staticConfigManager := config.StaticProjectConfigManager{}
-			staticConfigManager.SetConfig(projectConfig)
-			configManager = staticConfigManager
-		}
-	}
-
-	decisionService := decision.NewCompositeService()
-	client := OptimizelyClient{
-		decisionService: decisionService,
-		configManager:   configManager,
-	}
-	return client
+// SetConfig sets the project config
+func (cm *StaticProjectConfigManager) SetConfig(config ProjectConfig) {
+	cm.configLock.Lock()
+	defer cm.configLock.Unlock()
+	cm.projectConfig = config
 }

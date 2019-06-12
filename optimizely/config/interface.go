@@ -14,38 +14,18 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package client
+package config
 
 import (
-	"github.com/optimizely/go-sdk/optimizely/config"
-	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-// OptimizelyClient is the entry point to the Optimizely SDK
-type OptimizelyClient struct {
-	decisionService decision.DecisionService
-	configManager   config.ProjectConfigManager
+// ProjectConfig contains the parsed project entities
+type ProjectConfig interface {
+	GetFeatureByKey(string) (entities.Feature, error)
 }
 
-// IsFeatureEnabled returns true if the feature is enabled for the given user
-func (optly *OptimizelyClient) IsFeatureEnabled(featureKey string, userID string, attributes map[string]interface{}) bool {
-	userContext := entities.UserContext{ID: userID, Attributes: attributes}
-
-	// @TODO(mng): we should fetch the Feature entity from the config service instead of manually creating it here
-	featureExperiment := entities.Experiment{}
-	feature := entities.Feature{
-		Key:                featureKey,
-		FeatureExperiments: []entities.Experiment{featureExperiment},
-	}
-	featureDecisionContext := decision.FeatureDecisionContext{
-		Feature: feature,
-	}
-
-	featureDecision, err := optly.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
-	if err != nil {
-		// @TODO(mng): log error
-		return false
-	}
-	return featureDecision.FeatureEnabled
+// ProjectConfigManager manages the config
+type ProjectConfigManager interface {
+	GetConfig() ProjectConfig
 }
