@@ -24,7 +24,7 @@ type DefaultEventProcessor struct {
 
 func NewEventProcessor(queueSize int, flushInterval time.Duration ) Processor {
 	p := &DefaultEventProcessor{MaxQueueSize: queueSize, FlushInterval:flushInterval, Queue:make([] interface{}, 0, queueSize), EventDispatcher:&HttpEventDispatcher{}}
-	p.startTicker()
+	p.StartTicker()
 	return p
 }
 
@@ -35,19 +35,19 @@ func (p *DefaultEventProcessor) ProcessImpression(event Impression) {
 	p.Mux.Unlock()
 }
 
-func (p *DefaultEventProcessor) eventsCount() int {
+func (p *DefaultEventProcessor) EventsCount() int {
 	p.Mux.Lock()
 	defer p.Mux.Unlock()
 	return len(p.Queue)
 }
 
-func (p *DefaultEventProcessor) getEvents(count int) []interface{} {
+func (p *DefaultEventProcessor) GetEvents(count int) []interface{} {
 	p.Mux.Lock()
 	defer p.Mux.Unlock()
 	return p.Queue[:count]
 }
 
-func (p *DefaultEventProcessor) remove(count int) []interface{} {
+func (p *DefaultEventProcessor) Remove(count int) []interface{} {
 	p.Mux.Lock()
 	defer p.Mux.Unlock()
 	elem := p.Queue[:count]
@@ -55,27 +55,27 @@ func (p *DefaultEventProcessor) remove(count int) []interface{} {
 	return elem
 }
 
-func (p *DefaultEventProcessor) startTicker() {
+func (p *DefaultEventProcessor) StartTicker() {
 	if p.Ticker != nil {
 		return
 	}
 	p.Ticker = time.NewTicker(p.FlushInterval * time.Millisecond)
 	go func() {
 		for _ = range p.Ticker.C {
-			p.flushEvents()
+			p.FlushEvents()
 		}
 	}()
 }
 
 // ProcessImpression processes the given impression event
-func (p *DefaultEventProcessor) flushEvents() {
-	for p.eventsCount() > 0 {
-		events := p.getEvents(1)
+func (p *DefaultEventProcessor) FlushEvents() {
+	for p.EventsCount() > 0 {
+		events := p.GetEvents(1)
 		if len(events) > 0 {
 			p.EventDispatcher.DispatchEvent(events[0], func(success bool) {
 				fmt.Println(success)
 				if success {
-					p.remove(1)
+					p.Remove(1)
 				}
 			})
 		}

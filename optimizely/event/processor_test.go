@@ -17,13 +17,13 @@ func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 	result, ok := processor.(*DefaultEventProcessor)
 
 	if ok {
-		assert.Equal(t, 1, result.eventsCount())
+		assert.Equal(t, 1, result.EventsCount())
 
 		time.Sleep(1000 * time.Millisecond)
 
 		assert.NotNil(t, result.Ticker)
 
-		assert.Equal(t, 0, result.eventsCount())
+		assert.Equal(t, 0, result.EventsCount())
 	} else {
 		assert.Equal(t, true, false)
 	}
@@ -41,13 +41,13 @@ func TestDefaultEventProcessor_ProcessImpressions(t *testing.T) {
 	result, ok := processor.(*DefaultEventProcessor)
 
 	if ok {
-		assert.Equal(t, 2, result.eventsCount())
+		assert.Equal(t, 2, result.EventsCount())
 
 		time.Sleep(1000 * time.Millisecond)
 
 		assert.NotNil(t, result.Ticker)
 
-		assert.Equal(t, 0, result.eventsCount())
+		assert.Equal(t, 0, result.EventsCount())
 
 	} else {
 		assert.Equal(t, true, false)
