@@ -17,19 +17,35 @@
 package client
 
 import (
+	"github.com/optimizely/go-sdk/optimizely/config"
+	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 )
 
 // OptimizelyFactory is used to construct an instance of the OptimizelyClient
 type OptimizelyFactory struct {
-	SDKKey string
+	SDKKey   string
+	Datafile []byte
 }
 
 // Client returns a client initialized with the defaults
-func (OptimizelyFactory) Client() OptimizelyClient {
-	decisionEngine := &decision.DefaultDecisionEngine{}
+func (factory OptimizelyFactory) Client() OptimizelyClient {
+	var projectConfig config.ProjectConfig
+	var configManager config.ProjectConfigManager
+	if factory.Datafile != nil {
+		projectConfig = datafileProjectConfig.NewDatafileProjectConfig(factory.Datafile)
+
+		if factory.SDKKey == "" {
+			staticConfigManager := config.StaticProjectConfigManager{}
+			staticConfigManager.SetConfig(projectConfig)
+			configManager = staticConfigManager
+		}
+	}
+
+	decisionService := decision.NewCompositeService()
 	client := OptimizelyClient{
-		decisionEngine: decisionEngine,
+		decisionService: decisionService,
+		configManager:   configManager,
 	}
 	return client
 }

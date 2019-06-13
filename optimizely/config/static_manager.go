@@ -14,26 +14,26 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package entities
+package config
 
-// Variation represents a variation in the experiment
-type Variation struct {
-	ID             string
-	Key            string
-	FeatureEnabled bool
-	Variables      map[string]FeatureVariable
+import "sync"
+
+// StaticProjectConfigManager maintains a static copy of the project config
+type StaticProjectConfigManager struct {
+	projectConfig ProjectConfig
+	configLock    *sync.Mutex
 }
 
-// Experiment represents an experiment
-type Experiment struct {
-	ID         string
-	Key        string
-	Variations map[string]Variation
-	GroupID    string
+// GetConfig returns the project config
+func (cm StaticProjectConfigManager) GetConfig() ProjectConfig {
+	cm.configLock.Lock()
+	defer cm.configLock.Unlock()
+	return cm.projectConfig
 }
 
-// Range represents bucketing range that the specify entityID falls into
-type Range struct {
-	EntityID   string
-	EndOfRange int
+// SetConfig sets the project config
+func (cm *StaticProjectConfigManager) SetConfig(config ProjectConfig) {
+	cm.configLock.Lock()
+	defer cm.configLock.Unlock()
+	cm.projectConfig = config
 }

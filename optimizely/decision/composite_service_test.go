@@ -14,38 +14,54 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package client
+package decision
 
 import (
-	"github.com/optimizely/go-sdk/optimizely/config"
-	"github.com/optimizely/go-sdk/optimizely/decision"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/stretchr/testify/mock"
+
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-// OptimizelyClient is the entry point to the Optimizely SDK
-type OptimizelyClient struct {
-	decisionService decision.DecisionService
-	configManager   config.ProjectConfigManager
+type MockFeatureDecisionService struct {
+	mock.Mock
 }
 
-// IsFeatureEnabled returns true if the feature is enabled for the given user
-func (optly *OptimizelyClient) IsFeatureEnabled(featureKey string, userID string, attributes map[string]interface{}) bool {
-	userContext := entities.UserContext{ID: userID, Attributes: attributes}
+func (m *MockFeatureDecisionService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
+	args := m.Called(decisionContext, userContext)
+	return args.Get(0).(FeatureDecision), args.Error(1)
+}
 
-	// @TODO(mng): we should fetch the Feature entity from the config service instead of manually creating it here
-	featureExperiment := entities.Experiment{}
-	feature := entities.Feature{
-		Key:                featureKey,
-		FeatureExperiments: []entities.Experiment{featureExperiment},
-	}
-	featureDecisionContext := decision.FeatureDecisionContext{
-		Feature: feature,
+func TestGetFeatureDecision(t *testing.T) {
+	decisionContext := FeatureDecisionContext{
+		Feature: entities.Feature{
+			Key: "my_test_feature",
+		},
 	}
 
-	featureDecision, err := optly.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
+	userContext := entities.UserContext{
+		ID: "test_user",
+	}
+
+	expectedFeatureDecision := FeatureDecision{
+		FeatureEnabled: true,
+		Decision:       Decision{DecisionMade: true},
+	}
+
+	testFeatureDecisionService := new(MockFeatureDecisionService)
+	testFeatureDecisionService.On("GetDecision", decisionContext, userContext).Return(expectedFeatureDecision, nil)
+
+	decisionService := &CompositeService{
+		featureDecisionServices: []FeatureDecisionService{testFeatureDecisionService},
+	}
+	featureDecision, err := decisionService.GetFeatureDecision(decisionContext, userContext)
 	if err != nil {
-		// @TODO(mng): log error
-		return false
 	}
-	return featureDecision.FeatureEnabled
+
+	// Test assertions
+	assert.Equal(t, expectedFeatureDecision, featureDecision)
+	testFeatureDecisionService.AssertExpectations(t)
 }

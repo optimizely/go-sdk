@@ -14,26 +14,35 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package entities
+package decision
 
-// Variation represents a variation in the experiment
-type Variation struct {
-	ID             string
-	Key            string
+import "github.com/optimizely/go-sdk/optimizely/entities"
+
+// ExperimentDecisionContext contains the information needed to be able to make a decision for a given experiment
+type ExperimentDecisionContext struct {
+	Experiment entities.Experiment
+	Group      entities.Group
+}
+
+// FeatureDecisionContext contains the information needed to be able to make a decision for a given feature
+type FeatureDecisionContext struct {
+	Feature entities.Feature
+	Group   entities.Group
+}
+
+// Decision contains base information about a decision
+type Decision struct {
+	DecisionMade bool
+}
+
+// FeatureDecision contains the decision information about a feature
+type FeatureDecision struct {
+	Decision
 	FeatureEnabled bool
-	Variables      map[string]FeatureVariable
 }
 
-// Experiment represents an experiment
-type Experiment struct {
-	ID         string
-	Key        string
-	Variations map[string]Variation
-	GroupID    string
-}
-
-// Range represents bucketing range that the specify entityID falls into
-type Range struct {
-	EntityID   string
-	EndOfRange int
+// ExperimentDecision contains the decision information about an experiment
+type ExperimentDecision struct {
+	Decision
+	Variation *entities.Variation
 }

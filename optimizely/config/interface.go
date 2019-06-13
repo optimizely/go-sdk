@@ -14,26 +14,18 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package entities
+package config
 
-// Variation represents a variation in the experiment
-type Variation struct {
-	ID             string
-	Key            string
-	FeatureEnabled bool
-	Variables      map[string]FeatureVariable
+import (
+	"github.com/optimizely/go-sdk/optimizely/entities"
+)
+
+// ProjectConfig contains the parsed project entities
+type ProjectConfig interface {
+	GetFeatureByKey(string) (entities.Feature, error)
 }
 
-// Experiment represents an experiment
-type Experiment struct {
-	ID         string
-	Key        string
-	Variations map[string]Variation
-	GroupID    string
-}
-
-// Range represents bucketing range that the specify entityID falls into
-type Range struct {
-	EntityID   string
-	EndOfRange int
+// ProjectConfigManager manages the config
+type ProjectConfigManager interface {
+	GetConfig() ProjectConfig
 }
