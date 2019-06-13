@@ -40,8 +40,7 @@ func TestParseDatafilePasses(t *testing.T) {
 	}`, testFeatureKey, testFeatureID)
 
 	rawDatafile := []byte(datafileString)
-	parser := JSONParser{}
-	parsedDatafile, err := parser.Parse(rawDatafile)
+	parsedDatafile, err := Parse(rawDatafile)
 	if err != nil {
 		assert.Fail(t, err.Error())
 	}

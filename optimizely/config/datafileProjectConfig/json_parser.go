@@ -22,12 +22,8 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
 )
 
-// JSONParser implements the DatafileParser interface and parses a JSON-based datafile into a DatafileProjectConfig
-type JSONParser struct {
-}
-
-// Parse parses the json datafile
-func (p JSONParser) Parse(jsonDatafile []byte) (*entities.Datafile, error) {
+// Parse parses the raw json datafile
+func Parse(jsonDatafile []byte) (*entities.Datafile, error) {
 
 	datafile := &entities.Datafile{}
 

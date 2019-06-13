@@ -34,8 +34,7 @@ type DatafileProjectConfig struct {
 
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser
 func NewDatafileProjectConfig(jsonDatafile []byte) *DatafileProjectConfig {
-	parser := JSONParser{}
-	datafile, err := parser.Parse(jsonDatafile)
+	datafile, err := Parse(jsonDatafile)
 	if err != nil {
 		// @TODO(mng): handle error
 	}
