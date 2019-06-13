@@ -1,17 +1,10 @@
 package event
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 )
-
-type Dispatcher interface {
-	DispatchEvent(event interface{}, callback func(success bool))
-}
 
 // Processor processes events
 type Processor interface {
@@ -27,24 +20,6 @@ type DefaultEventProcessor struct {
 	Mux             sync.Mutex
 	Ticker          *time.Ticker
 	EventDispatcher Dispatcher
-}
-
-type HttpEventDispatcher struct {
-}
-
-func (*HttpEventDispatcher) DispatchEvent(event interface{}, callback func(success bool)) {
-	impression, ok := event.(Impression)
-	if ok {
-		jsonValue, _ := json.Marshal(impression)
-		resp, err := http.Post("https://logx.optimizely.com/v1/events", "application/json", bytes.NewBuffer(jsonValue))
-		fmt.Println(resp)
-		if err != nil {
-			fmt.Println(err)
-			callback(false)
-		} else {
-			callback(true)
-		}
-	}
 }
 
 func NewEventProcessor(queueSize int, flushInterval time.Duration ) Processor {
