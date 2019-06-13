@@ -8,19 +8,19 @@ import (
 
 // Context about the event
 type Context struct {
-	accountID     string
-	projectID     string
-	clientName    string
-	clientVersion string
-	revision      string
-	anonimizeIP   bool
-	botFiltering  bool
+	AccountID     string `json:"account_id"`
+	ProjectID     string `json:"project_id"`
+	ClientName    string `json:"client_name"`
+	ClientVersion string `json:"client_version"`
+	Revision      string `json:"revision"`
+	AnonymizeIP   bool   `json:"anonymize_ip"`
+	BotFiltering  bool   `json:"bot_filtering"`
 }
 
 // Event is the base event type
 type Event struct {
-	UUID      string
-	Timestamp time.Time
+	UUID      string 	`json:"uuid"`
+	Timestamp time.Time `json:"time_stamp"`
 	Context   Context
 }
 

@@ -2,90 +2,37 @@ package event
 
 import (
 	"bytes"
-	"sync"
-	"time"
-	"net/http"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"sync"
+	"time"
 )
 
-type EventDispatcher interface {
+type Dispatcher interface {
 	DispatchEvent(event interface{}, callback func(success bool))
 }
 
 // Processor processes events
-type EventProcessor interface {
-	ProcessEvent(event interface {} )
+type Processor interface {
+	ProcessImpression(event Impression)
 }
 
 // DefaultEventProcessor is used out of the box by the SDK
-type HttpEventProcessor struct {
-	maxQueueSize int // max size of the queue before flush
-	flushInterval time.Duration // in milliseconds
-	batchSize int
-	queue [] interface{}
-	mux sync.Mutex
-	ticker *time.Ticker
-
+type DefaultEventProcessor struct {
+	MaxQueueSize    int           // max size of the queue before flush
+	FlushInterval   time.Duration // in milliseconds
+	BatchSize       int
+	Queue           [] interface{}
+	Mux             sync.Mutex
+	Ticker          *time.Ticker
+	EventDispatcher Dispatcher
 }
 
-func (HttpEventProcessor) New(queueSize int, flushInterval time.Duration ) *HttpEventProcessor {
-	p := &HttpEventProcessor{maxQueueSize:queueSize, flushInterval:flushInterval, queue:make([] interface{}, queueSize)}
-	p.startTicker()
-	return p
+type HttpEventDispatcher struct {
 }
 
-// ProcessImpression processes the given impression event
-func (p *HttpEventProcessor) ProcessImpression(event Impression) {
-	p.mux.Lock()
-	p.queue = append(p.queue, event)
-	p.mux.Unlock()
-}
-
-func (p *HttpEventProcessor) eventsCount() int {
-	p.mux.Lock()
-	defer p.mux.Unlock()
-	return cap(p.queue)
-}
-
-func (p *HttpEventProcessor) getEvents(count int) []interface{} {
-	p.mux.Lock()
-	defer p.mux.Unlock()
-	return p.queue[:count]
-}
-
-func (p *HttpEventProcessor) remove(count int) []interface{} {
-	p.mux.Lock()
-	defer p.mux.Unlock()
-	elem := p.queue[:count]
-	p.queue = p.queue[count:]
-	return elem
-}
-
-func (p *HttpEventProcessor) startTicker() {
-	if p.ticker != nil {
-		return
-	}
-	p.ticker = time.NewTicker(p.flushInterval * time.Millisecond)
-	go func() {
-		for _ = range p.ticker.C {
-			p.flushEvents()
-		}
-	}()
-}
-
-// ProcessImpression processes the given impression event
-func (p *HttpEventProcessor) flushEvents() {
-	for cap(p.queue) > 0 {
-		events := p.getEvents(1)
-		if len(events) > 0 {
-			go p.sendEvent(events[0])
-		}
- 	}
-
-}
-
-func (p *HttpEventProcessor) sendEvent(event interface{}) {
+func (*HttpEventDispatcher) DispatchEvent(event interface{}, callback func(success bool)) {
 	impression, ok := event.(Impression)
 	if ok {
 		jsonValue, _ := json.Marshal(impression)
@@ -93,8 +40,67 @@ func (p *HttpEventProcessor) sendEvent(event interface{}) {
 		fmt.Println(resp)
 		if err != nil {
 			fmt.Println(err)
+			callback(false)
 		} else {
-
+			callback(true)
 		}
 	}
+}
+
+func NewEventProcessor(queueSize int, flushInterval time.Duration ) Processor {
+	p := &DefaultEventProcessor{MaxQueueSize: queueSize, FlushInterval:flushInterval, Queue:make([] interface{}, queueSize), EventDispatcher:&HttpEventDispatcher{}}
+	p.startTicker()
+	return p
+}
+
+// ProcessImpression processes the given impression event
+func (p *DefaultEventProcessor) ProcessImpression(event Impression) {
+	p.Mux.Lock()
+	p.Queue = append(p.Queue, event)
+	p.Mux.Unlock()
+}
+
+func (p *DefaultEventProcessor) eventsCount() int {
+	p.Mux.Lock()
+	defer p.Mux.Unlock()
+	return cap(p.Queue)
+}
+
+func (p *DefaultEventProcessor) getEvents(count int) []interface{} {
+	p.Mux.Lock()
+	defer p.Mux.Unlock()
+	return p.Queue[:count]
+}
+
+func (p *DefaultEventProcessor) remove(count int) []interface{} {
+	p.Mux.Lock()
+	defer p.Mux.Unlock()
+	elem := p.Queue[:count]
+	p.Queue = p.Queue[count:]
+	return elem
+}
+
+func (p *DefaultEventProcessor) startTicker() {
+	if p.Ticker != nil {
+		return
+	}
+	p.Ticker = time.NewTicker(p.FlushInterval * time.Millisecond)
+	go func() {
+		for _ = range p.Ticker.C {
+			p.flushEvents()
+		}
+	}()
+}
+
+// ProcessImpression processes the given impression event
+func (p *DefaultEventProcessor) flushEvents() {
+	for cap(p.Queue) > 0 {
+		events := p.getEvents(1)
+		if len(events) > 0 {
+			go p.EventDispatcher.DispatchEvent(events[0], func(success bool) {
+				fmt.Println(success)
+			})
+		}
+ 	}
+
 }
