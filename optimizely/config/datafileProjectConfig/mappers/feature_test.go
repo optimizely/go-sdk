@@ -14,49 +14,36 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package datafileProjectConfig
+package mappers
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseDatafilePasses(t *testing.T) {
-	testFeatureKey := "feature_test_1"
-	testFeatureID := "feature_id_123"
-	datafileString := fmt.Sprintf(`{
-		"projectId": "1337",
-		"accountId": "1338",
-		"version": "4",
-		"featureFlags": [
-			{
-				"key": "%s",
-				"id" : "%s"
-			}
-		]
-	}`, testFeatureKey, testFeatureID)
+func TestMapFeatures(t *testing.T) {
+	const testFeatureFlagString = `{
+		"id": "21111",
+		"key": "test_feature_21111"
+	}`
 
-	rawDatafile := []byte(datafileString)
-	parser := JSONParser{}
-	parsedDatafile, err := parser.Parse(rawDatafile)
-	if err != nil {
-		assert.Fail(t, err.Error())
-	}
+	var rawFeatureFlag datafileEntities.FeatureFlag
+	json.Unmarshal([]byte(testFeatureFlagString), &rawFeatureFlag)
 
-	expectedDatafile := &entities.Datafile{
-		AccountID: "1338",
-		ProjectID: "1337",
-		Version:   "4",
-		FeatureFlags: []entities.FeatureFlag{
-			entities.FeatureFlag{
-				Key: testFeatureKey,
-				ID:  testFeatureID,
-			},
+	fmt.Printf("FLAG: %+v", rawFeatureFlag)
+	rawFeatureFlags := []datafileEntities.FeatureFlag{rawFeatureFlag}
+	featureMap := MapFeatureFlags(rawFeatureFlags)
+	expectedFeatureMap := map[string]entities.Feature{
+		"test_feature_21111": entities.Feature{
+			ID:  "21111",
+			Key: "test_feature_21111",
 		},
 	}
 
-	assert.Equal(t, expectedDatafile, parsedDatafile)
+	assert.Equal(t, expectedFeatureMap, featureMap)
 }

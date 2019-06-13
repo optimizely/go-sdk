@@ -14,49 +14,27 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package datafileProjectConfig
+package entities
 
-import (
-	"fmt"
-	"testing"
+// Audience contains the audience definition
+type Audience struct {
+	ID            string
+	Name          string
+	ConditionTree *ConditionTreeNode
+}
 
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
-	"github.com/stretchr/testify/assert"
-)
+// Condition has condition info
+type Condition struct {
+	Name  string      `json:"name"`
+	Match string      `json:"match"`
+	Type  string      `json:"type"`
+	Value interface{} `json:"value"`
+}
 
-func TestParseDatafilePasses(t *testing.T) {
-	testFeatureKey := "feature_test_1"
-	testFeatureID := "feature_id_123"
-	datafileString := fmt.Sprintf(`{
-		"projectId": "1337",
-		"accountId": "1338",
-		"version": "4",
-		"featureFlags": [
-			{
-				"key": "%s",
-				"id" : "%s"
-			}
-		]
-	}`, testFeatureKey, testFeatureID)
+//ConditionTreeNode in a condition tree
+type ConditionTreeNode struct {
+	Condition Condition
+	Operator  string
 
-	rawDatafile := []byte(datafileString)
-	parser := JSONParser{}
-	parsedDatafile, err := parser.Parse(rawDatafile)
-	if err != nil {
-		assert.Fail(t, err.Error())
-	}
-
-	expectedDatafile := &entities.Datafile{
-		AccountID: "1338",
-		ProjectID: "1337",
-		Version:   "4",
-		FeatureFlags: []entities.FeatureFlag{
-			entities.FeatureFlag{
-				Key: testFeatureKey,
-				ID:  testFeatureID,
-			},
-		},
-	}
-
-	assert.Equal(t, expectedDatafile, parsedDatafile)
+	Nodes []*ConditionTreeNode
 }
