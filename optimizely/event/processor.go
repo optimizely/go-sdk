@@ -97,8 +97,11 @@ func (p *DefaultEventProcessor) flushEvents() {
 	for len(p.Queue) > 0 {
 		events := p.getEvents(1)
 		if len(events) > 0 {
-			go p.EventDispatcher.DispatchEvent(events[0], func(success bool) {
+			p.EventDispatcher.DispatchEvent(events[0], func(success bool) {
 				fmt.Println(success)
+				if success {
+					p.remove(1)
+				}
 			})
 		}
  	}

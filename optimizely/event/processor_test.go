@@ -3,6 +3,7 @@ package event
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 
@@ -16,7 +17,13 @@ func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 	result, ok := processor.(*DefaultEventProcessor)
 
 	if ok {
-		assert.Equal(t, result.eventsCount(),1)
+		assert.Equal(t, 1, result.eventsCount())
+
+		time.Sleep(1000 * time.Millisecond)
+
+		assert.NotNil(t, result.Ticker)
+
+		assert.Equal(t, 0, result.eventsCount())
 	} else {
 		assert.Equal(t, true, false)
 	}
