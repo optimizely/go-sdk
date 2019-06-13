@@ -94,7 +94,7 @@ func (p *DefaultEventProcessor) startTicker() {
 
 // ProcessImpression processes the given impression event
 func (p *DefaultEventProcessor) flushEvents() {
-	for len(p.Queue) > 0 {
+	for p.eventsCount() > 0 {
 		events := p.getEvents(1)
 		if len(events) > 0 {
 			p.EventDispatcher.DispatchEvent(events[0], func(success bool) {
