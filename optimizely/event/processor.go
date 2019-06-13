@@ -63,7 +63,7 @@ func (p *DefaultEventProcessor) ProcessImpression(event Impression) {
 func (p *DefaultEventProcessor) eventsCount() int {
 	p.Mux.Lock()
 	defer p.Mux.Unlock()
-	return cap(p.Queue)
+	return len(p.Queue)
 }
 
 func (p *DefaultEventProcessor) getEvents(count int) []interface{} {
@@ -94,7 +94,7 @@ func (p *DefaultEventProcessor) startTicker() {
 
 // ProcessImpression processes the given impression event
 func (p *DefaultEventProcessor) flushEvents() {
-	for cap(p.Queue) > 0 {
+	for len(p.Queue) > 0 {
 		events := p.getEvents(1)
 		if len(events) > 0 {
 			go p.EventDispatcher.DispatchEvent(events[0], func(success bool) {

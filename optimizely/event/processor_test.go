@@ -10,5 +10,4 @@ func TestDefaultEventProcessor_ProcessImpression(*testing.T) {
 
 	processor.ProcessImpression(impression)
 
-
 }
