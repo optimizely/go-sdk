@@ -48,7 +48,7 @@ func (*HttpEventDispatcher) DispatchEvent(event interface{}, callback func(succe
 }
 
 func NewEventProcessor(queueSize int, flushInterval time.Duration ) Processor {
-	p := &DefaultEventProcessor{MaxQueueSize: queueSize, FlushInterval:flushInterval, Queue:make([] interface{}, queueSize), EventDispatcher:&HttpEventDispatcher{}}
+	p := &DefaultEventProcessor{MaxQueueSize: queueSize, FlushInterval:flushInterval, Queue:make([] interface{}, 0, queueSize), EventDispatcher:&HttpEventDispatcher{}}
 	p.startTicker()
 	return p
 }
