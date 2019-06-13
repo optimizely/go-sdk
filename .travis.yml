@@ -1,0 +1,11 @@
+language: go
+
+go:
+  - 1.12.x
+  - master
+
+git:
+  depth: 1
+
+script:
+  - go test -v -race ./...
