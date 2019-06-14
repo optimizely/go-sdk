@@ -36,8 +36,7 @@ func (factory OptimizelyFactory) Client() OptimizelyClient {
 		projectConfig = datafileProjectConfig.NewDatafileProjectConfig(factory.Datafile)
 
 		if factory.SDKKey == "" {
-			staticConfigManager := config.StaticProjectConfigManager{}
-			staticConfigManager.SetConfig(projectConfig)
+			staticConfigManager := config.NewStaticProjectConfigManager(projectConfig)
 			configManager = staticConfigManager
 		}
 	}
