@@ -29,6 +29,7 @@ func TestCustomAttributeConditionEvaluator(t *testing.T) {
 		Match: "exact",
 		Value: "foo",
 		Name:  "string_foo",
+		Type:  "custom_attribute",
 	}
 
 	// Test condition passes

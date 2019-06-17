@@ -23,6 +23,8 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
+const customAttributeType = "custom_attribute"
+
 // ConditionEvaluator evaluates a condition against the given user's attributes
 type ConditionEvaluator interface {
 	Evaluate(entities.Condition, entities.UserContext) (bool, error)
@@ -34,7 +36,7 @@ type CustomAttributeConditionEvaluator struct{}
 // Evaluate returns true if the given user's attributes match the condition
 func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, user entities.UserContext) (bool, error) {
 	// We should only be evaluating custom attributes
-	if condition.Type != "custom_attribute" {
+	if condition.Type != customAttributeType {
 		return false, fmt.Errorf(`Unable to evaluator condition of type "%s"`, condition.Type)
 	}
 
