@@ -14,38 +14,34 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package client
+package matchers
 
 import (
-	"github.com/optimizely/go-sdk/optimizely/config"
-	"github.com/optimizely/go-sdk/optimizely/decision"
+	"fmt"
+
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-// OptimizelyClient is the entry point to the Optimizely SDK
-type OptimizelyClient struct {
-	decisionService decision.DecisionService
-	configManager   config.ProjectConfigManager
-}
+// ExactMatcher matches against the "exact" match type
+type ExactMatcher struct{}
 
-// IsFeatureEnabled returns true if the feature is enabled for the given user
-func (optly *OptimizelyClient) IsFeatureEnabled(featureKey string, userID string, attributes map[string]interface{}) bool {
-	userContext := entities.UserContext{ID: userID, Attributes: entities.UserAttributes{Attributes: attributes}}
-
-	// @TODO(mng): we should fetch the Feature entity from the config service instead of manually creating it here
-	featureExperiment := entities.Experiment{}
-	feature := entities.Feature{
-		Key:                featureKey,
-		FeatureExperiments: []entities.Experiment{featureExperiment},
-	}
-	featureDecisionContext := decision.FeatureDecisionContext{
-		Feature: feature,
+// Match returns true if the user's attribute match the condition's string value
+func (m ExactMatcher) Match(condition entities.Condition, user entities.UserContext) (bool, error) {
+	if stringValue, ok := condition.Value.(string); ok {
+		attributeValue, err := user.Attributes.GetString(condition.Name)
+		if err != nil {
+			return false, err
+		}
+		return stringValue == attributeValue, nil
 	}
 
-	featureDecision, err := optly.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
-	if err != nil {
-		// @TODO(mng): log error
-		return false
+	if boolValue, ok := condition.Value.(bool); ok {
+		attributeValue, err := user.Attributes.GetBool(condition.Name)
+		if err != nil {
+			return false, err
+		}
+		return boolValue == attributeValue, nil
 	}
-	return featureDecision.FeatureEnabled
+
+	return false, fmt.Errorf("audience condition %s evaluated to UNKNOWN because the condition value type is not supported", condition.Name)
 }

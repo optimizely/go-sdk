@@ -14,44 +14,11 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package entities
+package matchers
 
-import (
-	"fmt"
-	"reflect"
-)
+import "github.com/optimizely/go-sdk/optimizely/entities"
 
-// UserContext holds information about a user
-type UserContext struct {
-	ID         string
-	Attributes UserAttributes
-}
-
-// UserAttributes holds information about the user's attributes
-type UserAttributes struct {
-	Attributes map[string]interface{}
-}
-
-// GetString returns the string value for the specified attribute name in the attributes map. Returns error if not found.
-func (u UserAttributes) GetString(attrName string) (string, error) {
-	if value, ok := u.Attributes[attrName]; ok {
-		v := reflect.ValueOf(value)
-		if v.Type().String() == "string" {
-			return v.String(), nil
-		}
-	}
-
-	return "", fmt.Errorf(`No string attribute named "%s"`, attrName)
-}
-
-// GetBool returns the bool value for the specified attribute name in the attributes map. Returns error if not found.
-func (u UserAttributes) GetBool(attrName string) (bool, error) {
-	if value, ok := u.Attributes[attrName]; ok {
-		v := reflect.ValueOf(value)
-		if v.Type().String() == "bool" {
-			return v.Bool(), nil
-		}
-	}
-
-	return false, fmt.Errorf(`No bool attribute named "%s"`, attrName)
+// Matcher matches the condition against the user's attributes
+type Matcher interface {
+	Match(entities.Condition, entities.UserContext) (bool, error)
 }

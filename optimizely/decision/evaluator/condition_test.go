@@ -14,38 +14,42 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package client
+package evaluator
 
 import (
-	"github.com/optimizely/go-sdk/optimizely/config"
-	"github.com/optimizely/go-sdk/optimizely/decision"
+	"testing"
+
 	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/stretchr/testify/assert"
 )
 
-// OptimizelyClient is the entry point to the Optimizely SDK
-type OptimizelyClient struct {
-	decisionService decision.DecisionService
-	configManager   config.ProjectConfigManager
-}
-
-// IsFeatureEnabled returns true if the feature is enabled for the given user
-func (optly *OptimizelyClient) IsFeatureEnabled(featureKey string, userID string, attributes map[string]interface{}) bool {
-	userContext := entities.UserContext{ID: userID, Attributes: entities.UserAttributes{Attributes: attributes}}
-
-	// @TODO(mng): we should fetch the Feature entity from the config service instead of manually creating it here
-	featureExperiment := entities.Experiment{}
-	feature := entities.Feature{
-		Key:                featureKey,
-		FeatureExperiments: []entities.Experiment{featureExperiment},
-	}
-	featureDecisionContext := decision.FeatureDecisionContext{
-		Feature: feature,
+func TestCustomAttributeConditionEvaluator(t *testing.T) {
+	conditionEvaluator := CustomAttributeConditionEvaluator{}
+	condition := entities.Condition{
+		Match: "exact",
+		Value: "foo",
+		Name:  "string_foo",
 	}
 
-	featureDecision, err := optly.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
-	if err != nil {
-		// @TODO(mng): log error
-		return false
+	// Test condition passes
+	user := entities.UserContext{
+		Attributes: entities.UserAttributes{
+			Attributes: map[string]interface{}{
+				"string_foo": "foo",
+			},
+		},
 	}
-	return featureDecision.FeatureEnabled
+	result, _ := conditionEvaluator.Evaluate(condition, user)
+	assert.Equal(t, result, true)
+
+	// Test condition fails
+	user = entities.UserContext{
+		Attributes: entities.UserAttributes{
+			Attributes: map[string]interface{}{
+				"string_foo": "not_foo",
+			},
+		},
+	}
+	result, _ = conditionEvaluator.Evaluate(condition, user)
+	assert.Equal(t, result, false)
 }
