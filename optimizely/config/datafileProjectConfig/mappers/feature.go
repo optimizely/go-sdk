@@ -14,48 +14,23 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package datafileProjectConfig
+package mappers
 
 import (
-	"fmt"
-	"testing"
-
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
-	"github.com/stretchr/testify/assert"
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-func TestParseDatafilePasses(t *testing.T) {
-	testFeatureKey := "feature_test_1"
-	testFeatureID := "feature_id_123"
-	datafileString := fmt.Sprintf(`{
-		"projectId": "1337",
-		"accountId": "1338",
-		"version": "4",
-		"featureFlags": [
-			{
-				"key": "%s",
-				"id" : "%s"
-			}
-		]
-	}`, testFeatureKey, testFeatureID)
+// MapFeatureFlags maps the raw datafile feature flag entitiees to SDK Feature entities
+func MapFeatureFlags(featureFlags []datafileEntities.FeatureFlag) map[string]entities.Feature {
 
-	rawDatafile := []byte(datafileString)
-	parsedDatafile, err := Parse(rawDatafile)
-	if err != nil {
-		assert.Fail(t, err.Error())
+	featureMap := make(map[string]entities.Feature)
+	for _, featureFlag := range featureFlags {
+		// @TODO(mng): include experiments in the Feature
+		featureMap[featureFlag.Key] = entities.Feature{
+			Key: featureFlag.Key,
+			ID:  featureFlag.ID,
+		}
 	}
-
-	expectedDatafile := &entities.Datafile{
-		AccountID: "1338",
-		ProjectID: "1337",
-		Version:   "4",
-		FeatureFlags: []entities.FeatureFlag{
-			entities.FeatureFlag{
-				Key: testFeatureKey,
-				ID:  testFeatureID,
-			},
-		},
-	}
-
-	assert.Equal(t, expectedDatafile, parsedDatafile)
+	return featureMap
 }

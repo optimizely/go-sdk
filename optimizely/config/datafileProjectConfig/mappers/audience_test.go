@@ -14,48 +14,47 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package datafileProjectConfig
+package mappers
 
 import (
-	"fmt"
+	"encoding/json"
 	"testing"
 
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseDatafilePasses(t *testing.T) {
-	testFeatureKey := "feature_test_1"
-	testFeatureID := "feature_id_123"
-	datafileString := fmt.Sprintf(`{
-		"projectId": "1337",
-		"accountId": "1338",
-		"version": "4",
-		"featureFlags": [
-			{
-				"key": "%s",
-				"id" : "%s"
-			}
-		]
-	}`, testFeatureKey, testFeatureID)
-
-	rawDatafile := []byte(datafileString)
-	parsedDatafile, err := Parse(rawDatafile)
+func TestBuildConditionTreeSimpleAudienceCondition(t *testing.T) {
+	conditionString := "[ \"and\", [ \"or\", [ \"or\", { \"type\": \"custom_attribute\", \"name\": \"s_foo\", \"match\": \"exact\", \"value\": \"foo\" } ] ] ]"
+	var conditions interface{}
+	json.Unmarshal([]byte(conditionString), &conditions)
+	conditionTree, err := buildConditionTree(conditions)
 	if err != nil {
 		assert.Fail(t, err.Error())
 	}
 
-	expectedDatafile := &entities.Datafile{
-		AccountID: "1338",
-		ProjectID: "1337",
-		Version:   "4",
-		FeatureFlags: []entities.FeatureFlag{
-			entities.FeatureFlag{
-				Key: testFeatureKey,
-				ID:  testFeatureID,
+	expectedConditionTree := &entities.ConditionTreeNode{
+		Operator: "and",
+		Nodes: []*entities.ConditionTreeNode{
+			&entities.ConditionTreeNode{
+				Operator: "or",
+				Nodes: []*entities.ConditionTreeNode{
+					&entities.ConditionTreeNode{
+						Operator: "or",
+						Nodes: []*entities.ConditionTreeNode{
+							&entities.ConditionTreeNode{
+								Condition: entities.Condition{
+									Name:  "s_foo",
+									Match: "exact",
+									Type:  "custom_attribute",
+									Value: "foo",
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
-
-	assert.Equal(t, expectedDatafile, parsedDatafile)
+	assert.Equal(t, expectedConditionTree, conditionTree)
 }
