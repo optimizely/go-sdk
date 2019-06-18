@@ -9,3 +9,4 @@ git:
 
 script:
   - go test -v -race ./...
+  - go test ./... -run=Benchmark -bench=.
