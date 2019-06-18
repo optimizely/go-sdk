@@ -23,6 +23,8 @@ import (
 // conditionEvalResult is the result of evaluating a Condition, which can be true/false or null if the condition could not be evaluated
 type conditionEvalResult string
 
+const customAttributeType = "custom_attribute"
+
 const (
 	// TRUE means the condition passes
 	TRUE conditionEvalResult = "TRUE"
@@ -34,17 +36,16 @@ const (
 
 // ConditionTreeEvaluator evaluates a condition tree
 type ConditionTreeEvaluator struct {
-	conditionEvaluators []ConditionEvaluator
+	conditionEvaluatorMap map[string]ConditionEvaluator
 }
 
 // NewConditionTreeEvaluator creates a condition tree evaluator with the out-of-the-box condition evaluators
-func NewConditionTreeEvaluator(customEvaluators []ConditionEvaluator) *ConditionTreeEvaluator {
-	conditionEvaluators := append(
-		customEvaluators,
-		CustomAttributeConditionEvaluator{},
-	)
+func NewConditionTreeEvaluator() *ConditionTreeEvaluator {
+	// For now, only one evaluator per attribute type
+	conditionEvaluatorMap := make(map[string]ConditionEvaluator)
+	conditionEvaluatorMap[customAttributeType] = CustomAttributeConditionEvaluator{}
 	return &ConditionTreeEvaluator{
-		conditionEvaluators: conditionEvaluators,
+		conditionEvaluatorMap: conditionEvaluatorMap,
 	}
 }
 

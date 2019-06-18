@@ -23,8 +23,6 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-const customAttributeType = "custom_attribute"
-
 // ConditionEvaluator evaluates a condition against the given user's attributes
 type ConditionEvaluator interface {
 	Evaluate(entities.Condition, entities.UserContext) (bool, error)
@@ -44,9 +42,11 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 	matchType := condition.Match
 	switch matchType {
 	case "exact":
-		matcher = matchers.ExactMatcher{}
+		matcher = matchers.ExactMatcher{
+			Condition: condition,
+		}
 	}
 
-	result, err := matcher.Match(condition, user)
+	result, err := matcher.Match(user)
 	return result, err
 }

@@ -62,3 +62,33 @@ func TestUserAttributesGetBool(t *testing.T) {
 		assert.Fail(t, "Error should have been thrown")
 	}
 }
+
+func TestUserAttributesGetFloat(t *testing.T) {
+	userAttributes := UserAttributes{
+		Attributes: map[string]interface{}{
+			"int_42":    42,
+			"float_4_2": 42.0,
+		},
+	}
+
+	// Test happy path
+	floatAttribute1, _ := userAttributes.GetFloat("int_42")
+	floatAttribute2, _ := userAttributes.GetFloat("float_4_2")
+	assert.Equal(t, 42.0, floatAttribute1)
+	assert.Equal(t, 42.0, floatAttribute2)
+
+	// Test non-existent attr name
+	_, err := userAttributes.GetFloat("bool_false")
+	if assert.Error(t, err) {
+		assert.Equal(t, err.Error(), `No float attribute named "bool_false"`)
+	} else {
+		assert.Fail(t, "Error should have been thrown")
+	}
+
+	_, err = userAttributes.GetFloat("string_foo")
+	if assert.Error(t, err) {
+		assert.Equal(t, err.Error(), `No float attribute named "string_foo"`)
+	} else {
+		assert.Fail(t, "Error should have been thrown")
+	}
+}

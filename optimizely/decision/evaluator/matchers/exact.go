@@ -19,29 +19,40 @@ package matchers
 import (
 	"fmt"
 
+	"github.com/optimizely/go-sdk/optimizely/decision/evaluator/matchers/utils"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
 // ExactMatcher matches against the "exact" match type
-type ExactMatcher struct{}
+type ExactMatcher struct {
+	Condition entities.Condition
+}
 
 // Match returns true if the user's attribute match the condition's string value
-func (m ExactMatcher) Match(condition entities.Condition, user entities.UserContext) (bool, error) {
-	if stringValue, ok := condition.Value.(string); ok {
-		attributeValue, err := user.Attributes.GetString(condition.Name)
+func (m ExactMatcher) Match(user entities.UserContext) (bool, error) {
+	if stringValue, ok := m.Condition.Value.(string); ok {
+		attributeValue, err := user.Attributes.GetString(m.Condition.Name)
 		if err != nil {
 			return false, err
 		}
 		return stringValue == attributeValue, nil
 	}
 
-	if boolValue, ok := condition.Value.(bool); ok {
-		attributeValue, err := user.Attributes.GetBool(condition.Name)
+	if boolValue, ok := m.Condition.Value.(bool); ok {
+		attributeValue, err := user.Attributes.GetBool(m.Condition.Name)
 		if err != nil {
 			return false, err
 		}
 		return boolValue == attributeValue, nil
 	}
 
-	return false, fmt.Errorf("audience condition %s evaluated to UNKNOWN because the condition value type is not supported", condition.Name)
+	if floatValue, ok := utils.ToFloat(m.Condition.Value); ok {
+		attributeValue, err := user.Attributes.GetFloat(m.Condition.Name)
+		if err != nil {
+			return false, err
+		}
+		return floatValue == attributeValue, nil
+	}
+
+	return false, fmt.Errorf("audience condition %s evaluated to UNKNOWN because the condition value type is not supported", m.Condition.Name)
 }

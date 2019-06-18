@@ -27,11 +27,18 @@ type AudienceEvaluator interface {
 
 // TypedAudienceEvaluator evaluates typed audiences
 type TypedAudienceEvaluator struct {
-	CustomConditionEvaluators []ConditionEvaluator
+	conditionTreeEvaluator ConditionTreeEvaluator
+}
+
+// NewTypedAudienceEvaluator creates a new instance of the TypedAudienceEvaluator
+func NewTypedAudienceEvaluator() *TypedAudienceEvaluator {
+	conditionTreeEvaluator := NewConditionTreeEvaluator()
+	return &TypedAudienceEvaluator{
+		conditionTreeEvaluator: *conditionTreeEvaluator,
+	}
 }
 
 // Evaluate evaluates the typed audience against the given user's attributes
 func (a TypedAudienceEvaluator) Evaluate(audience entities.Audience, user entities.UserContext) bool {
-	conditionTreeEvaluator := NewConditionTreeEvaluator(a.CustomConditionEvaluators)
-	return conditionTreeEvaluator.Evaluate(audience.ConditionTree, user)
+	return a.conditionTreeEvaluator.Evaluate(audience.ConditionTree, user)
 }

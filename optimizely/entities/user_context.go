@@ -32,6 +32,8 @@ type UserAttributes struct {
 	Attributes map[string]interface{}
 }
 
+var floatType = reflect.TypeOf(float64(0))
+
 // GetString returns the string value for the specified attribute name in the attributes map. Returns error if not found.
 func (u UserAttributes) GetString(attrName string) (string, error) {
 	if value, ok := u.Attributes[attrName]; ok {
@@ -54,4 +56,17 @@ func (u UserAttributes) GetBool(attrName string) (bool, error) {
 	}
 
 	return false, fmt.Errorf(`No bool attribute named "%s"`, attrName)
+}
+
+// GetFloat returns the float64 value for the specified attribute name in the attributes map. Returns error if not found.
+func (u UserAttributes) GetFloat(attrName string) (float64, error) {
+	if value, ok := u.Attributes[attrName]; ok {
+		v := reflect.ValueOf(value)
+		if v.Type().String() == "float64" || v.Type().ConvertibleTo(floatType) {
+			floatValue := v.Convert(floatType).Float()
+			return floatValue, nil
+		}
+	}
+
+	return 0, fmt.Errorf(`No float attribute named "%s"`, attrName)
 }
