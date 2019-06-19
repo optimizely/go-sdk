@@ -23,14 +23,15 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-type mType int
+// MatchType dictates how the condition value will be matched to the corresponding attribute value
+type MatchType int
 
 const (
 	// EXACT match type performs an equality comparison
-	EXACT mType = iota
+	EXACT MatchType = iota
 )
 
-func (m mType) String() string {
+func (m MatchType) String() string {
 	return [...]string{
 		"exact",
 	}[m]
