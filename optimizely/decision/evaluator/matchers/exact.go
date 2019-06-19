@@ -14,38 +14,45 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package client
+package matchers
 
 import (
-	"github.com/optimizely/go-sdk/optimizely/config"
-	"github.com/optimizely/go-sdk/optimizely/decision"
+	"fmt"
+
+	"github.com/optimizely/go-sdk/optimizely/decision/evaluator/matchers/utils"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-// OptimizelyClient is the entry point to the Optimizely SDK
-type OptimizelyClient struct {
-	decisionService decision.DecisionService
-	configManager   config.ProjectConfigManager
+// ExactMatcher matches against the "exact" match type
+type ExactMatcher struct {
+	Condition entities.Condition
 }
 
-// IsFeatureEnabled returns true if the feature is enabled for the given user
-func (optly *OptimizelyClient) IsFeatureEnabled(featureKey string, userID string, attributes map[string]interface{}) bool {
-	userContext := entities.UserContext{ID: userID, Attributes: entities.UserAttributes{Attributes: attributes}}
-
-	// @TODO(mng): we should fetch the Feature entity from the config service instead of manually creating it here
-	featureExperiment := entities.Experiment{}
-	feature := entities.Feature{
-		Key:                featureKey,
-		FeatureExperiments: []entities.Experiment{featureExperiment},
-	}
-	featureDecisionContext := decision.FeatureDecisionContext{
-		Feature: feature,
+// Match returns true if the user's attribute match the condition's string value
+func (m ExactMatcher) Match(user entities.UserContext) (bool, error) {
+	if stringValue, ok := m.Condition.Value.(string); ok {
+		attributeValue, err := user.Attributes.GetString(m.Condition.Name)
+		if err != nil {
+			return false, err
+		}
+		return stringValue == attributeValue, nil
 	}
 
-	featureDecision, err := optly.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
-	if err != nil {
-		// @TODO(mng): log error
-		return false
+	if boolValue, ok := m.Condition.Value.(bool); ok {
+		attributeValue, err := user.Attributes.GetBool(m.Condition.Name)
+		if err != nil {
+			return false, err
+		}
+		return boolValue == attributeValue, nil
 	}
-	return featureDecision.FeatureEnabled
+
+	if floatValue, ok := utils.ToFloat(m.Condition.Value); ok {
+		attributeValue, err := user.Attributes.GetFloat(m.Condition.Name)
+		if err != nil {
+			return false, err
+		}
+		return floatValue == attributeValue, nil
+	}
+
+	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
 }

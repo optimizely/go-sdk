@@ -14,38 +14,31 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package client
+package evaluator
 
 import (
-	"github.com/optimizely/go-sdk/optimizely/config"
-	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-// OptimizelyClient is the entry point to the Optimizely SDK
-type OptimizelyClient struct {
-	decisionService decision.DecisionService
-	configManager   config.ProjectConfigManager
+// AudienceEvaluator evaluates an audience against the given user's attributes
+type AudienceEvaluator interface {
+	Evaluate(audience entities.Audience, user entities.UserContext) bool
 }
 
-// IsFeatureEnabled returns true if the feature is enabled for the given user
-func (optly *OptimizelyClient) IsFeatureEnabled(featureKey string, userID string, attributes map[string]interface{}) bool {
-	userContext := entities.UserContext{ID: userID, Attributes: entities.UserAttributes{Attributes: attributes}}
+// TypedAudienceEvaluator evaluates typed audiences
+type TypedAudienceEvaluator struct {
+	conditionTreeEvaluator ConditionTreeEvaluator
+}
 
-	// @TODO(mng): we should fetch the Feature entity from the config service instead of manually creating it here
-	featureExperiment := entities.Experiment{}
-	feature := entities.Feature{
-		Key:                featureKey,
-		FeatureExperiments: []entities.Experiment{featureExperiment},
+// NewTypedAudienceEvaluator creates a new instance of the TypedAudienceEvaluator
+func NewTypedAudienceEvaluator() *TypedAudienceEvaluator {
+	conditionTreeEvaluator := NewConditionTreeEvaluator()
+	return &TypedAudienceEvaluator{
+		conditionTreeEvaluator: *conditionTreeEvaluator,
 	}
-	featureDecisionContext := decision.FeatureDecisionContext{
-		Feature: feature,
-	}
+}
 
-	featureDecision, err := optly.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
-	if err != nil {
-		// @TODO(mng): log error
-		return false
-	}
-	return featureDecision.FeatureEnabled
+// Evaluate evaluates the typed audience against the given user's attributes
+func (a TypedAudienceEvaluator) Evaluate(audience entities.Audience, user entities.UserContext) bool {
+	return a.conditionTreeEvaluator.Evaluate(audience.ConditionTree, user)
 }
