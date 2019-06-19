@@ -21,18 +21,34 @@ import (
 )
 
 // conditionEvalResult is the result of evaluating a Condition, which can be true/false or null if the condition could not be evaluated
-type conditionEvalResult string
+type conditionEvalResult int
 
 const customAttributeType = "custom_attribute"
 
 const (
 	// TRUE means the condition passes
-	TRUE conditionEvalResult = "TRUE"
+	TRUE conditionEvalResult = iota
 	// FALSE means the condition does not pass
-	FALSE conditionEvalResult = "FALSE"
+	FALSE
 	// NULL means the condition could not be evaluated
-	NULL conditionEvalResult = "NULL"
+	NULL
 )
+
+// Enumate the different types of condition operators that exist
+type conditionOperator int
+
+const (
+	// AND operator returns true if all conditions evaluate to true
+	AND conditionOperator = iota
+	// NOT operator negates the result of the given condition
+	NOT
+	// OR operator returns true if any of the conditions evaluate to true
+	OR
+)
+
+func (c conditionOperator) String() string {
+	return [...]string{"and", "not", "or"}[c]
+}
 
 // ConditionTreeEvaluator evaluates a condition tree
 type ConditionTreeEvaluator struct {
@@ -58,6 +74,82 @@ func (c ConditionTreeEvaluator) Evaluate(node *entities.ConditionTreeNode, user 
 
 // Helper method to recursively evaluate a condition tree
 func (c ConditionTreeEvaluator) evaluate(node *entities.ConditionTreeNode, user entities.UserContext) conditionEvalResult {
-	// @TODO(mng): Implement tree evaluator with and/or/not operators
+	operator := node.Operator
+	if operator != "" {
+		switch operator {
+		case AND.String():
+			return c.evaluateAnd(node.Nodes, user)
+		case NOT.String():
+			return c.evaluateNot(node.Nodes, user)
+		case OR.String():
+			fallthrough
+		default:
+			return c.evaluateOr(node.Nodes, user)
+		}
+	}
+
+	conditionEvaluator, ok := c.conditionEvaluatorMap[node.Condition.Type]
+	if !ok {
+		// TODO(mng): log error
+		return NULL
+	}
+	result, err := conditionEvaluator.Evaluate(node.Condition, user)
+	if err != nil {
+		// TODO(mng): log error
+		return NULL
+	}
+	if result == true {
+		return TRUE
+	}
+	return FALSE
+}
+
+func (c ConditionTreeEvaluator) evaluateAnd(nodes []*entities.ConditionTreeNode, user entities.UserContext) conditionEvalResult {
+	sawNull := false
+	for _, node := range nodes {
+		result := c.evaluate(node, user)
+		if result == FALSE {
+			return FALSE
+		} else if result == NULL {
+			sawNull = true
+		}
+	}
+
+	if sawNull {
+		return NULL
+	}
+
 	return TRUE
+}
+
+func (c ConditionTreeEvaluator) evaluateNot(nodes []*entities.ConditionTreeNode, user entities.UserContext) conditionEvalResult {
+	if len(nodes) > 0 {
+		result := c.evaluate(nodes[0], user)
+		if result == NULL {
+			return NULL
+		} else if result == TRUE {
+			return FALSE
+		} else if result == FALSE {
+			return TRUE
+		}
+	}
+	return NULL
+}
+
+func (c ConditionTreeEvaluator) evaluateOr(nodes []*entities.ConditionTreeNode, user entities.UserContext) conditionEvalResult {
+	sawNull := false
+	for _, node := range nodes {
+		result := c.evaluate(node, user)
+		if result == TRUE {
+			return TRUE
+		} else if result == NULL {
+			sawNull = true
+		}
+	}
+
+	if sawNull {
+		return NULL
+	}
+
+	return FALSE
 }
