@@ -54,5 +54,5 @@ func (m ExactMatcher) Match(user entities.UserContext) (bool, error) {
 		return floatValue == attributeValue, nil
 	}
 
-	return false, fmt.Errorf("audience condition %s evaluated to UNKNOWN because the condition value type is not supported", m.Condition.Name)
+	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
 }

@@ -23,6 +23,19 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
+type mType int
+
+const (
+	// EXACT match type performs an equality comparison
+	EXACT mType = iota
+)
+
+func (m mType) String() string {
+	return [...]string{
+		"exact",
+	}[m]
+}
+
 // ConditionEvaluator evaluates a condition against the given user's attributes
 type ConditionEvaluator interface {
 	Evaluate(entities.Condition, entities.UserContext) (bool, error)
@@ -41,7 +54,7 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 	var matcher matchers.Matcher
 	matchType := condition.Match
 	switch matchType {
-	case "exact":
+	case EXACT.String():
 		matcher = matchers.ExactMatcher{
 			Condition: condition,
 		}
