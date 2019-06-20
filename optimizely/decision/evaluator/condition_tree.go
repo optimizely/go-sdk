@@ -34,21 +34,14 @@ const (
 	NULL
 )
 
-// Enumate the different types of condition operators that exist
-type conditionOperator int
-
 const (
-	// AND operator returns true if all conditions evaluate to true
-	AND conditionOperator = iota
-	// NOT operator negates the result of the given condition
-	NOT
-	// OR operator returns true if any of the conditions evaluate to true
-	OR
+	// "and" operator returns true if all conditions evaluate to true
+	andOperator = "and"
+	// "not" operator negates the result of the given condition
+	notOperator = "not"
+	// "or" operator returns true if any of the conditions evaluate to true
+	orOperator = "or"
 )
-
-func (c conditionOperator) String() string {
-	return [...]string{"and", "not", "or"}[c]
-}
 
 // ConditionTreeEvaluator evaluates a condition tree
 type ConditionTreeEvaluator struct {
@@ -77,11 +70,11 @@ func (c ConditionTreeEvaluator) evaluate(node *entities.ConditionTreeNode, user 
 	operator := node.Operator
 	if operator != "" {
 		switch operator {
-		case AND.String():
+		case andOperator:
 			return c.evaluateAnd(node.Nodes, user)
-		case NOT.String():
+		case notOperator:
 			return c.evaluateNot(node.Nodes, user)
-		case OR.String():
+		case orOperator:
 			fallthrough
 		default:
 			return c.evaluateOr(node.Nodes, user)
