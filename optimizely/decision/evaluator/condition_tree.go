@@ -73,10 +73,12 @@ func (c ConditionTreeEvaluator) evaluate(node *entities.ConditionTreeNode, user 
 	conditionEvaluator, ok := c.conditionEvaluatorMap[node.Condition.Type]
 	if !ok {
 		// TODO(mng): log error
+		// Result is invalid
 		return false, false
 	}
 	result, err := conditionEvaluator.Evaluate(node.Condition, user)
 	if err != nil {
+		// Result is invalid
 		return false, false
 	}
 	return result, true
