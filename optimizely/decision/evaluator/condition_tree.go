@@ -96,6 +96,7 @@ func (c ConditionTreeEvaluator) evaluateAnd(nodes []*entities.ConditionTreeNode,
 	}
 
 	if sawInvalid {
+		// bubble up the invalid result
 		return false, false
 	}
 
@@ -125,6 +126,7 @@ func (c ConditionTreeEvaluator) evaluateOr(nodes []*entities.ConditionTreeNode, 
 	}
 
 	if sawInvalid {
+		// bubble up the invalid result
 		return false, false
 	}
 
