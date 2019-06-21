@@ -20,19 +20,7 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-// conditionEvalResult is the result of evaluating a Condition, which can be true/false or null if the condition could not be evaluated
-type conditionEvalResult int
-
 const customAttributeType = "custom_attribute"
-
-const (
-	// TRUE means the condition passes
-	TRUE conditionEvalResult = iota
-	// FALSE means the condition does not pass
-	FALSE
-	// NULL means the condition could not be evaluated
-	NULL
-)
 
 const (
 	// "and" operator returns true if all conditions evaluate to true
@@ -61,12 +49,13 @@ func NewConditionTreeEvaluator() *ConditionTreeEvaluator {
 // Evaluate returns true if the userAttributes satisfy the given condition tree
 func (c ConditionTreeEvaluator) Evaluate(node *entities.ConditionTreeNode, user entities.UserContext) bool {
 	// This wrapper method converts the conditionEvalResult to a boolean
-	result := c.evaluate(node, user)
-	return result == TRUE
+	result, _ := c.evaluate(node, user)
+	return result == true
 }
 
 // Helper method to recursively evaluate a condition tree
-func (c ConditionTreeEvaluator) evaluate(node *entities.ConditionTreeNode, user entities.UserContext) conditionEvalResult {
+// Returns the result of the evaluation and whether the evaluation of the condition is valid or not (to handle null bubbling)
+func (c ConditionTreeEvaluator) evaluate(node *entities.ConditionTreeNode, user entities.UserContext) (evalResult bool, isValid bool) {
 	operator := node.Operator
 	if operator != "" {
 		switch operator {
@@ -84,65 +73,58 @@ func (c ConditionTreeEvaluator) evaluate(node *entities.ConditionTreeNode, user 
 	conditionEvaluator, ok := c.conditionEvaluatorMap[node.Condition.Type]
 	if !ok {
 		// TODO(mng): log error
-		return NULL
+		return false, false
 	}
 	result, err := conditionEvaluator.Evaluate(node.Condition, user)
 	if err != nil {
-		// TODO(mng): log error
-		return NULL
+		return false, false
 	}
-	if result == true {
-		return TRUE
-	}
-	return FALSE
+	return result, true
 }
 
-func (c ConditionTreeEvaluator) evaluateAnd(nodes []*entities.ConditionTreeNode, user entities.UserContext) conditionEvalResult {
-	sawNull := false
+func (c ConditionTreeEvaluator) evaluateAnd(nodes []*entities.ConditionTreeNode, user entities.UserContext) (evalResult bool, isValid bool) {
+	sawInvalid := false
 	for _, node := range nodes {
-		result := c.evaluate(node, user)
-		if result == FALSE {
-			return FALSE
-		} else if result == NULL {
-			sawNull = true
+		result, isValid := c.evaluate(node, user)
+		if !isValid {
+			return false, isValid
+		} else if result == false {
+			return result, isValid
 		}
 	}
 
-	if sawNull {
-		return NULL
+	if sawInvalid {
+		return false, false
 	}
 
-	return TRUE
+	return true, true
 }
 
-func (c ConditionTreeEvaluator) evaluateNot(nodes []*entities.ConditionTreeNode, user entities.UserContext) conditionEvalResult {
+func (c ConditionTreeEvaluator) evaluateNot(nodes []*entities.ConditionTreeNode, user entities.UserContext) (evalResult bool, isValid bool) {
 	if len(nodes) > 0 {
-		result := c.evaluate(nodes[0], user)
-		if result == NULL {
-			return NULL
-		} else if result == TRUE {
-			return FALSE
-		} else if result == FALSE {
-			return TRUE
+		result, isValid := c.evaluate(nodes[0], user)
+		if !isValid {
+			return false, false
 		}
+		return !result, isValid
 	}
-	return NULL
+	return false, false
 }
 
-func (c ConditionTreeEvaluator) evaluateOr(nodes []*entities.ConditionTreeNode, user entities.UserContext) conditionEvalResult {
-	sawNull := false
+func (c ConditionTreeEvaluator) evaluateOr(nodes []*entities.ConditionTreeNode, user entities.UserContext) (evalResult bool, isValid bool) {
+	sawInvalid := false
 	for _, node := range nodes {
-		result := c.evaluate(node, user)
-		if result == TRUE {
-			return TRUE
-		} else if result == NULL {
-			sawNull = true
+		result, isValid := c.evaluate(node, user)
+		if !isValid {
+			sawInvalid = true
+		} else if result == true {
+			return result, isValid
 		}
 	}
 
-	if sawNull {
-		return NULL
+	if sawInvalid {
+		return false, false
 	}
 
-	return FALSE
+	return false, true
 }
