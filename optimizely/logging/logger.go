@@ -16,9 +16,6 @@ const (
 
 	// LogLevelDebug log level
 	LogLevelDebug
-
-	// LogLevelVerbose log level
-	LogLevelVerbose
 )
 
 func init() {
