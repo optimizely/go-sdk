@@ -20,14 +20,12 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/config"
 	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig"
 	"github.com/optimizely/go-sdk/optimizely/decision"
-	"github.com/optimizely/go-sdk/optimizely/logging"
 )
 
 // OptimizelyFactory is used to construct an instance of the OptimizelyClient
 type OptimizelyFactory struct {
 	SDKKey   string
 	Datafile []byte
-	Logger   *logging.OptimizelyLogger
 }
 
 // Client returns a client initialized with the defaults
@@ -41,11 +39,6 @@ func (f OptimizelyFactory) Client() OptimizelyClient {
 			staticConfigManager := config.NewStaticProjectConfigManager(projectConfig)
 			configManager = staticConfigManager
 		}
-	}
-
-	// If a logger implementation is provided, use that one instead
-	if f.Logger != nil {
-		logging.SetLogger(*f.Logger)
 	}
 
 	decisionService := decision.NewCompositeService()

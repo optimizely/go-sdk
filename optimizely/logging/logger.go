@@ -2,6 +2,25 @@ package logging
 
 var loggerInstance OptimizelyLogger
 
+const (
+	_ = iota
+
+	// LogLevelError log level
+	LogLevelError
+
+	// LogLevelWarning log level
+	LogLevelWarning
+
+	// LogLevelInfo log level
+	LogLevelInfo
+
+	// LogLevelDebug log level
+	LogLevelDebug
+
+	// LogLevelVerbose log level
+	LogLevelVerbose
+)
+
 func init() {
 	loggerInstance = NewStdoutFilteredLevelLogger(LogLevelInfo)
 }
