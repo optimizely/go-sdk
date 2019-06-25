@@ -22,6 +22,7 @@ import (
 
 	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/mappers"
 	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/optimizely/logging"
 )
 
 // DatafileProjectConfig is a project config backed by a datafile
@@ -36,7 +37,7 @@ type DatafileProjectConfig struct {
 func NewDatafileProjectConfig(jsonDatafile []byte) *DatafileProjectConfig {
 	datafile, err := Parse(jsonDatafile)
 	if err != nil {
-		// @TODO(mng): handle error
+		logging.Error("Error parsing datafile.", err)
 	}
 
 	experiments, experimentKeyMap := mappers.MapExperiments(datafile.Experiments)
@@ -46,6 +47,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte) *DatafileProjectConfig {
 		experimentKeyToIDMap: experimentKeyMap,
 	}
 
+	logging.Info("Datafile is valid.")
 	return config
 }
 

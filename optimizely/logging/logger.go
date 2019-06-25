@@ -1,5 +1,7 @@
 package logging
 
+import "fmt"
+
 var loggerInstance OptimizelyLogger
 
 const (
@@ -43,6 +45,9 @@ func Debug(message string) {
 }
 
 // Error logs the given message with a ERROR level
-func Error(message string) {
+func Error(message string, err interface{}) {
+	if err != nil {
+		message = fmt.Sprintf("%s %v", message, err)
+	}
 	loggerInstance.Log(LogLevelError, message)
 }
