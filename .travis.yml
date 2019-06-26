@@ -7,5 +7,23 @@ go:
 git:
   depth: 1
 
-script:
-  - go test -v -race ./...
+stages:
+  - 'Integration tests'
+  - 'Test'
+jobs:
+  include:
+    - stage: 'Integration Tests'
+      merge_mode: replace
+      env: SDK=go
+      cache: false
+      language: minimal
+      install: skip
+      before_script:
+        - mkdir $HOME/travisci-tools && pushd $HOME/travisci-tools && git init && git pull https://$CI_USER_TOKEN@github.com/optimizely/travisci-tools.git && popd
+      script:
+        - "$HOME/travisci-tools/fsc-trigger/trigger_fullstack-sdk-compat.sh"
+      after_success: travis_terminate 0
+    - stage: 'Test'
+      script:
+        - go test -v -race ./...
+      
