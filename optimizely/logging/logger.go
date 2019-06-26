@@ -2,52 +2,75 @@ package logging
 
 import "fmt"
 
-var loggerInstance OptimizelyLogger
+var defaultLogConsumer OptimizelyLogConsumer
 
 const (
 	_ = iota
 
-	// LogLevelError log level
-	LogLevelError
-
-	// LogLevelWarning log level
-	LogLevelWarning
+	// LogLevelDebug log level
+	LogLevelDebug
 
 	// LogLevelInfo log level
 	LogLevelInfo
 
-	// LogLevelDebug log level
-	LogLevelDebug
+	// LogLevelWarning log level
+	LogLevelWarning
+
+	// LogLevelError log level
+	LogLevelError
 )
 
 func init() {
-	loggerInstance = NewStdoutFilteredLevelLogger(LogLevelInfo)
+	defaultLogConsumer = NewStdoutFilteredLevelLogConsumer(LogLevelInfo)
 }
 
 // SetLogger replaces the default logger with the given logger
-func SetLogger(logger OptimizelyLogger) {
-	loggerInstance = logger
+func SetLogger(logger OptimizelyLogConsumer) {
+	defaultLogConsumer = logger
 }
 
 // SetLogLevel sets the log level to the given level
 func SetLogLevel(logLevel int) {
-	loggerInstance.SetLogLevel(logLevel)
+	defaultLogConsumer.SetLogLevel(logLevel)
 }
 
-// Info logs the given message with a INFO level
-func Info(message string) {
-	loggerInstance.Log(LogLevelInfo, message)
+// GetLogger returns a log producer with the given name
+func GetLogger(name string) OptimizelyLogProducer {
+	return NamedLogProducer{
+		name: name,
+	}
+}
+
+// NamedLogProducer produces logs prefixed with its name
+type NamedLogProducer struct {
+	name string
 }
 
 // Debug logs the given message with a DEBUG level
-func Debug(message string) {
-	loggerInstance.Log(LogLevelDebug, message)
+func (p NamedLogProducer) Debug(message string) {
+	p.log(LogLevelDebug, message)
+}
+
+// Info logs the given message with a INFO level
+func (p NamedLogProducer) Info(message string) {
+	p.log(LogLevelInfo, message)
+}
+
+// Warning logs the given message with a WARNING level
+func (p NamedLogProducer) Warning(message string) {
+	p.log(LogLevelWarning, message)
 }
 
 // Error logs the given message with a ERROR level
-func Error(message string, err interface{}) {
+func (p NamedLogProducer) Error(message string, err interface{}) {
 	if err != nil {
 		message = fmt.Sprintf("%s %v", message, err)
 	}
-	loggerInstance.Log(LogLevelError, message)
+	p.log(LogLevelError, message)
+}
+
+func (p NamedLogProducer) log(logLevel int, message string) {
+	// prepends the name to the message
+	message = fmt.Sprintf("[%s] %s", p.name, message)
+	defaultLogConsumer.Log(logLevel, message)
 }
