@@ -1,12 +1,9 @@
 language: go
-
 go:
   - 1.12.x
   - master
-
 git:
   depth: 1
-
 stages:
   - 'Integration tests'
   - 'Test'
@@ -24,6 +21,5 @@ jobs:
         - "$HOME/travisci-tools/fsc-trigger/trigger_fullstack-sdk-compat.sh"
       after_success: travis_terminate 0
     - stage: 'Test'
-      script:
-        - go test -v -race ./...
+      dist: xenial
       
