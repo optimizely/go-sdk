@@ -20,16 +20,25 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/config"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/optimizely/logging"
 )
+
+var logger = logging.GetLogger("Client")
 
 // OptimizelyClient is the entry point to the Optimizely SDK
 type OptimizelyClient struct {
-	decisionService decision.DecisionService
 	configManager   config.ProjectConfigManager
+	decisionService decision.DecisionService
+	isValid         bool
 }
 
 // IsFeatureEnabled returns true if the feature is enabled for the given user
 func (optly *OptimizelyClient) IsFeatureEnabled(featureKey string, userID string, attributes map[string]interface{}) bool {
+	if !optly.isValid {
+		logger.Error("Optimizely instance is not valid. Failing IsFeatureEnabled.", nil)
+		return false
+	}
+
 	userContext := entities.UserContext{ID: userID, Attributes: entities.UserAttributes{Attributes: attributes}}
 
 	// @TODO(mng): we should fetch the Feature entity from the config service instead of manually creating it here
