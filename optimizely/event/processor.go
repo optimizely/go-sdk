@@ -16,43 +16,33 @@ type DefaultEventProcessor struct {
 	MaxQueueSize    int           // max size of the queue before flush
 	FlushInterval   time.Duration // in milliseconds
 	BatchSize       int
-	Queue           [] interface{}
+	Q      			Queue
 	Mux             sync.Mutex
 	Ticker          *time.Ticker
 	EventDispatcher Dispatcher
 }
 
 func NewEventProcessor(queueSize int, flushInterval time.Duration ) Processor {
-	p := &DefaultEventProcessor{MaxQueueSize: queueSize, FlushInterval:flushInterval, Queue:make([] interface{}, 0, queueSize), EventDispatcher:&HttpEventDispatcher{}}
+	p := &DefaultEventProcessor{MaxQueueSize: queueSize, FlushInterval:flushInterval, Q:NewInMemoryQueue(queueSize), EventDispatcher:&HttpEventDispatcher{}}
 	p.StartTicker()
 	return p
 }
 
 // ProcessImpression processes the given impression event
 func (p *DefaultEventProcessor) ProcessImpression(event Impression) {
-	p.Mux.Lock()
-	p.Queue = append(p.Queue, event)
-	p.Mux.Unlock()
+	p.Q.Add(event)
 }
 
 func (p *DefaultEventProcessor) EventsCount() int {
-	p.Mux.Lock()
-	defer p.Mux.Unlock()
-	return len(p.Queue)
+	return p.Q.Size()
 }
 
 func (p *DefaultEventProcessor) GetEvents(count int) []interface{} {
-	p.Mux.Lock()
-	defer p.Mux.Unlock()
-	return p.Queue[:count]
+	return p.Q.Get(count)
 }
 
 func (p *DefaultEventProcessor) Remove(count int) []interface{} {
-	p.Mux.Lock()
-	defer p.Mux.Unlock()
-	elem := p.Queue[:count]
-	p.Queue = p.Queue[count:]
-	return elem
+	return p.Q.Remove(count)
 }
 
 func (p *DefaultEventProcessor) StartTicker() {
