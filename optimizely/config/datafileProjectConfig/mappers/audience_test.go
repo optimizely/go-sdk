@@ -14,26 +14,47 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package config
+package mappers
 
-import "sync"
+import (
+	"encoding/json"
+	"testing"
 
-// StaticProjectConfigManager maintains a static copy of the project config
-type StaticProjectConfigManager struct {
-	projectConfig ProjectConfig
-	configLock    sync.Mutex
-}
+	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/stretchr/testify/assert"
+)
 
-// NewStaticProjectConfigManager creates a new instance of the manager with the given project config
-func NewStaticProjectConfigManager(config ProjectConfig) *StaticProjectConfigManager {
-	return &StaticProjectConfigManager{
-		projectConfig: config,
+func TestBuildConditionTreeSimpleAudienceCondition(t *testing.T) {
+	conditionString := "[ \"and\", [ \"or\", [ \"or\", { \"type\": \"custom_attribute\", \"name\": \"s_foo\", \"match\": \"exact\", \"value\": \"foo\" } ] ] ]"
+	var conditions interface{}
+	json.Unmarshal([]byte(conditionString), &conditions)
+	conditionTree, err := buildConditionTree(conditions)
+	if err != nil {
+		assert.Fail(t, err.Error())
 	}
-}
 
-// GetConfig returns the project config
-func (cm *StaticProjectConfigManager) GetConfig() ProjectConfig {
-	cm.configLock.Lock()
-	defer cm.configLock.Unlock()
-	return cm.projectConfig
+	expectedConditionTree := &entities.ConditionTreeNode{
+		Operator: "and",
+		Nodes: []*entities.ConditionTreeNode{
+			&entities.ConditionTreeNode{
+				Operator: "or",
+				Nodes: []*entities.ConditionTreeNode{
+					&entities.ConditionTreeNode{
+						Operator: "or",
+						Nodes: []*entities.ConditionTreeNode{
+							&entities.ConditionTreeNode{
+								Condition: entities.Condition{
+									Name:  "s_foo",
+									Match: "exact",
+									Type:  "custom_attribute",
+									Value: "foo",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	assert.Equal(t, expectedConditionTree, conditionTree)
 }

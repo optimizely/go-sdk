@@ -14,26 +14,23 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package config
+package mappers
 
-import "sync"
+import (
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	"github.com/optimizely/go-sdk/optimizely/entities"
+)
 
-// StaticProjectConfigManager maintains a static copy of the project config
-type StaticProjectConfigManager struct {
-	projectConfig ProjectConfig
-	configLock    sync.Mutex
-}
+// MapFeatureFlags maps the raw datafile feature flag entitiees to SDK Feature entities
+func MapFeatureFlags(featureFlags []datafileEntities.FeatureFlag) map[string]entities.Feature {
 
-// NewStaticProjectConfigManager creates a new instance of the manager with the given project config
-func NewStaticProjectConfigManager(config ProjectConfig) *StaticProjectConfigManager {
-	return &StaticProjectConfigManager{
-		projectConfig: config,
+	featureMap := make(map[string]entities.Feature)
+	for _, featureFlag := range featureFlags {
+		// @TODO(mng): include experiments in the Feature
+		featureMap[featureFlag.Key] = entities.Feature{
+			Key: featureFlag.Key,
+			ID:  featureFlag.ID,
+		}
 	}
-}
-
-// GetConfig returns the project config
-func (cm *StaticProjectConfigManager) GetConfig() ProjectConfig {
-	cm.configLock.Lock()
-	defer cm.configLock.Unlock()
-	return cm.projectConfig
+	return featureMap
 }

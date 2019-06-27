@@ -14,48 +14,45 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package datafileProjectConfig
+package matchers
 
 import (
 	"fmt"
-	"testing"
 
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
-	"github.com/stretchr/testify/assert"
+	"github.com/optimizely/go-sdk/optimizely/decision/evaluator/matchers/utils"
+	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-func TestParseDatafilePasses(t *testing.T) {
-	testFeatureKey := "feature_test_1"
-	testFeatureID := "feature_id_123"
-	datafileString := fmt.Sprintf(`{
-		"projectId": "1337",
-		"accountId": "1338",
-		"version": "4",
-		"featureFlags": [
-			{
-				"key": "%s",
-				"id" : "%s"
-			}
-		]
-	}`, testFeatureKey, testFeatureID)
+// ExactMatcher matches against the "exact" match type
+type ExactMatcher struct {
+	Condition entities.Condition
+}
 
-	rawDatafile := []byte(datafileString)
-	parsedDatafile, err := Parse(rawDatafile)
-	if err != nil {
-		assert.Fail(t, err.Error())
+// Match returns true if the user's attribute match the condition's string value
+func (m ExactMatcher) Match(user entities.UserContext) (bool, error) {
+	if stringValue, ok := m.Condition.Value.(string); ok {
+		attributeValue, err := user.Attributes.GetString(m.Condition.Name)
+		if err != nil {
+			return false, err
+		}
+		return stringValue == attributeValue, nil
 	}
 
-	expectedDatafile := &entities.Datafile{
-		AccountID: "1338",
-		ProjectID: "1337",
-		Version:   "4",
-		FeatureFlags: []entities.FeatureFlag{
-			entities.FeatureFlag{
-				Key: testFeatureKey,
-				ID:  testFeatureID,
-			},
-		},
+	if boolValue, ok := m.Condition.Value.(bool); ok {
+		attributeValue, err := user.Attributes.GetBool(m.Condition.Name)
+		if err != nil {
+			return false, err
+		}
+		return boolValue == attributeValue, nil
 	}
 
-	assert.Equal(t, expectedDatafile, parsedDatafile)
+	if floatValue, ok := utils.ToFloat(m.Condition.Value); ok {
+		attributeValue, err := user.Attributes.GetFloat(m.Condition.Name)
+		if err != nil {
+			return false, err
+		}
+		return floatValue == attributeValue, nil
+	}
+
+	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
 }

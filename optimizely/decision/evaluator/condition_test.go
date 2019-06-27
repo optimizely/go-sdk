@@ -14,26 +14,43 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package config
+package evaluator
 
-import "sync"
+import (
+	"testing"
 
-// StaticProjectConfigManager maintains a static copy of the project config
-type StaticProjectConfigManager struct {
-	projectConfig ProjectConfig
-	configLock    sync.Mutex
-}
+	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/stretchr/testify/assert"
+)
 
-// NewStaticProjectConfigManager creates a new instance of the manager with the given project config
-func NewStaticProjectConfigManager(config ProjectConfig) *StaticProjectConfigManager {
-	return &StaticProjectConfigManager{
-		projectConfig: config,
+func TestCustomAttributeConditionEvaluator(t *testing.T) {
+	conditionEvaluator := CustomAttributeConditionEvaluator{}
+	condition := entities.Condition{
+		Match: "exact",
+		Value: "foo",
+		Name:  "string_foo",
+		Type:  "custom_attribute",
 	}
-}
 
-// GetConfig returns the project config
-func (cm *StaticProjectConfigManager) GetConfig() ProjectConfig {
-	cm.configLock.Lock()
-	defer cm.configLock.Unlock()
-	return cm.projectConfig
+	// Test condition passes
+	user := entities.UserContext{
+		Attributes: entities.UserAttributes{
+			Attributes: map[string]interface{}{
+				"string_foo": "foo",
+			},
+		},
+	}
+	result, _ := conditionEvaluator.Evaluate(condition, user)
+	assert.Equal(t, result, true)
+
+	// Test condition fails
+	user = entities.UserContext{
+		Attributes: entities.UserAttributes{
+			Attributes: map[string]interface{}{
+				"string_foo": "not_foo",
+			},
+		},
+	}
+	result, _ = conditionEvaluator.Evaluate(condition, user)
+	assert.Equal(t, result, false)
 }

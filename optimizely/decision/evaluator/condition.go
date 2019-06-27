@@ -14,26 +14,44 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package config
+package evaluator
 
-import "sync"
+import (
+	"fmt"
 
-// StaticProjectConfigManager maintains a static copy of the project config
-type StaticProjectConfigManager struct {
-	projectConfig ProjectConfig
-	configLock    sync.Mutex
+	"github.com/optimizely/go-sdk/optimizely/decision/evaluator/matchers"
+	"github.com/optimizely/go-sdk/optimizely/entities"
+)
+
+const (
+	// EXACT match type performs an equality comparison
+	exactMatchType = "exact"
+)
+
+// ConditionEvaluator evaluates a condition against the given user's attributes
+type ConditionEvaluator interface {
+	Evaluate(entities.Condition, entities.UserContext) (bool, error)
 }
 
-// NewStaticProjectConfigManager creates a new instance of the manager with the given project config
-func NewStaticProjectConfigManager(config ProjectConfig) *StaticProjectConfigManager {
-	return &StaticProjectConfigManager{
-		projectConfig: config,
+// CustomAttributeConditionEvaluator evaluates conditions with custom attributes
+type CustomAttributeConditionEvaluator struct{}
+
+// Evaluate returns true if the given user's attributes match the condition
+func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, user entities.UserContext) (bool, error) {
+	// We should only be evaluating custom attributes
+	if condition.Type != customAttributeType {
+		return false, fmt.Errorf(`Unable to evaluator condition of type "%s"`, condition.Type)
 	}
-}
 
-// GetConfig returns the project config
-func (cm *StaticProjectConfigManager) GetConfig() ProjectConfig {
-	cm.configLock.Lock()
-	defer cm.configLock.Unlock()
-	return cm.projectConfig
+	var matcher matchers.Matcher
+	matchType := condition.Match
+	switch matchType {
+	case exactMatchType:
+		matcher = matchers.ExactMatcher{
+			Condition: condition,
+		}
+	}
+
+	result, err := matcher.Match(user)
+	return result, err
 }

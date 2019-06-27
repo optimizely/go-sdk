@@ -14,26 +14,27 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package config
+package entities
 
-import "sync"
-
-// StaticProjectConfigManager maintains a static copy of the project config
-type StaticProjectConfigManager struct {
-	projectConfig ProjectConfig
-	configLock    sync.Mutex
+// Audience contains the audience definition
+type Audience struct {
+	ID            string
+	Name          string
+	ConditionTree *ConditionTreeNode
 }
 
-// NewStaticProjectConfigManager creates a new instance of the manager with the given project config
-func NewStaticProjectConfigManager(config ProjectConfig) *StaticProjectConfigManager {
-	return &StaticProjectConfigManager{
-		projectConfig: config,
-	}
+// Condition has condition info
+type Condition struct {
+	Name  string      `json:"name"`
+	Match string      `json:"match"`
+	Type  string      `json:"type"`
+	Value interface{} `json:"value"`
 }
 
-// GetConfig returns the project config
-func (cm *StaticProjectConfigManager) GetConfig() ProjectConfig {
-	cm.configLock.Lock()
-	defer cm.configLock.Unlock()
-	return cm.projectConfig
+//ConditionTreeNode in a condition tree
+type ConditionTreeNode struct {
+	Condition Condition
+	Operator  string
+
+	Nodes []*ConditionTreeNode
 }

@@ -14,26 +14,36 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package config
+package mappers
 
-import "sync"
+import (
+	"encoding/json"
+	"fmt"
+	"testing"
 
-// StaticProjectConfigManager maintains a static copy of the project config
-type StaticProjectConfigManager struct {
-	projectConfig ProjectConfig
-	configLock    sync.Mutex
-}
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/stretchr/testify/assert"
+)
 
-// NewStaticProjectConfigManager creates a new instance of the manager with the given project config
-func NewStaticProjectConfigManager(config ProjectConfig) *StaticProjectConfigManager {
-	return &StaticProjectConfigManager{
-		projectConfig: config,
+func TestMapFeatures(t *testing.T) {
+	const testFeatureFlagString = `{
+		"id": "21111",
+		"key": "test_feature_21111"
+	}`
+
+	var rawFeatureFlag datafileEntities.FeatureFlag
+	json.Unmarshal([]byte(testFeatureFlagString), &rawFeatureFlag)
+
+	fmt.Printf("FLAG: %+v", rawFeatureFlag)
+	rawFeatureFlags := []datafileEntities.FeatureFlag{rawFeatureFlag}
+	featureMap := MapFeatureFlags(rawFeatureFlags)
+	expectedFeatureMap := map[string]entities.Feature{
+		"test_feature_21111": entities.Feature{
+			ID:  "21111",
+			Key: "test_feature_21111",
+		},
 	}
-}
 
-// GetConfig returns the project config
-func (cm *StaticProjectConfigManager) GetConfig() ProjectConfig {
-	cm.configLock.Lock()
-	defer cm.configLock.Unlock()
-	return cm.projectConfig
+	assert.Equal(t, expectedFeatureMap, featureMap)
 }

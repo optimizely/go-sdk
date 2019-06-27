@@ -29,15 +29,14 @@ type OptimizelyFactory struct {
 }
 
 // Client returns a client initialized with the defaults
-func (factory OptimizelyFactory) Client() OptimizelyClient {
+func (f OptimizelyFactory) Client() OptimizelyClient {
 	var projectConfig config.ProjectConfig
 	var configManager config.ProjectConfigManager
-	if factory.Datafile != nil {
-		projectConfig = datafileProjectConfig.NewDatafileProjectConfig(factory.Datafile)
+	if f.Datafile != nil {
+		projectConfig = datafileProjectConfig.NewDatafileProjectConfig(f.Datafile)
 
-		if factory.SDKKey == "" {
-			staticConfigManager := config.StaticProjectConfigManager{}
-			staticConfigManager.SetConfig(projectConfig)
+		if f.SDKKey == "" {
+			staticConfigManager := config.NewStaticProjectConfigManager(projectConfig)
 			configManager = staticConfigManager
 		}
 	}
@@ -46,6 +45,7 @@ func (factory OptimizelyFactory) Client() OptimizelyClient {
 	client := OptimizelyClient{
 		decisionService: decisionService,
 		configManager:   configManager,
+		isValid:         true,
 	}
 	return client
 }

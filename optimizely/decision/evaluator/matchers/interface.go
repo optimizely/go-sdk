@@ -14,26 +14,11 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package config
+package matchers
 
-import "sync"
+import "github.com/optimizely/go-sdk/optimizely/entities"
 
-// StaticProjectConfigManager maintains a static copy of the project config
-type StaticProjectConfigManager struct {
-	projectConfig ProjectConfig
-	configLock    sync.Mutex
-}
-
-// NewStaticProjectConfigManager creates a new instance of the manager with the given project config
-func NewStaticProjectConfigManager(config ProjectConfig) *StaticProjectConfigManager {
-	return &StaticProjectConfigManager{
-		projectConfig: config,
-	}
-}
-
-// GetConfig returns the project config
-func (cm *StaticProjectConfigManager) GetConfig() ProjectConfig {
-	cm.configLock.Lock()
-	defer cm.configLock.Unlock()
-	return cm.projectConfig
+// Matcher matches the condition against the user's attributes
+type Matcher interface {
+	Match(entities.UserContext) (bool, error)
 }

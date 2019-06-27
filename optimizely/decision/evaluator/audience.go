@@ -14,26 +14,31 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package config
+package evaluator
 
-import "sync"
+import (
+	"github.com/optimizely/go-sdk/optimizely/entities"
+)
 
-// StaticProjectConfigManager maintains a static copy of the project config
-type StaticProjectConfigManager struct {
-	projectConfig ProjectConfig
-	configLock    sync.Mutex
+// AudienceEvaluator evaluates an audience against the given user's attributes
+type AudienceEvaluator interface {
+	Evaluate(audience entities.Audience, user entities.UserContext) bool
 }
 
-// NewStaticProjectConfigManager creates a new instance of the manager with the given project config
-func NewStaticProjectConfigManager(config ProjectConfig) *StaticProjectConfigManager {
-	return &StaticProjectConfigManager{
-		projectConfig: config,
+// TypedAudienceEvaluator evaluates typed audiences
+type TypedAudienceEvaluator struct {
+	conditionTreeEvaluator ConditionTreeEvaluator
+}
+
+// NewTypedAudienceEvaluator creates a new instance of the TypedAudienceEvaluator
+func NewTypedAudienceEvaluator() *TypedAudienceEvaluator {
+	conditionTreeEvaluator := NewConditionTreeEvaluator()
+	return &TypedAudienceEvaluator{
+		conditionTreeEvaluator: *conditionTreeEvaluator,
 	}
 }
 
-// GetConfig returns the project config
-func (cm *StaticProjectConfigManager) GetConfig() ProjectConfig {
-	cm.configLock.Lock()
-	defer cm.configLock.Unlock()
-	return cm.projectConfig
+// Evaluate evaluates the typed audience against the given user's attributes
+func (a TypedAudienceEvaluator) Evaluate(audience entities.Audience, user entities.UserContext) bool {
+	return a.conditionTreeEvaluator.Evaluate(audience.ConditionTree, user)
 }
