@@ -28,6 +28,7 @@ type Experiment struct {
 	// @TODO(mng): include audienceConditions
 	ID                string              `json:"id"`
 	Key               string              `json:"key"`
+	LayerID           string              `json:"layerId"`
 	Status            string              `json:"status"`
 	Variations        []Variation         `json:"variations"`
 	TrafficAllocation []trafficAllocation `json:"trafficAllocation"`
