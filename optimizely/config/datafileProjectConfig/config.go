@@ -35,6 +35,30 @@ type DatafileProjectConfig struct {
 	featureMap           map[string]entities.Feature
 }
 
+func (config DatafileProjectConfig) GetProjectID() string {
+	panic("implement me")
+}
+
+func (config DatafileProjectConfig) GetRevision() string {
+	panic("implement me")
+}
+
+func (config DatafileProjectConfig) GetAccountID() string {
+	panic("implement me")
+}
+
+func (config DatafileProjectConfig) GetAnonymizeIP() bool {
+	panic("implement me")
+}
+
+func (config DatafileProjectConfig) GetAttributeID(key string) string {
+	panic("implement me")
+}
+
+func (config DatafileProjectConfig) GetBotFiltering() bool {
+	panic("implement me")
+}
+
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser
 func NewDatafileProjectConfig(jsonDatafile []byte) *DatafileProjectConfig {
 	datafile, err := Parse(jsonDatafile)
