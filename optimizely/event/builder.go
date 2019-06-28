@@ -28,11 +28,11 @@ func CreateImpressionEvent(config config.ProjectConfig, experiment entities.Expe
 	dispatchEvent.EntityID = experiment.LayerID
 	dispatchEvent.Uuid = guuid.New().String()
 
-	return CreateBatchEvent(config, userId, attributes, [] Decision{decision}, []DispatchEvent{dispatchEvent})
+	return CreateLogEvent(config, userId, attributes, [] Decision{decision}, []DispatchEvent{dispatchEvent})
 }
 
 
-func CreateBatchEvent(config config.ProjectConfig,
+func CreateLogEvent(config config.ProjectConfig,
 	userId string,
 	attributes map[string]interface{},
 	decisions []Decision,

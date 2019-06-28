@@ -16,10 +16,10 @@ func (TestConfig)GetFeatureByKey(string) (entities.Feature, error) {
 }
 
 func (TestConfig)GetProjectID() string {
-	return "11102097459"
+	return "15389410617"
 }
 func (TestConfig)GetRevision()  string {
-	return "175"
+	return "7"
 }
 func (TestConfig)GetAccountID() string {
 	return "8362480420"
@@ -47,12 +47,12 @@ func TestCreateImpressionEvent(t *testing.T) {
 
 	experiment := entities.Experiment{}
 	experiment.Key = "background_experiment"
-	experiment.LayerID = "11150133482"
-	experiment.ID = "11178792174"
+	experiment.LayerID = "15399420423"
+	experiment.ID = "15402980349"
 
 	variation := entities.Variation{}
 	variation.Key = "variation_a"
-	variation.ID = "11146534908"
+	variation.ID = "15410990633"
 
 	logEvent := CreateImpressionEvent(config, experiment, variation, RandomString(10), make(map[string]interface{}))
 
