@@ -43,7 +43,7 @@ func TestDefaultEventProcessor_ProcessImpressions(t *testing.T) {
 	if ok {
 		assert.Equal(t, 2, result.EventsCount())
 
-		time.Sleep(1000 * time.Millisecond)
+		time.Sleep(2000 * time.Millisecond)
 
 		assert.NotNil(t, result.Ticker)
 
