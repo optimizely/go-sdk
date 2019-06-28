@@ -3,7 +3,7 @@ package event
 import (
 	guuid "github.com/google/uuid"
 	"github.com/optimizely/go-sdk/optimizely/config"
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	"github.com/optimizely/go-sdk/optimizely/entities"
 	"strings"
 	"time"
 )

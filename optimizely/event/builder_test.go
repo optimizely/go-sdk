@@ -1,8 +1,7 @@
 package event
 
 import (
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
-	feature "github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"testing"
@@ -12,8 +11,8 @@ import (
 type TestConfig struct {
 }
 
-func (TestConfig)GetFeatureByKey(string) (feature.Feature, error) {
-	return feature.Feature{}, nil
+func (TestConfig)GetFeatureByKey(string) (entities.Feature, error) {
+	return entities.Feature{}, nil
 }
 
 func (TestConfig)GetProjectID() string {
