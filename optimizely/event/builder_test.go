@@ -1,0 +1,73 @@
+package event
+
+import (
+	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	feature "github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/stretchr/testify/assert"
+	"math/rand"
+	"testing"
+	"time"
+)
+
+type TestConfig struct {
+}
+
+func (TestConfig)GetFeatureByKey(string) (feature.Feature, error) {
+	return feature.Feature{}, nil
+}
+
+func (TestConfig)GetProjectID() string {
+	return "11102097459"
+}
+func (TestConfig)GetRevision()  string {
+	return "175"
+}
+func (TestConfig)GetAccountID() string {
+	return "8362480420"
+}
+func (TestConfig)GetAnonymizeIP() bool {
+	return true
+}
+func (TestConfig)GetAttributeID(key string) string { // returns "" if there is no id
+	return ""
+}
+func (TestConfig)GetBotFiltering() bool {
+	return false
+}
+
+func RandomString(len int) string {
+	bytes := make([]byte, len)
+	for i := 0; i < len; i++ {
+		bytes[i] = byte(65 + rand.Intn(25))  //A=65 and Z = 65+25
+	}
+	return string(bytes)
+}
+
+func TestCreateImpressionEvent(t *testing.T) {
+	config := TestConfig{}
+
+	experiment := entities.Experiment{}
+	experiment.Key = "background_experiment"
+	experiment.LayerID = "11150133482"
+	experiment.ID = "11178792174"
+
+	variation := entities.Variation{}
+	variation.Key = "variation_a"
+	variation.ID = "11146534908"
+
+	logEvent := CreateImpressionEvent(config, experiment, variation, RandomString(10), make(map[string]interface{}))
+
+	processor := NewEventProcessor(100, 100)
+
+	processor.ProcessImpression(logEvent)
+
+	result, ok := processor.(*DefaultEventProcessor)
+
+	if ok {
+		assert.Equal(t, 1, result.EventsCount())
+
+		time.Sleep(2000 * time.Millisecond)
+
+		assert.Equal(t, 0, result.EventsCount())
+	}
+}
