@@ -31,6 +31,12 @@ func NewEventProcessor(queueSize int, flushInterval time.Duration ) Processor {
 // ProcessImpression processes the given impression event
 func (p *DefaultEventProcessor) ProcessImpression(event Impression) {
 	p.Q.Add(event)
+
+	if p.Q.Size() >= p.MaxQueueSize {
+		go func() {
+			p.FlushEvents()
+		}()
+	}
 }
 
 func (p *DefaultEventProcessor) EventsCount() int {
@@ -59,6 +65,9 @@ func (p *DefaultEventProcessor) StartTicker() {
 
 // ProcessImpression processes the given impression event
 func (p *DefaultEventProcessor) FlushEvents() {
+	// we flush when queue size is reached.
+	// however, if there is a ticker cycle already processing, we should wait
+	p.Mux.Lock()
 	for p.EventsCount() > 0 {
 		events := p.GetEvents(1)
 		if len(events) > 0 {
@@ -70,5 +79,5 @@ func (p *DefaultEventProcessor) FlushEvents() {
 			})
 		}
  	}
-
+	p.Mux.Unlock()
 }
