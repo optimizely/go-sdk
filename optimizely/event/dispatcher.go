@@ -15,7 +15,7 @@ type HttpEventDispatcher struct {
 }
 
 func (*HttpEventDispatcher) DispatchEvent(event interface{}, callback func(success bool)) {
-	impression, ok := event.(Impression)
+	impression, ok := event.(LogEvent)
 	if ok {
 		jsonValue, _ := json.Marshal(impression)
 		resp, err := http.Post("https://logx.optimizely.com/v1/events", "application/json", bytes.NewBuffer(jsonValue))

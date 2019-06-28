@@ -1,34 +1,47 @@
 package event
 
-import (
-	"time"
-
-	"github.com/optimizely/go-sdk/optimizely/entities"
-)
-
 // Context about the event
-type Context struct {
-	AccountID     string `json:"account_id"`
-	ProjectID     string `json:"project_id"`
-	ClientName    string `json:"client_name"`
-	ClientVersion string `json:"client_version"`
-	Revision      string `json:"revision"`
-	AnonymizeIP   bool   `json:"anonymize_ip"`
-	BotFiltering  bool   `json:"bot_filtering"`
+type LogEvent struct {
+	Revision        string  `json:"revision"`
+	AccountID       string  `json:"account_id"`
+	ClientVersion   string  `json:"client_version"`
+	Visitors        []Visitor `json:"visitors"`
+	ProjectID       string  `json:"project_id"`
+	ClientName      string  `json:"client_name"`
+	AnonymizeIP     bool    `json:"anonymize_ip"`
+	EnrichDecisions bool    `json:"enrich_decisions"`
 }
 
-// Event is the base event type
-type Event struct {
-	UUID      string 	`json:"uuid"`
-	Timestamp time.Time `json:"time_stamp"`
-	Context   Context
+type Visitor struct {
+	Attributes []EventAttribute `json:"attributes"`
+	Snapshots  []Snapshot       `json:"snapshots"`
+	VisitorID  string           `json:"visitor_id"`
 }
 
-// Impression event
-type Impression struct {
-	Event
-	User         entities.UserContext
-	LayerID      string
-	ExperimentID string
-	VariationID  string
+type EventAttribute struct {
+	Value         interface{} `json:"value"`
+	Key           string	`json:"key"`
+	AttributeType string	`json:"attributeType"`
+	EntityID      string	`json:"entity_id"`
+}
+
+type Snapshot struct {
+	Decisions []Decision `json:"decisions"`
+ 	Events []DispatchEvent `json:"events"`
+}
+
+type Decision struct {
+	VariationID  string `json:"variation_id"`
+	CampaignID   string `json:"campaign_id"`
+	ExperimentID string `json:"experiment_id"`
+}
+
+type DispatchEvent struct {
+	EntityID  string `json:"event_id"`
+	Key       string `json:"key"`
+	Timestamp int64 `json:"timestamp"`
+	Uuid      string `json:"uuid"`
+	Tags      map[string]interface{} `json:"tags"`
+	Revenue   int `json:"revenue"`
+	Value     float32 `json:"value"`
 }

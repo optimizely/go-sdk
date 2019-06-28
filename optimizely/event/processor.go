@@ -8,7 +8,7 @@ import (
 
 // Processor processes events
 type Processor interface {
-	ProcessImpression(event Impression)
+	ProcessImpression(event LogEvent)
 }
 
 // DefaultEventProcessor is used out of the box by the SDK
@@ -29,7 +29,7 @@ func NewEventProcessor(queueSize int, flushInterval time.Duration ) Processor {
 }
 
 // ProcessImpression processes the given impression event
-func (p *DefaultEventProcessor) ProcessImpression(event Impression) {
+func (p *DefaultEventProcessor) ProcessImpression(event LogEvent) {
 	p.Q.Add(event)
 
 	if p.Q.Size() >= p.MaxQueueSize {
