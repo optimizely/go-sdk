@@ -16,7 +16,7 @@ type DefaultEventProcessor struct {
 	MaxQueueSize    int           // max size of the queue before flush
 	FlushInterval   time.Duration // in milliseconds
 	BatchSize       int
-	Q      			Queue
+	Q               Queue
 	Mux             sync.Mutex
 	Ticker          *time.Ticker
 	EventDispatcher Dispatcher
