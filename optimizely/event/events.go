@@ -41,7 +41,7 @@ type DispatchEvent struct {
 	Key       string `json:"key"`
 	Timestamp int64 `json:"timestamp"`
 	Uuid      string `json:"uuid"`
-	Tags      map[string]interface{} `json:"tags"`
-//	Revenue   int `json:"revenue"`
-//	Value     float32 `json:"value"`
+	Tags      map[string]interface{} `json:"tags,omitempty"`
+	Revenue   int `json:"revenue,omitempty"`
+	Value     float32 `json:"value,omitempty"`
 }

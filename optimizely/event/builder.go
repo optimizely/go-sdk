@@ -39,9 +39,9 @@ func CreateLogEvent(config config.ProjectConfig,
 	decisions []Decision,
 	dispatchEvents []DispatchEvent) LogEvent {
 
-		snapShot := Snapshot{}
-		snapShot.Decisions = decisions
-		snapShot.Events = dispatchEvents
+	snapShot := Snapshot{}
+	snapShot.Decisions = decisions
+	snapShot.Events = dispatchEvents
 
 	eventAttributes := GetEventAttributes(config, attributes)
 
@@ -68,22 +68,21 @@ func CreateLogEvent(config config.ProjectConfig,
 func GetEventAttributes(config config.ProjectConfig, attributes map[string]interface{}) []EventAttribute {
 	var eventAttributes = []EventAttribute{}
 
-	if attributes != nil {
-		for key, value := range attributes {
-			if value != nil {
-				attribute := EventAttribute{}
-				st := config.GetAttributeID(key)
-				if st != "" {
-					attribute.EntityID = st
-				} else if strings.HasPrefix(key, "$opt_") {
-					attribute.EntityID = key
-				}
-				attribute.Value = value
-				attribute.AttributeType = "custom"
-
-				eventAttributes = append(eventAttributes, attribute)
-			}
+	for key, value := range attributes {
+		if value == nil {
+			continue
 		}
+		attribute := EventAttribute{}
+		st := config.GetAttributeID(key)
+		if st != "" {
+			attribute.EntityID = st
+		} else if strings.HasPrefix(key, "$opt_") {
+			attribute.EntityID = key
+		}
+		attribute.Value = value
+		attribute.AttributeType = "custom"
+
+		eventAttributes = append(eventAttributes, attribute)
 	}
 
 	attribute := EventAttribute{}
