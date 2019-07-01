@@ -21,7 +21,7 @@ type Visitor struct {
 type EventAttribute struct {
 	Value         interface{} `json:"value"`
 	Key           string	`json:"key"`
-	AttributeType string	`json:"attributeType"`
+	AttributeType string	`json:"type"`
 	EntityID      string	`json:"entity_id"`
 }
 
@@ -37,11 +37,11 @@ type Decision struct {
 }
 
 type DispatchEvent struct {
-	EntityID  string `json:"event_id"`
+	EventID  string `json:"event_id"`
 	Key       string `json:"key"`
 	Timestamp int64 `json:"timestamp"`
 	Uuid      string `json:"uuid"`
 	Tags      map[string]interface{} `json:"tags"`
-	Revenue   int `json:"revenue"`
-	Value     float32 `json:"value"`
+//	Revenue   int `json:"revenue"`
+//	Value     float32 `json:"value"`
 }

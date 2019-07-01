@@ -25,8 +25,9 @@ func CreateImpressionEvent(config config.ProjectConfig, experiment entities.Expe
 	dispatchEvent := DispatchEvent{}
 	dispatchEvent.Timestamp = MakeTimestamp()
 	dispatchEvent.Key = "campaign_activated"
-	dispatchEvent.EntityID = experiment.LayerID
+	dispatchEvent.EventID = experiment.LayerID
 	dispatchEvent.Uuid = guuid.New().String()
+	dispatchEvent.Tags = make(map[string]interface{})
 
 	return CreateLogEvent(config, userId, attributes, [] Decision{decision}, []DispatchEvent{dispatchEvent})
 }
@@ -84,14 +85,13 @@ func GetEventAttributes(config config.ProjectConfig, attributes map[string]inter
 			}
 		}
 	}
-	if config.GetBotFiltering() {
-		attribute := EventAttribute{}
-		attribute.Value = true
-		attribute.AttributeType = "custom"
-		attribute.Key = "$opt_bot_filtering"
-		attribute.EntityID = "$opt_bot_filtering"
-		eventAttributes = append(eventAttributes, attribute)
-	}
+
+	attribute := EventAttribute{}
+	attribute.Value = config.GetBotFiltering()
+	attribute.AttributeType = "custom"
+	attribute.Key = "$opt_bot_filtering"
+	attribute.EntityID = "$opt_bot_filtering"
+	eventAttributes = append(eventAttributes, attribute)
 
 	return eventAttributes
 }

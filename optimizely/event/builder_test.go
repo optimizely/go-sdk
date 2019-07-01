@@ -36,6 +36,7 @@ func (TestConfig)GetBotFiltering() bool {
 
 func RandomString(len int) string {
 	bytes := make([]byte, len)
+	rand.Seed(time.Now().UnixNano())
 	for i := 0; i < len; i++ {
 		bytes[i] = byte(65 + rand.Intn(25))  //A=65 and Z = 65+25
 	}
