@@ -10,7 +10,7 @@ import (
 func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 	processor := NewEventProcessor(100, 100)
 
-	impression := LogEvent{}
+	impression := BuildTestImpressionEvent()
 
 	processor.ProcessImpression(impression)
 
@@ -33,7 +33,7 @@ func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 func TestDefaultEventProcessor_ProcessImpressions(t *testing.T) {
 	processor := NewEventProcessor(100, 100)
 
-	impression := LogEvent{}
+	impression := BuildTestImpressionEvent()
 
 	processor.ProcessImpression(impression)
 	processor.ProcessImpression(impression)

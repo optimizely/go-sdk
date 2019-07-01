@@ -23,12 +23,20 @@ func (*HttpEventDispatcher) DispatchEvent(event interface{}, callback func(succe
 		fmt.Println(string(jsonValue))
 		// also check response codes
 		// resp.StatusCode == 400 is an error
+		success := true
+
 		if err != nil {
 			fmt.Println(err)
-			callback(false)
+			success = false
 		} else {
-			callback(true)
+			if resp.StatusCode == 204 {
+				success = true
+			} else {
+				fmt.Printf("invalid response %d", resp.StatusCode)
+				success = false
+			}
 		}
+		callback(success)
 	}
 }
 

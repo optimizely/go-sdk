@@ -43,7 +43,7 @@ func RandomString(len int) string {
 	return string(bytes)
 }
 
-func TestCreateImpressionEvent(t *testing.T) {
+func BuildTestImpressionEvent() LogEvent {
 	config := TestConfig{}
 
 	experiment := entities.Experiment{}
@@ -56,6 +56,13 @@ func TestCreateImpressionEvent(t *testing.T) {
 	variation.ID = "15410990633"
 
 	logEvent := CreateImpressionEvent(config, experiment, variation, RandomString(10), make(map[string]interface{}))
+
+	return logEvent
+}
+
+func TestCreateImpressionEvent(t *testing.T) {
+
+	logEvent := BuildTestImpressionEvent()
 
 	processor := NewEventProcessor(100, 100)
 

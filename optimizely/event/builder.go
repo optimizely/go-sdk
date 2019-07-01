@@ -8,6 +8,13 @@ import (
 	"time"
 )
 
+const impressionKey string = "campaign_activated"
+const clientKey string = "go-sdk"
+const clientVersion string = "1.0.0"
+const attributeType = "custom"
+const specialPrefix = "$opt_"
+const botFiltering = "$opt_bot_filtering"
+
 func MakeTimestamp() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
@@ -24,7 +31,7 @@ func CreateImpressionEvent(config config.ProjectConfig, experiment entities.Expe
 
 	dispatchEvent := DispatchEvent{}
 	dispatchEvent.Timestamp = MakeTimestamp()
-	dispatchEvent.Key = "campaign_activated"
+	dispatchEvent.Key = impressionKey
 	dispatchEvent.EntityID = experiment.LayerID
 	dispatchEvent.Uuid = guuid.New().String()
 	dispatchEvent.Tags = make(map[string]interface{})
@@ -57,8 +64,8 @@ func CreateLogEvent(config config.ProjectConfig,
 	logEvent.Revision = config.GetRevision()
 	logEvent.AccountID = config.GetAccountID()
 	logEvent.Visitors = []Visitor{visitor}
-	logEvent.ClientName = "go-sdk"
-	logEvent.ClientVersion = "1.0.0"
+	logEvent.ClientName = clientKey
+	logEvent.ClientVersion = clientVersion
 	logEvent.AnonymizeIP = config.GetAnonymizeIP()
 	logEvent.EnrichDecisions = true
 
@@ -76,20 +83,20 @@ func GetEventAttributes(config config.ProjectConfig, attributes map[string]inter
 		st := config.GetAttributeID(key)
 		if st != "" {
 			attribute.EntityID = st
-		} else if strings.HasPrefix(key, "$opt_") {
+		} else if strings.HasPrefix(key, specialPrefix) {
 			attribute.EntityID = key
 		}
 		attribute.Value = value
-		attribute.AttributeType = "custom"
+		attribute.AttributeType = attributeType
 
 		eventAttributes = append(eventAttributes, attribute)
 	}
 
 	attribute := EventAttribute{}
 	attribute.Value = config.GetBotFiltering()
-	attribute.AttributeType = "custom"
-	attribute.Key = "$opt_bot_filtering"
-	attribute.EntityID = "$opt_bot_filtering"
+	attribute.AttributeType = attributeType
+	attribute.Key = botFiltering
+	attribute.EntityID = botFiltering
 	eventAttributes = append(eventAttributes, attribute)
 
 	return eventAttributes
