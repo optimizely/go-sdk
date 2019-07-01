@@ -33,30 +33,37 @@ type DatafileProjectConfig struct {
 	experimentMap        map[string]entities.Experiment
 	experimentKeyToIDMap map[string]string
 	featureMap           map[string]entities.Feature
+	attributeKeyToIDMap  map[string]string
+	projectID			 string
+	revision			 string
+	accountID			 string
+	anonymizeIP			 bool
+	botFiltering		 bool
+
 }
 
 func (config DatafileProjectConfig) GetProjectID() string {
-	panic("implement me")
+	return config.projectID
 }
 
 func (config DatafileProjectConfig) GetRevision() string {
-	panic("implement me")
+	return config.revision
 }
 
 func (config DatafileProjectConfig) GetAccountID() string {
-	panic("implement me")
+	return config.accountID
 }
 
 func (config DatafileProjectConfig) GetAnonymizeIP() bool {
-	panic("implement me")
+	return config.anonymizeIP
 }
 
 func (config DatafileProjectConfig) GetAttributeID(key string) string {
-	panic("implement me")
+	return config.attributeKeyToIDMap[key]
 }
 
 func (config DatafileProjectConfig) GetBotFiltering() bool {
-	panic("implement me")
+	return config.botFiltering
 }
 
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser
