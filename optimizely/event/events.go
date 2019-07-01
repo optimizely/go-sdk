@@ -37,7 +37,7 @@ type Decision struct {
 }
 
 type DispatchEvent struct {
-	EventID  string `json:"event_id"`
+	EntityID  string `json:"entity_id"`
 	Key       string `json:"key"`
 	Timestamp int64 `json:"timestamp"`
 	Uuid      string `json:"uuid"`

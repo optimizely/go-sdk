@@ -25,7 +25,7 @@ func CreateImpressionEvent(config config.ProjectConfig, experiment entities.Expe
 	dispatchEvent := DispatchEvent{}
 	dispatchEvent.Timestamp = MakeTimestamp()
 	dispatchEvent.Key = "campaign_activated"
-	dispatchEvent.EventID = experiment.LayerID
+	dispatchEvent.EntityID = experiment.LayerID
 	dispatchEvent.Uuid = guuid.New().String()
 	dispatchEvent.Tags = make(map[string]interface{})
 
