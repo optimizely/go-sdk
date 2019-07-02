@@ -29,7 +29,7 @@ type CompositeFeatureService struct {
 // NewCompositeFeatureService returns a new instance of the CompositeFeatureService
 func NewCompositeFeatureService(experimentDecisionService ExperimentDecisionService) *CompositeFeatureService {
 	if experimentDecisionService == nil {
-		experimentDecisionService = NewExperimentBucketerService()
+		experimentDecisionService = NewCompositeExperimentService()
 	}
 	return &CompositeFeatureService{
 		experimentDecisionService: experimentDecisionService,
@@ -37,7 +37,7 @@ func NewCompositeFeatureService(experimentDecisionService ExperimentDecisionServ
 }
 
 // GetDecision returns a decision for the given feature and user context
-func (featureService *CompositeFeatureService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
+func (featureService CompositeFeatureService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
 	featureEnabled := false
 	feature := decisionContext.Feature
 

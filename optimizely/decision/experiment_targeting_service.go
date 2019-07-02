@@ -34,7 +34,7 @@ func NewExperimentTargetingService() *ExperimentTargetingService {
 }
 
 // GetDecision applies audience targeting from the given experiment to the given user. The only decision it makes is whether to exclude the user from the experiment.
-func (s *ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
+func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
 	experimentDecision := ExperimentDecision{}
 	experiment := decisionContext.Experiment
 	if len(experiment.AudienceIds) > 0 {
