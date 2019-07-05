@@ -1,7 +1,44 @@
 package event
 
+type EventContext struct {
+	Revision        string  `json:"revision"`
+	AccountID       string  `json:"account_id"`
+	ClientVersion   string  `json:"client_version"`
+	ProjectID       string  `json:"project_id"`
+	ClientName      string  `json:"client_name"`
+	AnonymizeIP     bool    `json:"anonymize_ip"`
+}
+
+type UserEvent struct {
+	Timestamp int64 `json:"timestamp"`
+	Uuid      string `json:"uuid"`
+	EventContext EventContext
+	VisitorID string
+	Impression *ImpressionEvent
+	Conversion *ConversionEvent
+}
+
+type ImpressionEvent struct {
+	EntityID  string `json:"entity_id"`
+	Key       string `json:"key"`
+	Attributes 	 []EventAttribute
+	VariationID  string `json:"variation_id"`
+	CampaignID   string `json:"campaign_id"`
+	ExperimentID string `json:"experiment_id"`
+}
+
+type ConversionEvent struct {
+	EntityID  string `json:"entity_id"`
+	Key       string `json:"key"`
+	Attributes 	 []EventAttribute
+	Tags      map[string]interface{} `json:"tags,omitempty"`
+	Revenue   int `json:"revenue,omitempty"`
+	Value     float32 `json:"value,omitempty"`
+}
+
+
 // Context about the event
-type LogEvent struct {
+type EventBatch struct {
 	Revision        string  `json:"revision"`
 	AccountID       string  `json:"account_id"`
 	ClientVersion   string  `json:"client_version"`

@@ -29,6 +29,7 @@ type ProjectConfig interface {
 	GetAnonymizeIP() bool
 	GetAttributeID(key string) string // returns "" if there is no id
 	GetBotFiltering() bool
+	GetEventByKey(string) (entities.Event, error)
 }
 
 // ProjectConfigManager manages the config

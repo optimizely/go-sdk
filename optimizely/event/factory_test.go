@@ -11,6 +11,10 @@ import (
 type TestConfig struct {
 }
 
+func (TestConfig) GetEventByKey(string) (entities.Event, error) {
+	return entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, nil
+}
+
 func (TestConfig)GetFeatureByKey(string) (entities.Feature, error) {
 	return entities.Feature{}, nil
 }
@@ -43,7 +47,9 @@ func RandomString(len int) string {
 	return string(bytes)
 }
 
-func BuildTestImpressionEvent() LogEvent {
+var userId = RandomString(10)
+
+func BuildTestImpressionEvent() EventBatch {
 	config := TestConfig{}
 
 	experiment := entities.Experiment{}
@@ -55,7 +61,15 @@ func BuildTestImpressionEvent() LogEvent {
 	variation.Key = "variation_a"
 	variation.ID = "15410990633"
 
-	logEvent := CreateImpressionEvent(config, experiment, variation, RandomString(10), make(map[string]interface{}))
+	logEvent := CreateImpressionEvent(config, experiment, variation, userId, make(map[string]interface{}))
+
+	return logEvent
+}
+
+func BuildTestConversionEvent() EventBatch {
+	config := TestConfig{}
+
+	logEvent,_ := CreateConversionEvent(config, "sample_conversion", userId, make(map[string]interface{}),make(map[string]interface{}))
 
 	return logEvent
 }
@@ -63,6 +77,25 @@ func BuildTestImpressionEvent() LogEvent {
 func TestCreateImpressionEvent(t *testing.T) {
 
 	logEvent := BuildTestImpressionEvent()
+
+	processor := NewEventProcessor(100, 100)
+
+	processor.ProcessImpression(logEvent)
+
+	result, ok := processor.(*DefaultEventProcessor)
+
+	if ok {
+		assert.Equal(t, 1, result.EventsCount())
+
+		time.Sleep(2000 * time.Millisecond)
+
+		assert.Equal(t, 0, result.EventsCount())
+	}
+}
+
+func TestCreateConversionEvent(t *testing.T) {
+
+	logEvent := BuildTestConversionEvent()
 
 	processor := NewEventProcessor(100, 100)
 

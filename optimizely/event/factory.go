@@ -22,7 +22,7 @@ func MakeTimestamp() int64 {
 func CreateImpressionEvent(config config.ProjectConfig, experiment entities.Experiment,
 	variation entities.Variation,
 	userId string,
-	attributes map[string]interface{}) LogEvent {
+	attributes map[string]interface{}) EventBatch {
 
 	decision := Decision{}
 	decision.CampaignID = experiment.LayerID
@@ -36,15 +36,33 @@ func CreateImpressionEvent(config config.ProjectConfig, experiment entities.Expe
 	dispatchEvent.Uuid = guuid.New().String()
 	dispatchEvent.Tags = make(map[string]interface{})
 
-	return CreateLogEvent(config, userId, attributes, [] Decision{decision}, []DispatchEvent{dispatchEvent})
+	return CreateBatchEvent(config, userId, attributes, [] Decision{decision}, []DispatchEvent{dispatchEvent})
 }
 
+func CreateConversionEvent(config config.ProjectConfig, eventKey string, userId string, attributes map[string]interface{}, eventTags map[string]interface{}) (EventBatch, error) {
 
-func CreateLogEvent(config config.ProjectConfig,
+
+	event, err := config.GetEventByKey(eventKey)
+
+	if err != nil {
+		return EventBatch{}, err
+	}
+	dispatchEvent := DispatchEvent{}
+	dispatchEvent.Timestamp = MakeTimestamp()
+	dispatchEvent.Key = event.Key
+	dispatchEvent.EntityID = event.ID
+	dispatchEvent.Uuid = guuid.New().String()
+	dispatchEvent.Tags = eventTags
+
+	return CreateBatchEvent(config, userId, attributes, [] Decision{}, []DispatchEvent{dispatchEvent}), nil
+
+}
+
+func CreateBatchEvent(config config.ProjectConfig,
 	userId string,
 	attributes map[string]interface{},
 	decisions []Decision,
-	dispatchEvents []DispatchEvent) LogEvent {
+	dispatchEvents []DispatchEvent) EventBatch {
 
 	snapShot := Snapshot{}
 	snapShot.Decisions = decisions
@@ -59,17 +77,17 @@ func CreateLogEvent(config config.ProjectConfig,
 	visitor.VisitorID = userId
 
 
-	logEvent := LogEvent{}
-	logEvent.ProjectID = config.GetProjectID()
-	logEvent.Revision = config.GetRevision()
-	logEvent.AccountID = config.GetAccountID()
-	logEvent.Visitors = []Visitor{visitor}
-	logEvent.ClientName = clientKey
-	logEvent.ClientVersion = clientVersion
-	logEvent.AnonymizeIP = config.GetAnonymizeIP()
-	logEvent.EnrichDecisions = true
+	eventBatch := EventBatch{}
+	eventBatch.ProjectID = config.GetProjectID()
+	eventBatch.Revision = config.GetRevision()
+	eventBatch.AccountID = config.GetAccountID()
+	eventBatch.Visitors = []Visitor{visitor}
+	eventBatch.ClientName = clientKey
+	eventBatch.ClientVersion = clientVersion
+	eventBatch.AnonymizeIP = config.GetAnonymizeIP()
+	eventBatch.EnrichDecisions = true
 
-	return logEvent
+	return eventBatch
 }
 
 func GetEventAttributes(config config.ProjectConfig, attributes map[string]interface{}) []EventAttribute {
@@ -80,11 +98,13 @@ func GetEventAttributes(config config.ProjectConfig, attributes map[string]inter
 			continue
 		}
 		attribute := EventAttribute{}
-		st := config.GetAttributeID(key)
-		if st != "" {
-			attribute.EntityID = st
+		id := config.GetAttributeID(key)
+		if id != "" {
+			attribute.EntityID = id
 		} else if strings.HasPrefix(key, specialPrefix) {
 			attribute.EntityID = key
+		} else {
+			continue
 		}
 		attribute.Value = value
 		attribute.AttributeType = attributeType

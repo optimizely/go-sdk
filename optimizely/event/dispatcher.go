@@ -15,7 +15,9 @@ type HttpEventDispatcher struct {
 }
 
 func (*HttpEventDispatcher) DispatchEvent(event interface{}, callback func(success bool)) {
-	impression, ok := event.(LogEvent)
+	impression, ok := event.(EventBatch)
+	// add to current batch or create new batch
+	// does a batch have to contain a decision or can it just be impressions?
 	if ok {
 		jsonValue, _ := json.Marshal(impression)
 		resp, err := http.Post("https://logx.optimizely.com/v1/events", "application/json", bytes.NewBuffer(jsonValue))
