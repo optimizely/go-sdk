@@ -74,16 +74,16 @@ func (p *DefaultEventProcessor) FlushEvents() {
 			userEvent, ok := events[0].(UserEvent)
 			if ok {
 				if userEvent.Conversion != nil {
-					eventBatch := CreateConversionBatchEvent(userEvent)
-					p.EventDispatcher.DispatchEvent(eventBatch, func(success bool) {
+					eventBatch := createConversionBatchEvent(userEvent)
+					p.EventDispatcher.DispatchEvent(createLogEvent(eventBatch), func(success bool) {
 						fmt.Println(success)
 						if success {
 							p.Remove(1)
 						}
 					})
 				} else if userEvent.Impression != nil {
-					eventBatch := CreateImpressionBatchEvent(userEvent)
-					p.EventDispatcher.DispatchEvent(eventBatch, func(success bool) {
+					eventBatch := createImpressionBatchEvent(userEvent)
+					p.EventDispatcher.DispatchEvent(createLogEvent(eventBatch), func(success bool) {
 						fmt.Println(success)
 						if success {
 							p.Remove(1)

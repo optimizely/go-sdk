@@ -38,7 +38,10 @@ type ConversionEvent struct {
 	Value     float32 `json:"value,omitempty"`
 }
 
-
+type LogEvent struct {
+	endPoint string
+	event    EventBatch
+}
 // Context about the event
 type EventBatch struct {
 	Revision        string  `json:"revision"`

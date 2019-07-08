@@ -17,7 +17,7 @@ func main() {
 
 	processor := event.NewEventProcessor(100, 100)
 
-	impression := event.EventBatch{}
+	impression := event.UserEvent{}
 
 	processor.ProcessImpression(impression)
 
