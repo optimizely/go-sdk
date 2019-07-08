@@ -126,7 +126,7 @@ func CreateConversionBatchEvent(userEvent UserEvent) EventBatch {
 	return CreateBatchEvent(userEvent, userEvent.Conversion.Attributes, [] Decision{}, []DispatchEvent{dispatchEvent})
 }
 
-func CreateBatchEvent(userEvent UserEvent, attributes []EventAttribute,
+func CreateBatchEvent(userEvent UserEvent, attributes []VisitorAttribute,
 	decisions []Decision,
 	dispatchEvents []DispatchEvent) EventBatch {
 
@@ -155,14 +155,14 @@ func CreateBatchEvent(userEvent UserEvent, attributes []EventAttribute,
 	return eventBatch
 }
 
-func GetEventAttributes(config config.ProjectConfig, attributes map[string]interface{}) []EventAttribute {
-	var eventAttributes = []EventAttribute{}
+func GetEventAttributes(config config.ProjectConfig, attributes map[string]interface{}) []VisitorAttribute {
+	var eventAttributes = []VisitorAttribute{}
 
 	for key, value := range attributes {
 		if value == nil {
 			continue
 		}
-		attribute := EventAttribute{}
+		attribute := VisitorAttribute{}
 		id := config.GetAttributeID(key)
 		if id != "" {
 			attribute.EntityID = id
@@ -177,7 +177,7 @@ func GetEventAttributes(config config.ProjectConfig, attributes map[string]inter
 		eventAttributes = append(eventAttributes, attribute)
 	}
 
-	attribute := EventAttribute{}
+	attribute := VisitorAttribute{}
 	attribute.Value = config.GetBotFiltering()
 	attribute.AttributeType = attributeType
 	attribute.Key = botFiltering

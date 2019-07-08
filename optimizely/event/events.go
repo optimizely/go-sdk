@@ -21,7 +21,7 @@ type UserEvent struct {
 type ImpressionEvent struct {
 	EntityID  string `json:"entity_id"`
 	Key       string `json:"key"`
-	Attributes 	 []EventAttribute
+	Attributes 	 []VisitorAttribute
 	VariationID  string `json:"variation_id"`
 	CampaignID   string `json:"campaign_id"`
 	ExperimentID string `json:"experiment_id"`
@@ -30,7 +30,7 @@ type ImpressionEvent struct {
 type ConversionEvent struct {
 	EntityID  string `json:"entity_id"`
 	Key       string `json:"key"`
-	Attributes 	 []EventAttribute
+	Attributes 	 []VisitorAttribute
 	Tags      map[string]interface{} `json:"tags,omitempty"`
 	Revenue   int `json:"revenue,omitempty"`
 	Value     float32 `json:"value,omitempty"`
@@ -50,12 +50,12 @@ type EventBatch struct {
 }
 
 type Visitor struct {
-	Attributes []EventAttribute `json:"attributes"`
-	Snapshots  []Snapshot       `json:"snapshots"`
-	VisitorID  string           `json:"visitor_id"`
+	Attributes []VisitorAttribute `json:"attributes"`
+	Snapshots  []Snapshot         `json:"snapshots"`
+	VisitorID  string             `json:"visitor_id"`
 }
 
-type EventAttribute struct {
+type VisitorAttribute struct {
 	Value         interface{} `json:"value"`
 	Key           string	`json:"key"`
 	AttributeType string	`json:"type"`
