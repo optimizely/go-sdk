@@ -8,7 +8,7 @@ import (
 
 // Processor processes events
 type Processor interface {
-	ProcessImpression(event EventBatch)
+	ProcessImpression(event UserEvent)
 }
 
 // DefaultEventProcessor is used out of the box by the SDK
@@ -29,7 +29,7 @@ func NewEventProcessor(queueSize int, flushInterval time.Duration ) Processor {
 }
 
 // ProcessImpression processes the given impression event
-func (p *DefaultEventProcessor) ProcessImpression(event EventBatch) {
+func (p *DefaultEventProcessor) ProcessImpression(event UserEvent) {
 	p.Q.Add(event)
 
 	if p.Q.Size() >= p.MaxQueueSize {
@@ -71,12 +71,26 @@ func (p *DefaultEventProcessor) FlushEvents() {
 	for p.EventsCount() > 0 {
 		events := p.GetEvents(1)
 		if len(events) > 0 {
-			p.EventDispatcher.DispatchEvent(events[0], func(success bool) {
-				fmt.Println(success)
-				if success {
-					p.Remove(1)
+			userEvent, ok := events[0].(UserEvent)
+			if ok {
+				if userEvent.Conversion != nil {
+					eventBatch := CreateConversionBatchEvent(userEvent)
+					p.EventDispatcher.DispatchEvent(eventBatch, func(success bool) {
+						fmt.Println(success)
+						if success {
+							p.Remove(1)
+						}
+					})
+				} else if userEvent.Impression != nil {
+					eventBatch := CreateImpressionBatchEvent(userEvent)
+					p.EventDispatcher.DispatchEvent(eventBatch, func(success bool) {
+						fmt.Println(success)
+						if success {
+							p.Remove(1)
+						}
+					})
 				}
-			})
+			}
 		}
  	}
 	p.Mux.Unlock()

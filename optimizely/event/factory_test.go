@@ -49,7 +49,7 @@ func RandomString(len int) string {
 
 var userId = RandomString(10)
 
-func BuildTestImpressionEvent() EventBatch {
+func BuildTestImpressionEvent() UserEvent {
 	config := TestConfig{}
 
 	experiment := entities.Experiment{}
@@ -61,15 +61,15 @@ func BuildTestImpressionEvent() EventBatch {
 	variation.Key = "variation_a"
 	variation.ID = "15410990633"
 
-	logEvent := CreateImpressionEvent(config, experiment, variation, userId, make(map[string]interface{}))
+	logEvent := CreateImpressionUserEvent(config, experiment, variation, userId, make(map[string]interface{}))
 
 	return logEvent
 }
 
-func BuildTestConversionEvent() EventBatch {
+func BuildTestConversionEvent() UserEvent {
 	config := TestConfig{}
 
-	logEvent,_ := CreateConversionEvent(config, "sample_conversion", userId, make(map[string]interface{}),make(map[string]interface{}))
+	logEvent := CreateConversionUserEvent(config, "sample_conversion", userId, make(map[string]interface{}),make(map[string]interface{}))
 
 	return logEvent
 }

@@ -34,6 +34,7 @@ type DatafileProjectConfig struct {
 	experimentKeyToIDMap map[string]string
 	featureMap           map[string]entities.Feature
 	attributeKeyToIDMap  map[string]string
+	eventMap             map[string]entities.Event
 	projectID			 string
 	revision			 string
 	accountID			 string
@@ -82,6 +83,16 @@ func NewDatafileProjectConfig(jsonDatafile []byte) *DatafileProjectConfig {
 
 	logger.Info("Datafile is valid.")
 	return config
+}
+
+// GetEventByKey returns the event with the given key
+func (config DatafileProjectConfig) GetEventByKey(eventKey string) (entities.Event, error) {
+	if event, ok := config.eventMap[eventKey]; ok {
+		return event, nil
+	}
+
+	errMessage := fmt.Sprintf("Event with key %s not found", eventKey)
+	return entities.Event{}, errors.New(errMessage)
 }
 
 // GetFeatureByKey returns the feature with the given key
