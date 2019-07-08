@@ -86,7 +86,7 @@ func createImpressionBatchEvent(userEvent UserEvent) EventBatch {
 
 }
 
-func CreateConversionEvent(attributeKeyToIdMap map[string]string, event entities.Event, attributes map[string]interface{}, eventTags map[string]interface{}, botFiltering bool) ConversionEvent {
+func createConversionEvent(attributeKeyToIdMap map[string]string, event entities.Event, attributes map[string]interface{}, eventTags map[string]interface{}, botFiltering bool) ConversionEvent {
 	conversion := ConversionEvent{}
 
 	conversion.Key = event.Key
@@ -105,7 +105,7 @@ func CreateConversionUserEvent(context EventContext, event entities.Event, userI
 	userEvent.Uuid = guuid.New().String()
 
 	userEvent.EventContext = context
-	conversion := CreateConversionEvent(attributeKeyToIdMap, event, attributes, eventTags, context.BotFiltering)
+	conversion := createConversionEvent(attributeKeyToIdMap, event, attributes, eventTags, context.BotFiltering)
 	userEvent.Conversion = &conversion
 
 	return userEvent
