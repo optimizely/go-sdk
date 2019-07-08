@@ -2,7 +2,6 @@ package event
 
 import (
 	guuid "github.com/google/uuid"
-	"github.com/optimizely/go-sdk/optimizely/config"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"strings"
 	"time"
@@ -13,31 +12,33 @@ const clientKey string = "go-sdk"
 const clientVersion string = "1.0.0"
 const attributeType = "custom"
 const specialPrefix = "$opt_"
-const botFiltering = "$opt_bot_filtering"
+const botFilteringKey = "$opt_bot_filtering"
 
 func MakeTimestamp() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
-func CreateEventContext(config config.ProjectConfig) EventContext {
+func CreateEventContext(projectID string, revision string, accountID string, anonymizeIP bool, botFiltering bool, attributeKeyToIdMap map[string]string) EventContext {
 	context := EventContext{}
-	context.ProjectID = config.GetProjectID()
-	context.Revision = config.GetRevision()
-	context.AccountID = config.GetAccountID()
+	context.ProjectID = projectID
+	context.Revision = revision
+	context.AccountID = accountID
 	context.ClientName = clientKey
 	context.ClientVersion = clientVersion
-	context.AnonymizeIP = config.GetAnonymizeIP()
+	context.AnonymizeIP = anonymizeIP
+	context.BotFiltering = botFiltering
+	context.AttributeKeyToIdMap = attributeKeyToIdMap
 
 	return context
 }
 
-func CreateImpressionEvent(config config.ProjectConfig, experiment entities.Experiment,
+func CreateImpressionEvent(context EventContext, experiment entities.Experiment,
 	variation entities.Variation, attributes map[string]interface{}) ImpressionEvent {
 
 	impression := ImpressionEvent{}
 	impression.Key = impressionKey
 	impression.EntityID = experiment.LayerID
-	impression.Attributes = GetEventAttributes(config, attributes)
+	impression.Attributes = GetEventAttributes(context.AttributeKeyToIdMap, attributes, context.BotFiltering)
 	impression.VariationID = variation.ID
 	impression.ExperimentID = experiment.ID
 	impression.CampaignID = experiment.LayerID
@@ -45,14 +46,12 @@ func CreateImpressionEvent(config config.ProjectConfig, experiment entities.Expe
 	return impression
 }
 
-func CreateImpressionUserEvent(config config.ProjectConfig, experiment entities.Experiment,
+func CreateImpressionUserEvent(context EventContext, experiment entities.Experiment,
 	variation entities.Variation,
 	userId string,
 	attributes map[string]interface{}) UserEvent {
 
-	impression := CreateImpressionEvent(config, experiment, variation, attributes)
-
-	context := CreateEventContext(config)
+	impression := CreateImpressionEvent(context, experiment, variation, attributes)
 
 	userEvent := UserEvent{}
 	userEvent.Timestamp = MakeTimestamp()
@@ -82,25 +81,18 @@ func CreateImpressionBatchEvent(userEvent UserEvent) EventBatch {
 
 }
 
-func CreateConversionEvent(config config.ProjectConfig, eventKey string, attributes map[string]interface{}, eventTags map[string]interface{}) ConversionEvent {
+func CreateConversionEvent(attributeKeyToIdMap map[string]string, event entities.Event, attributes map[string]interface{}, eventTags map[string]interface{}, botFiltering bool) ConversionEvent {
 	conversion := ConversionEvent{}
 
-	event, err := config.GetEventByKey(eventKey)
-
-	if err != nil {
-		return conversion
-	}
 	conversion.Key = event.Key
 	conversion.EntityID = event.ID
 	conversion.Tags = eventTags
-	conversion.Attributes = GetEventAttributes(config, attributes)
+	conversion.Attributes = GetEventAttributes(attributeKeyToIdMap, attributes, botFiltering)
 
 	return conversion
 }
-func CreateConversionUserEvent(config config.ProjectConfig, eventKey string, userId string, attributes map[string]interface{}, eventTags map[string]interface{}) UserEvent {
+func CreateConversionUserEvent(context EventContext, event entities.Event, userId string, attributes map[string]interface{}, attributeKeyToIdMap map[string]string, eventTags map[string]interface{}) UserEvent {
 
-
-	context := CreateEventContext(config)
 
 	userEvent := UserEvent{}
 	userEvent.Timestamp = MakeTimestamp()
@@ -108,7 +100,7 @@ func CreateConversionUserEvent(config config.ProjectConfig, eventKey string, use
 	userEvent.Uuid = guuid.New().String()
 
 	userEvent.EventContext = context
-	conversion := CreateConversionEvent(config, eventKey, attributes, eventTags)
+	conversion := CreateConversionEvent(attributeKeyToIdMap, event, attributes, eventTags, context.BotFiltering)
 	userEvent.Conversion = &conversion
 
 	return userEvent
@@ -155,7 +147,7 @@ func CreateBatchEvent(userEvent UserEvent, attributes []VisitorAttribute,
 	return eventBatch
 }
 
-func GetEventAttributes(config config.ProjectConfig, attributes map[string]interface{}) []VisitorAttribute {
+func GetEventAttributes(attributeKeyToIdMap map[string]string, attributes map[string]interface{}, botFiltering bool) []VisitorAttribute {
 	var eventAttributes = []VisitorAttribute{}
 
 	for key, value := range attributes {
@@ -163,7 +155,7 @@ func GetEventAttributes(config config.ProjectConfig, attributes map[string]inter
 			continue
 		}
 		attribute := VisitorAttribute{}
-		id := config.GetAttributeID(key)
+		id := attributeKeyToIdMap[key]
 		if id != "" {
 			attribute.EntityID = id
 		} else if strings.HasPrefix(key, specialPrefix) {
@@ -178,10 +170,10 @@ func GetEventAttributes(config config.ProjectConfig, attributes map[string]inter
 	}
 
 	attribute := VisitorAttribute{}
-	attribute.Value = config.GetBotFiltering()
+	attribute.Value = botFiltering
 	attribute.AttributeType = attributeType
-	attribute.Key = botFiltering
-	attribute.EntityID = botFiltering
+	attribute.Key = botFilteringKey
+	attribute.EntityID = botFilteringKey
 	eventAttributes = append(eventAttributes, attribute)
 
 	return eventAttributes

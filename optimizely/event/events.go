@@ -7,6 +7,8 @@ type EventContext struct {
 	ProjectID       string  `json:"project_id"`
 	ClientName      string  `json:"client_name"`
 	AnonymizeIP     bool    `json:"anonymize_ip"`
+	BotFiltering    bool    `json:"bot_filtering"`
+	AttributeKeyToIdMap map[string]string `json:"attributeKeyToIdMap"`
 }
 
 type UserEvent struct {

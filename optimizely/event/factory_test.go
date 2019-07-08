@@ -51,6 +51,7 @@ var userId = RandomString(10)
 
 func BuildTestImpressionEvent() UserEvent {
 	config := TestConfig{}
+	context := CreateEventContext(config.GetProjectID(), config.GetRevision(), config.GetAccountID(), config.GetAnonymizeIP(), config.GetBotFiltering(), make(map[string]string))
 
 	experiment := entities.Experiment{}
 	experiment.Key = "background_experiment"
@@ -61,15 +62,16 @@ func BuildTestImpressionEvent() UserEvent {
 	variation.Key = "variation_a"
 	variation.ID = "15410990633"
 
-	logEvent := CreateImpressionUserEvent(config, experiment, variation, userId, make(map[string]interface{}))
+	logEvent := CreateImpressionUserEvent(context, experiment, variation, userId, make(map[string]interface{}))
 
 	return logEvent
 }
 
 func BuildTestConversionEvent() UserEvent {
 	config := TestConfig{}
+	context := CreateEventContext(config.GetProjectID(), config.GetRevision(), config.GetAccountID(), config.GetAnonymizeIP(), config.GetBotFiltering(), make(map[string]string))
 
-	logEvent := CreateConversionUserEvent(config, "sample_conversion", userId, make(map[string]interface{}),make(map[string]interface{}))
+	logEvent := CreateConversionUserEvent(context, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userId, make(map[string]interface{}),make(map[string]string), make(map[string]interface{}))
 
 	return logEvent
 }
