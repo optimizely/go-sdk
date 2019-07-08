@@ -11,8 +11,8 @@ type Processor interface {
 	ProcessImpression(event UserEvent)
 }
 
-// DefaultEventProcessor is used out of the box by the SDK
-type DefaultEventProcessor struct {
+// InMemQueueEventProcessor is used out of the box by the SDK
+type InMemQueueEventProcessor struct {
 	MaxQueueSize    int           // max size of the queue before flush
 	FlushInterval   time.Duration // in milliseconds
 	BatchSize       int
@@ -23,13 +23,13 @@ type DefaultEventProcessor struct {
 }
 
 func NewEventProcessor(queueSize int, flushInterval time.Duration ) Processor {
-	p := &DefaultEventProcessor{MaxQueueSize: queueSize, FlushInterval:flushInterval, Q:NewInMemoryQueue(queueSize), EventDispatcher:&HttpEventDispatcher{}}
+	p := &InMemQueueEventProcessor{MaxQueueSize: queueSize, FlushInterval:flushInterval, Q:NewInMemoryQueue(queueSize), EventDispatcher:&HttpEventDispatcher{}}
 	p.StartTicker()
 	return p
 }
 
 // ProcessImpression processes the given impression event
-func (p *DefaultEventProcessor) ProcessImpression(event UserEvent) {
+func (p *InMemQueueEventProcessor) ProcessImpression(event UserEvent) {
 	p.Q.Add(event)
 
 	if p.Q.Size() >= p.MaxQueueSize {
@@ -39,19 +39,19 @@ func (p *DefaultEventProcessor) ProcessImpression(event UserEvent) {
 	}
 }
 
-func (p *DefaultEventProcessor) EventsCount() int {
+func (p *InMemQueueEventProcessor) EventsCount() int {
 	return p.Q.Size()
 }
 
-func (p *DefaultEventProcessor) GetEvents(count int) []interface{} {
+func (p *InMemQueueEventProcessor) GetEvents(count int) []interface{} {
 	return p.Q.Get(count)
 }
 
-func (p *DefaultEventProcessor) Remove(count int) []interface{} {
+func (p *InMemQueueEventProcessor) Remove(count int) []interface{} {
 	return p.Q.Remove(count)
 }
 
-func (p *DefaultEventProcessor) StartTicker() {
+func (p *InMemQueueEventProcessor) StartTicker() {
 	if p.Ticker != nil {
 		return
 	}
@@ -64,7 +64,7 @@ func (p *DefaultEventProcessor) StartTicker() {
 }
 
 // ProcessImpression processes the given impression event
-func (p *DefaultEventProcessor) FlushEvents() {
+func (p *InMemQueueEventProcessor) FlushEvents() {
 	// we flush when queue size is reached.
 	// however, if there is a ticker cycle already processing, we should wait
 	p.Mux.Lock()

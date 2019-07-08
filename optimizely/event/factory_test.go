@@ -84,7 +84,7 @@ func TestCreateImpressionEvent(t *testing.T) {
 
 	processor.ProcessImpression(logEvent)
 
-	result, ok := processor.(*DefaultEventProcessor)
+	result, ok := processor.(*InMemQueueEventProcessor)
 
 	if ok {
 		assert.Equal(t, 1, result.EventsCount())
@@ -103,7 +103,7 @@ func TestCreateConversionEvent(t *testing.T) {
 
 	processor.ProcessImpression(logEvent)
 
-	result, ok := processor.(*DefaultEventProcessor)
+	result, ok := processor.(*InMemQueueEventProcessor)
 
 	if ok {
 		assert.Equal(t, 1, result.EventsCount())
