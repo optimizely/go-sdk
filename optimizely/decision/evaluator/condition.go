@@ -24,8 +24,10 @@ import (
 )
 
 const (
-	// EXACT match type performs an equality comparison
 	exactMatchType = "exact"
+	existsMatchType = "exists"
+	ltMatchType = "lt"
+	gtMatchType = "gt"
 )
 
 // ConditionEvaluator evaluates a condition against the given user's attributes
@@ -48,6 +50,18 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 	switch matchType {
 	case exactMatchType:
 		matcher = matchers.ExactMatcher{
+			Condition: condition,
+		}
+	case existsMatchType:
+		matcher = matchers.ExistsMatcher{
+			Condition: condition,
+		}
+	case ltMatchType:
+		matcher = matchers.LtMatcher{
+			Condition: condition,
+		}
+	case gtMatchType:
+		matcher = matchers.GtMatcher{
 			Condition: condition,
 		}
 	}
