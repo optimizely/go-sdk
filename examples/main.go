@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/optimizely/go-sdk/optimizely/client"
+	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
 func main() {
@@ -11,5 +12,12 @@ func main() {
 		SDKKey: "ABC",
 	}
 	client := optimizelyFactory.Client()
-	fmt.Printf("Is feature enabled? %v", client.IsFeatureEnabled("go_sdk", "mike", nil))
+
+	user := entities.UserContext{
+		ID:         "mike ng",
+		Attributes: entities.UserAttributes{},
+	}
+
+	enabled, _ := client.IsFeatureEnabled("go_sdk", user)
+	fmt.Printf("Is feature enabled? %v", enabled)
 }

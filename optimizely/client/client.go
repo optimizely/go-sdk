@@ -17,6 +17,8 @@
 package client
 
 import (
+	"errors"
+
 	"github.com/optimizely/go-sdk/optimizely/config"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
@@ -33,29 +35,31 @@ type OptimizelyClient struct {
 }
 
 // IsFeatureEnabled returns true if the feature is enabled for the given user
-func (optly *OptimizelyClient) IsFeatureEnabled(featureKey string, userID string, attributes map[string]interface{}) bool {
-	if !optly.isValid {
+func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entities.UserContext) (bool, error) {
+	if !o.isValid {
 		errorMessage := "Optimizely instance is not valid. Failing IsFeatureEnabled."
+		err := errors.New(errorMessage)
 		logger.Error(errorMessage, nil)
-		return false
+		return false, err
 	}
 
-	userContext := entities.UserContext{ID: userID, Attributes: entities.UserAttributes{Attributes: attributes}}
-
-	// @TODO(mng): we should fetch the Feature entity from the config service instead of manually creating it here
-	featureExperiment := entities.Experiment{}
-	feature := entities.Feature{
-		Key:                featureKey,
-		FeatureExperiments: []entities.Experiment{featureExperiment},
+	projectConfig := o.configManager.GetConfig()
+	feature, err := projectConfig.GetFeatureByKey(featureKey)
+	if err != nil {
+		return false, err
 	}
+
+	// @TODO(mng): Include assigned group for mutex support
 	featureDecisionContext := decision.FeatureDecisionContext{
 		Feature: feature,
 	}
 
-	featureDecision, err := optly.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
+	featureDecision, err := o.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
 	if err != nil {
-		// @TODO(mng): log error
-		return false
+		logger.Error("Received an error while computing feature decision", err)
+		return false, err
 	}
-	return featureDecision.FeatureEnabled
+
+	// @TODO(mng): send impression event
+	return featureDecision.FeatureEnabled, nil
 }
