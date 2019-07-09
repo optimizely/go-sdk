@@ -62,7 +62,7 @@ func (b MurmurhashBucketer) Bucket(bucketingID string, experiment entities.Exper
 
 func (b MurmurhashBucketer) bucketToEntity(bucketKey string, trafficAllocations []entities.Range) (entityID string) {
 	bucketValue := b.generateBucketValue(bucketKey)
-	// logger.Info()
+
 	var currentEndOfRange int
 	for _, trafficAllocationRange := range trafficAllocations {
 		currentEndOfRange = trafficAllocationRange.EndOfRange
