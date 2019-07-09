@@ -77,14 +77,14 @@ func createImpressionBatchEvent(userEvent UserEvent) EventBatch {
 	decision.ExperimentID = userEvent.Impression.ExperimentID
 	decision.VariationID = userEvent.Impression.VariationID
 
-	dispatchEvent := DispatchEvent{}
+	dispatchEvent := SnapshotEvent{}
 	dispatchEvent.Timestamp = makeTimestamp()
 	dispatchEvent.Key = userEvent.Impression.Key
 	dispatchEvent.EntityID = userEvent.Impression.EntityID
 	dispatchEvent.Uuid = guuid.New().String()
 	dispatchEvent.Tags = make(map[string]interface{})
 
-	return createBatchEvent(userEvent, userEvent.Impression.Attributes, [] Decision{decision}, []DispatchEvent{dispatchEvent})
+	return createBatchEvent(userEvent, userEvent.Impression.Attributes, [] Decision{decision}, []SnapshotEvent{dispatchEvent})
 
 }
 
@@ -127,7 +127,7 @@ func CreateConversionUserEvent(context EventContext, event entities.Event, userC
 }
 func createConversionBatchEvent(userEvent UserEvent) EventBatch {
 
-	dispatchEvent := DispatchEvent{}
+	dispatchEvent := SnapshotEvent{}
 	dispatchEvent.Timestamp = makeTimestamp()
 	dispatchEvent.Key = userEvent.Conversion.Key
 	dispatchEvent.EntityID = userEvent.Conversion.EntityID
@@ -140,12 +140,12 @@ func createConversionBatchEvent(userEvent UserEvent) EventBatch {
 		dispatchEvent.Value = userEvent.Conversion.Value
 	}
 
-	return createBatchEvent(userEvent, userEvent.Conversion.Attributes, [] Decision{}, []DispatchEvent{dispatchEvent})
+	return createBatchEvent(userEvent, userEvent.Conversion.Attributes, [] Decision{}, []SnapshotEvent{dispatchEvent})
 }
 
 func createBatchEvent(userEvent UserEvent, attributes []VisitorAttribute,
 	decisions []Decision,
-	dispatchEvents []DispatchEvent) EventBatch {
+	dispatchEvents []SnapshotEvent) EventBatch {
 
 	snapShot := Snapshot{}
 	snapShot.Decisions = decisions

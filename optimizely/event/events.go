@@ -70,8 +70,8 @@ type VisitorAttribute struct {
 }
 
 type Snapshot struct {
-	Decisions []Decision `json:"decisions"`
- 	Events []DispatchEvent `json:"events"`
+	Decisions []Decision   `json:"decisions"`
+ 	Events []SnapshotEvent `json:"events"`
 }
 
 type Decision struct {
@@ -80,7 +80,7 @@ type Decision struct {
 	ExperimentID string `json:"experiment_id"`
 }
 
-type DispatchEvent struct {
+type SnapshotEvent struct {
 	EntityID  string `json:"entity_id"`
 	Key       string `json:"key"`
 	Timestamp int64 `json:"timestamp"`
