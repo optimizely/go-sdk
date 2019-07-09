@@ -9,7 +9,7 @@ import (
 )
 
 func TestGenerateBucketValue(t *testing.T) {
-	bucketer := NewExperimentBucketer(DefaultHashSeed)
+	bucketer := NewMurmurhashBucketer(DefaultHashSeed)
 
 	// copied from unit tests in the other SDKs
 	experimentID := "1886780721"
@@ -26,7 +26,7 @@ func TestGenerateBucketValue(t *testing.T) {
 }
 
 func TestBucketToEntity(t *testing.T) {
-	bucketer := NewExperimentBucketer(DefaultHashSeed)
+	bucketer := NewMurmurhashBucketer(DefaultHashSeed)
 
 	experimentID := "1886780721"
 	experimentID2 := "1886780722"
@@ -102,7 +102,7 @@ func TestBucketExclusionGroups(t *testing.T) {
 		},
 	}
 
-	bucketer := NewExperimentBucketer(DefaultHashSeed)
+	bucketer := NewMurmurhashBucketer(DefaultHashSeed)
 	// ppid2 + 1886780722 (groupId) will generate bucket value of 2434 which maps to experiment 1
 	assert.Equal(t, experiment1.Variations["22222"], bucketer.Bucket("ppid2", experiment1, exclusionGroup))
 	// since the bucket value maps to experiment 1, the user will not be bucketed for experiment 2
