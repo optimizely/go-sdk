@@ -33,6 +33,7 @@ type UserAttributes struct {
 }
 
 var floatType = reflect.TypeOf(float64(0))
+var intType = reflect.TypeOf(int64(0))
 
 // GetString returns the string value for the specified attribute name in the attributes map. Returns error if not found.
 func (u UserAttributes) GetString(attrName string) (string, error) {
@@ -69,4 +70,16 @@ func (u UserAttributes) GetFloat(attrName string) (float64, error) {
 	}
 
 	return 0, fmt.Errorf(`No float attribute named "%s"`, attrName)
+}
+
+func (u UserAttributes) GetInt(attrName string) (int64, error) {
+	if value, ok := u.Attributes[attrName]; ok {
+		v := reflect.ValueOf(value)
+		if v.Type().String() == "int64" || v.Type().ConvertibleTo(intType) {
+			intValue := v.Convert(intType).Int()
+			return intValue, nil
+		}
+	}
+
+	return 0, fmt.Errorf(`No int attribute named "%s"`, attrName)
 }

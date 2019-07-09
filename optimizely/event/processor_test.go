@@ -14,7 +14,7 @@ func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 
 	processor.ProcessImpression(impression)
 
-	result, ok := processor.(*InMemQueueEventProcessor)
+	result, ok := processor.(*QueueingEventProcessor)
 
 	if ok {
 		assert.Equal(t, 1, result.EventsCount())
@@ -38,7 +38,7 @@ func TestDefaultEventProcessor_ProcessImpressions(t *testing.T) {
 	processor.ProcessImpression(impression)
 	processor.ProcessImpression(impression)
 
-	result, ok := processor.(*InMemQueueEventProcessor)
+	result, ok := processor.(*QueueingEventProcessor)
 
 	if ok {
 		assert.Equal(t, 2, result.EventsCount())

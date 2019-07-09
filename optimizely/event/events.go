@@ -34,8 +34,10 @@ type ConversionEvent struct {
 	Key       string `json:"key"`
 	Attributes 	 []VisitorAttribute
 	Tags      map[string]interface{} `json:"tags,omitempty"`
-	Revenue   int `json:"revenue,omitempty"`
-	Value     float32 `json:"value,omitempty"`
+	// these need to be pointers because 0 is a valid Revenue or Value.
+	// 0 is equivalent to omitempty for json marshalling.
+	Revenue   *int64 `json:"revenue,omitempty"`
+	Value     *float64 `json:"value,omitempty"`
 }
 
 type LogEvent struct {
@@ -84,6 +86,6 @@ type DispatchEvent struct {
 	Timestamp int64 `json:"timestamp"`
 	Uuid      string `json:"uuid"`
 	Tags      map[string]interface{} `json:"tags,omitempty"`
-	Revenue   int `json:"revenue,omitempty"`
-	Value     float32 `json:"value,omitempty"`
+	Revenue   *int64 `json:"revenue,omitempty"`
+	Value     *float64 `json:"value,omitempty"`
 }

@@ -21,7 +21,7 @@ func main() {
 
 	processor.ProcessImpression(impression)
 
-	_, ok := processor.(*event.InMemQueueEventProcessor)
+	_, ok := processor.(*event.QueueingEventProcessor)
 
 	if ok {
 		time.Sleep(1000 * time.Millisecond)

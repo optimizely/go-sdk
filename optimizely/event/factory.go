@@ -14,6 +14,9 @@ const attributeType = "custom"
 const specialPrefix = "$opt_"
 const botFilteringKey = "$opt_bot_filtering"
 const eventEndPoint = "https://logx.optimizely.com/v1/events"
+const revenueKey = "revenue"
+const valueKey = "value"
+
 
 func createLogEvent(event EventBatch) LogEvent {
 	return LogEvent{endPoint:eventEndPoint,event:event}
@@ -53,14 +56,13 @@ func createImpressionEvent(context EventContext, experiment entities.Experiment,
 
 func CreateImpressionUserEvent(context EventContext, experiment entities.Experiment,
 	variation entities.Variation,
-	userId string,
-	attributes map[string]interface{}) UserEvent {
+	userContext entities.UserContext) UserEvent {
 
-	impression := createImpressionEvent(context, experiment, variation, attributes)
+	impression := createImpressionEvent(context, experiment, variation, userContext.Attributes.Attributes)
 
 	userEvent := UserEvent{}
 	userEvent.Timestamp = makeTimestamp()
-	userEvent.VisitorID = userId
+	userEvent.VisitorID = userContext.ID
 	userEvent.Uuid = guuid.New().String()
 	userEvent.Impression = &impression
 	userEvent.EventContext = context
@@ -96,16 +98,28 @@ func createConversionEvent(attributeKeyToIdMap map[string]string, event entities
 
 	return conversion
 }
-func CreateConversionUserEvent(context EventContext, event entities.Event, userId string, attributes map[string]interface{}, attributeKeyToIdMap map[string]string, eventTags map[string]interface{}) UserEvent {
+func CreateConversionUserEvent(context EventContext, event entities.Event, userContext entities.UserContext, attributeKeyToIdMap map[string]string, eventTags map[string]interface{}) UserEvent {
 
 
 	userEvent := UserEvent{}
 	userEvent.Timestamp = makeTimestamp()
-	userEvent.VisitorID = userId
+	userEvent.VisitorID = userContext.ID
 	userEvent.Uuid = guuid.New().String()
 
 	userEvent.EventContext = context
-	conversion := createConversionEvent(attributeKeyToIdMap, event, attributes, eventTags, context.BotFiltering)
+	conversion := createConversionEvent(attributeKeyToIdMap, event, userContext.Attributes.Attributes, eventTags, context.BotFiltering)
+	// convert event tags to UserAttributes to pull out proper values
+	tagAttributes := entities.UserAttributes{Attributes:eventTags}
+	// get revenue if available
+	revenue, ok := tagAttributes.GetInt(revenueKey)
+	if ok == nil {
+		conversion.Revenue = &revenue
+	}
+	// get value if available
+	value, ok := tagAttributes.GetFloat(valueKey)
+	if ok == nil {
+		conversion.Value = &value
+	}
 	userEvent.Conversion = &conversion
 
 	return userEvent
@@ -119,6 +133,12 @@ func createConversionBatchEvent(userEvent UserEvent) EventBatch {
 	dispatchEvent.EntityID = userEvent.Conversion.EntityID
 	dispatchEvent.Uuid = userEvent.Uuid
 	dispatchEvent.Tags = userEvent.Conversion.Tags
+	if userEvent.Conversion.Revenue != nil {
+		dispatchEvent.Revenue = userEvent.Conversion.Revenue
+	}
+	if userEvent.Conversion.Value != nil {
+		dispatchEvent.Value = userEvent.Conversion.Value
+	}
 
 	return createBatchEvent(userEvent, userEvent.Conversion.Attributes, [] Decision{}, []DispatchEvent{dispatchEvent})
 }

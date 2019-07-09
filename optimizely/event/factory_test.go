@@ -48,6 +48,7 @@ func RandomString(len int) string {
 }
 
 var userId = RandomString(10)
+var userContext = entities.UserContext{userId, entities.UserAttributes{make(map[string]interface{})}}
 
 func BuildTestImpressionEvent() UserEvent {
 	config := TestConfig{}
@@ -62,7 +63,7 @@ func BuildTestImpressionEvent() UserEvent {
 	variation.Key = "variation_a"
 	variation.ID = "15410990633"
 
-	logEvent := CreateImpressionUserEvent(context, experiment, variation, userId, make(map[string]interface{}))
+	logEvent := CreateImpressionUserEvent(context, experiment, variation, userContext)
 
 	return logEvent
 }
@@ -71,12 +72,12 @@ func BuildTestConversionEvent() UserEvent {
 	config := TestConfig{}
 	context := CreateEventContext(config.GetProjectID(), config.GetRevision(), config.GetAccountID(), config.GetAnonymizeIP(), config.GetBotFiltering(), make(map[string]string))
 
-	logEvent := CreateConversionUserEvent(context, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userId, make(map[string]interface{}),make(map[string]string), make(map[string]interface{}))
+	logEvent := CreateConversionUserEvent(context, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext,make(map[string]string), make(map[string]interface{}))
 
 	return logEvent
 }
 
-func TestCreateImpressionEvent(t *testing.T) {
+func TestCreateAndSendImpressionEvent(t *testing.T) {
 
 	logEvent := BuildTestImpressionEvent()
 
@@ -84,7 +85,7 @@ func TestCreateImpressionEvent(t *testing.T) {
 
 	processor.ProcessImpression(logEvent)
 
-	result, ok := processor.(*InMemQueueEventProcessor)
+	result, ok := processor.(*QueueingEventProcessor)
 
 	if ok {
 		assert.Equal(t, 1, result.EventsCount())
@@ -95,7 +96,7 @@ func TestCreateImpressionEvent(t *testing.T) {
 	}
 }
 
-func TestCreateConversionEvent(t *testing.T) {
+func TestCreateAndSendConversionEvent(t *testing.T) {
 
 	logEvent := BuildTestConversionEvent()
 
@@ -103,7 +104,7 @@ func TestCreateConversionEvent(t *testing.T) {
 
 	processor.ProcessImpression(logEvent)
 
-	result, ok := processor.(*InMemQueueEventProcessor)
+	result, ok := processor.(*QueueingEventProcessor)
 
 	if ok {
 		assert.Equal(t, 1, result.EventsCount())
@@ -112,4 +113,21 @@ func TestCreateConversionEvent(t *testing.T) {
 
 		assert.Equal(t, 0, result.EventsCount())
 	}
+}
+
+func TestCreateConversionEventRevenue(t *testing.T) {
+	eventTags := map[string]interface{}{"revenue":55.0, "value":25.1}
+	config := TestConfig{}
+	context := CreateEventContext(config.GetProjectID(), config.GetRevision(), config.GetAccountID(), config.GetAnonymizeIP(), config.GetBotFiltering(), make(map[string]string))
+
+	logEvent := CreateConversionUserEvent(context, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext,make(map[string]string), eventTags)
+
+	assert.Equal(t, int64(55), *logEvent.Conversion.Revenue)
+	assert.Equal(t, 25.1, *logEvent.Conversion.Value)
+
+	batch := createConversionBatchEvent(logEvent)
+	assert.Equal(t, int64(55), *batch.Visitors[0].Snapshots[0].Events[0].Revenue)
+	assert.Equal(t, 25.1, *batch.Visitors[0].Snapshots[0].Events[0].Value)
+
+
 }
