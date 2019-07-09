@@ -69,7 +69,7 @@ func TestExperimentTargetingGetDecision(t *testing.T) {
 		ID: "test_user_1",
 		Attributes: entities.UserAttributes{
 			Attributes: map[string]interface{}{
-				"s_foo": "foo",
+				"s_foo": "not foo",
 			},
 		},
 	}
@@ -85,6 +85,30 @@ func TestExperimentTargetingGetDecision(t *testing.T) {
 		audienceEvaluator: mockAudienceEvaluator,
 	}
 	decision, _ := experimentTargetingService.GetDecision(testDecisionContext, testUserContext)
+	assert.Equal(t, expectedExperimentDecision, decision)
+	mockAudienceEvaluator.AssertExpectations(t)
+
+	// test passes evaluation, no decision is made
+	testUserContext = entities.UserContext{
+		ID: "test_user_1",
+		Attributes: entities.UserAttributes{
+			Attributes: map[string]interface{}{
+				"s_foo": "foo",
+			},
+		},
+	}
+	expectedExperimentDecision = ExperimentDecision{
+		Decision: Decision{
+			DecisionMade: false,
+		},
+	}
+
+	mockAudienceEvaluator = new(MockAudienceEvaluator)
+	mockAudienceEvaluator.On("Evaluate", testAudience, testUserContext).Return(true)
+	experimentTargetingService = ExperimentTargetingService{
+		audienceEvaluator: mockAudienceEvaluator,
+	}
+	decision, _ = experimentTargetingService.GetDecision(testDecisionContext, testUserContext)
 	assert.Equal(t, expectedExperimentDecision, decision)
 	mockAudienceEvaluator.AssertExpectations(t)
 }
