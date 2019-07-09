@@ -14,11 +14,57 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package entities
+package matchers
 
-// Group represents a grouping of entities and their traffic allocation ranges
-type Group struct {
-	ID                string
-	TrafficAllocation []Range
-	Policy            string
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/optimizely/go-sdk/optimizely/entities"
+)
+
+func TestExistsMatcher(t *testing.T) {
+	matcher := ExistsMatcher{
+		Condition: entities.Condition{
+			Match: "exists",
+			Name:  "string_foo",
+		},
+	}
+
+	// Test match
+	user := entities.UserContext{
+		Attributes: entities.UserAttributes{
+			Attributes: map[string]interface{}{
+				"string_foo": "any_value",
+			},
+		},
+	}
+	result, err := matcher.Match(user)
+	assert.NoError(t, err)
+	assert.True(t, result)
+
+	// Test no match
+	user = entities.UserContext{
+		Attributes: entities.UserAttributes{
+			Attributes: map[string]interface{}{
+				"string_foo1": "not_foo",
+			},
+		},
+	}
+
+	result, err = matcher.Match(user)
+	assert.NoError(t, err)
+	assert.False(t, result)
+
+	// Test null case
+	user = entities.UserContext{
+		Attributes: entities.UserAttributes{
+			Attributes: map[string]interface{}{},
+		},
+	}
+	result, err = matcher.Match(user)
+	assert.NoError(t, err)
+	assert.False(t, result)
 }
+

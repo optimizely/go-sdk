@@ -14,11 +14,24 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package entities
+package matchers
 
-// Group represents a grouping of entities and their traffic allocation ranges
-type Group struct {
-	ID                string
-	TrafficAllocation []Range
-	Policy            string
+import (
+	"github.com/optimizely/go-sdk/optimizely/entities"
+)
+
+// ExistsMatcher matches against the "exists" match type
+type ExistsMatcher struct {
+	Condition entities.Condition
+}
+
+// Match returns true if the user's attribute is in the condition
+func (m ExistsMatcher) Match(user entities.UserContext) (bool, error) {
+
+	_, err := user.Attributes.GetString(m.Condition.Name)
+	if err != nil {
+		return false, nil
+	}
+
+	return true, nil
 }

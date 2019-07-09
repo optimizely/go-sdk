@@ -14,11 +14,30 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package entities
+package matchers
 
-// Group represents a grouping of entities and their traffic allocation ranges
-type Group struct {
-	ID                string
-	TrafficAllocation []Range
-	Policy            string
+import (
+	"fmt"
+
+	"github.com/optimizely/go-sdk/optimizely/decision/evaluator/matchers/utils"
+	"github.com/optimizely/go-sdk/optimizely/entities"
+)
+
+// GtMatcher matches against the "gt" match type
+type GtMatcher struct {
+	Condition entities.Condition
+}
+
+// Match returns true if the user's attribute is greater than the condition's string value
+func (m GtMatcher) Match(user entities.UserContext) (bool, error) {
+
+	if floatValue, ok := utils.ToFloat(m.Condition.Value); ok {
+		attributeValue, err := user.Attributes.GetFloat(m.Condition.Name)
+		if err != nil {
+			return false, err
+		}
+		return floatValue < attributeValue, nil
+	}
+
+	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
 }
