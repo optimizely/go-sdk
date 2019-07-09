@@ -33,6 +33,38 @@ type DatafileProjectConfig struct {
 	experimentMap        map[string]entities.Experiment
 	experimentKeyToIDMap map[string]string
 	featureMap           map[string]entities.Feature
+	attributeKeyToIDMap  map[string]string
+	eventMap             map[string]entities.Event
+	projectID			 string
+	revision			 string
+	accountID			 string
+	anonymizeIP			 bool
+	botFiltering		 bool
+
+}
+
+func (config DatafileProjectConfig) GetProjectID() string {
+	return config.projectID
+}
+
+func (config DatafileProjectConfig) GetRevision() string {
+	return config.revision
+}
+
+func (config DatafileProjectConfig) GetAccountID() string {
+	return config.accountID
+}
+
+func (config DatafileProjectConfig) GetAnonymizeIP() bool {
+	return config.anonymizeIP
+}
+
+func (config DatafileProjectConfig) GetAttributeID(key string) string {
+	return config.attributeKeyToIDMap[key]
+}
+
+func (config DatafileProjectConfig) GetBotFiltering() bool {
+	return config.botFiltering
 }
 
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser
@@ -51,6 +83,16 @@ func NewDatafileProjectConfig(jsonDatafile []byte) *DatafileProjectConfig {
 
 	logger.Info("Datafile is valid.")
 	return config
+}
+
+// GetEventByKey returns the event with the given key
+func (config DatafileProjectConfig) GetEventByKey(eventKey string) (entities.Event, error) {
+	if event, ok := config.eventMap[eventKey]; ok {
+		return event, nil
+	}
+
+	errMessage := fmt.Sprintf("Event with key %s not found", eventKey)
+	return entities.Event{}, errors.New(errMessage)
 }
 
 // GetFeatureByKey returns the feature with the given key

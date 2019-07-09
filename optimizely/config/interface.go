@@ -23,6 +23,13 @@ import (
 // ProjectConfig contains the parsed project entities
 type ProjectConfig interface {
 	GetFeatureByKey(string) (entities.Feature, error)
+	GetProjectID() string
+	GetRevision()  string
+	GetAccountID() string
+	GetAnonymizeIP() bool
+	GetAttributeID(key string) string // returns "" if there is no id
+	GetBotFiltering() bool
+	GetEventByKey(string) (entities.Event, error)
 }
 
 // ProjectConfigManager manages the config
