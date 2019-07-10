@@ -28,6 +28,7 @@ type Experiment struct {
 	// @TODO(mng): include audienceConditions
 	ID                string              `json:"id"`
 	Key               string              `json:"key"`
+	LayerID           string              `json:"layerId"`
 	Status            string              `json:"status"`
 	Variations        []Variation         `json:"variations"`
 	TrafficAllocation []trafficAllocation `json:"trafficAllocation"`
@@ -58,6 +59,12 @@ type Variation struct {
 	FeatureEnabled bool   `json:"featureEnabled"`
 }
 
+type Event struct {
+	ID string `json:"id"`
+	Key string `json:"key"`
+	ExperimentIds []string `json:"experimentIds"`
+}
+
 // Datafile represents the datafile we get from Optimizely
 type Datafile struct {
 	AccountID    string        `json:"accountId"`
@@ -66,6 +73,7 @@ type Datafile struct {
 	BotFiltering bool          `json:"botFiltering"`
 	Experiments  []Experiment  `json:"experiments"`
 	FeatureFlags []FeatureFlag `json:"featureFlags"`
+	Events       []Event       `json:"events"`
 	ProjectID    string        `json:"projectId"`
 	Revision     string        `json:"revision"`
 	Variables    []string      `json:"variables"`

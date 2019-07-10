@@ -28,6 +28,7 @@ type Variation struct {
 type Experiment struct {
 	AudienceIds       []string
 	ID                string
+	LayerID           string
 	Key               string
 	Variations        map[string]Variation
 	TrafficAllocation []Range
