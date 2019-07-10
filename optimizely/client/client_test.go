@@ -29,6 +29,7 @@ import (
 )
 
 type MockProjectConfig struct {
+	config.ProjectConfig
 	mock.Mock
 }
 
