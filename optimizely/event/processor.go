@@ -8,7 +8,7 @@ import (
 
 // Processor processes events
 type Processor interface {
-	ProcessImpression(event UserEvent)
+	ProcessEvent(event UserEvent)
 }
 
 // QueueingEventProcessor is used out of the box by the SDK
@@ -28,8 +28,8 @@ func NewEventProcessor(queueSize int, flushInterval time.Duration ) Processor {
 	return p
 }
 
-// ProcessImpression processes the given impression event
-func (p *QueueingEventProcessor) ProcessImpression(event UserEvent) {
+// ProcessEvent processes the given impression event
+func (p *QueueingEventProcessor) ProcessEvent(event UserEvent) {
 	p.Q.Add(event)
 
 	if p.Q.Size() >= p.MaxQueueSize {
@@ -63,7 +63,7 @@ func (p *QueueingEventProcessor) StartTicker() {
 	}()
 }
 
-// ProcessImpression processes the given impression event
+// ProcessEvent processes the given impression event
 func (p *QueueingEventProcessor) FlushEvents() {
 	// we flush when queue size is reached.
 	// however, if there is a ticker cycle already processing, we should wait

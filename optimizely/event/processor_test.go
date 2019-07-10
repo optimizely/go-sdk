@@ -12,7 +12,7 @@ func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 
 	impression := BuildTestImpressionEvent()
 
-	processor.ProcessImpression(impression)
+	processor.ProcessEvent(impression)
 
 	result, ok := processor.(*QueueingEventProcessor)
 
@@ -35,8 +35,8 @@ func TestDefaultEventProcessor_ProcessImpressions(t *testing.T) {
 
 	impression := BuildTestImpressionEvent()
 
-	processor.ProcessImpression(impression)
-	processor.ProcessImpression(impression)
+	processor.ProcessEvent(impression)
+	processor.ProcessEvent(impression)
 
 	result, ok := processor.(*QueueingEventProcessor)
 

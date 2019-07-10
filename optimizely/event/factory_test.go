@@ -83,7 +83,7 @@ func TestCreateAndSendImpressionEvent(t *testing.T) {
 
 	processor := NewEventProcessor(100, 100)
 
-	processor.ProcessImpression(logEvent)
+	processor.ProcessEvent(logEvent)
 
 	result, ok := processor.(*QueueingEventProcessor)
 
@@ -102,7 +102,7 @@ func TestCreateAndSendConversionEvent(t *testing.T) {
 
 	processor := NewEventProcessor(100, 100)
 
-	processor.ProcessImpression(logEvent)
+	processor.ProcessEvent(logEvent)
 
 	result, ok := processor.(*QueueingEventProcessor)
 
