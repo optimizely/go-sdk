@@ -14,36 +14,24 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package decision
+package matchers
 
-import "github.com/optimizely/go-sdk/optimizely/entities"
+import (
+	"github.com/optimizely/go-sdk/optimizely/entities"
+)
 
-// ExperimentDecisionContext contains the information needed to be able to make a decision for a given experiment
-type ExperimentDecisionContext struct {
-	AudienceMap map[string]entities.Audience
-	Experiment  entities.Experiment
-	Group       entities.Group
+// ExistsMatcher matches against the "exists" match type
+type ExistsMatcher struct {
+	Condition entities.Condition
 }
 
-// FeatureDecisionContext contains the information needed to be able to make a decision for a given feature
-type FeatureDecisionContext struct {
-	Feature entities.Feature
-	Group   entities.Group
-}
+// Match returns true if the user's attribute is in the condition
+func (m ExistsMatcher) Match(user entities.UserContext) (bool, error) {
 
-// Decision contains base information about a decision
-type Decision struct {
-	DecisionMade bool
-}
+	_, err := user.Attributes.GetString(m.Condition.Name)
+	if err != nil {
+		return false, nil
+	}
 
-// FeatureDecision contains the decision information about a feature
-type FeatureDecision struct {
-	Decision
-	FeatureEnabled bool
-}
-
-// ExperimentDecision contains the decision information about an experiment
-type ExperimentDecision struct {
-	Decision
-	Variation entities.Variation
+	return true, nil
 }

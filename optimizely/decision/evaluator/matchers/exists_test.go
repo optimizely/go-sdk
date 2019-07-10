@@ -14,36 +14,57 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package decision
+package matchers
 
-import "github.com/optimizely/go-sdk/optimizely/entities"
+import (
+	"testing"
 
-// ExperimentDecisionContext contains the information needed to be able to make a decision for a given experiment
-type ExperimentDecisionContext struct {
-	AudienceMap map[string]entities.Audience
-	Experiment  entities.Experiment
-	Group       entities.Group
+	"github.com/stretchr/testify/assert"
+
+	"github.com/optimizely/go-sdk/optimizely/entities"
+)
+
+func TestExistsMatcher(t *testing.T) {
+	matcher := ExistsMatcher{
+		Condition: entities.Condition{
+			Match: "exists",
+			Name:  "string_foo",
+		},
+	}
+
+	// Test match
+	user := entities.UserContext{
+		Attributes: entities.UserAttributes{
+			Attributes: map[string]interface{}{
+				"string_foo": "any_value",
+			},
+		},
+	}
+	result, err := matcher.Match(user)
+	assert.NoError(t, err)
+	assert.True(t, result)
+
+	// Test no match
+	user = entities.UserContext{
+		Attributes: entities.UserAttributes{
+			Attributes: map[string]interface{}{
+				"string_foo1": "not_foo",
+			},
+		},
+	}
+
+	result, err = matcher.Match(user)
+	assert.NoError(t, err)
+	assert.False(t, result)
+
+	// Test null case
+	user = entities.UserContext{
+		Attributes: entities.UserAttributes{
+			Attributes: map[string]interface{}{},
+		},
+	}
+	result, err = matcher.Match(user)
+	assert.NoError(t, err)
+	assert.False(t, result)
 }
 
-// FeatureDecisionContext contains the information needed to be able to make a decision for a given feature
-type FeatureDecisionContext struct {
-	Feature entities.Feature
-	Group   entities.Group
-}
-
-// Decision contains base information about a decision
-type Decision struct {
-	DecisionMade bool
-}
-
-// FeatureDecision contains the decision information about a feature
-type FeatureDecision struct {
-	Decision
-	FeatureEnabled bool
-}
-
-// ExperimentDecision contains the decision information about an experiment
-type ExperimentDecision struct {
-	Decision
-	Variation entities.Variation
-}

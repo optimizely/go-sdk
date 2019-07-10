@@ -20,4 +20,5 @@ package entities
 type Group struct {
 	ID                string
 	TrafficAllocation []Range
+	Policy            string
 }

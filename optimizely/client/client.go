@@ -35,7 +35,8 @@ type OptimizelyClient struct {
 // IsFeatureEnabled returns true if the feature is enabled for the given user
 func (optly *OptimizelyClient) IsFeatureEnabled(featureKey string, userID string, attributes map[string]interface{}) bool {
 	if !optly.isValid {
-		logger.Error("Optimizely instance is not valid. Failing IsFeatureEnabled.", nil)
+		errorMessage := "Optimizely instance is not valid. Failing IsFeatureEnabled."
+		logger.Error(errorMessage, nil)
 		return false
 	}
 
