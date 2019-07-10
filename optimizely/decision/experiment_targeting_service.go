@@ -17,43 +17,36 @@
 package decision
 
 import (
-	"fmt"
-
-	"github.com/optimizely/go-sdk/optimizely/decision/bucketer"
+	"github.com/optimizely/go-sdk/optimizely/decision/evaluator"
 	"github.com/optimizely/go-sdk/optimizely/entities"
-	"github.com/optimizely/go-sdk/optimizely/logging"
 )
 
-// These variables are package-scoped, meaning that they can be accessed within the same package so we need unique names.
-var bLogger = logging.GetLogger("ExperimentBucketerService")
-
-// ExperimentBucketerService makes a decision using the experiment bucketer
-type ExperimentBucketerService struct {
-	bucketer bucketer.ExperimentBucketer
+// ExperimentTargetingService makes a decision using audience targeting
+type ExperimentTargetingService struct {
+	audienceEvaluator evaluator.AudienceEvaluator
 }
 
-// NewExperimentBucketerService returns a new instance of the ExperimentBucketerService
-func NewExperimentBucketerService() *ExperimentBucketerService {
-	// @TODO(mng): add experiment override service
-	return &ExperimentBucketerService{
-		bucketer: *bucketer.NewMurmurhashBucketer(bucketer.DefaultHashSeed),
+// NewExperimentTargetingService returns a new instance of ExperimentTargetingService
+func NewExperimentTargetingService() *ExperimentTargetingService {
+	return &ExperimentTargetingService{
+		audienceEvaluator: evaluator.NewTypedAudienceEvaluator(),
 	}
 }
 
-// GetDecision returns the decision with the variation the user is bucketed into
-func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
+// GetDecision applies audience targeting from the given experiment to the given user. The only decision it makes is whether to exclude the user from the experiment.
+func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
 	experimentDecision := ExperimentDecision{}
 	experiment := decisionContext.Experiment
-
-	// bucket user into a variation
-	bucketingID, err := userContext.GetBucketingID()
-	if err != nil {
-		bLogger.Warning(err.Error())
-	} else {
-		bLogger.Debug(fmt.Sprintf(`Using bucketing ID: "%s"`, bucketingID))
+	if len(experiment.AudienceIds) > 0 {
+		experimentAudience := decisionContext.AudienceMap[experiment.AudienceIds[0]]
+		evalResult := s.audienceEvaluator.Evaluate(experimentAudience, userContext)
+		if evalResult == false {
+			// user not targeted for experiment, return an empty variation
+			experimentDecision.DecisionMade = true
+			experimentDecision.Variation = entities.Variation{}
+			return experimentDecision, nil
+		}
 	}
-	variation := s.bucketer.Bucket(bucketingID, experiment, decisionContext.Group)
-	experimentDecision.DecisionMade = true
-	experimentDecision.Variation = variation
+	// user passes audience targeting, can move on to the next decision maker
 	return experimentDecision, nil
 }

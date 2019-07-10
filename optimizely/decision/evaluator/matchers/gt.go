@@ -14,36 +14,30 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package decision
+package matchers
 
-import "github.com/optimizely/go-sdk/optimizely/entities"
+import (
+	"fmt"
 
-// ExperimentDecisionContext contains the information needed to be able to make a decision for a given experiment
-type ExperimentDecisionContext struct {
-	AudienceMap map[string]entities.Audience
-	Experiment  entities.Experiment
-	Group       entities.Group
+	"github.com/optimizely/go-sdk/optimizely/decision/evaluator/matchers/utils"
+	"github.com/optimizely/go-sdk/optimizely/entities"
+)
+
+// GtMatcher matches against the "gt" match type
+type GtMatcher struct {
+	Condition entities.Condition
 }
 
-// FeatureDecisionContext contains the information needed to be able to make a decision for a given feature
-type FeatureDecisionContext struct {
-	Feature entities.Feature
-	Group   entities.Group
-}
+// Match returns true if the user's attribute is greater than the condition's string value
+func (m GtMatcher) Match(user entities.UserContext) (bool, error) {
 
-// Decision contains base information about a decision
-type Decision struct {
-	DecisionMade bool
-}
+	if floatValue, ok := utils.ToFloat(m.Condition.Value); ok {
+		attributeValue, err := user.Attributes.GetFloat(m.Condition.Name)
+		if err != nil {
+			return false, err
+		}
+		return floatValue < attributeValue, nil
+	}
 
-// FeatureDecision contains the decision information about a feature
-type FeatureDecision struct {
-	Decision
-	FeatureEnabled bool
-}
-
-// ExperimentDecision contains the decision information about an experiment
-type ExperimentDecision struct {
-	Decision
-	Variation entities.Variation
+	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
 }

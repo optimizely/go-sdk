@@ -28,7 +28,7 @@ type CompositeService struct {
 
 // NewCompositeService returns a new instance of the DefeaultDecisionEngine
 func NewCompositeService() *CompositeService {
-	experimentDecisionService := NewExperimentBucketerService()
+	experimentDecisionService := NewCompositeExperimentService()
 	featureDecisionService := NewCompositeFeatureService(experimentDecisionService)
 	return &CompositeService{
 		experimentDecisionServices: []ExperimentDecisionService{experimentDecisionService},
