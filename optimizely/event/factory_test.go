@@ -63,27 +63,27 @@ func BuildTestImpressionEvent() UserEvent {
 	variation.Key = "variation_a"
 	variation.ID = "15410990633"
 
-	logEvent := CreateImpressionUserEvent(context, experiment, variation, userContext)
+	impressionUserEvent := CreateImpressionUserEvent(context, experiment, variation, userContext)
 
-	return logEvent
+	return impressionUserEvent
 }
 
 func BuildTestConversionEvent() UserEvent {
 	config := TestConfig{}
 	context := CreateEventContext(config.GetProjectID(), config.GetRevision(), config.GetAccountID(), config.GetAnonymizeIP(), config.GetBotFiltering(), make(map[string]string))
 
-	logEvent := CreateConversionUserEvent(context, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext,make(map[string]string), make(map[string]interface{}))
+	conversionUserEvent := CreateConversionUserEvent(context, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext,make(map[string]string), make(map[string]interface{}))
 
-	return logEvent
+	return conversionUserEvent
 }
 
 func TestCreateAndSendImpressionEvent(t *testing.T) {
 
-	logEvent := BuildTestImpressionEvent()
+	impressionUserEvent := BuildTestImpressionEvent()
 
 	processor := NewEventProcessor(100, 100)
 
-	processor.ProcessImpression(logEvent)
+	processor.ProcessEvent(impressionUserEvent)
 
 	result, ok := processor.(*QueueingEventProcessor)
 
@@ -98,11 +98,11 @@ func TestCreateAndSendImpressionEvent(t *testing.T) {
 
 func TestCreateAndSendConversionEvent(t *testing.T) {
 
-	logEvent := BuildTestConversionEvent()
+	conversionUserEvent := BuildTestConversionEvent()
 
 	processor := NewEventProcessor(100, 100)
 
-	processor.ProcessImpression(logEvent)
+	processor.ProcessEvent(conversionUserEvent)
 
 	result, ok := processor.(*QueueingEventProcessor)
 
@@ -120,12 +120,12 @@ func TestCreateConversionEventRevenue(t *testing.T) {
 	config := TestConfig{}
 	context := CreateEventContext(config.GetProjectID(), config.GetRevision(), config.GetAccountID(), config.GetAnonymizeIP(), config.GetBotFiltering(), make(map[string]string))
 
-	logEvent := CreateConversionUserEvent(context, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext,make(map[string]string), eventTags)
+	conversionUserEvent := CreateConversionUserEvent(context, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext,make(map[string]string), eventTags)
 
-	assert.Equal(t, int64(55), *logEvent.Conversion.Revenue)
-	assert.Equal(t, 25.1, *logEvent.Conversion.Value)
+	assert.Equal(t, int64(55), *conversionUserEvent.Conversion.Revenue)
+	assert.Equal(t, 25.1, *conversionUserEvent.Conversion.Value)
 
-	batch := createConversionBatchEvent(logEvent)
+	batch := createConversionBatchEvent(conversionUserEvent)
 	assert.Equal(t, int64(55), *batch.Visitors[0].Snapshots[0].Events[0].Revenue)
 	assert.Equal(t, 25.1, *batch.Visitors[0].Snapshots[0].Events[0].Value)
 
