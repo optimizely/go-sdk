@@ -28,7 +28,7 @@ func main() {
 
 	impression := event.UserEvent{}
 
-	processor.ProcessImpression(impression)
+	processor.ProcessEvent(impression)
 
 	_, ok := processor.(*event.QueueingEventProcessor)
 
