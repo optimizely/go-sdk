@@ -19,6 +19,7 @@ package decision
 import (
 	"testing"
 
+	"github.com/optimizely/go-sdk/optimizely/decision/evaluator"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -28,7 +29,8 @@ type MockAudienceEvaluator struct {
 	mock.Mock
 }
 
-func (m *MockAudienceEvaluator) Evaluate(audience entities.Audience, userContext entities.UserContext) bool {
+func (m *MockAudienceEvaluator) Evaluate(audience entities.Audience, condTreeParams *evaluator.ConditionTreeParameters) bool {
+	userContext := *condTreeParams.User
 	args := m.Called(audience, userContext)
 	return args.Bool(0)
 }
@@ -58,6 +60,17 @@ func TestExperimentTargetingGetDecision(t *testing.T) {
 				"22222": testVariation,
 			},
 			AudienceIds: []string{"33333"},
+			AudienceConditionTree: &entities.ConditionTreeNode{
+				Operator: "or",
+				Nodes: []*entities.ConditionTreeNode{
+					&entities.ConditionTreeNode{
+						Condition: entities.Condition{
+							Name:  "s_foo",
+							Value: "33333",
+						},
+					},
+				},
+			},
 		},
 		AudienceMap: map[string]entities.Audience{
 			"33333": testAudience,

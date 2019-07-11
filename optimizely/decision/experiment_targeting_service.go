@@ -39,7 +39,8 @@ func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisi
 	experiment := decisionContext.Experiment
 	if len(experiment.AudienceIds) > 0 {
 		experimentAudience := decisionContext.AudienceMap[experiment.AudienceIds[0]]
-		evalResult := s.audienceEvaluator.Evaluate(experimentAudience, userContext)
+		condTreeParams := evaluator.NewCConditionTreeParameters(&userContext, map[string]entities.Audience{})
+		evalResult := s.audienceEvaluator.Evaluate(experimentAudience, condTreeParams)
 		if evalResult == false {
 			// user not targeted for experiment, return an empty variation
 			experimentDecision.DecisionMade = true

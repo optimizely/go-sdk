@@ -22,7 +22,7 @@ import (
 
 // AudienceEvaluator evaluates an audience against the given user's attributes
 type AudienceEvaluator interface {
-	Evaluate(audience entities.Audience, user entities.UserContext) bool
+	Evaluate(audience entities.Audience, condTreeParams *ConditionTreeParameters) bool
 }
 
 // TypedAudienceEvaluator evaluates typed audiences
@@ -39,6 +39,6 @@ func NewTypedAudienceEvaluator() *TypedAudienceEvaluator {
 }
 
 // Evaluate evaluates the typed audience against the given user's attributes
-func (a TypedAudienceEvaluator) Evaluate(audience entities.Audience, user entities.UserContext) bool {
-	return a.conditionTreeEvaluator.Evaluate(audience.ConditionTree, user)
+func (a TypedAudienceEvaluator) Evaluate(audience entities.Audience, condTreeParams *ConditionTreeParameters) bool {
+	return a.conditionTreeEvaluator.Evaluate(audience.ConditionTree, condTreeParams)
 }

@@ -32,14 +32,14 @@ const (
 
 // ConditionEvaluator evaluates a condition against the given user's attributes
 type ConditionEvaluator interface {
-	Evaluate(entities.Condition, interface{}) (bool, error)
+	Evaluate(entities.Condition, *ConditionTreeParameters) (bool, error)
 }
 
 // CustomAttributeConditionEvaluator evaluates conditions with custom attributes
 type CustomAttributeConditionEvaluator struct{}
 
 // Evaluate returns true if the given user's attributes match the condition
-func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, evalObject interface{}) (bool, error) {
+func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *ConditionTreeParameters) (bool, error) {
 	// We should only be evaluating custom attributes
 	if condition.Type != customAttributeType {
 		return false, fmt.Errorf(`Unable to evaluator condition of type "%s"`, condition.Type)
@@ -66,7 +66,43 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 		}
 	}
 
-	user := evalObject.(entities.UserContext)
+	user := *condTreeParams.User
+	result, err := matcher.Match(user)
+	return result, err
+}
+
+// AudienceConditionEvaluator evaluates conditions with audience condition
+type AudienceConditionEvaluator struct{}
+
+// Evaluate returns true if the given user's attributes match the condition
+func (c AudienceConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *ConditionTreeParameters) (bool, error) {
+	// We should only be evaluating custom attributes
+	if condition.Type != customAttributeType {
+		return false, fmt.Errorf(`Unable to evaluator condition of type "%s"`, condition.Type)
+	}
+
+	var matcher matchers.Matcher
+	matchType := condition.Match
+	switch matchType {
+	case exactMatchType:
+		matcher = matchers.ExactMatcher{
+			Condition: condition,
+		}
+	case existsMatchType:
+		matcher = matchers.ExistsMatcher{
+			Condition: condition,
+		}
+	case ltMatchType:
+		matcher = matchers.LtMatcher{
+			Condition: condition,
+		}
+	case gtMatchType:
+		matcher = matchers.GtMatcher{
+			Condition: condition,
+		}
+	}
+
+	user := *condTreeParams.User
 	result, err := matcher.Match(user)
 	return result, err
 }

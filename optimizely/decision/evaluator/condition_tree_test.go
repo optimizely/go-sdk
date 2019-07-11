@@ -48,7 +48,8 @@ func TestConditionTreeEvaluateSimpleCondition(t *testing.T) {
 			},
 		},
 	}
-	result := conditionTreeEvaluator.Evaluate(conditionTree, user)
+	condTreeParams := NewCConditionTreeParameters(&user, map[string]e.Audience{})
+	result := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 
 	// Test no match
@@ -59,7 +60,7 @@ func TestConditionTreeEvaluateSimpleCondition(t *testing.T) {
 			},
 		},
 	}
-	result = conditionTreeEvaluator.Evaluate(conditionTree, user)
+	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.False(t, result)
 }
 
@@ -85,7 +86,9 @@ func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
 			},
 		},
 	}
-	result := conditionTreeEvaluator.Evaluate(conditionTree, user)
+
+	condTreeParams := NewCConditionTreeParameters(&user, map[string]e.Audience{})
+	result := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 
 	// Test match bool
@@ -96,7 +99,7 @@ func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
 			},
 		},
 	}
-	result = conditionTreeEvaluator.Evaluate(conditionTree, user)
+	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 
 	// Test match both
@@ -108,7 +111,7 @@ func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
 			},
 		},
 	}
-	result = conditionTreeEvaluator.Evaluate(conditionTree, user)
+	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 
 	// Test no match
@@ -120,7 +123,7 @@ func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
 			},
 		},
 	}
-	result = conditionTreeEvaluator.Evaluate(conditionTree, user)
+	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.False(t, result)
 }
 
@@ -146,7 +149,9 @@ func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
 			},
 		},
 	}
-	result := conditionTreeEvaluator.Evaluate(conditionTree, user)
+
+	condTreeParams := NewCConditionTreeParameters(&user, map[string]e.Audience{})
+	result := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.False(t, result)
 
 	// Test only bool match with NULL bubbling
@@ -157,7 +162,7 @@ func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
 			},
 		},
 	}
-	result = conditionTreeEvaluator.Evaluate(conditionTree, user)
+	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.False(t, result)
 
 	// Test match both
@@ -169,7 +174,7 @@ func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
 			},
 		},
 	}
-	result = conditionTreeEvaluator.Evaluate(conditionTree, user)
+	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 
 	// Test no match
@@ -181,7 +186,7 @@ func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
 			},
 		},
 	}
-	result = conditionTreeEvaluator.Evaluate(conditionTree, user)
+	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.False(t, result)
 }
 
@@ -218,7 +223,9 @@ func TestConditionTreeEvaluateNotCondition(t *testing.T) {
 			},
 		},
 	}
-	result := conditionTreeEvaluator.Evaluate(conditionTree, user)
+
+	condTreeParams := NewCConditionTreeParameters(&user, map[string]e.Audience{})
+	result := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 
 	// Test match bool
@@ -229,7 +236,7 @@ func TestConditionTreeEvaluateNotCondition(t *testing.T) {
 			},
 		},
 	}
-	result = conditionTreeEvaluator.Evaluate(conditionTree, user)
+	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 
 	// Test match both
@@ -241,7 +248,7 @@ func TestConditionTreeEvaluateNotCondition(t *testing.T) {
 			},
 		},
 	}
-	result = conditionTreeEvaluator.Evaluate(conditionTree, user)
+	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 
 	// Test no match
@@ -253,7 +260,7 @@ func TestConditionTreeEvaluateNotCondition(t *testing.T) {
 			},
 		},
 	}
-	result = conditionTreeEvaluator.Evaluate(conditionTree, user)
+	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.False(t, result)
 }
 
@@ -303,7 +310,9 @@ func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
 			},
 		},
 	}
-	result := conditionTreeEvaluator.Evaluate(conditionTree, user)
+
+	condTreeParams := NewCConditionTreeParameters(&user, map[string]e.Audience{})
+	result := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 
 	// Test only match the NOT condition
@@ -316,7 +325,7 @@ func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
 			},
 		},
 	}
-	result = conditionTreeEvaluator.Evaluate(conditionTree, user)
+	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 
 	// Test only match the int condition
@@ -329,7 +338,7 @@ func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
 			},
 		},
 	}
-	result = conditionTreeEvaluator.Evaluate(conditionTree, user)
+	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 
 	// Test no match
@@ -342,6 +351,6 @@ func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
 			},
 		},
 	}
-	result = conditionTreeEvaluator.Evaluate(conditionTree, user)
+	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.False(t, result)
 }
