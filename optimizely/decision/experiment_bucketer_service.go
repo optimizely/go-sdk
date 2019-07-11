@@ -44,7 +44,11 @@ func NewExperimentBucketerService() *ExperimentBucketerService {
 func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
 	experimentDecision := ExperimentDecision{}
 	experiment := decisionContext.Experiment
-
+	var group entities.Group
+	if experiment.GroupID != "" {
+		// @TODO: figure out what to do if group is not found
+		group, _ = decisionContext.ProjectConfig.GetGroupByID(experiment.GroupID)
+	}
 	// bucket user into a variation
 	bucketingID, err := userContext.GetBucketingID()
 	if err != nil {
@@ -52,7 +56,7 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	} else {
 		bLogger.Debug(fmt.Sprintf(`Using bucketing ID: "%s"`, bucketingID))
 	}
-	variation := s.bucketer.Bucket(bucketingID, experiment, decisionContext.Group)
+	variation := s.bucketer.Bucket(bucketingID, experiment, group)
 	experimentDecision.DecisionMade = true
 	experimentDecision.Variation = variation
 	return experimentDecision, nil

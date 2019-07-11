@@ -16,19 +16,21 @@
 
 package decision
 
-import "github.com/optimizely/go-sdk/optimizely/entities"
+import (
+	"github.com/optimizely/go-sdk/optimizely"
+	"github.com/optimizely/go-sdk/optimizely/entities"
+)
 
 // ExperimentDecisionContext contains the information needed to be able to make a decision for a given experiment
 type ExperimentDecisionContext struct {
-	AudienceMap map[string]entities.Audience
-	Experiment  entities.Experiment
-	Group       entities.Group
+	Experiment    entities.Experiment
+	ProjectConfig optimizely.ProjectConfig
 }
 
 // FeatureDecisionContext contains the information needed to be able to make a decision for a given feature
 type FeatureDecisionContext struct {
-	Feature entities.Feature
-	Group   entities.Group
+	FeatureKey    string
+	ProjectConfig optimizely.ProjectConfig
 }
 
 // Decision contains base information about a decision
@@ -39,7 +41,8 @@ type Decision struct {
 // FeatureDecision contains the decision information about a feature
 type FeatureDecision struct {
 	Decision
-	FeatureEnabled bool
+	Experiment entities.Experiment
+	Variation  entities.Variation
 }
 
 // ExperimentDecision contains the decision information about an experiment

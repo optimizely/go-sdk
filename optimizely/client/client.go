@@ -19,7 +19,7 @@ package client
 import (
 	"errors"
 
-	"github.com/optimizely/go-sdk/optimizely/config"
+	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/optimizely/go-sdk/optimizely/logging"
@@ -29,7 +29,7 @@ var logger = logging.GetLogger("Client")
 
 // OptimizelyClient is the entry point to the Optimizely SDK
 type OptimizelyClient struct {
-	configManager   config.ProjectConfigManager
+	configManager   optimizely.ProjectConfigManager
 	decisionService decision.DecisionService
 	isValid         bool
 }
@@ -44,14 +44,9 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 	}
 
 	projectConfig := o.configManager.GetConfig()
-	feature, err := projectConfig.GetFeatureByKey(featureKey)
-	if err != nil {
-		return false, err
-	}
-
-	// @TODO(mng): Include assigned group for mutex support
 	featureDecisionContext := decision.FeatureDecisionContext{
-		Feature: feature,
+		FeatureKey:    featureKey,
+		ProjectConfig: projectConfig,
 	}
 
 	featureDecision, err := o.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
@@ -61,5 +56,5 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 	}
 
 	// @TODO(mng): send impression event
-	return featureDecision.FeatureEnabled, nil
+	return featureDecision.Variation.FeatureEnabled, nil
 }

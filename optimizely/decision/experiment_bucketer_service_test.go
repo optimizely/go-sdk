@@ -51,7 +51,6 @@ func TestExperimentBucketerGetDecision(t *testing.T) {
 				},
 			},
 		},
-		Group: entities.Group{},
 	}
 
 	testUserContext := entities.UserContext{
@@ -65,7 +64,7 @@ func TestExperimentBucketerGetDecision(t *testing.T) {
 		},
 	}
 	mockBucketer := new(MockBucketer)
-	mockBucketer.On("Bucket", testUserContext.ID, testDecisionContext.Experiment, testDecisionContext.Group).Return(testVariation, nil)
+	mockBucketer.On("Bucket", testUserContext.ID, testDecisionContext.Experiment, entities.Group{}).Return(testVariation, nil)
 
 	experimentBucketerService := ExperimentBucketerService{
 		bucketer: mockBucketer,

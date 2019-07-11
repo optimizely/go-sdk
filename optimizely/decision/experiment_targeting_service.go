@@ -38,7 +38,8 @@ func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisi
 	experimentDecision := ExperimentDecision{}
 	experiment := decisionContext.Experiment
 	if len(experiment.AudienceIds) > 0 {
-		experimentAudience := decisionContext.AudienceMap[experiment.AudienceIds[0]]
+		// @TODO: figure out what to do with the error
+		experimentAudience, _ := decisionContext.ProjectConfig.GetAudienceByID(experiment.AudienceIds[0])
 		evalResult := s.audienceEvaluator.Evaluate(experimentAudience, userContext)
 		if evalResult == false {
 			// user not targeted for experiment, return an empty variation

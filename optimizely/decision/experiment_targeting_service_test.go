@@ -19,10 +19,21 @@ package decision
 import (
 	"testing"
 
+	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+type bMockProjectConfig struct {
+	optimizely.ProjectConfig
+	mock.Mock
+}
+
+func (c *bMockProjectConfig) GetAudienceByID(audienceID string) (entities.Audience, error) {
+	args := c.Called(audienceID)
+	return args.Get(0).(entities.Audience), args.Error(1)
+}
 
 type MockAudienceEvaluator struct {
 	mock.Mock
@@ -47,6 +58,8 @@ func TestExperimentTargetingGetDecision(t *testing.T) {
 			},
 		},
 	}
+	mockProjectConfig := new(bMockProjectConfig)
+	mockProjectConfig.On("GetAudienceByID", "33333").Return(testAudience, nil)
 	testVariation := entities.Variation{
 		ID:  "22222",
 		Key: "22222",
@@ -59,9 +72,7 @@ func TestExperimentTargetingGetDecision(t *testing.T) {
 			},
 			AudienceIds: []string{"33333"},
 		},
-		AudienceMap: map[string]entities.Audience{
-			"33333": testAudience,
-		},
+		ProjectConfig: mockProjectConfig,
 	}
 
 	// test does not pass audience evaluation
@@ -111,4 +122,5 @@ func TestExperimentTargetingGetDecision(t *testing.T) {
 	decision, _ = experimentTargetingService.GetDecision(testDecisionContext, testUserContext)
 	assert.Equal(t, expectedExperimentDecision, decision)
 	mockAudienceEvaluator.AssertExpectations(t)
+	mockProjectConfig.AssertExpectations(t)
 }
