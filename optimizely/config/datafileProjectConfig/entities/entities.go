@@ -26,14 +26,15 @@ type Audience struct {
 // Experiment represents an Experiment object from the Optimizely datafile
 type Experiment struct {
 	// @TODO(mng): include audienceConditions
-	ID                string              `json:"id"`
-	Key               string              `json:"key"`
-	LayerID           string              `json:"layerId"`
-	Status            string              `json:"status"`
-	Variations        []Variation         `json:"variations"`
-	TrafficAllocation []trafficAllocation `json:"trafficAllocation"`
-	AudienceIds       []string            `json:"audienceIds"`
-	ForcedVariations  map[string]string   `json:"forcedVariations"`
+	ID                 string              `json:"id"`
+	Key                string              `json:"key"`
+	LayerID            string              `json:"layerId"`
+	Status             string              `json:"status"`
+	Variations         []Variation         `json:"variations"`
+	TrafficAllocation  []trafficAllocation `json:"trafficAllocation"`
+	AudienceIds        []string            `json:"audienceIds"`
+	ForcedVariations   map[string]string   `json:"forcedVariations"`
+	AudienceConditions interface{}         `json:"audienceConditions"`
 }
 
 // FeatureFlag represents a FeatureFlag object from the Optimizely datafile
@@ -60,8 +61,8 @@ type Variation struct {
 }
 
 type Event struct {
-	ID string `json:"id"`
-	Key string `json:"key"`
+	ID            string   `json:"id"`
+	Key           string   `json:"key"`
 	ExperimentIds []string `json:"experimentIds"`
 }
 

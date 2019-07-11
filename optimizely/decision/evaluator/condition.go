@@ -24,22 +24,22 @@ import (
 )
 
 const (
-	exactMatchType = "exact"
+	exactMatchType  = "exact"
 	existsMatchType = "exists"
-	ltMatchType = "lt"
-	gtMatchType = "gt"
+	ltMatchType     = "lt"
+	gtMatchType     = "gt"
 )
 
 // ConditionEvaluator evaluates a condition against the given user's attributes
 type ConditionEvaluator interface {
-	Evaluate(entities.Condition, entities.UserContext) (bool, error)
+	Evaluate(entities.Condition, interface{}) (bool, error)
 }
 
 // CustomAttributeConditionEvaluator evaluates conditions with custom attributes
 type CustomAttributeConditionEvaluator struct{}
 
 // Evaluate returns true if the given user's attributes match the condition
-func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, user entities.UserContext) (bool, error) {
+func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, evalObject interface{}) (bool, error) {
 	// We should only be evaluating custom attributes
 	if condition.Type != customAttributeType {
 		return false, fmt.Errorf(`Unable to evaluator condition of type "%s"`, condition.Type)
@@ -66,6 +66,7 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 		}
 	}
 
+	user := evalObject.(entities.UserContext)
 	result, err := matcher.Match(user)
 	return result, err
 }

@@ -51,38 +51,57 @@ func TestMapExperiments(t *testing.T) {
 				"entityId": "21112",
 				"endOfRange": 10000
 			}
+		],
+		"audienceConditions": [
+			"or",
+			"31111"
 		]
 	}`
+
 	var rawExperiment datafileEntities.Experiment
 	json.Unmarshal([]byte(testExperimentString), &rawExperiment)
 
 	rawExperiments := []datafileEntities.Experiment{rawExperiment}
 	experiments, experimentKeyMap := MapExperiments(rawExperiments)
 	expectedExperiments := map[string]entities.Experiment{
-		"11111": entities.Experiment{
+		"11111": {
 			AudienceIds: []string{"31111"},
 			ID:          "11111",
 			Key:         "test_experiment_11111",
 			Variations: map[string]entities.Variation{
-				"21111": entities.Variation{
+				"21111": {
 					ID:             "21111",
 					Key:            "variation_1",
 					FeatureEnabled: true,
 				},
-				"21112": entities.Variation{
+				"21112": {
 					ID:             "21112",
 					Key:            "variation_2",
 					FeatureEnabled: false,
 				},
 			},
 			TrafficAllocation: []entities.Range{
-				entities.Range{
+				{
 					EntityID:   "21111",
 					EndOfRange: 7000,
 				},
-				entities.Range{
+				{
 					EntityID:   "21112",
 					EndOfRange: 10000,
+				},
+			},
+			AudienceConditionTree: &entities.ConditionTreeNode{
+				Operator: "or",
+				Nodes: []*entities.ConditionTreeNode{
+					{
+						Operator: "",
+						Condition: entities.Condition{
+							Name:  "optimizely_populated",
+							Match: "",
+							Type:  "audience_condition",
+							Value: "31111",
+						},
+					},
 				},
 			},
 		},
