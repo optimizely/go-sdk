@@ -11,8 +11,9 @@ import (
 )
 
 func main() {
+	datafileStr := `{DATAFILE_STRING_HERE}`
 	optimizelyFactory := &client.OptimizelyFactory{
-		SDKKey: "ABC",
+		Datafile: []byte(datafileStr),
 	}
 	client := optimizelyFactory.Client()
 
