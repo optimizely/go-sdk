@@ -29,13 +29,14 @@ type MockAudienceEvaluator struct {
 	mock.Mock
 }
 
-func (m *MockAudienceEvaluator) Evaluate(audience entities.Audience, condTreeParams *evaluator.ConditionTreeParameters) bool {
+func (m *MockAudienceEvaluator) Evaluate(audience entities.Audience, condTreeParams *entities.ConditionTreeParameters) bool {
 	userContext := *condTreeParams.User
 	args := m.Called(audience, userContext)
 	return args.Bool(0)
 }
 
-func TestExperimentTargetingGetDecision(t *testing.T) {
+// test with mocking
+func TestExperimentTargetingGetDecisionNoAudienceCondTree(t *testing.T) {
 	testAudience := entities.Audience{
 		ConditionTree: &entities.ConditionTreeNode{
 			Operator: "or",
@@ -60,17 +61,6 @@ func TestExperimentTargetingGetDecision(t *testing.T) {
 				"22222": testVariation,
 			},
 			AudienceIds: []string{"33333"},
-			AudienceConditionTree: &entities.ConditionTreeNode{
-				Operator: "or",
-				Nodes: []*entities.ConditionTreeNode{
-					&entities.ConditionTreeNode{
-						Condition: entities.Condition{
-							Name:  "s_foo",
-							Value: "33333",
-						},
-					},
-				},
-			},
 		},
 		AudienceMap: map[string]entities.Audience{
 			"33333": testAudience,
@@ -124,4 +114,97 @@ func TestExperimentTargetingGetDecision(t *testing.T) {
 	decision, _ = experimentTargetingService.GetDecision(testDecisionContext, testUserContext)
 	assert.Equal(t, expectedExperimentDecision, decision)
 	mockAudienceEvaluator.AssertExpectations(t)
+}
+
+// Real tests with no mocking
+func TestExperimentTargetingGetDecisionWithAudienceCondTree(t *testing.T) {
+	testAudience := entities.Audience{
+		ConditionTree: &entities.ConditionTreeNode{
+			Operator: "or",
+			Nodes: []*entities.ConditionTreeNode{
+				{
+					Condition: entities.Condition{
+						Name:  "s_foo",
+						Type:  "custom_attribute",
+						Match: "exact",
+						Value: "foo",
+					},
+				},
+			},
+		},
+	}
+	testVariation := entities.Variation{
+		ID:  "22222",
+		Key: "22222",
+	}
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment: entities.Experiment{
+			ID: "111111",
+			Variations: map[string]entities.Variation{
+				"22222": testVariation,
+			},
+			AudienceIds: []string{"33333"},
+			AudienceConditionTree: &entities.ConditionTreeNode{
+				Operator: "or",
+				Nodes: []*entities.ConditionTreeNode{
+					{
+						Condition: entities.Condition{
+							Name:  "optimizely_generated",
+							Type:  "audience_condition",
+							Value: "33333",
+						},
+					},
+				},
+			},
+		},
+		AudienceMap: map[string]entities.Audience{
+			"33333": testAudience,
+		},
+	}
+
+	// test does not pass audience evaluation
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+		Attributes: entities.UserAttributes{
+			Attributes: map[string]interface{}{
+				"s_foo": "not_foo",
+			},
+		},
+	}
+	expectedExperimentDecision := ExperimentDecision{
+		Decision: Decision{
+			DecisionMade: true,
+		},
+		Variation: entities.Variation{},
+	}
+
+	audienceEvaluator := evaluator.NewTypedAudienceEvaluator()
+	experimentTargetingService := ExperimentTargetingService{
+		audienceEvaluator: audienceEvaluator,
+	}
+
+	decision, _ := experimentTargetingService.GetDecision(testDecisionContext, testUserContext)
+	assert.Equal(t, expectedExperimentDecision, decision) //decision made but did not pass
+
+	/****** Perfect Match ***************/
+
+	testUserContext = entities.UserContext{
+		ID: "test_user_1",
+		Attributes: entities.UserAttributes{
+			Attributes: map[string]interface{}{
+				"s_foo": "foo",
+			},
+		},
+	}
+
+	expectedExperimentDecision = ExperimentDecision{
+		Decision: Decision{
+			DecisionMade: false,
+		},
+		Variation: entities.Variation{},
+	}
+
+	decision, _ = experimentTargetingService.GetDecision(testDecisionContext, testUserContext)
+	assert.Equal(t, expectedExperimentDecision, decision) // decision not made? but it passed
+
 }

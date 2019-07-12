@@ -41,7 +41,7 @@ func TestCustomAttributeConditionEvaluator(t *testing.T) {
 		},
 	}
 
-	condTreeParams := NewCConditionTreeParameters(&user, map[string]entities.Audience{})
+	condTreeParams := entities.NewConditionTreeParameters(&user, map[string]entities.Audience{})
 	result, _ := conditionEvaluator.Evaluate(condition, condTreeParams)
 	assert.Equal(t, result, true)
 

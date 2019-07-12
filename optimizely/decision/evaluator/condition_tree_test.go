@@ -48,7 +48,7 @@ func TestConditionTreeEvaluateSimpleCondition(t *testing.T) {
 			},
 		},
 	}
-	condTreeParams := NewCConditionTreeParameters(&user, map[string]e.Audience{})
+	condTreeParams := e.NewConditionTreeParameters(&user, map[string]e.Audience{})
 	result := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 
@@ -87,7 +87,7 @@ func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
 		},
 	}
 
-	condTreeParams := NewCConditionTreeParameters(&user, map[string]e.Audience{})
+	condTreeParams := e.NewConditionTreeParameters(&user, map[string]e.Audience{})
 	result := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 
@@ -150,7 +150,7 @@ func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
 		},
 	}
 
-	condTreeParams := NewCConditionTreeParameters(&user, map[string]e.Audience{})
+	condTreeParams := e.NewConditionTreeParameters(&user, map[string]e.Audience{})
 	result := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.False(t, result)
 
@@ -224,7 +224,7 @@ func TestConditionTreeEvaluateNotCondition(t *testing.T) {
 		},
 	}
 
-	condTreeParams := NewCConditionTreeParameters(&user, map[string]e.Audience{})
+	condTreeParams := e.NewConditionTreeParameters(&user, map[string]e.Audience{})
 	result := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 
@@ -311,7 +311,7 @@ func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
 		},
 	}
 
-	condTreeParams := NewCConditionTreeParameters(&user, map[string]e.Audience{})
+	condTreeParams := e.NewConditionTreeParameters(&user, map[string]e.Audience{})
 	result := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 

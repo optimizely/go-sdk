@@ -18,7 +18,6 @@ package evaluator
 
 import (
 	"fmt"
-
 	"github.com/optimizely/go-sdk/optimizely/decision/evaluator/matchers"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
@@ -32,14 +31,14 @@ const (
 
 // ConditionEvaluator evaluates a condition against the given user's attributes
 type ConditionEvaluator interface {
-	Evaluate(entities.Condition, *ConditionTreeParameters) (bool, error)
+	Evaluate(entities.Condition, *entities.ConditionTreeParameters) (bool, error)
 }
 
 // CustomAttributeConditionEvaluator evaluates conditions with custom attributes
 type CustomAttributeConditionEvaluator struct{}
 
 // Evaluate returns true if the given user's attributes match the condition
-func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *ConditionTreeParameters) (bool, error) {
+func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *entities.ConditionTreeParameters) (bool, error) {
 	// We should only be evaluating custom attributes
 	if condition.Type != customAttributeType {
 		return false, fmt.Errorf(`Unable to evaluator condition of type "%s"`, condition.Type)
@@ -64,6 +63,8 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 		matcher = matchers.GtMatcher{
 			Condition: condition,
 		}
+	default:
+		return false, fmt.Errorf(`Invalid Condition matcher "%s"`, condition.Match)
 	}
 
 	user := *condTreeParams.User
@@ -75,34 +76,22 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 type AudienceConditionEvaluator struct{}
 
 // Evaluate returns true if the given user's attributes match the condition
-func (c AudienceConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *ConditionTreeParameters) (bool, error) {
+func (c AudienceConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *entities.ConditionTreeParameters) (bool, error) {
 	// We should only be evaluating custom attributes
-	if condition.Type != customAttributeType {
+	if condition.Type != audienceCondition {
 		return false, fmt.Errorf(`Unable to evaluator condition of type "%s"`, condition.Type)
 	}
+	var ok bool
+	var audienceID string
 
-	var matcher matchers.Matcher
-	matchType := condition.Match
-	switch matchType {
-	case exactMatchType:
-		matcher = matchers.ExactMatcher{
-			Condition: condition,
-		}
-	case existsMatchType:
-		matcher = matchers.ExistsMatcher{
-			Condition: condition,
-		}
-	case ltMatchType:
-		matcher = matchers.LtMatcher{
-			Condition: condition,
-		}
-	case gtMatchType:
-		matcher = matchers.GtMatcher{
-			Condition: condition,
+	if audienceID, ok = condition.Value.(string); ok {
+		if audience, good := condTreeParams.AudienceMap[audienceID]; good {
+			condTree := audience.ConditionTree
+			conditionTreeEvaluator := NewConditionTreeEvaluator()
+			retValue := conditionTreeEvaluator.Evaluate(condTree, condTreeParams)
+			return retValue, nil
 		}
 	}
 
-	user := *condTreeParams.User
-	result, err := matcher.Match(user)
-	return result, err
+	return false, fmt.Errorf(`Unable to evaluate nested tree for audience ID "%s"`, audienceID)
 }

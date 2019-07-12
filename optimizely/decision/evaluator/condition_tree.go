@@ -32,15 +32,6 @@ const (
 	orOperator = "or"
 )
 
-type ConditionTreeParameters struct {
-	User        *entities.UserContext
-	AudienceMap map[string]entities.Audience
-}
-
-func NewCConditionTreeParameters(user *entities.UserContext, audience map[string]entities.Audience) *ConditionTreeParameters {
-	return &ConditionTreeParameters{User: user, AudienceMap: audience}
-}
-
 // ConditionTreeEvaluator evaluates a condition tree
 type ConditionTreeEvaluator struct {
 	conditionEvaluatorMap map[string]ConditionEvaluator
@@ -59,7 +50,7 @@ func NewConditionTreeEvaluator() *ConditionTreeEvaluator {
 
 // entities.UserContext
 // Evaluate returns true if the userAttributes satisfy the given condition tree
-func (c ConditionTreeEvaluator) Evaluate(node *entities.ConditionTreeNode, condTreeParams *ConditionTreeParameters) bool {
+func (c ConditionTreeEvaluator) Evaluate(node *entities.ConditionTreeNode, condTreeParams *entities.ConditionTreeParameters) bool {
 	// This wrapper method converts the conditionEvalResult to a boolean
 	result, _ := c.evaluate(node, condTreeParams)
 	return result == true
@@ -67,7 +58,7 @@ func (c ConditionTreeEvaluator) Evaluate(node *entities.ConditionTreeNode, condT
 
 // Helper method to recursively evaluate a condition tree
 // Returns the result of the evaluation and whether the evaluation of the condition is valid or not (to handle null bubbling)
-func (c ConditionTreeEvaluator) evaluate(node *entities.ConditionTreeNode, condTreeParams *ConditionTreeParameters) (evalResult bool, isValid bool) {
+func (c ConditionTreeEvaluator) evaluate(node *entities.ConditionTreeNode, condTreeParams *entities.ConditionTreeParameters) (evalResult bool, isValid bool) {
 	operator := node.Operator
 	if operator != "" {
 		switch operator {
@@ -96,7 +87,7 @@ func (c ConditionTreeEvaluator) evaluate(node *entities.ConditionTreeNode, condT
 	return result, true
 }
 
-func (c ConditionTreeEvaluator) evaluateAnd(nodes []*entities.ConditionTreeNode, condTreeParams *ConditionTreeParameters) (evalResult bool, isValid bool) {
+func (c ConditionTreeEvaluator) evaluateAnd(nodes []*entities.ConditionTreeNode, condTreeParams *entities.ConditionTreeParameters) (evalResult bool, isValid bool) {
 	sawInvalid := false
 	for _, node := range nodes {
 		result, isValid := c.evaluate(node, condTreeParams)
@@ -115,7 +106,7 @@ func (c ConditionTreeEvaluator) evaluateAnd(nodes []*entities.ConditionTreeNode,
 	return true, true
 }
 
-func (c ConditionTreeEvaluator) evaluateNot(nodes []*entities.ConditionTreeNode, condTreeParams *ConditionTreeParameters) (evalResult bool, isValid bool) {
+func (c ConditionTreeEvaluator) evaluateNot(nodes []*entities.ConditionTreeNode, condTreeParams *entities.ConditionTreeParameters) (evalResult bool, isValid bool) {
 	if len(nodes) > 0 {
 		result, isValid := c.evaluate(nodes[0], condTreeParams)
 		if !isValid {
@@ -126,7 +117,7 @@ func (c ConditionTreeEvaluator) evaluateNot(nodes []*entities.ConditionTreeNode,
 	return false, false
 }
 
-func (c ConditionTreeEvaluator) evaluateOr(nodes []*entities.ConditionTreeNode, condTreeParams *ConditionTreeParameters) (evalResult bool, isValid bool) {
+func (c ConditionTreeEvaluator) evaluateOr(nodes []*entities.ConditionTreeNode, condTreeParams *entities.ConditionTreeParameters) (evalResult bool, isValid bool) {
 	sawInvalid := false
 	for _, node := range nodes {
 		result, isValid := c.evaluate(node, condTreeParams)

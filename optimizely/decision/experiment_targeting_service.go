@@ -37,15 +37,28 @@ func NewExperimentTargetingService() *ExperimentTargetingService {
 func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
 	experimentDecision := ExperimentDecision{}
 	experiment := decisionContext.Experiment
-	if len(experiment.AudienceIds) > 0 {
-		experimentAudience := decisionContext.AudienceMap[experiment.AudienceIds[0]]
-		condTreeParams := evaluator.NewCConditionTreeParameters(&userContext, map[string]entities.Audience{})
-		evalResult := s.audienceEvaluator.Evaluate(experimentAudience, condTreeParams)
-		if evalResult == false {
+
+	if experiment.AudienceConditionTree != nil {
+
+		condTreeParams := entities.NewConditionTreeParameters(&userContext, decisionContext.AudienceMap)
+		conditionTreeEvaluator := evaluator.NewConditionTreeEvaluator()
+		evalResult := conditionTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
+		if !evalResult {
 			// user not targeted for experiment, return an empty variation
 			experimentDecision.DecisionMade = true
 			experimentDecision.Variation = entities.Variation{}
-			return experimentDecision, nil
+		}
+		return experimentDecision, nil
+	}
+
+	if len(experiment.AudienceIds) > 0 {
+		experimentAudience := decisionContext.AudienceMap[experiment.AudienceIds[0]]
+		condTreeParams := entities.NewConditionTreeParameters(&userContext, map[string]entities.Audience{})
+		evalResult := s.audienceEvaluator.Evaluate(experimentAudience, condTreeParams)
+		if !evalResult {
+			// user not targeted for experiment, return an empty variation
+			experimentDecision.DecisionMade = true
+			experimentDecision.Variation = entities.Variation{}
 		}
 	}
 	// user passes audience targeting, can move on to the next decision maker
