@@ -17,15 +17,57 @@
 package config
 
 import (
+	"bytes"
+	"errors"
+	"io"
+	"net/http"
 	"sync"
 
 	"github.com/optimizely/go-sdk/optimizely"
+	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig"
 )
 
 // StaticProjectConfigManager maintains a static copy of the project config
 type StaticProjectConfigManager struct {
 	projectConfig optimizely.ProjectConfig
 	configLock    sync.Mutex
+}
+
+func NewStaticProjectConfigManagerFromUrl(URL string) (*StaticProjectConfigManager, error) {
+	downloadFile := func(URL string) ([]byte, error) {
+		response, err := http.Get(URL)
+		if err != nil {
+			return nil, err
+		}
+		defer response.Body.Close()
+		if response.StatusCode != http.StatusOK {
+			return nil, errors.New(response.Status)
+		}
+		var data bytes.Buffer
+		_, err = io.Copy(&data, response.Body)
+		if err != nil {
+			return nil, err
+		}
+		return data.Bytes(), nil
+	}
+
+	body, err := downloadFile(URL)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return NewStaticProjectConfigManagerFromPayload(body)
+}
+
+func NewStaticProjectConfigManagerFromPayload(payload []byte) (*StaticProjectConfigManager, error) {
+	projectConfig, err := datafileProjectConfig.NewDatafileProjectConfig(payload)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return NewStaticProjectConfigManager(projectConfig), nil
 }
 
 // NewStaticProjectConfigManager creates a new instance of the manager with the given project config

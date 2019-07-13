@@ -14,51 +14,30 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package client
+package cmd
 
 import (
-
-	"github.com/optimizely/go-sdk/optimizely"
 	"fmt"
-	"github.com/optimizely/go-sdk/optimizely/config"
-	"github.com/optimizely/go-sdk/optimizely/decision"
+	"os"
+
+	"github.com/spf13/cobra"
 )
 
-// OptimizelyFactory is used to construct an instance of the OptimizelyClient
-type OptimizelyFactory struct {
-	SDKKey   string
-	Datafile []byte
+var sdkKey string
+
+var rootCmd = &cobra.Command{
+	Use:   "go-sdk",
+	Short: "go-sdk provides cli access to your Optimizely fullstack project",
 }
 
-// Client returns a client initialized with the defaults
-func (f OptimizelyFactory) Client() (*OptimizelyClient, error) {
-	var configManager optimizely.ProjectConfigManager
-
-	if f.SDKKey != "" {
-		url := fmt.Sprintf("https://cdn.optimizely.com/datafiles/%s.json", f.SDKKey)
-		staticConfigManager, err := config.NewStaticProjectConfigManagerFromUrl(url)
-
-		if err != nil {
-			return nil, err
-		}
-
-		configManager = staticConfigManager
-
-	} else if f.Datafile != nil {
-		staticConfigManager, err := config.NewStaticProjectConfigManagerFromPayload(f.Datafile)
-
-		if err != nil {
-			return nil, err
-		}
-
-		configManager = staticConfigManager
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
+}
 
-	decisionService := decision.NewCompositeService()
-	client := OptimizelyClient{
-		decisionService: decisionService,
-		configManager:   configManager,
-		isValid:         true,
-	}
-	return &client, nil
+func init() {
+	rootCmd.PersistentFlags().StringVarP(&sdkKey, "sdkKey", "s", "", "Optimizely project SDK key")
+	rootCmd.MarkPersistentFlagRequired("sdkKey")
 }
