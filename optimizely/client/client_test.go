@@ -22,14 +22,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/optimizely/go-sdk/optimizely/config"
+	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/mock"
 )
 
 type MockProjectConfig struct {
-	config.ProjectConfig
+	optimizely.ProjectConfig
 	mock.Mock
 }
 
@@ -42,9 +42,9 @@ type MockProjectConfigManager struct {
 	mock.Mock
 }
 
-func (p *MockProjectConfigManager) GetConfig() config.ProjectConfig {
+func (p *MockProjectConfigManager) GetConfig() optimizely.ProjectConfig {
 	args := p.Called()
-	return args.Get(0).(config.ProjectConfig)
+	return args.Get(0).(optimizely.ProjectConfig)
 }
 
 type MockDecisionService struct {
@@ -58,37 +58,31 @@ func (m *MockDecisionService) GetFeatureDecision(decisionContext decision.Featur
 
 func TestIsFeatureEnabled(t *testing.T) {
 	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testFeatureKey := "test_feature_key"
-	testFeature := entities.Feature{
-		Key: testFeatureKey,
-		FeatureExperiments: []entities.Experiment{
-			entities.Experiment{
-				ID: "111111",
-				Variations: map[string]entities.Variation{
-					"22222": entities.Variation{
-						ID:             "22222",
-						Key:            "22222",
-						FeatureEnabled: true,
-					},
-				},
-			},
-		},
+	testVariation := entities.Variation{
+		ID:             "22222",
+		Key:            "22222",
+		FeatureEnabled: true,
 	}
+	testExperiment := entities.Experiment{
+		ID:         "111111",
+		Variations: map[string]entities.Variation{"22222": testVariation},
+	}
+	testFeatureKey := "test_feature_key"
 
 	// Test happy path
 	mockConfig := new(MockProjectConfig)
-	mockConfig.On("GetFeatureByKey", testFeatureKey).Return(testFeature, nil)
-
 	mockConfigManager := new(MockProjectConfigManager)
 	mockConfigManager.On("GetConfig").Return(mockConfig)
 
 	// Set up the mock decision service and its return value
 	testDecisionContext := decision.FeatureDecisionContext{
-		Feature: testFeature,
+		FeatureKey:    testFeatureKey,
+		ProjectConfig: mockConfig,
 	}
 
 	expectedFeatureDecision := decision.FeatureDecision{
-		FeatureEnabled: true,
+		Experiment: testExperiment,
+		Variation:  testVariation,
 		Decision: decision.Decision{
 			DecisionMade: true,
 		},
@@ -127,15 +121,19 @@ func TestIsFeatureEnabledErrorCases(t *testing.T) {
 	mockConfigManager.AssertNotCalled(t, "GetFeatureByKey")
 	mockDecisionService.AssertNotCalled(t, "GetFeatureDecision")
 
-	// Test invalid feature key
+	// Test decision serviceinvalid feature key
 	expectedError := errors.New("Invalid feature key")
 	mockConfig := new(MockProjectConfig)
-	mockConfig.On("GetFeatureByKey", testFeatureKey).Return(entities.Feature{}, expectedError)
 
 	mockConfigManager = new(MockProjectConfigManager)
 	mockConfigManager.On("GetConfig").Return(mockConfig)
-	mockDecisionService = new(MockDecisionService)
 
+	testFeatureDecisionContext := decision.FeatureDecisionContext{
+		FeatureKey:    testFeatureKey,
+		ProjectConfig: mockConfig,
+	}
+	mockDecisionService = new(MockDecisionService)
+	mockDecisionService.On("GetFeatureDecision", testFeatureDecisionContext, testUserContext).Return(decision.FeatureDecision{}, expectedError)
 	client = OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
@@ -146,4 +144,6 @@ func TestIsFeatureEnabledErrorCases(t *testing.T) {
 		assert.Equal(t, expectedError, err)
 	}
 	assert.False(t, result)
+	mockConfigManager.AssertExpectations(t)
+	mockDecisionService.AssertExpectations(t)
 }

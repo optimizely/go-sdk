@@ -16,23 +16,27 @@
 
 package config
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/optimizely/go-sdk/optimizely"
+)
 
 // StaticProjectConfigManager maintains a static copy of the project config
 type StaticProjectConfigManager struct {
-	projectConfig ProjectConfig
+	projectConfig optimizely.ProjectConfig
 	configLock    sync.Mutex
 }
 
 // NewStaticProjectConfigManager creates a new instance of the manager with the given project config
-func NewStaticProjectConfigManager(config ProjectConfig) *StaticProjectConfigManager {
+func NewStaticProjectConfigManager(config optimizely.ProjectConfig) *StaticProjectConfigManager {
 	return &StaticProjectConfigManager{
 		projectConfig: config,
 	}
 }
 
 // GetConfig returns the project config
-func (cm *StaticProjectConfigManager) GetConfig() ProjectConfig {
+func (cm *StaticProjectConfigManager) GetConfig() optimizely.ProjectConfig {
 	cm.configLock.Lock()
 	defer cm.configLock.Unlock()
 	return cm.projectConfig

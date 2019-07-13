@@ -47,21 +47,18 @@ func TestExperimentTargetingGetDecision(t *testing.T) {
 			},
 		},
 	}
-	testVariation := entities.Variation{
-		ID:  "22222",
-		Key: "22222",
+	mockProjectConfig := new(MockProjectConfig)
+
+	testExperimentKey := "test_experiment"
+	testExperiment := entities.Experiment{
+		ID:          "111111",
+		AudienceIds: []string{"33333"},
 	}
+	mockProjectConfig.On("GetAudienceByID", "33333").Return(testAudience, nil)
+	mockProjectConfig.On("GetExperimentByKey", testExperimentKey).Return(testExperiment, nil)
 	testDecisionContext := ExperimentDecisionContext{
-		Experiment: entities.Experiment{
-			ID: "111111",
-			Variations: map[string]entities.Variation{
-				"22222": testVariation,
-			},
-			AudienceIds: []string{"33333"},
-		},
-		AudienceMap: map[string]entities.Audience{
-			"33333": testAudience,
-		},
+		ExperimentKey: testExperimentKey,
+		ProjectConfig: mockProjectConfig,
 	}
 
 	// test does not pass audience evaluation
@@ -111,4 +108,5 @@ func TestExperimentTargetingGetDecision(t *testing.T) {
 	decision, _ = experimentTargetingService.GetDecision(testDecisionContext, testUserContext)
 	assert.Equal(t, expectedExperimentDecision, decision)
 	mockAudienceEvaluator.AssertExpectations(t)
+	mockProjectConfig.AssertExpectations(t)
 }

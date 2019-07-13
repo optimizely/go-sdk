@@ -23,8 +23,29 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
+	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
+
+type MockProjectConfig struct {
+	optimizely.ProjectConfig
+	mock.Mock
+}
+
+func (c *MockProjectConfig) GetFeatureByKey(featureKey string) (entities.Feature, error) {
+	args := c.Called(featureKey)
+	return args.Get(0).(entities.Feature), args.Error(1)
+}
+
+func (c *MockProjectConfig) GetExperimentByKey(experimentKey string) (entities.Experiment, error) {
+	args := c.Called(experimentKey)
+	return args.Get(0).(entities.Experiment), args.Error(1)
+}
+
+func (c *MockProjectConfig) GetAudienceByID(audienceID string) (entities.Audience, error) {
+	args := c.Called(audienceID)
+	return args.Get(0).(entities.Audience), args.Error(1)
+}
 
 type MockFeatureDecisionService struct {
 	mock.Mock
@@ -36,10 +57,23 @@ func (m *MockFeatureDecisionService) GetDecision(decisionContext FeatureDecision
 }
 
 func TestGetFeatureDecision(t *testing.T) {
+	testFeatureKey := "my_test_feature"
+	testVariation := entities.Variation{
+		ID:             "11111",
+		FeatureEnabled: true,
+	}
+	testExperiment := entities.Experiment{
+		Variations: map[string]entities.Variation{"11111": testVariation},
+	}
+	testFeature := entities.Feature{
+		Key:                testFeatureKey,
+		FeatureExperiments: []entities.Experiment{testExperiment},
+	}
+	mockProjectConfig := new(MockProjectConfig)
+	mockProjectConfig.On("GetFeatureByKey", testFeatureKey).Return(testFeature, nil)
 	decisionContext := FeatureDecisionContext{
-		Feature: entities.Feature{
-			Key: "my_test_feature",
-		},
+		FeatureKey:    testFeatureKey,
+		ProjectConfig: mockProjectConfig,
 	}
 
 	userContext := entities.UserContext{
@@ -47,8 +81,9 @@ func TestGetFeatureDecision(t *testing.T) {
 	}
 
 	expectedFeatureDecision := FeatureDecision{
-		FeatureEnabled: true,
-		Decision:       Decision{DecisionMade: true},
+		Experiment: testExperiment,
+		Variation:  testVariation,
+		Decision:   Decision{DecisionMade: true},
 	}
 
 	testFeatureDecisionService := new(MockFeatureDecisionService)

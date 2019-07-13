@@ -17,6 +17,7 @@
 package client
 
 import (
+	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/config"
 	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig"
 	"github.com/optimizely/go-sdk/optimizely/decision"
@@ -30,8 +31,8 @@ type OptimizelyFactory struct {
 
 // Client returns a client initialized with the defaults
 func (f OptimizelyFactory) Client() OptimizelyClient {
-	var projectConfig config.ProjectConfig
-	var configManager config.ProjectConfigManager
+	var projectConfig optimizely.ProjectConfig
+	var configManager optimizely.ProjectConfigManager
 	if f.Datafile != nil {
 		projectConfig = datafileProjectConfig.NewDatafileProjectConfig(f.Datafile)
 

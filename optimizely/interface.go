@@ -14,7 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package config
+package optimizely
 
 import (
 	"github.com/optimizely/go-sdk/optimizely/entities"
@@ -22,14 +22,17 @@ import (
 
 // ProjectConfig contains the parsed project entities
 type ProjectConfig interface {
-	GetFeatureByKey(string) (entities.Feature, error)
-	GetProjectID() string
-	GetRevision()  string
 	GetAccountID() string
 	GetAnonymizeIP() bool
 	GetAttributeID(key string) string // returns "" if there is no id
+	GetAudienceByID(string) (entities.Audience, error)
 	GetBotFiltering() bool
 	GetEventByKey(string) (entities.Event, error)
+	GetExperimentByKey(string) (entities.Experiment, error)
+	GetFeatureByKey(string) (entities.Feature, error)
+	GetGroupByID(string) (entities.Group, error)
+	GetProjectID() string
+	GetRevision() string
 }
 
 // ProjectConfigManager manages the config
