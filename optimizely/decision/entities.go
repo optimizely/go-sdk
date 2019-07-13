@@ -23,7 +23,7 @@ import (
 
 // ExperimentDecisionContext contains the information needed to be able to make a decision for a given experiment
 type ExperimentDecisionContext struct {
-	Experiment    entities.Experiment
+	ExperimentKey string
 	ProjectConfig optimizely.ProjectConfig
 }
 

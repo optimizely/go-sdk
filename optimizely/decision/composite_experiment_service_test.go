@@ -35,16 +35,22 @@ func (m *MockExperimentDecisionService) GetDecision(decisionContext ExperimentDe
 }
 
 func TestCompositeExperimentServiceGetDecision(t *testing.T) {
-	testDecisionContext := ExperimentDecisionContext{
-		Experiment: entities.Experiment{
-			ID: "111111",
-			Variations: map[string]entities.Variation{
-				"22222": entities.Variation{
-					ID:  "22222",
-					Key: "22222",
-				},
+	testExperimentKey := "test_experiment"
+	testExperiment := entities.Experiment{
+		ID:  "111111",
+		Key: testExperimentKey,
+		Variations: map[string]entities.Variation{
+			"22222": entities.Variation{
+				ID:  "22222",
+				Key: "22222",
 			},
 		},
+	}
+	mockProjectConfig := new(MockProjectConfig)
+	mockProjectConfig.On("GetExperimentByKey", testExperimentKey).Return(testExperiment, nil)
+	testDecisionContext := ExperimentDecisionContext{
+		ExperimentKey: testExperimentKey,
+		ProjectConfig: mockProjectConfig,
 	}
 
 	testUserContext := entities.UserContext{
@@ -52,7 +58,7 @@ func TestCompositeExperimentServiceGetDecision(t *testing.T) {
 	}
 
 	expectedExperimentDecision := ExperimentDecision{
-		Variation: testDecisionContext.Experiment.Variations["22222"],
+		Variation: testExperiment.Variations["22222"],
 		Decision: Decision{
 			DecisionMade: true,
 		},
@@ -86,7 +92,7 @@ func TestCompositeExperimentServiceGetDecision(t *testing.T) {
 
 	mockExperimentDecisionService2 = new(MockExperimentDecisionService)
 	expectedExperimentDecision2 := ExperimentDecision{
-		Variation: testDecisionContext.Experiment.Variations["22222"],
+		Variation: testExperiment.Variations["22222"],
 		Decision: Decision{
 			DecisionMade: true,
 		},

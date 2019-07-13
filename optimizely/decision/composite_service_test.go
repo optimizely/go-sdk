@@ -19,23 +19,32 @@ package decision
 import (
 	"testing"
 
-	"github.com/optimizely/go-sdk/optimizely"
-
 	"github.com/stretchr/testify/assert"
 
 	"github.com/stretchr/testify/mock"
 
+	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-type cMockProjectConfig struct {
+type MockProjectConfig struct {
 	optimizely.ProjectConfig
 	mock.Mock
 }
 
-func (c *cMockProjectConfig) GetFeatureByKey(featureKey string) (entities.Feature, error) {
+func (c *MockProjectConfig) GetFeatureByKey(featureKey string) (entities.Feature, error) {
 	args := c.Called(featureKey)
 	return args.Get(0).(entities.Feature), args.Error(1)
+}
+
+func (c *MockProjectConfig) GetExperimentByKey(experimentKey string) (entities.Experiment, error) {
+	args := c.Called(experimentKey)
+	return args.Get(0).(entities.Experiment), args.Error(1)
+}
+
+func (c *MockProjectConfig) GetAudienceByID(audienceID string) (entities.Audience, error) {
+	args := c.Called(audienceID)
+	return args.Get(0).(entities.Audience), args.Error(1)
 }
 
 type MockFeatureDecisionService struct {
@@ -60,7 +69,7 @@ func TestGetFeatureDecision(t *testing.T) {
 		Key:                testFeatureKey,
 		FeatureExperiments: []entities.Experiment{testExperiment},
 	}
-	mockProjectConfig := new(cMockProjectConfig)
+	mockProjectConfig := new(MockProjectConfig)
 	mockProjectConfig.On("GetFeatureByKey", testFeatureKey).Return(testFeature, nil)
 	decisionContext := FeatureDecisionContext{
 		FeatureKey:    testFeatureKey,

@@ -19,21 +19,10 @@ package decision
 import (
 	"testing"
 
-	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-type bMockProjectConfig struct {
-	optimizely.ProjectConfig
-	mock.Mock
-}
-
-func (c *bMockProjectConfig) GetAudienceByID(audienceID string) (entities.Audience, error) {
-	args := c.Called(audienceID)
-	return args.Get(0).(entities.Audience), args.Error(1)
-}
 
 type MockAudienceEvaluator struct {
 	mock.Mock
@@ -58,20 +47,17 @@ func TestExperimentTargetingGetDecision(t *testing.T) {
 			},
 		},
 	}
-	mockProjectConfig := new(bMockProjectConfig)
-	mockProjectConfig.On("GetAudienceByID", "33333").Return(testAudience, nil)
-	testVariation := entities.Variation{
-		ID:  "22222",
-		Key: "22222",
+	mockProjectConfig := new(MockProjectConfig)
+
+	testExperimentKey := "test_experiment"
+	testExperiment := entities.Experiment{
+		ID:          "111111",
+		AudienceIds: []string{"33333"},
 	}
+	mockProjectConfig.On("GetAudienceByID", "33333").Return(testAudience, nil)
+	mockProjectConfig.On("GetExperimentByKey", testExperimentKey).Return(testExperiment, nil)
 	testDecisionContext := ExperimentDecisionContext{
-		Experiment: entities.Experiment{
-			ID: "111111",
-			Variations: map[string]entities.Variation{
-				"22222": testVariation,
-			},
-			AudienceIds: []string{"33333"},
-		},
+		ExperimentKey: testExperimentKey,
 		ProjectConfig: mockProjectConfig,
 	}
 

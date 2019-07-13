@@ -45,10 +45,10 @@ func (featureService CompositeFeatureService) GetDecision(decisionContext Featur
 	}
 
 	// Check if user is bucketed in feature experiment
-	// @TODO: bucket into an experiment when using mutex
+	// @TODO: add in a feature decision service that takes into account multiple experiments (via group mutex)
 	experiment := feature.FeatureExperiments[0]
 	experimentDecisionContext := ExperimentDecisionContext{
-		Experiment:    experiment,
+		ExperimentKey: experiment.Key,
 		ProjectConfig: decisionContext.ProjectConfig,
 	}
 

@@ -115,6 +115,17 @@ func (c DatafileProjectConfig) GetAudienceByID(audienceID string) (entities.Audi
 	return entities.Audience{}, errors.New(errMessage)
 }
 
+// GetExperimentByKey returns the experiment with the given key
+func (c DatafileProjectConfig) GetExperimentByKey(experimentKey string) (entities.Experiment, error) {
+	if experimentID, ok := c.experimentKeyToIDMap[experimentKey]; ok {
+		experiment := c.experimentMap[experimentID]
+		return experiment, nil
+	}
+
+	errMessage := fmt.Sprintf(`Experiment with key "%s" not found`, experimentKey)
+	return entities.Experiment{}, errors.New(errMessage)
+}
+
 // GetGroupByID returns the group with the given ID
 func (c DatafileProjectConfig) GetGroupByID(groupID string) (entities.Group, error) {
 	if group, ok := c.groupMap[groupID]; ok {
