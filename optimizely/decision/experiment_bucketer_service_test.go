@@ -35,9 +35,8 @@ func (m *MockBucketer) Bucket(bucketingID string, experiment entities.Experiment
 
 func TestExperimentBucketerGetDecision(t *testing.T) {
 	mockProjectConfig := new(mockProjectConfig)
-	mockProjectConfig.On("GetExperimentByKey", testExp1111Key).Return(testExp1111, nil)
 	testDecisionContext := ExperimentDecisionContext{
-		ExperimentKey: testExp1111Key,
+		Experiment:    &testExp1111,
 		ProjectConfig: mockProjectConfig,
 	}
 

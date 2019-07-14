@@ -44,8 +44,13 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 	}
 
 	projectConfig := o.configManager.GetConfig()
+	feature, err := projectConfig.GetFeatureByKey(featureKey)
+	if err != nil {
+		logger.Error("Error retrieving feature", err)
+		return false, err
+	}
 	featureDecisionContext := decision.FeatureDecisionContext{
-		FeatureKey:    featureKey,
+		Feature:       &feature,
 		ProjectConfig: projectConfig,
 	}
 

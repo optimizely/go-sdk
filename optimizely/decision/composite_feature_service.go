@@ -39,16 +39,13 @@ func NewCompositeFeatureService(experimentDecisionService ExperimentDecisionServ
 // GetDecision returns a decision for the given feature and user context
 func (featureService CompositeFeatureService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
 	featureDecision := FeatureDecision{}
-	feature, err := decisionContext.ProjectConfig.GetFeatureByKey(decisionContext.FeatureKey)
-	if err != nil {
-		return featureDecision, err
-	}
+	feature := decisionContext.Feature
 
 	// Check if user is bucketed in feature experiment
 	// @TODO: add in a feature decision service that takes into account multiple experiments (via group mutex)
 	experiment := feature.FeatureExperiments[0]
 	experimentDecisionContext := ExperimentDecisionContext{
-		ExperimentKey: experiment.Key,
+		Experiment:    &experiment,
 		ProjectConfig: decisionContext.ProjectConfig,
 	}
 

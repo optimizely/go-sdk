@@ -54,9 +54,8 @@ func TestExperimentTargetingGetDecision(t *testing.T) {
 	testExperiment.AudienceIds = []string{"33333"}
 	mockProjectConfig := new(mockProjectConfig)
 	mockProjectConfig.On("GetAudienceByID", "33333").Return(testAudience, nil)
-	mockProjectConfig.On("GetExperimentByKey", testExperiment.Key).Return(testExperiment, nil)
 	testDecisionContext := ExperimentDecisionContext{
-		ExperimentKey: testExperiment.Key,
+		Experiment:    &testExperiment,
 		ProjectConfig: mockProjectConfig,
 	}
 

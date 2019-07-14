@@ -42,11 +42,6 @@ func NewCompositeExperimentService() *CompositeExperimentService {
 
 // GetDecision returns a decision for the given experiment and user context
 func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
-	_, err := decisionContext.ProjectConfig.GetExperimentByKey(decisionContext.ExperimentKey)
-	if err != nil {
-		return ExperimentDecision{}, err
-	}
-
 	for _, experimentService := range s.experimentDecisionServices {
 		decision, err := experimentService.GetDecision(decisionContext, userContext)
 		if decision.DecisionMade == true {

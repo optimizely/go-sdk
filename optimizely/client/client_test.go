@@ -68,15 +68,19 @@ func TestIsFeatureEnabled(t *testing.T) {
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeatureKey := "test_feature_key"
-
+	testFeature := entities.Feature{
+		ID:                 "22222",
+		Key:                testFeatureKey,
+		FeatureExperiments: []entities.Experiment{testExperiment},
+	}
 	// Test happy path
 	mockConfig := new(MockProjectConfig)
+	mockConfig.On("GetFeatureByKey", testFeatureKey).Return(testFeature, nil)
 	mockConfigManager := new(MockProjectConfigManager)
 	mockConfigManager.On("GetConfig").Return(mockConfig)
-
 	// Set up the mock decision service and its return value
 	testDecisionContext := decision.FeatureDecisionContext{
-		FeatureKey:    testFeatureKey,
+		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
 	}
 
@@ -121,19 +125,14 @@ func TestIsFeatureEnabledErrorCases(t *testing.T) {
 	mockConfigManager.AssertNotCalled(t, "GetFeatureByKey")
 	mockDecisionService.AssertNotCalled(t, "GetFeatureDecision")
 
-	// Test decision serviceinvalid feature key
+	// Test invalid feature key
 	expectedError := errors.New("Invalid feature key")
 	mockConfig := new(MockProjectConfig)
+	mockConfig.On("GetFeatureByKey", testFeatureKey).Return(entities.Feature{}, expectedError)
 
 	mockConfigManager = new(MockProjectConfigManager)
 	mockConfigManager.On("GetConfig").Return(mockConfig)
-
-	testFeatureDecisionContext := decision.FeatureDecisionContext{
-		FeatureKey:    testFeatureKey,
-		ProjectConfig: mockConfig,
-	}
 	mockDecisionService = new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testFeatureDecisionContext, testUserContext).Return(decision.FeatureDecision{}, expectedError)
 	client = OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
@@ -145,5 +144,5 @@ func TestIsFeatureEnabledErrorCases(t *testing.T) {
 	}
 	assert.False(t, result)
 	mockConfigManager.AssertExpectations(t)
-	mockDecisionService.AssertExpectations(t)
+	mockDecisionService.AssertNotCalled(t, "GetDecision")
 }
