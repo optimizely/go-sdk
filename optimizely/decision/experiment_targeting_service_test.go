@@ -35,6 +35,7 @@ func (m *MockAudienceEvaluator) Evaluate(audience entities.Audience, userContext
 
 func TestExperimentTargetingGetDecision(t *testing.T) {
 	testAudience := entities.Audience{
+		ID: "33333",
 		ConditionTree: &entities.ConditionTreeNode{
 			Operator: "or",
 			Nodes: []*entities.ConditionTreeNode{
@@ -47,17 +48,15 @@ func TestExperimentTargetingGetDecision(t *testing.T) {
 			},
 		},
 	}
-	mockProjectConfig := new(MockProjectConfig)
 
-	testExperimentKey := "test_experiment"
-	testExperiment := entities.Experiment{
-		ID:          "111111",
-		AudienceIds: []string{"33333"},
-	}
+	// make a copy of the testExp1111 so we do not mutate the original one
+	var testExperiment = testExp1111
+	testExperiment.AudienceIds = []string{"33333"}
+	mockProjectConfig := new(mockProjectConfig)
 	mockProjectConfig.On("GetAudienceByID", "33333").Return(testAudience, nil)
-	mockProjectConfig.On("GetExperimentByKey", testExperimentKey).Return(testExperiment, nil)
+	mockProjectConfig.On("GetExperimentByKey", testExperiment.Key).Return(testExperiment, nil)
 	testDecisionContext := ExperimentDecisionContext{
-		ExperimentKey: testExperimentKey,
+		ExperimentKey: testExperiment.Key,
 		ProjectConfig: mockProjectConfig,
 	}
 

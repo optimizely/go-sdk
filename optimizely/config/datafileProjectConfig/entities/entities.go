@@ -59,9 +59,10 @@ type Variation struct {
 	FeatureEnabled bool   `json:"featureEnabled"`
 }
 
+// Event represents an event from the Optimizely datafile
 type Event struct {
-	ID string `json:"id"`
-	Key string `json:"key"`
+	ID            string   `json:"id"`
+	Key           string   `json:"key"`
 	ExperimentIds []string `json:"experimentIds"`
 }
 
