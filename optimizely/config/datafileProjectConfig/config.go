@@ -29,49 +29,50 @@ var logger = logging.GetLogger("DatafileProjectConfig")
 
 // DatafileProjectConfig is a project config backed by a datafile
 type DatafileProjectConfig struct {
-	audienceMap          map[string]entities.Audience
-	experimentMap        map[string]entities.Experiment
-	experimentKeyToIDMap map[string]string
-	featureMap           map[string]entities.Feature
+	accountID            string
+	anonymizeIP          bool
 	attributeKeyToIDMap  map[string]string
+	audienceMap          map[string]entities.Audience
+	botFiltering         bool
 	eventMap             map[string]entities.Event
-	projectID			 string
-	revision			 string
-	accountID			 string
-	anonymizeIP			 bool
-	botFiltering		 bool
-
+	experimentKeyToIDMap map[string]string
+	experimentMap        map[string]entities.Experiment
+	featureMap           map[string]entities.Feature
+	groupMap             map[string]entities.Group
+	projectID            string
+	revision             string
 }
 
-func (config DatafileProjectConfig) GetProjectID() string {
-	return config.projectID
+func (c DatafileProjectConfig) GetProjectID() string {
+	return c.projectID
 }
 
-func (config DatafileProjectConfig) GetRevision() string {
-	return config.revision
+func (c DatafileProjectConfig) GetRevision() string {
+	return c.revision
 }
 
-func (config DatafileProjectConfig) GetAccountID() string {
-	return config.accountID
+func (c DatafileProjectConfig) GetAccountID() string {
+	return c.accountID
 }
 
-func (config DatafileProjectConfig) GetAnonymizeIP() bool {
-	return config.anonymizeIP
+func (c DatafileProjectConfig) GetAnonymizeIP() bool {
+	return c.anonymizeIP
 }
 
-func (config DatafileProjectConfig) GetAttributeID(key string) string {
-	return config.attributeKeyToIDMap[key]
+func (c DatafileProjectConfig) GetAttributeID(key string) string {
+	return c.attributeKeyToIDMap[key]
 }
 
-func (config DatafileProjectConfig) GetBotFiltering() bool {
-	return config.botFiltering
+func (c DatafileProjectConfig) GetBotFiltering() bool {
+	return c.botFiltering
 }
 
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser
-func NewDatafileProjectConfig(jsonDatafile []byte) *DatafileProjectConfig {
+func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, error) {
 	datafile, err := Parse(jsonDatafile)
 	if err != nil {
 		logger.Error("Error parsing datafile.", err)
+		return nil, err
 	}
 
 	experiments, experimentKeyMap := mappers.MapExperiments(datafile.Experiments)
@@ -82,12 +83,12 @@ func NewDatafileProjectConfig(jsonDatafile []byte) *DatafileProjectConfig {
 	}
 
 	logger.Info("Datafile is valid.")
-	return config
+	return config, nil
 }
 
 // GetEventByKey returns the event with the given key
-func (config DatafileProjectConfig) GetEventByKey(eventKey string) (entities.Event, error) {
-	if event, ok := config.eventMap[eventKey]; ok {
+func (c DatafileProjectConfig) GetEventByKey(eventKey string) (entities.Event, error) {
+	if event, ok := c.eventMap[eventKey]; ok {
 		return event, nil
 	}
 
@@ -96,11 +97,47 @@ func (config DatafileProjectConfig) GetEventByKey(eventKey string) (entities.Eve
 }
 
 // GetFeatureByKey returns the feature with the given key
-func (config DatafileProjectConfig) GetFeatureByKey(featureKey string) (entities.Feature, error) {
-	if feature, ok := config.featureMap[featureKey]; ok {
+func (c DatafileProjectConfig) GetFeatureByKey(featureKey string) (entities.Feature, error) {
+	if feature, ok := c.featureMap[featureKey]; ok {
 		return feature, nil
 	}
 
 	errMessage := fmt.Sprintf("Feature with key %s not found", featureKey)
 	return entities.Feature{}, errors.New(errMessage)
+}
+
+// GetAudienceByID returns the audience with the given ID
+func (c DatafileProjectConfig) GetAudienceByID(audienceID string) (entities.Audience, error) {
+	if audience, ok := c.audienceMap[audienceID]; ok {
+		return audience, nil
+	}
+
+	errMessage := fmt.Sprintf(`Audience with ID "%s" not found`, audienceID)
+	return entities.Audience{}, errors.New(errMessage)
+}
+
+// GetAudienceMap returns the audience map
+func (c DatafileProjectConfig) GetAudienceMap() map[string]entities.Audience {
+	return c.audienceMap
+}
+
+// GetExperimentByKey returns the experiment with the given key
+func (c DatafileProjectConfig) GetExperimentByKey(experimentKey string) (entities.Experiment, error) {
+	if experimentID, ok := c.experimentKeyToIDMap[experimentKey]; ok {
+		experiment := c.experimentMap[experimentID]
+		return experiment, nil
+	}
+
+	errMessage := fmt.Sprintf(`Experiment with key "%s" not found`, experimentKey)
+	return entities.Experiment{}, errors.New(errMessage)
+}
+
+// GetGroupByID returns the group with the given ID
+func (c DatafileProjectConfig) GetGroupByID(groupID string) (entities.Group, error) {
+	if group, ok := c.groupMap[groupID]; ok {
+		return group, nil
+	}
+
+	errMessage := fmt.Sprintf(`Group with ID "%s" not found`, groupID)
+	return entities.Group{}, errors.New(errMessage)
 }

@@ -38,20 +38,26 @@ func TestExperimentBucketerGetDecision(t *testing.T) {
 		ID:  "22222",
 		Key: "22222",
 	}
-	testDecisionContext := ExperimentDecisionContext{
-		Experiment: entities.Experiment{
-			ID: "111111",
-			Variations: map[string]entities.Variation{
-				"22222": testVariation,
-			},
-			TrafficAllocation: []entities.Range{
-				entities.Range{
-					EntityID:   "22222",
-					EndOfRange: 10000,
-				},
+	testExperimentKey := "test_experiment"
+	testExperiment := entities.Experiment{
+		ID:  "111111",
+		Key: testExperimentKey,
+		Variations: map[string]entities.Variation{
+			"22222": testVariation,
+		},
+		TrafficAllocation: []entities.Range{
+			entities.Range{
+				EntityID:   "22222",
+				EndOfRange: 10000,
 			},
 		},
-		Group: entities.Group{},
+	}
+
+	mockProjectConfig := new(MockProjectConfig)
+	mockProjectConfig.On("GetExperimentByKey", testExperimentKey).Return(testExperiment, nil)
+	testDecisionContext := ExperimentDecisionContext{
+		ExperimentKey: testExperimentKey,
+		ProjectConfig: mockProjectConfig,
 	}
 
 	testUserContext := entities.UserContext{
@@ -65,7 +71,7 @@ func TestExperimentBucketerGetDecision(t *testing.T) {
 		},
 	}
 	mockBucketer := new(MockBucketer)
-	mockBucketer.On("Bucket", testUserContext.ID, testDecisionContext.Experiment, testDecisionContext.Group).Return(testVariation, nil)
+	mockBucketer.On("Bucket", testUserContext.ID, testExperiment, entities.Group{}).Return(testVariation, nil)
 
 	experimentBucketerService := ExperimentBucketerService{
 		bucketer: mockBucketer,

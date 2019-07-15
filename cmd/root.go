@@ -14,39 +14,30 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package decision
+package cmd
 
 import (
-	"github.com/optimizely/go-sdk/optimizely"
-	"github.com/optimizely/go-sdk/optimizely/entities"
+	"fmt"
+	"os"
+
+	"github.com/spf13/cobra"
 )
 
-// ExperimentDecisionContext contains the information needed to be able to make a decision for a given experiment
-type ExperimentDecisionContext struct {
-	ExperimentKey string
-	ProjectConfig optimizely.ProjectConfig
+var sdkKey string
+
+var rootCmd = &cobra.Command{
+	Use:   "go-sdk",
+	Short: "go-sdk provides cli access to your Optimizely fullstack project",
 }
 
-// FeatureDecisionContext contains the information needed to be able to make a decision for a given feature
-type FeatureDecisionContext struct {
-	FeatureKey    string
-	ProjectConfig optimizely.ProjectConfig
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
 
-// Decision contains base information about a decision
-type Decision struct {
-	DecisionMade bool
-}
-
-// FeatureDecision contains the decision information about a feature
-type FeatureDecision struct {
-	Decision
-	Experiment entities.Experiment
-	Variation  entities.Variation
-}
-
-// ExperimentDecision contains the decision information about an experiment
-type ExperimentDecision struct {
-	Decision
-	Variation entities.Variation
+func init() {
+	rootCmd.PersistentFlags().StringVarP(&sdkKey, "sdkKey", "s", "", "Optimizely project SDK key")
+	rootCmd.MarkPersistentFlagRequired("sdkKey")
 }

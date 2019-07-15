@@ -36,11 +36,11 @@ func NewExperimentTargetingService() *ExperimentTargetingService {
 // GetDecision applies audience targeting from the given experiment to the given user. The only decision it makes is whether to exclude the user from the experiment.
 func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
 	experimentDecision := ExperimentDecision{}
-	experiment := decisionContext.Experiment
+	experiment, _ := decisionContext.ProjectConfig.GetExperimentByKey(decisionContext.ExperimentKey)
 
 	if experiment.AudienceConditionTree != nil {
 
-		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.AudienceMap)
+		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
 		conditionTreeEvaluator := evaluator.NewTreeEvaluator()
 		evalResult := conditionTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
 		if !evalResult {
@@ -51,12 +51,14 @@ func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisi
 	}
 
 	if len(experiment.AudienceIds) > 0 {
-		experimentAudience := decisionContext.AudienceMap[experiment.AudienceIds[0]]
+		// @TODO: figure out what to do with the error
+		experimentAudience, _ := decisionContext.ProjectConfig.GetAudienceByID(experiment.AudienceIds[0])
 		condTreeParams := entities.NewTreeParameters(&userContext, map[string]entities.Audience{})
 		evalResult := s.audienceEvaluator.Evaluate(experimentAudience, condTreeParams)
-		if !evalResult {
+		if evalResult == false {
 			// user not targeted for experiment, return an empty variation
 			experimentDecision.DecisionMade = true
+			return experimentDecision, nil
 		}
 	}
 	// user passes audience targeting, can move on to the next decision maker

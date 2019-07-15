@@ -14,7 +14,12 @@ func main() {
 	optimizelyFactory := &client.OptimizelyFactory{
 		SDKKey: "ABC",
 	}
-	client := optimizelyFactory.Client()
+	client, err := optimizelyFactory.Client()
+
+	if err != nil {
+		fmt.Printf("Error instantiating client: %s", err)
+		return
+	}
 
 	user := entities.UserContext{
 		ID:         "mike ng",

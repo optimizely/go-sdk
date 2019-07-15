@@ -50,21 +50,18 @@ func TestExperimentTargetingGetDecisionNoAudienceCondTree(t *testing.T) {
 			},
 		},
 	}
-	testVariation := entities.Variation{
-		ID:  "22222",
-		Key: "22222",
+	mockProjectConfig := new(MockProjectConfig)
+
+	testExperimentKey := "test_experiment"
+	testExperiment := entities.Experiment{
+		ID:          "111111",
+		AudienceIds: []string{"33333"},
 	}
+	mockProjectConfig.On("GetAudienceByID", "33333").Return(testAudience, nil)
+	mockProjectConfig.On("GetExperimentByKey", testExperimentKey).Return(testExperiment, nil)
 	testDecisionContext := ExperimentDecisionContext{
-		Experiment: entities.Experiment{
-			ID: "111111",
-			Variations: map[string]entities.Variation{
-				"22222": testVariation,
-			},
-			AudienceIds: []string{"33333"},
-		},
-		AudienceMap: map[string]entities.Audience{
-			"33333": testAudience,
-		},
+		ExperimentKey: testExperimentKey,
+		ProjectConfig: mockProjectConfig,
 	}
 
 	// test does not pass audience evaluation
@@ -114,6 +111,7 @@ func TestExperimentTargetingGetDecisionNoAudienceCondTree(t *testing.T) {
 	decision, _ = experimentTargetingService.GetDecision(testDecisionContext, testUserContext)
 	assert.Equal(t, expectedExperimentDecision, decision)
 	mockAudienceEvaluator.AssertExpectations(t)
+	mockProjectConfig.AssertExpectations(t)
 }
 
 // Real tests with no mocking
@@ -133,31 +131,20 @@ func TestExperimentTargetingGetDecisionWithAudienceCondTree(t *testing.T) {
 			},
 		},
 	}
-	testVariation := entities.Variation{
-		ID:  "22222",
-		Key: "22222",
-	}
-	testDecisionContext := ExperimentDecisionContext{
-		Experiment: entities.Experiment{
-			ID: "111111",
-			Variations: map[string]entities.Variation{
-				"22222": testVariation,
-			},
-			AudienceIds: []string{"33333"},
-			AudienceConditionTree: &entities.TreeNode{
-				Operator: "or",
-				Nodes: []*entities.TreeNode{
-					{
-						Item: "33333",
-					},
-				},
-			},
-		},
-		AudienceMap: map[string]entities.Audience{
-			"33333": testAudience,
-		},
+
+	testExperimentKey := "test_experiment"
+	testExperiment := entities.Experiment{
+		ID:          "111111",
+		AudienceIds: []string{"33333"},
 	}
 
+	mockProjectConfig := new(MockProjectConfig)
+	mockProjectConfig.On("GetAudienceByID", "33333").Return(testAudience, nil)
+	mockProjectConfig.On("GetExperimentByKey", testExperimentKey).Return(testExperiment, nil)
+	testDecisionContext := ExperimentDecisionContext{
+		ExperimentKey: testExperimentKey,
+		ProjectConfig: mockProjectConfig,
+	}
 	// test does not pass audience evaluation
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",

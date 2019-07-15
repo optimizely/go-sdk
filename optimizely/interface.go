@@ -14,39 +14,29 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package decision
+package optimizely
 
 import (
-	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-// ExperimentDecisionContext contains the information needed to be able to make a decision for a given experiment
-type ExperimentDecisionContext struct {
-	ExperimentKey string
-	ProjectConfig optimizely.ProjectConfig
+// ProjectConfig contains the parsed project entities
+type ProjectConfig interface {
+	GetAccountID() string
+	GetAnonymizeIP() bool
+	GetAttributeID(key string) string // returns "" if there is no id
+	GetAudienceByID(string) (entities.Audience, error)
+	GetAudienceMap() map[string]entities.Audience
+	GetBotFiltering() bool
+	GetEventByKey(string) (entities.Event, error)
+	GetExperimentByKey(string) (entities.Experiment, error)
+	GetFeatureByKey(string) (entities.Feature, error)
+	GetGroupByID(string) (entities.Group, error)
+	GetProjectID() string
+	GetRevision() string
 }
 
-// FeatureDecisionContext contains the information needed to be able to make a decision for a given feature
-type FeatureDecisionContext struct {
-	FeatureKey    string
-	ProjectConfig optimizely.ProjectConfig
-}
-
-// Decision contains base information about a decision
-type Decision struct {
-	DecisionMade bool
-}
-
-// FeatureDecision contains the decision information about a feature
-type FeatureDecision struct {
-	Decision
-	Experiment entities.Experiment
-	Variation  entities.Variation
-}
-
-// ExperimentDecision contains the decision information about an experiment
-type ExperimentDecision struct {
-	Decision
-	Variation entities.Variation
+// ProjectConfigManager manages the config
+type ProjectConfigManager interface {
+	GetConfig() ProjectConfig
 }
