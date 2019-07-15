@@ -17,9 +17,10 @@
 package client
 
 import (
+
 	"github.com/optimizely/go-sdk/optimizely"
+	"fmt"
 	"github.com/optimizely/go-sdk/optimizely/config"
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 )
 
@@ -30,16 +31,27 @@ type OptimizelyFactory struct {
 }
 
 // Client returns a client initialized with the defaults
-func (f OptimizelyFactory) Client() OptimizelyClient {
-	var projectConfig optimizely.ProjectConfig
+func (f OptimizelyFactory) Client() (*OptimizelyClient, error) {
 	var configManager optimizely.ProjectConfigManager
-	if f.Datafile != nil {
-		projectConfig = datafileProjectConfig.NewDatafileProjectConfig(f.Datafile)
 
-		if f.SDKKey == "" {
-			staticConfigManager := config.NewStaticProjectConfigManager(projectConfig)
-			configManager = staticConfigManager
+	if f.SDKKey != "" {
+		url := fmt.Sprintf("https://cdn.optimizely.com/datafiles/%s.json", f.SDKKey)
+		staticConfigManager, err := config.NewStaticProjectConfigManagerFromUrl(url)
+
+		if err != nil {
+			return nil, err
 		}
+
+		configManager = staticConfigManager
+
+	} else if f.Datafile != nil {
+		staticConfigManager, err := config.NewStaticProjectConfigManagerFromPayload(f.Datafile)
+
+		if err != nil {
+			return nil, err
+		}
+
+		configManager = staticConfigManager
 	}
 
 	decisionService := decision.NewCompositeService()
@@ -48,5 +60,5 @@ func (f OptimizelyFactory) Client() OptimizelyClient {
 		configManager:   configManager,
 		isValid:         true,
 	}
-	return client
+	return &client, nil
 }

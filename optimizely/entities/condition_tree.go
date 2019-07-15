@@ -14,31 +14,21 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package evaluator
+package entities
 
-import (
-	"github.com/optimizely/go-sdk/optimizely/entities"
-)
+//TreeNode in a condition tree
+type TreeNode struct {
+	Item     interface{} // can be a condition or a string
+	Operator string
 
-// AudienceEvaluator evaluates an audience against the given user's attributes
-type AudienceEvaluator interface {
-	Evaluate(audience entities.Audience, condTreeParams *entities.TreeParameters) bool
+	Nodes []*TreeNode
 }
 
-// TypedAudienceEvaluator evaluates typed audiences
-type TypedAudienceEvaluator struct {
-	conditionTreeEvaluator TreeEvaluator
+type TreeParameters struct {
+	User        *UserContext
+	AudienceMap map[string]Audience
 }
 
-// NewTypedAudienceEvaluator creates a new instance of the TypedAudienceEvaluator
-func NewTypedAudienceEvaluator() *TypedAudienceEvaluator {
-	conditionTreeEvaluator := NewTreeEvaluator()
-	return &TypedAudienceEvaluator{
-		conditionTreeEvaluator: *conditionTreeEvaluator,
-	}
-}
-
-// Evaluate evaluates the typed audience against the given user's attributes
-func (a TypedAudienceEvaluator) Evaluate(audience entities.Audience, condTreeParams *entities.TreeParameters) bool {
-	return a.conditionTreeEvaluator.Evaluate(audience.ConditionTree, condTreeParams)
+func NewTreeParameters(user *UserContext, audience map[string]Audience) *TreeParameters {
+	return &TreeParameters{User: user, AudienceMap: audience}
 }

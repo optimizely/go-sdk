@@ -14,31 +14,30 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package evaluator
+package cmd
 
 import (
-	"github.com/optimizely/go-sdk/optimizely/entities"
+	"fmt"
+	"os"
+
+	"github.com/spf13/cobra"
 )
 
-// AudienceEvaluator evaluates an audience against the given user's attributes
-type AudienceEvaluator interface {
-	Evaluate(audience entities.Audience, condTreeParams *entities.TreeParameters) bool
+var sdkKey string
+
+var rootCmd = &cobra.Command{
+	Use:   "go-sdk",
+	Short: "go-sdk provides cli access to your Optimizely fullstack project",
 }
 
-// TypedAudienceEvaluator evaluates typed audiences
-type TypedAudienceEvaluator struct {
-	conditionTreeEvaluator TreeEvaluator
-}
-
-// NewTypedAudienceEvaluator creates a new instance of the TypedAudienceEvaluator
-func NewTypedAudienceEvaluator() *TypedAudienceEvaluator {
-	conditionTreeEvaluator := NewTreeEvaluator()
-	return &TypedAudienceEvaluator{
-		conditionTreeEvaluator: *conditionTreeEvaluator,
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
 
-// Evaluate evaluates the typed audience against the given user's attributes
-func (a TypedAudienceEvaluator) Evaluate(audience entities.Audience, condTreeParams *entities.TreeParameters) bool {
-	return a.conditionTreeEvaluator.Evaluate(audience.ConditionTree, condTreeParams)
+func init() {
+	rootCmd.PersistentFlags().StringVarP(&sdkKey, "sdkKey", "s", "", "Optimizely project SDK key")
+	rootCmd.MarkPersistentFlagRequired("sdkKey")
 }

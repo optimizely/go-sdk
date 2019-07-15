@@ -68,10 +68,11 @@ func (c DatafileProjectConfig) GetBotFiltering() bool {
 }
 
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser
-func NewDatafileProjectConfig(jsonDatafile []byte) *DatafileProjectConfig {
+func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, error) {
 	datafile, err := Parse(jsonDatafile)
 	if err != nil {
 		logger.Error("Error parsing datafile.", err)
+		return nil, err
 	}
 
 	experiments, experimentKeyMap := mappers.MapExperiments(datafile.Experiments)
@@ -82,7 +83,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte) *DatafileProjectConfig {
 	}
 
 	logger.Info("Datafile is valid.")
-	return config
+	return config, nil
 }
 
 // GetEventByKey returns the event with the given key
@@ -113,6 +114,11 @@ func (c DatafileProjectConfig) GetAudienceByID(audienceID string) (entities.Audi
 
 	errMessage := fmt.Sprintf(`Audience with ID "%s" not found`, audienceID)
 	return entities.Audience{}, errors.New(errMessage)
+}
+
+// GetAudienceMap returns the audience map
+func (c DatafileProjectConfig) GetAudienceMap() map[string]entities.Audience {
+	return c.audienceMap
 }
 
 // GetExperimentByKey returns the experiment with the given key

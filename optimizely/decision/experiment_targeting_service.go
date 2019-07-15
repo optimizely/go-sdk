@@ -37,14 +37,27 @@ func NewExperimentTargetingService() *ExperimentTargetingService {
 func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
 	experimentDecision := ExperimentDecision{}
 	experiment := decisionContext.Experiment
+
+	if experiment.AudienceConditionTree != nil {
+
+		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
+		conditionTreeEvaluator := evaluator.NewTreeEvaluator()
+		evalResult := conditionTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
+		if !evalResult {
+			// user not targeted for experiment, return an empty variation
+			experimentDecision.DecisionMade = true
+		}
+		return experimentDecision, nil
+	}
+
 	if len(experiment.AudienceIds) > 0 {
 		// @TODO: figure out what to do with the error
 		experimentAudience, _ := decisionContext.ProjectConfig.GetAudienceByID(experiment.AudienceIds[0])
-		evalResult := s.audienceEvaluator.Evaluate(experimentAudience, userContext)
+		condTreeParams := entities.NewTreeParameters(&userContext, map[string]entities.Audience{})
+		evalResult := s.audienceEvaluator.Evaluate(experimentAudience, condTreeParams)
 		if evalResult == false {
 			// user not targeted for experiment, return an empty variation
 			experimentDecision.DecisionMade = true
-			experimentDecision.Variation = entities.Variation{}
 			return experimentDecision, nil
 		}
 	}

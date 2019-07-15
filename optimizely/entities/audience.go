@@ -20,7 +20,7 @@ package entities
 type Audience struct {
 	ID            string
 	Name          string
-	ConditionTree *ConditionTreeNode
+	ConditionTree *TreeNode
 }
 
 // Condition has condition info
@@ -29,12 +29,4 @@ type Condition struct {
 	Match string      `json:"match"`
 	Type  string      `json:"type"`
 	Value interface{} `json:"value"`
-}
-
-//ConditionTreeNode in a condition tree
-type ConditionTreeNode struct {
-	Condition Condition
-	Operator  string
-
-	Nodes []*ConditionTreeNode
 }
