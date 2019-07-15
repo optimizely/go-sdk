@@ -116,6 +116,11 @@ func (c DatafileProjectConfig) GetAudienceByID(audienceID string) (entities.Audi
 	return entities.Audience{}, errors.New(errMessage)
 }
 
+// GetAudienceMap returns the audience map
+func (c DatafileProjectConfig) GetAudienceMap() map[string]entities.Audience {
+	return c.audienceMap
+}
+
 // GetExperimentByKey returns the experiment with the given key
 func (c DatafileProjectConfig) GetExperimentByKey(experimentKey string) (entities.Experiment, error) {
 	if experimentID, ok := c.experimentKeyToIDMap[experimentKey]; ok {

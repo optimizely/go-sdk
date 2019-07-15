@@ -27,12 +27,18 @@ func MapExperiments(rawExperiments []datafileEntities.Experiment) (map[string]en
 	experimentMap := make(map[string]entities.Experiment)
 	experimentKeyMap := make(map[string]string)
 	for _, rawExperiment := range rawExperiments {
+		audienceConditionTree, err := buildAudienceConditionTree(rawExperiment.AudienceConditions)
+		if err != nil {
+			// @TODO: handle error
+		}
+
 		experiment := entities.Experiment{
-			AudienceIds:       rawExperiment.AudienceIds,
-			ID:                rawExperiment.ID,
-			Key:               rawExperiment.Key,
-			TrafficAllocation: make([]entities.Range, len(rawExperiment.TrafficAllocation)),
-			Variations:        make(map[string]entities.Variation),
+			AudienceIds:           rawExperiment.AudienceIds,
+			ID:                    rawExperiment.ID,
+			Key:                   rawExperiment.Key,
+			TrafficAllocation:     make([]entities.Range, len(rawExperiment.TrafficAllocation)),
+			Variations:            make(map[string]entities.Variation),
+			AudienceConditionTree: audienceConditionTree,
 		}
 
 		for _, variation := range rawExperiment.Variations {
