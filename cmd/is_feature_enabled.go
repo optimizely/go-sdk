@@ -14,51 +14,50 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package client
+package cmd
 
 import (
-
-	"github.com/optimizely/go-sdk/optimizely"
 	"fmt"
-	"github.com/optimizely/go-sdk/optimizely/config"
-	"github.com/optimizely/go-sdk/optimizely/decision"
+	"github.com/optimizely/go-sdk/optimizely/client"
+	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/spf13/cobra"
 )
 
-// OptimizelyFactory is used to construct an instance of the OptimizelyClient
-type OptimizelyFactory struct {
-	SDKKey   string
-	Datafile []byte
+var (
+	userId string
+	featurekKey string
+)
+
+var isFeatureEnabledCmd = &cobra.Command{
+	Use:   "is_feature_enabled",
+	Short: "Is feature enabled?",
+	Long:  `Determines if a feature is enabled`,
+	Run: func(cmd *cobra.Command, args []string) {
+		optimizelyFactory := &client.OptimizelyFactory{
+			SDKKey: sdkKey,
+		}
+
+		client, err := optimizelyFactory.Client()
+
+		if err != nil {
+			fmt.Printf("Error instantiating client: %s\n", err)
+			return
+		}
+
+		user := entities.UserContext{
+			ID:         userId,
+			Attributes: entities.UserAttributes{},
+		}
+
+		enabled, _ := client.IsFeatureEnabled(featurekKey, user)
+		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featurekKey, userId, enabled)
+	},
 }
 
-// Client returns a client initialized with the defaults
-func (f OptimizelyFactory) Client() (*OptimizelyClient, error) {
-	var configManager optimizely.ProjectConfigManager
-
-	if f.SDKKey != "" {
-		url := fmt.Sprintf("https://cdn.optimizely.com/datafiles/%s.json", f.SDKKey)
-		staticConfigManager, err := config.NewStaticProjectConfigManagerFromUrl(url)
-
-		if err != nil {
-			return nil, err
-		}
-
-		configManager = staticConfigManager
-
-	} else if f.Datafile != nil {
-		staticConfigManager, err := config.NewStaticProjectConfigManagerFromPayload(f.Datafile)
-
-		if err != nil {
-			return nil, err
-		}
-
-		configManager = staticConfigManager
-	}
-
-	decisionService := decision.NewCompositeService()
-	client := OptimizelyClient{
-		decisionService: decisionService,
-		configManager:   configManager,
-		isValid:         true,
-	}
-	return &client, nil
+func init() {
+	rootCmd.AddCommand(isFeatureEnabledCmd)
+	isFeatureEnabledCmd.Flags().StringVarP(&userId, "userId", "u", "", "user id")
+	isFeatureEnabledCmd.MarkFlagRequired("userId")
+	isFeatureEnabledCmd.Flags().StringVarP(&featurekKey, "featureKey", "f", "", "feature key to enable")
+	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
 }
