@@ -38,10 +38,9 @@ type ItemEvaluator interface {
 type CustomAttributeConditionEvaluator struct{}
 
 // Evaluate returns true if the given user's attributes match the condition
-func (c CustomAttributeConditionEvaluator) Evaluate(item interface{}, condTreeParams *entities.TreeParameters) (bool, error) {
+func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *entities.TreeParameters) (bool, error) {
 	// We should only be evaluating custom attributes
 
-	condition := item.(entities.Condition)
 	if condition.Type != customAttributeType {
 		return false, fmt.Errorf(`Unable to evaluator condition of type "%s"`, condition.Type)
 	}
@@ -78,18 +77,14 @@ func (c CustomAttributeConditionEvaluator) Evaluate(item interface{}, condTreePa
 type AudienceConditionEvaluator struct{}
 
 // Evaluate returns true if the given user's attributes match the condition
-func (c AudienceConditionEvaluator) Evaluate(item interface{}, condTreeParams *entities.TreeParameters) (bool, error) {
+func (c AudienceConditionEvaluator) Evaluate(audienceID string, condTreeParams *entities.TreeParameters) (bool, error) {
 
-	var ok bool
-	var audienceID string
+	if audience, ok := condTreeParams.AudienceMap[audienceID]; ok {
+		condTree := audience.ConditionTree
+		conditionTreeEvaluator := NewTreeEvaluator()
+		retValue := conditionTreeEvaluator.Evaluate(condTree, condTreeParams)
+		return retValue, nil
 
-	if audienceID, ok = item.(string); ok {
-		if audience, good := condTreeParams.AudienceMap[audienceID]; good {
-			condTree := audience.ConditionTree
-			conditionTreeEvaluator := NewTreeEvaluator()
-			retValue := conditionTreeEvaluator.Evaluate(condTree, condTreeParams)
-			return retValue, nil
-		}
 	}
 
 	return false, fmt.Errorf(`Unable to evaluate nested tree for audience ID "%s"`, audienceID)

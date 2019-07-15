@@ -25,7 +25,6 @@ type Audience struct {
 
 // Experiment represents an Experiment object from the Optimizely datafile
 type Experiment struct {
-	// @TODO(mng): include audienceConditions
 	ID                 string              `json:"id"`
 	Key                string              `json:"key"`
 	LayerID            string              `json:"layerId"`

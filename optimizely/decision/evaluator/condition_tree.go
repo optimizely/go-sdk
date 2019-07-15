@@ -71,10 +71,10 @@ func (c TreeEvaluator) evaluate(node *entities.TreeNode, condTreeParams *entitie
 	switch v := node.Item.(type) {
 	case entities.Condition:
 		evaluator := CustomAttributeConditionEvaluator{}
-		result, err = evaluator.Evaluate(node.Item, condTreeParams)
+		result, err = evaluator.Evaluate(node.Item.(entities.Condition), condTreeParams)
 	case string:
 		evaluator := AudienceConditionEvaluator{}
-		result, err = evaluator.Evaluate(node.Item, condTreeParams)
+		result, err = evaluator.Evaluate(node.Item.(string), condTreeParams)
 	default:
 		fmt.Printf("I don't know about type %T!\n", v)
 		return false, false

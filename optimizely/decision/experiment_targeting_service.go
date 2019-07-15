@@ -46,7 +46,6 @@ func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisi
 		if !evalResult {
 			// user not targeted for experiment, return an empty variation
 			experimentDecision.DecisionMade = true
-			experimentDecision.Variation = entities.Variation{}
 		}
 		return experimentDecision, nil
 	}
@@ -58,7 +57,6 @@ func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisi
 		if !evalResult {
 			// user not targeted for experiment, return an empty variation
 			experimentDecision.DecisionMade = true
-			experimentDecision.Variation = entities.Variation{}
 		}
 	}
 	// user passes audience targeting, can move on to the next decision maker
