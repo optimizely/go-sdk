@@ -16,11 +16,19 @@
 
 package entities
 
-type ConditionTreeParameters struct {
+//TreeNode in a condition tree
+type TreeNode struct {
+	Item     interface{} // can be a condition or a string
+	Operator string
+
+	Nodes []*TreeNode
+}
+
+type TreeParameters struct {
 	User        *UserContext
 	AudienceMap map[string]Audience
 }
 
-func NewConditionTreeParameters(user *UserContext, audience map[string]Audience) *ConditionTreeParameters {
-	return &ConditionTreeParameters{User: user, AudienceMap: audience}
+func NewTreeParameters(user *UserContext, audience map[string]Audience) *TreeParameters {
+	return &TreeParameters{User: user, AudienceMap: audience}
 }

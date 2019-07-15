@@ -29,7 +29,7 @@ type MockAudienceEvaluator struct {
 	mock.Mock
 }
 
-func (m *MockAudienceEvaluator) Evaluate(audience entities.Audience, condTreeParams *entities.ConditionTreeParameters) bool {
+func (m *MockAudienceEvaluator) Evaluate(audience entities.Audience, condTreeParams *entities.TreeParameters) bool {
 	userContext := *condTreeParams.User
 	args := m.Called(audience, userContext)
 	return args.Bool(0)
@@ -38,11 +38,11 @@ func (m *MockAudienceEvaluator) Evaluate(audience entities.Audience, condTreePar
 // test with mocking
 func TestExperimentTargetingGetDecisionNoAudienceCondTree(t *testing.T) {
 	testAudience := entities.Audience{
-		ConditionTree: &entities.ConditionTreeNode{
+		ConditionTree: &entities.TreeNode{
 			Operator: "or",
-			Nodes: []*entities.ConditionTreeNode{
-				&entities.ConditionTreeNode{
-					Condition: entities.Condition{
+			Nodes: []*entities.TreeNode{
+				&entities.TreeNode{
+					Item: entities.Condition{
 						Name:  "s_foo",
 						Value: "foo",
 					},
@@ -119,11 +119,11 @@ func TestExperimentTargetingGetDecisionNoAudienceCondTree(t *testing.T) {
 // Real tests with no mocking
 func TestExperimentTargetingGetDecisionWithAudienceCondTree(t *testing.T) {
 	testAudience := entities.Audience{
-		ConditionTree: &entities.ConditionTreeNode{
+		ConditionTree: &entities.TreeNode{
 			Operator: "or",
-			Nodes: []*entities.ConditionTreeNode{
+			Nodes: []*entities.TreeNode{
 				{
-					Condition: entities.Condition{
+					Item: entities.Condition{
 						Name:  "s_foo",
 						Type:  "custom_attribute",
 						Match: "exact",
@@ -144,15 +144,11 @@ func TestExperimentTargetingGetDecisionWithAudienceCondTree(t *testing.T) {
 				"22222": testVariation,
 			},
 			AudienceIds: []string{"33333"},
-			AudienceConditionTree: &entities.ConditionTreeNode{
+			AudienceConditionTree: &entities.TreeNode{
 				Operator: "or",
-				Nodes: []*entities.ConditionTreeNode{
+				Nodes: []*entities.TreeNode{
 					{
-						Condition: entities.Condition{
-							Name:  "optimizely_generated",
-							Type:  "audience_condition",
-							Value: "33333",
-						},
+						Item: "33333",
 					},
 				},
 			},

@@ -40,8 +40,8 @@ func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisi
 
 	if experiment.AudienceConditionTree != nil {
 
-		condTreeParams := entities.NewConditionTreeParameters(&userContext, decisionContext.AudienceMap)
-		conditionTreeEvaluator := evaluator.NewConditionTreeEvaluator()
+		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.AudienceMap)
+		conditionTreeEvaluator := evaluator.NewTreeEvaluator()
 		evalResult := conditionTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
 		if !evalResult {
 			// user not targeted for experiment, return an empty variation
@@ -53,7 +53,7 @@ func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisi
 
 	if len(experiment.AudienceIds) > 0 {
 		experimentAudience := decisionContext.AudienceMap[experiment.AudienceIds[0]]
-		condTreeParams := entities.NewConditionTreeParameters(&userContext, map[string]entities.Audience{})
+		condTreeParams := entities.NewTreeParameters(&userContext, map[string]entities.Audience{})
 		evalResult := s.audienceEvaluator.Evaluate(experimentAudience, condTreeParams)
 		if !evalResult {
 			// user not targeted for experiment, return an empty variation

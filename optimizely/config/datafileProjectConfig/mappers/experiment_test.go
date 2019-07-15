@@ -90,17 +90,12 @@ func TestMapExperiments(t *testing.T) {
 					EndOfRange: 10000,
 				},
 			},
-			AudienceConditionTree: &entities.ConditionTreeNode{
+			AudienceConditionTree: &entities.TreeNode{
 				Operator: "or",
-				Nodes: []*entities.ConditionTreeNode{
+				Nodes: []*entities.TreeNode{
 					{
 						Operator: "",
-						Condition: entities.Condition{
-							Name:  "optimizely_populated",
-							Match: "",
-							Type:  "audience_condition",
-							Value: "31111",
-						},
+						Item:     "31111",
 					},
 				},
 			},

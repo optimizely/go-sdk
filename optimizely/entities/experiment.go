@@ -33,7 +33,7 @@ type Experiment struct {
 	Variations            map[string]Variation
 	TrafficAllocation     []Range
 	GroupID               string
-	AudienceConditionTree *ConditionTreeNode
+	AudienceConditionTree *TreeNode
 }
 
 // Range represents bucketing range that the specify entityID falls into

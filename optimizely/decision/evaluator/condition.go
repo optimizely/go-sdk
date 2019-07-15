@@ -29,17 +29,19 @@ const (
 	gtMatchType     = "gt"
 )
 
-// ConditionEvaluator evaluates a condition against the given user's attributes
-type ConditionEvaluator interface {
-	Evaluate(entities.Condition, *entities.ConditionTreeParameters) (bool, error)
+// ItemEvaluator evaluates a condition against the given user's attributes
+type ItemEvaluator interface {
+	Evaluate(interface{}, *entities.TreeParameters) (bool, error)
 }
 
 // CustomAttributeConditionEvaluator evaluates conditions with custom attributes
 type CustomAttributeConditionEvaluator struct{}
 
 // Evaluate returns true if the given user's attributes match the condition
-func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *entities.ConditionTreeParameters) (bool, error) {
+func (c CustomAttributeConditionEvaluator) Evaluate(item interface{}, condTreeParams *entities.TreeParameters) (bool, error) {
 	// We should only be evaluating custom attributes
+
+	condition := item.(entities.Condition)
 	if condition.Type != customAttributeType {
 		return false, fmt.Errorf(`Unable to evaluator condition of type "%s"`, condition.Type)
 	}
@@ -76,18 +78,15 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 type AudienceConditionEvaluator struct{}
 
 // Evaluate returns true if the given user's attributes match the condition
-func (c AudienceConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *entities.ConditionTreeParameters) (bool, error) {
-	// We should only be evaluating custom attributes
-	if condition.Type != audienceCondition {
-		return false, fmt.Errorf(`Unable to evaluator condition of type "%s"`, condition.Type)
-	}
+func (c AudienceConditionEvaluator) Evaluate(item interface{}, condTreeParams *entities.TreeParameters) (bool, error) {
+
 	var ok bool
 	var audienceID string
 
-	if audienceID, ok = condition.Value.(string); ok {
+	if audienceID, ok = item.(string); ok {
 		if audience, good := condTreeParams.AudienceMap[audienceID]; good {
 			condTree := audience.ConditionTree
-			conditionTreeEvaluator := NewConditionTreeEvaluator()
+			conditionTreeEvaluator := NewTreeEvaluator()
 			retValue := conditionTreeEvaluator.Evaluate(condTree, condTreeParams)
 			return retValue, nil
 		}

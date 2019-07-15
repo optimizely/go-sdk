@@ -26,14 +26,14 @@ import (
 var ErrEmptyTree = errors.New("Empty Tree")
 
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
-func buildConditionTree(conditions interface{}) (conditionTree *entities.ConditionTreeNode, retErr error) {
+func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, retErr error) {
 
 	value := reflect.ValueOf(conditions)
 	visited := make(map[interface{}]bool)
 
-	conditionTree = &entities.ConditionTreeNode{}
-	var populateConditions func(v reflect.Value, root *entities.ConditionTreeNode)
-	populateConditions = func(v reflect.Value, root *entities.ConditionTreeNode) {
+	conditionTree = &entities.TreeNode{}
+	var populateConditions func(v reflect.Value, root *entities.TreeNode)
+	populateConditions = func(v reflect.Value, root *entities.TreeNode) {
 
 		for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
 			if v.Kind() == reflect.Ptr {
@@ -50,7 +50,7 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.Conditi
 
 		case reflect.Slice, reflect.Array:
 			for i := 0; i < v.Len(); i++ {
-				n := &entities.ConditionTreeNode{}
+				n := &entities.TreeNode{}
 				typedV := v.Index(i).Interface()
 				switch typedV.(type) {
 				case string:
@@ -69,7 +69,7 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.Conditi
 						retErr = err
 						return
 					}
-					n.Condition = condition
+					n.Item = condition
 				}
 
 				root.Nodes = append(root.Nodes, n)
@@ -88,15 +88,15 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.Conditi
 }
 
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
-func buildAudienceConditionTree(conditions interface{}) (conditionTree *entities.ConditionTreeNode, err error) {
+func buildAudienceConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, err error) {
 
 	var operators = []string{"or", "and", "not"} // any other operators?
 	value := reflect.ValueOf(conditions)
 	visited := make(map[interface{}]bool)
 
-	conditionTree = &entities.ConditionTreeNode{}
-	var populateConditions func(v reflect.Value, root *entities.ConditionTreeNode)
-	populateConditions = func(v reflect.Value, root *entities.ConditionTreeNode) {
+	conditionTree = &entities.TreeNode{}
+	var populateConditions func(v reflect.Value, root *entities.TreeNode)
+	populateConditions = func(v reflect.Value, root *entities.TreeNode) {
 
 		for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
 			if v.Kind() == reflect.Ptr {
@@ -113,7 +113,7 @@ func buildAudienceConditionTree(conditions interface{}) (conditionTree *entities
 
 		case reflect.Slice, reflect.Array:
 			for i := 0; i < v.Len(); i++ {
-				n := &entities.ConditionTreeNode{}
+				n := &entities.TreeNode{}
 				typedV := v.Index(i).Interface()
 				switch typedV.(type) {
 				case string:
@@ -123,9 +123,8 @@ func buildAudienceConditionTree(conditions interface{}) (conditionTree *entities
 						root.Operator = n.Operator
 						continue
 					} else {
-						n.Condition.Value = value
-						n.Condition.Type = "audience_condition"
-						n.Condition.Name = "optimizely_populated"
+						n.Item = value
+
 					}
 				}
 

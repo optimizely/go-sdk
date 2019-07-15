@@ -30,12 +30,12 @@ var int42Condition = e.Condition{
 }
 
 func TestConditionTreeEvaluateSimpleCondition(t *testing.T) {
-	conditionTreeEvaluator := NewConditionTreeEvaluator()
-	conditionTree := &e.ConditionTreeNode{
+	conditionTreeEvaluator := NewTreeEvaluator()
+	conditionTree := &e.TreeNode{
 		Operator: "or",
-		Nodes: []*e.ConditionTreeNode{
-			&e.ConditionTreeNode{
-				Condition: stringFooCondition,
+		Nodes: []*e.TreeNode{
+			&e.TreeNode{
+				Item: stringFooCondition,
 			},
 		},
 	}
@@ -48,7 +48,7 @@ func TestConditionTreeEvaluateSimpleCondition(t *testing.T) {
 			},
 		},
 	}
-	condTreeParams := e.NewConditionTreeParameters(&user, map[string]e.Audience{})
+	condTreeParams := e.NewTreeParameters(&user, map[string]e.Audience{})
 	result := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 
@@ -65,15 +65,15 @@ func TestConditionTreeEvaluateSimpleCondition(t *testing.T) {
 }
 
 func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
-	conditionTreeEvaluator := NewConditionTreeEvaluator()
-	conditionTree := &e.ConditionTreeNode{
+	conditionTreeEvaluator := NewTreeEvaluator()
+	conditionTree := &e.TreeNode{
 		Operator: "or",
-		Nodes: []*e.ConditionTreeNode{
-			&e.ConditionTreeNode{
-				Condition: stringFooCondition,
+		Nodes: []*e.TreeNode{
+			&e.TreeNode{
+				Item: stringFooCondition,
 			},
-			&e.ConditionTreeNode{
-				Condition: boolTrueCondition,
+			&e.TreeNode{
+				Item: boolTrueCondition,
 			},
 		},
 	}
@@ -87,7 +87,7 @@ func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
 		},
 	}
 
-	condTreeParams := e.NewConditionTreeParameters(&user, map[string]e.Audience{})
+	condTreeParams := e.NewTreeParameters(&user, map[string]e.Audience{})
 	result := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 
@@ -128,15 +128,15 @@ func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
 }
 
 func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
-	conditionTreeEvaluator := NewConditionTreeEvaluator()
-	conditionTree := &e.ConditionTreeNode{
+	conditionTreeEvaluator := NewTreeEvaluator()
+	conditionTree := &e.TreeNode{
 		Operator: "and",
-		Nodes: []*e.ConditionTreeNode{
-			&e.ConditionTreeNode{
-				Condition: stringFooCondition,
+		Nodes: []*e.TreeNode{
+			&e.TreeNode{
+				Item: stringFooCondition,
 			},
-			&e.ConditionTreeNode{
-				Condition: boolTrueCondition,
+			&e.TreeNode{
+				Item: boolTrueCondition,
 			},
 		},
 	}
@@ -150,7 +150,7 @@ func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
 		},
 	}
 
-	condTreeParams := e.NewConditionTreeParameters(&user, map[string]e.Audience{})
+	condTreeParams := e.NewTreeParameters(&user, map[string]e.Audience{})
 	result := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.False(t, result)
 
@@ -191,24 +191,24 @@ func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
 }
 
 func TestConditionTreeEvaluateNotCondition(t *testing.T) {
-	conditionTreeEvaluator := NewConditionTreeEvaluator()
+	conditionTreeEvaluator := NewTreeEvaluator()
 	// [or, [not, stringFooCondition], [not, boolTrueCondition]]
-	conditionTree := &e.ConditionTreeNode{
+	conditionTree := &e.TreeNode{
 		Operator: "or",
-		Nodes: []*e.ConditionTreeNode{
-			&e.ConditionTreeNode{
+		Nodes: []*e.TreeNode{
+			&e.TreeNode{
 				Operator: "not",
-				Nodes: []*e.ConditionTreeNode{
-					&e.ConditionTreeNode{
-						Condition: stringFooCondition,
+				Nodes: []*e.TreeNode{
+					&e.TreeNode{
+						Item: stringFooCondition,
 					},
 				},
 			},
-			&e.ConditionTreeNode{
+			&e.TreeNode{
 				Operator: "not",
-				Nodes: []*e.ConditionTreeNode{
-					&e.ConditionTreeNode{
-						Condition: boolTrueCondition,
+				Nodes: []*e.TreeNode{
+					&e.TreeNode{
+						Item: boolTrueCondition,
 					},
 				},
 			},
@@ -224,7 +224,7 @@ func TestConditionTreeEvaluateNotCondition(t *testing.T) {
 		},
 	}
 
-	condTreeParams := e.NewConditionTreeParameters(&user, map[string]e.Audience{})
+	condTreeParams := e.NewTreeParameters(&user, map[string]e.Audience{})
 	result := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 
@@ -265,35 +265,35 @@ func TestConditionTreeEvaluateNotCondition(t *testing.T) {
 }
 
 func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
-	conditionTreeEvaluator := NewConditionTreeEvaluator()
+	conditionTreeEvaluator := NewTreeEvaluator()
 	// [or, [and, stringFooCondition, boolTrueCondition], [or, [not, stringFooCondition], int42Condition]]
-	conditionTree := &e.ConditionTreeNode{
+	conditionTree := &e.TreeNode{
 		Operator: "or",
-		Nodes: []*e.ConditionTreeNode{
-			&e.ConditionTreeNode{
+		Nodes: []*e.TreeNode{
+			&e.TreeNode{
 				Operator: "and",
-				Nodes: []*e.ConditionTreeNode{
-					&e.ConditionTreeNode{
-						Condition: stringFooCondition,
+				Nodes: []*e.TreeNode{
+					&e.TreeNode{
+						Item: stringFooCondition,
 					},
-					&e.ConditionTreeNode{
-						Condition: boolTrueCondition,
+					&e.TreeNode{
+						Item: boolTrueCondition,
 					},
 				},
 			},
-			&e.ConditionTreeNode{
+			&e.TreeNode{
 				Operator: "or",
-				Nodes: []*e.ConditionTreeNode{
-					&e.ConditionTreeNode{
+				Nodes: []*e.TreeNode{
+					&e.TreeNode{
 						Operator: "not",
-						Nodes: []*e.ConditionTreeNode{
-							&e.ConditionTreeNode{
-								Condition: stringFooCondition,
+						Nodes: []*e.TreeNode{
+							&e.TreeNode{
+								Item: stringFooCondition,
 							},
 						},
 					},
-					&e.ConditionTreeNode{
-						Condition: int42Condition,
+					&e.TreeNode{
+						Item: int42Condition,
 					},
 				},
 			},
@@ -311,7 +311,7 @@ func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
 		},
 	}
 
-	condTreeParams := e.NewConditionTreeParameters(&user, map[string]e.Audience{})
+	condTreeParams := e.NewTreeParameters(&user, map[string]e.Audience{})
 	result := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.True(t, result)
 

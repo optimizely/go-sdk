@@ -33,38 +33,23 @@ func TestBuildAudienceConditionTreeSimpleAudienceCondition(t *testing.T) {
 		assert.Fail(t, err.Error())
 	}
 
-	expectedConditionTree := &entities.ConditionTreeNode{
+	expectedConditionTree := &entities.TreeNode{
 		Operator: "and",
-		Nodes: []*entities.ConditionTreeNode{
+		Nodes: []*entities.TreeNode{
 			{
 				Operator: "or",
-				Nodes: []*entities.ConditionTreeNode{
+				Nodes: []*entities.TreeNode{
 					{
 						Operator: "or",
-						Nodes: []*entities.ConditionTreeNode{
+						Nodes: []*entities.TreeNode{
 							{
-								Condition: entities.Condition{
-									Name:  "optimizely_populated",
-									Match: "",
-									Type:  "audience_condition",
-									Value: "12",
-								},
+								Item: "12",
 							},
 							{
-								Condition: entities.Condition{
-									Name:  "optimizely_populated",
-									Match: "",
-									Type:  "audience_condition",
-									Value: "123",
-								},
+								Item: "123",
 							},
 							{
-								Condition: entities.Condition{
-									Name:  "optimizely_populated",
-									Match: "",
-									Type:  "audience_condition",
-									Value: "1234",
-								},
+								Item: "1234",
 							},
 						},
 					},
@@ -84,17 +69,17 @@ func TestBuildConditionTreeSimpleAudienceCondition(t *testing.T) {
 		assert.Fail(t, err.Error())
 	}
 
-	expectedConditionTree := &entities.ConditionTreeNode{
+	expectedConditionTree := &entities.TreeNode{
 		Operator: "and",
-		Nodes: []*entities.ConditionTreeNode{
+		Nodes: []*entities.TreeNode{
 			{
 				Operator: "or",
-				Nodes: []*entities.ConditionTreeNode{
+				Nodes: []*entities.TreeNode{
 					{
 						Operator: "or",
-						Nodes: []*entities.ConditionTreeNode{
+						Nodes: []*entities.TreeNode{
 							{
-								Condition: entities.Condition{
+								Item: entities.Condition{
 									Name:  "s_foo",
 									Match: "exact",
 									Type:  "custom_attribute",

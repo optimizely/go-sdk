@@ -22,23 +22,23 @@ import (
 
 // AudienceEvaluator evaluates an audience against the given user's attributes
 type AudienceEvaluator interface {
-	Evaluate(audience entities.Audience, condTreeParams *entities.ConditionTreeParameters) bool
+	Evaluate(audience entities.Audience, condTreeParams *entities.TreeParameters) bool
 }
 
 // TypedAudienceEvaluator evaluates typed audiences
 type TypedAudienceEvaluator struct {
-	conditionTreeEvaluator ConditionTreeEvaluator
+	conditionTreeEvaluator TreeEvaluator
 }
 
 // NewTypedAudienceEvaluator creates a new instance of the TypedAudienceEvaluator
 func NewTypedAudienceEvaluator() *TypedAudienceEvaluator {
-	conditionTreeEvaluator := NewConditionTreeEvaluator()
+	conditionTreeEvaluator := NewTreeEvaluator()
 	return &TypedAudienceEvaluator{
 		conditionTreeEvaluator: *conditionTreeEvaluator,
 	}
 }
 
 // Evaluate evaluates the typed audience against the given user's attributes
-func (a TypedAudienceEvaluator) Evaluate(audience entities.Audience, condTreeParams *entities.ConditionTreeParameters) bool {
+func (a TypedAudienceEvaluator) Evaluate(audience entities.Audience, condTreeParams *entities.TreeParameters) bool {
 	return a.conditionTreeEvaluator.Evaluate(audience.ConditionTree, condTreeParams)
 }
