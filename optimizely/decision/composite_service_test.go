@@ -26,7 +26,6 @@ import (
 
 func TestGetFeatureDecision(t *testing.T) {
 	mockProjectConfig := new(mockProjectConfig)
-	mockProjectConfig.On("GetFeatureByKey", testFeat3333Key).Return(testFeat3333, nil)
 	decisionContext := FeatureDecisionContext{
 		Feature:       &testFeat3333,
 		ProjectConfig: mockProjectConfig,

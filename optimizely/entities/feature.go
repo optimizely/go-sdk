@@ -21,6 +21,7 @@ type Feature struct {
 	ID                 string
 	Key                string
 	FeatureExperiments []Experiment
+	Rollout            Rollout
 	Variables          map[string]FeatureVariable
 }
 
@@ -29,4 +30,10 @@ type FeatureVariable struct {
 	Key   string
 	Type  string
 	Value string
+}
+
+// Rollout represents a feature rollout
+type Rollout struct {
+	ID          string
+	Experiments []Experiment
 }

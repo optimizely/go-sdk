@@ -52,12 +52,13 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	// bucket user into a variation
 	bucketingID, err := userContext.GetBucketingID()
 	if err != nil {
-		bLogger.Warning(err.Error())
-	} else {
-		bLogger.Debug(fmt.Sprintf(`Using bucketing ID: "%s"`, bucketingID))
+		return experimentDecision, fmt.Errorf(`Error computing bucketing ID for experiment "%s": "%s"`, experiment.Key, err.Error())
 	}
-	variation := s.bucketer.Bucket(bucketingID, *experiment, group)
+
+	bLogger.Debug(fmt.Sprintf(`Using bucketing ID: "%s"`, bucketingID))
+	variation, reason := s.bucketer.Bucket(bucketingID, *experiment, group)
 	experimentDecision.DecisionMade = true
+	experimentDecision.Reason = reason
 	experimentDecision.Variation = variation
 	return experimentDecision, nil
 }

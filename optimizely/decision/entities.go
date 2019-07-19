@@ -36,6 +36,7 @@ type FeatureDecisionContext struct {
 // Decision contains base information about a decision
 type Decision struct {
 	DecisionMade bool
+	Reason       string
 }
 
 // FeatureDecision contains the decision information about a feature

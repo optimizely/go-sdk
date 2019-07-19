@@ -74,6 +74,7 @@ func TestExperimentTargetingGetDecisionNoAudienceCondTree(t *testing.T) {
 	expectedExperimentDecision := ExperimentDecision{
 		Decision: Decision{
 			DecisionMade: true,
+			Reason:       `User "test_user_1" does not qualify for experiment "test_experiment_1111".`,
 		},
 	}
 
@@ -155,8 +156,8 @@ func TestExperimentTargetingGetDecisionWithAudienceCondTree(t *testing.T) {
 	expectedExperimentDecision := ExperimentDecision{
 		Decision: Decision{
 			DecisionMade: true,
+			Reason:       `User "test_user_1" does not qualify for experiment "test_experiment".`,
 		},
-		Variation: entities.Variation{},
 	}
 
 	audienceEvaluator := evaluator.NewTypedAudienceEvaluator()
