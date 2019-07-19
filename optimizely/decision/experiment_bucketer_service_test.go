@@ -34,29 +34,9 @@ func (m *MockBucketer) Bucket(bucketingID string, experiment entities.Experiment
 }
 
 func TestExperimentBucketerGetDecision(t *testing.T) {
-	testVariation := entities.Variation{
-		ID:  "22222",
-		Key: "22222",
-	}
-	testExperimentKey := "test_experiment"
-	testExperiment := entities.Experiment{
-		ID:  "111111",
-		Key: testExperimentKey,
-		Variations: map[string]entities.Variation{
-			"22222": testVariation,
-		},
-		TrafficAllocation: []entities.Range{
-			entities.Range{
-				EntityID:   "22222",
-				EndOfRange: 10000,
-			},
-		},
-	}
-
-	mockProjectConfig := new(MockProjectConfig)
-	mockProjectConfig.On("GetExperimentByKey", testExperimentKey).Return(testExperiment, nil)
+	mockProjectConfig := new(mockProjectConfig)
 	testDecisionContext := ExperimentDecisionContext{
-		ExperimentKey: testExperimentKey,
+		Experiment:    &testExp1111,
 		ProjectConfig: mockProjectConfig,
 	}
 
@@ -65,13 +45,13 @@ func TestExperimentBucketerGetDecision(t *testing.T) {
 	}
 
 	expectedDecision := ExperimentDecision{
-		Variation: testVariation,
+		Variation: testExp1111Var2222,
 		Decision: Decision{
 			DecisionMade: true,
 		},
 	}
 	mockBucketer := new(MockBucketer)
-	mockBucketer.On("Bucket", testUserContext.ID, testExperiment, entities.Group{}).Return(testVariation, nil)
+	mockBucketer.On("Bucket", testUserContext.ID, testExp1111, entities.Group{}).Return(testExp1111Var2222, nil)
 
 	experimentBucketerService := ExperimentBucketerService{
 		bucketer: mockBucketer,

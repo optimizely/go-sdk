@@ -38,6 +38,7 @@ func (m *MockAudienceEvaluator) Evaluate(audience entities.Audience, condTreePar
 // test with mocking
 func TestExperimentTargetingGetDecisionNoAudienceCondTree(t *testing.T) {
 	testAudience := entities.Audience{
+		ID: "33333",
 		ConditionTree: &entities.TreeNode{
 			Operator: "or",
 			Nodes: []*entities.TreeNode{
@@ -50,17 +51,14 @@ func TestExperimentTargetingGetDecisionNoAudienceCondTree(t *testing.T) {
 			},
 		},
 	}
-	mockProjectConfig := new(MockProjectConfig)
 
-	testExperimentKey := "test_experiment"
-	testExperiment := entities.Experiment{
-		ID:          "111111",
-		AudienceIds: []string{"33333"},
-	}
+	// make a copy of the testExp1111 so we do not mutate the original one
+	var testExperiment = testExp1111
+	testExperiment.AudienceIds = []string{"33333"}
+	mockProjectConfig := new(mockProjectConfig)
 	mockProjectConfig.On("GetAudienceByID", "33333").Return(testAudience, nil)
-	mockProjectConfig.On("GetExperimentByKey", testExperimentKey).Return(testExperiment, nil)
 	testDecisionContext := ExperimentDecisionContext{
-		ExperimentKey: testExperimentKey,
+		Experiment:    &testExperiment,
 		ProjectConfig: mockProjectConfig,
 	}
 
@@ -135,14 +133,14 @@ func TestExperimentTargetingGetDecisionWithAudienceCondTree(t *testing.T) {
 	testExperimentKey := "test_experiment"
 	testExperiment := entities.Experiment{
 		ID:          "111111",
+		Key:         testExperimentKey,
 		AudienceIds: []string{"33333"},
 	}
 
-	mockProjectConfig := new(MockProjectConfig)
+	mockProjectConfig := new(mockProjectConfig)
 	mockProjectConfig.On("GetAudienceByID", "33333").Return(testAudience, nil)
-	mockProjectConfig.On("GetExperimentByKey", testExperimentKey).Return(testExperiment, nil)
 	testDecisionContext := ExperimentDecisionContext{
-		ExperimentKey: testExperimentKey,
+		Experiment:    &testExperiment,
 		ProjectConfig: mockProjectConfig,
 	}
 	// test does not pass audience evaluation

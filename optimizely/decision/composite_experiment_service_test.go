@@ -22,34 +22,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/optimizely/go-sdk/optimizely/entities"
-	"github.com/stretchr/testify/mock"
 )
 
-type MockExperimentDecisionService struct {
-	mock.Mock
-}
-
-func (m *MockExperimentDecisionService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
-	args := m.Called(decisionContext, userContext)
-	return args.Get(0).(ExperimentDecision), args.Error(1)
-}
-
 func TestCompositeExperimentServiceGetDecision(t *testing.T) {
-	testExperimentKey := "test_experiment"
-	testExperiment := entities.Experiment{
-		ID:  "111111",
-		Key: testExperimentKey,
-		Variations: map[string]entities.Variation{
-			"22222": entities.Variation{
-				ID:  "22222",
-				Key: "22222",
-			},
-		},
-	}
-	mockProjectConfig := new(MockProjectConfig)
-	mockProjectConfig.On("GetExperimentByKey", testExperimentKey).Return(testExperiment, nil)
+	mockProjectConfig := new(mockProjectConfig)
 	testDecisionContext := ExperimentDecisionContext{
-		ExperimentKey: testExperimentKey,
+		Experiment:    &testExp1111,
 		ProjectConfig: mockProjectConfig,
 	}
 
@@ -58,7 +36,7 @@ func TestCompositeExperimentServiceGetDecision(t *testing.T) {
 	}
 
 	expectedExperimentDecision := ExperimentDecision{
-		Variation: testExperiment.Variations["22222"],
+		Variation: testExp1111.Variations["2222"],
 		Decision: Decision{
 			DecisionMade: true,
 		},
@@ -92,7 +70,7 @@ func TestCompositeExperimentServiceGetDecision(t *testing.T) {
 
 	mockExperimentDecisionService2 = new(MockExperimentDecisionService)
 	expectedExperimentDecision2 := ExperimentDecision{
-		Variation: testExperiment.Variations["22222"],
+		Variation: testExp1111.Variations["2222"],
 		Decision: Decision{
 			DecisionMade: true,
 		},

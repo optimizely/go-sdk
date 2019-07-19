@@ -21,58 +21,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/stretchr/testify/mock"
-
-	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-type MockProjectConfig struct {
-	optimizely.ProjectConfig
-	mock.Mock
-}
-
-func (c *MockProjectConfig) GetFeatureByKey(featureKey string) (entities.Feature, error) {
-	args := c.Called(featureKey)
-	return args.Get(0).(entities.Feature), args.Error(1)
-}
-
-func (c *MockProjectConfig) GetExperimentByKey(experimentKey string) (entities.Experiment, error) {
-	args := c.Called(experimentKey)
-	return args.Get(0).(entities.Experiment), args.Error(1)
-}
-
-func (c *MockProjectConfig) GetAudienceByID(audienceID string) (entities.Audience, error) {
-	args := c.Called(audienceID)
-	return args.Get(0).(entities.Audience), args.Error(1)
-}
-
-type MockFeatureDecisionService struct {
-	mock.Mock
-}
-
-func (m *MockFeatureDecisionService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
-	args := m.Called(decisionContext, userContext)
-	return args.Get(0).(FeatureDecision), args.Error(1)
-}
-
 func TestGetFeatureDecision(t *testing.T) {
-	testFeatureKey := "my_test_feature"
-	testVariation := entities.Variation{
-		ID:             "11111",
-		FeatureEnabled: true,
-	}
-	testExperiment := entities.Experiment{
-		Variations: map[string]entities.Variation{"11111": testVariation},
-	}
-	testFeature := entities.Feature{
-		Key:                testFeatureKey,
-		FeatureExperiments: []entities.Experiment{testExperiment},
-	}
-	mockProjectConfig := new(MockProjectConfig)
-	mockProjectConfig.On("GetFeatureByKey", testFeatureKey).Return(testFeature, nil)
+	mockProjectConfig := new(mockProjectConfig)
+	mockProjectConfig.On("GetFeatureByKey", testFeat3333Key).Return(testFeat3333, nil)
 	decisionContext := FeatureDecisionContext{
-		FeatureKey:    testFeatureKey,
+		Feature:       &testFeat3333,
 		ProjectConfig: mockProjectConfig,
 	}
 
@@ -81,8 +37,8 @@ func TestGetFeatureDecision(t *testing.T) {
 	}
 
 	expectedFeatureDecision := FeatureDecision{
-		Experiment: testExperiment,
-		Variation:  testVariation,
+		Experiment: testExp1111,
+		Variation:  testExp1111Var2222,
 		Decision:   Decision{DecisionMade: true},
 	}
 
