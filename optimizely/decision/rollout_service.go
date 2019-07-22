@@ -17,7 +17,7 @@
 package decision
 
 import (
-	"fmt"
+	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
 
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
@@ -42,13 +42,13 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	feature := decisionContext.Feature
 	rollout := feature.Rollout
 	if rollout.ID == "" {
-		featureDecision.Reason = fmt.Sprintf(`There is no rollout for feature "%s".`, feature.Key)
+		featureDecision.Reason = reasons.NoRolloutForFeature
 		return featureDecision, nil
 	}
 
 	numberOfExperiments := len(rollout.Experiments)
 	if numberOfExperiments == 0 {
-		featureDecision.Reason = fmt.Sprintf(`Rollout of feature "%s" has no experiments.`, feature.Key)
+		featureDecision.Reason = reasons.RolloutHasNoExperiments
 		return featureDecision, nil
 	}
 
@@ -63,7 +63,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	// if user fails rollout targeting rule we return out of it
 	if decision.DecisionMade == true {
 		featureDecision.DecisionMade = true
-		featureDecision.Reason = fmt.Sprintf(`User "%s" does not meet conditions for rollout targeting rule.`, userContext.ID)
+		featureDecision.Reason = reasons.DoesNotMeetRolloutTargeting
 		return featureDecision, nil
 	}
 

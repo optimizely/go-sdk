@@ -14,41 +14,27 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package decision
+package reasons
 
-import (
-	"github.com/optimizely/go-sdk/optimizely"
-	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
-	"github.com/optimizely/go-sdk/optimizely/entities"
+// Reason is the reason for which a decision was made
+type Reason int
+
+const (
+	_ Reason = iota
+	// BucketedVariationNotFound - the bucketed variation ID is not in the config
+	BucketedVariationNotFound
+	// BucketedIntoVariation - the user is bucketed into a variation for the given experiment
+	BucketedIntoVariation
+	// DoesNotMeetRolloutTargeting - the user does not meet the rollout targeting rules
+	DoesNotMeetRolloutTargeting
+	// DoesNotQualify - the user did not qualify for the experiment
+	DoesNotQualify
+	// NoRolloutForFeature - there is no rollout for the given feature
+	NoRolloutForFeature
+	// RolloutHasNoExperiments - the rollout has no assigned experiments
+	RolloutHasNoExperiments
+	// NotBucketedIntoVariation - the user is not bucketed into a variation for the given experiment
+	NotBucketedIntoVariation
+	// NotInGroup - the user is not bucketed into the mutex group
+	NotInGroup
 )
-
-// ExperimentDecisionContext contains the information needed to be able to make a decision for a given experiment
-type ExperimentDecisionContext struct {
-	Experiment    *entities.Experiment
-	ProjectConfig optimizely.ProjectConfig
-}
-
-// FeatureDecisionContext contains the information needed to be able to make a decision for a given feature
-type FeatureDecisionContext struct {
-	Feature       *entities.Feature
-	ProjectConfig optimizely.ProjectConfig
-}
-
-// Decision contains base information about a decision
-type Decision struct {
-	DecisionMade bool
-	Reason       reasons.Reason
-}
-
-// FeatureDecision contains the decision information about a feature
-type FeatureDecision struct {
-	Decision
-	Experiment entities.Experiment
-	Variation  entities.Variation
-}
-
-// ExperimentDecision contains the decision information about an experiment
-type ExperimentDecision struct {
-	Decision
-	Variation entities.Variation
-}

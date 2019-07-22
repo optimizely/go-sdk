@@ -1,9 +1,9 @@
 package bucketer
 
 import (
-	"fmt"
 	"math"
 
+	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/optimizely/go-sdk/optimizely/logging"
 	"github.com/twmb/murmur3"
@@ -18,7 +18,7 @@ const maxTrafficValue = 10000
 
 // ExperimentBucketer is used to bucket the user into a particular entity in the experiment's traffic alloc range
 type ExperimentBucketer interface {
-	Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (entities.Variation, string)
+	Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (entities.Variation, reasons.Reason)
 }
 
 // MurmurhashBucketer buckets the user using the mmh3 algorightm
@@ -34,14 +34,13 @@ func NewMurmurhashBucketer(hashSeed uint32) *MurmurhashBucketer {
 }
 
 // Bucket buckets the user into the given experiment
-func (b MurmurhashBucketer) Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (entities.Variation, string) {
+func (b MurmurhashBucketer) Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (entities.Variation, reasons.Reason) {
 	if experiment.GroupID != "" && group.Policy == "random" {
 		bucketKey := bucketingID + group.ID
 		bucketedExperimentID := b.bucketToEntity(bucketKey, group.TrafficAllocation)
 		if bucketedExperimentID == "" || bucketedExperimentID != experiment.ID {
 			// User is not bucketed into an experiment in the exclusion group, return an empty variation
-			reason := fmt.Sprintf(`User "%s" is not in any experiment of group "%s"`, bucketingID, group.ID)
-			return entities.Variation{}, reason
+			return entities.Variation{}, reasons.NotInGroup
 		}
 	}
 
@@ -49,16 +48,14 @@ func (b MurmurhashBucketer) Bucket(bucketingID string, experiment entities.Exper
 	bucketedVariationID := b.bucketToEntity(bucketKey, experiment.TrafficAllocation)
 	if bucketedVariationID == "" {
 		// User is not bucketed into a variation in the experiment, return an empty variation
-		reason := fmt.Sprintf(`User "%s" is not in any variation of experiment "%s"`, bucketingID, experiment.Key)
-		return entities.Variation{}, reason
+		return entities.Variation{}, reasons.NotBucketedIntoVariation
 	}
 
 	if variation, ok := experiment.Variations[bucketedVariationID]; ok {
-		return variation, fmt.Sprintf(`User "%s" is bucketed in variation "%s" of experiment "%s"`, bucketingID, variation.Key, experiment.Key)
+		return variation, reasons.BucketedIntoVariation
 	}
 
-	reason := fmt.Sprintf(`Variation with ID "%s" not found for experiment "%s"`, bucketedVariationID, experiment.Key)
-	return entities.Variation{}, reason
+	return entities.Variation{}, reasons.BucketedVariationNotFound
 }
 
 func (b MurmurhashBucketer) bucketToEntity(bucketKey string, trafficAllocations []entities.Range) (entityID string) {

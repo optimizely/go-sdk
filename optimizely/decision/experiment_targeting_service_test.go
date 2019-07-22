@@ -19,6 +19,8 @@ package decision
 import (
 	"testing"
 
+	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
+
 	"github.com/optimizely/go-sdk/optimizely/decision/evaluator"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/assert"
@@ -74,7 +76,7 @@ func TestExperimentTargetingGetDecisionNoAudienceCondTree(t *testing.T) {
 	expectedExperimentDecision := ExperimentDecision{
 		Decision: Decision{
 			DecisionMade: true,
-			Reason:       `User "test_user_1" does not qualify for experiment "test_experiment_1111".`,
+			Reason:       reasons.DoesNotQualify,
 		},
 	}
 
@@ -156,7 +158,7 @@ func TestExperimentTargetingGetDecisionWithAudienceCondTree(t *testing.T) {
 	expectedExperimentDecision := ExperimentDecision{
 		Decision: Decision{
 			DecisionMade: true,
-			Reason:       `User "test_user_1" does not qualify for experiment "test_experiment".`,
+			Reason:       reasons.DoesNotQualify,
 		},
 	}
 

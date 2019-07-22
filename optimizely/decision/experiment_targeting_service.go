@@ -17,7 +17,7 @@
 package decision
 
 import (
-	"fmt"
+	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
 
 	"github.com/optimizely/go-sdk/optimizely/decision/evaluator"
 	"github.com/optimizely/go-sdk/optimizely/entities"
@@ -48,7 +48,7 @@ func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisi
 		if !evalResult {
 			// user not targeted for experiment, return an empty variation
 			experimentDecision.DecisionMade = true
-			experimentDecision.Reason = fmt.Sprintf(`User "%s" does not qualify for experiment "%s".`, userContext.ID, experiment.Key)
+			experimentDecision.Reason = reasons.DoesNotQualify
 		}
 		return experimentDecision, nil
 	}
@@ -61,7 +61,7 @@ func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisi
 		if evalResult == false {
 			// user not targeted for experiment, return an empty variation
 			experimentDecision.DecisionMade = true
-			experimentDecision.Reason = fmt.Sprintf(`User "%s" does not qualify for experiment "%s".`, userContext.ID, experiment.Key)
+			experimentDecision.Reason = reasons.DoesNotQualify
 			return experimentDecision, nil
 		}
 	}

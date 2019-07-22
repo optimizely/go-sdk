@@ -19,6 +19,8 @@ package decision
 import (
 	"testing"
 
+	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/optimizely/go-sdk/optimizely/entities"
@@ -77,7 +79,7 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 	testExperimentBucketerDecision = ExperimentDecision{
 		Decision: Decision{
 			DecisionMade: true,
-			Reason:       "User not bucketed into experiment",
+			Reason:       reasons.NotBucketedIntoVariation,
 		},
 	}
 	testExperimentBucketerDecisionContext = ExperimentDecisionContext{
@@ -95,7 +97,7 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 	expectedFeatureDecision = FeatureDecision{
 		Decision: Decision{
 			DecisionMade: true,
-			Reason:       "User not bucketed into experiment",
+			Reason:       reasons.NotBucketedIntoVariation,
 		},
 	}
 	decision, _ = testRolloutService.GetDecision(testFeatureDecisionContext, testUserContext)
@@ -123,7 +125,7 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 	expectedFeatureDecision = FeatureDecision{
 		Decision: Decision{
 			DecisionMade: true,
-			Reason:       `User "test_user" does not meet conditions for rollout targeting rule.`,
+			Reason:       reasons.DoesNotMeetRolloutTargeting,
 		},
 	}
 	decision, _ = testRolloutService.GetDecision(testFeatureDecisionContext, testUserContext)

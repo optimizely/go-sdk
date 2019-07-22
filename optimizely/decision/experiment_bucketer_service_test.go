@@ -19,6 +19,8 @@ package decision
 import (
 	"testing"
 
+	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
+
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -28,9 +30,9 @@ type MockBucketer struct {
 	mock.Mock
 }
 
-func (m *MockBucketer) Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (entities.Variation, string) {
+func (m *MockBucketer) Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (entities.Variation, reasons.Reason) {
 	args := m.Called(bucketingID, experiment, group)
-	return args.Get(0).(entities.Variation), args.String(1)
+	return args.Get(0).(entities.Variation), args.Get(1).(reasons.Reason)
 }
 
 func TestExperimentBucketerGetDecision(t *testing.T) {
@@ -48,10 +50,11 @@ func TestExperimentBucketerGetDecision(t *testing.T) {
 		Variation: testExp1111Var2222,
 		Decision: Decision{
 			DecisionMade: true,
+			Reason:       reasons.BucketedIntoVariation,
 		},
 	}
 	mockBucketer := new(MockBucketer)
-	mockBucketer.On("Bucket", testUserContext.ID, testExp1111, entities.Group{}).Return(testExp1111Var2222, "")
+	mockBucketer.On("Bucket", testUserContext.ID, testExp1111, entities.Group{}).Return(testExp1111Var2222, reasons.BucketedIntoVariation)
 
 	experimentBucketerService := ExperimentBucketerService{
 		bucketer: mockBucketer,
