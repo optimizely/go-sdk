@@ -108,11 +108,11 @@ func TestBucketExclusionGroups(t *testing.T) {
 
 	bucketer := NewMurmurhashBucketer(DefaultHashSeed)
 	// ppid2 + 1886780722 (groupId) will generate bucket value of 2434 which maps to experiment 1
-	bucketedVariation, reason := bucketer.Bucket("ppid2", experiment1, exclusionGroup)
+	bucketedVariation, reason, _ := bucketer.Bucket("ppid2", experiment1, exclusionGroup)
 	assert.Equal(t, experiment1.Variations["22222"], bucketedVariation)
 	assert.Equal(t, reasons.BucketedIntoVariation, reason)
 	// since the bucket value maps to experiment 1, the user will not be bucketed for experiment 2
-	bucketedVariation, reason = bucketer.Bucket("ppid2", experiment2, exclusionGroup)
+	bucketedVariation, reason, _ = bucketer.Bucket("ppid2", experiment2, exclusionGroup)
 	assert.Equal(t, entities.Variation{}, bucketedVariation)
 	assert.Equal(t, reasons.NotInGroup, reason)
 }

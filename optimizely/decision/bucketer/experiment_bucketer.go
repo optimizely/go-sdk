@@ -18,7 +18,7 @@ const maxTrafficValue = 10000
 
 // ExperimentBucketer is used to bucket the user into a particular entity in the experiment's traffic alloc range
 type ExperimentBucketer interface {
-	Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (entities.Variation, reasons.Reason)
+	Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (entities.Variation, reasons.Reason, error)
 }
 
 // MurmurhashBucketer buckets the user using the mmh3 algorightm
@@ -34,13 +34,13 @@ func NewMurmurhashBucketer(hashSeed uint32) *MurmurhashBucketer {
 }
 
 // Bucket buckets the user into the given experiment
-func (b MurmurhashBucketer) Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (entities.Variation, reasons.Reason) {
+func (b MurmurhashBucketer) Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (entities.Variation, reasons.Reason, error) {
 	if experiment.GroupID != "" && group.Policy == "random" {
 		bucketKey := bucketingID + group.ID
 		bucketedExperimentID := b.bucketToEntity(bucketKey, group.TrafficAllocation)
 		if bucketedExperimentID == "" || bucketedExperimentID != experiment.ID {
 			// User is not bucketed into an experiment in the exclusion group, return an empty variation
-			return entities.Variation{}, reasons.NotInGroup
+			return entities.Variation{}, reasons.NotInGroup, nil
 		}
 	}
 
@@ -48,14 +48,14 @@ func (b MurmurhashBucketer) Bucket(bucketingID string, experiment entities.Exper
 	bucketedVariationID := b.bucketToEntity(bucketKey, experiment.TrafficAllocation)
 	if bucketedVariationID == "" {
 		// User is not bucketed into a variation in the experiment, return an empty variation
-		return entities.Variation{}, reasons.NotBucketedIntoVariation
+		return entities.Variation{}, reasons.NotBucketedIntoVariation, nil
 	}
 
 	if variation, ok := experiment.Variations[bucketedVariationID]; ok {
-		return variation, reasons.BucketedIntoVariation
+		return variation, reasons.BucketedIntoVariation, nil
 	}
 
-	return entities.Variation{}, reasons.BucketedVariationNotFound
+	return entities.Variation{}, reasons.BucketedVariationNotFound, nil
 }
 
 func (b MurmurhashBucketer) bucketToEntity(bucketKey string, trafficAllocations []entities.Range) (entityID string) {
