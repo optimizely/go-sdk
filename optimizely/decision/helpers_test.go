@@ -64,14 +64,10 @@ func (m *MockFeatureDecisionService) GetDecision(decisionContext FeatureDecision
 	return args.Get(0).(FeatureDecision), args.Error(1)
 }
 
+// Single variation experiment
 const testExp1111Key = "test_experiment_1111"
-const testFeat3333Key = "my_test_feature_3333"
 
-var testExp1111Var2222 = entities.Variation{
-	ID:  "2222",
-	Key: "2222",
-}
-
+var testExp1111Var2222 = entities.Variation{ID: "2222", Key: "2222"}
 var testExp1111 = entities.Experiment{
 	ID:  "1111",
 	Key: testExp1111Key,
@@ -79,15 +75,39 @@ var testExp1111 = entities.Experiment{
 		"2222": testExp1111Var2222,
 	},
 	TrafficAllocation: []entities.Range{
-		entities.Range{
-			EntityID:   "2222",
-			EndOfRange: 10000,
-		},
+		entities.Range{EntityID: "2222", EndOfRange: 10000},
 	},
 }
+
+// Simple feature test
+const testFeat3333Key = "my_test_feature_3333"
 
 var testFeat3333 = entities.Feature{
 	ID:                 "3333",
 	Key:                testFeat3333Key,
 	FeatureExperiments: []entities.Experiment{testExp1111},
+}
+
+// Feature rollout
+var testExp1112Var2222 = entities.Variation{ID: "2222", Key: "2222"}
+var testExp1112 = entities.Experiment{
+	ID:  "1112",
+	Key: testExp1111Key,
+	Variations: map[string]entities.Variation{
+		"2222": testExp1111Var2222,
+	},
+	TrafficAllocation: []entities.Range{
+		entities.Range{EntityID: "2222", EndOfRange: 10000},
+	},
+}
+
+const testFeatRollout3334Key = "test_feature_rollout_3334_key"
+
+var testFeatRollout3334 = entities.Feature{
+	ID:  "3334",
+	Key: testFeatRollout3334Key,
+	Rollout: entities.Rollout{
+		ID:          "4444",
+		Experiments: []entities.Experiment{testExp1112},
+	},
 }
