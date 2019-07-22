@@ -18,7 +18,6 @@ package mappers
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
@@ -29,19 +28,24 @@ import (
 func TestMapFeatures(t *testing.T) {
 	const testFeatureFlagString = `{
 		"id": "21111",
-		"key": "test_feature_21111"
+		"key": "test_feature_21111",
+		"rolloutId": "41111"
 	}`
 
 	var rawFeatureFlag datafileEntities.FeatureFlag
 	json.Unmarshal([]byte(testFeatureFlagString), &rawFeatureFlag)
 
-	fmt.Printf("FLAG: %+v", rawFeatureFlag)
 	rawFeatureFlags := []datafileEntities.FeatureFlag{rawFeatureFlag}
-	featureMap := MapFeatureFlags(rawFeatureFlags)
+	rollout := entities.Rollout{ID: "41111"}
+	rolloutMap := map[string]entities.Rollout{
+		"41111": rollout,
+	}
+	featureMap := MapFeatureFlags(rawFeatureFlags, rolloutMap)
 	expectedFeatureMap := map[string]entities.Feature{
 		"test_feature_21111": entities.Feature{
-			ID:  "21111",
-			Key: "test_feature_21111",
+			ID:      "21111",
+			Key:     "test_feature_21111",
+			Rollout: rollout,
 		},
 	}
 

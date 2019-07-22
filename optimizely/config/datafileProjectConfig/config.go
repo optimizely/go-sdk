@@ -41,6 +41,7 @@ type DatafileProjectConfig struct {
 	groupMap             map[string]entities.Group
 	projectID            string
 	revision             string
+	rolloutMap           map[string]entities.Rollout
 }
 
 func (c DatafileProjectConfig) GetProjectID() string {
@@ -76,10 +77,13 @@ func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, erro
 	}
 
 	experiments, experimentKeyMap := mappers.MapExperiments(datafile.Experiments)
+	rolloutMap := mappers.MapRollouts(datafile.Rollouts)
 	config := &DatafileProjectConfig{
-		audienceMap:          mappers.MapAudiences(datafile.Audiences),
+		audienceMap:          mappers.MapAudiences(datafile.TypedAudiences),
 		experimentMap:        experiments,
 		experimentKeyToIDMap: experimentKeyMap,
+		rolloutMap:           rolloutMap,
+		featureMap:           mappers.MapFeatureFlags(datafile.FeatureFlags, rolloutMap),
 	}
 
 	logger.Info("Datafile is valid.")
