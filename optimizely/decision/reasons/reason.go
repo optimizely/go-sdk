@@ -14,25 +14,27 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package entities
+package reasons
 
-// Feature represents a feature flag
-type Feature struct {
-	ID                 string
-	Key                string
-	FeatureExperiments []Experiment
-	Rollout            Rollout
-}
+// Reason is the reason for which a decision was made
+type Reason int
 
-// FeatureVariable represents a variable
-type FeatureVariable struct {
-	Key   string
-	Type  string
-	Value string
-}
-
-// Rollout represents a feature rollout
-type Rollout struct {
-	ID          string
-	Experiments []Experiment
-}
+const (
+	_ Reason = iota
+	// BucketedVariationNotFound - the bucketed variation ID is not in the config
+	BucketedVariationNotFound
+	// BucketedIntoVariation - the user is bucketed into a variation for the given experiment
+	BucketedIntoVariation
+	// DoesNotMeetRolloutTargeting - the user does not meet the rollout targeting rules
+	DoesNotMeetRolloutTargeting
+	// DoesNotQualify - the user did not qualify for the experiment
+	DoesNotQualify
+	// NoRolloutForFeature - there is no rollout for the given feature
+	NoRolloutForFeature
+	// RolloutHasNoExperiments - the rollout has no assigned experiments
+	RolloutHasNoExperiments
+	// NotBucketedIntoVariation - the user is not bucketed into a variation for the given experiment
+	NotBucketedIntoVariation
+	// NotInGroup - the user is not bucketed into the mutex group
+	NotInGroup
+)

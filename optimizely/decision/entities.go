@@ -18,6 +18,7 @@ package decision
 
 import (
 	"github.com/optimizely/go-sdk/optimizely"
+	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
@@ -36,6 +37,7 @@ type FeatureDecisionContext struct {
 // Decision contains base information about a decision
 type Decision struct {
 	DecisionMade bool
+	Reason       reasons.Reason
 }
 
 // FeatureDecision contains the decision information about a feature

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
+
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/assert"
 )
@@ -69,7 +71,8 @@ func TestBucketToEntity(t *testing.T) {
 
 func TestBucketExclusionGroups(t *testing.T) {
 	experiment1 := entities.Experiment{
-		ID: "1886780721",
+		ID:  "1886780721",
+		Key: "experiment_1",
 		Variations: map[string]entities.Variation{
 			"22222": entities.Variation{ID: "22222", Key: "exp_1_var_1"},
 			"22223": entities.Variation{ID: "22223", Key: "exp_1_var_2"},
@@ -81,7 +84,8 @@ func TestBucketExclusionGroups(t *testing.T) {
 		GroupID: "1886780722",
 	}
 	experiment2 := entities.Experiment{
-		ID: "1886780723",
+		ID:  "1886780723",
+		Key: "experiment_2",
 		Variations: map[string]entities.Variation{
 			"22224": entities.Variation{ID: "22224", Key: "exp_2_var_1"},
 			"22225": entities.Variation{ID: "22225", Key: "exp_2_var_2"},
@@ -104,7 +108,11 @@ func TestBucketExclusionGroups(t *testing.T) {
 
 	bucketer := NewMurmurhashBucketer(DefaultHashSeed)
 	// ppid2 + 1886780722 (groupId) will generate bucket value of 2434 which maps to experiment 1
-	assert.Equal(t, experiment1.Variations["22222"], bucketer.Bucket("ppid2", experiment1, exclusionGroup))
+	bucketedVariation, reason, _ := bucketer.Bucket("ppid2", experiment1, exclusionGroup)
+	assert.Equal(t, experiment1.Variations["22222"], bucketedVariation)
+	assert.Equal(t, reasons.BucketedIntoVariation, reason)
 	// since the bucket value maps to experiment 1, the user will not be bucketed for experiment 2
-	assert.Equal(t, entities.Variation{}, bucketer.Bucket("ppid2", experiment2, exclusionGroup))
+	bucketedVariation, reason, _ = bucketer.Bucket("ppid2", experiment2, exclusionGroup)
+	assert.Equal(t, entities.Variation{}, bucketedVariation)
+	assert.Equal(t, reasons.NotInGroup, reason)
 }
