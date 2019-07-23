@@ -79,7 +79,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, erro
 	experiments, experimentKeyMap := mappers.MapExperiments(datafile.Experiments)
 	rolloutMap := mappers.MapRollouts(datafile.Rollouts)
 	config := &DatafileProjectConfig{
-		audienceMap:          mappers.MapAudiences(datafile.TypedAudiences),
+		audienceMap:          mappers.MapAudiences(datafile.Audiences),
 		experimentMap:        experiments,
 		experimentKeyToIDMap: experimentKeyMap,
 		rolloutMap:           rolloutMap,

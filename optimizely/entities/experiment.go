@@ -21,7 +21,6 @@ type Variation struct {
 	ID             string
 	Key            string
 	FeatureEnabled bool
-	Variables      map[string]FeatureVariable
 }
 
 // Experiment represents an experiment

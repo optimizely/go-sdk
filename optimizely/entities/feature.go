@@ -24,13 +24,6 @@ type Feature struct {
 	Rollout            Rollout
 }
 
-// FeatureVariable represents a variable
-type FeatureVariable struct {
-	Key   string
-	Type  string
-	Value string
-}
-
 // Rollout represents a feature rollout
 type Rollout struct {
 	ID          string
