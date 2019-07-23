@@ -27,28 +27,8 @@ func MapExperiments(rawExperiments []datafileEntities.Experiment) (map[string]en
 	experimentMap := make(map[string]entities.Experiment)
 	experimentKeyMap := make(map[string]string)
 	for _, rawExperiment := range rawExperiments {
-		audienceConditionTree, err := buildAudienceConditionTree(rawExperiment.AudienceConditions)
-		if err != nil {
-			// @TODO: handle error
-		}
 
-		experiment := entities.Experiment{
-			AudienceIds:           rawExperiment.AudienceIds,
-			ID:                    rawExperiment.ID,
-			Key:                   rawExperiment.Key,
-			TrafficAllocation:     make([]entities.Range, len(rawExperiment.TrafficAllocation)),
-			Variations:            make(map[string]entities.Variation),
-			AudienceConditionTree: audienceConditionTree,
-		}
-
-		for _, variation := range rawExperiment.Variations {
-			experiment.Variations[variation.ID] = mapVariation(variation)
-		}
-
-		for i, allocation := range rawExperiment.TrafficAllocation {
-			experiment.TrafficAllocation[i] = entities.Range(allocation)
-		}
-
+		experiment := mapExperiment(rawExperiment)
 		experimentMap[experiment.ID] = experiment
 		experimentKeyMap[experiment.Key] = experiment.ID
 	}
@@ -65,4 +45,31 @@ func mapVariation(rawVariation datafileEntities.Variation) entities.Variation {
 		FeatureEnabled: rawVariation.FeatureEnabled,
 	}
 	return variation
+}
+
+// Maps the raw experiment entity from the datafile into an SDK Experiment entity
+func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experiment {
+	audienceConditionTree, err := buildAudienceConditionTree(rawExperiment.AudienceConditions)
+	if err != nil {
+		// @TODO: handle error
+	}
+
+	experiment := entities.Experiment{
+		AudienceIds:           rawExperiment.AudienceIds,
+		ID:                    rawExperiment.ID,
+		Key:                   rawExperiment.Key,
+		TrafficAllocation:     make([]entities.Range, len(rawExperiment.TrafficAllocation)),
+		Variations:            make(map[string]entities.Variation),
+		AudienceConditionTree: audienceConditionTree,
+	}
+
+	for _, variation := range rawExperiment.Variations {
+		experiment.Variations[variation.ID] = mapVariation(variation)
+	}
+
+	for i, allocation := range rawExperiment.TrafficAllocation {
+		experiment.TrafficAllocation[i] = entities.Range(allocation)
+	}
+
+	return experiment
 }

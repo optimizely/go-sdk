@@ -21,16 +21,20 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-// MapFeatureFlags maps the raw datafile feature flag entitiees to SDK Feature entities
-func MapFeatureFlags(featureFlags []datafileEntities.FeatureFlag) map[string]entities.Feature {
+// MapFeatureFlags maps the raw datafile feature flag entities to SDK Feature entities
+func MapFeatureFlags(featureFlags []datafileEntities.FeatureFlag, rolloutMap map[string]entities.Rollout) map[string]entities.Feature {
 
 	featureMap := make(map[string]entities.Feature)
 	for _, featureFlag := range featureFlags {
 		// @TODO(mng): include experiments in the Feature
-		featureMap[featureFlag.Key] = entities.Feature{
+		feature := entities.Feature{
 			Key: featureFlag.Key,
 			ID:  featureFlag.ID,
 		}
+		if rollout, ok := rolloutMap[featureFlag.RolloutID]; ok {
+			feature.Rollout = rollout
+		}
+		featureMap[featureFlag.Key] = feature
 	}
 	return featureMap
 }

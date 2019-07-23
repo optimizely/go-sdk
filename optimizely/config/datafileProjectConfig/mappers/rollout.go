@@ -14,18 +14,32 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package entities
+package mappers
 
-// Feature represents a feature flag
-type Feature struct {
-	ID                 string
-	Key                string
-	FeatureExperiments []Experiment
-	Rollout            Rollout
+import (
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	"github.com/optimizely/go-sdk/optimizely/entities"
+)
+
+// MapRollouts maps the raw datafile rollout entities to SDK Rollout entities
+func MapRollouts(rollouts []datafileEntities.Rollout) map[string]entities.Rollout {
+	rolloutMap := make(map[string]entities.Rollout)
+	for _, rollout := range rollouts {
+		rolloutMap[rollout.ID] = mapRollout(rollout)
+	}
+
+	return rolloutMap
 }
 
-// Rollout represents a feature rollout
-type Rollout struct {
-	ID          string
-	Experiments []Experiment
+func mapRollout(datafileRollout datafileEntities.Rollout) entities.Rollout {
+	rolloutExperiments := make([]entities.Experiment, len(datafileRollout.Experiments))
+	for i, datafileExperiment := range datafileRollout.Experiments {
+		experiment := mapExperiment(datafileExperiment)
+		rolloutExperiments[i] = experiment
+	}
+
+	return entities.Rollout{
+		ID:          datafileRollout.ID,
+		Experiments: rolloutExperiments,
+	}
 }

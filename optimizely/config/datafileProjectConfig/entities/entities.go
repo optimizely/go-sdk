@@ -66,17 +66,25 @@ type Event struct {
 	ExperimentIds []string `json:"experimentIds"`
 }
 
+// Rollout represents a rollout from the Optimizely datafile
+type Rollout struct {
+	ID          string       `json:"id"`
+	Experiments []Experiment `json:"experiments"`
+}
+
 // Datafile represents the datafile we get from Optimizely
 type Datafile struct {
-	AccountID    string        `json:"accountId"`
-	AnonymizeIP  bool          `json:"anonymizeIP"`
-	Audiences    []Audience    `json:"audiences"`
-	BotFiltering bool          `json:"botFiltering"`
-	Experiments  []Experiment  `json:"experiments"`
-	FeatureFlags []FeatureFlag `json:"featureFlags"`
-	Events       []Event       `json:"events"`
-	ProjectID    string        `json:"projectId"`
-	Revision     string        `json:"revision"`
-	Variables    []string      `json:"variables"`
-	Version      string        `json:"version"`
+	AccountID      string        `json:"accountId"`
+	AnonymizeIP    bool          `json:"anonymizeIP"`
+	Audiences      []Audience    `json:"audiences"`
+	BotFiltering   bool          `json:"botFiltering"`
+	Experiments    []Experiment  `json:"experiments"`
+	FeatureFlags   []FeatureFlag `json:"featureFlags"`
+	Events         []Event       `json:"events"`
+	ProjectID      string        `json:"projectId"`
+	Revision       string        `json:"revision"`
+	Rollouts       []Rollout     `json:"rollouts"`
+	TypedAudiences []Audience    `json:"typedAudiences"`
+	Variables      []string      `json:"variables"`
+	Version        string        `json:"version"`
 }

@@ -17,9 +17,9 @@
 package client
 
 import (
+	"fmt"
 
 	"github.com/optimizely/go-sdk/optimizely"
-	"fmt"
 	"github.com/optimizely/go-sdk/optimizely/config"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 )
