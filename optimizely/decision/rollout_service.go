@@ -69,11 +69,8 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 
 	decision, _ = r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext)
 	featureDecision.Decision = decision.Decision
-	// check if we have a variation
-	if decision.Variation.ID != "" {
-		featureDecision.Experiment = experiment
-		featureDecision.Variation = decision.Variation
-	}
+	featureDecision.Experiment = experiment
+	featureDecision.Variation = decision.Variation
 
 	return featureDecision, nil
 }

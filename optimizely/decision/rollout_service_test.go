@@ -99,6 +99,7 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 			DecisionMade: true,
 			Reason:       reasons.NotBucketedIntoVariation,
 		},
+		Experiment: testExp1112,
 	}
 	decision, _ = testRolloutService.GetDecision(testFeatureDecisionContext, testUserContext)
 	assert.Equal(t, expectedFeatureDecision, decision)

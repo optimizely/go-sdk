@@ -18,6 +18,7 @@ package client
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/decision"
@@ -54,10 +55,24 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 		ProjectConfig: projectConfig,
 	}
 
+	userID := userContext.ID
+	logger.Debug(fmt.Sprintf(`Evaluating feature "%s" for user "%s".`, featureKey, userID))
 	featureDecision, err := o.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
 	if err != nil {
 		logger.Error("Received an error while computing feature decision", err)
 		return false, err
+	}
+
+	if featureDecision.DecisionMade == true {
+		logger.Debug(fmt.Sprintf(`Decision made for feature "%s" for user "%s" with the following reason: "%s". Source: "%s".`, featureKey, userID, featureDecision.Reason, featureDecision.Source))
+	} else {
+		logger.Debug(fmt.Sprintf(`No decision made for feature "%s" for user "%s": "%s". Source: "%s".`, featureKey, userID, featureDecision.Reason, featureDecision.Source))
+	}
+
+	if featureDecision.Variation.FeatureEnabled == true {
+		logger.Info(fmt.Sprintf(`Feature "%s" is enabled for user "%s".`, featureKey, userID))
+	} else {
+		logger.Info(fmt.Sprintf(`Feature "%s" is not enabled for user "%s".`, featureKey, userID))
 	}
 
 	// @TODO(mng): send impression event

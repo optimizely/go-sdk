@@ -20,7 +20,7 @@ package entities
 type Audience struct {
 	ID         string      `json:"id"`
 	Name       string      `json:"name"`
-	Conditions interface{} `json:"condition"`
+	Conditions interface{} `json:"conditions"`
 }
 
 // Experiment represents an Experiment object from the Optimizely datafile

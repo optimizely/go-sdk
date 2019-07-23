@@ -55,7 +55,7 @@ func (b MurmurhashBucketer) Bucket(bucketingID string, experiment entities.Exper
 		return variation, reasons.BucketedIntoVariation, nil
 	}
 
-	return entities.Variation{}, reasons.BucketedVariationNotFound, nil
+	return entities.Variation{ID: bucketedVariationID}, reasons.BucketedVariationNotFound, nil
 }
 
 func (b MurmurhashBucketer) bucketToEntity(bucketKey string, trafficAllocations []entities.Range) (entityID string) {

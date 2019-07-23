@@ -110,9 +110,9 @@ func TestBucketExclusionGroups(t *testing.T) {
 	// ppid2 + 1886780722 (groupId) will generate bucket value of 2434 which maps to experiment 1
 	bucketedVariation, reason, _ := bucketer.Bucket("ppid2", experiment1, exclusionGroup)
 	assert.Equal(t, experiment1.Variations["22222"], bucketedVariation)
-	assert.Equal(t, reasons.BucketedIntoVariation, reason)
+	assert.Equal(t, reasons.Reason(reasons.BucketedIntoVariation), reason)
 	// since the bucket value maps to experiment 1, the user will not be bucketed for experiment 2
 	bucketedVariation, reason, _ = bucketer.Bucket("ppid2", experiment2, exclusionGroup)
 	assert.Equal(t, entities.Variation{}, bucketedVariation)
-	assert.Equal(t, reasons.NotInGroup, reason)
+	assert.Equal(t, reasons.Reason(reasons.NotInGroup), reason)
 }
