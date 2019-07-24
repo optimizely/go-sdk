@@ -2,16 +2,19 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/optimizely/go-sdk/optimizely/client"
 	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/optimizely/event"
 	"github.com/optimizely/go-sdk/optimizely/logging"
 )
 
 func main() {
 	logging.SetLogLevel(logging.LogLevelDebug)
 	optimizelyFactory := &client.OptimizelyFactory{
-		SDKKey: "4SLpaJA1r1pgE6T2CoMs9q",
+		SDKKey:   "4SLpaJA1r1pgE6T2CoMs9q",
+		Datafile: []byte("datafile_string"),
 	}
 	client, err := optimizelyFactory.Client()
 
@@ -24,7 +27,7 @@ func main() {
 		ID: "mike ng",
 		Attributes: entities.UserAttributes{
 			Attributes: map[string]interface{}{
-				"country":      "California",
+				"country":      "Unknown",
 				"likes_donuts": true,
 			},
 		},
@@ -33,16 +36,16 @@ func main() {
 	enabled, _ := client.IsFeatureEnabled("binary_feature", user)
 	fmt.Printf("Is feature enabled? %v", enabled)
 
-	// processor := event.NewEventProcessor(100, 100)
+	processor := event.NewEventProcessor(100, 100)
 
-	// impression := event.UserEvent{}
+	impression := event.UserEvent{}
 
-	// processor.ProcessEvent(impression)
+	processor.ProcessEvent(impression)
 
-	// _, ok := processor.(*event.QueueingEventProcessor)
+	_, ok := processor.(*event.QueueingEventProcessor)
 
-	// if ok {
-	// 	time.Sleep(1000 * time.Millisecond)
-	// 	fmt.Println("\nending")
-	// }
+	if ok {
+		time.Sleep(1000 * time.Millisecond)
+		fmt.Println("\nending")
+	}
 }

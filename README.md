@@ -1,5 +1,43 @@
 # Optimizely Go SDK
 
+## Usage
+
+### Instantiation
+To start using the SDK, create an instance using our factory method:
+
+```
+import "github.com/optimizely/go-sdk/optimizely/client"
+
+optimizelyFactory := &client.OptimizelyFactory{
+  SDKKey: "[SDK_KEY_HERE]",
+}
+
+client, err := optimizelyFactory.Client()
+
+// You can also instantiate with a hard-coded datafile
+optimizelyFactory := &client.OptimizelyFactory{
+	Datafile: []byte("datafile_string"),
+}
+
+client, err := optimizelyFactory.Client()
+
+```
+
+### Feature Rollouts
+```
+user := entities.UserContext{
+  ID: "optimizely end user",
+  Attributes: entities.UserAttributes{
+    Attributes: map[string]interface{}{
+      "state":      "California",
+      "likes_donuts": true,
+    },
+  },
+}
+
+enabled, _ := client.IsFeatureEnabled("binary_feature", user)
+```
+
 ## Command line interface
 A CLI has been provided to illustrate the functionality of the SDK. Simply run `go-sdk` for help.
 ```$sh
