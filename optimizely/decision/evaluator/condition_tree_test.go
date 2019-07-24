@@ -42,10 +42,8 @@ func TestConditionTreeEvaluateSimpleCondition(t *testing.T) {
 
 	// Test match
 	user := e.UserContext{
-		Attributes: e.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "foo",
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "foo",
 		},
 	}
 	condTreeParams := e.NewTreeParameters(&user, map[string]e.Audience{})
@@ -54,10 +52,8 @@ func TestConditionTreeEvaluateSimpleCondition(t *testing.T) {
 
 	// Test no match
 	user = e.UserContext{
-		Attributes: e.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "not foo",
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "not foo",
 		},
 	}
 	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
@@ -80,10 +76,8 @@ func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
 
 	// Test match string
 	user := e.UserContext{
-		Attributes: e.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "foo",
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "foo",
 		},
 	}
 
@@ -93,10 +87,8 @@ func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
 
 	// Test match bool
 	user = e.UserContext{
-		Attributes: e.UserAttributes{
-			Attributes: map[string]interface{}{
-				"bool_true": true,
-			},
+		Attributes: map[string]interface{}{
+			"bool_true": true,
 		},
 	}
 	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
@@ -104,11 +96,9 @@ func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
 
 	// Test match both
 	user = e.UserContext{
-		Attributes: e.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "foo",
-				"bool_true":  true,
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "foo",
+			"bool_true":  true,
 		},
 	}
 	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
@@ -116,11 +106,9 @@ func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
 
 	// Test no match
 	user = e.UserContext{
-		Attributes: e.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "not foo",
-				"bool_true":  false,
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "not foo",
+			"bool_true":  false,
 		},
 	}
 	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
@@ -143,10 +131,8 @@ func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
 
 	// Test only string match with NULL bubbling
 	user := e.UserContext{
-		Attributes: e.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "foo",
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "foo",
 		},
 	}
 
@@ -156,10 +142,8 @@ func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
 
 	// Test only bool match with NULL bubbling
 	user = e.UserContext{
-		Attributes: e.UserAttributes{
-			Attributes: map[string]interface{}{
-				"bool_true": true,
-			},
+		Attributes: map[string]interface{}{
+			"bool_true": true,
 		},
 	}
 	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
@@ -167,11 +151,9 @@ func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
 
 	// Test match both
 	user = e.UserContext{
-		Attributes: e.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "foo",
-				"bool_true":  true,
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "foo",
+			"bool_true":  true,
 		},
 	}
 	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
@@ -179,11 +161,9 @@ func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
 
 	// Test no match
 	user = e.UserContext{
-		Attributes: e.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "not foo",
-				"bool_true":  false,
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "not foo",
+			"bool_true":  false,
 		},
 	}
 	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
@@ -217,10 +197,8 @@ func TestConditionTreeEvaluateNotCondition(t *testing.T) {
 
 	// Test match string
 	user := e.UserContext{
-		Attributes: e.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "not foo",
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "not foo",
 		},
 	}
 
@@ -230,10 +208,8 @@ func TestConditionTreeEvaluateNotCondition(t *testing.T) {
 
 	// Test match bool
 	user = e.UserContext{
-		Attributes: e.UserAttributes{
-			Attributes: map[string]interface{}{
-				"bool_true": false,
-			},
+		Attributes: map[string]interface{}{
+			"bool_true": false,
 		},
 	}
 	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
@@ -241,11 +217,9 @@ func TestConditionTreeEvaluateNotCondition(t *testing.T) {
 
 	// Test match both
 	user = e.UserContext{
-		Attributes: e.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "not foo",
-				"bool_true":  false,
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "not foo",
+			"bool_true":  false,
 		},
 	}
 	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
@@ -253,11 +227,9 @@ func TestConditionTreeEvaluateNotCondition(t *testing.T) {
 
 	// Test no match
 	user = e.UserContext{
-		Attributes: e.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "foo",
-				"bool_true":  true,
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "foo",
+			"bool_true":  true,
 		},
 	}
 	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
@@ -302,12 +274,10 @@ func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
 
 	// Test only match AND condition
 	user := e.UserContext{
-		Attributes: e.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "foo",
-				"bool_true":  true,
-				"int_42":     43,
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "foo",
+			"bool_true":  true,
+			"int_42":     43,
 		},
 	}
 
@@ -317,12 +287,10 @@ func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
 
 	// Test only match the NOT condition
 	user = e.UserContext{
-		Attributes: e.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "not foo",
-				"bool_true":  true,
-				"int_42":     43,
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "not foo",
+			"bool_true":  true,
+			"int_42":     43,
 		},
 	}
 	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
@@ -330,12 +298,10 @@ func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
 
 	// Test only match the int condition
 	user = e.UserContext{
-		Attributes: e.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "foo",
-				"bool_true":  false,
-				"int_42":     42,
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "foo",
+			"bool_true":  false,
+			"int_42":     42,
 		},
 	}
 	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
@@ -343,12 +309,10 @@ func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
 
 	// Test no match
 	user = e.UserContext{
-		Attributes: e.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "foo",
-				"bool_true":  false,
-				"int_42":     43,
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "foo",
+			"bool_true":  false,
+			"int_42":     43,
 		},
 	}
 	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)

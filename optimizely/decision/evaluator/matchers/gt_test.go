@@ -24,9 +24,6 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-
-
-
 func TestGtMatcherInt(t *testing.T) {
 	matcher := GtMatcher{
 		Condition: entities.Condition{
@@ -38,10 +35,8 @@ func TestGtMatcherInt(t *testing.T) {
 
 	// Test match - same type
 	user := entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"int_42": 43,
-			},
+		Attributes: map[string]interface{}{
+			"int_42": 43,
 		},
 	}
 	result, err := matcher.Match(user)
@@ -50,10 +45,8 @@ func TestGtMatcherInt(t *testing.T) {
 
 	// Test match int to float
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"int_42": 42.9999,
-			},
+		Attributes: map[string]interface{}{
+			"int_42": 42.9999,
 		},
 	}
 
@@ -63,10 +56,8 @@ func TestGtMatcherInt(t *testing.T) {
 
 	// Test no match
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"int_42": 42.00000,
-			},
+		Attributes: map[string]interface{}{
+			"int_42": 42.00000,
 		},
 	}
 
@@ -74,13 +65,10 @@ func TestGtMatcherInt(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, result)
 
-
 	// Test no match
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"int_42": 41,
-			},
+		Attributes: map[string]interface{}{
+			"int_42": 41,
 		},
 	}
 
@@ -90,10 +78,8 @@ func TestGtMatcherInt(t *testing.T) {
 
 	// Test error case
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"int_43": 42,
-			},
+		Attributes: map[string]interface{}{
+			"int_43": 42,
 		},
 	}
 
@@ -112,10 +98,8 @@ func TestGtMatcherFloat(t *testing.T) {
 
 	// Test match float to int
 	user := entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"float_4_2": 5,
-			},
+		Attributes: map[string]interface{}{
+			"float_4_2": 5,
 		},
 	}
 	result, err := matcher.Match(user)
@@ -124,10 +108,8 @@ func TestGtMatcherFloat(t *testing.T) {
 
 	// Test match
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"float_4_2": 4.29999,
-			},
+		Attributes: map[string]interface{}{
+			"float_4_2": 4.29999,
 		},
 	}
 	result, err = matcher.Match(user)
@@ -136,10 +118,8 @@ func TestGtMatcherFloat(t *testing.T) {
 
 	// Test no match
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"float_4_2": 4.2,
-			},
+		Attributes: map[string]interface{}{
+			"float_4_2": 4.2,
 		},
 	}
 
@@ -149,10 +129,8 @@ func TestGtMatcherFloat(t *testing.T) {
 
 	// Test error case
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"float_4_3": 4.2,
-			},
+		Attributes: map[string]interface{}{
+			"float_4_3": 4.2,
 		},
 	}
 

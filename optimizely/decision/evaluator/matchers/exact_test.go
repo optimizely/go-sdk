@@ -35,10 +35,8 @@ func TestExactMatcherString(t *testing.T) {
 
 	// Test match
 	user := entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "foo",
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "foo",
 		},
 	}
 	result, err := matcher.Match(user)
@@ -47,10 +45,8 @@ func TestExactMatcherString(t *testing.T) {
 
 	// Test no match
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "not_foo",
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "not_foo",
 		},
 	}
 
@@ -60,10 +56,8 @@ func TestExactMatcherString(t *testing.T) {
 
 	// Test error case
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_not_foo": "foo",
-			},
+		Attributes: map[string]interface{}{
+			"string_not_foo": "foo",
 		},
 	}
 
@@ -82,10 +76,8 @@ func TestExactMatcherBool(t *testing.T) {
 
 	// Test match
 	user := entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"bool_true": true,
-			},
+		Attributes: map[string]interface{}{
+			"bool_true": true,
 		},
 	}
 	result, err := matcher.Match(user)
@@ -94,10 +86,8 @@ func TestExactMatcherBool(t *testing.T) {
 
 	// Test no match
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"bool_true": false,
-			},
+		Attributes: map[string]interface{}{
+			"bool_true": false,
 		},
 	}
 
@@ -107,10 +97,8 @@ func TestExactMatcherBool(t *testing.T) {
 
 	// Test error case
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"not_bool_true": true,
-			},
+		Attributes: map[string]interface{}{
+			"not_bool_true": true,
 		},
 	}
 
@@ -129,10 +117,8 @@ func TestExactMatcherInt(t *testing.T) {
 
 	// Test match - same type
 	user := entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"int_42": 42,
-			},
+		Attributes: map[string]interface{}{
+			"int_42": 42,
 		},
 	}
 	result, err := matcher.Match(user)
@@ -141,10 +127,8 @@ func TestExactMatcherInt(t *testing.T) {
 
 	// Test match int to float
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"int_42": 42.0,
-			},
+		Attributes: map[string]interface{}{
+			"int_42": 42.0,
 		},
 	}
 
@@ -154,10 +138,8 @@ func TestExactMatcherInt(t *testing.T) {
 
 	// Test no match
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"int_42": 43,
-			},
+		Attributes: map[string]interface{}{
+			"int_42": 43,
 		},
 	}
 
@@ -167,10 +149,8 @@ func TestExactMatcherInt(t *testing.T) {
 
 	// Test error case
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"int_43": 42,
-			},
+		Attributes: map[string]interface{}{
+			"int_43": 42,
 		},
 	}
 
@@ -189,10 +169,8 @@ func TestExactMatcherFloat(t *testing.T) {
 
 	// Test match
 	user := entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"float_4_2": 4.2,
-			},
+		Attributes: map[string]interface{}{
+			"float_4_2": 4.2,
 		},
 	}
 	result, err := matcher.Match(user)
@@ -201,10 +179,8 @@ func TestExactMatcherFloat(t *testing.T) {
 
 	// Test no match
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"float_4_2": 4.3,
-			},
+		Attributes: map[string]interface{}{
+			"float_4_2": 4.3,
 		},
 	}
 
@@ -214,10 +190,8 @@ func TestExactMatcherFloat(t *testing.T) {
 
 	// Test error case
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"float_4_3": 4.2,
-			},
+		Attributes: map[string]interface{}{
+			"float_4_3": 4.2,
 		},
 	}
 

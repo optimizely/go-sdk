@@ -34,10 +34,8 @@ func TestCustomAttributeConditionEvaluator(t *testing.T) {
 
 	// Test condition passes
 	user := entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "foo",
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "foo",
 		},
 	}
 
@@ -47,10 +45,8 @@ func TestCustomAttributeConditionEvaluator(t *testing.T) {
 
 	// Test condition fails
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "not_foo",
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "not_foo",
 		},
 	}
 	result, _ = conditionEvaluator.Evaluate(condition, condTreeParams)

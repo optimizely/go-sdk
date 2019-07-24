@@ -28,7 +28,7 @@ type ExistsMatcher struct {
 // Match returns true if the user's attribute is in the condition
 func (m ExistsMatcher) Match(user entities.UserContext) (bool, error) {
 
-	_, err := user.Attributes.GetString(m.Condition.Name)
+	_, err := user.GetStringAttribute(m.Condition.Name)
 	if err != nil {
 		return false, nil
 	}

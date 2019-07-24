@@ -31,7 +31,7 @@ type ExactMatcher struct {
 // Match returns true if the user's attribute match the condition's string value
 func (m ExactMatcher) Match(user entities.UserContext) (bool, error) {
 	if stringValue, ok := m.Condition.Value.(string); ok {
-		attributeValue, err := user.Attributes.GetString(m.Condition.Name)
+		attributeValue, err := user.GetStringAttribute(m.Condition.Name)
 		if err != nil {
 			return false, err
 		}
@@ -39,7 +39,7 @@ func (m ExactMatcher) Match(user entities.UserContext) (bool, error) {
 	}
 
 	if boolValue, ok := m.Condition.Value.(bool); ok {
-		attributeValue, err := user.Attributes.GetBool(m.Condition.Name)
+		attributeValue, err := user.GetBoolAttribute(m.Condition.Name)
 		if err != nil {
 			return false, err
 		}
@@ -47,7 +47,7 @@ func (m ExactMatcher) Match(user entities.UserContext) (bool, error) {
 	}
 
 	if floatValue, ok := utils.ToFloat(m.Condition.Value); ok {
-		attributeValue, err := user.Attributes.GetFloat(m.Condition.Name)
+		attributeValue, err := user.GetFloatAttribute(m.Condition.Name)
 		if err != nil {
 			return false, err
 		}
