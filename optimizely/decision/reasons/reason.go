@@ -23,17 +23,17 @@ const (
 	// BucketedVariationNotFound - the bucketed variation ID is not in the config
 	BucketedVariationNotFound Reason = "Bucketed variation not found"
 	// BucketedIntoVariation - the user is bucketed into a variation for the given experiment
-	BucketedIntoVariation = "Bucketed into variation"
+	BucketedIntoVariation Reason = "Bucketed into variation"
 	// DoesNotMeetRolloutTargeting - the user does not meet the rollout targeting rules
-	DoesNotMeetRolloutTargeting = "Does not meet rollout targeting"
+	DoesNotMeetRolloutTargeting Reason = "Does not meet rollout targeting"
 	// DoesNotQualify - the user did not qualify for the experiment
-	DoesNotQualify = "Does not qualify for experiment"
+	DoesNotQualify Reason = "Does not qualify for experiment"
 	// NoRolloutForFeature - there is no rollout for the given feature
-	NoRolloutForFeature = "No rollout for feature"
+	NoRolloutForFeature Reason = "No rollout for feature"
 	// RolloutHasNoExperiments - the rollout has no assigned experiments
-	RolloutHasNoExperiments = "Rollout has no experiments"
+	RolloutHasNoExperiments Reason = "Rollout has no experiments"
 	// NotBucketedIntoVariation - the user is not bucketed into a variation for the given experiment
-	NotBucketedIntoVariation = "Not bucketed into a variation"
+	NotBucketedIntoVariation Reason = "Not bucketed into a variation"
 	// NotInGroup - the user is not bucketed into the mutex group
-	NotInGroup = "Not bucketed into any experiment in mutex group"
+	NotInGroup Reason = "Not bucketed into any experiment in mutex group"
 )
