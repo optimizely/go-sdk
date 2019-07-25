@@ -67,10 +67,8 @@ func TestExperimentTargetingGetDecisionNoAudienceCondTree(t *testing.T) {
 	// test does not pass audience evaluation
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"s_foo": "not foo",
-			},
+		Attributes: map[string]interface{}{
+			"s_foo": "not foo",
 		},
 	}
 	expectedExperimentDecision := ExperimentDecision{
@@ -92,10 +90,8 @@ func TestExperimentTargetingGetDecisionNoAudienceCondTree(t *testing.T) {
 	// test passes evaluation, no decision is made
 	testUserContext = entities.UserContext{
 		ID: "test_user_1",
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"s_foo": "foo",
-			},
+		Attributes: map[string]interface{}{
+			"s_foo": "foo",
 		},
 	}
 	expectedExperimentDecision = ExperimentDecision{
@@ -149,10 +145,8 @@ func TestExperimentTargetingGetDecisionWithAudienceCondTree(t *testing.T) {
 	// test does not pass audience evaluation
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"s_foo": "not_foo",
-			},
+		Attributes: map[string]interface{}{
+			"s_foo": "not_foo",
 		},
 	}
 	expectedExperimentDecision := ExperimentDecision{
@@ -174,10 +168,8 @@ func TestExperimentTargetingGetDecisionWithAudienceCondTree(t *testing.T) {
 
 	testUserContext = entities.UserContext{
 		ID: "test_user_1",
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"s_foo": "foo",
-			},
+		Attributes: map[string]interface{}{
+			"s_foo": "foo",
 		},
 	}
 

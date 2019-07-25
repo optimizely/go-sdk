@@ -32,7 +32,7 @@ type LtMatcher struct {
 func (m LtMatcher) Match(user entities.UserContext) (bool, error) {
 
 	if floatValue, ok := utils.ToFloat(m.Condition.Value); ok {
-		attributeValue, err := user.Attributes.GetFloat(m.Condition.Name)
+		attributeValue, err := user.GetFloatAttribute(m.Condition.Name)
 		if err != nil {
 			return false, err
 		}

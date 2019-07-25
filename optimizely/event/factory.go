@@ -1,10 +1,13 @@
 package event
 
 import (
-	guuid "github.com/google/uuid"
-	"github.com/optimizely/go-sdk/optimizely/entities"
+	"errors"
 	"strings"
 	"time"
+
+	guuid "github.com/google/uuid"
+	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/optimizely/utils"
 )
 
 const impressionKey string = "campaign_activated"
@@ -17,9 +20,8 @@ const eventEndPoint = "https://logx.optimizely.com/v1/events"
 const revenueKey = "revenue"
 const valueKey = "value"
 
-
 func createLogEvent(event EventBatch) LogEvent {
-	return LogEvent{endPoint:eventEndPoint,event:event}
+	return LogEvent{endPoint: eventEndPoint, event: event}
 }
 
 func makeTimestamp() int64 {
@@ -58,7 +60,7 @@ func CreateImpressionUserEvent(context EventContext, experiment entities.Experim
 	variation entities.Variation,
 	userContext entities.UserContext) UserEvent {
 
-	impression := createImpressionEvent(context, experiment, variation, userContext.Attributes.Attributes)
+	impression := createImpressionEvent(context, experiment, variation, userContext.Attributes)
 
 	userEvent := UserEvent{}
 	userEvent.Timestamp = makeTimestamp()
@@ -84,7 +86,7 @@ func createImpressionBatchEvent(userEvent UserEvent) EventBatch {
 	dispatchEvent.Uuid = guuid.New().String()
 	dispatchEvent.Tags = make(map[string]interface{})
 
-	return createBatchEvent(userEvent, userEvent.Impression.Attributes, [] Decision{decision}, []SnapshotEvent{dispatchEvent})
+	return createBatchEvent(userEvent, userEvent.Impression.Attributes, []Decision{decision}, []SnapshotEvent{dispatchEvent})
 
 }
 
@@ -100,24 +102,20 @@ func createConversionEvent(attributeKeyToIdMap map[string]string, event entities
 }
 func CreateConversionUserEvent(context EventContext, event entities.Event, userContext entities.UserContext, attributeKeyToIdMap map[string]string, eventTags map[string]interface{}) UserEvent {
 
-
 	userEvent := UserEvent{}
 	userEvent.Timestamp = makeTimestamp()
 	userEvent.VisitorID = userContext.ID
 	userEvent.Uuid = guuid.New().String()
 
 	userEvent.EventContext = context
-	conversion := createConversionEvent(attributeKeyToIdMap, event, userContext.Attributes.Attributes, eventTags, context.BotFiltering)
-	// convert event tags to UserAttributes to pull out proper values
-	tagAttributes := entities.UserAttributes{Attributes:eventTags}
-	// get revenue if available
-	revenue, ok := tagAttributes.GetInt(revenueKey)
-	if ok == nil {
+	conversion := createConversionEvent(attributeKeyToIdMap, event, userContext.Attributes, eventTags, context.BotFiltering)
+	revenue, err := getRevenueValue(eventTags)
+	if err == nil {
 		conversion.Revenue = &revenue
 	}
 	// get value if available
-	value, ok := tagAttributes.GetFloat(valueKey)
-	if ok == nil {
+	value, err := getTagValue(eventTags)
+	if err == nil {
 		conversion.Value = &value
 	}
 	userEvent.Conversion = &conversion
@@ -140,7 +138,7 @@ func createConversionBatchEvent(userEvent UserEvent) EventBatch {
 		dispatchEvent.Value = userEvent.Conversion.Value
 	}
 
-	return createBatchEvent(userEvent, userEvent.Conversion.Attributes, [] Decision{}, []SnapshotEvent{dispatchEvent})
+	return createBatchEvent(userEvent, userEvent.Conversion.Attributes, []Decision{}, []SnapshotEvent{dispatchEvent})
 }
 
 func createBatchEvent(userEvent UserEvent, attributes []VisitorAttribute,
@@ -202,4 +200,20 @@ func getEventAttributes(attributeKeyToIdMap map[string]string, attributes map[st
 	eventAttributes = append(eventAttributes, attribute)
 
 	return eventAttributes
+}
+
+func getRevenueValue(eventTags map[string]interface{}) (int64, error) {
+	if value, ok := eventTags[revenueKey]; ok {
+		return utils.GetIntValue(value)
+	}
+
+	return 0, errors.New("No event tag found for revenue")
+}
+
+func getTagValue(eventTags map[string]interface{}) (float64, error) {
+	if value, ok := eventTags[valueKey]; ok {
+		return utils.GetFloatValue(value)
+	}
+
+	return 0, errors.New("No event tag found for value")
 }

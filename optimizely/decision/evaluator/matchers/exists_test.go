@@ -34,10 +34,8 @@ func TestExistsMatcher(t *testing.T) {
 
 	// Test match
 	user := entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo": "any_value",
-			},
+		Attributes: map[string]interface{}{
+			"string_foo": "any_value",
 		},
 	}
 	result, err := matcher.Match(user)
@@ -46,10 +44,8 @@ func TestExistsMatcher(t *testing.T) {
 
 	// Test no match
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"string_foo1": "not_foo",
-			},
+		Attributes: map[string]interface{}{
+			"string_foo1": "not_foo",
 		},
 	}
 
@@ -59,12 +55,9 @@ func TestExistsMatcher(t *testing.T) {
 
 	// Test null case
 	user = entities.UserContext{
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{},
-		},
+		Attributes: map[string]interface{}{},
 	}
 	result, err = matcher.Match(user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 }
-

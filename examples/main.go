@@ -22,8 +22,11 @@ func main() {
 	}
 
 	user := entities.UserContext{
-		ID:         "mike ng",
-		Attributes: entities.UserAttributes{},
+		ID: "mike ng",
+		Attributes: map[string]interface{}{
+			"country":      "Unknown",
+			"likes_donuts": true,
+		},
 	}
 
 	enabled, _ := client.IsFeatureEnabled("go_sdk", user)
