@@ -18,13 +18,14 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/optimizely/go-sdk/optimizely/client"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/spf13/cobra"
 )
 
 var (
-	userId string
+	userId      string
 	featurekKey string
 )
 
@@ -46,7 +47,7 @@ var isFeatureEnabledCmd = &cobra.Command{
 
 		user := entities.UserContext{
 			ID:         userId,
-			Attributes: entities.UserAttributes{},
+			Attributes: map[string]interface{}{},
 		}
 
 		enabled, _ := client.IsFeatureEnabled(featurekKey, user)

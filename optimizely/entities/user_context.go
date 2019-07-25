@@ -18,7 +18,8 @@ package entities
 
 import (
 	"fmt"
-	"reflect"
+
+	"github.com/optimizely/go-sdk/optimizely/utils"
 )
 
 const bucketingIDAttributeName = "$opt_bucketing_id"
@@ -26,60 +27,51 @@ const bucketingIDAttributeName = "$opt_bucketing_id"
 // UserContext holds information about a user
 type UserContext struct {
 	ID         string
-	Attributes UserAttributes
-}
-
-// UserAttributes holds information about the user's attributes
-type UserAttributes struct {
 	Attributes map[string]interface{}
 }
 
-var floatType = reflect.TypeOf(float64(0))
-var intType = reflect.TypeOf(int64(0))
-
-// GetString returns the string value for the specified attribute name in the attributes map. Returns error if not found.
-func (u UserAttributes) GetString(attrName string) (string, error) {
+// GetStringAttribute returns the string value for the specified attribute name in the attributes map. Returns error if not found.
+func (u UserContext) GetStringAttribute(attrName string) (string, error) {
 	if value, ok := u.Attributes[attrName]; ok {
-		v := reflect.ValueOf(value)
-		if v.Type().String() == "string" {
-			return v.String(), nil
+		stringVal, err := utils.GetStringValue(value)
+		if err == nil {
+			return stringVal, nil
 		}
 	}
 
 	return "", fmt.Errorf(`No string attribute named "%s"`, attrName)
 }
 
-// GetBool returns the bool value for the specified attribute name in the attributes map. Returns error if not found.
-func (u UserAttributes) GetBool(attrName string) (bool, error) {
+// GetBoolAttribute returns the bool value for the specified attribute name in the attributes map. Returns error if not found.
+func (u UserContext) GetBoolAttribute(attrName string) (bool, error) {
 	if value, ok := u.Attributes[attrName]; ok {
-		v := reflect.ValueOf(value)
-		if v.Type().String() == "bool" {
-			return v.Bool(), nil
+		boolVal, err := utils.GetBoolValue(value)
+		if err == nil {
+			return boolVal, nil
 		}
 	}
 
 	return false, fmt.Errorf(`No bool attribute named "%s"`, attrName)
 }
 
-// GetFloat returns the float64 value for the specified attribute name in the attributes map. Returns error if not found.
-func (u UserAttributes) GetFloat(attrName string) (float64, error) {
+// GetFloatAttribute returns the float64 value for the specified attribute name in the attributes map. Returns error if not found.
+func (u UserContext) GetFloatAttribute(attrName string) (float64, error) {
 	if value, ok := u.Attributes[attrName]; ok {
-		v := reflect.ValueOf(value)
-		if v.Type().String() == "float64" || v.Type().ConvertibleTo(floatType) {
-			floatValue := v.Convert(floatType).Float()
-			return floatValue, nil
+		floatVal, err := utils.GetFloatValue(value)
+		if err == nil {
+			return floatVal, nil
 		}
 	}
 
 	return 0, fmt.Errorf(`No float attribute named "%s"`, attrName)
 }
 
-func (u UserAttributes) GetInt(attrName string) (int64, error) {
+// GetIntAttribute returns the int64 value for the specified attribute name in the attributes map. Returns error if not found.
+func (u UserContext) GetIntAttribute(attrName string) (int64, error) {
 	if value, ok := u.Attributes[attrName]; ok {
-		v := reflect.ValueOf(value)
-		if v.Type().String() == "int64" || v.Type().ConvertibleTo(intType) {
-			intValue := v.Convert(intType).Int()
-			return intValue, nil
+		intVal, err := utils.GetIntValue(value)
+		if err == nil {
+			return intVal, nil
 		}
 	}
 
@@ -92,8 +84,8 @@ func (u UserContext) GetBucketingID() (string, error) {
 	bucketingID := u.ID
 
 	// If the bucketing ID key is defined in attributes, than use that in place of the user ID
-	if value, ok := u.Attributes.Attributes[bucketingIDAttributeName]; ok {
-		customBucketingID, err := u.Attributes.GetString(bucketingIDAttributeName)
+	if value, ok := u.Attributes[bucketingIDAttributeName]; ok {
+		customBucketingID, err := u.GetStringAttribute(bucketingIDAttributeName)
 		if err != nil {
 			return bucketingID, fmt.Errorf(`Invalid bucketing ID provided: "%s"`, value)
 		}

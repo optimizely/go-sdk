@@ -25,11 +25,9 @@ func main() {
 
 	user := entities.UserContext{
 		ID: "mike ng",
-		Attributes: entities.UserAttributes{
-			Attributes: map[string]interface{}{
-				"country":      "Unknown",
-				"likes_donuts": true,
-			},
+		Attributes: map[string]interface{}{
+			"country":      "Unknown",
+			"likes_donuts": true,
 		},
 	}
 
