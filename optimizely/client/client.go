@@ -63,11 +63,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 		return false, err
 	}
 
-	if featureDecision.DecisionMade == true {
-		logger.Debug(fmt.Sprintf(`Decision made for feature "%s" for user "%s" with the following reason: "%s". Source: "%s".`, featureKey, userID, featureDecision.Reason, featureDecision.Source))
-	} else {
-		logger.Debug(fmt.Sprintf(`No decision made for feature "%s" for user "%s": "%s". Source: "%s".`, featureKey, userID, featureDecision.Reason, featureDecision.Source))
-	}
+	logger.Debug(fmt.Sprintf(`Decision made for feature "%s" for user "%s" with the following reason: "%s". Source: "%s".`, featureKey, userID, featureDecision.Reason, featureDecision.Source))
 
 	if featureDecision.Variation.FeatureEnabled == true {
 		logger.Info(fmt.Sprintf(`Feature "%s" is enabled for user "%s".`, featureKey, userID))

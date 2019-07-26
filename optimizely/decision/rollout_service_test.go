@@ -126,7 +126,7 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 	expectedFeatureDecision = FeatureDecision{
 		Decision: Decision{
 			DecisionMade: true,
-			Reason:       reasons.DoesNotMeetRolloutTargeting,
+			Reason:       reasons.FailedRolloutTargeting,
 		},
 	}
 	decision, _ = testRolloutService.GetDecision(testFeatureDecisionContext, testUserContext)

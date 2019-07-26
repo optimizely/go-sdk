@@ -24,10 +24,10 @@ const (
 	BucketedVariationNotFound Reason = "Bucketed variation not found"
 	// BucketedIntoVariation - the user is bucketed into a variation for the given experiment
 	BucketedIntoVariation Reason = "Bucketed into variation"
-	// DoesNotMeetRolloutTargeting - the user does not meet the rollout targeting rules
-	DoesNotMeetRolloutTargeting Reason = "Does not meet rollout targeting"
-	// DoesNotQualify - the user did not qualify for the experiment
-	DoesNotQualify Reason = "Does not qualify for experiment"
+	// FailedRolloutTargeting - the user does not meet the rollout targeting rules
+	FailedRolloutTargeting Reason = "Does not meet rollout targeting rule"
+	// FailedAudienceTargeting - the user failed the audience targeting conditions
+	FailedAudienceTargeting Reason = "Does not meet audience targeting conditions"
 	// NoRolloutForFeature - there is no rollout for the given feature
 	NoRolloutForFeature Reason = "No rollout for feature"
 	// RolloutHasNoExperiments - the rollout has no assigned experiments

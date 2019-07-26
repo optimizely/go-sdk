@@ -22,14 +22,14 @@ import (
 
 // CompositeFeatureService is the default out-of-the-box feature decision service
 type CompositeFeatureService struct {
-	experimentDecisionService        ExperimentDecisionService
-	rolloutExperimentDecisionService FeatureDecisionService
+	experimentDecisionService ExperimentDecisionService
+	rolloutDecisionService    FeatureDecisionService
 }
 
 // NewCompositeFeatureService returns a new instance of the CompositeFeatureService
 func NewCompositeFeatureService() *CompositeFeatureService {
 	return &CompositeFeatureService{
-		rolloutExperimentDecisionService: NewRolloutService(),
+		rolloutDecisionService: NewRolloutService(),
 	}
 }
 
@@ -59,7 +59,7 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 		Feature:       feature,
 		ProjectConfig: decisionContext.ProjectConfig,
 	}
-	featureDecision, err := f.rolloutExperimentDecisionService.GetDecision(featureDecisionContext, userContext)
+	featureDecision, err := f.rolloutDecisionService.GetDecision(featureDecisionContext, userContext)
 	featureDecision.Source = Rollout
 	return featureDecision, err
 }

@@ -63,7 +63,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	// if user fails rollout targeting rule we return out of it
 	if decision.DecisionMade == true {
 		featureDecision.DecisionMade = true
-		featureDecision.Reason = reasons.DoesNotMeetRolloutTargeting
+		featureDecision.Reason = reasons.FailedRolloutTargeting
 		return featureDecision, nil
 	}
 

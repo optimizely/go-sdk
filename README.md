@@ -28,10 +28,8 @@ client, err := optimizelyFactory.Client()
 user := entities.UserContext{
   ID: "optimizely end user",
   Attributes: entities.UserAttributes{
-    Attributes: map[string]interface{}{
-      "state":      "California",
-      "likes_donuts": true,
-    },
+    "state":      "California",
+    "likes_donuts": true,
   },
 }
 

@@ -48,7 +48,7 @@ func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisi
 		if !evalResult {
 			// user not targeted for experiment, return an empty variation
 			experimentDecision.DecisionMade = true
-			experimentDecision.Reason = reasons.DoesNotQualify
+			experimentDecision.Reason = reasons.FailedAudienceTargeting
 		}
 		return experimentDecision, nil
 	}
@@ -61,7 +61,7 @@ func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisi
 		if evalResult == false {
 			// user not targeted for experiment, return an empty variation
 			experimentDecision.DecisionMade = true
-			experimentDecision.Reason = reasons.DoesNotQualify
+			experimentDecision.Reason = reasons.FailedAudienceTargeting
 			return experimentDecision, nil
 		}
 	}
