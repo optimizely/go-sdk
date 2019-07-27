@@ -19,15 +19,15 @@ package mappers
 import (
 	"encoding/json"
 	"errors"
-	"github.com/optimizely/go-sdk/optimizely/entities"
 	"reflect"
+
+	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
 var ErrEmptyTree = errors.New("Empty Tree")
 
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
 func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, retErr error) {
-
 	value := reflect.ValueOf(conditions)
 	visited := make(map[interface{}]bool)
 

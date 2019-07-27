@@ -74,7 +74,7 @@ func TestExperimentTargetingGetDecisionNoAudienceCondTree(t *testing.T) {
 	expectedExperimentDecision := ExperimentDecision{
 		Decision: Decision{
 			DecisionMade: true,
-			Reason:       reasons.DoesNotQualify,
+			Reason:       reasons.FailedAudienceTargeting,
 		},
 	}
 
@@ -152,7 +152,7 @@ func TestExperimentTargetingGetDecisionWithAudienceCondTree(t *testing.T) {
 	expectedExperimentDecision := ExperimentDecision{
 		Decision: Decision{
 			DecisionMade: true,
-			Reason:       reasons.DoesNotQualify,
+			Reason:       reasons.FailedAudienceTargeting,
 		},
 	}
 

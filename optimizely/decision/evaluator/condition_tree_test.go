@@ -318,3 +318,114 @@ func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
 	result = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	assert.False(t, result)
 }
+
+var audienceMap = map[string]e.Audience{
+	"11111": audience11111,
+	"11112": audience11112,
+}
+
+var audience11111 = e.Audience{
+	ID: "11111",
+	ConditionTree: &e.TreeNode{
+		Operator: "or",
+		Nodes: []*e.TreeNode{
+			&e.TreeNode{
+				Operator: "or",
+				Nodes: []*e.TreeNode{
+					&e.TreeNode{
+						Item: stringFooCondition,
+					},
+				},
+			},
+		},
+	},
+}
+
+var audience11112 = e.Audience{
+	ID: "11112",
+	ConditionTree: &e.TreeNode{
+		Operator: "or",
+		Nodes: []*e.TreeNode{
+			&e.TreeNode{
+				Operator: "and",
+				Nodes: []*e.TreeNode{
+					&e.TreeNode{
+						Item: boolTrueCondition,
+					},
+					&e.TreeNode{
+						Item: int42Condition,
+					},
+				},
+			},
+		},
+	},
+}
+
+func TestConditionTreeEvaluateAnAudienceTreeSingleAudience(t *testing.T) {
+	audienceTree := &e.TreeNode{
+		Operator: "or",
+		Nodes: []*e.TreeNode{
+			&e.TreeNode{
+				Item: audience11111.ID,
+			},
+		},
+	}
+
+	conditionTreeEvaluator := NewTreeEvaluator()
+
+	// Test matches audience 11111
+	treeParams := &e.TreeParameters{
+		User: &e.UserContext{
+			ID: "test_user_1",
+			Attributes: map[string]interface{}{
+				"string_foo": "foo",
+			},
+		},
+		AudienceMap: audienceMap,
+	}
+	result := conditionTreeEvaluator.Evaluate(audienceTree, treeParams)
+	assert.True(t, result)
+}
+
+func TestConditionTreeEvaluateAnAudienceTreeMultipleAudiences(t *testing.T) {
+	audienceTree := &e.TreeNode{
+		Operator: "or",
+		Nodes: []*e.TreeNode{
+			&e.TreeNode{
+				Item: audience11111.ID,
+			},
+			&e.TreeNode{
+				Item: audience11112.ID,
+			},
+		},
+	}
+
+	conditionTreeEvaluator := NewTreeEvaluator()
+
+	// Test only matches audience 11111
+	treeParams := &e.TreeParameters{
+		User: &e.UserContext{
+			ID: "test_user_1",
+			Attributes: map[string]interface{}{
+				"string_foo": "foo",
+			},
+		},
+		AudienceMap: audienceMap,
+	}
+	result := conditionTreeEvaluator.Evaluate(audienceTree, treeParams)
+	assert.True(t, result)
+
+	// Test only matches audience 11112
+	treeParams = &e.TreeParameters{
+		User: &e.UserContext{
+			ID: "test_user_1",
+			Attributes: map[string]interface{}{
+				"bool_true": true,
+				"int_42":    42,
+			},
+		},
+		AudienceMap: audienceMap,
+	}
+	result = conditionTreeEvaluator.Evaluate(audienceTree, treeParams)
+	assert.True(t, result)
+}

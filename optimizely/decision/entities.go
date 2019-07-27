@@ -34,6 +34,14 @@ type FeatureDecisionContext struct {
 	ProjectConfig optimizely.ProjectConfig
 }
 
+// Source is where the decision came from
+type Source string
+
+const (
+	// Rollout - the decision came from a rollout
+	Rollout Source = "Rollout"
+)
+
 // Decision contains base information about a decision
 type Decision struct {
 	DecisionMade bool
@@ -43,6 +51,7 @@ type Decision struct {
 // FeatureDecision contains the decision information about a feature
 type FeatureDecision struct {
 	Decision
+	Source     Source
 	Experiment entities.Experiment
 	Variation  entities.Variation
 }

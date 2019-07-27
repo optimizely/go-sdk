@@ -63,17 +63,14 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	// if user fails rollout targeting rule we return out of it
 	if decision.DecisionMade == true {
 		featureDecision.DecisionMade = true
-		featureDecision.Reason = reasons.DoesNotMeetRolloutTargeting
+		featureDecision.Reason = reasons.FailedRolloutTargeting
 		return featureDecision, nil
 	}
 
 	decision, _ = r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext)
 	featureDecision.Decision = decision.Decision
-	// check if we have a variation
-	if decision.Variation.ID != "" {
-		featureDecision.Experiment = experiment
-		featureDecision.Variation = decision.Variation
-	}
+	featureDecision.Experiment = experiment
+	featureDecision.Variation = decision.Variation
 
 	return featureDecision, nil
 }

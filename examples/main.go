@@ -2,17 +2,19 @@ package main
 
 import (
 	"fmt"
-
 	"time"
 
 	"github.com/optimizely/go-sdk/optimizely/client"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/optimizely/go-sdk/optimizely/event"
+	"github.com/optimizely/go-sdk/optimizely/logging"
 )
 
 func main() {
+	logging.SetLogLevel(logging.LogLevelDebug)
 	optimizelyFactory := &client.OptimizelyFactory{
-		SDKKey: "ABC",
+		SDKKey:   "4SLpaJA1r1pgE6T2CoMs9q",
+		Datafile: []byte("datafile_string"),
 	}
 	client, err := optimizelyFactory.Client()
 
@@ -29,7 +31,7 @@ func main() {
 		},
 	}
 
-	enabled, _ := client.IsFeatureEnabled("go_sdk", user)
+	enabled, _ := client.IsFeatureEnabled("binary_feature", user)
 	fmt.Printf("Is feature enabled? %v", enabled)
 
 	processor := event.NewEventProcessor(100, 100)

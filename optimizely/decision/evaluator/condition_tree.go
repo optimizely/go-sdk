@@ -18,6 +18,7 @@ package evaluator
 
 import (
 	"fmt"
+
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 

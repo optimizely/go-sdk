@@ -20,7 +20,13 @@ package entities
 type Audience struct {
 	ID         string      `json:"id"`
 	Name       string      `json:"name"`
-	Conditions interface{} `json:"condition"`
+	Conditions interface{} `json:"conditions"`
+}
+
+// Attribute represents an Attribute object from the Optimizely datafile
+type Attribute struct {
+	ID  string `json:"id"`
+	Key string `json:"key"`
 }
 
 // Experiment represents an Experiment object from the Optimizely datafile
@@ -38,11 +44,19 @@ type Experiment struct {
 
 // FeatureFlag represents a FeatureFlag object from the Optimizely datafile
 type FeatureFlag struct {
-	ID            string   `json:"id"`
-	RolloutID     string   `json:"rolloutId"`
-	Key           string   `json:"key"`
-	ExperimentIDs []string `json:"experimentIds"`
-	Variables     []string `json:"variables"`
+	ID            string     `json:"id"`
+	RolloutID     string     `json:"rolloutId"`
+	Key           string     `json:"key"`
+	ExperimentIDs []string   `json:"experimentIds"`
+	Variables     []Variable `json:"variables"`
+}
+
+// Variable represents a Variable object from the Optimizely datafile
+type Variable struct {
+	DefaultValue string `json:"defaultValue"`
+	ID           string `json:"id"`
+	Key          string `json:"key"`
+	Type         string `json:"type"`
 }
 
 // trafficAllocation represents a traffic allocation range from the Optimizely datafile
@@ -76,6 +90,7 @@ type Rollout struct {
 type Datafile struct {
 	AccountID      string        `json:"accountId"`
 	AnonymizeIP    bool          `json:"anonymizeIP"`
+	Attributes     []Attribute   `json:"attributes"`
 	Audiences      []Audience    `json:"audiences"`
 	BotFiltering   bool          `json:"botFiltering"`
 	Experiments    []Experiment  `json:"experiments"`

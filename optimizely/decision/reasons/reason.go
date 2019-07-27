@@ -17,24 +17,23 @@
 package reasons
 
 // Reason is the reason for which a decision was made
-type Reason int
+type Reason string
 
 const (
-	_ Reason = iota
 	// BucketedVariationNotFound - the bucketed variation ID is not in the config
-	BucketedVariationNotFound
+	BucketedVariationNotFound Reason = "Bucketed variation not found"
 	// BucketedIntoVariation - the user is bucketed into a variation for the given experiment
-	BucketedIntoVariation
-	// DoesNotMeetRolloutTargeting - the user does not meet the rollout targeting rules
-	DoesNotMeetRolloutTargeting
-	// DoesNotQualify - the user did not qualify for the experiment
-	DoesNotQualify
+	BucketedIntoVariation Reason = "Bucketed into variation"
+	// FailedRolloutTargeting - the user does not meet the rollout targeting rules
+	FailedRolloutTargeting Reason = "Does not meet rollout targeting rule"
+	// FailedAudienceTargeting - the user failed the audience targeting conditions
+	FailedAudienceTargeting Reason = "Does not meet audience targeting conditions"
 	// NoRolloutForFeature - there is no rollout for the given feature
-	NoRolloutForFeature
+	NoRolloutForFeature Reason = "No rollout for feature"
 	// RolloutHasNoExperiments - the rollout has no assigned experiments
-	RolloutHasNoExperiments
+	RolloutHasNoExperiments Reason = "Rollout has no experiments"
 	// NotBucketedIntoVariation - the user is not bucketed into a variation for the given experiment
-	NotBucketedIntoVariation
+	NotBucketedIntoVariation Reason = "Not bucketed into a variation"
 	// NotInGroup - the user is not bucketed into the mutex group
-	NotInGroup
+	NotInGroup Reason = "Not bucketed into any experiment in mutex group"
 )

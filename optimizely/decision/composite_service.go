@@ -28,20 +28,18 @@ type CompositeService struct {
 
 // NewCompositeService returns a new instance of the DefeaultDecisionEngine
 func NewCompositeService() *CompositeService {
-	experimentDecisionService := NewCompositeExperimentService()
-	featureDecisionService := NewCompositeFeatureService(experimentDecisionService)
+	featureDecisionService := NewCompositeFeatureService()
 	return &CompositeService{
-		experimentDecisionServices: []ExperimentDecisionService{experimentDecisionService},
-		featureDecisionServices:    []FeatureDecisionService{featureDecisionService},
+		featureDecisionServices: []FeatureDecisionService{featureDecisionService},
 	}
 }
 
 // GetFeatureDecision returns a decision for the given feature key
-func (service CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
+func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
 	var featureDecision FeatureDecision
 
 	// loop through the different features decision services until we get a decision
-	for _, decisionService := range service.featureDecisionServices {
+	for _, decisionService := range s.featureDecisionServices {
 		featureDecision, err := decisionService.GetDecision(featureDecisionContext, userContext)
 		if err != nil {
 			// @TODO: log error
