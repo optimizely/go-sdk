@@ -50,10 +50,7 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 		group, _ = decisionContext.ProjectConfig.GetGroupByID(experiment.GroupID)
 	}
 	// bucket user into a variation
-	bucketingID, err := userContext.GetBucketingID()
-	if err != nil {
-		return experimentDecision, fmt.Errorf(`Error computing bucketing ID for experiment "%s": "%s"`, experiment.Key, err.Error())
-	}
+	bucketingID := userContext.GetBucketingID()
 
 	bLogger.Debug(fmt.Sprintf(`Using bucketing ID: "%s"`, bucketingID))
 	// @TODO: handle error from bucketer

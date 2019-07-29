@@ -79,18 +79,17 @@ func (u UserContext) GetIntAttribute(attrName string) (int64, error) {
 }
 
 // GetBucketingID returns the bucketing ID to use for the given user
-func (u UserContext) GetBucketingID() (string, error) {
+func (u UserContext) GetBucketingID() string {
 	// by default
 	bucketingID := u.ID
 
 	// If the bucketing ID key is defined in attributes, than use that in place of the user ID
-	if value, ok := u.Attributes[bucketingIDAttributeName]; ok {
+	if _, ok := u.Attributes[bucketingIDAttributeName]; ok {
 		customBucketingID, err := u.GetStringAttribute(bucketingIDAttributeName)
-		if err != nil {
-			return bucketingID, fmt.Errorf(`Invalid bucketing ID provided: "%s"`, value)
+		if err == nil {
+			bucketingID = customBucketingID
 		}
-		bucketingID = customBucketingID
 	}
 
-	return bucketingID, nil
+	return bucketingID
 }
