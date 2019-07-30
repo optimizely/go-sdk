@@ -29,15 +29,15 @@ var ErrEmptyTree = errors.New("Empty Tree")
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
 func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, retErr error) {
 
-	var finalConditions interface{}
+	var parsedConditions interface{}
 	switch v := conditions.(type) {
 	case string:
-		json.Unmarshal([]byte(v), &finalConditions)
+		json.Unmarshal([]byte(v), &parsedConditions)
 	default:
-		finalConditions = conditions
+		parsedConditions = conditions
 	}
 
-	value := reflect.ValueOf(finalConditions)
+	value := reflect.ValueOf(parsedConditions)
 	visited := make(map[interface{}]bool)
 
 	conditionTree = &entities.TreeNode{}
