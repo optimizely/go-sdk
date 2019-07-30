@@ -89,3 +89,19 @@ Flags:
 Global Flags:
   -s, --sdkKey string   Optimizely project SDK key
   ```
+
+## Credits
+
+This software is distributed with code from the following open source projects:
+
+murmur3
+Copyright 2013, Sébastien Paolacci.
+License (BSD-3 Clause): https://github.com/twmb/murmur3/blob/master/LICENSE
+
+uuid
+Copyright (c) 2009, 2014 Google Inc. All rights reserved.
+License (BSD-3 Clause): https://github.com/google/uuid/blob/master/LICENSE
+
+testify
+Copyright (c) 2012-2018 Mat Ryer and Tyler Bunnell.
+License (MIT): https://github.com/stretchr/testify/blob/master/LICENSE
