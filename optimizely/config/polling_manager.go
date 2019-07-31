@@ -17,6 +17,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -24,7 +25,7 @@ import (
 	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig"
 	"github.com/optimizely/go-sdk/optimizely/logging"
-	"github.com/optimizely/go-sdk/optimizely/requester"
+	"github.com/optimizely/go-sdk/optimizely/utils"
 )
 
 const defaultPollingWait = time.Duration(5 * time.Minute) // default 5 minutes for polling wait
@@ -33,14 +34,16 @@ var cmLogger = logging.GetLogger("PollingConfigManager")
 
 // PollingProjectConfigManager maintains a dynamic copy of the project config
 type PollingProjectConfigManager struct {
-	requester     *requester.Requester
-	metrics       *Metrics
+	requester     *Requester
+	metrics       *utils.Metrics
 	pollingWait   time.Duration
 	projectConfig optimizely.ProjectConfig
 	configLock    sync.RWMutex
+
+	ctx context.Context // context used for cancellation
 }
 
-func (cm *PollingProjectConfigManager) activate(URI string, initialPayload []byte, init bool) {
+func (cm *PollingProjectConfigManager) activate(initialPayload []byte, init bool) {
 
 	update := func() {
 		var e error
@@ -49,7 +52,7 @@ func (cm *PollingProjectConfigManager) activate(URI string, initialPayload []byt
 		if init && len(initialPayload) > 0 {
 			payload = initialPayload
 		} else {
-			payload, code, e = cm.requester.Get(URI)
+			payload, code, e = cm.requester.Get()
 
 			if e != nil {
 				cm.metrics.Inc("bad_http_request")
@@ -72,25 +75,30 @@ func (cm *PollingProjectConfigManager) activate(URI string, initialPayload []byt
 		update()
 		return
 	}
-
+	t := time.NewTicker(cm.pollingWait)
 	for {
-		update()
-		cm.metrics.Inc("polls")
-		time.Sleep(cm.pollingWait)
+		select {
+		case <-t.C:
+			update()
+			cm.metrics.Inc("polls")
+		case <-cm.ctx.Done():
+			return
+		}
 	}
 }
 
-func NewPollingProjectConfigManager(requester *requester.Requester, SDKKey string, initialPayload []byte, pollingWait time.Duration) *PollingProjectConfigManager {
+func NewPollingProjectConfigManager(ctx context.Context, requester *Requester, initialPayload []byte, pollingWait time.Duration) *PollingProjectConfigManager {
 
-	URI := SDKKey + ".json"
 	if pollingWait == 0 {
 		pollingWait = defaultPollingWait
 	}
-	pollingProjectConfigManager := PollingProjectConfigManager{requester: requester, pollingWait: pollingWait, metrics: NewMetrics()}
-	pollingProjectConfigManager.activate(URI, initialPayload, true) // initial poll
 
-	cmLogger.Info("Polling Config Manager Initiated")
-	go pollingProjectConfigManager.activate(URI, []byte{}, false)
+	pollingProjectConfigManager := PollingProjectConfigManager{requester: requester, pollingWait: pollingWait, metrics: utils.NewMetrics(), ctx: ctx}
+
+	pollingProjectConfigManager.activate(initialPayload, true) // initial poll
+
+	cmLogger.Debug("Polling Config Manager Initiated")
+	go pollingProjectConfigManager.activate([]byte{}, false)
 	return &pollingProjectConfigManager
 }
 

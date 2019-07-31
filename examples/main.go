@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -16,7 +17,7 @@ func main() {
 		SDKKey:   "4SLpaJA1r1pgE6T2CoMs9q",
 		Datafile: []byte("datafile_string"),
 	}
-	client, err := optimizelyFactory.Client()
+	app, err := optimizelyFactory.Client()
 
 	if err != nil {
 		fmt.Printf("Error instantiating client: %s", err)
@@ -31,7 +32,7 @@ func main() {
 		},
 	}
 
-	enabled, _ := client.IsFeatureEnabled("binary_feature", user)
+	enabled, _ := app.IsFeatureEnabled("binary_feature", user)
 	fmt.Printf("Is feature enabled? %v", enabled)
 
 	processor := event.NewEventProcessor(100, 100)
@@ -41,6 +42,37 @@ func main() {
 	processor.ProcessEvent(impression)
 
 	_, ok := processor.(*event.QueueingEventProcessor)
+
+	if ok {
+		time.Sleep(1000 * time.Millisecond)
+		fmt.Println("\nending")
+	}
+
+	/************* Polling Manager ********************/
+
+	optimizelyFactory = &client.OptimizelyFactory{
+		SDKKey: "4SLpaJA1r1pgE6T2CoMs9q",
+	}
+	ctx := context.Background()
+	ctx, cancelManager := context.WithCancel(ctx) // user can set up any context
+	app, err = optimizelyFactory.PollingClient(ctx)
+	cancelManager() //  user can cancel anytime
+
+	if err != nil {
+		fmt.Printf("Error instantiating client: %s", err)
+		return
+	}
+
+	enabled, _ = app.IsFeatureEnabled("binary_feature", user)
+	fmt.Printf("Is feature enabled? %v", enabled)
+
+	processor = event.NewEventProcessor(100, 100)
+
+	impression = event.UserEvent{}
+
+	processor.ProcessEvent(impression)
+
+	_, ok = processor.(*event.QueueingEventProcessor)
 
 	if ok {
 		time.Sleep(1000 * time.Millisecond)

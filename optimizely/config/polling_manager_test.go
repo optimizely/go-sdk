@@ -17,26 +17,29 @@
 package config
 
 import (
+	"context"
+	"log"
 	"testing"
 	"time"
 
 	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig"
-	"github.com/optimizely/go-sdk/optimizely/requester"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewPollingProjectConfigManager(t *testing.T) {
-	URL := "https://cdn.optimizely.com/datafiles/"
+	URL := "https://cdn.optimizely.com/datafiles/4SLpaJA1r1pgE6T2CoMs9q_bad.json"
 	projectConfig, _ := datafileProjectConfig.NewDatafileProjectConfig([]byte{})
-	request := requester.New(URL)
+	request := NewRequester(URL)
 
 	// Bad SDK Key test
-	configManager := NewPollingProjectConfigManager(request, "4SLpaJA1r1pgE6T2CoMs9q_bad", []byte{}, 0)
+	configManager := NewPollingProjectConfigManager(context.Background(), request, []byte{}, 0)
 	assert.Equal(t, projectConfig, configManager.GetConfig())
 	assert.Equal(t, "[bad_http_request:1, failed_project_config:1]", configManager.GetMetrics())
 
 	// Good SDK Key test
-	configManager = NewPollingProjectConfigManager(request, "4SLpaJA1r1pgE6T2CoMs9q", []byte{}, 0)
+	URL = "https://cdn.optimizely.com/datafiles/4SLpaJA1r1pgE6T2CoMs9q.json"
+	request = NewRequester(URL)
+	configManager = NewPollingProjectConfigManager(context.Background(), request, []byte{}, 0)
 	newConfig := configManager.GetConfig()
 
 	assert.Equal(t, "", newConfig.GetAccountID())
@@ -46,12 +49,17 @@ func TestNewPollingProjectConfigManager(t *testing.T) {
 }
 
 func TestPollingMetrics(t *testing.T) {
-	URL := "https://cdn.optimizely.com/datafiles/"
-	request := requester.New(URL)
+	URL := "https://cdn.optimizely.com/datafiles/4SLpaJA1r1pgE6T2CoMs9q.json"
+	request := NewRequester(URL)
 
 	// Good SDK Key test -- number of polling
-	configManager := NewPollingProjectConfigManager(request, "4SLpaJA1r1pgE6T2CoMs9q", []byte{}, 5*time.Second)
-	time.Sleep(14 * time.Second)
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	configManager := NewPollingProjectConfigManager(ctx, request, []byte{}, 5*time.Second)
+	time.Sleep(16 * time.Second)
+	cancel()
+	log.Print("sleeping")
+	time.Sleep(5 * time.Second) // should have picked up another poll, but it is cancelled
 	assert.Equal(t, "[polls:3]", configManager.GetMetrics())
 
 }

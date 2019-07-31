@@ -1,4 +1,20 @@
-package requester
+/****************************************************************************
+ * Copyright 2019, Optimizely, Inc. and contributors                        *
+ *                                                                          *
+ * Licensed under the Apache License, Version 2.0 (the "License");          *
+ * you may not use this file except in compliance with the License.         *
+ * You may obtain a copy of the License at                                  *
+ *                                                                          *
+ *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *                                                                          *
+ * Unless required by applicable law or agreed to in writing, software      *
+ * distributed under the License is distributed on an "AS IS" BASIS,        *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+ * See the License for the specific language governing permissions and      *
+ * limitations under the License.                                           *
+ ***************************************************************************/
+
+package config
 
 import (
 	"errors"
@@ -27,12 +43,13 @@ func TestGet(t *testing.T) {
 	defer ts.Close()
 
 	var httpreq *Requester
-	httpreq = New(ts.URL)
-	resp, code, err := httpreq.Get("/good")
+	httpreq = NewRequester(ts.URL + "/good")
+	resp, code, err := httpreq.Get()
 	assert.Nil(t, err)
 	assert.Equal(t, "Hello, client\n", string(resp))
 
-	_, code, err = httpreq.Get("/bad")
+	httpreq = NewRequester(ts.URL + "/bad")
+	_, code, err = httpreq.Get()
 	assert.Equal(t, errors.New("400 Bad Request"), err)
 	assert.Equal(t, code, 400)
 }
@@ -56,16 +73,16 @@ func TestGetObj(t *testing.T) {
 	defer ts.Close()
 
 	var httpreq *Requester
-	httpreq = New(ts.URL)
+	httpreq = NewRequester(ts.URL + "/good")
 	r := resp{}
-	err := httpreq.GetObj("/good", &r)
+	err := httpreq.GetObj(&r)
 	assert.Nil(t, err)
 	assert.Equal(t, resp{Fld1: "Hello, client", Fld2: 123}, r)
 }
 
 func TestGetBad(t *testing.T) {
-	httpreq := New("blah12345")
-	_, _, err := httpreq.Get("/good")
+	httpreq := NewRequester("blah12345/good")
+	_, _, err := httpreq.Get()
 	_, ok := err.(*url.Error)
 	assert.True(t, ok, "url error")
 }
@@ -84,8 +101,8 @@ func TestGetBadWithResponse(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	httpreq := New(ts.URL, Retries(1))
-	data, _, err := httpreq.Get("/bad")
+	httpreq := NewRequester(ts.URL+"/bad", Retries(1))
+	data, _, err := httpreq.Get()
 	assert.Equal(t, "400 Bad Request", err.Error())
 	assert.Equal(t, "bad bad response\n", string(data))
 }
@@ -113,10 +130,10 @@ func TestGetRetry(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	httpreq := New(ts.URL, Retries(10))
+	httpreq := NewRequester(ts.URL+"/test", Retries(10))
 
 	st := time.Now()
-	resp, _, err := httpreq.Get("/test")
+	resp, _, err := httpreq.Get()
 	assert.Nil(t, err)
 	assert.Equal(t, "Hello, client\n", string(resp))
 	assert.Equal(t, 5, called, "called 5 retries")
@@ -124,27 +141,27 @@ func TestGetRetry(t *testing.T) {
 
 	assert.True(t, elapsed >= 400*5*time.Millisecond && elapsed <= 510*5*time.Second, "took %s", elapsed)
 
-	httpreq = New(ts.URL, Retries(3))
+	httpreq = NewRequester(ts.URL+"/test", Retries(3))
 	called = 0
-	_, _, err = httpreq.Get("/test")
+	_, _, err = httpreq.Get()
 	assert.Equal(t, errors.New("400 Bad Request"), err)
 	assert.Equal(t, 3, called, "called 3 retries")
 
-	httpreq = New(ts.URL, Retries(1))
+	httpreq = NewRequester(ts.URL+"/test", Retries(1))
 	called = 0
-	_, _, err = httpreq.Get("/test")
+	_, _, err = httpreq.Get()
 	assert.Equal(t, errors.New("400 Bad Request"), err)
 	assert.Equal(t, 1, called, "called 1 retries")
 
-	httpreq = New(ts.URL)
+	httpreq = NewRequester(ts.URL + "/test")
 	called = 0
-	_, _, err = httpreq.Get("/test")
+	_, _, err = httpreq.Get()
 	assert.Equal(t, errors.New("400 Bad Request"), err)
 	assert.Equal(t, 1, called, "called 1 retries")
 }
 
 func TestString(t *testing.T) {
-	assert.Equal(t, "{url: 127.0.0.1/blah, timeout: 5s, retries: 1}", New("127.0.0.1/blah").String())
+	assert.Equal(t, "{url: 127.0.0.1/blah, timeout: 5s, retries: 1}", NewRequester("127.0.0.1/blah").String())
 	assert.Equal(t, "{url: 127.0.0.1/blah, timeout: 19s, retries: 10}",
-		New("127.0.0.1/blah", Retries(10), Timeout(time.Duration(19)*time.Second)).String())
+		NewRequester("127.0.0.1/blah", Retries(10), Timeout(time.Duration(19)*time.Second)).String())
 }

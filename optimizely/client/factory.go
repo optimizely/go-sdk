@@ -17,6 +17,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/optimizely/go-sdk/optimizely"
@@ -61,4 +62,26 @@ func (f OptimizelyFactory) Client() (*OptimizelyClient, error) {
 		isValid:         true,
 	}
 	return &client, nil
+}
+
+// Client returns a client initialized with the defaults
+func (f OptimizelyFactory) PollingClient(ctx context.Context) (*OptimizelyClient, error) {
+	var configManager optimizely.ProjectConfigManager
+
+	if f.SDKKey != "" {
+		url := fmt.Sprintf("https://cdn.optimizely.com/datafiles/%s.json", f.SDKKey)
+		request := config.NewRequester(url)
+
+		configManager = config.NewPollingProjectConfigManager(ctx, request, f.Datafile, 0)
+
+		decisionService := decision.NewCompositeService()
+		client := OptimizelyClient{
+			decisionService: decisionService,
+			configManager:   configManager,
+			isValid:         true,
+		}
+		return &client, nil
+	}
+
+	return nil, fmt.Errorf("Cannot create Polling Client")
 }

@@ -1,10 +1,25 @@
-package requester
+/****************************************************************************
+ * Copyright 2019, Optimizely, Inc. and contributors                        *
+ *                                                                          *
+ * Licensed under the Apache License, Version 2.0 (the "License");          *
+ * you may not use this file except in compliance with the License.         *
+ * You may obtain a copy of the License at                                  *
+ *                                                                          *
+ *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *                                                                          *
+ * Unless required by applicable law or agreed to in writing, software      *
+ * distributed under the License is distributed on an "AS IS" BASIS,        *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+ * See the License for the specific language governing permissions and      *
+ * limitations under the License.                                           *
+ ***************************************************************************/
+
+package config
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -53,9 +68,9 @@ type Requester struct {
 	ttl     time.Duration // time-to-live
 }
 
-// New makes Requester with api and parameters. Sets defaults
-// url has base part of request's url, like https://cdn.optimizely.com/datafiles/
-func New(url string, params ...func(*Requester)) *Requester {
+// NewRequester makes Requester with api and parameters. Sets defaults
+// url has a complete url of the request like https://cdn.optimizely.com/datafiles/24234.json
+func NewRequester(url string, params ...func(*Requester)) *Requester {
 
 	res := Requester{
 		url:     url,
@@ -72,13 +87,13 @@ func New(url string, params ...func(*Requester)) *Requester {
 
 // Get executes HTTP GET with uri and optional extra headers, returns body in []bytes
 // url created as url+sdkKey.json
-func (r Requester) Get(uri string, headers ...Header) (response []byte, code int, err error) {
-	return r.Do(uri, "GET", nil, headers)
+func (r Requester) Get(headers ...Header) (response []byte, code int, err error) {
+	return r.Do("GET", headers)
 }
 
 // GetObj executes HTTP GET with uri and optional extra headers, returns filled object
-func (r Requester) GetObj(uri string, result interface{}, headers ...Header) error {
-	b, _, err := r.Do(uri, "GET", nil, headers)
+func (r Requester) GetObj(result interface{}, headers ...Header) error {
+	b, _, err := r.Do("GET", headers)
 	if err != nil {
 		return err
 	}
@@ -86,7 +101,7 @@ func (r Requester) GetObj(uri string, result interface{}, headers ...Header) err
 }
 
 // Do executes request and returns response body for requested uri (sdkKey.json).
-func (r Requester) Do(uri string, method string, body io.Reader, headers []Header) (response []byte, code int, err error) {
+func (r Requester) Do(method string, headers []Header) (response []byte, code int, err error) {
 
 	single := func(request *http.Request) (response []byte, code int, e error) {
 		resp, doErr := r.client.Do(request)
@@ -113,12 +128,11 @@ func (r Requester) Do(uri string, method string, body io.Reader, headers []Heade
 		return response, resp.StatusCode, nil
 	}
 
-	reqURL := fmt.Sprintf("%s%s", r.url, uri)
-	requesterLogger.Debug(fmt.Sprintf("request %s", reqURL))
-	req, err := http.NewRequest(method, reqURL, body)
+	requesterLogger.Debug(fmt.Sprintf("request %s", r.url))
+	req, err := http.NewRequest(method, r.url, nil)
 	log.Print(req)
 	if err != nil {
-		requesterLogger.Error(fmt.Sprintf("failed to make request %s", reqURL), err)
+		requesterLogger.Error(fmt.Sprintf("failed to make request %s", r.url), err)
 		return nil, 0, err
 	}
 
@@ -131,10 +145,10 @@ func (r Requester) Do(uri string, method string, body io.Reader, headers []Heade
 			if i > 0 {
 				triedMsg = fmt.Sprintf(", tried %d time(s)", i+1)
 			}
-			requesterLogger.Debug(fmt.Sprintf("completed %s%s", reqURL, triedMsg))
+			requesterLogger.Debug(fmt.Sprintf("completed %s%s", r.url, triedMsg))
 			return response, code, err
 		}
-		requesterLogger.Debug(fmt.Sprintf("failed %s with %v", reqURL, err))
+		requesterLogger.Debug(fmt.Sprintf("failed %s with %v", r.url, err))
 
 		if i != r.retries {
 			delay := time.Duration(500) * time.Millisecond
