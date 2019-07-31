@@ -14,25 +14,34 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package decision
+package notification
 
 import (
-	"github.com/optimizely/go-sdk/optimizely/entities"
-	"github.com/optimizely/go-sdk/optimizely/notification"
+	"sync/atomic"
 )
 
-// DecisionService interface is used to make a decision for a given feature or experiment
-type DecisionService interface {
-	GetFeatureDecision(FeatureDecisionContext, entities.UserContext) (FeatureDecision, error)
-	OnDecision(func(notification.DecisionNotification))
+// Manager is a generic interface for managing notifications of a particular type
+type Manager interface {
+	AddHandler(func(interface{})) (int, error)
+	Send(message interface{})
 }
 
-// ExperimentDecisionService can make a decision about an experiment
-type ExperimentDecisionService interface {
-	GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error)
+// AtomicManager adds handlers atomically
+type AtomicManager struct {
+	handlers map[uint32]func(interface{})
+	counter  uint32
 }
 
-// FeatureDecisionService can make a decision about a Feature Flag (can be feature test or rollout)
-type FeatureDecisionService interface {
-	GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error)
+// AddHandler adds the given handler
+func (am *AtomicManager) AddHandler(newHandler func(interface{})) (int, error) {
+	atomic.AddUint32(&am.counter, 1)
+	am.handlers[am.counter] = newHandler
+	return int(am.counter), nil
+}
+
+// Send sends the notification to the registered handlers
+func (am *AtomicManager) Send(notification interface{}) {
+	for _, handler := range am.handlers {
+		handler(notification)
+	}
 }

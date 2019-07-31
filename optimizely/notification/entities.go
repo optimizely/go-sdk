@@ -14,25 +14,21 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package decision
+package notification
 
-import (
-	"github.com/optimizely/go-sdk/optimizely/entities"
-	"github.com/optimizely/go-sdk/optimizely/notification"
+import "github.com/optimizely/go-sdk/optimizely/entities"
+
+// Type is the type of notification
+type Type string
+
+const (
+	// Decision notification type
+	Decision Type = "decision"
 )
 
-// DecisionService interface is used to make a decision for a given feature or experiment
-type DecisionService interface {
-	GetFeatureDecision(FeatureDecisionContext, entities.UserContext) (FeatureDecision, error)
-	OnDecision(func(notification.DecisionNotification))
-}
-
-// ExperimentDecisionService can make a decision about an experiment
-type ExperimentDecisionService interface {
-	GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error)
-}
-
-// FeatureDecisionService can make a decision about a Feature Flag (can be feature test or rollout)
-type FeatureDecisionService interface {
-	GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error)
+// DecisionNotification is a notification triggered when a decision is made
+type DecisionNotification struct {
+	Type         string
+	UserContext  entities.UserContext
+	DecisionInfo map[string]interface{}
 }
