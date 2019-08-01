@@ -13,8 +13,7 @@ import (
 func main() {
 	logging.SetLogLevel(logging.LogLevelDebug)
 	optimizelyFactory := &client.OptimizelyFactory{
-		SDKKey:   "4SLpaJA1r1pgE6T2CoMs9q",
-		Datafile: []byte("datafile_string"),
+		SDKKey: "4SLpaJA1r1pgE6T2CoMs9q",
 	}
 	client, err := optimizelyFactory.Client()
 
@@ -31,7 +30,7 @@ func main() {
 		},
 	}
 
-	enabled, _ := client.IsFeatureEnabled("binary_feature", user)
+	enabled, _ := client.IsFeatureEnabled("mutext_feat", user)
 	fmt.Printf("Is feature enabled? %v", enabled)
 
 	processor := event.NewEventProcessor(100, 100)
