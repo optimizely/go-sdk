@@ -16,6 +16,9 @@ func main() {
 	optimizelyFactory := &client.OptimizelyFactory{
 		SDKKey: "4SLpaJA1r1pgE6T2CoMs9q",
 	}
+
+	/************* StaticClient ********************/
+
 	app, err := optimizelyFactory.StaticClient()
 
 	if err != nil {
@@ -32,7 +35,6 @@ func main() {
 	}
 
 	enabled, _ := app.IsFeatureEnabled("mutext_feat", user)
-
 	fmt.Printf("Is feature enabled? %v\n", enabled)
 
 	processor := event.NewEventProcessor(100, 100)
@@ -48,7 +50,7 @@ func main() {
 		fmt.Println("\nending")
 	}
 
-	/************* Polling Manager ********************/
+	/************* ClientWithContext ********************/
 
 	optimizelyFactory = &client.OptimizelyFactory{
 		SDKKey: "4SLpaJA1r1pgE6T2CoMs9q",
