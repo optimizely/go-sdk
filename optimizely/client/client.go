@@ -50,7 +50,6 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 			errorMessage := fmt.Sprintf(`Optimizely SDK is panicking with the error "%s"`, string(debug.Stack()))
 			err = errors.New(errorMessage)
 			logger.Error(errorMessage, err)
-			result = false
 		}
 	}()
 
