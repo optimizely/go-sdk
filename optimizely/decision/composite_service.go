@@ -56,7 +56,9 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 	// @TODO: add errors
 
 	// @TODO convert the decision to a notification.DecisionNotification
-	s.notificationCenter.Send(notification.Decision, featureDecision)
+	if s.notificationCenter != nil {
+		s.notificationCenter.Send(notification.Decision, featureDecision)
+	}
 	return featureDecision, err
 }
 
