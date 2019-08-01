@@ -82,6 +82,7 @@ func (cm *PollingProjectConfigManager) activate(initialPayload []byte, init bool
 			update()
 			cm.metrics.Inc("polls")
 		case <-cm.ctx.Done():
+			cmLogger.Debug("Polling Config Manager Stopped")
 			return
 		}
 	}

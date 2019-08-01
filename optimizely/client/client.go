@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"runtime/debug"
 
 	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/decision"
@@ -37,13 +38,21 @@ type OptimizelyClient struct {
 }
 
 // IsFeatureEnabled returns true if the feature is enabled for the given user
-func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entities.UserContext) (bool, error) {
+func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entities.UserContext) (result bool, err error) {
 	if !o.isValid {
 		errorMessage := "Optimizely instance is not valid. Failing IsFeatureEnabled."
 		err := errors.New(errorMessage)
 		logger.Error(errorMessage, nil)
 		return false, err
 	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			errorMessage := fmt.Sprintf(`Optimizely SDK is panicking with the error "%s"`, string(debug.Stack()))
+			err = errors.New(errorMessage)
+			logger.Error(errorMessage, err)
+		}
+	}()
 
 	projectConfig := o.configManager.GetConfig()
 
@@ -53,7 +62,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 	feature, err := projectConfig.GetFeatureByKey(featureKey)
 	if err != nil {
 		logger.Error("Error retrieving feature", err)
-		return false, err
+		return result, err
 	}
 	featureDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &feature,
@@ -65,17 +74,18 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 	featureDecision, err := o.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
 	if err != nil {
 		logger.Error("Received an error while computing feature decision", err)
-		return false, err
+		return result, err
 	}
 
 	logger.Debug(fmt.Sprintf(`Decision made for feature "%s" for user "%s" with the following reason: "%s". Source: "%s".`, featureKey, userID, featureDecision.Reason, featureDecision.Source))
 
 	if featureDecision.Variation.FeatureEnabled == true {
+		result = true
 		logger.Info(fmt.Sprintf(`Feature "%s" is enabled for user "%s".`, featureKey, userID))
 	} else {
 		logger.Info(fmt.Sprintf(`Feature "%s" is not enabled for user "%s".`, featureKey, userID))
 	}
 
 	// @TODO(mng): send impression event
-	return featureDecision.Variation.FeatureEnabled, nil
+	return result, nil
 }

@@ -31,8 +31,8 @@ type OptimizelyFactory struct {
 	Datafile []byte
 }
 
-// Client returns a client initialized with the defaults
-func (f OptimizelyFactory) Client() (*OptimizelyClient, error) {
+// StaticClient returns a client initialized with the defaults
+func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 	var configManager optimizely.ProjectConfigManager
 
 	if f.SDKKey != "" {
@@ -64,8 +64,8 @@ func (f OptimizelyFactory) Client() (*OptimizelyClient, error) {
 	return &client, nil
 }
 
-// Client returns a client initialized with the defaults
-func (f OptimizelyFactory) PollingClient(ctx context.Context) (*OptimizelyClient, error) {
+// ClientWithContext returns a client initialized with the defaults
+func (f OptimizelyFactory) ClientWithContext(ctx context.Context) (*OptimizelyClient, error) {
 	var configManager optimizely.ProjectConfigManager
 
 	if f.SDKKey != "" {
@@ -83,5 +83,5 @@ func (f OptimizelyFactory) PollingClient(ctx context.Context) (*OptimizelyClient
 		return &client, nil
 	}
 
-	return nil, fmt.Errorf("Cannot create Polling Client")
+	return nil, fmt.Errorf("Cannot create ClientWithContext")
 }

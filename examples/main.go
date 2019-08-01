@@ -14,10 +14,9 @@ import (
 func main() {
 	logging.SetLogLevel(logging.LogLevelDebug)
 	optimizelyFactory := &client.OptimizelyFactory{
-		SDKKey:   "4SLpaJA1r1pgE6T2CoMs9q",
-		Datafile: []byte("datafile_string"),
+		SDKKey: "4SLpaJA1r1pgE6T2CoMs9q",
 	}
-	app, err := optimizelyFactory.Client()
+	app, err := optimizelyFactory.StaticClient()
 
 	if err != nil {
 		fmt.Printf("Error instantiating client: %s", err)
@@ -32,8 +31,9 @@ func main() {
 		},
 	}
 
-	enabled, _ := app.IsFeatureEnabled("binary_feature", user)
-	fmt.Printf("Is feature enabled? %v", enabled)
+	enabled, _ := app.IsFeatureEnabled("mutext_feat", user)
+
+	fmt.Printf("Is feature enabled? %v\n", enabled)
 
 	processor := event.NewEventProcessor(100, 100)
 
@@ -55,7 +55,7 @@ func main() {
 	}
 	ctx := context.Background()
 	ctx, cancelManager := context.WithCancel(ctx) // user can set up any context
-	app, err = optimizelyFactory.PollingClient(ctx)
+	app, err = optimizelyFactory.ClientWithContext(ctx)
 	cancelManager() //  user can cancel anytime
 
 	if err != nil {
@@ -63,8 +63,8 @@ func main() {
 		return
 	}
 
-	enabled, _ = app.IsFeatureEnabled("binary_feature", user)
-	fmt.Printf("Is feature enabled? %v", enabled)
+	enabled, _ = app.IsFeatureEnabled("mutext_feat", user)
+	fmt.Printf("Is feature enabled? %v\n", enabled)
 
 	processor = event.NewEventProcessor(100, 100)
 
