@@ -68,16 +68,4 @@ func main() {
 	enabled, _ = app.IsFeatureEnabled("mutext_feat", user)
 	fmt.Printf("Is feature enabled? %v\n", enabled)
 
-	processor = event.NewEventProcessor(100, 100)
-
-	impression = event.UserEvent{}
-
-	processor.ProcessEvent(impression)
-
-	_, ok = processor.(*event.QueueingEventProcessor)
-
-	if ok {
-		time.Sleep(1000 * time.Millisecond)
-		fmt.Println("\nending")
-	}
 }
