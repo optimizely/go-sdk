@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/optimizely/resources"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,6 +51,45 @@ func TestBuildAudienceConditionTreeSimpleAudienceCondition(t *testing.T) {
 							},
 							{
 								Item: "1234",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	assert.Equal(t, expectedConditionTree, conditionTree)
+}
+
+func TestBuildConditionTreeUsingDatafileAudienceConditions(t *testing.T) {
+	datafile, err := resources.GetTestDataFileJSON("bucketing_id.json")
+	if err != nil {
+		assert.Fail(t, err.Error())
+	}
+	if datafile == nil || len(datafile.Audiences) == 0 {
+		assert.Fail(t, "datafile parsing error")
+	}
+	audience := datafile.Audiences[0]
+	conditionTree, err := buildConditionTree(audience.Conditions)
+	if err != nil {
+		assert.Fail(t, err.Error())
+	}
+
+	expectedConditionTree := &entities.TreeNode{
+		Operator: "and",
+		Nodes: []*entities.TreeNode{
+			{
+				Operator: "or",
+				Nodes: []*entities.TreeNode{
+					{
+						Operator: "or",
+						Nodes: []*entities.TreeNode{
+							{
+								Item: entities.Condition{
+									Name:  "s_foo",
+									Type:  "custom_attribute",
+									Value: "foo",
+								},
 							},
 						},
 					},

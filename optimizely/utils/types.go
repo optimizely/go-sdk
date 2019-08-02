@@ -40,9 +40,10 @@ func GetBoolValue(value interface{}) (bool, error) {
 func GetFloatValue(value interface{}) (float64, error) {
 	if value != nil {
 		v := reflect.ValueOf(value)
-		if v.Type().String() == "float64" || v.Type().ConvertibleTo(floatType) {
-			floatValue := v.Convert(floatType).Float()
-			return floatValue, nil
+		v = reflect.Indirect(v)
+		if v.Type().ConvertibleTo(floatType) {
+			fv := v.Convert(floatType)
+			return fv.Float(), nil
 		}
 	}
 
