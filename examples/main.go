@@ -49,6 +49,7 @@ func main() {
 		time.Sleep(1000 * time.Millisecond)
 		fmt.Println("\nending")
 	}
+	fmt.Println()
 
 	/************* ClientWithContext ********************/
 
@@ -69,6 +70,7 @@ func main() {
 	fmt.Printf("Is feature enabled? %v\n", enabled)
 
 	time.Sleep(1000 * time.Millisecond)
+	fmt.Println()
 
 	/************* Client ********************/
 

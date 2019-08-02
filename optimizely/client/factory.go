@@ -96,7 +96,8 @@ func (f OptimizelyFactory) Client() (*OptimizelyClient, error) {
 		url := fmt.Sprintf(CDNTemplate, f.SDKKey)
 		request := config.NewRequester(url)
 		ctx := context.Background()
-		ctx, cancel := context.WithCancel(ctx)
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithCancel(ctx)
 		configManager = config.NewPollingProjectConfigManager(ctx, request, f.Datafile, 0)
 
 		decisionService := decision.NewCompositeService()
