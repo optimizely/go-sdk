@@ -146,3 +146,25 @@ func TestIsFeatureEnabledErrorCases(t *testing.T) {
 	mockConfigManager.AssertExpectations(t)
 	mockDecisionService.AssertNotCalled(t, "GetDecision")
 }
+
+func TestIsFeatureEnabledPanic(t *testing.T) {
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	testFeatureKey := "test_feature_key"
+
+	mockConfigManager := new(MockProjectConfigManager)
+	mockDecisionService := new(MockDecisionService)
+
+	client := OptimizelyClient{
+		configManager:   mockConfigManager,
+		decisionService: mockDecisionService,
+		isValid:         true,
+	}
+
+	// returning an error object will cause the Client to panic
+	mockConfigManager.On("GetFeatureByKey", testFeatureKey, testUserContext).Return(errors.New("failure"))
+
+	// ensure that the client calms back down and recovers
+	result, err := client.IsFeatureEnabled(testFeatureKey, testUserContext)
+	assert.False(t, result)
+	assert.True(t, assert.Error(t, err))
+}

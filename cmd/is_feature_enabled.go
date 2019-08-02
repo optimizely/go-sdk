@@ -38,7 +38,7 @@ var isFeatureEnabledCmd = &cobra.Command{
 			SDKKey: sdkKey,
 		}
 
-		client, err := optimizelyFactory.Client()
+		client, err := optimizelyFactory.StaticClient()
 
 		if err != nil {
 			fmt.Printf("Error instantiating client: %s\n", err)
