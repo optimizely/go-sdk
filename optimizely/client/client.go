@@ -17,6 +17,7 @@
 package client
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -35,6 +36,8 @@ type OptimizelyClient struct {
 	configManager   optimizely.ProjectConfigManager
 	decisionService decision.DecisionService
 	isValid         bool
+
+	cancelFunc context.CancelFunc
 }
 
 // IsFeatureEnabled returns true if the feature is enabled for the given user
@@ -88,4 +91,8 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 
 	// @TODO(mng): send impression event
 	return result, nil
+}
+
+func (o *OptimizelyClient) StopPolling() {
+	o.cancelFunc()
 }

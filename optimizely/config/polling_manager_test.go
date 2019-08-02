@@ -18,12 +18,9 @@ package config
 
 import (
 	"context"
-	"log"
-	"testing"
-	"time"
-
 	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestNewPollingProjectConfigManager(t *testing.T) {
@@ -34,7 +31,6 @@ func TestNewPollingProjectConfigManager(t *testing.T) {
 	// Bad SDK Key test
 	configManager := NewPollingProjectConfigManager(context.Background(), request, []byte{}, 0)
 	assert.Equal(t, projectConfig, configManager.GetConfig())
-	assert.Equal(t, "[bad_http_request:1, failed_project_config:1]", configManager.GetMetrics())
 
 	// Good SDK Key test
 	URL = "https://cdn.optimizely.com/datafiles/4SLpaJA1r1pgE6T2CoMs9q.json"
@@ -44,22 +40,4 @@ func TestNewPollingProjectConfigManager(t *testing.T) {
 
 	assert.Equal(t, "", newConfig.GetAccountID())
 	assert.Equal(t, 3, len(newConfig.GetAudienceMap()))
-	assert.Equal(t, "", configManager.GetMetrics())
-
-}
-
-func TestPollingMetrics(t *testing.T) {
-	URL := "https://cdn.optimizely.com/datafiles/4SLpaJA1r1pgE6T2CoMs9q.json"
-	request := NewRequester(URL)
-
-	// Good SDK Key test -- number of polling
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	configManager := NewPollingProjectConfigManager(ctx, request, []byte{}, 5*time.Second)
-	time.Sleep(16 * time.Second)
-	cancel()
-	log.Print("sleeping")
-	time.Sleep(5 * time.Second) // should have picked up another poll, but it is cancelled
-	assert.Equal(t, "[polls:3]", configManager.GetMetrics())
-
 }

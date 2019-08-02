@@ -68,4 +68,22 @@ func main() {
 	enabled, _ = app.IsFeatureEnabled("mutext_feat", user)
 	fmt.Printf("Is feature enabled? %v\n", enabled)
 
+	time.Sleep(1000 * time.Millisecond)
+
+	/************* Client ********************/
+
+	optimizelyFactory = &client.OptimizelyFactory{
+		SDKKey: "4SLpaJA1r1pgE6T2CoMs9q",
+	}
+
+	app, err = optimizelyFactory.Client()
+	app.StopPolling() //  user can cancel anytime
+
+	if err != nil {
+		fmt.Printf("Error instantiating client: %s", err)
+		return
+	}
+
+	enabled, _ = app.IsFeatureEnabled("mutext_feat", user)
+	fmt.Printf("Is feature enabled? %v\n", enabled)
 }
