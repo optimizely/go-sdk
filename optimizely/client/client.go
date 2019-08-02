@@ -19,6 +19,7 @@ package client
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"runtime/debug"
 
 	"github.com/optimizely/go-sdk/optimizely"
@@ -54,6 +55,10 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 	}()
 
 	projectConfig := o.configManager.GetConfig()
+
+	if reflect.ValueOf(projectConfig).IsNil() {
+		return false, fmt.Errorf("project config is null")
+	}
 	feature, err := projectConfig.GetFeatureByKey(featureKey)
 	if err != nil {
 		logger.Error("Error retrieving feature", err)

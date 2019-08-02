@@ -17,6 +17,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/optimizely/go-sdk/optimizely"
@@ -30,8 +31,8 @@ type OptimizelyFactory struct {
 	Datafile []byte
 }
 
-// Client returns a client initialized with the defaults
-func (f OptimizelyFactory) Client() (*OptimizelyClient, error) {
+// StaticClient returns a client initialized with the defaults
+func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 	var configManager optimizely.ProjectConfigManager
 
 	if f.SDKKey != "" {
@@ -61,4 +62,26 @@ func (f OptimizelyFactory) Client() (*OptimizelyClient, error) {
 		isValid:         true,
 	}
 	return &client, nil
+}
+
+// ClientWithContext returns a client initialized with the defaults
+func (f OptimizelyFactory) ClientWithContext(ctx context.Context) (*OptimizelyClient, error) {
+	var configManager optimizely.ProjectConfigManager
+
+	if f.SDKKey != "" {
+		url := fmt.Sprintf("https://cdn.optimizely.com/datafiles/%s.json", f.SDKKey)
+		request := config.NewRequester(url)
+
+		configManager = config.NewPollingProjectConfigManager(ctx, request, f.Datafile, 0)
+
+		decisionService := decision.NewCompositeService()
+		client := OptimizelyClient{
+			decisionService: decisionService,
+			configManager:   configManager,
+			isValid:         true,
+		}
+		return &client, nil
+	}
+
+	return nil, fmt.Errorf("Cannot create ClientWithContext")
 }
