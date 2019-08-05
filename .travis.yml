@@ -4,8 +4,8 @@ go:
   - master
 git:
   depth: 1
-install:
-  - go get -t ./...
+
+before_script:
   - go get -u golang.org/x/lint/golint
 script:
   - golint ./...
