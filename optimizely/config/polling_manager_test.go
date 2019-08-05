@@ -22,13 +22,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig"
+	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewPollingProjectConfigManager(t *testing.T) {
 	URL := "https://cdn.optimizely.com/datafiles/4SLpaJA1r1pgE6T2CoMs9q_bad.json"
-	projectConfig, _ := datafileProjectConfig.NewDatafileProjectConfig([]byte{})
+	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig([]byte{})
 	request := NewRequester(URL)
 
 	// Bad SDK Key test

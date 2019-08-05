@@ -14,13 +14,13 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package datafileProjectConfig
+package datafileprojectconfig
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
 	"github.com/stretchr/testify/assert"
 )
 

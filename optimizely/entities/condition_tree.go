@@ -24,11 +24,13 @@ type TreeNode struct {
 	Nodes []*TreeNode
 }
 
+//TreeParameters represents paramaters of a tree
 type TreeParameters struct {
 	User        *UserContext
 	AudienceMap map[string]Audience
 }
 
+//NewTreeParameters returns TreeParameters object
 func NewTreeParameters(user *UserContext, audience map[string]Audience) *TreeParameters {
 	return &TreeParameters{User: user, AudienceMap: audience}
 }
