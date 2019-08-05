@@ -5,6 +5,7 @@ go:
 git:
   depth: 1
 install:
+  - go get -t ./...
   - go get -u golang.org/x/lint/golint
 script:
   - golint ./...
