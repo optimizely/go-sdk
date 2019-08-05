@@ -4,7 +4,10 @@ go:
   - master
 git:
   depth: 1
+install:
+  - go get -u golang.org/x/lint/golint
 script:
+  - golint ./...
   - go test -v -race ./...
 stages:
   - 'Integration tests'
