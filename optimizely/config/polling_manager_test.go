@@ -18,9 +18,10 @@ package config
 
 import (
 	"context"
+	"testing"
+
 	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestNewPollingProjectConfigManager(t *testing.T) {
