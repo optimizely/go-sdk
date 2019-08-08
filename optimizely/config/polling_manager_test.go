@@ -40,5 +40,5 @@ func TestNewPollingProjectConfigManager(t *testing.T) {
 	newConfig := configManager.GetConfig()
 
 	assert.Equal(t, "", newConfig.GetAccountID())
-	assert.Equal(t, 3, len(newConfig.GetAudienceMap()))
+	assert.Equal(t, 4, len(newConfig.GetAudienceMap()))
 }

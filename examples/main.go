@@ -79,7 +79,7 @@ func main() {
 	}
 
 	app, err = optimizelyFactory.Client()
-	app.StopPolling() //  user can cancel anytime
+	app.Close() //  user can cancel anytime
 
 	if err != nil {
 		fmt.Printf("Error instantiating client: %s", err)
