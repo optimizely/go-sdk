@@ -24,10 +24,11 @@ import (
 )
 
 const (
-	exactMatchType  = "exact"
-	existsMatchType = "exists"
-	ltMatchType     = "lt"
-	gtMatchType     = "gt"
+	exactMatchType     = "exact"
+	existsMatchType    = "exists"
+	ltMatchType        = "lt"
+	gtMatchType        = "gt"
+	substringMatchType = "substring"
 )
 
 // ItemEvaluator evaluates a condition against the given user's attributes
@@ -66,6 +67,10 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 		}
 	case gtMatchType:
 		matcher = matchers.GtMatcher{
+			Condition: condition,
+		}
+	case substringMatchType:
+		matcher = matchers.SubstringMatcher{
 			Condition: condition,
 		}
 	default:
