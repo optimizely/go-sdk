@@ -18,6 +18,7 @@ package evaluator
 
 import (
 	"fmt"
+
 	"github.com/optimizely/go-sdk/optimizely/decision/evaluator/matchers"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
@@ -47,6 +48,9 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 
 	var matcher matchers.Matcher
 	matchType := condition.Match
+	if matchType == "" {
+		matchType = exactMatchType
+	}
 	switch matchType {
 	case exactMatchType:
 		matcher = matchers.ExactMatcher{

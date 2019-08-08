@@ -26,14 +26,17 @@ func MapAudiences(audiences []datafileEntities.Audience) map[string]entities.Aud
 
 	audienceMap := make(map[string]entities.Audience)
 	for _, audience := range audiences {
-		conditionTree, err := buildConditionTree(audience.Conditions)
-		if err != nil {
-			// @TODO: handle error
-		}
-		audienceMap[audience.ID] = entities.Audience{
-			ID:            audience.ID,
-			Name:          audience.Name,
-			ConditionTree: conditionTree,
+		_, ok := audienceMap[audience.ID]
+		if !ok {
+			conditionTree, err := buildConditionTree(audience.Conditions)
+			if err != nil {
+				// @TODO: handle error
+			}
+			audienceMap[audience.ID] = entities.Audience{
+				ID:            audience.ID,
+				Name:          audience.Name,
+				ConditionTree: conditionTree,
+			}
 		}
 	}
 	return audienceMap
