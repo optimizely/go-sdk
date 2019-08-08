@@ -20,7 +20,7 @@ const eventEndPoint = "https://logx.optimizely.com/v1/events"
 const revenueKey = "revenue"
 const valueKey = "value"
 
-func createLogEvent(event EventBatch) LogEvent {
+func createLogEvent(event Batch) LogEvent {
 	return LogEvent{endPoint: eventEndPoint, event: event}
 }
 
@@ -28,8 +28,8 @@ func makeTimestamp() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
-func CreateEventContext(projectID string, revision string, accountID string, anonymizeIP bool, botFiltering bool, attributeKeyToIdMap map[string]string) EventContext {
-	context := EventContext{}
+func CreateEventContext(projectID string, revision string, accountID string, anonymizeIP bool, botFiltering bool, attributeKeyToIdMap map[string]string) Context {
+	context := Context{}
 	context.ProjectID = projectID
 	context.Revision = revision
 	context.AccountID = accountID
@@ -42,7 +42,7 @@ func CreateEventContext(projectID string, revision string, accountID string, ano
 	return context
 }
 
-func createImpressionEvent(context EventContext, experiment entities.Experiment,
+func createImpressionEvent(context Context, experiment entities.Experiment,
 	variation entities.Variation, attributes map[string]interface{}) ImpressionEvent {
 
 	impression := ImpressionEvent{}
@@ -56,7 +56,7 @@ func createImpressionEvent(context EventContext, experiment entities.Experiment,
 	return impression
 }
 
-func CreateImpressionUserEvent(context EventContext, experiment entities.Experiment,
+func CreateImpressionUserEvent(context Context, experiment entities.Experiment,
 	variation entities.Variation,
 	userContext entities.UserContext) UserEvent {
 
@@ -72,7 +72,7 @@ func CreateImpressionUserEvent(context EventContext, experiment entities.Experim
 	return userEvent
 }
 
-func createImpressionBatchEvent(userEvent UserEvent) EventBatch {
+func createImpressionBatchEvent(userEvent UserEvent) Batch {
 
 	decision := Decision{}
 	decision.CampaignID = userEvent.Impression.CampaignID
@@ -86,7 +86,9 @@ func createImpressionBatchEvent(userEvent UserEvent) EventBatch {
 	dispatchEvent.Uuid = guuid.New().String()
 	dispatchEvent.Tags = make(map[string]interface{})
 
-	return createBatchEvent(userEvent, userEvent.Impression.Attributes, []Decision{decision}, []SnapshotEvent{dispatchEvent})
+	visitor := createVisitor(userEvent, userEvent.Impression.Attributes, []Decision{decision}, []SnapshotEvent{dispatchEvent})
+
+	return createBatchEvent(userEvent, visitor)
 
 }
 
@@ -100,7 +102,7 @@ func createConversionEvent(attributeKeyToIdMap map[string]string, event entities
 
 	return conversion
 }
-func CreateConversionUserEvent(context EventContext, event entities.Event, userContext entities.UserContext, attributeKeyToIdMap map[string]string, eventTags map[string]interface{}) UserEvent {
+func CreateConversionUserEvent(context Context, event entities.Event, userContext entities.UserContext, attributeKeyToIdMap map[string]string, eventTags map[string]interface{}) UserEvent {
 
 	userEvent := UserEvent{}
 	userEvent.Timestamp = makeTimestamp()
@@ -123,7 +125,8 @@ func CreateConversionUserEvent(context EventContext, event entities.Event, userC
 	return userEvent
 
 }
-func createConversionBatchEvent(userEvent UserEvent) EventBatch {
+
+func createConversionBatchEvent(userEvent UserEvent) Batch {
 
 	dispatchEvent := SnapshotEvent{}
 	dispatchEvent.Timestamp = makeTimestamp()
@@ -138,13 +141,14 @@ func createConversionBatchEvent(userEvent UserEvent) EventBatch {
 		dispatchEvent.Value = userEvent.Conversion.Value
 	}
 
-	return createBatchEvent(userEvent, userEvent.Conversion.Attributes, []Decision{}, []SnapshotEvent{dispatchEvent})
+	visitor := createVisitor(userEvent, userEvent.Conversion.Attributes, []Decision{}, []SnapshotEvent{dispatchEvent})
+
+	return createBatchEvent(userEvent, visitor)
 }
 
-func createBatchEvent(userEvent UserEvent, attributes []VisitorAttribute,
+func createVisitor(userEvent UserEvent, attributes []VisitorAttribute,
 	decisions []Decision,
-	dispatchEvents []SnapshotEvent) EventBatch {
-
+	dispatchEvents []SnapshotEvent) Visitor {
 	snapShot := Snapshot{}
 	snapShot.Decisions = decisions
 	snapShot.Events = dispatchEvents
@@ -157,7 +161,13 @@ func createBatchEvent(userEvent UserEvent, attributes []VisitorAttribute,
 	visitor.Snapshots = []Snapshot{snapShot}
 	visitor.VisitorID = userEvent.VisitorID
 
-	eventBatch := EventBatch{}
+	return visitor
+}
+
+func createBatchEvent(userEvent UserEvent, visitor Visitor) Batch {
+
+
+	eventBatch := Batch{}
 	eventBatch.ProjectID = userEvent.EventContext.ProjectID
 	eventBatch.Revision = userEvent.EventContext.Revision
 	eventBatch.AccountID = userEvent.EventContext.AccountID

@@ -1,6 +1,6 @@
 package event
 
-type EventContext struct {
+type Context struct {
 	Revision        string  `json:"revision"`
 	AccountID       string  `json:"account_id"`
 	ClientVersion   string  `json:"client_version"`
@@ -12,12 +12,12 @@ type EventContext struct {
 }
 
 type UserEvent struct {
-	Timestamp int64 `json:"timestamp"`
-	Uuid      string `json:"uuid"`
-	EventContext EventContext
-	VisitorID string
-	Impression *ImpressionEvent
-	Conversion *ConversionEvent
+	Timestamp    int64 `json:"timestamp"`
+	Uuid         string `json:"uuid"`
+	EventContext Context
+	VisitorID    string
+	Impression   *ImpressionEvent
+	Conversion   *ConversionEvent
 }
 
 type ImpressionEvent struct {
@@ -42,10 +42,10 @@ type ConversionEvent struct {
 
 type LogEvent struct {
 	endPoint string
-	event    EventBatch
+	event    Batch
 }
 // Context about the event
-type EventBatch struct {
+type Batch struct {
 	Revision        string  `json:"revision"`
 	AccountID       string  `json:"account_id"`
 	ClientVersion   string  `json:"client_version"`

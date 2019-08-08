@@ -24,6 +24,7 @@ type QueueingEventProcessor struct {
 
 func NewEventProcessor(queueSize int, flushInterval time.Duration ) Processor {
 	p := &QueueingEventProcessor{MaxQueueSize: queueSize, FlushInterval:flushInterval, Q:NewInMemoryQueue(queueSize), EventDispatcher:&HttpEventDispatcher{}}
+	p.BatchSize = 20
 	p.StartTicker()
 	return p
 }
@@ -63,35 +64,69 @@ func (p *QueueingEventProcessor) StartTicker() {
 	}()
 }
 
+func (p *QueueingEventProcessor) Append(current *Batch, new Batch) bool {
+	if current.ProjectID == new.ProjectID &&
+		current.Revision == new.Revision {
+		visitors := append(current.Visitors, new.Visitors[0])
+		current.Visitors = visitors
+		return true
+	}
+
+	return false
+}
+
 // ProcessEvent processes the given impression event
 func (p *QueueingEventProcessor) FlushEvents() {
 	// we flush when queue size is reached.
 	// however, if there is a ticker cycle already processing, we should wait
 	p.Mux.Lock()
+	var batchEvent Batch
+	var batchEventCount = 0
+	var failedToSend = false
+
 	for p.EventsCount() > 0 {
-		events := p.GetEvents(1)
+		if failedToSend {
+			break
+		}
+		events := p.GetEvents(p.BatchSize)
+
 		if len(events) > 0 {
-			userEvent, ok := events[0].(UserEvent)
-			if ok {
-				if userEvent.Conversion != nil {
-					eventBatch := createConversionBatchEvent(userEvent)
-					p.EventDispatcher.DispatchEvent(createLogEvent(eventBatch), func(success bool) {
-						fmt.Println(success)
-						if success {
-							p.Remove(1)
-						}
-					})
-				} else if userEvent.Impression != nil {
-					eventBatch := createImpressionBatchEvent(userEvent)
-					p.EventDispatcher.DispatchEvent(createLogEvent(eventBatch), func(success bool) {
-						fmt.Println(success)
-						if success {
-							p.Remove(1)
-						}
-					})
+			for i := 0; i < len(events); i++ {
+				userEvent, ok := events[i].(UserEvent)
+				if ok {
+					var eventToAdd Batch
+					if userEvent.Conversion != nil {
+						eventToAdd = createConversionBatchEvent(userEvent)
+					} else if userEvent.Impression != nil {
+							eventToAdd = createImpressionBatchEvent(userEvent)
+					}
+					if batchEventCount == 0 {
+						batchEvent = eventToAdd
+						batchEventCount = 1
+					} else if !p.Append(&batchEvent, eventToAdd) {
+						break
+					} else {
+						batchEventCount++
+					}
+
+					if batchEventCount >= p.BatchSize {
+						break
+					}
 				}
 			}
 		}
- 	}
+		if batchEventCount > 0 {
+			p.EventDispatcher.DispatchEvent(createLogEvent(batchEvent), func(success bool) {
+				fmt.Println(success)
+				if success {
+					p.Remove(batchEventCount)
+					batchEventCount = 0
+					batchEvent = Batch{}
+				} else {
+					failedToSend = true
+				}
+			})
+		}
+	}
 	p.Mux.Unlock()
 }
