@@ -49,6 +49,9 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 
 	var matcher matchers.Matcher
 	matchType := condition.Match
+	if matchType == "" {
+		matchType = exactMatchType
+	}
 	switch matchType {
 	case exactMatchType:
 		matcher = matchers.ExactMatcher{
