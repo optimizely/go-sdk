@@ -25,12 +25,13 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/decision"
 )
 
-const CDNTemplate = "https://cdn.optimizely.com/datafiles/%s.json"
+const datafileURLTemplate = "https://cdn.optimizely.com/datafiles/%s.json"
 
 // OptimizelyFactory is used to construct an instance of the OptimizelyClient
 type OptimizelyFactory struct {
-	SDKKey   string
-	Datafile []byte
+	SDKKey               string
+	Datafile             []byte
+	ProjectConfigManager optimizely.ProjectConfigManager
 }
 
 // StaticClient returns a client initialized with the defaults
@@ -38,7 +39,7 @@ func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 	var configManager optimizely.ProjectConfigManager
 
 	if f.SDKKey != "" {
-		url := fmt.Sprintf(CDNTemplate, f.SDKKey)
+		url := fmt.Sprintf(datafileURLTemplate, f.SDKKey)
 		staticConfigManager, err := config.NewStaticProjectConfigManagerFromUrl(url)
 
 		if err != nil {
@@ -70,45 +71,31 @@ func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 func (f OptimizelyFactory) ClientWithContext(ctx context.Context) (*OptimizelyClient, error) {
 	var configManager optimizely.ProjectConfigManager
 
-	if f.SDKKey != "" {
-		url := fmt.Sprintf(CDNTemplate, f.SDKKey)
+	if f.ProjectConfigManager != nil {
+		configManager = f.ProjectConfigManager
+	} else if f.SDKKey != "" {
+		url := fmt.Sprintf(datafileURLTemplate, f.SDKKey)
 		request := config.NewRequester(url)
-
 		configManager = config.NewPollingProjectConfigManager(ctx, request, f.Datafile, 0)
-
-		decisionService := decision.NewCompositeService()
-		client := OptimizelyClient{
-			decisionService: decisionService,
-			configManager:   configManager,
-			isValid:         true,
-		}
-		return &client, nil
 	}
 
-	return nil, fmt.Errorf("Cannot create ClientWithContext")
+	decisionService := decision.NewCompositeService()
+	client := OptimizelyClient{
+		decisionService: decisionService,
+		configManager:   configManager,
+		isValid:         true,
+	}
+	return &client, nil
 }
 
 // Client returns a client initialized with the defaults
 func (f OptimizelyFactory) Client() (*OptimizelyClient, error) {
-	var configManager optimizely.ProjectConfigManager
+	// Creates a default, canceleable context
+	ctx := context.Background()
+	var cancel context.CancelFunc
+	ctx, cancel = context.WithCancel(ctx)
 
-	if f.SDKKey != "" {
-		url := fmt.Sprintf(CDNTemplate, f.SDKKey)
-		request := config.NewRequester(url)
-		ctx := context.Background()
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithCancel(ctx)
-		configManager = config.NewPollingProjectConfigManager(ctx, request, f.Datafile, 0)
-
-		decisionService := decision.NewCompositeService()
-		client := OptimizelyClient{
-			decisionService: decisionService,
-			configManager:   configManager,
-			isValid:         true,
-			cancelFunc:      cancel,
-		}
-		return &client, nil
-	}
-
-	return nil, fmt.Errorf("Cannot create Client")
+	client, err := f.ClientWithContext(ctx)
+	client.cancelFunc = cancel
+	return client, err
 }

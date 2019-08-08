@@ -93,6 +93,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 	return result, nil
 }
 
-func (o *OptimizelyClient) StopPolling() {
+// Close closes the Optimizely instance and stops any ongoing tasks from its children components
+func (o *OptimizelyClient) Close() {
 	o.cancelFunc()
 }
