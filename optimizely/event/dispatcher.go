@@ -12,7 +12,7 @@ type Dispatcher interface {
 	DispatchEvent(event LogEvent, callback func(success bool))
 }
 
-// HTTPEventDispatcher represents HTTPEventDispatcher object
+// HTTPEventDispatcher is the HTTP implementation of the Dispatcher interface
 type HTTPEventDispatcher struct {
 }
 

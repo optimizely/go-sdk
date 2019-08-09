@@ -1,6 +1,6 @@
 package event
 
-// EventContext respresents event context of a UserEvent
+// EventContext holds project-related contextual information about a UserEvent
 type EventContext struct {
 	Revision            string            `json:"revision"`
 	AccountID           string            `json:"account_id"`
@@ -22,7 +22,7 @@ type UserEvent struct {
 	Conversion   *ConversionEvent
 }
 
-// ImpressionEvent respresents a impression event
+// ImpressionEvent respresents an impression event
 type ImpressionEvent struct {
 	EntityID     string `json:"entity_id"`
 	Key          string `json:"key"`
