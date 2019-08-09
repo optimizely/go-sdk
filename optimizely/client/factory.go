@@ -18,6 +18,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/optimizely/go-sdk/optimizely"
@@ -73,7 +74,7 @@ func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 
 // ClientWithOptions returns a client initialized with the given configuration options
 func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*OptimizelyClient, error) {
-	client := OptimizelyClient{
+	client := &OptimizelyClient{
 		isValid: false,
 	}
 
@@ -94,12 +95,17 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 		url := fmt.Sprintf(datafileURLTemplate, f.SDKKey)
 		request := config.NewRequester(url)
 		client.configManager = config.NewPollingProjectConfigManager(ctx, request, f.Datafile, 0)
+	} else if f.Datafile != nil {
+		staticConfigManager, _ := config.NewStaticProjectConfigManagerFromPayload(f.Datafile)
+		client.configManager = staticConfigManager
+	} else {
+		return client, errors.New("unable to instantiate client: no project config manager, SDK key, or a Datafile provided")
 	}
 
 	// @TODO: allow decision service to be passed in via options
 	client.decisionService = decision.NewCompositeService()
 	client.isValid = true
-	return &client, nil
+	return client, nil
 }
 
 // Client returns a client initialized with the defaults
