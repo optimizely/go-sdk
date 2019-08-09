@@ -25,7 +25,7 @@ import (
 )
 
 var (
-	userId      string
+	userID      string
 	featurekKey string
 )
 
@@ -46,19 +46,19 @@ var isFeatureEnabledCmd = &cobra.Command{
 		}
 
 		user := entities.UserContext{
-			ID:         userId,
+			ID:         userID,
 			Attributes: map[string]interface{}{},
 		}
 
 		enabled, _ := client.IsFeatureEnabled(featurekKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featurekKey, userId, enabled)
+		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featurekKey, userID, enabled)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userId, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
+	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userID", "u", "", "user id")
+	isFeatureEnabledCmd.MarkFlagRequired("userID")
 	isFeatureEnabledCmd.Flags().StringVarP(&featurekKey, "featureKey", "f", "", "feature key to enable")
 	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
 }

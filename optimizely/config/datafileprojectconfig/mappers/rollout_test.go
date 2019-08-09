@@ -17,24 +17,37 @@
 package mappers
 
 import (
-	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	"encoding/json"
+	"testing"
+
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/stretchr/testify/assert"
 )
 
-// MapFeatureFlags maps the raw datafile feature flag entities to SDK Feature entities
-func MapFeatureFlags(featureFlags []datafileEntities.FeatureFlag, rolloutMap map[string]entities.Rollout) map[string]entities.Feature {
+func TestMapRollouts(t *testing.T) {
+	const testRolloutString = `{
+		 "id": "21111",
+		 "experiments": [
+			 { "id": "11111", "key": "exp_11111" },
+			 { "id": "11112", "key": "exp_11112" }
+		 ]
+	 }`
 
-	featureMap := make(map[string]entities.Feature)
-	for _, featureFlag := range featureFlags {
-		// @TODO(mng): include experiments in the Feature
-		feature := entities.Feature{
-			Key: featureFlag.Key,
-			ID:  featureFlag.ID,
-		}
-		if rollout, ok := rolloutMap[featureFlag.RolloutID]; ok {
-			feature.Rollout = rollout
-		}
-		featureMap[featureFlag.Key] = feature
+	var rawRollout datafileEntities.Rollout
+	json.Unmarshal([]byte(testRolloutString), &rawRollout)
+
+	rawRollouts := []datafileEntities.Rollout{rawRollout}
+	rolloutMap := MapRollouts(rawRollouts)
+	expectedRolloutMap := map[string]entities.Rollout{
+		"21111": entities.Rollout{
+			ID: "21111",
+			Experiments: []entities.Experiment{
+				entities.Experiment{ID: "11111", Key: "exp_11111", Variations: map[string]entities.Variation{}, TrafficAllocation: []entities.Range{}},
+				entities.Experiment{ID: "11112", Key: "exp_11112", Variations: map[string]entities.Variation{}, TrafficAllocation: []entities.Range{}},
+			},
+		},
 	}
-	return featureMap
+
+	assert.Equal(t, expectedRolloutMap, rolloutMap)
 }

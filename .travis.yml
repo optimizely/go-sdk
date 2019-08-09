@@ -6,7 +6,11 @@ before_install:
   - go get github.com/mattn/goveralls
 git:
   depth: 1
+
+before_script:
+  - go get -u golang.org/x/lint/golint
 script:
+  - golint ./...
   - $GOPATH/bin/goveralls -service=travis-ci
 stages:
   - 'Integration tests'

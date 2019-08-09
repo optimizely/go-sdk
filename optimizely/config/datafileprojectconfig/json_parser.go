@@ -14,12 +14,12 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package datafileProjectConfig
+package datafileprojectconfig
 
 import (
 	"encoding/json"
 
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
 )
 
 // Parse parses the raw json datafile

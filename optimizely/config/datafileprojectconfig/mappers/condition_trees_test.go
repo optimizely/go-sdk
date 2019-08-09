@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	datafileConfig "github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	datafileConfig "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/assert"
 )

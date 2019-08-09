@@ -17,27 +17,24 @@
 package mappers
 
 import (
-	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-// MapAudiences maps the raw datafile audience entities to SDK Audience entities
-func MapAudiences(audiences []datafileEntities.Audience) map[string]entities.Audience {
+// MapFeatureFlags maps the raw datafile feature flag entities to SDK Feature entities
+func MapFeatureFlags(featureFlags []datafileEntities.FeatureFlag, rolloutMap map[string]entities.Rollout) map[string]entities.Feature {
 
-	audienceMap := make(map[string]entities.Audience)
-	for _, audience := range audiences {
-		_, ok := audienceMap[audience.ID]
-		if !ok {
-			conditionTree, err := buildConditionTree(audience.Conditions)
-			if err != nil {
-				// @TODO: handle error
-			}
-			audienceMap[audience.ID] = entities.Audience{
-				ID:            audience.ID,
-				Name:          audience.Name,
-				ConditionTree: conditionTree,
-			}
+	featureMap := make(map[string]entities.Feature)
+	for _, featureFlag := range featureFlags {
+		// @TODO(mng): include experiments in the Feature
+		feature := entities.Feature{
+			Key: featureFlag.Key,
+			ID:  featureFlag.ID,
 		}
+		if rollout, ok := rolloutMap[featureFlag.RolloutID]; ok {
+			feature.Rollout = rollout
+		}
+		featureMap[featureFlag.Key] = feature
 	}
-	return audienceMap
+	return featureMap
 }

@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/optimizely/go-sdk/optimizely"
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig"
+	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/optimizely/logging"
 	"github.com/optimizely/go-sdk/optimizely/utils"
 )
@@ -60,7 +60,7 @@ func (cm *PollingProjectConfigManager) activate(initialPayload []byte, init bool
 			}
 		}
 
-		projectConfig, err := datafileProjectConfig.NewDatafileProjectConfig(payload)
+		projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(payload)
 		if err != nil {
 			cm.metrics.Inc("failed_project_config")
 			cmLogger.Error("failed to create project config", err)
@@ -88,6 +88,7 @@ func (cm *PollingProjectConfigManager) activate(initialPayload []byte, init bool
 	}
 }
 
+// NewPollingProjectConfigManager returns new instance of PollingProjectConfigManager
 func NewPollingProjectConfigManager(ctx context.Context, requester *Requester, initialPayload []byte, pollingWait time.Duration) *PollingProjectConfigManager {
 
 	if pollingWait == 0 {

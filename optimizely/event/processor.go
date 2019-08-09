@@ -22,8 +22,9 @@ type QueueingEventProcessor struct {
 	EventDispatcher Dispatcher
 }
 
-func NewEventProcessor(queueSize int, flushInterval time.Duration ) Processor {
-	p := &QueueingEventProcessor{MaxQueueSize: queueSize, FlushInterval:flushInterval, Q:NewInMemoryQueue(queueSize), EventDispatcher:&HttpEventDispatcher{}}
+// NewEventProcessor returns a new instance of QueueingEventProcessor with queueSize and flushInterval
+func NewEventProcessor(queueSize int, flushInterval time.Duration) Processor {
+	p := &QueueingEventProcessor{MaxQueueSize: queueSize, FlushInterval: flushInterval, Q: NewInMemoryQueue(queueSize), EventDispatcher: &HTTPEventDispatcher{}}
 	p.StartTicker()
 	return p
 }
@@ -39,31 +40,35 @@ func (p *QueueingEventProcessor) ProcessEvent(event UserEvent) {
 	}
 }
 
+// EventsCount returns size of an event queue
 func (p *QueueingEventProcessor) EventsCount() int {
 	return p.Q.Size()
 }
 
+// GetEvents returns events from event queue for count
 func (p *QueueingEventProcessor) GetEvents(count int) []interface{} {
 	return p.Q.Get(count)
 }
 
+// Remove removes events from queue for count
 func (p *QueueingEventProcessor) Remove(count int) []interface{} {
 	return p.Q.Remove(count)
 }
 
+// StartTicker starts new ticker for flushing events
 func (p *QueueingEventProcessor) StartTicker() {
 	if p.Ticker != nil {
 		return
 	}
 	p.Ticker = time.NewTicker(p.FlushInterval * time.Millisecond)
 	go func() {
-		for _ = range p.Ticker.C {
+		for range p.Ticker.C {
 			p.FlushEvents()
 		}
 	}()
 }
 
-// ProcessEvent processes the given impression event
+// FlushEvents flushes events in queue
 func (p *QueueingEventProcessor) FlushEvents() {
 	// we flush when queue size is reached.
 	// however, if there is a ticker cycle already processing, we should wait
@@ -92,6 +97,6 @@ func (p *QueueingEventProcessor) FlushEvents() {
 				}
 			}
 		}
- 	}
+	}
 	p.Mux.Unlock()
 }
