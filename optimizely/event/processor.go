@@ -1,7 +1,8 @@
 package event
 
 import (
-	"fmt"
+	"errors"
+	"github.com/optimizely/go-sdk/optimizely/logging"
 	"sync"
 	"time"
 )
@@ -21,6 +22,8 @@ type QueueingEventProcessor struct {
 	Ticker          *time.Ticker
 	EventDispatcher Dispatcher
 }
+
+var pLogger = logging.GetLogger("EventProcessor")
 
 func NewEventProcessor(queueSize int, flushInterval time.Duration ) Processor {
 	p := &QueueingEventProcessor{MaxQueueSize: queueSize, FlushInterval:flushInterval, Q:NewInMemoryQueue(queueSize), EventDispatcher:&HttpEventDispatcher{}}
@@ -89,6 +92,8 @@ func (p *QueueingEventProcessor) FlushEvents() {
 
 	for p.EventsCount() > 0 {
 		if failedToSend {
+			pLogger.Error("Last Event Batch failed to send. Retry on next Flush", errors.New("Dispatcher failed"))
+
 			break
 		}
 		events := p.GetEvents(p.BatchSize)
@@ -101,6 +106,8 @@ func (p *QueueingEventProcessor) FlushEvents() {
 						batchEvent = createBatchEvent(userEvent, createVisitorFromUserEvent(userEvent))
 						batchEventCount = 1
 					} else if !p.canBatch(&batchEvent, userEvent) {
+						// this could happen if the project config was updated for instance.
+						pLogger.Info("Can't batch last event. Sending current batch.")
 						break
 					} else {
 						p.addToBatch(&batchEvent, createVisitorFromUserEvent(userEvent))
@@ -108,6 +115,7 @@ func (p *QueueingEventProcessor) FlushEvents() {
 					}
 
 					if batchEventCount >= p.BatchSize {
+						// the batch size is reached so take the current batchEvent and send it.
 						break
 					}
 				}
@@ -115,7 +123,6 @@ func (p *QueueingEventProcessor) FlushEvents() {
 		}
 		if batchEventCount > 0 {
 			p.EventDispatcher.DispatchEvent(createLogEvent(batchEvent), func(success bool) {
-				fmt.Println(success)
 				if success {
 					p.Remove(batchEventCount)
 					batchEventCount = 0

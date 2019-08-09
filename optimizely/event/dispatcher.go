@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/optimizely/go-sdk/optimizely/logging"
 	"net/http"
 )
 
@@ -14,26 +15,24 @@ type Dispatcher interface {
 type HttpEventDispatcher struct {
 }
 
+var dispatcherLogger = logging.GetLogger("EventDispatcher")
+
 func (*HttpEventDispatcher) DispatchEvent(event LogEvent, callback func(success bool)) {
-	// add to current batch or create new batch
-	// does a batch have to contain a decision or can it just be impressions?
 
 	jsonValue, _ := json.Marshal(event.event)
 	resp, err := http.Post( event.endPoint, "application/json", bytes.NewBuffer(jsonValue))
-	fmt.Println(resp)
-	fmt.Println(string(jsonValue))
 	// also check response codes
 	// resp.StatusCode == 400 is an error
 	success := true
 
 	if err != nil {
-		fmt.Println(err)
+		dispatcherLogger.Error("http.Post failed:", err)
 		success = false
 	} else {
 		if resp.StatusCode == 204 {
 			success = true
 		} else {
-			fmt.Printf("invalid response %d", resp.StatusCode)
+			fmt.Printf("http.Post invalid response %d", resp.StatusCode)
 			success = false
 		}
 	}
