@@ -47,7 +47,7 @@ func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 
 	if f.SDKKey != "" {
 		url := fmt.Sprintf(datafileURLTemplate, f.SDKKey)
-		staticConfigManager, err := config.NewStaticProjectConfigManagerFromUrl(url)
+		staticConfigManager, err := config.NewStaticProjectConfigManagerFromURL(url)
 
 		if err != nil {
 			return nil, err

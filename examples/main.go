@@ -51,14 +51,18 @@ func main() {
 	}
 	fmt.Println()
 
-	/************* ClientWithContext ********************/
+	/************* ClientWithOptions - custom context  ********************/
 
 	optimizelyFactory = &client.OptimizelyFactory{
 		SDKKey: "4SLpaJA1r1pgE6T2CoMs9q",
 	}
 	ctx := context.Background()
 	ctx, cancelManager := context.WithCancel(ctx) // user can set up any context
-	app, err = optimizelyFactory.ClientWithContext(ctx)
+	clientOptions := client.Options{
+		Context: ctx,
+	}
+
+	app, err = optimizelyFactory.ClientWithOptions(clientOptions)
 	cancelManager() //  user can cancel anytime
 
 	if err != nil {
