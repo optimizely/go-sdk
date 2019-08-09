@@ -73,7 +73,7 @@ func (p *QueueingEventProcessor) StartTicker() {
 }
 
 // check if user event can be batched in the current batch
-func (p *QueueingEventProcessor)canBatch(current *Batch, user UserEvent) bool {
+func (p *QueueingEventProcessor) canBatch(current *Batch, user UserEvent) bool {
 	if current.ProjectID == user.EventContext.ProjectID &&
 		current.Revision == user.EventContext.Revision {
 		return true
@@ -83,7 +83,7 @@ func (p *QueueingEventProcessor)canBatch(current *Batch, user UserEvent) bool {
 }
 
 // add the visitor to the current batch
-func (p *QueueingEventProcessor)addToBatch(current *Batch, visitor Visitor) {
+func (p *QueueingEventProcessor) addToBatch(current *Batch, visitor Visitor) {
 	visitors := append(current.Visitors, visitor)
 	current.Visitors = visitors
 }
@@ -100,7 +100,6 @@ func (p *QueueingEventProcessor) FlushEvents() {
 	for p.EventsCount() > 0 {
 		if failedToSend {
 			pLogger.Error("Last Event Batch failed to send. Retry on next Flush", errors.New("Dispatcher failed"))
-
 			break
 		}
 		events := p.GetEvents(p.BatchSize)

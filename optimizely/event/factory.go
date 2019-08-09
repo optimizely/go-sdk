@@ -67,7 +67,7 @@ func CreateImpressionUserEvent(context Context, experiment entities.Experiment,
 	userEvent := UserEvent{}
 	userEvent.Timestamp = makeTimestamp()
 	userEvent.VisitorID = userContext.ID
-	userEvent.Uuid = guuid.New().String()
+	userEvent.UUID = guuid.New().String()
 	userEvent.Impression = &impression
 	userEvent.EventContext = context
 
@@ -111,7 +111,7 @@ func CreateConversionUserEvent(context Context, event entities.Event, userContex
 	userEvent := UserEvent{}
 	userEvent.Timestamp = makeTimestamp()
 	userEvent.VisitorID = userContext.ID
-	userEvent.Uuid = guuid.New().String()
+	userEvent.UUID = guuid.New().String()
 
 	userEvent.EventContext = context
 	conversion := createConversionEvent(attributeKeyToIDMap, event, userContext.Attributes, eventTags, context.BotFiltering)
@@ -149,7 +149,7 @@ func createConversionVisitor(userEvent UserEvent) Visitor {
 	dispatchEvent.Timestamp = makeTimestamp()
 	dispatchEvent.Key = userEvent.Conversion.Key
 	dispatchEvent.EntityID = userEvent.Conversion.EntityID
-	dispatchEvent.UUID = userEvent.Uuid
+	dispatchEvent.UUID = userEvent.UUID
 	dispatchEvent.Tags = userEvent.Conversion.Tags
 	if userEvent.Conversion.Revenue != nil {
 		dispatchEvent.Revenue = userEvent.Conversion.Revenue

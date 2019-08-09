@@ -15,7 +15,7 @@ type Context struct {
 // UserEvent represents a user event
 type UserEvent struct {
 	Timestamp    int64 `json:"timestamp"`
-	Uuid         string `json:"uuid"`
+	UUID         string `json:"uuid"`
 	EventContext Context
 	VisitorID    string
 	Impression   *ImpressionEvent

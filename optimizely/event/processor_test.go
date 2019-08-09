@@ -30,17 +30,17 @@ func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 
 }
 
-type FakeDispatcher struct {
+type MockDispatcher struct {
 	Events []LogEvent
 }
 
-func (f *FakeDispatcher)DispatchEvent(event LogEvent, callback func(success bool)) {
+func (f *MockDispatcher)DispatchEvent(event LogEvent, callback func(success bool)) {
 	f.Events = append(f.Events, event)
 	callback(true)
 }
 
 func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
-	processor := &QueueingEventProcessor{MaxQueueSize: 100, FlushInterval: 100, Q: NewInMemoryQueue(100), EventDispatcher: &FakeDispatcher{}}
+	processor := &QueueingEventProcessor{MaxQueueSize: 100, FlushInterval: 100, Q: NewInMemoryQueue(100), EventDispatcher: &MockDispatcher{}}
 	processor.BatchSize = 10
 	processor.StartTicker()
 
@@ -60,7 +60,7 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 
 	assert.Equal(t, 0, processor.EventsCount())
 
-	result, ok := (processor.EventDispatcher).(*FakeDispatcher)
+	result, ok := (processor.EventDispatcher).(*MockDispatcher)
 
 	if ok {
 		assert.Equal(t, 1, len(result.Events))
@@ -70,7 +70,7 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
-	processor := &QueueingEventProcessor{MaxQueueSize: 100, FlushInterval: 100, Q: NewInMemoryQueue(100), EventDispatcher: &FakeDispatcher{}}
+	processor := &QueueingEventProcessor{MaxQueueSize: 100, FlushInterval: 100, Q: NewInMemoryQueue(100), EventDispatcher: &MockDispatcher{}}
 	processor.BatchSize = 10
 	processor.StartTicker()
 
@@ -91,7 +91,7 @@ func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 
 	assert.Equal(t, 0, processor.EventsCount())
 
-	result, ok := (processor.EventDispatcher).(*FakeDispatcher)
+	result, ok := (processor.EventDispatcher).(*MockDispatcher)
 
 	if ok {
 		assert.Equal(t, 3, len(result.Events))
@@ -101,7 +101,7 @@ func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
-	processor := &QueueingEventProcessor{MaxQueueSize: 100, FlushInterval: 100, Q: NewInMemoryQueue(100), EventDispatcher: &FakeDispatcher{}}
+	processor := &QueueingEventProcessor{MaxQueueSize: 100, FlushInterval: 100, Q: NewInMemoryQueue(100), EventDispatcher: &MockDispatcher{}}
 	processor.BatchSize = 10
 	processor.StartTicker()
 
@@ -122,7 +122,7 @@ func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 
 	assert.Equal(t, 0, processor.EventsCount())
 
-	result, ok := (processor.EventDispatcher).(*FakeDispatcher)
+	result, ok := (processor.EventDispatcher).(*MockDispatcher)
 
 	if ok {
 		assert.Equal(t, 3, len(result.Events))
