@@ -64,15 +64,18 @@ func (p *QueueingEventProcessor) StartTicker() {
 	}()
 }
 
-func (p *QueueingEventProcessor) Append(current *Batch, new Batch) bool {
-	if current.ProjectID == new.ProjectID &&
-		current.Revision == new.Revision {
-		visitors := append(current.Visitors, new.Visitors[0])
-		current.Visitors = visitors
+func (p *QueueingEventProcessor)canBatch(current *Batch, user UserEvent) bool {
+	if current.ProjectID == user.EventContext.ProjectID &&
+		current.Revision == user.EventContext.Revision {
 		return true
 	}
 
 	return false
+}
+
+func (p *QueueingEventProcessor)addToBatch(current *Batch, visitor Visitor) {
+	visitors := append(current.Visitors, visitor)
+	current.Visitors = visitors
 }
 
 // ProcessEvent processes the given impression event
@@ -94,18 +97,13 @@ func (p *QueueingEventProcessor) FlushEvents() {
 			for i := 0; i < len(events); i++ {
 				userEvent, ok := events[i].(UserEvent)
 				if ok {
-					var eventToAdd Batch
-					if userEvent.Conversion != nil {
-						eventToAdd = createConversionBatchEvent(userEvent)
-					} else if userEvent.Impression != nil {
-							eventToAdd = createImpressionBatchEvent(userEvent)
-					}
 					if batchEventCount == 0 {
-						batchEvent = eventToAdd
+						batchEvent = createBatchEvent(userEvent, createVisitorFromUserEvent(userEvent))
 						batchEventCount = 1
-					} else if !p.Append(&batchEvent, eventToAdd) {
+					} else if !p.canBatch(&batchEvent, userEvent) {
 						break
 					} else {
+						p.addToBatch(&batchEvent, createVisitorFromUserEvent(userEvent))
 						batchEventCount++
 					}
 

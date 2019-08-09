@@ -72,8 +72,7 @@ func CreateImpressionUserEvent(context Context, experiment entities.Experiment,
 	return userEvent
 }
 
-func createImpressionBatchEvent(userEvent UserEvent) Batch {
-
+func createImpressionVisitor(userEvent UserEvent) Visitor {
 	decision := Decision{}
 	decision.CampaignID = userEvent.Impression.CampaignID
 	decision.ExperimentID = userEvent.Impression.ExperimentID
@@ -88,8 +87,7 @@ func createImpressionBatchEvent(userEvent UserEvent) Batch {
 
 	visitor := createVisitor(userEvent, userEvent.Impression.Attributes, []Decision{decision}, []SnapshotEvent{dispatchEvent})
 
-	return createBatchEvent(userEvent, visitor)
-
+	return visitor
 }
 
 func createConversionEvent(attributeKeyToIdMap map[string]string, event entities.Event, attributes map[string]interface{}, eventTags map[string]interface{}, botFiltering bool) ConversionEvent {
@@ -126,7 +124,18 @@ func CreateConversionUserEvent(context Context, event entities.Event, userContex
 
 }
 
-func createConversionBatchEvent(userEvent UserEvent) Batch {
+func createVisitorFromUserEvent(event UserEvent) Visitor {
+	if event.Impression != nil {
+		return createImpressionVisitor(event)
+	}
+	if event.Conversion != nil {
+		return createConversionVisitor(event)
+	}
+
+	return Visitor{}
+}
+
+func createConversionVisitor(userEvent UserEvent) Visitor {
 
 	dispatchEvent := SnapshotEvent{}
 	dispatchEvent.Timestamp = makeTimestamp()
@@ -143,7 +152,7 @@ func createConversionBatchEvent(userEvent UserEvent) Batch {
 
 	visitor := createVisitor(userEvent, userEvent.Conversion.Attributes, []Decision{}, []SnapshotEvent{dispatchEvent})
 
-	return createBatchEvent(userEvent, visitor)
+	return visitor
 }
 
 func createVisitor(userEvent UserEvent, attributes []VisitorAttribute,
