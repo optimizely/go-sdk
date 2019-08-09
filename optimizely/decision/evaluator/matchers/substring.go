@@ -14,30 +14,30 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package mappers
+package matchers
 
 import (
-	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	"fmt"
+	"strings"
+
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-// MapAudiences maps the raw datafile audience entities to SDK Audience entities
-func MapAudiences(audiences []datafileEntities.Audience) map[string]entities.Audience {
+// SubstringMatcher matches against the "substring" match type
+type SubstringMatcher struct {
+	Condition entities.Condition
+}
 
-	audienceMap := make(map[string]entities.Audience)
-	for _, audience := range audiences {
-		_, ok := audienceMap[audience.ID]
-		if !ok {
-			conditionTree, err := buildConditionTree(audience.Conditions)
-			if err != nil {
-				// @TODO: handle error
-			}
-			audienceMap[audience.ID] = entities.Audience{
-				ID:            audience.ID,
-				Name:          audience.Name,
-				ConditionTree: conditionTree,
-			}
+// Match returns true if the user's attribute is a substring of the condition's string value
+func (m SubstringMatcher) Match(user entities.UserContext) (bool, error) {
+
+	if stringValue, ok := m.Condition.Value.(string); ok {
+		attributeValue, err := user.GetStringAttribute(m.Condition.Name)
+		if err != nil {
+			return false, err
 		}
+		return strings.Contains(stringValue, attributeValue), nil
 	}
-	return audienceMap
+
+	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
 }

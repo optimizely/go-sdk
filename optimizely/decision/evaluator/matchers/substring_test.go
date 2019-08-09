@@ -14,30 +14,54 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package mappers
+package matchers
 
 import (
-	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-// MapAudiences maps the raw datafile audience entities to SDK Audience entities
-func MapAudiences(audiences []datafileEntities.Audience) map[string]entities.Audience {
-
-	audienceMap := make(map[string]entities.Audience)
-	for _, audience := range audiences {
-		_, ok := audienceMap[audience.ID]
-		if !ok {
-			conditionTree, err := buildConditionTree(audience.Conditions)
-			if err != nil {
-				// @TODO: handle error
-			}
-			audienceMap[audience.ID] = entities.Audience{
-				ID:            audience.ID,
-				Name:          audience.Name,
-				ConditionTree: conditionTree,
-			}
-		}
+func TestSubstringMatcher(t *testing.T) {
+	matcher := SubstringMatcher{
+		Condition: entities.Condition{
+			Match: "substring",
+			Value: "foobar",
+			Name:  "string_foo",
+		},
 	}
-	return audienceMap
+
+	// Test match
+	user := entities.UserContext{
+		Attributes: map[string]interface{}{
+			"string_foo": "foo",
+		},
+	}
+
+	result, err := matcher.Match(user)
+	assert.NoError(t, err)
+	assert.True(t, result)
+
+	// Test no match
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"string_foo": "not_foobar",
+		},
+	}
+
+	result, err = matcher.Match(user)
+	assert.NoError(t, err)
+	assert.False(t, result)
+
+	// Test error case
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"not_string_foo": "foo",
+		},
+	}
+
+	_, err = matcher.Match(user)
+	assert.Error(t, err)
 }
