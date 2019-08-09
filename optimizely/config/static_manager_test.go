@@ -19,12 +19,12 @@ package config
 import (
 	"testing"
 
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig"
+	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewStaticProjectConfigManager(t *testing.T) {
-	projectConfig := datafileProjectConfig.DatafileProjectConfig{}
+	projectConfig := datafileprojectconfig.DatafileProjectConfig{}
 	configManager := NewStaticProjectConfigManager(projectConfig)
 	assert.Equal(t, projectConfig, configManager.GetConfig())
 }

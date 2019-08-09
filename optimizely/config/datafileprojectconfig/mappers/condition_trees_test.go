@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	datafileConfig "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/assert"
 )
@@ -50,6 +51,44 @@ func TestBuildAudienceConditionTreeSimpleAudienceCondition(t *testing.T) {
 							},
 							{
 								Item: "1234",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	assert.Equal(t, expectedConditionTree, conditionTree)
+}
+
+func TestBuildConditionTreeUsingDatafileAudienceConditions(t *testing.T) {
+
+	audience := datafileConfig.Audience{
+		ID:         "12567320080",
+		Name:       "message",
+		Conditions: "[\"and\", [\"or\", [\"or\", {\"name\": \"s_foo\", \"type\": \"custom_attribute\", \"value\": \"foo\"}]]]",
+	}
+
+	conditionTree, err := buildConditionTree(audience.Conditions)
+	if err != nil {
+		assert.Fail(t, err.Error())
+	}
+
+	expectedConditionTree := &entities.TreeNode{
+		Operator: "and",
+		Nodes: []*entities.TreeNode{
+			{
+				Operator: "or",
+				Nodes: []*entities.TreeNode{
+					{
+						Operator: "or",
+						Nodes: []*entities.TreeNode{
+							{
+								Item: entities.Condition{
+									Name:  "s_foo",
+									Type:  "custom_attribute",
+									Value: "foo",
+								},
 							},
 						},
 					},

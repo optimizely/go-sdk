@@ -14,27 +14,54 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package mappers
+package matchers
 
 import (
-	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-// MapFeatureFlags maps the raw datafile feature flag entities to SDK Feature entities
-func MapFeatureFlags(featureFlags []datafileEntities.FeatureFlag, rolloutMap map[string]entities.Rollout) map[string]entities.Feature {
-
-	featureMap := make(map[string]entities.Feature)
-	for _, featureFlag := range featureFlags {
-		// @TODO(mng): include experiments in the Feature
-		feature := entities.Feature{
-			Key: featureFlag.Key,
-			ID:  featureFlag.ID,
-		}
-		if rollout, ok := rolloutMap[featureFlag.RolloutID]; ok {
-			feature.Rollout = rollout
-		}
-		featureMap[featureFlag.Key] = feature
+func TestSubstringMatcher(t *testing.T) {
+	matcher := SubstringMatcher{
+		Condition: entities.Condition{
+			Match: "substring",
+			Value: "foobar",
+			Name:  "string_foo",
+		},
 	}
-	return featureMap
+
+	// Test match
+	user := entities.UserContext{
+		Attributes: map[string]interface{}{
+			"string_foo": "foo",
+		},
+	}
+
+	result, err := matcher.Match(user)
+	assert.NoError(t, err)
+	assert.True(t, result)
+
+	// Test no match
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"string_foo": "not_foobar",
+		},
+	}
+
+	result, err = matcher.Match(user)
+	assert.NoError(t, err)
+	assert.False(t, result)
+
+	// Test error case
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"not_string_foo": "foo",
+		},
+	}
+
+	_, err = matcher.Match(user)
+	assert.Error(t, err)
 }

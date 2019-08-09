@@ -25,8 +25,9 @@ type QueueingEventProcessor struct {
 
 var pLogger = logging.GetLogger("EventProcessor")
 
+// NewEventProcessor returns a new instance of QueueingEventProcessor with queueSize and flushInterval
 func NewEventProcessor(queueSize int, flushInterval time.Duration ) Processor {
-	p := &QueueingEventProcessor{MaxQueueSize: queueSize, FlushInterval:flushInterval, Q:NewInMemoryQueue(queueSize), EventDispatcher:&HttpEventDispatcher{}}
+	p := &QueueingEventProcessor{MaxQueueSize: queueSize, FlushInterval:flushInterval, Q:NewInMemoryQueue(queueSize), EventDispatcher:&HTTPEventDispatcher{}}
 	p.BatchSize = 10
 	p.StartTicker()
 	return p
@@ -43,30 +44,35 @@ func (p *QueueingEventProcessor) ProcessEvent(event UserEvent) {
 	}
 }
 
+// EventsCount returns size of an event queue
 func (p *QueueingEventProcessor) EventsCount() int {
 	return p.Q.Size()
 }
 
+// GetEvents returns events from event queue for count
 func (p *QueueingEventProcessor) GetEvents(count int) []interface{} {
 	return p.Q.Get(count)
 }
 
+// Remove removes events from queue for count
 func (p *QueueingEventProcessor) Remove(count int) []interface{} {
 	return p.Q.Remove(count)
 }
 
+// StartTicker starts new ticker for flushing events
 func (p *QueueingEventProcessor) StartTicker() {
 	if p.Ticker != nil {
 		return
 	}
 	p.Ticker = time.NewTicker(p.FlushInterval * time.Millisecond)
 	go func() {
-		for _ = range p.Ticker.C {
+		for range p.Ticker.C {
 			p.FlushEvents()
 		}
 	}()
 }
 
+// check if user event can be batched in the current batch
 func (p *QueueingEventProcessor)canBatch(current *Batch, user UserEvent) bool {
 	if current.ProjectID == user.EventContext.ProjectID &&
 		current.Revision == user.EventContext.Revision {
@@ -76,12 +82,13 @@ func (p *QueueingEventProcessor)canBatch(current *Batch, user UserEvent) bool {
 	return false
 }
 
+// add the visitor to the current batch
 func (p *QueueingEventProcessor)addToBatch(current *Batch, visitor Visitor) {
 	visitors := append(current.Visitors, visitor)
 	current.Visitors = visitors
 }
 
-// ProcessEvent processes the given impression event
+// FlushEvents flushes events in queue
 func (p *QueueingEventProcessor) FlushEvents() {
 	// we flush when queue size is reached.
 	// however, if there is a ticker cycle already processing, we should wait

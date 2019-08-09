@@ -14,27 +14,48 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package mappers
+package datafileprojectconfig
 
 import (
-	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
-	"github.com/optimizely/go-sdk/optimizely/entities"
+	"fmt"
+	"testing"
+
+	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
+	"github.com/stretchr/testify/assert"
 )
 
-// MapAudiences maps the raw datafile audience entities to SDK Audience entities
-func MapAudiences(audiences []datafileEntities.Audience) map[string]entities.Audience {
+func TestParseDatafilePasses(t *testing.T) {
+	testFeatureKey := "feature_test_1"
+	testFeatureID := "feature_id_123"
+	datafileString := fmt.Sprintf(`{
+		"projectId": "1337",
+		"accountId": "1338",
+		"version": "4",
+		"featureFlags": [
+			{
+				"key": "%s",
+				"id" : "%s"
+			}
+		]
+	}`, testFeatureKey, testFeatureID)
 
-	audienceMap := make(map[string]entities.Audience)
-	for _, audience := range audiences {
-		conditionTree, err := buildConditionTree(audience.Conditions)
-		if err != nil {
-			// @TODO: handle error
-		}
-		audienceMap[audience.ID] = entities.Audience{
-			ID:            audience.ID,
-			Name:          audience.Name,
-			ConditionTree: conditionTree,
-		}
+	rawDatafile := []byte(datafileString)
+	parsedDatafile, err := Parse(rawDatafile)
+	if err != nil {
+		assert.Fail(t, err.Error())
 	}
-	return audienceMap
+
+	expectedDatafile := &entities.Datafile{
+		AccountID: "1338",
+		ProjectID: "1337",
+		Version:   "4",
+		FeatureFlags: []entities.FeatureFlag{
+			entities.FeatureFlag{
+				Key: testFeatureKey,
+				ID:  testFeatureID,
+			},
+		},
+	}
+
+	assert.Equal(t, expectedDatafile, parsedDatafile)
 }

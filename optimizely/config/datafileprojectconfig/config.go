@@ -14,13 +14,13 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package datafileProjectConfig
+package datafileprojectconfig
 
 import (
 	"errors"
 	"fmt"
 
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/mappers"
+	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/mappers"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/optimizely/go-sdk/optimizely/logging"
 )
@@ -44,26 +44,32 @@ type DatafileProjectConfig struct {
 	rolloutMap           map[string]entities.Rollout
 }
 
+// GetProjectID returns projectID
 func (c DatafileProjectConfig) GetProjectID() string {
 	return c.projectID
 }
 
+// GetRevision returns revision
 func (c DatafileProjectConfig) GetRevision() string {
 	return c.revision
 }
 
+// GetAccountID returns accountID
 func (c DatafileProjectConfig) GetAccountID() string {
 	return c.accountID
 }
 
+// GetAnonymizeIP returns anonymizeIP
 func (c DatafileProjectConfig) GetAnonymizeIP() bool {
 	return c.anonymizeIP
 }
 
+// GetAttributeID returns attributeID
 func (c DatafileProjectConfig) GetAttributeID(key string) string {
 	return c.attributeKeyToIDMap[key]
 }
 
+// GetBotFiltering returns GetBotFiltering
 func (c DatafileProjectConfig) GetBotFiltering() bool {
 	return c.botFiltering
 }
@@ -78,8 +84,9 @@ func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, erro
 
 	experiments, experimentKeyMap := mappers.MapExperiments(datafile.Experiments)
 	rolloutMap := mappers.MapRollouts(datafile.Rollouts)
+	mergedAudiences := append(datafile.TypedAudiences, datafile.Audiences...)
 	config := &DatafileProjectConfig{
-		audienceMap:          mappers.MapAudiences(datafile.TypedAudiences),
+		audienceMap:          mappers.MapAudiences(mergedAudiences),
 		experimentMap:        experiments,
 		experimentKeyToIDMap: experimentKeyMap,
 		rolloutMap:           rolloutMap,

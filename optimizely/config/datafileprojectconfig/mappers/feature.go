@@ -17,29 +17,24 @@
 package mappers
 
 import (
-	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-// MapRollouts maps the raw datafile rollout entities to SDK Rollout entities
-func MapRollouts(rollouts []datafileEntities.Rollout) map[string]entities.Rollout {
-	rolloutMap := make(map[string]entities.Rollout)
-	for _, rollout := range rollouts {
-		rolloutMap[rollout.ID] = mapRollout(rollout)
-	}
+// MapFeatureFlags maps the raw datafile feature flag entities to SDK Feature entities
+func MapFeatureFlags(featureFlags []datafileEntities.FeatureFlag, rolloutMap map[string]entities.Rollout) map[string]entities.Feature {
 
-	return rolloutMap
-}
-
-func mapRollout(datafileRollout datafileEntities.Rollout) entities.Rollout {
-	rolloutExperiments := make([]entities.Experiment, len(datafileRollout.Experiments))
-	for i, datafileExperiment := range datafileRollout.Experiments {
-		experiment := mapExperiment(datafileExperiment)
-		rolloutExperiments[i] = experiment
+	featureMap := make(map[string]entities.Feature)
+	for _, featureFlag := range featureFlags {
+		// @TODO(mng): include experiments in the Feature
+		feature := entities.Feature{
+			Key: featureFlag.Key,
+			ID:  featureFlag.ID,
+		}
+		if rollout, ok := rolloutMap[featureFlag.RolloutID]; ok {
+			feature.Rollout = rollout
+		}
+		featureMap[featureFlag.Key] = feature
 	}
-
-	return entities.Rollout{
-		ID:          datafileRollout.ID,
-		Experiments: rolloutExperiments,
-	}
+	return featureMap
 }

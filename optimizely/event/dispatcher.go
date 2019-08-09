@@ -8,16 +8,19 @@ import (
 	"net/http"
 )
 
+// Dispatcher dispatches events
 type Dispatcher interface {
 	DispatchEvent(event LogEvent, callback func(success bool))
 }
 
-type HttpEventDispatcher struct {
+// HTTPEventDispatcher is the HTTP implementation of the Dispatcher interface
+type HTTPEventDispatcher struct {
 }
 
 var dispatcherLogger = logging.GetLogger("EventDispatcher")
 
-func (*HttpEventDispatcher) DispatchEvent(event LogEvent, callback func(success bool)) {
+// DispatchEvent dispatches event with callback
+func (*HTTPEventDispatcher) DispatchEvent(event LogEvent, callback func(success bool)) {
 
 	jsonValue, _ := json.Marshal(event.event)
 	resp, err := http.Post( event.endPoint, "application/json", bytes.NewBuffer(jsonValue))
@@ -39,4 +42,3 @@ func (*HttpEventDispatcher) DispatchEvent(event LogEvent, callback func(success 
 	callback(success)
 
 }
-

@@ -14,23 +14,23 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package entities
+package datafileprojectconfig
 
-//TreeNode in a condition tree
-type TreeNode struct {
-	Item     interface{} // can be a condition or a string
-	Operator string
+import (
+	"encoding/json"
 
-	Nodes []*TreeNode
-}
+	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
+)
 
-//TreeParameters represents paramaters of a tree
-type TreeParameters struct {
-	User        *UserContext
-	AudienceMap map[string]Audience
-}
+// Parse parses the raw json datafile
+func Parse(jsonDatafile []byte) (*entities.Datafile, error) {
 
-//NewTreeParameters returns TreeParameters object
-func NewTreeParameters(user *UserContext, audience map[string]Audience) *TreeParameters {
-	return &TreeParameters{User: user, AudienceMap: audience}
+	datafile := &entities.Datafile{}
+
+	err := json.Unmarshal(jsonDatafile, &datafile)
+	if err != nil {
+		return nil, err
+	}
+
+	return datafile, nil
 }
