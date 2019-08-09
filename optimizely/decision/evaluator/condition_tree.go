@@ -42,7 +42,6 @@ func NewTreeEvaluator() *TreeEvaluator {
 	return &TreeEvaluator{}
 }
 
-// entities.UserContext
 // Evaluate returns true if the userAttributes satisfy the given condition tree
 func (c TreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) bool {
 	// This wrapper method converts the conditionEvalResult to a boolean

@@ -14,31 +14,23 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package config
+package datafileprojectconfig
 
 import (
-	"context"
-	"testing"
+	"encoding/json"
 
-	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
-	"github.com/stretchr/testify/assert"
+	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
 )
 
-func TestNewPollingProjectConfigManager(t *testing.T) {
-	URL := "https://cdn.optimizely.com/datafiles/4SLpaJA1r1pgE6T2CoMs9q_bad.json"
-	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig([]byte{})
-	request := NewRequester(URL)
+// Parse parses the raw json datafile
+func Parse(jsonDatafile []byte) (*entities.Datafile, error) {
 
-	// Bad SDK Key test
-	configManager := NewPollingProjectConfigManager(context.Background(), request, []byte{}, 0)
-	assert.Equal(t, projectConfig, configManager.GetConfig())
+	datafile := &entities.Datafile{}
 
-	// Good SDK Key test
-	URL = "https://cdn.optimizely.com/datafiles/4SLpaJA1r1pgE6T2CoMs9q.json"
-	request = NewRequester(URL)
-	configManager = NewPollingProjectConfigManager(context.Background(), request, []byte{}, 0)
-	newConfig := configManager.GetConfig()
+	err := json.Unmarshal(jsonDatafile, &datafile)
+	if err != nil {
+		return nil, err
+	}
 
-	assert.Equal(t, "", newConfig.GetAccountID())
-	assert.Equal(t, 4, len(newConfig.GetAudienceMap()))
+	return datafile, nil
 }

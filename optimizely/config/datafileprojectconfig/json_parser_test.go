@@ -14,32 +14,48 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package mappers
+package datafileprojectconfig
 
 import (
-	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
-	"github.com/optimizely/go-sdk/optimizely/entities"
+	"fmt"
+	"testing"
+
+	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
+	"github.com/stretchr/testify/assert"
 )
 
-// MapRollouts maps the raw datafile rollout entities to SDK Rollout entities
-func MapRollouts(rollouts []datafileEntities.Rollout) map[string]entities.Rollout {
-	rolloutMap := make(map[string]entities.Rollout)
-	for _, rollout := range rollouts {
-		rolloutMap[rollout.ID] = mapRollout(rollout)
+func TestParseDatafilePasses(t *testing.T) {
+	testFeatureKey := "feature_test_1"
+	testFeatureID := "feature_id_123"
+	datafileString := fmt.Sprintf(`{
+		"projectId": "1337",
+		"accountId": "1338",
+		"version": "4",
+		"featureFlags": [
+			{
+				"key": "%s",
+				"id" : "%s"
+			}
+		]
+	}`, testFeatureKey, testFeatureID)
+
+	rawDatafile := []byte(datafileString)
+	parsedDatafile, err := Parse(rawDatafile)
+	if err != nil {
+		assert.Fail(t, err.Error())
 	}
 
-	return rolloutMap
-}
-
-func mapRollout(datafileRollout datafileEntities.Rollout) entities.Rollout {
-	rolloutExperiments := make([]entities.Experiment, len(datafileRollout.Experiments))
-	for i, datafileExperiment := range datafileRollout.Experiments {
-		experiment := mapExperiment(datafileExperiment)
-		rolloutExperiments[i] = experiment
+	expectedDatafile := &entities.Datafile{
+		AccountID: "1338",
+		ProjectID: "1337",
+		Version:   "4",
+		FeatureFlags: []entities.FeatureFlag{
+			entities.FeatureFlag{
+				Key: testFeatureKey,
+				ID:  testFeatureID,
+			},
+		},
 	}
 
-	return entities.Rollout{
-		ID:          datafileRollout.ID,
-		Experiments: rolloutExperiments,
-	}
+	assert.Equal(t, expectedDatafile, parsedDatafile)
 }

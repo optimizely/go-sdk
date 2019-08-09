@@ -14,48 +14,40 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package datafileProjectConfig
+package mappers
 
 import (
-	"fmt"
+	"encoding/json"
 	"testing"
 
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
+	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseDatafilePasses(t *testing.T) {
-	testFeatureKey := "feature_test_1"
-	testFeatureID := "feature_id_123"
-	datafileString := fmt.Sprintf(`{
-		"projectId": "1337",
-		"accountId": "1338",
-		"version": "4",
-		"featureFlags": [
-			{
-				"key": "%s",
-				"id" : "%s"
-			}
-		]
-	}`, testFeatureKey, testFeatureID)
+func TestMapRollouts(t *testing.T) {
+	const testRolloutString = `{
+		 "id": "21111",
+		 "experiments": [
+			 { "id": "11111", "key": "exp_11111" },
+			 { "id": "11112", "key": "exp_11112" }
+		 ]
+	 }`
 
-	rawDatafile := []byte(datafileString)
-	parsedDatafile, err := Parse(rawDatafile)
-	if err != nil {
-		assert.Fail(t, err.Error())
-	}
+	var rawRollout datafileEntities.Rollout
+	json.Unmarshal([]byte(testRolloutString), &rawRollout)
 
-	expectedDatafile := &entities.Datafile{
-		AccountID: "1338",
-		ProjectID: "1337",
-		Version:   "4",
-		FeatureFlags: []entities.FeatureFlag{
-			entities.FeatureFlag{
-				Key: testFeatureKey,
-				ID:  testFeatureID,
+	rawRollouts := []datafileEntities.Rollout{rawRollout}
+	rolloutMap := MapRollouts(rawRollouts)
+	expectedRolloutMap := map[string]entities.Rollout{
+		"21111": entities.Rollout{
+			ID: "21111",
+			Experiments: []entities.Experiment{
+				entities.Experiment{ID: "11111", Key: "exp_11111", Variations: map[string]entities.Variation{}, TrafficAllocation: []entities.Range{}},
+				entities.Experiment{ID: "11112", Key: "exp_11112", Variations: map[string]entities.Variation{}, TrafficAllocation: []entities.Range{}},
 			},
 		},
 	}
 
-	assert.Equal(t, expectedDatafile, parsedDatafile)
+	assert.Equal(t, expectedRolloutMap, rolloutMap)
 }

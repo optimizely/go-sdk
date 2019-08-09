@@ -14,23 +14,30 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package datafileProjectConfig
+package mappers
 
 import (
-	"encoding/json"
-
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
+	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-// Parse parses the raw json datafile
-func Parse(jsonDatafile []byte) (*entities.Datafile, error) {
+// MapAudiences maps the raw datafile audience entities to SDK Audience entities
+func MapAudiences(audiences []datafileEntities.Audience) map[string]entities.Audience {
 
-	datafile := &entities.Datafile{}
-
-	err := json.Unmarshal(jsonDatafile, &datafile)
-	if err != nil {
-		return nil, err
+	audienceMap := make(map[string]entities.Audience)
+	for _, audience := range audiences {
+		_, ok := audienceMap[audience.ID]
+		if !ok {
+			conditionTree, err := buildConditionTree(audience.Conditions)
+			if err != nil {
+				// @TODO: handle error
+			}
+			audienceMap[audience.ID] = entities.Audience{
+				ID:            audience.ID,
+				Name:          audience.Name,
+				ConditionTree: conditionTree,
+			}
+		}
 	}
-
-	return datafile, nil
+	return audienceMap
 }

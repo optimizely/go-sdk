@@ -30,6 +30,7 @@ var rootCmd = &cobra.Command{
 	Short: "go-sdk provides cli access to your Optimizely fullstack project",
 }
 
+// Execute executes rootCmd, exits if error found
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

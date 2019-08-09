@@ -7,19 +7,22 @@ import (
 	"net/http"
 )
 
+// Dispatcher dispatches events
 type Dispatcher interface {
 	DispatchEvent(event LogEvent, callback func(success bool))
 }
 
-type HttpEventDispatcher struct {
+// HTTPEventDispatcher is the HTTP implementation of the Dispatcher interface
+type HTTPEventDispatcher struct {
 }
 
-func (*HttpEventDispatcher) DispatchEvent(event LogEvent, callback func(success bool)) {
+// DispatchEvent dispatches event with callback
+func (*HTTPEventDispatcher) DispatchEvent(event LogEvent, callback func(success bool)) {
 	// add to current batch or create new batch
 	// does a batch have to contain a decision or can it just be impressions?
 
 	jsonValue, _ := json.Marshal(event.event)
-	resp, err := http.Post( event.endPoint, "application/json", bytes.NewBuffer(jsonValue))
+	resp, err := http.Post(event.endPoint, "application/json", bytes.NewBuffer(jsonValue))
 	fmt.Println(resp)
 	fmt.Println(string(jsonValue))
 	// also check response codes
@@ -40,4 +43,3 @@ func (*HttpEventDispatcher) DispatchEvent(event LogEvent, callback func(success 
 	callback(success)
 
 }
-
