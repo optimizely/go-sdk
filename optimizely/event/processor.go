@@ -24,7 +24,7 @@ type QueueingEventProcessor struct {
 
 func NewEventProcessor(queueSize int, flushInterval time.Duration ) Processor {
 	p := &QueueingEventProcessor{MaxQueueSize: queueSize, FlushInterval:flushInterval, Q:NewInMemoryQueue(queueSize), EventDispatcher:&HttpEventDispatcher{}}
-	p.BatchSize = 20
+	p.BatchSize = 10
 	p.StartTicker()
 	return p
 }
