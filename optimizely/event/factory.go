@@ -20,7 +20,7 @@ const eventEndPoint = "https://logx.optimizely.com/v1/events"
 const revenueKey = "revenue"
 const valueKey = "value"
 
-func createLogEvent(event EventBatch) LogEvent {
+func createLogEvent(event Batch) LogEvent {
 	return LogEvent{endPoint: eventEndPoint, event: event}
 }
 
@@ -29,8 +29,8 @@ func makeTimestamp() int64 {
 }
 
 // CreateEventContext creates and returns EventContext
-func CreateEventContext(projectID string, revision string, accountID string, anonymizeIP bool, botFiltering bool, attributeKeyToIDMap map[string]string) EventContext {
-	context := EventContext{}
+func CreateEventContext(projectID string, revision string, accountID string, anonymizeIP bool, botFiltering bool, attributeKeyToIDMap map[string]string) Context {
+	context := Context{}
 	context.ProjectID = projectID
 	context.Revision = revision
 	context.AccountID = accountID
@@ -43,7 +43,7 @@ func CreateEventContext(projectID string, revision string, accountID string, ano
 	return context
 }
 
-func createImpressionEvent(context EventContext, experiment entities.Experiment,
+func createImpressionEvent(context Context, experiment entities.Experiment,
 	variation entities.Variation, attributes map[string]interface{}) ImpressionEvent {
 
 	impression := ImpressionEvent{}
@@ -58,7 +58,7 @@ func createImpressionEvent(context EventContext, experiment entities.Experiment,
 }
 
 // CreateImpressionUserEvent creates and returns ImpressionEvent for user
-func CreateImpressionUserEvent(context EventContext, experiment entities.Experiment,
+func CreateImpressionUserEvent(context Context, experiment entities.Experiment,
 	variation entities.Variation,
 	userContext entities.UserContext) UserEvent {
 
@@ -74,8 +74,8 @@ func CreateImpressionUserEvent(context EventContext, experiment entities.Experim
 	return userEvent
 }
 
-func createImpressionBatchEvent(userEvent UserEvent) EventBatch {
-
+// create an impression visitor
+func createImpressionVisitor(userEvent UserEvent) Visitor {
 	decision := Decision{}
 	decision.CampaignID = userEvent.Impression.CampaignID
 	decision.ExperimentID = userEvent.Impression.ExperimentID
@@ -88,10 +88,12 @@ func createImpressionBatchEvent(userEvent UserEvent) EventBatch {
 	dispatchEvent.UUID = guuid.New().String()
 	dispatchEvent.Tags = make(map[string]interface{})
 
-	return createBatchEvent(userEvent, userEvent.Impression.Attributes, []Decision{decision}, []SnapshotEvent{dispatchEvent})
+	visitor := createVisitor(userEvent, userEvent.Impression.Attributes, []Decision{decision}, []SnapshotEvent{dispatchEvent})
 
+	return visitor
 }
 
+// create a conversion event
 func createConversionEvent(attributeKeyToIDMap map[string]string, event entities.Event, attributes map[string]interface{}, eventTags map[string]interface{}, botFiltering bool) ConversionEvent {
 	conversion := ConversionEvent{}
 
@@ -104,7 +106,7 @@ func createConversionEvent(attributeKeyToIDMap map[string]string, event entities
 }
 
 // CreateConversionUserEvent creates and returns ConversionEvent for user
-func CreateConversionUserEvent(context EventContext, event entities.Event, userContext entities.UserContext, attributeKeyToIDMap map[string]string, eventTags map[string]interface{}) UserEvent {
+func CreateConversionUserEvent(context Context, event entities.Event, userContext entities.UserContext, attributeKeyToIDMap map[string]string, eventTags map[string]interface{}) UserEvent {
 
 	userEvent := UserEvent{}
 	userEvent.Timestamp = makeTimestamp()
@@ -127,7 +129,21 @@ func CreateConversionUserEvent(context EventContext, event entities.Event, userC
 	return userEvent
 
 }
-func createConversionBatchEvent(userEvent UserEvent) EventBatch {
+
+// create visitor from user event
+func createVisitorFromUserEvent(event UserEvent) Visitor {
+	if event.Impression != nil {
+		return createImpressionVisitor(event)
+	}
+	if event.Conversion != nil {
+		return createConversionVisitor(event)
+	}
+
+	return Visitor{}
+}
+
+// create a conversion visitor
+func createConversionVisitor(userEvent UserEvent) Visitor {
 
 	dispatchEvent := SnapshotEvent{}
 	dispatchEvent.Timestamp = makeTimestamp()
@@ -142,13 +158,15 @@ func createConversionBatchEvent(userEvent UserEvent) EventBatch {
 		dispatchEvent.Value = userEvent.Conversion.Value
 	}
 
-	return createBatchEvent(userEvent, userEvent.Conversion.Attributes, []Decision{}, []SnapshotEvent{dispatchEvent})
+	visitor := createVisitor(userEvent, userEvent.Conversion.Attributes, []Decision{}, []SnapshotEvent{dispatchEvent})
+
+	return visitor
 }
 
-func createBatchEvent(userEvent UserEvent, attributes []VisitorAttribute,
+// create a visitor
+func createVisitor(userEvent UserEvent, attributes []VisitorAttribute,
 	decisions []Decision,
-	dispatchEvents []SnapshotEvent) EventBatch {
-
+	dispatchEvents []SnapshotEvent) Visitor {
 	snapShot := Snapshot{}
 	snapShot.Decisions = decisions
 	snapShot.Events = dispatchEvents
@@ -161,7 +179,14 @@ func createBatchEvent(userEvent UserEvent, attributes []VisitorAttribute,
 	visitor.Snapshots = []Snapshot{snapShot}
 	visitor.VisitorID = userEvent.VisitorID
 
-	eventBatch := EventBatch{}
+	return visitor
+}
+
+// create a batch event with visitor
+func createBatchEvent(userEvent UserEvent, visitor Visitor) Batch {
+
+
+	eventBatch := Batch{}
 	eventBatch.ProjectID = userEvent.EventContext.ProjectID
 	eventBatch.Revision = userEvent.EventContext.Revision
 	eventBatch.AccountID = userEvent.EventContext.AccountID
@@ -174,6 +199,7 @@ func createBatchEvent(userEvent UserEvent, attributes []VisitorAttribute,
 	return eventBatch
 }
 
+// get visitor attributes from user attributes
 func getEventAttributes(attributeKeyToIDMap map[string]string, attributes map[string]interface{}, botFiltering bool) []VisitorAttribute {
 	var eventAttributes = []VisitorAttribute{}
 
@@ -206,6 +232,7 @@ func getEventAttributes(attributeKeyToIDMap map[string]string, attributes map[st
 	return eventAttributes
 }
 
+// get revenue attribute
 func getRevenueValue(eventTags map[string]interface{}) (int64, error) {
 	if value, ok := eventTags[revenueKey]; ok {
 		return utils.GetIntValue(value)
@@ -214,6 +241,7 @@ func getRevenueValue(eventTags map[string]interface{}) (int64, error) {
 	return 0, errors.New("No event tag found for revenue")
 }
 
+// get a value attribute
 func getTagValue(eventTags map[string]interface{}) (float64, error) {
 	if value, ok := eventTags[valueKey]; ok {
 		return utils.GetFloatValue(value)
