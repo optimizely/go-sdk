@@ -24,7 +24,7 @@ import (
 	"sync"
 
 	"github.com/optimizely/go-sdk/optimizely"
-	"github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig"
+	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 )
 
 // StaticProjectConfigManager maintains a static copy of the project config
@@ -33,7 +33,8 @@ type StaticProjectConfigManager struct {
 	configLock    sync.Mutex
 }
 
-func NewStaticProjectConfigManagerFromUrl(URL string) (*StaticProjectConfigManager, error) {
+// NewStaticProjectConfigManagerFromURL returns new instance of StaticProjectConfigManager for URL
+func NewStaticProjectConfigManagerFromURL(URL string) (*StaticProjectConfigManager, error) {
 	downloadFile := func(URL string) ([]byte, error) {
 		response, err := http.Get(URL)
 		if err != nil {
@@ -60,8 +61,9 @@ func NewStaticProjectConfigManagerFromUrl(URL string) (*StaticProjectConfigManag
 	return NewStaticProjectConfigManagerFromPayload(body)
 }
 
+// NewStaticProjectConfigManagerFromPayload returns new instance of StaticProjectConfigManager for payload
 func NewStaticProjectConfigManagerFromPayload(payload []byte) (*StaticProjectConfigManager, error) {
-	projectConfig, err := datafileProjectConfig.NewDatafileProjectConfig(payload)
+	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(payload)
 
 	if err != nil {
 		return nil, err
