@@ -28,7 +28,7 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/logging"
 )
 
-const DefaultTTL = 5 * time.Second
+const defaultTTL = 5 * time.Second
 
 var requesterLogger = logging.GetLogger("Requester")
 
@@ -76,7 +76,7 @@ func NewRequester(url string, params ...func(*Requester)) *Requester {
 		url:     url,
 		retries: 1,
 		headers: []Header{{"Content-Type", "application/json"}, {"Accept", "application/json"}},
-		client:  http.Client{Timeout: DefaultTTL},
+		client:  http.Client{Timeout: defaultTTL},
 	}
 
 	for _, param := range params {

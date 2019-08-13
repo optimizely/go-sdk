@@ -17,37 +17,27 @@
 package mappers
 
 import (
-	"encoding/json"
-	"testing"
-
-	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileProjectConfig/entities"
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/optimizely/entities"
-	"github.com/stretchr/testify/assert"
 )
 
-func TestMapFeatures(t *testing.T) {
-	const testFeatureFlagString = `{
-		"id": "21111",
-		"key": "test_feature_21111",
-		"rolloutId": "41111"
-	}`
+// MapAudiences maps the raw datafile audience entities to SDK Audience entities
+func MapAudiences(audiences []datafileEntities.Audience) map[string]entities.Audience {
 
-	var rawFeatureFlag datafileEntities.FeatureFlag
-	json.Unmarshal([]byte(testFeatureFlagString), &rawFeatureFlag)
-
-	rawFeatureFlags := []datafileEntities.FeatureFlag{rawFeatureFlag}
-	rollout := entities.Rollout{ID: "41111"}
-	rolloutMap := map[string]entities.Rollout{
-		"41111": rollout,
+	audienceMap := make(map[string]entities.Audience)
+	for _, audience := range audiences {
+		_, ok := audienceMap[audience.ID]
+		if !ok {
+			conditionTree, err := buildConditionTree(audience.Conditions)
+			if err != nil {
+				// @TODO: handle error
+			}
+			audienceMap[audience.ID] = entities.Audience{
+				ID:            audience.ID,
+				Name:          audience.Name,
+				ConditionTree: conditionTree,
+			}
+		}
 	}
-	featureMap := MapFeatureFlags(rawFeatureFlags, rolloutMap)
-	expectedFeatureMap := map[string]entities.Feature{
-		"test_feature_21111": entities.Feature{
-			ID:      "21111",
-			Key:     "test_feature_21111",
-			Rollout: rollout,
-		},
-	}
-
-	assert.Equal(t, expectedFeatureMap, featureMap)
+	return audienceMap
 }

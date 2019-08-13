@@ -24,7 +24,7 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-var ErrEmptyTree = errors.New("Empty Tree")
+var errEmptyTree = errors.New("Empty Tree")
 
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
 func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, retErr error) {
@@ -90,7 +90,7 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 
 	populateConditions(value, conditionTree)
 	if conditionTree.Nodes == nil && conditionTree.Operator == "" {
-		retErr = ErrEmptyTree
+		retErr = errEmptyTree
 		conditionTree = nil
 	}
 	return conditionTree, retErr
@@ -147,7 +147,7 @@ func buildAudienceConditionTree(conditions interface{}) (conditionTree *entities
 	populateConditions(value, conditionTree)
 
 	if conditionTree.Nodes == nil && conditionTree.Operator == "" {
-		err = ErrEmptyTree
+		err = errEmptyTree
 		conditionTree = nil
 	}
 

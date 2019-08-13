@@ -14,31 +14,24 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package config
+package client
 
 import (
-	"context"
+	"errors"
 	"testing"
 
-	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewPollingProjectConfigManager(t *testing.T) {
-	URL := "https://cdn.optimizely.com/datafiles/4SLpaJA1r1pgE6T2CoMs9q_bad.json"
-	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig([]byte{})
-	request := NewRequester(URL)
+func TestClientWithOptionsErrorCase(t *testing.T) {
+	// Error when no config manager, sdk key, or datafile is provided
+	factory := OptimizelyFactory{}
+	clientOptions := Options{}
 
-	// Bad SDK Key test
-	configManager := NewPollingProjectConfigManager(context.Background(), request, []byte{}, 0)
-	assert.Equal(t, projectConfig, configManager.GetConfig())
-
-	// Good SDK Key test
-	URL = "https://cdn.optimizely.com/datafiles/4SLpaJA1r1pgE6T2CoMs9q.json"
-	request = NewRequester(URL)
-	configManager = NewPollingProjectConfigManager(context.Background(), request, []byte{}, 0)
-	newConfig := configManager.GetConfig()
-
-	assert.Equal(t, "", newConfig.GetAccountID())
-	assert.Equal(t, 4, len(newConfig.GetAudienceMap()))
+	client, err := factory.ClientWithOptions(clientOptions)
+	expectedErr := errors.New("unable to instantiate client: no project config manager, SDK key, or a Datafile provided")
+	assert.False(t, client.isValid)
+	if assert.Error(t, err) {
+		assert.Equal(t, err, expectedErr)
+	}
 }
