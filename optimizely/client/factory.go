@@ -36,9 +36,8 @@ type Options struct {
 
 // OptimizelyFactory is used to construct an instance of the OptimizelyClient
 type OptimizelyFactory struct {
-	SDKKey               string
-	Datafile             []byte
-	ProjectConfigManager optimizely.ProjectConfigManager
+	SDKKey   string
+	Datafile []byte
 }
 
 // StaticClient returns a client initialized with a static project config
