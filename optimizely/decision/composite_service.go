@@ -17,9 +17,14 @@
 package decision
 
 import (
+	"fmt"
+
 	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/optimizely/logging"
 	"github.com/optimizely/go-sdk/optimizely/notification"
 )
+
+var csLogger = logging.GetLogger("CompositeDecisionService")
 
 // CompositeService is the entrypoint into the decision service. It provides out of the box decision making for Features and Experiments.
 type CompositeService struct {
@@ -54,10 +59,20 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 	}
 
 	// @TODO: add errors
-
-	// @TODO convert the decision to a notification.DecisionNotification
 	if s.notificationCenter != nil {
-		s.notificationCenter.Send(notification.Decision, featureDecision)
+		decisionInfo := map[string]interface{}{
+			"feature": map[string]interface{}{
+				"feature_key":     featureDecisionContext.Feature.Key,
+				"feature_enabled": featureDecision.Variation.FeatureEnabled,
+				"source":          featureDecision.Source,
+			},
+		}
+		decisionNotification := notification.DecisionNotification{
+			DecisionInfo: decisionInfo,
+			Type:         notification.Feature,
+			UserContext:  userContext,
+		}
+		s.notificationCenter.Send(notification.Decision, decisionNotification)
 	}
 	return featureDecision, err
 }
@@ -67,6 +82,8 @@ func (s CompositeService) OnDecision(callback func(notification.DecisionNotifica
 	handler := func(payload interface{}) {
 		if decisionNotification, ok := payload.(notification.DecisionNotification); ok {
 			callback(decisionNotification)
+		} else {
+			csLogger.Warning(fmt.Sprintf("Unable to convert notification payload %v into DecisionNotification", payload))
 		}
 	}
 	s.notificationCenter.AddHandler(notification.Decision, handler)

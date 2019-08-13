@@ -26,9 +26,17 @@ const (
 	Decision Type = "decision"
 )
 
+// DecisionNotificationType is the type of decision notification
+type DecisionNotificationType string
+
+const (
+	// Feature is used when the decision is returned as part of evaluating a feature
+	Feature DecisionNotificationType = "feature"
+)
+
 // DecisionNotification is a notification triggered when a decision is made
 type DecisionNotification struct {
-	Type         string
+	Type         DecisionNotificationType
 	UserContext  entities.UserContext
 	DecisionInfo map[string]interface{}
 }
