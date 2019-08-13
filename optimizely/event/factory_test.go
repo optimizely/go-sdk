@@ -129,7 +129,7 @@ func TestCreateConversionEventRevenue(t *testing.T) {
 	assert.Equal(t, int64(55), *conversionUserEvent.Conversion.Revenue)
 	assert.Equal(t, 25.1, *conversionUserEvent.Conversion.Value)
 
-	batch := createConversionBatchEvent(conversionUserEvent)
+	batch := createBatchEvent(conversionUserEvent, createVisitorFromUserEvent(conversionUserEvent))
 	assert.Equal(t, int64(55), *batch.Visitors[0].Snapshots[0].Events[0].Revenue)
 	assert.Equal(t, 25.1, *batch.Visitors[0].Snapshots[0].Events[0].Value)
 

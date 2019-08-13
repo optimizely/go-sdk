@@ -1,28 +1,28 @@
 package event
 
-// EventContext holds project-related contextual information about a UserEvent
-type EventContext struct {
-	Revision            string            `json:"revision"`
-	AccountID           string            `json:"account_id"`
-	ClientVersion       string            `json:"client_version"`
-	ProjectID           string            `json:"project_id"`
-	ClientName          string            `json:"client_name"`
-	AnonymizeIP         bool              `json:"anonymize_ip"`
-	BotFiltering        bool              `json:"bot_filtering"`
+// Context holds project-related contextual information about a UserEvent
+type Context struct {
+	Revision        string  `json:"revision"`
+	AccountID       string  `json:"account_id"`
+	ClientVersion   string  `json:"client_version"`
+	ProjectID       string  `json:"project_id"`
+	ClientName      string  `json:"client_name"`
+	AnonymizeIP     bool    `json:"anonymize_ip"`
+	BotFiltering    bool    `json:"bot_filtering"`
 	attributeKeyToIDMap map[string]string `json:"attributeKeyToIdMap"`
 }
 
-// UserEvent respresents a user event
+// UserEvent represents a user event
 type UserEvent struct {
-	Timestamp    int64  `json:"timestamp"`
+	Timestamp    int64 `json:"timestamp"`
 	UUID         string `json:"uuid"`
-	EventContext EventContext
+	EventContext Context
 	VisitorID    string
 	Impression   *ImpressionEvent
 	Conversion   *ConversionEvent
 }
 
-// ImpressionEvent respresents an impression event
+// ImpressionEvent represents an impression event
 type ImpressionEvent struct {
 	EntityID     string `json:"entity_id"`
 	Key          string `json:"key"`
@@ -32,7 +32,7 @@ type ImpressionEvent struct {
 	ExperimentID string `json:"experiment_id"`
 }
 
-// ConversionEvent respresents a conversion event
+// ConversionEvent represents a conversion event
 type ConversionEvent struct {
 	EntityID   string `json:"entity_id"`
 	Key        string `json:"key"`
@@ -44,17 +44,17 @@ type ConversionEvent struct {
 	Value   *float64 `json:"value,omitempty"`
 }
 
-// LogEvent respresents a log event
+// LogEvent represents a log event
 type LogEvent struct {
 	endPoint string
-	event    EventBatch
+	event    Batch
 }
 
-// EventBatch respresents Context about the event
-type EventBatch struct {
-	Revision        string    `json:"revision"`
-	AccountID       string    `json:"account_id"`
-	ClientVersion   string    `json:"client_version"`
+// Context about the event to send in batch
+type Batch struct {
+	Revision        string  `json:"revision"`
+	AccountID       string  `json:"account_id"`
+	ClientVersion   string  `json:"client_version"`
 	Visitors        []Visitor `json:"visitors"`
 	ProjectID       string    `json:"project_id"`
 	ClientName      string    `json:"client_name"`
@@ -62,14 +62,14 @@ type EventBatch struct {
 	EnrichDecisions bool      `json:"enrich_decisions"`
 }
 
-// Visitor respresents a visitor of an eventbatch
+// Visitor represents a visitor of an eventbatch
 type Visitor struct {
 	Attributes []VisitorAttribute `json:"attributes"`
 	Snapshots  []Snapshot         `json:"snapshots"`
 	VisitorID  string             `json:"visitor_id"`
 }
 
-// VisitorAttribute respresents an attribute of a visitor
+// VisitorAttribute represents an attribute of a visitor
 type VisitorAttribute struct {
 	Value         interface{} `json:"value"`
 	Key           string      `json:"key"`
@@ -77,20 +77,20 @@ type VisitorAttribute struct {
 	EntityID      string      `json:"entity_id"`
 }
 
-// Snapshot respresents a snapshot of a visitor
+// Snapshot represents a snapshot of a visitor
 type Snapshot struct {
 	Decisions []Decision      `json:"decisions"`
 	Events    []SnapshotEvent `json:"events"`
 }
 
-// Decision respresents a decision of a snapshot
+// Decision represents a decision of a snapshot
 type Decision struct {
 	VariationID  string `json:"variation_id"`
 	CampaignID   string `json:"campaign_id"`
 	ExperimentID string `json:"experiment_id"`
 }
 
-// SnapshotEvent respresents an event of a snapshot
+// SnapshotEvent represents an event of a snapshot
 type SnapshotEvent struct {
 	EntityID  string                 `json:"entity_id"`
 	Key       string                 `json:"key"`
