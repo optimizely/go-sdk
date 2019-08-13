@@ -26,8 +26,6 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/decision"
 )
 
-const datafileURLTemplate = "https://cdn.optimizely.com/datafiles/%s.json"
-
 // Options are used to create an instance of the OptimizelyClient with custom configuration
 type Options struct {
 	Context              context.Context
@@ -45,7 +43,7 @@ func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 	var configManager optimizely.ProjectConfigManager
 
 	if f.SDKKey != "" {
-		url := fmt.Sprintf(datafileURLTemplate, f.SDKKey)
+		url := fmt.Sprintf(config.DatafileURLTemplate, f.SDKKey)
 		staticConfigManager, err := config.NewStaticProjectConfigManagerFromURL(url)
 
 		if err != nil {
@@ -91,9 +89,10 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 	if clientOptions.ProjectConfigManager != nil {
 		client.configManager = clientOptions.ProjectConfigManager
 	} else if f.SDKKey != "" {
-		url := fmt.Sprintf(datafileURLTemplate, f.SDKKey)
-		request := config.NewRequester(url)
-		client.configManager = config.NewPollingProjectConfigManager(ctx, request, f.Datafile, 0)
+		options := config.PollingProjectConfigManagerOptions{
+			FallbackDatafile: f.Datafile,
+		}
+		client.configManager = config.NewPollingProjectConfigManagerWithOptions(ctx, f.SDKKey, options)
 	} else if f.Datafile != nil {
 		staticConfigManager, _ := config.NewStaticProjectConfigManagerFromPayload(f.Datafile)
 		client.configManager = staticConfigManager
