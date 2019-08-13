@@ -70,7 +70,14 @@ func (p NamedLogProducer) Error(message string, err interface{}) {
 }
 
 func (p NamedLogProducer) log(logLevel int, message string) {
-	// prepends the name to the message
-	message = fmt.Sprintf("[%s] %s", p.name, message)
+	logLevelStrings := map[int]string{
+		LogLevelDebug:   "Debug",
+		LogLevelInfo:    "Info",
+		LogLevelWarning: "Warning",
+		LogLevelError:   "Error",
+	}
+
+	// prepends the name and log level to the message
+	message = fmt.Sprintf("[%s][%s] %s", p.name, logLevelStrings[logLevel], message)
 	defaultLogConsumer.Log(logLevel, message)
 }

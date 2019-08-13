@@ -25,7 +25,7 @@ func (m *MockOptimizelyLogger) SetLogLevel(level int) {
 
 func TestNamedLoggerInfo(t *testing.T) {
 	testLogMessage := "Test info message"
-	expectedLogMessage := "[test-info] Test info message"
+	expectedLogMessage := "[test-info][Info] Test info message"
 	testLogger := new(MockOptimizelyLogger)
 	testLogger.On("Log", LogLevelInfo, expectedLogMessage)
 
@@ -39,7 +39,7 @@ func TestNamedLoggerInfo(t *testing.T) {
 
 func TestNamedLoggerError(t *testing.T) {
 	testLogMessage := "Test error message"
-	expectedLogMessage := "[test-error] Test error message I am an error object"
+	expectedLogMessage := "[test-error][Error] Test error message I am an error object"
 	testLogger := new(MockOptimizelyLogger)
 	testLogger.On("Log", LogLevelError, expectedLogMessage)
 	SetLogger(testLogger)
