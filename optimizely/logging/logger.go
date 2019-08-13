@@ -6,14 +6,14 @@ import "fmt"
 type LogLevel int
 
 func (l LogLevel) String() string {
-	return [...]string{"Debug", "Info", "Warning", "Error"}[l]
+	return [...]string{"", "Debug", "Info", "Warning", "Error"}[l]
 }
 
 var defaultLogConsumer OptimizelyLogConsumer
 
 const (
 	// LogLevelDebug log level
-	LogLevelDebug LogLevel = iota
+	LogLevelDebug LogLevel = iota + 1
 
 	// LogLevelInfo log level
 	LogLevelInfo
