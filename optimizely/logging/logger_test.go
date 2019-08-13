@@ -14,12 +14,12 @@ type MockOptimizelyLogger struct {
 	loggedMessages []string
 }
 
-func (m *MockOptimizelyLogger) Log(level int, message string) {
+func (m *MockOptimizelyLogger) Log(level LogLevel, message string) {
 	m.Called(level, message)
 	m.loggedMessages = append(m.loggedMessages, message)
 }
 
-func (m *MockOptimizelyLogger) SetLogLevel(level int) {
+func (m *MockOptimizelyLogger) SetLogLevel(level LogLevel) {
 	m.Called(level)
 }
 
