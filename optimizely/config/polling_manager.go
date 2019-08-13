@@ -33,7 +33,7 @@ var cmLogger = logging.GetLogger("PollingConfigManager")
 
 // PollingProjectConfigManager maintains a dynamic copy of the project config
 type PollingProjectConfigManager struct {
-	requester     *Requester
+	requester     Requester
 	pollingWait   time.Duration
 	projectConfig optimizely.ProjectConfig
 	configLock    sync.RWMutex
@@ -84,7 +84,7 @@ func (cm *PollingProjectConfigManager) activate(initialPayload []byte, init bool
 }
 
 // NewPollingProjectConfigManager returns new instance of PollingProjectConfigManager
-func NewPollingProjectConfigManager(ctx context.Context, requester *Requester, initialPayload []byte, pollingWait time.Duration) *PollingProjectConfigManager {
+func NewPollingProjectConfigManager(ctx context.Context, requester Requester, initialPayload []byte, pollingWait time.Duration) *PollingProjectConfigManager {
 
 	if pollingWait == 0 {
 		pollingWait = defaultPollingWait

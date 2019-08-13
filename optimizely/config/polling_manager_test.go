@@ -22,20 +22,28 @@ import (
 
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
+type MockRequester struct {
+	Requester
+	mock.Mock
+}
+
+func (m *MockRequester) Get(headers ...Header) (response []byte, code int, err error) {
+	args := m.Called(headers)
+	return args.Get(0).([]byte), args.Int(1), args.Error(2)
+}
+
 func TestNewPollingProjectConfigManager(t *testing.T) {
-	URL := "https://cdn.optimizely.com/datafiles/4SLpaJA1r1pgE6T2CoMs9q_bad.json"
 	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig([]byte{})
-	request := NewRequester(URL)
+	request := new(MockRequester)
 
 	// Bad SDK Key test
 	configManager := NewPollingProjectConfigManager(context.Background(), request, []byte{}, 0)
 	assert.Equal(t, projectConfig, configManager.GetConfig())
 
 	// Good SDK Key test
-	URL = "https://cdn.optimizely.com/datafiles/4SLpaJA1r1pgE6T2CoMs9q.json"
-	request = NewRequester(URL)
 	configManager = NewPollingProjectConfigManager(context.Background(), request, []byte{}, 0)
 	newConfig := configManager.GetConfig()
 
