@@ -25,7 +25,6 @@ import (
 	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/optimizely/logging"
-	"github.com/optimizely/go-sdk/optimizely/utils"
 )
 
 const defaultPollingWait = time.Duration(5 * time.Minute) // default 5 minutes for polling wait
@@ -35,7 +34,6 @@ var cmLogger = logging.GetLogger("PollingConfigManager")
 // PollingProjectConfigManager maintains a dynamic copy of the project config
 type PollingProjectConfigManager struct {
 	requester     *Requester
-	metrics       *utils.Metrics
 	pollingWait   time.Duration
 	projectConfig optimizely.ProjectConfig
 	configLock    sync.RWMutex
@@ -55,14 +53,12 @@ func (cm *PollingProjectConfigManager) activate(initialPayload []byte, init bool
 			payload, code, e = cm.requester.Get()
 
 			if e != nil {
-				cm.metrics.Inc("bad_http_request")
 				cmLogger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
 			}
 		}
 
 		projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(payload)
 		if err != nil {
-			cm.metrics.Inc("failed_project_config")
 			cmLogger.Error("failed to create project config", err)
 		}
 
@@ -80,7 +76,6 @@ func (cm *PollingProjectConfigManager) activate(initialPayload []byte, init bool
 		select {
 		case <-t.C:
 			update()
-			cm.metrics.Inc("polls")
 		case <-cm.ctx.Done():
 			cmLogger.Debug("Polling Config Manager Stopped")
 			return
@@ -95,7 +90,7 @@ func NewPollingProjectConfigManager(ctx context.Context, requester *Requester, i
 		pollingWait = defaultPollingWait
 	}
 
-	pollingProjectConfigManager := PollingProjectConfigManager{requester: requester, pollingWait: pollingWait, metrics: utils.NewMetrics(), ctx: ctx}
+	pollingProjectConfigManager := PollingProjectConfigManager{requester: requester, pollingWait: pollingWait, ctx: ctx}
 
 	pollingProjectConfigManager.activate(initialPayload, true) // initial poll
 
@@ -109,9 +104,4 @@ func (cm *PollingProjectConfigManager) GetConfig() optimizely.ProjectConfig {
 	cm.configLock.RLock()
 	defer cm.configLock.RUnlock()
 	return cm.projectConfig
-}
-
-//GetMetrics returns a string of all metrics
-func (cm *PollingProjectConfigManager) GetMetrics() string {
-	return cm.metrics.String()
 }

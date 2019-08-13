@@ -49,15 +49,20 @@ func main() {
 		time.Sleep(1000 * time.Millisecond)
 		fmt.Println("\nending")
 	}
+	fmt.Println()
 
-	/************* ClientWithContext ********************/
+	/************* ClientWithOptions - custom context  ********************/
 
 	optimizelyFactory = &client.OptimizelyFactory{
 		SDKKey: "4SLpaJA1r1pgE6T2CoMs9q",
 	}
 	ctx := context.Background()
 	ctx, cancelManager := context.WithCancel(ctx) // user can set up any context
-	app, err = optimizelyFactory.ClientWithContext(ctx)
+	clientOptions := client.Options{
+		Context: ctx,
+	}
+
+	app, err = optimizelyFactory.ClientWithOptions(clientOptions)
 	cancelManager() //  user can cancel anytime
 
 	if err != nil {
@@ -68,4 +73,23 @@ func main() {
 	enabled, _ = app.IsFeatureEnabled("mutext_feat", user)
 	fmt.Printf("Is feature enabled? %v\n", enabled)
 
+	time.Sleep(1000 * time.Millisecond)
+	fmt.Println()
+
+	/************* Client ********************/
+
+	optimizelyFactory = &client.OptimizelyFactory{
+		SDKKey: "4SLpaJA1r1pgE6T2CoMs9q",
+	}
+
+	app, err = optimizelyFactory.Client()
+	app.Close() //  user can cancel anytime
+
+	if err != nil {
+		fmt.Printf("Error instantiating client: %s", err)
+		return
+	}
+
+	enabled, _ = app.IsFeatureEnabled("mutext_feat", user)
+	fmt.Printf("Is feature enabled? %v\n", enabled)
 }
