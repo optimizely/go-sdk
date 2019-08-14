@@ -34,7 +34,7 @@ const (
 	Feature DecisionNotificationType = "feature"
 )
 
-// DecisionNotification is a notification triggered when a decision is made
+// DecisionNotification is a notification triggered when a decision is made for either a feature or an experiment
 type DecisionNotification struct {
 	Type         DecisionNotificationType
 	UserContext  entities.UserContext
