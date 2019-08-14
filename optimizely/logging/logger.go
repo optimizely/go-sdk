@@ -2,13 +2,18 @@ package logging
 
 import "fmt"
 
+// LogLevel represents the level of the log (i.e. Debug, Info, Warning, Error)
+type LogLevel int
+
+func (l LogLevel) String() string {
+	return [...]string{"", "Debug", "Info", "Warning", "Error"}[l]
+}
+
 var defaultLogConsumer OptimizelyLogConsumer
 
 const (
-	_ = iota
-
 	// LogLevelDebug log level
-	LogLevelDebug
+	LogLevelDebug LogLevel = iota + 1
 
 	// LogLevelInfo log level
 	LogLevelInfo
@@ -30,7 +35,7 @@ func SetLogger(logger OptimizelyLogConsumer) {
 }
 
 // SetLogLevel sets the log level to the given level
-func SetLogLevel(logLevel int) {
+func SetLogLevel(logLevel LogLevel) {
 	defaultLogConsumer.SetLogLevel(logLevel)
 }
 
@@ -69,8 +74,9 @@ func (p NamedLogProducer) Error(message string, err interface{}) {
 	p.log(LogLevelError, message)
 }
 
-func (p NamedLogProducer) log(logLevel int, message string) {
-	// prepends the name to the message
-	message = fmt.Sprintf("[%s] %s", p.name, message)
+func (p NamedLogProducer) log(logLevel LogLevel, message string) {
+
+	// prepends the name and log level to the message
+	message = fmt.Sprintf("[%s][%s] %s", p.name, logLevel, message)
 	defaultLogConsumer.Log(logLevel, message)
 }
