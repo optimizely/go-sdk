@@ -32,6 +32,13 @@ type AtomicManager struct {
 	counter  uint32
 }
 
+// NewAtomicManager creates a new instance of the atomic manager
+func NewAtomicManager() *AtomicManager {
+	return &AtomicManager{
+		handlers: make(map[uint32]func(interface{})),
+	}
+}
+
 // AddHandler adds the given handler
 func (am *AtomicManager) AddHandler(newHandler func(interface{})) (int, error) {
 	atomic.AddUint32(&am.counter, 1)

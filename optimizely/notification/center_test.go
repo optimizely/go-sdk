@@ -15,8 +15,9 @@ func (m *MockReceiver) handleNotification(notification interface{}) {
 	m.Called(notification)
 }
 
-func TestNotificationCenterAddHandler(t *testing.T) {
+func TestNotificationCenter(t *testing.T) {
 	mockReceiver := new(MockReceiver)
+	mockReceiver2 := new(MockReceiver)
 
 	testUser := entities.UserContext{}
 	testDecisionNotification := DecisionNotification{
@@ -29,9 +30,12 @@ func TestNotificationCenterAddHandler(t *testing.T) {
 		},
 	}
 	mockReceiver.On("handleNotification", testDecisionNotification)
+	mockReceiver2.On("handleNotification", testDecisionNotification)
 	notificationCenter := NewNotificationCenter()
 	notificationCenter.AddHandler(Decision, mockReceiver.handleNotification)
+	notificationCenter.AddHandler(Decision, mockReceiver2.handleNotification)
 	notificationCenter.Send(Decision, testDecisionNotification)
 
 	mockReceiver.AssertExpectations(t)
+	mockReceiver2.AssertExpectations(t)
 }

@@ -31,7 +31,7 @@ type DefaultCenter struct {
 
 // NewNotificationCenter returns a new notification center
 func NewNotificationCenter() *DefaultCenter {
-	decisionNotificationManager := &AtomicManager{}
+	decisionNotificationManager := NewAtomicManager()
 	managerMap := make(map[Type]Manager)
 	managerMap[Decision] = decisionNotificationManager
 	return &DefaultCenter{
