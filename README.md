@@ -75,7 +75,7 @@ cd $GOPATH/src/github.com/optimizely/go-sdk
 go install
 ```
 
-NOTE:: 
+NOTE:
 ```$sh
 go get github.com/optimizely/go-sdk/...
 ```
