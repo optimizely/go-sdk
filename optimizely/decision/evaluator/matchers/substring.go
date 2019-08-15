@@ -36,7 +36,7 @@ func (m SubstringMatcher) Match(user entities.UserContext) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		return strings.Contains(stringValue, attributeValue), nil
+		return strings.Contains(attributeValue, stringValue), nil
 	}
 
 	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
