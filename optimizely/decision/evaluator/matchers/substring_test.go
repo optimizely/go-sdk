@@ -28,7 +28,7 @@ func TestSubstringMatcher(t *testing.T) {
 	matcher := SubstringMatcher{
 		Condition: entities.Condition{
 			Match: "substring",
-			Value: "foobar",
+			Value: "foo",
 			Name:  "string_foo",
 		},
 	}
@@ -36,7 +36,7 @@ func TestSubstringMatcher(t *testing.T) {
 	// Test match
 	user := entities.UserContext{
 		Attributes: map[string]interface{}{
-			"string_foo": "foo",
+			"string_foo": "foobar",
 		},
 	}
 
@@ -47,7 +47,7 @@ func TestSubstringMatcher(t *testing.T) {
 	// Test no match
 	user = entities.UserContext{
 		Attributes: map[string]interface{}{
-			"string_foo": "not_foobar",
+			"string_foo": "bar",
 		},
 	}
 
