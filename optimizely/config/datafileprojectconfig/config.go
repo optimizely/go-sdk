@@ -117,6 +117,11 @@ func (c DatafileProjectConfig) GetFeatureByKey(featureKey string) (entities.Feat
 	return entities.Feature{}, errors.New(errMessage)
 }
 
+// GetFeatureMap returns the feature with the given key
+func (c DatafileProjectConfig) GetFeatureMap() map[string]entities.Feature {
+	return c.featureMap
+}
+
 // GetAudienceByID returns the audience with the given ID
 func (c DatafileProjectConfig) GetAudienceByID(audienceID string) (entities.Audience, error) {
 	if audience, ok := c.audienceMap[audienceID]; ok {

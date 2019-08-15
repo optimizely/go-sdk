@@ -93,6 +93,42 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 	return result, nil
 }
 
+// GetEnabledFeatures returns an array containing the keys of all features in the project that are enabled for the given user.
+func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) (enabledFeatures []string, err error) {
+	if !o.isValid {
+		errorMessage := "Optimizely instance is not valid. Failing GetEnabledFeatures."
+		err := errors.New(errorMessage)
+		logger.Error(errorMessage, nil)
+		return enabledFeatures, err
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			errorMessage := fmt.Sprintf(`Optimizely SDK is panicking with the error "%s"`, string(debug.Stack()))
+			err = errors.New(errorMessage)
+			logger.Error(errorMessage, err)
+		}
+	}()
+
+	projectConfig := o.configManager.GetConfig()
+
+	if reflect.ValueOf(projectConfig).IsNil() {
+		return enabledFeatures, fmt.Errorf("project config is null")
+	}
+
+	features := projectConfig.GetFeatureMap()
+	for feature := range features {
+		isEnabled, _ := o.IsFeatureEnabled(feature, userContext)
+
+		if isEnabled {
+			enabledFeatures = append(enabledFeatures, feature)
+		}
+	}
+
+	// @TODO(mng): send impression event
+	return enabledFeatures, nil
+}
+
 // Close closes the Optimizely instance and stops any ongoing tasks from its children components
 func (o *OptimizelyClient) Close() {
 	o.cancelFunc()

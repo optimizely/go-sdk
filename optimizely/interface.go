@@ -31,6 +31,7 @@ type ProjectConfig interface {
 	GetEventByKey(string) (entities.Event, error)
 	GetExperimentByKey(string) (entities.Experiment, error)
 	GetFeatureByKey(string) (entities.Feature, error)
+	GetFeatureMap() map[string]entities.Feature
 	GetGroupByID(string) (entities.Group, error)
 	GetProjectID() string
 	GetRevision() string
