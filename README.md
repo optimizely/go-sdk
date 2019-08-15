@@ -75,6 +75,16 @@ cd $GOPATH/src/github.com/optimizely/go-sdk
 go install
 ```
 
+NOTE:: 
+```$sh
+go get github.com/optimizely/go-sdk/...
+```
+or 
+```$sh
+go get github.com/optimizely/go-sdk/optimizely
+```
+will install it as a package to pkg directory, rather than src directory. It could be useful for future development and vendoring.
+
 ### Commands
 
 #### is_feature_enabled
