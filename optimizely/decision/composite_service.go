@@ -34,11 +34,11 @@ type CompositeService struct {
 }
 
 // NewCompositeService returns a new instance of the DefeaultDecisionEngine
-func NewCompositeService() *CompositeService {
+func NewCompositeService(notificationCenter notification.Center) *CompositeService {
 	featureDecisionService := NewCompositeFeatureService()
 	return &CompositeService{
 		featureDecisionServices: []FeatureDecisionService{featureDecisionService},
-		notificationCenter:      notification.NewNotificationCenter(),
+		notificationCenter:      notificationCenter,
 	}
 }
 
