@@ -116,12 +116,12 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 		return enabledFeatures, fmt.Errorf("project config is null")
 	}
 
-	features := projectConfig.GetFeatureMap()
-	for feature := range features {
-		isEnabled, _ := o.IsFeatureEnabled(feature, userContext)
+	featureList := projectConfig.GetFeatureList()
+	for _, feature := range featureList {
+		isEnabled, _ := o.IsFeatureEnabled(feature.Key, userContext)
 
 		if isEnabled {
-			enabledFeatures = append(enabledFeatures, feature)
+			enabledFeatures = append(enabledFeatures, feature.Key)
 		}
 	}
 

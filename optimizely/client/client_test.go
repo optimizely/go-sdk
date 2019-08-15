@@ -38,9 +38,9 @@ func (c *MockProjectConfig) GetFeatureByKey(featureKey string) (entities.Feature
 	return args.Get(0).(entities.Feature), args.Error(1)
 }
 
-func (c *MockProjectConfig) GetFeatureMap() map[string]entities.Feature {
+func (c *MockProjectConfig) GetFeatureList() []entities.Feature {
 	args := c.Called()
-	return args.Get(0).(map[string]entities.Feature)
+	return args.Get(0).([]entities.Feature)
 }
 
 type MockProjectConfigManager struct {
@@ -206,15 +206,12 @@ func TestGetEnabledFeatures(t *testing.T) {
 		Key:                testFeatureDisabledKey,
 		FeatureExperiments: []entities.Experiment{testExperimentDisabled},
 	}
-	featureMap := map[string]entities.Feature{
-		testFeatureEnabledKey:  testFeatureEnabled,
-		testFeatureDisabledKey: testFeatureDisabled,
-	}
+	featureList := []entities.Feature{testFeatureEnabled, testFeatureDisabled}
 	// Test happy path
 	mockConfig := new(MockProjectConfig)
 	mockConfig.On("GetFeatureByKey", testFeatureEnabledKey).Return(testFeatureEnabled, nil)
 	mockConfig.On("GetFeatureByKey", testFeatureDisabledKey).Return(testFeatureDisabled, nil)
-	mockConfig.On("GetFeatureMap").Return(featureMap)
+	mockConfig.On("GetFeatureList").Return(featureList)
 	mockConfigManager := new(MockProjectConfigManager)
 	mockConfigManager.On("GetConfig").Return(mockConfig)
 	// Set up the mock decision service and its return value
