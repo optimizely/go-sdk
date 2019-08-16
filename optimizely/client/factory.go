@@ -32,6 +32,7 @@ import (
 type Options struct {
 	Context              context.Context
 	ProjectConfigManager optimizely.ProjectConfigManager
+	DecisionService      decision.DecisionService
 }
 
 // OptimizelyFactory is used to construct an instance of the OptimizelyClient
@@ -105,7 +106,12 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 	}
 
 	// @TODO: allow decision service to be passed in via options
-	client.decisionService = decision.NewCompositeService(notificationCenter)
+	if clientOptions.DecisionService != nil {
+		client.decisionService = clientOptions.DecisionService
+	} else {
+		client.decisionService = decision.NewCompositeService(notificationCenter)
+	}
+
 	client.isValid = true
 	return client, nil
 }
