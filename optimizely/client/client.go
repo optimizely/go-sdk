@@ -125,7 +125,6 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 		}
 	}
 
-	// @TODO(mng): send impression event
 	return enabledFeatures, nil
 }
 
