@@ -36,8 +36,8 @@ func CreateEventContext(projectConfig optimizely.ProjectConfig) Context {
 	context.ProjectID = projectConfig.GetProjectID()
 	context.Revision = projectConfig.GetRevision()
 	context.AccountID = projectConfig.GetAccountID()
-	context.ClientName = projectConfig.GetClientName()
-	context.ClientVersion = projectConfig.GetClientVersion()
+	context.ClientName = clientKey
+	context.ClientVersion = clientVersion
 	context.AnonymizeIP = projectConfig.GetAnonymizeIP()
 	context.BotFiltering = projectConfig.GetBotFiltering()
 
@@ -191,8 +191,8 @@ func createBatchEvent(userEvent UserEvent, visitor Visitor) Batch {
 	eventBatch.Revision = userEvent.EventContext.Revision
 	eventBatch.AccountID = userEvent.EventContext.AccountID
 	eventBatch.Visitors = []Visitor{visitor}
-	eventBatch.ClientName = clientKey
-	eventBatch.ClientVersion = clientVersion
+	eventBatch.ClientName = userEvent.EventContext.ClientName
+	eventBatch.ClientVersion = userEvent.EventContext.ClientVersion
 	eventBatch.AnonymizeIP = userEvent.EventContext.AnonymizeIP
 	eventBatch.EnrichDecisions = true
 

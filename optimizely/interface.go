@@ -29,8 +29,6 @@ type ProjectConfig interface {
 	GetAudienceByID(string) (entities.Audience, error)
 	GetAudienceMap() map[string]entities.Audience
 	GetBotFiltering() bool
-	GetClientName() string
-	GetClientVersion() string
 	GetEventByKey(string) (entities.Event, error)
 	GetExperimentByKey(string) (entities.Experiment, error)
 	GetFeatureByKey(string) (entities.Feature, error)

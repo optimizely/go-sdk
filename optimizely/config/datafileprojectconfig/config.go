@@ -20,8 +20,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/optimizely/go-sdk/optimizely"
-
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/mappers"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/optimizely/go-sdk/optimizely/logging"
@@ -37,8 +35,6 @@ type DatafileProjectConfig struct {
 	audienceMap          map[string]entities.Audience
 	attributeMap         map[string]entities.Attribute
 	botFiltering         bool
-	clientName           string
-	clientVersion        string
 	eventMap             map[string]entities.Event
 	experimentKeyToIDMap map[string]string
 	experimentMap        map[string]entities.Experiment
@@ -95,8 +91,6 @@ func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, erro
 		audienceMap:          mappers.MapAudiences(mergedAudiences),
 		attributeMap:         attributeMap,
 		attributeKeyToIDMap:  attributeKeyToIDMap,
-		clientName:           optimizely.ClientName,
-		clientVersion:        optimizely.Version,
 		experimentMap:        experiments,
 		experimentKeyToIDMap: experimentKeyMap,
 		rolloutMap:           rolloutMap,
@@ -105,16 +99,6 @@ func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, erro
 
 	logger.Info("Datafile is valid.")
 	return config, nil
-}
-
-// GetClientName returns the name of the client engine
-func (c DatafileProjectConfig) GetClientName() string {
-	return c.clientName
-}
-
-// GetClientVersion returns the version of the client engine
-func (c DatafileProjectConfig) GetClientVersion() string {
-	return c.clientVersion
 }
 
 // GetEventByKey returns the event with the given key
