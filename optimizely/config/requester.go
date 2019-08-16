@@ -32,35 +32,41 @@ const defaultTTL = 5 * time.Second
 
 var requesterLogger = logging.GetLogger("Requester")
 
+// Requester is used to make outbound requests with
+type Requester interface {
+	Get(...Header) (response []byte, code int, err error)
+	GetObj(result interface{}, headers ...Header) error
+}
+
 // Header element to be sent
 type Header struct {
 	Name, Value string
 }
 
 // Timeout sets http client timeout
-func Timeout(timeout time.Duration) func(r *Requester) {
-	return func(r *Requester) {
+func Timeout(timeout time.Duration) func(r *HTTPRequester) {
+	return func(r *HTTPRequester) {
 		r.client = http.Client{Timeout: timeout}
 	}
 }
 
 // Retries sets max number of retries for failed calls
-func Retries(retries int) func(r *Requester) {
-	return func(r *Requester) {
+func Retries(retries int) func(r *HTTPRequester) {
+	return func(r *HTTPRequester) {
 		r.retries = retries
 	}
 }
 
 // Headers sets request headers
-func Headers(headers ...Header) func(r *Requester) {
-	return func(r *Requester) {
+func Headers(headers ...Header) func(r *HTTPRequester) {
+	return func(r *HTTPRequester) {
 		r.headers = []Header{}
 		r.headers = append(r.headers, headers...)
 	}
 }
 
-// Requester contains main info
-type Requester struct {
+// HTTPRequester contains main info
+type HTTPRequester struct {
 	url     string
 	client  http.Client
 	retries int
@@ -68,11 +74,11 @@ type Requester struct {
 	ttl     time.Duration // time-to-live
 }
 
-// NewRequester makes Requester with api and parameters. Sets defaults
+// NewHTTPRequester makes Requester with api and parameters. Sets defaults
 // url has a complete url of the request like https://cdn.optimizely.com/datafiles/24234.json
-func NewRequester(url string, params ...func(*Requester)) *Requester {
+func NewHTTPRequester(url string, params ...func(*HTTPRequester)) *HTTPRequester {
 
-	res := Requester{
+	res := HTTPRequester{
 		url:     url,
 		retries: 1,
 		headers: []Header{{"Content-Type", "application/json"}, {"Accept", "application/json"}},
@@ -87,12 +93,12 @@ func NewRequester(url string, params ...func(*Requester)) *Requester {
 
 // Get executes HTTP GET with uri and optional extra headers, returns body in []bytes
 // url created as url+sdkKey.json
-func (r Requester) Get(headers ...Header) (response []byte, code int, err error) {
+func (r HTTPRequester) Get(headers ...Header) (response []byte, code int, err error) {
 	return r.Do("GET", headers)
 }
 
 // GetObj executes HTTP GET with uri and optional extra headers, returns filled object
-func (r Requester) GetObj(result interface{}, headers ...Header) error {
+func (r HTTPRequester) GetObj(result interface{}, headers ...Header) error {
 	b, _, err := r.Do("GET", headers)
 	if err != nil {
 		return err
@@ -101,7 +107,7 @@ func (r Requester) GetObj(result interface{}, headers ...Header) error {
 }
 
 // Do executes request and returns response body for requested uri (sdkKey.json).
-func (r Requester) Do(method string, headers []Header) (response []byte, code int, err error) {
+func (r HTTPRequester) Do(method string, headers []Header) (response []byte, code int, err error) {
 
 	single := func(request *http.Request) (response []byte, code int, e error) {
 		resp, doErr := r.client.Do(request)
@@ -159,7 +165,7 @@ func (r Requester) Do(method string, headers []Header) (response []byte, code in
 	return response, code, err
 }
 
-func (r Requester) addHeaders(req *http.Request, headers []Header) *http.Request {
+func (r HTTPRequester) addHeaders(req *http.Request, headers []Header) *http.Request {
 	for _, h := range r.headers {
 		req.Header.Add(h.Name, h.Value)
 	}
@@ -169,7 +175,7 @@ func (r Requester) addHeaders(req *http.Request, headers []Header) *http.Request
 	return req
 }
 
-func (r Requester) String() string {
+func (r HTTPRequester) String() string {
 	return fmt.Sprintf("{url: %s, timeout: %v, retries: %d}",
 		r.url, r.client.Timeout, r.retries)
 }

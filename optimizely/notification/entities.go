@@ -14,40 +14,29 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package config
+package notification
 
-import (
-	"context"
-	"testing"
+import "github.com/optimizely/go-sdk/optimizely/entities"
 
-	"github.com/stretchr/testify/assert"
+// Type is the type of notification
+type Type string
 
-	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
-	"github.com/stretchr/testify/mock"
+const (
+	// Decision notification type
+	Decision Type = "decision"
 )
 
-type MockRequester struct {
-	Requester
-	mock.Mock
-}
+// DecisionNotificationType is the type of decision notification
+type DecisionNotificationType string
 
-func (m *MockRequester) Get(headers ...Header) (response []byte, code int, err error) {
-	args := m.Called(headers)
-	return args.Get(0).([]byte), args.Int(1), args.Error(2)
-}
+const (
+	// Feature is used when the decision is returned as part of evaluating a feature
+	Feature DecisionNotificationType = "feature"
+)
 
-func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
-	mockDatafile := []byte("{ revision: \"42\" }")
-	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
-	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []Header(nil)).Return(mockDatafile, 200, nil)
-
-	// Test we fetch using requester
-	sdkKey := "test_sdk_key"
-	options := PollingProjectConfigManagerOptions{
-		Requester: mockRequester,
-	}
-	configManager := NewPollingProjectConfigManagerWithOptions(context.Background(), sdkKey, options)
-	mockRequester.AssertExpectations(t)
-	assert.Equal(t, projectConfig, configManager.GetConfig())
+// DecisionNotification is a notification triggered when a decision is made for either a feature or an experiment
+type DecisionNotification struct {
+	Type         DecisionNotificationType
+	UserContext  entities.UserContext
+	DecisionInfo map[string]interface{}
 }
