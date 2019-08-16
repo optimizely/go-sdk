@@ -14,40 +14,41 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package config
+package notification
 
 import (
-	"context"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-
-	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
-	"github.com/stretchr/testify/mock"
+	"sync/atomic"
 )
 
-type MockRequester struct {
-	Requester
-	mock.Mock
+// Manager is a generic interface for managing notifications of a particular type
+type Manager interface {
+	AddHandler(func(interface{})) (int, error)
+	Send(message interface{})
 }
 
-func (m *MockRequester) Get(headers ...Header) (response []byte, code int, err error) {
-	args := m.Called(headers)
-	return args.Get(0).([]byte), args.Int(1), args.Error(2)
+// AtomicManager adds handlers atomically
+type AtomicManager struct {
+	handlers map[uint32]func(interface{})
+	counter  uint32
 }
 
-func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
-	mockDatafile := []byte("{ revision: \"42\" }")
-	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
-	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []Header(nil)).Return(mockDatafile, 200, nil)
-
-	// Test we fetch using requester
-	sdkKey := "test_sdk_key"
-	options := PollingProjectConfigManagerOptions{
-		Requester: mockRequester,
+// NewAtomicManager creates a new instance of the atomic manager
+func NewAtomicManager() *AtomicManager {
+	return &AtomicManager{
+		handlers: make(map[uint32]func(interface{})),
 	}
-	configManager := NewPollingProjectConfigManagerWithOptions(context.Background(), sdkKey, options)
-	mockRequester.AssertExpectations(t)
-	assert.Equal(t, projectConfig, configManager.GetConfig())
+}
+
+// AddHandler adds the given handler
+func (am *AtomicManager) AddHandler(newHandler func(interface{})) (int, error) {
+	atomic.AddUint32(&am.counter, 1)
+	am.handlers[am.counter] = newHandler
+	return int(am.counter), nil
+}
+
+// Send sends the notification to the registered handlers
+func (am *AtomicManager) Send(notification interface{}) {
+	for _, handler := range am.handlers {
+		handler(notification)
+	}
 }

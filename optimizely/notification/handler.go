@@ -14,40 +14,9 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package config
+package notification
 
-import (
-	"context"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-
-	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
-	"github.com/stretchr/testify/mock"
-)
-
-type MockRequester struct {
-	Requester
-	mock.Mock
-}
-
-func (m *MockRequester) Get(headers ...Header) (response []byte, code int, err error) {
-	args := m.Called(headers)
-	return args.Get(0).([]byte), args.Int(1), args.Error(2)
-}
-
-func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
-	mockDatafile := []byte("{ revision: \"42\" }")
-	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
-	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []Header(nil)).Return(mockDatafile, 200, nil)
-
-	// Test we fetch using requester
-	sdkKey := "test_sdk_key"
-	options := PollingProjectConfigManagerOptions{
-		Requester: mockRequester,
-	}
-	configManager := NewPollingProjectConfigManagerWithOptions(context.Background(), sdkKey, options)
-	mockRequester.AssertExpectations(t)
-	assert.Equal(t, projectConfig, configManager.GetConfig())
+// Handler is a generic interface for Optimizely notification listeners
+type Handler interface {
+	handle(interface{})
 }
