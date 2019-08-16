@@ -36,9 +36,9 @@ var cmLogger = logging.GetLogger("PollingConfigManager")
 
 // PollingProjectConfigManagerOptions used to create an instance with custom configuration
 type PollingProjectConfigManagerOptions struct {
-	FallbackDatafile []byte
-	PollingInterval  time.Duration
-	Requester        Requester
+	Datafile        []byte
+	PollingInterval time.Duration
+	Requester       Requester
 }
 
 // PollingProjectConfigManager maintains a dynamic copy of the project config
@@ -111,7 +111,7 @@ func NewPollingProjectConfigManagerWithOptions(ctx context.Context, sdkKey strin
 
 	pollingProjectConfigManager := PollingProjectConfigManager{requester: requester, pollingInterval: pollingInterval, ctx: ctx}
 
-	pollingProjectConfigManager.activate(options.FallbackDatafile, true) // initial poll
+	pollingProjectConfigManager.activate(options.Datafile, true) // initial poll
 
 	cmLogger.Debug("Polling Config Manager Initiated")
 	go pollingProjectConfigManager.activate([]byte{}, false)

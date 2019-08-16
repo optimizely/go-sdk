@@ -94,7 +94,7 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 		client.configManager = clientOptions.ProjectConfigManager
 	} else if f.SDKKey != "" {
 		options := config.PollingProjectConfigManagerOptions{
-			FallbackDatafile: f.Datafile,
+			Datafile: f.Datafile,
 		}
 		client.configManager = config.NewPollingProjectConfigManagerWithOptions(ctx, f.SDKKey, options)
 	} else if f.Datafile != nil {
