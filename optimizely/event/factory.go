@@ -13,8 +13,8 @@ import (
 )
 
 const impressionKey string = "campaign_activated"
-const clientKey string = "go-sdk"
-const clientVersion string = "1.0.0"
+const clientKey string = optimizely.ClientName
+const clientVersion string = optimizely.Version
 const attributeType = "custom"
 const specialPrefix = "$opt_"
 const botFilteringKey = "$opt_bot_filtering"
