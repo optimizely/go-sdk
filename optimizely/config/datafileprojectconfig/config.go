@@ -147,6 +147,14 @@ func (c DatafileProjectConfig) GetAttributeByKey(key string) (entities.Attribute
 	return entities.Attribute{}, errors.New(errMessage)
 }
 
+// GetFeatureList returns an array of all the features
+func (c DatafileProjectConfig) GetFeatureList() (featureList []entities.Feature) {
+	for _, feature := range c.featureMap {
+		featureList = append(featureList, feature)
+	}
+	return featureList
+}
+
 // GetAudienceByID returns the audience with the given ID
 func (c DatafileProjectConfig) GetAudienceByID(audienceID string) (entities.Audience, error) {
 	if audience, ok := c.audienceMap[audienceID]; ok {
