@@ -27,16 +27,26 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/logging"
 )
 
-const defaultPollingWait = time.Duration(5 * time.Minute) // default 5 minutes for polling wait
+const defaultPollingInterval = time.Duration(5 * time.Minute) // default to 5 minutes for polling
+
+// DatafileURLTemplate is used to construct the endpoint for retrieving the datafile from the CDN
+const DatafileURLTemplate = "https://cdn.optimizely.com/datafiles/%s.json"
 
 var cmLogger = logging.GetLogger("PollingConfigManager")
 
+// PollingProjectConfigManagerOptions used to create an instance with custom configuration
+type PollingProjectConfigManagerOptions struct {
+	Datafile        []byte
+	PollingInterval time.Duration
+	Requester       Requester
+}
+
 // PollingProjectConfigManager maintains a dynamic copy of the project config
 type PollingProjectConfigManager struct {
-	requester     *Requester
-	pollingWait   time.Duration
-	projectConfig optimizely.ProjectConfig
-	configLock    sync.RWMutex
+	requester       Requester
+	pollingInterval time.Duration
+	projectConfig   optimizely.ProjectConfig
+	configLock      sync.RWMutex
 
 	ctx context.Context // context used for cancellation
 }
@@ -71,7 +81,7 @@ func (cm *PollingProjectConfigManager) activate(initialPayload []byte, init bool
 		update()
 		return
 	}
-	t := time.NewTicker(cm.pollingWait)
+	t := time.NewTicker(cm.pollingInterval)
 	for {
 		select {
 		case <-t.C:
@@ -83,20 +93,36 @@ func (cm *PollingProjectConfigManager) activate(initialPayload []byte, init bool
 	}
 }
 
-// NewPollingProjectConfigManager returns new instance of PollingProjectConfigManager
-func NewPollingProjectConfigManager(ctx context.Context, requester *Requester, initialPayload []byte, pollingWait time.Duration) *PollingProjectConfigManager {
+// NewPollingProjectConfigManagerWithOptions returns new instance of PollingProjectConfigManager with the given options
+func NewPollingProjectConfigManagerWithOptions(ctx context.Context, sdkKey string, options PollingProjectConfigManagerOptions) *PollingProjectConfigManager {
 
-	if pollingWait == 0 {
-		pollingWait = defaultPollingWait
+	var requester Requester
+	if options.Requester != nil {
+		requester = options.Requester
+	} else {
+		url := fmt.Sprintf(DatafileURLTemplate, sdkKey)
+		requester = NewHTTPRequester(url)
 	}
 
-	pollingProjectConfigManager := PollingProjectConfigManager{requester: requester, pollingWait: pollingWait, ctx: ctx}
+	pollingInterval := options.PollingInterval
+	if pollingInterval == 0 {
+		pollingInterval = defaultPollingInterval
+	}
 
-	pollingProjectConfigManager.activate(initialPayload, true) // initial poll
+	pollingProjectConfigManager := PollingProjectConfigManager{requester: requester, pollingInterval: pollingInterval, ctx: ctx}
+
+	pollingProjectConfigManager.activate(options.Datafile, true) // initial poll
 
 	cmLogger.Debug("Polling Config Manager Initiated")
 	go pollingProjectConfigManager.activate([]byte{}, false)
 	return &pollingProjectConfigManager
+}
+
+// NewPollingProjectConfigManager returns an instance of the polling config manager with the default configuration
+func NewPollingProjectConfigManager(ctx context.Context, sdkKey string) *PollingProjectConfigManager {
+	options := PollingProjectConfigManagerOptions{}
+	configManager := NewPollingProjectConfigManagerWithOptions(ctx, sdkKey, options)
+	return configManager
 }
 
 // GetConfig returns the project config

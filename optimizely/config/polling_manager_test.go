@@ -20,25 +20,34 @@ import (
 	"context"
 	"testing"
 
-	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
+	"github.com/stretchr/testify/mock"
 )
 
-func TestNewPollingProjectConfigManager(t *testing.T) {
-	URL := "https://cdn.optimizely.com/datafiles/4SLpaJA1r1pgE6T2CoMs9q_bad.json"
-	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig([]byte{})
-	request := NewRequester(URL)
+type MockRequester struct {
+	Requester
+	mock.Mock
+}
 
-	// Bad SDK Key test
-	configManager := NewPollingProjectConfigManager(context.Background(), request, []byte{}, 0)
+func (m *MockRequester) Get(headers ...Header) (response []byte, code int, err error) {
+	args := m.Called(headers)
+	return args.Get(0).([]byte), args.Int(1), args.Error(2)
+}
+
+func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
+	mockDatafile := []byte("{ revision: \"42\" }")
+	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
+	mockRequester := new(MockRequester)
+	mockRequester.On("Get", []Header(nil)).Return(mockDatafile, 200, nil)
+
+	// Test we fetch using requester
+	sdkKey := "test_sdk_key"
+	options := PollingProjectConfigManagerOptions{
+		Requester: mockRequester,
+	}
+	configManager := NewPollingProjectConfigManagerWithOptions(context.Background(), sdkKey, options)
+	mockRequester.AssertExpectations(t)
 	assert.Equal(t, projectConfig, configManager.GetConfig())
-
-	// Good SDK Key test
-	URL = "https://cdn.optimizely.com/datafiles/4SLpaJA1r1pgE6T2CoMs9q.json"
-	request = NewRequester(URL)
-	configManager = NewPollingProjectConfigManager(context.Background(), request, []byte{}, 0)
-	newConfig := configManager.GetConfig()
-
-	assert.Equal(t, "", newConfig.GetAccountID())
-	assert.Equal(t, 4, len(newConfig.GetAudienceMap()))
 }
