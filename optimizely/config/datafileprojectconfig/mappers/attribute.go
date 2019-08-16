@@ -14,32 +14,27 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package optimizely
+package mappers
 
 import (
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-// ProjectConfig contains the parsed project entities
-type ProjectConfig interface {
-	GetAccountID() string
-	GetAnonymizeIP() bool
-	GetAttributeID(id string) string // returns "" if there is no id
-	GetAttributeByKey(key string) (entities.Attribute, error)
-	GetAudienceByID(string) (entities.Audience, error)
-	GetAudienceMap() map[string]entities.Audience
-	GetBotFiltering() bool
-	GetClientName() string
-	GetClientVersion() string
-	GetEventByKey(string) (entities.Event, error)
-	GetExperimentByKey(string) (entities.Experiment, error)
-	GetFeatureByKey(string) (entities.Feature, error)
-	GetGroupByID(string) (entities.Group, error)
-	GetProjectID() string
-	GetRevision() string
-}
+// MapAttributes maps the raw datafile attribute entities to SDK Attribute entities
+func MapAttributes(attributes []datafileEntities.Attribute) (attributeMap map[string]entities.Attribute, attributeKeyToIDMap map[string]string) {
 
-// ProjectConfigManager manages the config
-type ProjectConfigManager interface {
-	GetConfig() ProjectConfig
+	attributeMap = make(map[string]entities.Attribute)
+	attributeKeyToIDMap = make(map[string]string)
+	for _, attribute := range attributes {
+		_, ok := attributeMap[attribute.ID]
+		if !ok {
+			attributeMap[attribute.ID] = entities.Attribute{
+				ID:  attribute.ID,
+				Key: attribute.Key,
+			}
+			attributeKeyToIDMap[attribute.Key] = attribute.ID
+		}
+	}
+	return attributeMap, attributeKeyToIDMap
 }

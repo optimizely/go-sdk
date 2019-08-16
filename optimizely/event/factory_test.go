@@ -5,11 +5,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/optimizely/go-sdk/optimizely"
+
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/assert"
 )
 
 type TestConfig struct {
+	optimizely.ProjectConfig
 }
 
 func (TestConfig) GetEventByKey(string) (entities.Event, error) {
@@ -38,6 +41,12 @@ func (TestConfig) GetAttributeID(key string) string { // returns "" if there is 
 func (TestConfig) GetBotFiltering() bool {
 	return false
 }
+func (TestConfig) GetClientName() string {
+	return "go-sdk"
+}
+func (TestConfig) GetClientVersion() string {
+	return "1.0.0"
+}
 
 func RandomString(len int) string {
 	bytes := make([]byte, len)
@@ -56,7 +65,6 @@ var userContext = entities.UserContext{
 
 func BuildTestImpressionEvent() UserEvent {
 	config := TestConfig{}
-	context := CreateEventContext(config.GetProjectID(), config.GetRevision(), config.GetAccountID(), config.GetAnonymizeIP(), config.GetBotFiltering(), make(map[string]string))
 
 	experiment := entities.Experiment{}
 	experiment.Key = "background_experiment"
@@ -67,16 +75,14 @@ func BuildTestImpressionEvent() UserEvent {
 	variation.Key = "variation_a"
 	variation.ID = "15410990633"
 
-	impressionUserEvent := CreateImpressionUserEvent(context, experiment, variation, userContext)
+	impressionUserEvent := CreateImpressionUserEvent(config, experiment, variation, userContext)
 
 	return impressionUserEvent
 }
 
 func BuildTestConversionEvent() UserEvent {
 	config := TestConfig{}
-	context := CreateEventContext(config.GetProjectID(), config.GetRevision(), config.GetAccountID(), config.GetAnonymizeIP(), config.GetBotFiltering(), make(map[string]string))
-
-	conversionUserEvent := CreateConversionUserEvent(context, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext, make(map[string]string), make(map[string]interface{}))
+	conversionUserEvent := CreateConversionUserEvent(config, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext, make(map[string]interface{}))
 
 	return conversionUserEvent
 }
@@ -122,9 +128,8 @@ func TestCreateAndSendConversionEvent(t *testing.T) {
 func TestCreateConversionEventRevenue(t *testing.T) {
 	eventTags := map[string]interface{}{"revenue": 55.0, "value": 25.1}
 	config := TestConfig{}
-	context := CreateEventContext(config.GetProjectID(), config.GetRevision(), config.GetAccountID(), config.GetAnonymizeIP(), config.GetBotFiltering(), make(map[string]string))
 
-	conversionUserEvent := CreateConversionUserEvent(context, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext, make(map[string]string), eventTags)
+	conversionUserEvent := CreateConversionUserEvent(config, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext, eventTags)
 
 	assert.Equal(t, int64(55), *conversionUserEvent.Conversion.Revenue)
 	assert.Equal(t, 25.1, *conversionUserEvent.Conversion.Value)
