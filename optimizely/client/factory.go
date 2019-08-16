@@ -21,6 +21,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/optimizely/go-sdk/optimizely/notification"
+
 	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/config"
 	"github.com/optimizely/go-sdk/optimizely/decision"
@@ -88,6 +90,8 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 		client.cancelFunc = cancel
 	}
 
+	notificationCenter := notification.NewNotificationCenter()
+
 	if clientOptions.ProjectConfigManager != nil {
 		client.configManager = clientOptions.ProjectConfigManager
 	} else if f.SDKKey != "" {
@@ -102,7 +106,7 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 	}
 
 	// @TODO: allow decision service to be passed in via options
-	client.decisionService = decision.NewCompositeService()
+	client.decisionService = decision.NewCompositeService(notificationCenter)
 	client.isValid = true
 	return client, nil
 }
