@@ -14,54 +14,29 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package matchers
+package notification
 
-import (
-	"testing"
+import "github.com/optimizely/go-sdk/optimizely/entities"
 
-	"github.com/stretchr/testify/assert"
+// Type is the type of notification
+type Type string
 
-	"github.com/optimizely/go-sdk/optimizely/entities"
+const (
+	// Decision notification type
+	Decision Type = "decision"
 )
 
-func TestSubstringMatcher(t *testing.T) {
-	matcher := SubstringMatcher{
-		Condition: entities.Condition{
-			Match: "substring",
-			Value: "foo",
-			Name:  "string_foo",
-		},
-	}
+// DecisionNotificationType is the type of decision notification
+type DecisionNotificationType string
 
-	// Test match
-	user := entities.UserContext{
-		Attributes: map[string]interface{}{
-			"string_foo": "foobar",
-		},
-	}
+const (
+	// Feature is used when the decision is returned as part of evaluating a feature
+	Feature DecisionNotificationType = "feature"
+)
 
-	result, err := matcher.Match(user)
-	assert.NoError(t, err)
-	assert.True(t, result)
-
-	// Test no match
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"string_foo": "bar",
-		},
-	}
-
-	result, err = matcher.Match(user)
-	assert.NoError(t, err)
-	assert.False(t, result)
-
-	// Test error case
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"not_string_foo": "foo",
-		},
-	}
-
-	_, err = matcher.Match(user)
-	assert.Error(t, err)
+// DecisionNotification is a notification triggered when a decision is made for either a feature or an experiment
+type DecisionNotification struct {
+	Type         DecisionNotificationType
+	UserContext  entities.UserContext
+	DecisionInfo map[string]interface{}
 }

@@ -48,6 +48,7 @@ func (p *MockProjectConfigManager) GetConfig() optimizely.ProjectConfig {
 }
 
 type MockDecisionService struct {
+	decision.DecisionService
 	mock.Mock
 }
 

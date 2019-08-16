@@ -14,54 +14,41 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package matchers
+package notification
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-
-	"github.com/optimizely/go-sdk/optimizely/entities"
+	"sync/atomic"
 )
 
-func TestSubstringMatcher(t *testing.T) {
-	matcher := SubstringMatcher{
-		Condition: entities.Condition{
-			Match: "substring",
-			Value: "foo",
-			Name:  "string_foo",
-		},
+// Manager is a generic interface for managing notifications of a particular type
+type Manager interface {
+	AddHandler(func(interface{})) (int, error)
+	Send(message interface{})
+}
+
+// AtomicManager adds handlers atomically
+type AtomicManager struct {
+	handlers map[uint32]func(interface{})
+	counter  uint32
+}
+
+// NewAtomicManager creates a new instance of the atomic manager
+func NewAtomicManager() *AtomicManager {
+	return &AtomicManager{
+		handlers: make(map[uint32]func(interface{})),
 	}
+}
 
-	// Test match
-	user := entities.UserContext{
-		Attributes: map[string]interface{}{
-			"string_foo": "foobar",
-		},
+// AddHandler adds the given handler
+func (am *AtomicManager) AddHandler(newHandler func(interface{})) (int, error) {
+	atomic.AddUint32(&am.counter, 1)
+	am.handlers[am.counter] = newHandler
+	return int(am.counter), nil
+}
+
+// Send sends the notification to the registered handlers
+func (am *AtomicManager) Send(notification interface{}) {
+	for _, handler := range am.handlers {
+		handler(notification)
 	}
-
-	result, err := matcher.Match(user)
-	assert.NoError(t, err)
-	assert.True(t, result)
-
-	// Test no match
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"string_foo": "bar",
-		},
-	}
-
-	result, err = matcher.Match(user)
-	assert.NoError(t, err)
-	assert.False(t, result)
-
-	// Test error case
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"not_string_foo": "foo",
-		},
-	}
-
-	_, err = matcher.Match(user)
-	assert.Error(t, err)
 }

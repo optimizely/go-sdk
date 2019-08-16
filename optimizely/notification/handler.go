@@ -14,54 +14,9 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package matchers
+package notification
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-
-	"github.com/optimizely/go-sdk/optimizely/entities"
-)
-
-func TestSubstringMatcher(t *testing.T) {
-	matcher := SubstringMatcher{
-		Condition: entities.Condition{
-			Match: "substring",
-			Value: "foo",
-			Name:  "string_foo",
-		},
-	}
-
-	// Test match
-	user := entities.UserContext{
-		Attributes: map[string]interface{}{
-			"string_foo": "foobar",
-		},
-	}
-
-	result, err := matcher.Match(user)
-	assert.NoError(t, err)
-	assert.True(t, result)
-
-	// Test no match
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"string_foo": "bar",
-		},
-	}
-
-	result, err = matcher.Match(user)
-	assert.NoError(t, err)
-	assert.False(t, result)
-
-	// Test error case
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"not_string_foo": "foo",
-		},
-	}
-
-	_, err = matcher.Match(user)
-	assert.Error(t, err)
+// Handler is a generic interface for Optimizely notification listeners
+type Handler interface {
+	handle(interface{})
 }
