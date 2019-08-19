@@ -40,6 +40,8 @@ type Source string
 const (
 	// Rollout - the decision came from a rollout
 	Rollout Source = "rollout"
+	// FeatureTest - the decision came from a feature test
+	FeatureTest Source = "feature-test"
 )
 
 // Decision contains base information about a decision

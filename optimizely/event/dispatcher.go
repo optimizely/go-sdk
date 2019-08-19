@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/optimizely/go-sdk/optimizely/logging"
 	"net/http"
+
+	"github.com/optimizely/go-sdk/optimizely/logging"
 )
 
 // Dispatcher dispatches events
@@ -23,7 +24,7 @@ var dispatcherLogger = logging.GetLogger("EventDispatcher")
 func (*HTTPEventDispatcher) DispatchEvent(event LogEvent, callback func(success bool)) {
 
 	jsonValue, _ := json.Marshal(event.event)
-	resp, err := http.Post( event.endPoint, "application/json", bytes.NewBuffer(jsonValue))
+	resp, err := http.Post(event.endPoint, "application/json", bytes.NewBuffer(jsonValue))
 	// also check response codes
 	// resp.StatusCode == 400 is an error
 	success := true
