@@ -28,9 +28,14 @@ client, err := optimizelyFactory.Client()
 
 ### Feature Rollouts
 ```
+import (
+  "github.com/optimizely/go-sdk/optimizely/client"
+  "github.com/optimizely/go-sdk/optimizely/entities"
+)
+
 user := entities.UserContext{
   ID: "optimizely end user",
-  Attributes: entities.UserAttributes{
+  Attributes: map[string]interface{}{
     "state":      "California",
     "likes_donuts": true,
   },

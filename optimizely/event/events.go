@@ -2,19 +2,18 @@ package event
 
 // Context holds project-related contextual information about a UserEvent
 type Context struct {
-	Revision        string  `json:"revision"`
-	AccountID       string  `json:"account_id"`
-	ClientVersion   string  `json:"client_version"`
-	ProjectID       string  `json:"project_id"`
-	ClientName      string  `json:"client_name"`
-	AnonymizeIP     bool    `json:"anonymize_ip"`
-	BotFiltering    bool    `json:"bot_filtering"`
-	attributeKeyToIDMap map[string]string `json:"attributeKeyToIdMap"`
+	Revision      string `json:"revision"`
+	AccountID     string `json:"account_id"`
+	ClientVersion string `json:"client_version"`
+	ProjectID     string `json:"project_id"`
+	ClientName    string `json:"client_name"`
+	AnonymizeIP   bool   `json:"anonymize_ip"`
+	BotFiltering  bool   `json:"bot_filtering"`
 }
 
 // UserEvent represents a user event
 type UserEvent struct {
-	Timestamp    int64 `json:"timestamp"`
+	Timestamp    int64  `json:"timestamp"`
 	UUID         string `json:"uuid"`
 	EventContext Context
 	VisitorID    string
@@ -50,11 +49,11 @@ type LogEvent struct {
 	event    Batch
 }
 
-// Context about the event to send in batch
+// Batch - Context about the event to send in batch
 type Batch struct {
-	Revision        string  `json:"revision"`
-	AccountID       string  `json:"account_id"`
-	ClientVersion   string  `json:"client_version"`
+	Revision        string    `json:"revision"`
+	AccountID       string    `json:"account_id"`
+	ClientVersion   string    `json:"client_version"`
 	Visitors        []Visitor `json:"visitors"`
 	ProjectID       string    `json:"project_id"`
 	ClientName      string    `json:"client_name"`
