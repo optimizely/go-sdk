@@ -9,7 +9,7 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/logging"
 )
 
-const jsonContenType = "application/json"
+const jsonContentType = "application/json"
 
 // Dispatcher dispatches events
 type Dispatcher interface {
@@ -26,7 +26,7 @@ var dispatcherLogger = logging.GetLogger("EventDispatcher")
 func (*HTTPEventDispatcher) DispatchEvent(event LogEvent, callback func(success bool)) {
 
 	jsonValue, _ := json.Marshal(event.event)
-	resp, err := http.Post(event.endPoint, jsonContenType, bytes.NewBuffer(jsonValue))
+	resp, err := http.Post(event.endPoint, jsonContentType, bytes.NewBuffer(jsonValue))
 	// also check response codes
 	// resp.StatusCode == 400 is an error
 	success := true
