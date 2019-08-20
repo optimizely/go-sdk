@@ -116,6 +116,8 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 		client.decisionService = decision.NewCompositeService(notificationCenter)
 	}
 
+	// @TODO: allow event processor to be passed in
+	// @TODO: pass the context object to the event processor
 	client.eventProcessor = event.NewEventProcessor(defaultEventQueueSize, defaultEventFlushInterval)
 	client.isValid = true
 	return client, nil

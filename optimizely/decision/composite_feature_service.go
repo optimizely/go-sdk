@@ -54,7 +54,6 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 
 		experimentDecision, err := f.experimentDecisionService.GetDecision(experimentDecisionContext, userContext)
 		// only return the decision if we have a valid variation
-		// @TODO: log the decision made here as debug
 		if experimentDecision.Variation.ID != "" {
 			featureDecision := FeatureDecision{
 				Experiment: experiment,
