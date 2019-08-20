@@ -43,6 +43,7 @@ func mapVariation(rawVariation datafileEntities.Variation) entities.Variation {
 		ID:             rawVariation.ID,
 		Key:            rawVariation.Key,
 		FeatureEnabled: rawVariation.FeatureEnabled,
+		Variables:      rawVariation.Variables,
 	}
 	return variation
 }

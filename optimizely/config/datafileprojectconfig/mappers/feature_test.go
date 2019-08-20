@@ -40,7 +40,7 @@ func TestMapFeatures(t *testing.T) {
 	rolloutMap := map[string]entities.Rollout{
 		"41111": rollout,
 	}
-	featureMap := MapFeatureFlags(rawFeatureFlags, rolloutMap)
+	featureMap := MapFeatures(rawFeatureFlags, rolloutMap)
 	expectedFeatureMap := map[string]entities.Feature{
 		"test_feature_21111": entities.Feature{
 			ID:      "21111",
