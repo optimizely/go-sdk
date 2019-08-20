@@ -33,6 +33,14 @@ func NewEventProcessor(queueSize int, flushInterval time.Duration ) Processor {
 	return p
 }
 
+// NewEventProcessor returns a new instance of QueueingEventProcessor with queueSize and flushInterval
+func NewEventProcessorNSQ(queueSize int, flushInterval time.Duration ) Processor {
+	p := &QueueingEventProcessor{MaxQueueSize: queueSize, FlushInterval:flushInterval, Q:NewNSQueue(queueSize), EventDispatcher:&HTTPEventDispatcher{}}
+	p.BatchSize = 10
+	p.StartTicker()
+	return p
+}
+
 // ProcessEvent processes the given impression event
 func (p *QueueingEventProcessor) ProcessEvent(event UserEvent) {
 	p.Q.Add(event)

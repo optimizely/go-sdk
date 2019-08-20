@@ -30,6 +30,30 @@ func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 
 }
 
+func TestNSQEventProcessor_ProcessImpression(t *testing.T) {
+	processor := NewEventProcessorNSQ(100, 100)
+
+	impression := BuildTestImpressionEvent()
+
+	processor.ProcessEvent(impression)
+
+	result, ok := processor.(*QueueingEventProcessor)
+
+	if ok {
+		result.GetEvents(1)
+		assert.Equal(t, 1, result.EventsCount())
+
+		time.Sleep(2000 * time.Millisecond)
+
+		assert.NotNil(t, result.Ticker)
+
+		assert.Equal(t, 0, result.EventsCount())
+	} else {
+		assert.Equal(t, true, false)
+	}
+
+}
+
 type MockDispatcher struct {
 	Events []LogEvent
 }
