@@ -23,7 +23,7 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/logging"
 )
 
-var cfLogger = logging.GetLogger("ComposuteFeatureService")
+var cfLogger = logging.GetLogger("CompositeFeatureService")
 
 // CompositeFeatureService is the default out-of-the-box feature decision service
 type CompositeFeatureService struct {
@@ -53,7 +53,8 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 		}
 
 		experimentDecision, err := f.experimentDecisionService.GetDecision(experimentDecisionContext, userContext)
-		// only return the decision if we have a valid variation
+		// If we get an empty string Variation ID it means that the user is assigned no variation, hence we
+		// move onto Rollout evaluation
 		if experimentDecision.Variation.ID != "" {
 			featureDecision := FeatureDecision{
 				Experiment: experiment,

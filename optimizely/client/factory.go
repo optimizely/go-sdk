@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/optimizely/go-sdk/optimizely/event"
 
@@ -44,7 +45,7 @@ type OptimizelyFactory struct {
 }
 
 const defaultEventQueueSize = 10
-const defaultEventFlushInterval = 30000
+const defaultEventFlushInterval = 30 * time.Second
 
 // StaticClient returns a client initialized with a static project config
 func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
