@@ -7,7 +7,6 @@ import (
 
 	"github.com/optimizely/go-sdk/optimizely/client"
 	"github.com/optimizely/go-sdk/optimizely/entities"
-	"github.com/optimizely/go-sdk/optimizely/event"
 	"github.com/optimizely/go-sdk/optimizely/logging"
 )
 
@@ -37,18 +36,6 @@ func main() {
 	enabled, _ := app.IsFeatureEnabled("mutext_feat", user)
 	fmt.Printf("Is feature enabled? %v\n", enabled)
 
-	processor := event.NewEventProcessor(100, 100)
-
-	impression := event.UserEvent{}
-
-	processor.ProcessEvent(impression)
-
-	_, ok := processor.(*event.QueueingEventProcessor)
-
-	if ok {
-		time.Sleep(1000 * time.Millisecond)
-		fmt.Println("\nending")
-	}
 	fmt.Println()
 
 	/************* ClientWithOptions - custom context  ********************/

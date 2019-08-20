@@ -17,8 +17,13 @@
 package decision
 
 import (
+	"fmt"
+
 	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/optimizely/logging"
 )
+
+var cfLogger = logging.GetLogger("CompositeFeatureService")
 
 // CompositeFeatureService is the default out-of-the-box feature decision service
 type CompositeFeatureService struct {
@@ -29,7 +34,8 @@ type CompositeFeatureService struct {
 // NewCompositeFeatureService returns a new instance of the CompositeFeatureService
 func NewCompositeFeatureService() *CompositeFeatureService {
 	return &CompositeFeatureService{
-		rolloutDecisionService: NewRolloutService(),
+		experimentDecisionService: NewCompositeExperimentService(),
+		rolloutDecisionService:    NewRolloutService(),
 	}
 }
 
@@ -47,12 +53,24 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 		}
 
 		experimentDecision, err := f.experimentDecisionService.GetDecision(experimentDecisionContext, userContext)
-		featureDecision := FeatureDecision{
-			Experiment: experiment,
-			Decision:   experimentDecision.Decision,
-			Variation:  experimentDecision.Variation,
+		// If we get an empty string Variation ID it means that the user is assigned no variation, hence we
+		// move onto Rollout evaluation
+		if experimentDecision.Variation.ID != "" {
+			featureDecision := FeatureDecision{
+				Experiment: experiment,
+				Decision:   experimentDecision.Decision,
+				Variation:  experimentDecision.Variation,
+				Source:     FeatureTest,
+			}
+
+			cfLogger.Debug(fmt.Sprintf(
+				`Decision made for feature test with key "%s" for user "%s" with the following reason: "%s".`,
+				feature.Key,
+				userContext.ID,
+				featureDecision.Reason,
+			))
+			return featureDecision, err
 		}
-		return featureDecision, err
 	}
 
 	featureDecisionContext := FeatureDecisionContext{
@@ -61,5 +79,12 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 	}
 	featureDecision, err := f.rolloutDecisionService.GetDecision(featureDecisionContext, userContext)
 	featureDecision.Source = Rollout
+	cfLogger.Debug(fmt.Sprintf(
+		`Decision made for feature rollout with key "%s" for user "%s" with the following reason: "%s".`,
+		feature.Key,
+		userContext.ID,
+		featureDecision.Reason,
+	))
+
 	return featureDecision, err
 }
