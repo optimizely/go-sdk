@@ -2,9 +2,10 @@ package event
 
 import (
 	"errors"
-	"github.com/optimizely/go-sdk/optimizely/logging"
 	"sync"
 	"time"
+
+	"github.com/optimizely/go-sdk/optimizely/logging"
 )
 
 // Processor processes events
@@ -26,8 +27,8 @@ type QueueingEventProcessor struct {
 var pLogger = logging.GetLogger("EventProcessor")
 
 // NewEventProcessor returns a new instance of QueueingEventProcessor with queueSize and flushInterval
-func NewEventProcessor(queueSize int, flushInterval time.Duration ) Processor {
-	p := &QueueingEventProcessor{MaxQueueSize: queueSize, FlushInterval:flushInterval, Q:NewInMemoryQueue(queueSize), EventDispatcher:&HTTPEventDispatcher{}}
+func NewEventProcessor(queueSize int, flushInterval time.Duration) *QueueingEventProcessor {
+	p := &QueueingEventProcessor{MaxQueueSize: queueSize, FlushInterval: flushInterval, Q: NewInMemoryQueue(queueSize), EventDispatcher: &HTTPEventDispatcher{}}
 	p.BatchSize = 10
 	p.StartTicker()
 	return p

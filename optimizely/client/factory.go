@@ -20,6 +20,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
+	"github.com/optimizely/go-sdk/optimizely/event"
 
 	"github.com/optimizely/go-sdk/optimizely/notification"
 
@@ -40,6 +43,9 @@ type OptimizelyFactory struct {
 	SDKKey   string
 	Datafile []byte
 }
+
+const defaultEventQueueSize = 10
+const defaultEventFlushInterval = 30 * time.Second
 
 // StaticClient returns a client initialized with a static project config
 func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
@@ -111,6 +117,9 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 		client.decisionService = decision.NewCompositeService(notificationCenter)
 	}
 
+	// @TODO: allow event processor to be passed in
+	// @TODO: pass the context object to the event processor
+	client.eventProcessor = event.NewEventProcessor(defaultEventQueueSize, defaultEventFlushInterval)
 	client.isValid = true
 	return client, nil
 }
