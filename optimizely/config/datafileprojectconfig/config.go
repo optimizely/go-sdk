@@ -33,6 +33,7 @@ type DatafileProjectConfig struct {
 	anonymizeIP          bool
 	attributeKeyToIDMap  map[string]string
 	audienceMap          map[string]entities.Audience
+	attributeMap         map[string]entities.Attribute
 	botFiltering         bool
 	eventMap             map[string]entities.Event
 	experimentKeyToIDMap map[string]string
@@ -82,11 +83,14 @@ func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, erro
 		return nil, err
 	}
 
+	attributeMap, attributeKeyToIDMap := mappers.MapAttributes(datafile.Attributes)
 	experiments, experimentKeyMap := mappers.MapExperiments(datafile.Experiments)
 	rolloutMap := mappers.MapRollouts(datafile.Rollouts)
 	mergedAudiences := append(datafile.TypedAudiences, datafile.Audiences...)
 	config := &DatafileProjectConfig{
 		audienceMap:          mappers.MapAudiences(mergedAudiences),
+		attributeMap:         attributeMap,
+		attributeKeyToIDMap:  attributeKeyToIDMap,
 		experimentMap:        experiments,
 		experimentKeyToIDMap: experimentKeyMap,
 		rolloutMap:           rolloutMap,
@@ -115,6 +119,16 @@ func (c DatafileProjectConfig) GetFeatureByKey(featureKey string) (entities.Feat
 
 	errMessage := fmt.Sprintf("Feature with key %s not found", featureKey)
 	return entities.Feature{}, errors.New(errMessage)
+}
+
+// GetAttributeByKey returns the attribute with the given key
+func (c DatafileProjectConfig) GetAttributeByKey(key string) (entities.Attribute, error) {
+	if attributeID, ok := c.attributeKeyToIDMap[key]; ok {
+		return c.attributeMap[attributeID], nil
+	}
+
+	errMessage := fmt.Sprintf(`Attribute with key "%s" not found`, key)
+	return entities.Attribute{}, errors.New(errMessage)
 }
 
 // GetFeatureList returns an array of all the features
