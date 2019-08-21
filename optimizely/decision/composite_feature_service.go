@@ -44,7 +44,7 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 	feature := decisionContext.Feature
 
 	// Check if user is bucketed in feature experiment
-	if f.experimentDecisionService != nil {
+	if f.experimentDecisionService != nil && len(feature.FeatureExperiments) > 0 {
 		// @TODO: add in a feature decision service that takes into account multiple experiments (via group mutex)
 		experiment := feature.FeatureExperiments[0]
 		experimentDecisionContext := ExperimentDecisionContext{
