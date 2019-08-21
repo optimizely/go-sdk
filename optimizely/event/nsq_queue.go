@@ -22,15 +22,40 @@ var done = make(chan bool)
 type NSQQueue struct {
 	p *nsq.Producer
 	c *snsq.Consumer
-	messages []snsq.Message
+	messages Queue
 }
 
 // Get returns queue for given count size
 func (i *NSQQueue) Get(count int) []interface{} {
-	message := <- i.c.Messages()
-	i.messages = append(i.messages, message)
-	event := i.decodeMessage(message.Body)
-	return []interface{}{event}
+
+	events := []interface{}{}
+
+	messages := i.messages.Get(count)
+	for _, message := range messages {
+		mess, ok := message.(snsq.Message)
+		if !ok {
+			continue
+		}
+		events = append(events, i.decodeMessage(mess.Body))
+	}
+
+	return events
+	//for {
+	//	select {
+	//	case res := <-i.c.Messages():
+	//		i.messages = append(i.messages, res)
+	//		event := i.decodeMessage(res.Body)
+	//		events = append(events, event)
+	//		if len(events) == count {
+	//			return events
+	//		}
+	//	case <-time.After(30 * time.Second):
+	//		fmt.Println("timeout 30 seconds")
+	//		fmt.Println(len(events))
+	//		return events
+	//	}
+	//}
+	return events
 }
 
 // Add appends item to queue
@@ -59,16 +84,15 @@ func (i *NSQQueue) decodeMessage(body []byte) UserEvent {
 
 // Remove removes item from queue and returns elements slice
 func (i *NSQQueue) Remove(count int) []interface{} {
-	if len(i.messages) < count {
-		count = len(i.messages)
-	}
-
 	userEvents := make([]interface{},0, count)
-	events := i.messages[:count]
-	i.messages = i.messages[count:]
+	events := i.messages.Remove(count)
 	for _,message := range events {
-		userEvent := i.decodeMessage(message.Body)
-		message.Finish()
+		mess, ok := message.(snsq.Message)
+		if !ok {
+			continue
+		}
+		userEvent := i.decodeMessage(mess.Body)
+		mess.Finish()
 		userEvents = append(userEvents, userEvent)
 	}
 	return userEvents
@@ -92,7 +116,7 @@ func (i *NSQQueue) Remove(count int) []interface{} {
 
 // Size returns size of queue
 func (i *NSQQueue) Size() int {
-	return len(i.messages)
+	return i.messages.Size()
 }
 
 // NewNSQueue returns new NSQ based queue with given queueSize
@@ -147,13 +171,13 @@ func NewNSQueue(queueSize int) Queue {
 		MaxInFlight: queueSize,
 	})
 
-	i := &NSQQueue{p:p,c:consumer, messages:[]snsq.Message{}}
+	i := &NSQQueue{p:p,c:consumer, messages:NewInMemoryQueue(queueSize)}
 
-	//go func() {
-	//	for message := range i.c.Messages() {
-	//		i.messages.Add(message)
-	//	}
-	//}()
+	go func() {
+		for message := range i.c.Messages() {
+			i.messages.Add(message)
+		}
+	}()
 
 	return i
 }

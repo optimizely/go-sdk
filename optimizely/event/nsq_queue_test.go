@@ -9,19 +9,22 @@ import (
 func TestNSQQueue_Add_Size_Remove(t *testing.T) {
 	q := NewNSQueue(5)
 
-	q.Add(1)
-	q.Add(2)
-	q.Add(3)
+	impression := BuildTestImpressionEvent()
+	conversion := BuildTestConversionEvent()
+
+	q.Add(impression)
+	q.Add(impression)
+	q.Add(conversion)
 
 	time.Sleep(2000 * time.Millisecond)
 
-	items1 := q.Get(1)
+	items1 := q.Get(2)
 
-	assert.Equal(t, 1, len(items1))
+	assert.Equal(t, 2, len(items1))
 
 	q.Remove(1)
 
-	items2 := q.Get(5)
+	items2 := q.Get(1)
 
 	assert.True(t, len(items2) != 0)
 
