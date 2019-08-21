@@ -6,13 +6,10 @@ import (
 	"github.com/nsqio/go-nsq"
 	"github.com/nsqio/nsq/nsqd"
 	snsq "github.com/segmentio/nsq-go"
-	"time"
 )
 
-const NSQ_MAX_IN_FLIGHT int = 100 // Ideally match http.DefaultTransport.MaxIdleConns
 const NSQ_CONSUMER_CHANNEL string = "optimizely"
 const NSQ_LISTEN_SPEC string = "localhost:4150"
-const NSQ_REQUEUE_WAIT time.Duration = time.Duration(30) * time.Second
 const NSQ_TOPIC string = "user_event"
 
 var embedded_nsqd *nsqd.NSQD = nil
@@ -40,22 +37,6 @@ func (i *NSQQueue) Get(count int) []interface{} {
 	}
 
 	return events
-	//for {
-	//	select {
-	//	case res := <-i.c.Messages():
-	//		i.messages = append(i.messages, res)
-	//		event := i.decodeMessage(res.Body)
-	//		events = append(events, event)
-	//		if len(events) == count {
-	//			return events
-	//		}
-	//	case <-time.After(30 * time.Second):
-	//		fmt.Println("timeout 30 seconds")
-	//		fmt.Println(len(events))
-	//		return events
-	//	}
-	//}
-	return events
 }
 
 // Add appends item to queue
@@ -65,12 +46,10 @@ func (i *NSQQueue) Add(item interface{}) {
 		// cannot add non-user events
 		return
 	}
-//	go func() {
-		buf := new(bytes.Buffer)
-		enc := gob.NewEncoder(buf)
-		enc.Encode(event)
-		i.p.Publish(NSQ_TOPIC, buf.Bytes())
-//	}()
+	buf := new(bytes.Buffer)
+	enc := gob.NewEncoder(buf)
+	enc.Encode(event)
+	i.p.Publish(NSQ_TOPIC, buf.Bytes())
 }
 
 func (i *NSQQueue) decodeMessage(body []byte) UserEvent {
@@ -97,22 +76,6 @@ func (i *NSQQueue) Remove(count int) []interface{} {
 	}
 	return userEvents
 }
-
-//func (h *NSQQueue) HandleMessage(m *nsq.Message) error {
-//	if len(m.Body) == 0 {
-//		// returning an error results in the message being re-enqueued
-//		// a REQ is sent to nsqd
-//		//return errors.New("body is blank re-enqueue message")
-//	}
-//
-//	h.messages = append(h.messages, m)
-//	// Let's log our message!
-//	//log.Print(m.Body)
-//
-//	// Returning nil signals to the consumer that the message has
-//	// been handled with success. A FIN is sent to nsqd
-//	return nil
-//}
 
 // Size returns size of queue
 func (i *NSQQueue) Size() int {
@@ -147,22 +110,6 @@ func NewNSQueue(queueSize int) Queue {
 	if err != nil {
 		//log.Fatal(err)
 	}
-
-	//c, err := nsq.NewConsumer(NSQ_TOPIC, "NSQQueue", nsqConfig)
-	//if err != nil {
-	//	//log.Panic("Could not create consumer")
-	//}
-	//
-	//i := &NSQQueue{p:p,c:c, messages:[]*nsq.Message{}}
-	//
-	//c.ChangeMaxInFlight(1)
-	//c.AddConcurrentHandlers(i, 1)
-	//
-	//err = c.ConnectToNSQD(NSQ_LISTEN_SPEC)
-	//
-	//if err != nil {
-	//	// problem
-	//}
 
 	consumer, _ := snsq.StartConsumer(snsq.ConsumerConfig{
 		Topic:       NSQ_TOPIC,
