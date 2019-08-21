@@ -83,8 +83,8 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 		return result, err
 	}
 
-	if featureDecision.Variation.FeatureEnabled == true {
-		result = true
+	result = (featureDecision.Variation.FeatureEnabled == true)
+	if result {
 		logger.Info(fmt.Sprintf(`Feature "%s" is enabled for user "%s".`, featureKey, userID))
 	} else {
 		logger.Info(fmt.Sprintf(`Feature "%s" is not enabled for user "%s".`, featureKey, userID))
