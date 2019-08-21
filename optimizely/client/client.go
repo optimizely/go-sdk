@@ -23,6 +23,8 @@ import (
 	"reflect"
 	"runtime/debug"
 
+	"github.com/optimizely/go-sdk/optimizely/event"
+
 	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
@@ -35,6 +37,7 @@ var logger = logging.GetLogger("Client")
 type OptimizelyClient struct {
 	configManager   optimizely.ProjectConfigManager
 	decisionService decision.DecisionService
+	eventProcessor  event.Processor
 	isValid         bool
 
 	cancelFunc context.CancelFunc
@@ -80,16 +83,18 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 		return result, err
 	}
 
-	logger.Debug(fmt.Sprintf(`Decision made for feature "%s" for user "%s" with the following reason: "%s". Source: "%s".`, featureKey, userID, featureDecision.Reason, featureDecision.Source))
-
-	if featureDecision.Variation.FeatureEnabled == true {
-		result = true
+	result = (featureDecision.Variation.FeatureEnabled == true)
+	if result {
 		logger.Info(fmt.Sprintf(`Feature "%s" is enabled for user "%s".`, featureKey, userID))
 	} else {
 		logger.Info(fmt.Sprintf(`Feature "%s" is not enabled for user "%s".`, featureKey, userID))
 	}
 
-	// @TODO(mng): send impression event
+	if featureDecision.Source == decision.FeatureTest {
+		// send impression event for feature tests
+		impressionEvent := event.CreateImpressionUserEvent(projectConfig, featureDecision.Experiment, featureDecision.Variation, userContext)
+		o.eventProcessor.ProcessEvent(impressionEvent)
+	}
 	return result, nil
 }
 

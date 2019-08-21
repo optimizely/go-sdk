@@ -1,11 +1,11 @@
 package event
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
-)
 
+	"github.com/stretchr/testify/assert"
+)
 
 func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 	processor := NewEventProcessor(100, 100)
@@ -14,19 +14,13 @@ func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 
 	processor.ProcessEvent(impression)
 
-	result, ok := processor.(*QueueingEventProcessor)
+	assert.Equal(t, 1, processor.EventsCount())
 
-	if ok {
-		assert.Equal(t, 1, result.EventsCount())
+	time.Sleep(200 * time.Millisecond)
 
-		time.Sleep(2000 * time.Millisecond)
+	assert.NotNil(t, processor.Ticker)
 
-		assert.NotNil(t, result.Ticker)
-
-		assert.Equal(t, 0, result.EventsCount())
-	} else {
-		assert.Equal(t, true, false)
-	}
+	assert.Equal(t, 0, processor.EventsCount())
 
 }
 
@@ -57,7 +51,7 @@ type MockDispatcher struct {
 	Events []LogEvent
 }
 
-func (f *MockDispatcher)DispatchEvent(event LogEvent, callback func(success bool)) {
+func (f *MockDispatcher) DispatchEvent(event LogEvent, callback func(success bool)) {
 	f.Events = append(f.Events, event)
 	callback(true)
 }
@@ -105,7 +99,7 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 
 	assert.Equal(t, 4, processor.EventsCount())
 
-	time.Sleep(2000 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 
 	assert.NotNil(t, processor.Ticker)
 
@@ -136,7 +130,7 @@ func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 
 	assert.Equal(t, 4, processor.EventsCount())
 
-	time.Sleep(2000 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 
 	assert.NotNil(t, processor.Ticker)
 
@@ -167,7 +161,7 @@ func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 
 	assert.Equal(t, 4, processor.EventsCount())
 
-	time.Sleep(2000 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 
 	assert.NotNil(t, processor.Ticker)
 
