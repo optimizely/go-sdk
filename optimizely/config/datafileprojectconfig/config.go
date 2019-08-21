@@ -84,17 +84,17 @@ func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, erro
 	}
 
 	attributeMap, attributeKeyToIDMap := mappers.MapAttributes(datafile.Attributes)
-	experiments, experimentKeyMap := mappers.MapExperiments(datafile.Experiments)
+	experimentMap, experimentKeyMap := mappers.MapExperiments(datafile.Experiments)
 	rolloutMap := mappers.MapRollouts(datafile.Rollouts)
 	mergedAudiences := append(datafile.TypedAudiences, datafile.Audiences...)
 	config := &DatafileProjectConfig{
 		audienceMap:          mappers.MapAudiences(mergedAudiences),
 		attributeMap:         attributeMap,
 		attributeKeyToIDMap:  attributeKeyToIDMap,
-		experimentMap:        experiments,
+		experimentMap:        experimentMap,
 		experimentKeyToIDMap: experimentKeyMap,
 		rolloutMap:           rolloutMap,
-		featureMap:           mappers.MapFeatureFlags(datafile.FeatureFlags, rolloutMap),
+		featureMap:           mappers.MapFeatureFlags(datafile.FeatureFlags, rolloutMap, experimentMap),
 	}
 
 	logger.Info("Datafile is valid.")
