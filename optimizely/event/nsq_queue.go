@@ -95,12 +95,13 @@ func NewNSQueue(queueSize int) Queue {
 			// line args and does something similar
 			if embedded_nsqd == nil {
 				opts := nsqd.NewOptions()
-				embedded_nsqd, _ := nsqd.New(opts)
-				embedded_nsqd.Main()
-
-				// wait until we are told to continue and exit
-				<-done
-				embedded_nsqd.Exit()
+				embedded_nsqd, err := nsqd.New(opts)
+				if err == nil {
+					embedded_nsqd.Main()
+					// wait until we are told to continue and exit
+					<-done
+					embedded_nsqd.Exit()
+				}
 			}
 		}()
 	}
