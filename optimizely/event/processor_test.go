@@ -8,23 +8,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
-// 	ctx := context.Background()
+func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
+	ctx := context.Background()
 
-// 	processor := NewEventProcessor(ctx, 100, 100)
+	processor := NewEventProcessor(ctx, 100, 100)
 
-// 	impression := BuildTestImpressionEvent()
+	impression := BuildTestImpressionEvent()
 
-// 	processor.ProcessEvent(impression)
+	processor.ProcessEvent(impression)
 
-// 	assert.Equal(t, 1, processor.EventsCount())
+	assert.Equal(t, 1, processor.EventsCount())
 
-// 	time.Sleep(200 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 
-// 	assert.NotNil(t, processor.Ticker)
+	assert.NotNil(t, processor.Ticker)
 
-// 	assert.Equal(t, 0, processor.EventsCount())
-// }
+	assert.Equal(t, 0, processor.EventsCount())
+}
 
 type MockDispatcher struct {
 	Events []LogEvent
