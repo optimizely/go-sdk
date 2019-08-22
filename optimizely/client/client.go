@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime/debug"
+	"strconv"
 
 	"github.com/optimizely/go-sdk/optimizely/event"
 
@@ -223,7 +224,7 @@ func (o *OptimizelyClient) getFeatureVariable(valueType interface{}, featureKey 
 		return nil, err
 	}
 
-	var featureValue interface{} = variable.DefaultValue
+	var featureValue = variable.DefaultValue
 
 	feature, err := projectConfig.GetFeatureByKey(featureKey)
 	if err != nil {
@@ -250,28 +251,29 @@ func (o *OptimizelyClient) getFeatureVariable(valueType interface{}, featureKey 
 	switch valueType.(type) {
 	case string:
 		typeName = "string"
-		convertedValue, ok := featureValue.(string)
-		if ok {
-			valueParsed = convertedValue
-		}
+		valueParsed = featureValue
+		break
 	case int:
 		typeName = "integer"
-		convertedValue, ok := featureValue.(int)
-		if ok {
+		convertedValue, err := strconv.Atoi(featureValue)
+		if err == nil {
 			valueParsed = convertedValue
 		}
+		break
 	case float64:
 		typeName = "double"
-		convertedValue, ok := featureValue.(float64)
-		if ok {
+		convertedValue, err := strconv.ParseFloat(featureValue, 64)
+		if err == nil {
 			valueParsed = convertedValue
 		}
+		break
 	case bool:
 		typeName = "boolean"
-		convertedValue, ok := featureValue.(bool)
-		if ok {
+		convertedValue, err := strconv.ParseBool(featureValue)
+		if err == nil {
 			valueParsed = convertedValue
 		}
+		break
 	default:
 		break
 	}
