@@ -149,10 +149,10 @@ func (o *OptimizelyClient) Track(userContext entities.UserContext, eventKey stri
 		}
 	}()
 
-	event, err := o.configManager.GetConfig().GetEventByKey(eventKey)
+	configEvent, err := o.configManager.GetConfig().GetEventByKey(eventKey)
 
 	if err == nil {
-		userEvent := event.CreateConversionUserEvent(o.configManager.GetConfig(), event, userContext, eventTags)
+		userEvent := event.CreateConversionUserEvent(o.configManager.GetConfig(), configEvent, userContext, eventTags)
 		o.eventProcessor.ProcessEvent(userEvent)
 	} else {
 		logger.Error("Error getting event", err)
