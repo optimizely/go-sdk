@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/mappers"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/optimizely/go-sdk/optimizely/logging"
@@ -39,6 +40,7 @@ type DatafileProjectConfig struct {
 	experimentKeyToIDMap map[string]string
 	experimentMap        map[string]entities.Experiment
 	featureMap           map[string]entities.Feature
+	featureFlagMap       map[string]datafileEntities.FeatureFlag
 	groupMap             map[string]entities.Group
 	projectID            string
 	revision             string
@@ -94,7 +96,8 @@ func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, erro
 		experimentMap:        experimentMap,
 		experimentKeyToIDMap: experimentKeyMap,
 		rolloutMap:           rolloutMap,
-		featureMap:           mappers.MapFeatureFlags(datafile.FeatureFlags, rolloutMap, experimentMap),
+		featureMap:           mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentMap),
+		featureFlagMap:       mappers.MapFeatureFlags(datafile.FeatureFlags),
 	}
 
 	logger.Info("Datafile is valid.")
@@ -119,6 +122,16 @@ func (c DatafileProjectConfig) GetFeatureByKey(featureKey string) (entities.Feat
 
 	errMessage := fmt.Sprintf("Feature with key %s not found", featureKey)
 	return entities.Feature{}, errors.New(errMessage)
+}
+
+// GetFeatureFlagByKey returns the featureflag with the given key
+func (c DatafileProjectConfig) GetFeatureFlagByKey(featureKey string) (datafileEntities.FeatureFlag, error) {
+	if feature, ok := c.featureFlagMap[featureKey]; ok {
+		return feature, nil
+	}
+
+	errMessage := fmt.Sprintf("FeatureFlag with key %s not found", featureKey)
+	return datafileEntities.FeatureFlag{}, errors.New(errMessage)
 }
 
 // GetAttributeByKey returns the attribute with the given key

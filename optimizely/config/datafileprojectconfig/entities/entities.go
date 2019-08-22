@@ -16,6 +16,10 @@
 
 package entities
 
+import (
+	"fmt"
+)
+
 // Audience represents an Audience object from the Optimizely datafile
 type Audience struct {
 	ID         string      `json:"id"`
@@ -51,6 +55,20 @@ type FeatureFlag struct {
 	Variables     []Variable `json:"variables"`
 }
 
+// GetVariable returns variable for key from feature flag
+func (f *FeatureFlag) GetVariable(key string) (Variable, error) {
+	var variable Variable
+	var err = fmt.Errorf("Variable with key %s not found", key)
+	for _, v := range f.Variables {
+		if v.Key == key {
+			variable = v
+			err = nil
+			break
+		}
+	}
+	return variable, err
+}
+
 // Variable represents a Variable object from the Optimizely datafile
 type Variable struct {
 	DefaultValue string `json:"defaultValue"`
@@ -67,10 +85,16 @@ type trafficAllocation struct {
 
 // Variation represents an experiment variation from the Optimizely datafile
 type Variation struct {
-	ID string `json:"id"`
-	// @TODO(mng): include variables
-	Key            string `json:"key"`
-	FeatureEnabled bool   `json:"featureEnabled"`
+	ID             string              `json:"id"`
+	Variables      []VariationVariable `json:"variables"`
+	Key            string              `json:"key"`
+	FeatureEnabled bool                `json:"featureEnabled"`
+}
+
+// VariationVariable represents a Variable object from the Variation
+type VariationVariable struct {
+	ID    string `json:"id"`
+	Value string `json:"value"`
 }
 
 // Event represents an event from the Optimizely datafile
