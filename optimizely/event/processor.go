@@ -1,7 +1,9 @@
 package event
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -22,13 +24,20 @@ type QueueingEventProcessor struct {
 	Mux             sync.Mutex
 	Ticker          *time.Ticker
 	EventDispatcher Dispatcher
+	ctx             context.Context
 }
 
 var pLogger = logging.GetLogger("EventProcessor")
 
 // NewEventProcessor returns a new instance of QueueingEventProcessor with queueSize and flushInterval
-func NewEventProcessor(queueSize int, flushInterval time.Duration) *QueueingEventProcessor {
-	p := &QueueingEventProcessor{MaxQueueSize: queueSize, FlushInterval: flushInterval, Q: NewInMemoryQueue(queueSize), EventDispatcher: &HTTPEventDispatcher{}}
+func NewEventProcessor(ctx context.Context, queueSize int, flushInterval time.Duration) *QueueingEventProcessor {
+	p := &QueueingEventProcessor{
+		MaxQueueSize:    queueSize,
+		FlushInterval:   flushInterval,
+		Q:               NewInMemoryQueue(queueSize),
+		EventDispatcher: &HTTPEventDispatcher{},
+		ctx:             ctx,
+	}
 	p.BatchSize = 10
 	p.StartTicker()
 	return p
@@ -67,8 +76,15 @@ func (p *QueueingEventProcessor) StartTicker() {
 	}
 	p.Ticker = time.NewTicker(p.FlushInterval * time.Millisecond)
 	go func() {
-		for range p.Ticker.C {
-			p.FlushEvents()
+		for {
+			select {
+			case <-p.Ticker.C:
+				p.FlushEvents()
+			case <-p.ctx.Done():
+				pLogger.Debug("Event processor stopped, flushing events.")
+				p.FlushEvents()
+				return
+			}
 		}
 	}()
 }
@@ -114,6 +130,7 @@ func (p *QueueingEventProcessor) FlushEvents() {
 						batchEventCount = 1
 					} else if !p.canBatch(&batchEvent, userEvent) {
 						// this could happen if the project config was updated for instance.
+						fmt.Printf("Can batch? %+v ------- %+v", batchEvent, userEvent)
 						pLogger.Info("Can't batch last event. Sending current batch.")
 						break
 					} else {
