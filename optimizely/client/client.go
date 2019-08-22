@@ -137,58 +137,58 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 
 // GetFeatureVariableBoolean returns bool feature variable value
 func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey string, variableKey string, userContext entities.UserContext) (value bool, err error) {
-	val1, err1 := o.getFeatureVariable(false, featureKey, variableKey, userContext)
-	if err1 == nil {
-		switch val1.(type) {
+	val, err := o.getFeatureVariable(false, featureKey, variableKey, userContext)
+	if err == nil {
+		switch val.(type) {
 		case bool:
-			return val1.(bool), err1
+			return val.(bool), err
 		default:
 			break
 		}
 	}
-	return false, err1
+	return false, err
 }
 
 // GetFeatureVariableDouble returns double feature variable value
 func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey string, variableKey string, userContext entities.UserContext) (value float64, err error) {
-	val1, err1 := o.getFeatureVariable(float64(0), featureKey, variableKey, userContext)
-	if err1 == nil {
-		switch val1.(type) {
+	val, err := o.getFeatureVariable(float64(0), featureKey, variableKey, userContext)
+	if err == nil {
+		switch val.(type) {
 		case float64:
-			return val1.(float64), err1
+			return val.(float64), err
 		default:
 			break
 		}
 	}
-	return 0, err1
+	return 0, err
 }
 
 // GetFeatureVariableInteger returns integer feature variable value
 func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey string, variableKey string, userContext entities.UserContext) (value int, err error) {
-	val1, err1 := o.getFeatureVariable(int(0), featureKey, variableKey, userContext)
-	if err1 == nil {
-		switch val1.(type) {
+	val, err := o.getFeatureVariable(int(0), featureKey, variableKey, userContext)
+	if err == nil {
+		switch val.(type) {
 		case int:
-			return val1.(int), err1
+			return val.(int), err
 		default:
 			break
 		}
 	}
-	return 0, err1
+	return 0, err
 }
 
 // GetFeatureVariableString returns string feature variable value
 func (o *OptimizelyClient) GetFeatureVariableString(featureKey string, variableKey string, userContext entities.UserContext) (value string, err error) {
-	val1, err1 := o.getFeatureVariable("", featureKey, variableKey, userContext)
-	if err1 == nil {
-		switch val1.(type) {
+	val, err := o.getFeatureVariable("", featureKey, variableKey, userContext)
+	if err == nil {
+		switch val.(type) {
 		case string:
-			return val1.(string), err1
+			return val.(string), err
 		default:
 			break
 		}
 	}
-	return "", err1
+	return "", err
 }
 
 func (o *OptimizelyClient) getFeatureVariable(valueType interface{}, featureKey string, variableKey string, userContext entities.UserContext) (value interface{}, err error) {
