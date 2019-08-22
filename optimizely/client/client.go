@@ -133,6 +133,36 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 	return enabledFeatures, nil
 }
 
+func (o *OptimizelyClient) Track(userContext entities.UserContext, eventKey string, eventTags map[string]interface{}) error {
+	if !o.isValid {
+		errorMessage := "Optimizely instance is not valid. Failing GetEnabledFeatures."
+		err := errors.New(errorMessage)
+		logger.Error(errorMessage, nil)
+		return err
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			errorMessage := fmt.Sprintf(`Optimizely SDK is panicking with the error "%s"`, string(debug.Stack()))
+			err := errors.New(errorMessage)
+			logger.Error(errorMessage, err)
+		}
+	}()
+
+	event, err := o.configManager.GetConfig().GetEventByKey(eventKey)
+
+	if err != nil {
+		event.
+		userEvent := event.CreateConversionUserEvent(o.configManager.GetConfig(), event, userContext, eventTags)
+		o.eventProcessor.ProcessEvent(userEvent)
+	} else {
+		logger.Error("Error getting event", err)
+		return err
+	}
+
+	return nil
+}
+
 // Close closes the Optimizely instance and stops any ongoing tasks from its children components
 func (o *OptimizelyClient) Close() {
 	o.cancelFunc()
