@@ -16,14 +16,10 @@
 
 package entities
 
-import (
-	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
-)
-
 // Variation represents a variation in the experiment
 type Variation struct {
 	ID             string
-	Variables      []datafileEntities.VariationVariable
+	Variables      []VariationVariable
 	Key            string
 	FeatureEnabled bool
 }
@@ -44,4 +40,10 @@ type Experiment struct {
 type Range struct {
 	EntityID   string
 	EndOfRange int
+}
+
+// VariationVariable represents a Variable object from the Variation
+type VariationVariable struct {
+	ID    string
+	Value string
 }

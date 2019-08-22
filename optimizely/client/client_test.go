@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/optimizely/go-sdk/optimizely"
-	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/mock"
@@ -44,9 +43,9 @@ func (c *MockProjectConfig) GetFeatureList() []entities.Feature {
 	return args.Get(0).([]entities.Feature)
 }
 
-func (c *MockProjectConfig) GetFeatureFlagByKey(featureKey string) (datafileEntities.FeatureFlag, error) {
-	args := c.Called(featureKey)
-	return args.Get(0).(datafileEntities.FeatureFlag), args.Error(1)
+func (c *MockProjectConfig) GetVariableByKey(featureKey string, variableKey string) (entities.Variable, error) {
+	args := c.Called(featureKey, variableKey)
+	return args.Get(0).(entities.Variable), args.Error(1)
 }
 
 type MockProjectConfigManager struct {
@@ -306,14 +305,14 @@ func TestGetEnabledFeaturesPanic(t *testing.T) {
 
 func TestGetFeatureVariableStringWithValidValue(t *testing.T) {
 	testFeatureKey := "test_feature_key"
-	testFeatureFlagKey := "test_feature_flag_key"
+	testVariableKey := "test_feature_flag_key"
 	testVariableValue := "teststring"
 	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testVariationVariable := datafileEntities.VariationVariable{
+	testVariationVariable := entities.VariationVariable{
 		ID:    "1",
 		Value: testVariableValue,
 	}
-	testVariable := datafileEntities.Variable{
+	testVariable := entities.Variable{
 		DefaultValue: "default",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
@@ -324,8 +323,7 @@ func TestGetFeatureVariableStringWithValidValue(t *testing.T) {
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
-	testFeatureFlag := getTestFeatureFlag(testFeatureFlagKey, testVariable)
-	mockConfig := getMockConfig(testFeatureKey, testFeature, testFeatureFlag)
+	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
 	mockConfigManager.On("GetConfig").Return(mockConfig)
 
@@ -343,7 +341,7 @@ func TestGetFeatureVariableStringWithValidValue(t *testing.T) {
 		decisionService: mockDecisionService,
 		isValid:         true,
 	}
-	result, _ := client.GetFeatureVariableString(testFeatureKey, testFeatureFlagKey, testUserContext)
+	result, _ := client.GetFeatureVariableString(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, testVariableValue, result)
 	mockConfig.AssertExpectations(t)
 	mockConfigManager.AssertExpectations(t)
@@ -352,14 +350,14 @@ func TestGetFeatureVariableStringWithValidValue(t *testing.T) {
 
 func TestGetFeatureVariableStringWithInvalidValueType(t *testing.T) {
 	testFeatureKey := "test_feature_key"
-	testFeatureFlagKey := "test_feature_flag_key"
+	testVariableKey := "test_feature_flag_key"
 	testVariableValue := "true"
 	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testVariationVariable := datafileEntities.VariationVariable{
+	testVariationVariable := entities.VariationVariable{
 		ID:    "1",
 		Value: testVariableValue,
 	}
-	testVariable := datafileEntities.Variable{
+	testVariable := entities.Variable{
 		DefaultValue: "default",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
@@ -370,8 +368,7 @@ func TestGetFeatureVariableStringWithInvalidValueType(t *testing.T) {
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
-	testFeatureFlag := getTestFeatureFlag(testFeatureFlagKey, testVariable)
-	mockConfig := getMockConfig(testFeatureKey, testFeature, testFeatureFlag)
+	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
 	mockConfigManager.On("GetConfig").Return(mockConfig)
 
@@ -389,7 +386,7 @@ func TestGetFeatureVariableStringWithInvalidValueType(t *testing.T) {
 		decisionService: mockDecisionService,
 		isValid:         true,
 	}
-	result, err := client.GetFeatureVariableString(testFeatureKey, testFeatureFlagKey, testUserContext)
+	result, err := client.GetFeatureVariableString(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, "", result)
 	assert.NotNil(t, err)
 	mockConfig.AssertExpectations(t)
@@ -399,14 +396,14 @@ func TestGetFeatureVariableStringWithInvalidValueType(t *testing.T) {
 
 func TestGetFeatureVariableStringReturnsDefaultValueIfFeatureNotEnabled(t *testing.T) {
 	testFeatureKey := "test_feature_key"
-	testFeatureFlagKey := "test_feature_flag_key"
+	testVariableKey := "test_feature_flag_key"
 	testVariableValue := "teststring"
 	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testVariationVariable := datafileEntities.VariationVariable{
+	testVariationVariable := entities.VariationVariable{
 		ID:    "1",
 		Value: testVariableValue,
 	}
-	testVariable := datafileEntities.Variable{
+	testVariable := entities.Variable{
 		DefaultValue: "defaultString",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
@@ -417,8 +414,7 @@ func TestGetFeatureVariableStringReturnsDefaultValueIfFeatureNotEnabled(t *testi
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
-	testFeatureFlag := getTestFeatureFlag(testFeatureFlagKey, testVariable)
-	mockConfig := getMockConfig(testFeatureKey, testFeature, testFeatureFlag)
+	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
 	mockConfigManager.On("GetConfig").Return(mockConfig)
 
@@ -436,7 +432,7 @@ func TestGetFeatureVariableStringReturnsDefaultValueIfFeatureNotEnabled(t *testi
 		decisionService: mockDecisionService,
 		isValid:         true,
 	}
-	result, err := client.GetFeatureVariableString(testFeatureKey, testFeatureFlagKey, testUserContext)
+	result, err := client.GetFeatureVariableString(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, "defaultString", result)
 	assert.Nil(t, err)
 	mockConfig.AssertExpectations(t)
@@ -457,8 +453,8 @@ func TestGetFeatureVariableErrorCases(t *testing.T) {
 	}
 	_, err1 := client.GetFeatureVariableString("test_feature_key", "test_variable_key", testUserContext)
 	assert.Error(t, err1)
-	mockConfigManager.AssertNotCalled(t, "GetFeatureFlagByKey")
 	mockConfigManager.AssertNotCalled(t, "GetFeatureByKey")
+	mockConfigManager.AssertNotCalled(t, "GetVariableByKey")
 	mockDecisionService.AssertNotCalled(t, "GetFeatureDecision")
 }
 
@@ -496,29 +492,19 @@ func getTestFeatureDecision(experiment entities.Experiment, variation entities.V
 	}
 }
 
-func getTestVariationWithFeatureVariable(featureEnabled bool, featureVariable datafileEntities.VariationVariable) entities.Variation {
+func getTestVariationWithFeatureVariable(featureEnabled bool, variable entities.VariationVariable) entities.Variation {
 	return entities.Variation{
 		ID:             "22222",
 		Key:            "22222",
 		FeatureEnabled: featureEnabled,
-		Variables:      []datafileEntities.VariationVariable{featureVariable},
+		Variables:      []entities.VariationVariable{variable},
 	}
 }
 
-func getTestFeatureFlag(featureFlagKey string, variable datafileEntities.Variable) datafileEntities.FeatureFlag {
-	return datafileEntities.FeatureFlag{
-		ID:            "21111",
-		Key:           featureFlagKey,
-		RolloutID:     "41111",
-		ExperimentIDs: []string{"31111", "31112"},
-		Variables:     []datafileEntities.Variable{variable},
-	}
-}
-
-func getMockConfig(featureKey string, feature entities.Feature, featureFlag datafileEntities.FeatureFlag) *MockProjectConfig {
+func getMockConfig(featureKey string, variableKey string, feature entities.Feature, variable entities.Variable) *MockProjectConfig {
 	mockConfig := new(MockProjectConfig)
 	mockConfig.On("GetFeatureByKey", featureKey).Return(feature, nil)
-	mockConfig.On("GetFeatureFlagByKey", featureKey).Return(featureFlag, nil)
+	mockConfig.On("GetVariableByKey", featureKey, variableKey).Return(variable, nil)
 	return mockConfig
 }
 

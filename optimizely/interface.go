@@ -17,7 +17,6 @@
 package optimizely
 
 import (
-	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
@@ -33,7 +32,7 @@ type ProjectConfig interface {
 	GetEventByKey(string) (entities.Event, error)
 	GetExperimentByKey(string) (entities.Experiment, error)
 	GetFeatureByKey(string) (entities.Feature, error)
-	GetFeatureFlagByKey(string) (datafileEntities.FeatureFlag, error)
+	GetVariableByKey(featureKey string, variableKey string) (entities.Variable, error)
 	GetFeatureList() []entities.Feature
 	GetGroupByID(string) (entities.Group, error)
 	GetProjectID() string

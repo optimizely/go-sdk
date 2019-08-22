@@ -16,10 +16,6 @@
 
 package entities
 
-import (
-	"fmt"
-)
-
 // Audience represents an Audience object from the Optimizely datafile
 type Audience struct {
 	ID         string      `json:"id"`
@@ -53,20 +49,6 @@ type FeatureFlag struct {
 	Key           string     `json:"key"`
 	ExperimentIDs []string   `json:"experimentIds"`
 	Variables     []Variable `json:"variables"`
-}
-
-// GetVariable returns variable for key from feature flag
-func (f *FeatureFlag) GetVariable(key string) (Variable, error) {
-	var variable Variable
-	var err = fmt.Errorf("Variable with key %s not found", key)
-	for _, v := range f.Variables {
-		if v.Key == key {
-			variable = v
-			err = nil
-			break
-		}
-	}
-	return variable, err
 }
 
 // Variable represents a Variable object from the Optimizely datafile

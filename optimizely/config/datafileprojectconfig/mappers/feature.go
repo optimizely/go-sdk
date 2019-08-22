@@ -41,18 +41,18 @@ func MapFeatures(featureFlags []datafileEntities.FeatureFlag, rolloutMap map[str
 			}
 		}
 
+		var variables = []entities.Variable{}
+		for _, variable := range featureFlag.Variables {
+			variables = append(variables, entities.Variable{
+				DefaultValue: variable.DefaultValue,
+				ID:           variable.ID,
+				Key:          variable.Key,
+				Type:         variable.Type})
+		}
+
 		feature.FeatureExperiments = featureExperiments
+		feature.Variables = variables
 		featureMap[featureFlag.Key] = feature
 	}
 	return featureMap
-}
-
-// MapFeatureFlags maps the raw datafile feature flag entities to their keys
-func MapFeatureFlags(featureFlags []datafileEntities.FeatureFlag) map[string]datafileEntities.FeatureFlag {
-
-	featureFlagsMap := make(map[string]datafileEntities.FeatureFlag)
-	for _, featureFlag := range featureFlags {
-		featureFlagsMap[featureFlag.Key] = featureFlag
-	}
-	return featureFlagsMap
 }

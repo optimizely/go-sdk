@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 
-	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/mappers"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/optimizely/go-sdk/optimizely/logging"
@@ -40,7 +39,6 @@ type DatafileProjectConfig struct {
 	experimentKeyToIDMap map[string]string
 	experimentMap        map[string]entities.Experiment
 	featureMap           map[string]entities.Feature
-	featureFlagMap       map[string]datafileEntities.FeatureFlag
 	groupMap             map[string]entities.Group
 	projectID            string
 	revision             string
@@ -97,7 +95,6 @@ func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, erro
 		experimentKeyToIDMap: experimentKeyMap,
 		rolloutMap:           rolloutMap,
 		featureMap:           mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentMap),
-		featureFlagMap:       mappers.MapFeatureFlags(datafile.FeatureFlags),
 	}
 
 	logger.Info("Datafile is valid.")
@@ -124,14 +121,21 @@ func (c DatafileProjectConfig) GetFeatureByKey(featureKey string) (entities.Feat
 	return entities.Feature{}, errors.New(errMessage)
 }
 
-// GetFeatureFlagByKey returns the featureflag with the given key
-func (c DatafileProjectConfig) GetFeatureFlagByKey(featureKey string) (datafileEntities.FeatureFlag, error) {
-	if feature, ok := c.featureFlagMap[featureKey]; ok {
-		return feature, nil
-	}
+// GetVariableByKey returns the featureVariable with the given key
+func (c DatafileProjectConfig) GetVariableByKey(featureKey string, variableKey string) (entities.Variable, error) {
 
-	errMessage := fmt.Sprintf("FeatureFlag with key %s not found", featureKey)
-	return datafileEntities.FeatureFlag{}, errors.New(errMessage)
+	var variable entities.Variable
+	var err = fmt.Errorf("Variable with key %s not found", featureKey)
+	if feature, ok := c.featureMap[featureKey]; ok {
+		for _, v := range feature.Variables {
+			if v.Key == variableKey {
+				variable = v
+				err = nil
+				break
+			}
+		}
+	}
+	return variable, err
 }
 
 // GetAttributeByKey returns the attribute with the given key

@@ -25,39 +25,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMapFeatureFlags(t *testing.T) {
-	const testFeatureFlagString = `{
-		"id": "21111",
-		"key": "test_feature_21111",
-		"rolloutId": "41111",
-		"experimentIds": ["31111", "31112"]
-	}`
-
-	var rawFeatureFlag datafileEntities.FeatureFlag
-	json.Unmarshal([]byte(testFeatureFlagString), &rawFeatureFlag)
-
-	rawFeatureFlags := []datafileEntities.FeatureFlag{rawFeatureFlag}
-	featureFlagsMap := MapFeatureFlags(rawFeatureFlags)
-	assert.Equal(t, len(featureFlagsMap), 1)
-
-	expectedFeatureFlagsMap := map[string]datafileEntities.FeatureFlag{
-		"test_feature_21111": datafileEntities.FeatureFlag{
-			ID:            "21111",
-			Key:           "test_feature_21111",
-			RolloutID:     "41111",
-			ExperimentIDs: []string{"31111", "31112"},
-		},
-	}
-
-	assert.Equal(t, expectedFeatureFlagsMap, featureFlagsMap)
-}
-
 func TestMapFeatures(t *testing.T) {
 	const testFeatureFlagString = `{
 		"id": "21111",
 		"key": "test_feature_21111",
 		"rolloutId": "41111",
-		"experimentIds": ["31111", "31112"]
+		"experimentIds": ["31111", "31112"],
+		"variables": [{"defaultValue":"1","id":"1","key":"test","type":"integer"}]
 	}`
 
 	var rawFeatureFlag datafileEntities.FeatureFlag
@@ -75,12 +49,19 @@ func TestMapFeatures(t *testing.T) {
 		"31112": experiment31112,
 	}
 	featureMap := MapFeatures(rawFeatureFlags, rolloutMap, experimentMap)
+	variable := entities.Variable{
+		ID:           "1",
+		DefaultValue: "1",
+		Key:          "test",
+		Type:         "integer",
+	}
 	expectedFeatureMap := map[string]entities.Feature{
 		"test_feature_21111": entities.Feature{
 			ID:                 "21111",
 			Key:                "test_feature_21111",
 			Rollout:            rollout,
 			FeatureExperiments: []entities.Experiment{experiment31111, experiment31112},
+			Variables:          []entities.Variable{variable},
 		},
 	}
 
