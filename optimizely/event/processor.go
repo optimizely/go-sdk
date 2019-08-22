@@ -3,7 +3,6 @@ package event
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -130,7 +129,6 @@ func (p *QueueingEventProcessor) FlushEvents() {
 						batchEventCount = 1
 					} else if !p.canBatch(&batchEvent, userEvent) {
 						// this could happen if the project config was updated for instance.
-						fmt.Printf("Can batch? %+v ------- %+v", batchEvent, userEvent)
 						pLogger.Info("Can't batch last event. Sending current batch.")
 						break
 					} else {
