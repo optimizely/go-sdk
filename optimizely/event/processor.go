@@ -36,7 +36,7 @@ func NewEventProcessor(queueSize int, flushInterval time.Duration) *QueueingEven
 
 // NewEventProcessor returns a new instance of QueueingEventProcessor with queueSize and flushInterval
 func NewEventProcessorNSQ(queueSize int, flushInterval time.Duration ) Processor {
-	p := &QueueingEventProcessor{MaxQueueSize: queueSize, FlushInterval:flushInterval, Q:NewNSQueue(queueSize), EventDispatcher:&HTTPEventDispatcher{}}
+	p := &QueueingEventProcessor{MaxQueueSize: queueSize, FlushInterval:flushInterval, Q:NewNSQueueDefault(), EventDispatcher:&HTTPEventDispatcher{}}
 	p.BatchSize = 10
 	p.StartTicker()
 	return p

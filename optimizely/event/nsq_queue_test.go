@@ -7,7 +7,7 @@ import (
 )
 
 func TestNSQQueue_Add_Size_Remove(t *testing.T) {
-	q := NewNSQueue(5)
+	q := NewNSQueueDefault()
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()

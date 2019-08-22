@@ -57,7 +57,7 @@ func (f *MockDispatcher) DispatchEvent(event LogEvent, callback func(success boo
 }
 
 func TestNSQEventProcessor_ProcessBatch(t *testing.T) {
-	processor := &QueueingEventProcessor{MaxQueueSize: 100, FlushInterval: 100, Q: NewNSQueue(100), EventDispatcher: &MockDispatcher{}}
+	processor := &QueueingEventProcessor{MaxQueueSize: 100, FlushInterval: 100, Q: NewNSQueueDefault(), EventDispatcher: &MockDispatcher{}}
 	processor.BatchSize = 10
 	processor.StartTicker()
 

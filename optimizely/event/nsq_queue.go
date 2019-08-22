@@ -49,7 +49,9 @@ func (i *NSQQueue) Add(item interface{}) {
 	buf := new(bytes.Buffer)
 	enc := gob.NewEncoder(buf)
 	enc.Encode(event)
-	i.p.Publish(NSQ_TOPIC, buf.Bytes())
+	if i.p != nil {
+		i.p.Publish(NSQ_TOPIC, buf.Bytes())
+	}
 }
 
 func (i *NSQQueue) decodeMessage(body []byte) UserEvent {
@@ -83,10 +85,10 @@ func (i *NSQQueue) Size() int {
 }
 
 // NewNSQueue returns new NSQ based queue with given queueSize
-func NewNSQueue(queueSize int) Queue {
+func NewNSQueue(queueSize int, address string, startDaemon bool, startProducer bool, startConsumer bool) Queue {
 
 	// Run nsqd embedded
-	if embedded_nsqd == nil {
+	if embedded_nsqd == nil && startDaemon {
 		go func() {
 			// running an nsqd with all of the default options
 			// (as if you ran it from the command line with no flags)
@@ -106,27 +108,43 @@ func NewNSQueue(queueSize int) Queue {
 		}()
 	}
 
+	var p *nsq.Producer = nil
+	var err error = nil
 	nsqConfig := nsq.NewConfig()
-	p, err := nsq.NewProducer(NSQ_LISTEN_SPEC, nsqConfig)
-	if err != nil {
-		//log.Fatal(err)
+
+	if startProducer {
+		p, err = nsq.NewProducer(address, nsqConfig)
+		if err != nil {
+			//log.Fatal(err)
+		}
 	}
 
-	consumer, _ := snsq.StartConsumer(snsq.ConsumerConfig{
-		Topic:       NSQ_TOPIC,
-		Channel:     NSQ_CONSUMER_CHANNEL,
-		Address:     NSQ_LISTEN_SPEC,
-		MaxInFlight: queueSize,
-	})
+	var consumer *snsq.Consumer = nil
+	if startConsumer {
+		consumer, _ = snsq.StartConsumer(snsq.ConsumerConfig{
+			Topic:       NSQ_TOPIC,
+			Channel:     NSQ_CONSUMER_CHANNEL,
+			Address:     address,
+			MaxInFlight: queueSize,
+		})
 
-	i := &NSQQueue{p:p,c:consumer, messages:NewInMemoryQueue(queueSize)}
+	}
 
-	go func() {
-		for message := range i.c.Messages() {
-			i.messages.Add(message)
-		}
-	}()
+	i := &NSQQueue{p: p, c: consumer, messages: NewInMemoryQueue(queueSize)}
+
+	if startConsumer {
+		go func() {
+			for message := range i.c.Messages() {
+				i.messages.Add(message)
+			}
+		}()
+	}
 
 	return i
+}
+
+//NewNSQueueDefault returns a default implementation of the NSQueue
+func NewNSQueueDefault() Queue {
+	return NewNSQueue(100, NSQ_LISTEN_SPEC, true, true, true)
 }
 
