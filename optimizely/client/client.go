@@ -134,10 +134,10 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 }
 
 // Track take and event key with event tags and if the event is part of the config, send to events backend.
-func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}) error {
+func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}) (err error) {
 	if !o.isValid {
 		errorMessage := "Optimizely instance is not valid. Failing GetEnabledFeatures."
-		err := errors.New(errorMessage)
+		err = errors.New(errorMessage)
 		logger.Error(errorMessage, err)
 		return err
 	}
@@ -145,20 +145,20 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 	defer func() {
 		if r := recover(); r != nil {
 			errorMessage := fmt.Sprintf(`Optimizely SDK is panicking with the error "%s"`, string(debug.Stack()))
-			err := errors.New(errorMessage)
+			err = errors.New(errorMessage)
 			logger.Error(errorMessage, err)
 		}
 	}()
 
-	configEvent, err := o.configManager.GetConfig().GetEventByKey(eventKey)
+	configEvent, eventError := o.configManager.GetConfig().GetEventByKey(eventKey)
 
-	if err == nil {
+	if eventError == nil {
 		userEvent := event.CreateConversionUserEvent(o.configManager.GetConfig(), configEvent, userContext, eventTags)
 		o.eventProcessor.ProcessEvent(userEvent)
 	} else {
 		errorMessage := fmt.Sprintf(`Optimizely SDK track: error getting event with key "%s"`, eventKey)
-		logger.Error(errorMessage, err)
-		return err
+		logger.Error(errorMessage, eventError)
+		return eventError
 	}
 
 	return nil
