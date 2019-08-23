@@ -78,8 +78,12 @@ type TestConfig struct {
 	optimizely.ProjectConfig
 }
 
-func (TestConfig) GetEventByKey(string) (entities.Event, error) {
-	return entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, nil
+func (TestConfig) GetEventByKey(key string) (entities.Event, error) {
+	if key == "sample_conversion" {
+		return entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, nil
+	}
+
+	return entities.Event{}, errors.New("No conversion")
 }
 
 func (TestConfig) GetFeatureByKey(string) (entities.Feature, error) {
@@ -126,11 +130,34 @@ func TestTrack(t *testing.T) {
 		isValid:         true,
 	}
 
-	client.Track(entities.UserContext{ID:"1212121", Attributes: map[string]interface{}{}}, "sample_conversion", map[string]interface{}{})
+	err := client.Track(entities.UserContext{ID:"1212121", Attributes: map[string]interface{}{}}, "sample_conversion", map[string]interface{}{})
 
+	assert.Nil(t, err)
 	assert.True(t, len(mockProcessor.Events) == 1)
 	assert.True(t, mockProcessor.Events[0].VisitorID == "1212121")
 	assert.True(t, mockProcessor.Events[0].EventContext.ProjectID == "15389410617")
+
+}
+
+func TestTrackFail(t *testing.T) {
+	mockProcessor := &MockProcessor{}
+
+	mockConfig := new(TestConfig)
+	mockConfigManager := new(MockProjectConfigManager)
+	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockDecisionService := new(MockDecisionService)
+
+	client := OptimizelyClient{
+		configManager:   mockConfigManager,
+		decisionService: mockDecisionService,
+		eventProcessor: mockProcessor,
+		isValid:         true,
+	}
+
+	err := client.Track(entities.UserContext{ID:"1212121", Attributes: map[string]interface{}{}}, "bob", map[string]interface{}{})
+
+	assert.NotNil(t, err)
+	assert.True(t, len(mockProcessor.Events) == 0)
 
 }
 

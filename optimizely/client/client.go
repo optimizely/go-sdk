@@ -137,7 +137,7 @@ func (o *OptimizelyClient) Track(userContext entities.UserContext, eventKey stri
 	if !o.isValid {
 		errorMessage := "Optimizely instance is not valid. Failing GetEnabledFeatures."
 		err := errors.New(errorMessage)
-		logger.Error(errorMessage, nil)
+		logger.Error(errorMessage, err)
 		return err
 	}
 
