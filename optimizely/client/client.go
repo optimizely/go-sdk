@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"reflect"
 	"runtime/debug"
-	"strconv"
 
 	"github.com/optimizely/go-sdk/optimizely/event"
 
@@ -124,14 +123,17 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 
 // GetFeatureVariableString returns string feature variable value
 func (o *OptimizelyClient) GetFeatureVariableString(featureKey string, variableKey string, userContext entities.UserContext) (value string, err error) {
-	val, err := o.getFeatureVariable("string", featureKey, variableKey, userContext)
-	if returnValue, ok := val.(string); ok {
-		value = returnValue
+	value, valueType, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+	if err != nil {
+		return "", err
+	}
+	if valueType != "string" {
+		return "", fmt.Errorf("Variable value for key %s is wrong type", variableKey)
 	}
 	return value, err
 }
 
-func (o *OptimizelyClient) getFeatureVariable(valueType string, featureKey string, variableKey string, userContext entities.UserContext) (value interface{}, err error) {
+func (o *OptimizelyClient) getFeatureVariable(featureKey string, variableKey string, userContext entities.UserContext) (value string, valueType string, err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -142,7 +144,7 @@ func (o *OptimizelyClient) getFeatureVariable(valueType string, featureKey strin
 	}()
 
 	if isValid, err := o.isValidClient("getFeatureVariable"); !isValid {
-		return nil, err
+		return "", "", err
 	}
 
 	projectConfig := o.configManager.GetConfig()
@@ -150,13 +152,13 @@ func (o *OptimizelyClient) getFeatureVariable(valueType string, featureKey strin
 	feature, err := projectConfig.GetFeatureByKey(featureKey)
 	if err != nil {
 		logger.Error("Error retrieving feature", err)
-		return nil, err
+		return "", "", err
 	}
 
 	variable, err := projectConfig.GetVariableByKey(featureKey, variableKey)
 	if err != nil {
 		logger.Error("Error retrieving variable", err)
-		return nil, err
+		return "", "", err
 	}
 
 	var featureValue = variable.DefaultValue
@@ -173,39 +175,12 @@ func (o *OptimizelyClient) getFeatureVariable(valueType string, featureKey strin
 		}
 	}
 
-	var valueParsed interface{}
-	switch valueType {
-	case "string":
-		valueParsed = featureValue
-		break
-	case "integer":
-		convertedValue, err := strconv.Atoi(featureValue)
-		if err == nil {
-			valueParsed = convertedValue
-		}
-		break
-	case "double":
-		convertedValue, err := strconv.ParseFloat(featureValue, 64)
-		if err == nil {
-			valueParsed = convertedValue
-		}
-		break
-	case "boolean":
-		convertedValue, err := strconv.ParseBool(featureValue)
-		if err == nil {
-			valueParsed = convertedValue
-		}
-		break
-	default:
-		break
-	}
-
-	if valueParsed == nil || variable.Type != valueType {
-		return nil, fmt.Errorf("Variable value for key %s is invalid or wrong type", variableKey)
+	if featureValue == "" {
+		return "", "", fmt.Errorf("Variable value for key %s is invalid", variableKey)
 	}
 
 	// @TODO(yasir): send decision notification
-	return valueParsed, nil
+	return featureValue, variable.Type, nil
 }
 
 func (o *OptimizelyClient) isValidClient(methodName string) (result bool, err error) {
