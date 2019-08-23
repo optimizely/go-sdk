@@ -155,7 +155,8 @@ func (o *OptimizelyClient) Track(userContext entities.UserContext, eventKey stri
 		userEvent := event.CreateConversionUserEvent(o.configManager.GetConfig(), configEvent, userContext, eventTags)
 		o.eventProcessor.ProcessEvent(userEvent)
 	} else {
-		logger.Error("Error getting event", err)
+		errorMessage := fmt.Sprintf(`Optimizely SDK track: error getting event with key "%s"`, eventKey)
+		logger.Error(errorMessage, err)
 		return err
 	}
 
