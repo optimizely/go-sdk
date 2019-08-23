@@ -161,6 +161,28 @@ func TestTrackFail(t *testing.T) {
 
 }
 
+func TestTrackInvalid(t *testing.T) {
+	mockProcessor := &MockProcessor{}
+
+	mockConfig := new(TestConfig)
+	mockConfigManager := new(MockProjectConfigManager)
+	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockDecisionService := new(MockDecisionService)
+
+	client := OptimizelyClient{
+		configManager:   mockConfigManager,
+		decisionService: mockDecisionService,
+		eventProcessor: mockProcessor,
+		isValid:         false,
+	}
+
+	err := client.Track(entities.UserContext{ID:"1212121", Attributes: map[string]interface{}{}}, "sample_conversion", map[string]interface{}{})
+
+	assert.NotNil(t, err)
+	assert.True(t, len(mockProcessor.Events) == 0)
+
+}
+
 func TestIsFeatureEnabled(t *testing.T) {
 	testUserContext := entities.UserContext{ID: "test_user_1"}
 	testVariation := entities.Variation{
