@@ -133,6 +133,7 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 	return enabledFeatures, nil
 }
 
+// Track take and event key with event tags and if the event is part of the config, send to events backend.
 func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}) error {
 	if !o.isValid {
 		errorMessage := "Optimizely instance is not valid. Failing GetEnabledFeatures."
