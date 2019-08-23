@@ -175,10 +175,6 @@ func (o *OptimizelyClient) getFeatureVariable(featureKey string, variableKey str
 		}
 	}
 
-	if featureValue == "" {
-		return "", "", fmt.Errorf("Variable value for key %s is invalid", variableKey)
-	}
-
 	// @TODO(yasir): send decision notification
 	return featureValue, variable.Type, nil
 }
