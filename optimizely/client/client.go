@@ -168,11 +168,8 @@ func (o *OptimizelyClient) getFeatureVariable(valueType string, featureKey strin
 
 	featureDecision, err := o.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
 	if err == nil {
-		for _, v := range featureDecision.Variation.Variables {
-			if v.ID == variable.ID && featureDecision.Variation.FeatureEnabled {
-				featureValue = v.Value
-				break
-			}
+		if v, ok := featureDecision.Variation.Variables[variable.ID]; ok && featureDecision.Variation.FeatureEnabled {
+			featureValue = v.Value
 		}
 	}
 

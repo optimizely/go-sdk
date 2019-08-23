@@ -46,7 +46,7 @@ func mapVariation(rawVariation datafileEntities.Variation) entities.Variation {
 	}
 
 	for _, variable := range rawVariation.Variables {
-		variation.Variables = append(variation.Variables, entities.VariationVariable{ID: variable.ID, Value: variable.Value})
+		variation.Variables[variable.ID] = entities.VariationVariable{ID: variable.ID, Value: variable.Value}
 	}
 
 	return variation

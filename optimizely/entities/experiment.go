@@ -19,7 +19,7 @@ package entities
 // Variation represents a variation in the experiment
 type Variation struct {
 	ID             string
-	Variables      []VariationVariable
+	Variables      map[string]VariationVariable
 	Key            string
 	FeatureEnabled bool
 }

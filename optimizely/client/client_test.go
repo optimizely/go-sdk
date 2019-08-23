@@ -316,7 +316,8 @@ func TestGetFeatureVariableStringWithValidValue(t *testing.T) {
 		DefaultValue: "default",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
-		Type:         "string"}
+		Type:         "string",
+	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
 		ID:         "111111",
@@ -361,7 +362,8 @@ func TestGetFeatureVariableStringWithInvalidValueType(t *testing.T) {
 		DefaultValue: "default",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
-		Type:         "boolean"}
+		Type:         "boolean",
+	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
 		ID:         "111111",
@@ -407,7 +409,8 @@ func TestGetFeatureVariableStringReturnsDefaultValueIfFeatureNotEnabled(t *testi
 		DefaultValue: "defaultString",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
-		Type:         "string"}
+		Type:         "string",
+	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
 		ID:         "111111",
@@ -497,7 +500,7 @@ func getTestVariationWithFeatureVariable(featureEnabled bool, variable entities.
 		ID:             "22222",
 		Key:            "22222",
 		FeatureEnabled: featureEnabled,
-		Variables:      []entities.VariationVariable{variable},
+		Variables:      map[string]entities.VariationVariable{variable.ID: variable},
 	}
 }
 
