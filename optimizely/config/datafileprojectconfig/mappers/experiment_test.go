@@ -34,12 +34,14 @@ func TestMapExperiments(t *testing.T) {
 			{
 				"id": "21111",
 				"key": "variation_1",
-				"featureEnabled": true
+				"featureEnabled": true,
+				"variables": [{"id":"1","value":"1"}]
 			},
 			{
 				"id": "21112",
 				"key": "variation_2",
-				"featureEnabled": false
+				"featureEnabled": false,
+				"variables": [{"id":"2","value":"2"}]
 			}
 		],
 		"trafficAllocation": [
@@ -71,11 +73,13 @@ func TestMapExperiments(t *testing.T) {
 			Variations: map[string]entities.Variation{
 				"21111": {
 					ID:             "21111",
+					Variables:      map[string]entities.VariationVariable{"1": entities.VariationVariable{ID: "1", Value: "1"}},
 					Key:            "variation_1",
 					FeatureEnabled: true,
 				},
 				"21112": {
 					ID:             "21112",
+					Variables:      map[string]entities.VariationVariable{"2": entities.VariationVariable{ID: "2", Value: "2"}},
 					Key:            "variation_2",
 					FeatureEnabled: false,
 				},
