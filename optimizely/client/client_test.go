@@ -18,14 +18,13 @@ package client
 
 import (
 	"errors"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-
 	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/optimizely/event"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"testing"
 )
 
 type MockProjectConfig struct {
@@ -41,6 +40,11 @@ func (c *MockProjectConfig) GetFeatureByKey(featureKey string) (entities.Feature
 func (c *MockProjectConfig) GetFeatureList() []entities.Feature {
 	args := c.Called()
 	return args.Get(0).([]entities.Feature)
+}
+
+func (c *MockProjectConfig) GetEventByKey(string) (entities.Event, error) {
+	args := c.Called()
+	return args.Get(0).(entities.Event), args.Error(1)
 }
 
 type MockProjectConfigManager struct {
@@ -60,6 +64,74 @@ type MockDecisionService struct {
 func (m *MockDecisionService) GetFeatureDecision(decisionContext decision.FeatureDecisionContext, userContext entities.UserContext) (decision.FeatureDecision, error) {
 	args := m.Called(decisionContext, userContext)
 	return args.Get(0).(decision.FeatureDecision), args.Error(1)
+}
+
+type MockProcessor struct {
+	Events []event.UserEvent
+}
+
+func (f *MockProcessor) ProcessEvent(event event.UserEvent) {
+	f.Events = append(f.Events, event)
+}
+
+type TestConfig struct {
+	optimizely.ProjectConfig
+}
+
+func (TestConfig) GetEventByKey(string) (entities.Event, error) {
+	return entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, nil
+}
+
+func (TestConfig) GetFeatureByKey(string) (entities.Feature, error) {
+	return entities.Feature{}, nil
+}
+
+func (TestConfig) GetProjectID() string {
+	return "15389410617"
+}
+func (TestConfig) GetRevision() string {
+	return "7"
+}
+func (TestConfig) GetAccountID() string {
+	return "8362480420"
+}
+func (TestConfig) GetAnonymizeIP() bool {
+	return true
+}
+func (TestConfig) GetAttributeID(key string) string { // returns "" if there is no id
+	return ""
+}
+func (TestConfig) GetBotFiltering() bool {
+	return false
+}
+func (TestConfig) GetClientName() string {
+	return "go-sdk"
+}
+func (TestConfig) GetClientVersion() string {
+	return "1.0.0"
+}
+
+func TestTrack(t *testing.T) {
+	mockProcessor := &MockProcessor{}
+
+	mockConfig := new(TestConfig)
+	mockConfigManager := new(MockProjectConfigManager)
+	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockDecisionService := new(MockDecisionService)
+
+	client := OptimizelyClient{
+		configManager:   mockConfigManager,
+		decisionService: mockDecisionService,
+		eventProcessor: mockProcessor,
+		isValid:         true,
+	}
+
+	client.Track(entities.UserContext{ID:"1212121", Attributes: map[string]interface{}{}}, "sample_conversion", map[string]interface{}{})
+
+	assert.True(t, len(mockProcessor.Events) == 1)
+	assert.True(t, mockProcessor.Events[0].VisitorID == "1212121")
+	assert.True(t, mockProcessor.Events[0].EventContext.ProjectID == "15389410617")
+
 }
 
 func TestIsFeatureEnabled(t *testing.T) {
