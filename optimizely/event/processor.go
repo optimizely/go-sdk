@@ -23,7 +23,6 @@ type QueueingEventProcessor struct {
 	Mux             sync.Mutex
 	Ticker          *time.Ticker
 	EventDispatcher Dispatcher
-	ctx             context.Context
 }
 
 var pLogger = logging.GetLogger("EventProcessor")
@@ -35,10 +34,9 @@ func NewEventProcessor(ctx context.Context, queueSize int, flushInterval time.Du
 		FlushInterval:   flushInterval,
 		Q:               NewInMemoryQueue(queueSize),
 		EventDispatcher: &HTTPEventDispatcher{},
-		ctx:             ctx,
 	}
 	p.BatchSize = 10
-	p.StartTicker()
+	p.StartTicker(ctx)
 	return p
 }
 
@@ -69,7 +67,7 @@ func (p *QueueingEventProcessor) Remove(count int) []interface{} {
 }
 
 // StartTicker starts new ticker for flushing events
-func (p *QueueingEventProcessor) StartTicker() {
+func (p *QueueingEventProcessor) StartTicker(ctx context.Context) {
 	if p.Ticker != nil {
 		return
 	}
@@ -79,7 +77,7 @@ func (p *QueueingEventProcessor) StartTicker() {
 			select {
 			case <-p.Ticker.C:
 				p.FlushEvents()
-			case <-p.ctx.Done():
+			case <-ctx.Done():
 				pLogger.Debug("Event processor stopped, flushing events.")
 				p.FlushEvents()
 				return

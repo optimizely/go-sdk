@@ -41,10 +41,9 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 		FlushInterval:   100,
 		Q:               NewInMemoryQueue(100),
 		EventDispatcher: &MockDispatcher{},
-		ctx:             context.Background(),
 	}
 	processor.BatchSize = 10
-	processor.StartTicker()
+	processor.StartTicker(context.TODO())
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -78,10 +77,9 @@ func TestBatchEventProcessor_FlushesOnClose(t *testing.T) {
 		FlushInterval:   30 * time.Second,
 		Q:               NewInMemoryQueue(100),
 		EventDispatcher: &MockDispatcher{},
-		ctx:             ctx,
 	}
 	processor.BatchSize = 10
-	processor.StartTicker()
+	processor.StartTicker(ctx)
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -109,10 +107,9 @@ func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 		FlushInterval:   100,
 		Q:               NewInMemoryQueue(100),
 		EventDispatcher: &MockDispatcher{},
-		ctx:             context.Background(),
 	}
 	processor.BatchSize = 10
-	processor.StartTicker()
+	processor.StartTicker(context.TODO())
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -146,10 +143,9 @@ func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 		FlushInterval:   100,
 		Q:               NewInMemoryQueue(100),
 		EventDispatcher: &MockDispatcher{},
-		ctx:             context.Background(),
 	}
 	processor.BatchSize = 10
-	processor.StartTicker()
+	processor.StartTicker(context.TODO())
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
