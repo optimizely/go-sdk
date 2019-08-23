@@ -118,8 +118,7 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 	}
 
 	// @TODO: allow event processor to be passed in
-	// @TODO: pass the context object to the event processor
-	client.eventProcessor = event.NewEventProcessor(defaultEventQueueSize, defaultEventFlushInterval)
+	client.eventProcessor = event.NewEventProcessor(ctx, defaultEventQueueSize, defaultEventFlushInterval)
 	client.isValid = true
 	return client, nil
 }
