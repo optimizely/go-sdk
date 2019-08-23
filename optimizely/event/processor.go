@@ -1,6 +1,7 @@
 package event
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"time"
@@ -27,10 +28,15 @@ type QueueingEventProcessor struct {
 var pLogger = logging.GetLogger("EventProcessor")
 
 // NewEventProcessor returns a new instance of QueueingEventProcessor with queueSize and flushInterval
-func NewEventProcessor(queueSize int, flushInterval time.Duration) *QueueingEventProcessor {
-	p := &QueueingEventProcessor{MaxQueueSize: queueSize, FlushInterval: flushInterval, Q: NewInMemoryQueue(queueSize), EventDispatcher: &HTTPEventDispatcher{}}
+func NewEventProcessor(ctx context.Context, queueSize int, flushInterval time.Duration) *QueueingEventProcessor {
+	p := &QueueingEventProcessor{
+		MaxQueueSize:    queueSize,
+		FlushInterval:   flushInterval,
+		Q:               NewInMemoryQueue(queueSize),
+		EventDispatcher: &HTTPEventDispatcher{},
+	}
 	p.BatchSize = 10
-	p.StartTicker()
+	p.StartTicker(ctx)
 	return p
 }
 
@@ -61,14 +67,21 @@ func (p *QueueingEventProcessor) Remove(count int) []interface{} {
 }
 
 // StartTicker starts new ticker for flushing events
-func (p *QueueingEventProcessor) StartTicker() {
+func (p *QueueingEventProcessor) StartTicker(ctx context.Context) {
 	if p.Ticker != nil {
 		return
 	}
 	p.Ticker = time.NewTicker(p.FlushInterval * time.Millisecond)
 	go func() {
-		for range p.Ticker.C {
-			p.FlushEvents()
+		for {
+			select {
+			case <-p.Ticker.C:
+				p.FlushEvents()
+			case <-ctx.Done():
+				pLogger.Debug("Event processor stopped, flushing events.")
+				p.FlushEvents()
+				return
+			}
 		}
 	}()
 }

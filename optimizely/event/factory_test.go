@@ -1,6 +1,7 @@
 package event
 
 import (
+	"context"
 	"math/rand"
 	"testing"
 	"time"
@@ -88,10 +89,11 @@ func BuildTestConversionEvent() UserEvent {
 }
 
 func TestCreateAndSendImpressionEvent(t *testing.T) {
+	ctx := context.Background()
 
 	impressionUserEvent := BuildTestImpressionEvent()
 
-	processor := NewEventProcessor(100, 100)
+	processor := NewEventProcessor(ctx, 100, 100)
 
 	processor.ProcessEvent(impressionUserEvent)
 
@@ -103,10 +105,11 @@ func TestCreateAndSendImpressionEvent(t *testing.T) {
 }
 
 func TestCreateAndSendConversionEvent(t *testing.T) {
+	ctx := context.Background()
 
 	conversionUserEvent := BuildTestConversionEvent()
 
-	processor := NewEventProcessor(100, 100)
+	processor := NewEventProcessor(ctx, 100, 100)
 
 	processor.ProcessEvent(conversionUserEvent)
 
