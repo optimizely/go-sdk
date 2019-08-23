@@ -133,7 +133,7 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 	return enabledFeatures, nil
 }
 
-func (o *OptimizelyClient) Track(userContext entities.UserContext, eventKey string, eventTags map[string]interface{}) error {
+func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}) error {
 	if !o.isValid {
 		errorMessage := "Optimizely instance is not valid. Failing GetEnabledFeatures."
 		err := errors.New(errorMessage)

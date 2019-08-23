@@ -130,7 +130,7 @@ func TestTrack(t *testing.T) {
 		isValid:         true,
 	}
 
-	err := client.Track(entities.UserContext{ID:"1212121", Attributes: map[string]interface{}{}}, "sample_conversion", map[string]interface{}{})
+	err := client.Track("sample_conversion", entities.UserContext{ID:"1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
 
 	assert.Nil(t, err)
 	assert.True(t, len(mockProcessor.Events) == 1)
@@ -154,7 +154,7 @@ func TestTrackFail(t *testing.T) {
 		isValid:         true,
 	}
 
-	err := client.Track(entities.UserContext{ID:"1212121", Attributes: map[string]interface{}{}}, "bob", map[string]interface{}{})
+	err := client.Track("bob", entities.UserContext{ID:"1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
 
 	assert.NotNil(t, err)
 	assert.True(t, len(mockProcessor.Events) == 0)
@@ -176,7 +176,7 @@ func TestTrackInvalid(t *testing.T) {
 		isValid:         false,
 	}
 
-	err := client.Track(entities.UserContext{ID:"1212121", Attributes: map[string]interface{}{}}, "sample_conversion", map[string]interface{}{})
+	err := client.Track("sample_conversion", entities.UserContext{ID:"1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
 
 	assert.NotNil(t, err)
 	assert.True(t, len(mockProcessor.Events) == 0)
