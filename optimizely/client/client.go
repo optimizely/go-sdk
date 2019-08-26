@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime/debug"
+	"strconv"
 
 	"github.com/optimizely/go-sdk/optimizely/event"
 
@@ -119,6 +120,45 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 	}
 
 	return enabledFeatures, nil
+}
+
+// GetFeatureVariableBoolean returns boolean feature variable value
+func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey string, variableKey string, userContext entities.UserContext) (value bool, err error) {
+	val, valueType, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+	if err != nil {
+		return false, err
+	}
+	convertedValue, err := strconv.ParseBool(val)
+	if err != nil || valueType != "boolean" {
+		return false, fmt.Errorf("Variable value for key %s is invalid or wrong type", variableKey)
+	}
+	return convertedValue, err
+}
+
+// GetFeatureVariableDouble returns double feature variable value
+func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey string, variableKey string, userContext entities.UserContext) (value float64, err error) {
+	val, valueType, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+	if err != nil {
+		return 0, err
+	}
+	convertedValue, err := strconv.ParseFloat(val, 64)
+	if err != nil || valueType != "double" {
+		return 0, fmt.Errorf("Variable value for key %s is invalid or wrong type", variableKey)
+	}
+	return convertedValue, err
+}
+
+// GetFeatureVariableInteger returns double feature variable value
+func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey string, variableKey string, userContext entities.UserContext) (value int, err error) {
+	val, valueType, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+	if err != nil {
+		return 0, err
+	}
+	convertedValue, err := strconv.Atoi(val)
+	if err != nil || valueType != "integer" {
+		return 0, fmt.Errorf("Variable value for key %s is invalid or wrong type", variableKey)
+	}
+	return convertedValue, err
 }
 
 // GetFeatureVariableString returns string feature variable value
