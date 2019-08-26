@@ -30,7 +30,8 @@ func TestMapFeatures(t *testing.T) {
 		"id": "21111",
 		"key": "test_feature_21111",
 		"rolloutId": "41111",
-		"experimentIds": ["31111", "31112"]
+		"experimentIds": ["31111", "31112"],
+		"variables": [{"defaultValue":"1","id":"1","key":"test","type":"integer"}]
 	}`
 
 	var rawFeatureFlag datafileEntities.FeatureFlag
@@ -47,13 +48,20 @@ func TestMapFeatures(t *testing.T) {
 		"31111": experiment31111,
 		"31112": experiment31112,
 	}
-	featureMap := MapFeatureFlags(rawFeatureFlags, rolloutMap, experimentMap)
+	featureMap := MapFeatures(rawFeatureFlags, rolloutMap, experimentMap)
+	variable := entities.Variable{
+		ID:           "1",
+		DefaultValue: "1",
+		Key:          "test",
+		Type:         "integer",
+	}
 	expectedFeatureMap := map[string]entities.Feature{
 		"test_feature_21111": entities.Feature{
 			ID:                 "21111",
 			Key:                "test_feature_21111",
 			Rollout:            rollout,
 			FeatureExperiments: []entities.Experiment{experiment31111, experiment31112},
+			Variables:          []entities.Variable{variable},
 		},
 	}
 

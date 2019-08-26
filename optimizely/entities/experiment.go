@@ -19,6 +19,7 @@ package entities
 // Variation represents a variation in the experiment
 type Variation struct {
 	ID             string
+	Variables      map[string]VariationVariable
 	Key            string
 	FeatureEnabled bool
 }
@@ -39,4 +40,10 @@ type Experiment struct {
 type Range struct {
 	EntityID   string
 	EndOfRange int
+}
+
+// VariationVariable represents a Variable object from the Variation
+type VariationVariable struct {
+	ID    string
+	Value string
 }

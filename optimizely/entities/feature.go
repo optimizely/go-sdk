@@ -22,10 +22,19 @@ type Feature struct {
 	Key                string
 	FeatureExperiments []Experiment
 	Rollout            Rollout
+	Variables          []Variable
 }
 
 // Rollout represents a feature rollout
 type Rollout struct {
 	ID          string
 	Experiments []Experiment
+}
+
+// Variable represents a feature variable
+type Variable struct {
+	DefaultValue string
+	ID           string
+	Key          string
+	Type         string
 }

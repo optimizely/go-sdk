@@ -67,10 +67,16 @@ type trafficAllocation struct {
 
 // Variation represents an experiment variation from the Optimizely datafile
 type Variation struct {
-	ID string `json:"id"`
-	// @TODO(mng): include variables
-	Key            string `json:"key"`
-	FeatureEnabled bool   `json:"featureEnabled"`
+	ID             string              `json:"id"`
+	Variables      []VariationVariable `json:"variables"`
+	Key            string              `json:"key"`
+	FeatureEnabled bool                `json:"featureEnabled"`
+}
+
+// VariationVariable represents a Variable object from the Variation
+type VariationVariable struct {
+	ID    string `json:"id"`
+	Value string `json:"value"`
 }
 
 // Event represents an event from the Optimizely datafile
