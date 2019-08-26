@@ -148,7 +148,7 @@ func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey string, variableK
 	return convertedValue, err
 }
 
-// GetFeatureVariableInteger returns double feature variable value
+// GetFeatureVariableInteger returns integer feature variable value
 func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey string, variableKey string, userContext entities.UserContext) (value int, err error) {
 	val, valueType, err := o.getFeatureVariable(featureKey, variableKey, userContext)
 	if err != nil {
