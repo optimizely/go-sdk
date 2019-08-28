@@ -14,10 +14,17 @@ script:
   - go test -v -race ./... -coverprofile=profile.cov
   - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
 stages:
+  - 'Lint'
   - 'Integration tests'
   - 'Test'
 jobs:
   include:
+    - stage: 'Lint'
+      install:
+        - go get github.com/golangci/golangci-lint/cmd/golangci-lint
+      script:
+        - golangci-lint run --out-format=tab --tests=false ./...
+
     - stage: 'Integration Tests'
       merge_mode: replace
       env: SDK=go
