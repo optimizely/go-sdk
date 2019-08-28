@@ -438,7 +438,7 @@ func TestGetFeatureVariableBooleanWithValidValue(t *testing.T) {
 		DefaultValue: "false",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
-		Type:         "boolean",
+		Type:         entities.Boolean,
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
@@ -484,7 +484,7 @@ func TestGetFeatureVariableBooleanWithInvalidValue(t *testing.T) {
 		DefaultValue: "false",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
-		Type:         "boolean",
+		Type:         entities.Boolean,
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
@@ -531,7 +531,54 @@ func TestGetFeatureVariableBooleanWithInvalidValueType(t *testing.T) {
 		DefaultValue: "4",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
-		Type:         "integer",
+		Type:         entities.Integer,
+	}
+	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
+	testExperiment := entities.Experiment{
+		ID:         "111111",
+		Variations: map[string]entities.Variation{"22222": testVariation},
+	}
+	testFeature := getTestFeature(testFeatureKey, testExperiment)
+	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
+	mockConfigManager := new(MockProjectConfigManager)
+	mockConfigManager.On("GetConfig").Return(mockConfig)
+
+	testDecisionContext := decision.FeatureDecisionContext{
+		Feature:       &testFeature,
+		ProjectConfig: mockConfig,
+	}
+
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	mockDecisionService := new(MockDecisionService)
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+
+	client := OptimizelyClient{
+		configManager:   mockConfigManager,
+		decisionService: mockDecisionService,
+		isValid:         true,
+	}
+	result, err := client.GetFeatureVariableBoolean(testFeatureKey, testVariableKey, testUserContext)
+	assert.Equal(t, false, result)
+	assert.NotNil(t, err)
+	mockConfig.AssertExpectations(t)
+	mockConfigManager.AssertExpectations(t)
+	mockDecisionService.AssertExpectations(t)
+}
+
+func TestGetFeatureVariableBooleanWithEmptyValueType(t *testing.T) {
+	testFeatureKey := "test_feature_key"
+	testVariableKey := "test_feature_flag_key"
+	testVariableValue := "5"
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	testVariationVariable := entities.VariationVariable{
+		ID:    "1",
+		Value: testVariableValue,
+	}
+	testVariable := entities.Variable{
+		DefaultValue: "4",
+		ID:           "1",
+		Key:          "test_feature_flag_key",
+		Type:         "",
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
@@ -578,7 +625,7 @@ func TestGetFeatureVariableBooleanReturnsDefaultValueIfFeatureNotEnabled(t *test
 		DefaultValue: "false",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
-		Type:         "boolean",
+		Type:         entities.Boolean,
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
@@ -648,7 +695,7 @@ func TestGetFeatureVariableDoubleWithValidValue(t *testing.T) {
 		DefaultValue: "4",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
-		Type:         "double",
+		Type:         entities.Double,
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
@@ -694,7 +741,7 @@ func TestGetFeatureVariableDoubleWithInvalidValue(t *testing.T) {
 		DefaultValue: "4",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
-		Type:         "double",
+		Type:         entities.Double,
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
@@ -741,7 +788,54 @@ func TestGetFeatureVariableDoubleWithInvalidValueType(t *testing.T) {
 		DefaultValue: "4",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
-		Type:         "integer",
+		Type:         entities.Integer,
+	}
+	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
+	testExperiment := entities.Experiment{
+		ID:         "111111",
+		Variations: map[string]entities.Variation{"22222": testVariation},
+	}
+	testFeature := getTestFeature(testFeatureKey, testExperiment)
+	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
+	mockConfigManager := new(MockProjectConfigManager)
+	mockConfigManager.On("GetConfig").Return(mockConfig)
+
+	testDecisionContext := decision.FeatureDecisionContext{
+		Feature:       &testFeature,
+		ProjectConfig: mockConfig,
+	}
+
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	mockDecisionService := new(MockDecisionService)
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+
+	client := OptimizelyClient{
+		configManager:   mockConfigManager,
+		decisionService: mockDecisionService,
+		isValid:         true,
+	}
+	result, err := client.GetFeatureVariableDouble(testFeatureKey, testVariableKey, testUserContext)
+	assert.Equal(t, float64(0), result)
+	assert.NotNil(t, err)
+	mockConfig.AssertExpectations(t)
+	mockConfigManager.AssertExpectations(t)
+	mockDecisionService.AssertExpectations(t)
+}
+
+func TestGetFeatureVariableDoubleWithEmptyValueType(t *testing.T) {
+	testFeatureKey := "test_feature_key"
+	testVariableKey := "test_feature_flag_key"
+	testVariableValue := "5"
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	testVariationVariable := entities.VariationVariable{
+		ID:    "1",
+		Value: testVariableValue,
+	}
+	testVariable := entities.Variable{
+		DefaultValue: "4",
+		ID:           "1",
+		Key:          "test_feature_flag_key",
+		Type:         "",
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
@@ -788,7 +882,7 @@ func TestGetFeatureVariableDoubleReturnsDefaultValueIfFeatureNotEnabled(t *testi
 		DefaultValue: "4",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
-		Type:         "double",
+		Type:         entities.Double,
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
@@ -858,7 +952,7 @@ func TestGetFeatureVariableIntegerWithValidValue(t *testing.T) {
 		DefaultValue: "4",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
-		Type:         "integer",
+		Type:         entities.Integer,
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
@@ -904,7 +998,7 @@ func TestGetFeatureVariableIntegerWithInvalidValue(t *testing.T) {
 		DefaultValue: "4",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
-		Type:         "integer",
+		Type:         entities.Integer,
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
@@ -951,7 +1045,54 @@ func TestGetFeatureVariableIntegerWithInvalidValueType(t *testing.T) {
 		DefaultValue: "false",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
-		Type:         "boolean",
+		Type:         entities.Boolean,
+	}
+	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
+	testExperiment := entities.Experiment{
+		ID:         "111111",
+		Variations: map[string]entities.Variation{"22222": testVariation},
+	}
+	testFeature := getTestFeature(testFeatureKey, testExperiment)
+	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
+	mockConfigManager := new(MockProjectConfigManager)
+	mockConfigManager.On("GetConfig").Return(mockConfig)
+
+	testDecisionContext := decision.FeatureDecisionContext{
+		Feature:       &testFeature,
+		ProjectConfig: mockConfig,
+	}
+
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	mockDecisionService := new(MockDecisionService)
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+
+	client := OptimizelyClient{
+		configManager:   mockConfigManager,
+		decisionService: mockDecisionService,
+		isValid:         true,
+	}
+	result, err := client.GetFeatureVariableInteger(testFeatureKey, testVariableKey, testUserContext)
+	assert.Equal(t, 0, result)
+	assert.NotNil(t, err)
+	mockConfig.AssertExpectations(t)
+	mockConfigManager.AssertExpectations(t)
+	mockDecisionService.AssertExpectations(t)
+}
+
+func TestGetFeatureVariableIntegerWithEmptyValueType(t *testing.T) {
+	testFeatureKey := "test_feature_key"
+	testVariableKey := "test_feature_flag_key"
+	testVariableValue := "true"
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	testVariationVariable := entities.VariationVariable{
+		ID:    "1",
+		Value: testVariableValue,
+	}
+	testVariable := entities.Variable{
+		DefaultValue: "false",
+		ID:           "1",
+		Key:          "test_feature_flag_key",
+		Type:         "",
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
@@ -998,7 +1139,7 @@ func TestGetFeatureVariableIntegerReturnsDefaultValueIfFeatureNotEnabled(t *test
 		DefaultValue: "4",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
-		Type:         "integer",
+		Type:         entities.Integer,
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
@@ -1068,7 +1209,7 @@ func TestGetFeatureVariableStringWithValidValue(t *testing.T) {
 		DefaultValue: "default",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
-		Type:         "string",
+		Type:         entities.String,
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
@@ -1114,7 +1255,54 @@ func TestGetFeatureVariableStringWithInvalidValueType(t *testing.T) {
 		DefaultValue: "default",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
-		Type:         "boolean",
+		Type:         entities.Boolean,
+	}
+	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
+	testExperiment := entities.Experiment{
+		ID:         "111111",
+		Variations: map[string]entities.Variation{"22222": testVariation},
+	}
+	testFeature := getTestFeature(testFeatureKey, testExperiment)
+	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
+	mockConfigManager := new(MockProjectConfigManager)
+	mockConfigManager.On("GetConfig").Return(mockConfig)
+
+	testDecisionContext := decision.FeatureDecisionContext{
+		Feature:       &testFeature,
+		ProjectConfig: mockConfig,
+	}
+
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	mockDecisionService := new(MockDecisionService)
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+
+	client := OptimizelyClient{
+		configManager:   mockConfigManager,
+		decisionService: mockDecisionService,
+		isValid:         true,
+	}
+	result, err := client.GetFeatureVariableString(testFeatureKey, testVariableKey, testUserContext)
+	assert.Equal(t, "", result)
+	assert.NotNil(t, err)
+	mockConfig.AssertExpectations(t)
+	mockConfigManager.AssertExpectations(t)
+	mockDecisionService.AssertExpectations(t)
+}
+
+func TestGetFeatureVariableStringWithEmptyValueType(t *testing.T) {
+	testFeatureKey := "test_feature_key"
+	testVariableKey := "test_feature_flag_key"
+	testVariableValue := "true"
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	testVariationVariable := entities.VariationVariable{
+		ID:    "1",
+		Value: testVariableValue,
+	}
+	testVariable := entities.Variable{
+		DefaultValue: "default",
+		ID:           "1",
+		Key:          "test_feature_flag_key",
+		Type:         "",
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
@@ -1161,7 +1349,7 @@ func TestGetFeatureVariableStringReturnsDefaultValueIfFeatureNotEnabled(t *testi
 		DefaultValue: "defaultString",
 		ID:           "1",
 		Key:          "test_feature_flag_key",
-		Type:         "string",
+		Type:         entities.String,
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{

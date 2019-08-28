@@ -160,7 +160,7 @@ func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey string, variable
 		return false, err
 	}
 	convertedValue, err := strconv.ParseBool(val)
-	if err != nil || valueType != "boolean" {
+	if err != nil || valueType != entities.Boolean {
 		return false, fmt.Errorf("Variable value for key %s is invalid or wrong type", variableKey)
 	}
 	return convertedValue, err
@@ -173,7 +173,7 @@ func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey string, variableK
 		return 0, err
 	}
 	convertedValue, err := strconv.ParseFloat(val, 64)
-	if err != nil || valueType != "double" {
+	if err != nil || valueType != entities.Double {
 		return 0, fmt.Errorf("Variable value for key %s is invalid or wrong type", variableKey)
 	}
 	return convertedValue, err
@@ -186,7 +186,7 @@ func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey string, variable
 		return 0, err
 	}
 	convertedValue, err := strconv.Atoi(val)
-	if err != nil || valueType != "integer" {
+	if err != nil || valueType != entities.Integer {
 		return 0, fmt.Errorf("Variable value for key %s is invalid or wrong type", variableKey)
 	}
 	return convertedValue, err
@@ -198,13 +198,13 @@ func (o *OptimizelyClient) GetFeatureVariableString(featureKey string, variableK
 	if err != nil {
 		return "", err
 	}
-	if valueType != "string" {
+	if valueType != entities.String {
 		return "", fmt.Errorf("Variable value for key %s is wrong type", variableKey)
 	}
 	return value, err
 }
 
-func (o *OptimizelyClient) getFeatureVariable(featureKey string, variableKey string, userContext entities.UserContext) (value string, valueType string, err error) {
+func (o *OptimizelyClient) getFeatureVariable(featureKey string, variableKey string, userContext entities.UserContext) (value string, valueType entities.VariableType, err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
