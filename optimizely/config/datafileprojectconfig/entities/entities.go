@@ -16,6 +16,8 @@
 
 package entities
 
+import "github.com/optimizely/go-sdk/optimizely/entities"
+
 // Audience represents an Audience object from the Optimizely datafile
 type Audience struct {
 	ID         string      `json:"id"`
@@ -53,10 +55,10 @@ type FeatureFlag struct {
 
 // Variable represents a Variable object from the Optimizely datafile
 type Variable struct {
-	DefaultValue string `json:"defaultValue"`
-	ID           string `json:"id"`
-	Key          string `json:"key"`
-	Type         string `json:"type"`
+	DefaultValue string                `json:"defaultValue"`
+	ID           string                `json:"id"`
+	Key          string                `json:"key"`
+	Type         entities.VariableType `json:"type"`
 }
 
 // trafficAllocation represents a traffic allocation range from the Optimizely datafile

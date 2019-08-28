@@ -47,7 +47,7 @@ func MapFeatures(featureFlags []datafileEntities.FeatureFlag, rolloutMap map[str
 				DefaultValue: variable.DefaultValue,
 				ID:           variable.ID,
 				Key:          variable.Key,
-				Type:         entities.VariableType(variable.Type)})
+				Type:         variable.Type})
 		}
 
 		feature.FeatureExperiments = featureExperiments
