@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime/debug"
+	"strconv"
 
 	"github.com/optimizely/go-sdk/optimizely/event"
 
@@ -152,19 +153,58 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 	return nil
 }
 
+// GetFeatureVariableBoolean returns boolean feature variable value
+func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey string, variableKey string, userContext entities.UserContext) (value bool, err error) {
+	val, valueType, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+	if err != nil {
+		return false, err
+	}
+	convertedValue, err := strconv.ParseBool(val)
+	if err != nil || valueType != entities.Boolean {
+		return false, fmt.Errorf("Variable value for key %s is invalid or wrong type", variableKey)
+	}
+	return convertedValue, err
+}
+
+// GetFeatureVariableDouble returns double feature variable value
+func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey string, variableKey string, userContext entities.UserContext) (value float64, err error) {
+	val, valueType, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+	if err != nil {
+		return 0, err
+	}
+	convertedValue, err := strconv.ParseFloat(val, 64)
+	if err != nil || valueType != entities.Double {
+		return 0, fmt.Errorf("Variable value for key %s is invalid or wrong type", variableKey)
+	}
+	return convertedValue, err
+}
+
+// GetFeatureVariableInteger returns integer feature variable value
+func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey string, variableKey string, userContext entities.UserContext) (value int, err error) {
+	val, valueType, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+	if err != nil {
+		return 0, err
+	}
+	convertedValue, err := strconv.Atoi(val)
+	if err != nil || valueType != entities.Integer {
+		return 0, fmt.Errorf("Variable value for key %s is invalid or wrong type", variableKey)
+	}
+	return convertedValue, err
+}
+
 // GetFeatureVariableString returns string feature variable value
 func (o *OptimizelyClient) GetFeatureVariableString(featureKey string, variableKey string, userContext entities.UserContext) (value string, err error) {
 	value, valueType, err := o.getFeatureVariable(featureKey, variableKey, userContext)
 	if err != nil {
 		return "", err
 	}
-	if valueType != "string" {
+	if valueType != entities.String {
 		return "", fmt.Errorf("Variable value for key %s is wrong type", variableKey)
 	}
 	return value, err
 }
 
-func (o *OptimizelyClient) getFeatureVariable(featureKey string, variableKey string, userContext entities.UserContext) (value string, valueType string, err error) {
+func (o *OptimizelyClient) getFeatureVariable(featureKey string, variableKey string, userContext entities.UserContext) (value string, valueType entities.VariableType, err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
