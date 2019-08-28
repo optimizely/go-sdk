@@ -53,7 +53,7 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 			// @TODO: log error
 		}
 
-		if featureDecision.DecisionMade {
+		if featureDecision.Variation != nil {
 			break
 		}
 	}

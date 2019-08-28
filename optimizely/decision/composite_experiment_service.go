@@ -22,7 +22,8 @@ import (
 
 // CompositeExperimentService bridges together the various experiment decision services that ship by default with the SDK
 type CompositeExperimentService struct {
-	experimentDecisionServices []ExperimentDecisionService
+	experimentBucketerService  ExperimentDecisionService
+	experimentTargetingService ExperimentDecisionService
 }
 
 // NewCompositeExperimentService creates a new instance of the CompositeExperimentService
@@ -31,24 +32,19 @@ func NewCompositeExperimentService() *CompositeExperimentService {
 	// 1. Targeting
 	// 2. Bucketing
 	// @TODO(mng): Prepend forced variation and whitelisting services
-	experimentDecisionServices := []ExperimentDecisionService{
-		NewExperimentTargetingService(),
-		NewExperimentBucketerService(),
-	}
 	return &CompositeExperimentService{
-		experimentDecisionServices: experimentDecisionServices,
+		experimentBucketerService:  NewExperimentBucketerService(),
+		experimentTargetingService: NewExperimentTargetingService(),
 	}
 }
 
 // GetDecision returns a decision for the given experiment and user context
 func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
-	for _, experimentService := range s.experimentDecisionServices {
-		decision, err := experimentService.GetDecision(decisionContext, userContext)
-		if decision.DecisionMade == true {
-			return decision, err
-		}
+	if decision, err := s.experimentTargetingService.GetDecision(decisionContext, userContext); err != nil {
+		// if err is present it means user failed targeting, should return
+		return decision, err
 	}
 
-	// zero-value for DecisionMade is false
-	return ExperimentDecision{}, nil
+	decision, err := s.experimentBucketerService.GetDecision(decisionContext, userContext)
+	return decision, err
 }

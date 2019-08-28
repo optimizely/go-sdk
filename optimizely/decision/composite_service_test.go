@@ -37,8 +37,7 @@ func TestGetFeatureDecision(t *testing.T) {
 
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1111,
-		Variation:  testExp1111Var2222,
-		Decision:   Decision{DecisionMade: true},
+		Variation:  &testExp1111Var2222,
 	}
 
 	testFeatureDecisionService := new(MockFeatureDecisionService)

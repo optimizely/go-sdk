@@ -73,8 +73,7 @@ func TestExperimentTargetingGetDecisionNoAudienceCondTree(t *testing.T) {
 	}
 	expectedExperimentDecision := ExperimentDecision{
 		Decision: Decision{
-			DecisionMade: true,
-			Reason:       reasons.FailedAudienceTargeting,
+			Reason: reasons.FailedAudienceTargeting,
 		},
 	}
 
@@ -94,11 +93,7 @@ func TestExperimentTargetingGetDecisionNoAudienceCondTree(t *testing.T) {
 			"s_foo": "foo",
 		},
 	}
-	expectedExperimentDecision = ExperimentDecision{
-		Decision: Decision{
-			DecisionMade: false,
-		},
-	}
+	expectedExperimentDecision = ExperimentDecision{}
 
 	mockAudienceEvaluator = new(MockAudienceEvaluator)
 	mockAudienceEvaluator.On("Evaluate", testAudience, testUserContext).Return(true)
@@ -151,8 +146,7 @@ func TestExperimentTargetingGetDecisionWithAudienceCondTree(t *testing.T) {
 	}
 	expectedExperimentDecision := ExperimentDecision{
 		Decision: Decision{
-			DecisionMade: true,
-			Reason:       reasons.FailedAudienceTargeting,
+			Reason: reasons.FailedAudienceTargeting,
 		},
 	}
 
@@ -173,12 +167,7 @@ func TestExperimentTargetingGetDecisionWithAudienceCondTree(t *testing.T) {
 		},
 	}
 
-	expectedExperimentDecision = ExperimentDecision{
-		Decision: Decision{
-			DecisionMade: false,
-		},
-		Variation: entities.Variation{},
-	}
+	expectedExperimentDecision = ExperimentDecision{}
 
 	decision, _ = experimentTargetingService.GetDecision(testDecisionContext, testUserContext)
 	assert.Equal(t, expectedExperimentDecision, decision) // decision not made? but it passed

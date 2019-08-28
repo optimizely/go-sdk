@@ -17,6 +17,8 @@
 package decision
 
 import (
+	"errors"
+
 	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
 
 	"github.com/optimizely/go-sdk/optimizely/decision/evaluator"
@@ -46,11 +48,10 @@ func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisi
 		conditionTreeEvaluator := evaluator.NewTreeEvaluator()
 		evalResult := conditionTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
 		if !evalResult {
-			// user not targeted for experiment, return an empty variation
-			experimentDecision.DecisionMade = true
+			// user not targeted for experiment, return decision with nil variation
 			experimentDecision.Reason = reasons.FailedAudienceTargeting
 		}
-		return experimentDecision, nil
+		return experimentDecision, errors.New(string(reasons.FailedAudienceTargeting))
 	}
 
 	if len(experiment.AudienceIds) > 0 {
@@ -59,10 +60,9 @@ func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisi
 		condTreeParams := entities.NewTreeParameters(&userContext, map[string]entities.Audience{})
 		evalResult := s.audienceEvaluator.Evaluate(experimentAudience, condTreeParams)
 		if evalResult == false {
-			// user not targeted for experiment, return an empty variation
-			experimentDecision.DecisionMade = true
+			// user not targeted for experiment, return decision with nil variation
 			experimentDecision.Reason = reasons.FailedAudienceTargeting
-			return experimentDecision, nil
+			return experimentDecision, errors.New(string(reasons.FailedAudienceTargeting))
 		}
 	}
 	// user passes audience targeting, can move on to the next decision maker

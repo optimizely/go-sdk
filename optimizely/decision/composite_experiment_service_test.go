@@ -17,6 +17,7 @@
 package decision
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,53 +36,42 @@ func TestCompositeExperimentServiceGetDecision(t *testing.T) {
 		ID: "test_user_1",
 	}
 
-	expectedExperimentDecision := ExperimentDecision{
-		Variation: testExp1111.Variations["2222"],
-		Decision: Decision{
-			DecisionMade: true,
-		},
-	}
+	expectedVariation := testExp1111.Variations["2222"]
+	expectedExperimentDecision := ExperimentDecision{}
+	expectedErr := errors.New("User failed targeting")
 	// test that we return out of the decision making and the next one doesn't get called
 	mockExperimentDecisionService := new(MockExperimentDecisionService)
-	mockExperimentDecisionService.On("GetDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision, nil)
+	mockExperimentDecisionService.On("GetDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision, expectedErr)
 
 	mockExperimentDecisionService2 := new(MockExperimentDecisionService)
 	compositeExperimentService := &CompositeExperimentService{
-		experimentDecisionServices: []ExperimentDecisionService{
-			mockExperimentDecisionService,
-			mockExperimentDecisionService2,
-		},
+		experimentTargetingService: mockExperimentDecisionService,
+		experimentBucketerService:  mockExperimentDecisionService2,
 	}
 	decision, err := compositeExperimentService.GetDecision(testDecisionContext, testUserContext)
 
-	assert.NoError(t, err)
-	assert.Equal(t, expectedExperimentDecision, decision)
+	if assert.Error(t, err) {
+		assert.Equal(t, expectedErr, err)
+	} else {
+		panic("Error expected")
+	}
 	mockExperimentDecisionService.AssertExpectations(t)
 	mockExperimentDecisionService2.AssertNotCalled(t, "GetDecision")
 
 	// test that we move on to the next decision service if no decision is made
 	mockExperimentDecisionService = new(MockExperimentDecisionService)
-	expectedExperimentDecision = ExperimentDecision{
-		Decision: Decision{
-			DecisionMade: false,
-		},
-	}
+	expectedExperimentDecision = ExperimentDecision{}
 	mockExperimentDecisionService.On("GetDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision, nil)
 
 	mockExperimentDecisionService2 = new(MockExperimentDecisionService)
 	expectedExperimentDecision2 := ExperimentDecision{
-		Variation: testExp1111.Variations["2222"],
-		Decision: Decision{
-			DecisionMade: true,
-		},
+		Variation: &expectedVariation,
 	}
 	mockExperimentDecisionService2.On("GetDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision2, nil)
 
 	compositeExperimentService = &CompositeExperimentService{
-		experimentDecisionServices: []ExperimentDecisionService{
-			mockExperimentDecisionService,
-			mockExperimentDecisionService2,
-		},
+		experimentTargetingService: mockExperimentDecisionService,
+		experimentBucketerService:  mockExperimentDecisionService2,
 	}
 	decision, err = compositeExperimentService.GetDecision(testDecisionContext, testUserContext)
 
@@ -92,26 +82,16 @@ func TestCompositeExperimentServiceGetDecision(t *testing.T) {
 
 	// test when no decisions are made
 	mockExperimentDecisionService = new(MockExperimentDecisionService)
-	expectedExperimentDecision = ExperimentDecision{
-		Decision: Decision{
-			DecisionMade: false,
-		},
-	}
+	expectedExperimentDecision = ExperimentDecision{}
 	mockExperimentDecisionService.On("GetDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision, nil)
 
 	mockExperimentDecisionService2 = new(MockExperimentDecisionService)
-	expectedExperimentDecision2 = ExperimentDecision{
-		Decision: Decision{
-			DecisionMade: false,
-		},
-	}
+	expectedExperimentDecision2 = ExperimentDecision{}
 	mockExperimentDecisionService2.On("GetDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision2, nil)
 
 	compositeExperimentService = &CompositeExperimentService{
-		experimentDecisionServices: []ExperimentDecisionService{
-			mockExperimentDecisionService,
-			mockExperimentDecisionService2,
-		},
+		experimentTargetingService: mockExperimentDecisionService,
+		experimentBucketerService:  mockExperimentDecisionService2,
 	}
 	decision, err = compositeExperimentService.GetDecision(testDecisionContext, testUserContext)
 

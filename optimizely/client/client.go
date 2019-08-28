@@ -88,7 +88,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 
 	if featureDecision.Source == decision.FeatureTest {
 		// send impression event for feature tests
-		impressionEvent := event.CreateImpressionUserEvent(projectConfig, featureDecision.Experiment, featureDecision.Variation, userContext)
+		impressionEvent := event.CreateImpressionUserEvent(projectConfig, featureDecision.Experiment, *featureDecision.Variation, userContext)
 		o.eventProcessor.ProcessEvent(impressionEvent)
 	}
 	return result, nil

@@ -17,6 +17,7 @@
 package decision
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
@@ -43,8 +44,7 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 		ProjectConfig: mockProjectConfig,
 	}
 	testExperimentBucketerDecision := ExperimentDecision{
-		Decision:  Decision{DecisionMade: true},
-		Variation: testExp1112Var2222,
+		Variation: &testExp1112Var2222,
 	}
 	testExperimentBucketerDecisionContext := ExperimentDecisionContext{
 		Experiment:    &testExp1112,
@@ -60,10 +60,7 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 	}
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1112,
-		Variation:  testExp1112Var2222,
-		Decision: Decision{
-			DecisionMade: true,
-		},
+		Variation:  &testExp1112Var2222,
 	}
 	decision, _ := testRolloutService.GetDecision(testFeatureDecisionContext, testUserContext)
 	assert.Equal(t, expectedFeatureDecision, decision)
@@ -78,8 +75,7 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 	}
 	testExperimentBucketerDecision = ExperimentDecision{
 		Decision: Decision{
-			DecisionMade: true,
-			Reason:       reasons.NotBucketedIntoVariation,
+			Reason: reasons.NotBucketedIntoVariation,
 		},
 	}
 	testExperimentBucketerDecisionContext = ExperimentDecisionContext{
@@ -96,8 +92,7 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 	}
 	expectedFeatureDecision = FeatureDecision{
 		Decision: Decision{
-			DecisionMade: true,
-			Reason:       reasons.NotBucketedIntoVariation,
+			Reason: reasons.NotBucketedIntoVariation,
 		},
 		Experiment: testExp1112,
 	}
@@ -107,30 +102,29 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 	mockExperimentTargetingService.AssertExpectations(t)
 
 	// Test experiment fails targeting
-	testExperimentTargetingDecision = ExperimentDecision{
-		Decision: Decision{
-			DecisionMade: true,
-		},
-	} // zero-value variation means the user failed targeting
+	testExperimentTargetingDecision = ExperimentDecision{} // zero-value variation means the user failed targeting
 	testExperimentTargetingDecisionContext = ExperimentDecisionContext{
 		Experiment:    &testExp1112,
 		ProjectConfig: mockProjectConfig,
 	}
-
+	expectedErr := errors.New("User failed targeting")
 	mockExperimentTargetingService = new(MockExperimentDecisionService)
-	mockExperimentTargetingService.On("GetDecision", testExperimentTargetingDecisionContext, testUserContext).Return(testExperimentTargetingDecision, nil)
+	mockExperimentTargetingService.On("GetDecision", testExperimentTargetingDecisionContext, testUserContext).Return(testExperimentTargetingDecision, expectedErr)
 	testRolloutService = RolloutService{
 		experimentTargetingService: mockExperimentTargetingService,
 		experimentBucketerService:  mockExperimentBucketerService,
 	}
 	expectedFeatureDecision = FeatureDecision{
 		Decision: Decision{
-			DecisionMade: true,
-			Reason:       reasons.FailedRolloutTargeting,
+			Reason: reasons.FailedRolloutTargeting,
 		},
 	}
-	decision, _ = testRolloutService.GetDecision(testFeatureDecisionContext, testUserContext)
-	assert.Equal(t, expectedFeatureDecision, decision)
+	_, err := testRolloutService.GetDecision(testFeatureDecisionContext, testUserContext)
+	if assert.Error(t, err) {
+		assert.Equal(t, expectedErr, err)
+	} else {
+		panic("Error expected")
+	}
 	mockExperimentTargetingService.AssertExpectations(t)
 	mockExperimentBucketerService.AssertNotCalled(t, "GetDecision")
 }

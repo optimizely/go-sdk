@@ -219,10 +219,7 @@ func TestIsFeatureEnabled(t *testing.T) {
 
 	expectedFeatureDecision := decision.FeatureDecision{
 		Experiment: testExperiment,
-		Variation:  testVariation,
-		Decision: decision.Decision{
-			DecisionMade: true,
-		},
+		Variation:  &testVariation,
 	}
 
 	mockDecisionService := new(MockDecisionService)
@@ -354,17 +351,11 @@ func TestGetEnabledFeatures(t *testing.T) {
 
 	expectedFeatureDecisionEnabled := decision.FeatureDecision{
 		Experiment: testExperimentEnabled,
-		Variation:  testVariationEnabled,
-		Decision: decision.Decision{
-			DecisionMade: true,
-		},
+		Variation:  &testVariationEnabled,
 	}
 	expectedFeatureDecisionDisabled := decision.FeatureDecision{
 		Experiment: testExperimentDisabled,
-		Variation:  testVariationDisabled,
-		Decision: decision.Decision{
-			DecisionMade: true,
-		},
+		Variation:  &testVariationDisabled,
 	}
 
 	mockDecisionService := new(MockDecisionService)
@@ -1434,10 +1425,7 @@ func TestGetFeatureVariableErrorCases(t *testing.T) {
 func getTestFeatureDecision(experiment entities.Experiment, variation entities.Variation, decisionMade bool) decision.FeatureDecision {
 	return decision.FeatureDecision{
 		Experiment: experiment,
-		Variation:  variation,
-		Decision: decision.Decision{
-			DecisionMade: decisionMade,
-		},
+		Variation:  &variation,
 	}
 }
 

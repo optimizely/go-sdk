@@ -59,15 +59,13 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		ProjectConfig: decisionContext.ProjectConfig,
 	}
 
-	decision, _ := r.experimentTargetingService.GetDecision(experimentDecisionContext, userContext)
 	// if user fails rollout targeting rule we return out of it
-	if decision.DecisionMade == true {
-		featureDecision.DecisionMade = true
+	if _, err := r.experimentTargetingService.GetDecision(experimentDecisionContext, userContext); err != nil {
 		featureDecision.Reason = reasons.FailedRolloutTargeting
-		return featureDecision, nil
+		return featureDecision, err
 	}
 
-	decision, _ = r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext)
+	decision, _ := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext)
 	featureDecision.Decision = decision.Decision
 	featureDecision.Experiment = experiment
 	featureDecision.Variation = decision.Variation
