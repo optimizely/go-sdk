@@ -26,5 +26,7 @@ import (
 func TestNewStaticProjectConfigManager(t *testing.T) {
 	projectConfig := datafileprojectconfig.DatafileProjectConfig{}
 	configManager := NewStaticProjectConfigManager(projectConfig)
-	assert.Equal(t, projectConfig, configManager.GetConfig())
+
+	actual, _ := configManager.GetConfig()
+	assert.Equal(t, projectConfig, actual)
 }
