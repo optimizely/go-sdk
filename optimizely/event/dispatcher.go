@@ -43,7 +43,7 @@ func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent, callback func(succ
 }
 
 func dispatchEvent(event LogEvent, callback func(success bool)) {
-	jsonValue, _ := json.Marshal(event)
+	jsonValue, _ := json.Marshal(event.event)
 	resp, err := http.Post(event.endPoint, jsonContentType, bytes.NewBuffer(jsonValue))
 	// also check response codes
 	// resp.StatusCode == 400 is an error
