@@ -97,6 +97,6 @@ func (ed *QueueEventDispatcher) flushEvents() {
 }
 
 func NewQueueEventDispatcher() Dispatcher {
-	dispatcher := QueueEventDispatcher{q:NewInMemoryQueue(1000)}
-	return &dispatcher
+	dispatcher := &QueueEventDispatcher{q:NewInMemoryQueue(1000)}
+	return dispatcher
 }
