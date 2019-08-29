@@ -48,6 +48,11 @@ func (c *mockProjectConfig) GetAudienceByID(audienceID string) (entities.Audienc
 	return args.Get(0).(entities.Audience), args.Error(1)
 }
 
+func (c *mockProjectConfig) GetAudienceMap() map[string]entities.Audience {
+	args := c.Called()
+	return args.Get(0).(map[string]entities.Audience)
+}
+
 type MockExperimentDecisionService struct {
 	mock.Mock
 }
@@ -64,6 +69,15 @@ type MockFeatureDecisionService struct {
 func (m *MockFeatureDecisionService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
 	args := m.Called(decisionContext, userContext)
 	return args.Get(0).(FeatureDecision), args.Error(1)
+}
+
+type MockAudienceTreeEvaluator struct {
+	mock.Mock
+}
+
+func (m *MockAudienceTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) bool {
+	args := m.Called(node, condTreeParams)
+	return args.Bool(0)
 }
 
 // Single variation experiment
@@ -92,7 +106,14 @@ var testFeat3333 = entities.Feature{
 
 // Feature rollout
 var testExp1112Var2222 = entities.Variation{ID: "2222", Key: "2222"}
+var testAudience5555 = entities.Audience{ID: "5555"}
 var testExp1112 = entities.Experiment{
+	AudienceConditionTree: &entities.TreeNode{
+		Operator: "and",
+		Nodes: []*entities.TreeNode{
+			&entities.TreeNode{Item: "test_audience_5555"},
+		},
+	},
 	ID:  "1112",
 	Key: testExp1111Key,
 	Variations: map[string]entities.Variation{

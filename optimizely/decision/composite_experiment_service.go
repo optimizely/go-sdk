@@ -18,34 +18,51 @@
 package decision
 
 import (
+	"github.com/optimizely/go-sdk/optimizely/decision/evaluator"
+	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
 // CompositeExperimentService bridges together the various experiment decision services that ship by default with the SDK
 type CompositeExperimentService struct {
-	experimentBucketerService  ExperimentService
-	experimentTargetingService ExperimentService
+	audienceTreeEvaluator evaluator.TreeEvaluator
+	experimentServices    []ExperimentService
 }
 
 // NewCompositeExperimentService creates a new instance of the CompositeExperimentService
 func NewCompositeExperimentService() *CompositeExperimentService {
 	// These decision services are applied in order:
-	// 1. Targeting
-	// 2. Bucketing
+	// 1. Bucketing
 	// @TODO(mng): Prepend forced variation and whitelisting services
 	return &CompositeExperimentService{
-		experimentBucketerService:  NewExperimentBucketerService(),
-		experimentTargetingService: NewExperimentTargetingService(),
+		audienceTreeEvaluator: evaluator.NewMixedTreeEvaluator(),
+		experimentServices: []ExperimentService{
+			NewExperimentBucketerService(),
+		},
 	}
 }
 
 // GetDecision returns a decision for the given experiment and user context
 func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
-	if decision, err := s.experimentTargetingService.GetDecision(decisionContext, userContext); err != nil {
-		// if err is present it means user failed targeting, should return
-		return decision, err
+	experimentDecision := ExperimentDecision{}
+	experiment := decisionContext.Experiment
+
+	// Determine if user can be part of the experiment
+	if experiment.AudienceConditionTree != nil {
+		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
+		evalResult := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
+		if !evalResult {
+			experimentDecision.Reason = reasons.FailedAudienceTargeting
+			return experimentDecision, nil
+		}
 	}
 
-	decision, err := s.experimentBucketerService.GetDecision(decisionContext, userContext)
-	return decision, err
+	// User passed targeting (or the experiment is untargeted), so run through the various decision services
+	for _, experimentService := range s.experimentServices {
+		if decision, err := experimentService.GetDecision(decisionContext, userContext); decision.Variation != nil {
+			return decision, err
+		}
+	}
+
+	return experimentDecision, nil
 }

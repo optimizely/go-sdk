@@ -17,7 +17,6 @@
 package decision
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,24 +36,18 @@ func TestCompositeExperimentServiceGetDecision(t *testing.T) {
 	}
 
 	expectedVariation := testExp1111.Variations["2222"]
-	expectedExperimentDecision := ExperimentDecision{}
-	expectedErr := errors.New("User failed targeting")
+	expectedExperimentDecision := ExperimentDecision{
+		Variation: &expectedVariation,
+	}
 	// test that we return out of the decision making and the next one doesn't get called
 	mockExperimentDecisionService := new(MockExperimentDecisionService)
-	mockExperimentDecisionService.On("GetDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision, expectedErr)
+	mockExperimentDecisionService.On("GetDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision, nil)
 
 	mockExperimentDecisionService2 := new(MockExperimentDecisionService)
 	compositeExperimentService := &CompositeExperimentService{
-		experimentTargetingService: mockExperimentDecisionService,
-		experimentBucketerService:  mockExperimentDecisionService2,
+		experimentServices: []ExperimentService{mockExperimentDecisionService, mockExperimentDecisionService2},
 	}
 	decision, err := compositeExperimentService.GetDecision(testDecisionContext, testUserContext)
-
-	if assert.Error(t, err) {
-		assert.Equal(t, expectedErr, err)
-	} else {
-		panic("Error expected")
-	}
 	mockExperimentDecisionService.AssertExpectations(t)
 	mockExperimentDecisionService2.AssertNotCalled(t, "GetDecision")
 
@@ -70,8 +63,7 @@ func TestCompositeExperimentServiceGetDecision(t *testing.T) {
 	mockExperimentDecisionService2.On("GetDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision2, nil)
 
 	compositeExperimentService = &CompositeExperimentService{
-		experimentTargetingService: mockExperimentDecisionService,
-		experimentBucketerService:  mockExperimentDecisionService2,
+		experimentServices: []ExperimentService{mockExperimentDecisionService, mockExperimentDecisionService2},
 	}
 	decision, err = compositeExperimentService.GetDecision(testDecisionContext, testUserContext)
 
@@ -90,8 +82,7 @@ func TestCompositeExperimentServiceGetDecision(t *testing.T) {
 	mockExperimentDecisionService2.On("GetDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision2, nil)
 
 	compositeExperimentService = &CompositeExperimentService{
-		experimentTargetingService: mockExperimentDecisionService,
-		experimentBucketerService:  mockExperimentDecisionService2,
+		experimentServices: []ExperimentService{mockExperimentDecisionService, mockExperimentDecisionService2},
 	}
 	decision, err = compositeExperimentService.GetDecision(testDecisionContext, testUserContext)
 
@@ -99,4 +90,51 @@ func TestCompositeExperimentServiceGetDecision(t *testing.T) {
 	assert.Equal(t, expectedExperimentDecision2, decision)
 	mockExperimentDecisionService.AssertExpectations(t)
 	mockExperimentDecisionService2.AssertExpectations(t)
+}
+
+func TestCompositeExperimentServiceGetDecisionTargeting(t *testing.T) {
+	testUserContext := entities.UserContext{
+		ID: "test_user",
+	}
+	testAudienceMap := map[string]entities.Audience{
+		"5555": testAudience5555,
+	}
+	mockProjectConfig := new(mockProjectConfig)
+	mockProjectConfig.On("GetAudienceMap").Return(testAudienceMap)
+
+	testExperimentDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1112,
+		ProjectConfig: mockProjectConfig,
+	}
+	testCondTreeParams := entities.NewTreeParameters(&testUserContext, testAudienceMap)
+
+	// Test user fails targeting
+	mockAudienceTreeEvaluator := new(MockAudienceTreeEvaluator)
+	mockAudienceTreeEvaluator.On("Evaluate", testExp1112.AudienceConditionTree, testCondTreeParams).Return(false)
+	mockExperimentDecisionService := new(MockExperimentDecisionService)
+	testCompositeExperimentService := &CompositeExperimentService{
+		audienceTreeEvaluator: mockAudienceTreeEvaluator,
+		experimentServices:    []ExperimentService{mockExperimentDecisionService},
+	}
+	decision, _ := testCompositeExperimentService.GetDecision(testExperimentDecisionContext, testUserContext)
+	assert.Nil(t, decision.Variation)
+	mockAudienceTreeEvaluator.AssertExpectations(t)
+	mockExperimentDecisionService.AssertNotCalled(t, "GetDecision")
+
+	// Test user passes targeting, moves on to children decision services
+	expectedExperimentDecision := ExperimentDecision{
+		Variation: &testExp1112Var2222,
+	}
+	mockAudienceTreeEvaluator = new(MockAudienceTreeEvaluator)
+	mockAudienceTreeEvaluator.On("Evaluate", testExp1112.AudienceConditionTree, testCondTreeParams).Return(true)
+	mockExperimentDecisionService = new(MockExperimentDecisionService)
+	mockExperimentDecisionService.On("GetDecision", testExperimentDecisionContext, testUserContext).Return(expectedExperimentDecision, nil)
+	testCompositeExperimentService = &CompositeExperimentService{
+		audienceTreeEvaluator: mockAudienceTreeEvaluator,
+		experimentServices:    []ExperimentService{mockExperimentDecisionService},
+	}
+	decision, _ = testCompositeExperimentService.GetDecision(testExperimentDecisionContext, testUserContext)
+	assert.Equal(t, decision, expectedExperimentDecision)
+	mockAudienceTreeEvaluator.AssertExpectations(t)
+	mockExperimentDecisionService.AssertExpectations(t)
 }
