@@ -33,7 +33,7 @@ func NewEventProcessor(ctx context.Context, queueSize int, flushInterval time.Du
 		MaxQueueSize:    queueSize,
 		FlushInterval:   flushInterval,
 		Q:               NewInMemoryQueue(queueSize),
-		EventDispatcher: &HTTPEventDispatcher{},
+		EventDispatcher: NewQueueEventDispatcher(),
 	}
 	p.BatchSize = 10
 	p.StartTicker(ctx)
