@@ -1,3 +1,20 @@
+/****************************************************************************
+ * Copyright 2019, Optimizely, Inc. and contributors                        *
+ *                                                                          *
+ * Licensed under the Apache License, Version 2.0 (the "License");          *
+ * you may not use this file except in compliance with the License.         *
+ * You may obtain a copy of the License at                                  *
+ *                                                                          *
+ *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *                                                                          *
+ * Unless required by applicable law or agreed to in writing, software      *
+ * distributed under the License is distributed on an "AS IS" BASIS,        *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+ * See the License for the specific language governing permissions and      *
+ * limitations under the License.                                           *
+ ***************************************************************************/
+
+// Package event //
 package event
 
 import (
@@ -113,7 +130,7 @@ func (p *QueueingEventProcessor) FlushEvents() {
 
 	for p.EventsCount() > 0 {
 		if failedToSend {
-			pLogger.Error("Last Event Batch failed to send. Retry on next Flush", errors.New("Dispatcher failed"))
+			pLogger.Error("last Event Batch failed to send; retry on next flush", errors.New("dispatcher failed"))
 			break
 		}
 		events := p.GetEvents(p.BatchSize)
@@ -125,13 +142,15 @@ func (p *QueueingEventProcessor) FlushEvents() {
 					if batchEventCount == 0 {
 						batchEvent = createBatchEvent(userEvent, createVisitorFromUserEvent(userEvent))
 						batchEventCount = 1
-					} else if !p.canBatch(&batchEvent, userEvent) {
-						// this could happen if the project config was updated for instance.
-						pLogger.Info("Can't batch last event. Sending current batch.")
-						break
 					} else {
-						p.addToBatch(&batchEvent, createVisitorFromUserEvent(userEvent))
-						batchEventCount++
+						if !p.canBatch(&batchEvent, userEvent) {
+							// this could happen if the project config was updated for instance.
+							pLogger.Info("Can't batch last event. Sending current batch.")
+							break
+						} else {
+							p.addToBatch(&batchEvent, createVisitorFromUserEvent(userEvent))
+							batchEventCount++
+						}
 					}
 
 					if batchEventCount >= p.BatchSize {
