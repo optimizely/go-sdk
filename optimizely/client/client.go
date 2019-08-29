@@ -139,10 +139,17 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 		}
 	}()
 
-	configEvent, eventError := o.configManager.GetConfig().GetEventByKey(eventKey)
+	projectConfig, err := o.GetProjectConfig()
+	if err != nil {
+		errorMessage := "Optimizely SDK track: error getting ProjectConfig"
+		logger.Error(errorMessage, err)
+		return err
+	}
+
+	configEvent, eventError := projectConfig.GetEventByKey(eventKey)
 
 	if eventError == nil {
-		userEvent := event.CreateConversionUserEvent(o.configManager.GetConfig(), configEvent, userContext, eventTags)
+		userEvent := event.CreateConversionUserEvent(projectConfig, configEvent, userContext, eventTags)
 		o.eventProcessor.ProcessEvent(userEvent)
 	} else {
 		errorMessage := fmt.Sprintf(`Optimizely SDK track: error getting event with key "%s"`, eventKey)
@@ -220,12 +227,12 @@ func (o *OptimizelyClient) GetProjectConfig() (projectConfig optimizely.ProjectC
 		return nil, err
 	}
 
-	projectConfig = o.configManager.GetConfig()
-	if projectConfig == nil {
-		return nil, fmt.Errorf("Project config is null")
+	projectConfig, err = o.configManager.GetConfig()
+	if err != nil {
+		return nil, err
 	}
 
-	return projectConfig, err
+	return projectConfig, nil
 }
 
 // Close closes the Optimizely instance and stops any ongoing tasks from its children components

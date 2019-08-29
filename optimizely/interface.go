@@ -41,5 +41,5 @@ type ProjectConfig interface {
 
 // ProjectConfigManager manages the config
 type ProjectConfigManager interface {
-	GetConfig() ProjectConfig
+	GetConfig() (ProjectConfig, error)
 }
