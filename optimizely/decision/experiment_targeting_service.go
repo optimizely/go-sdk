@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package decision //
 package decision
 
 import (
@@ -59,7 +60,7 @@ func (s ExperimentTargetingService) GetDecision(decisionContext ExperimentDecisi
 		experimentAudience, _ := decisionContext.ProjectConfig.GetAudienceByID(experiment.AudienceIds[0])
 		condTreeParams := entities.NewTreeParameters(&userContext, map[string]entities.Audience{})
 		evalResult := s.audienceEvaluator.Evaluate(experimentAudience, condTreeParams)
-		if evalResult == false {
+		if !evalResult {
 			// user not targeted for experiment, return decision with nil variation
 			experimentDecision.Reason = reasons.FailedAudienceTargeting
 			return experimentDecision, errors.New(string(reasons.FailedAudienceTargeting))

@@ -44,7 +44,7 @@ func TestGetFeatureDecision(t *testing.T) {
 	testFeatureDecisionService.On("GetDecision", decisionContext, userContext).Return(expectedFeatureDecision, nil)
 
 	decisionService := &CompositeService{
-		featureDecisionServices: []FeatureDecisionService{testFeatureDecisionService},
+		featureDecisionServices: []FeatureService{testFeatureDecisionService},
 	}
 	featureDecision, err := decisionService.GetFeatureDecision(decisionContext, userContext)
 	if err != nil {

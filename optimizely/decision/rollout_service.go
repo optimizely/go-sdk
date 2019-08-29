@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package decision //
 package decision
 
 import (
@@ -24,8 +25,8 @@ import (
 
 // RolloutService makes a feature decision for a given feature rollout
 type RolloutService struct {
-	experimentBucketerService  ExperimentDecisionService
-	experimentTargetingService ExperimentDecisionService
+	experimentBucketerService  ExperimentService
+	experimentTargetingService ExperimentService
 }
 
 // NewRolloutService returns a new instance of the Rollout service

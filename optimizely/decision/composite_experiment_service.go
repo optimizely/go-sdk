@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package decision //
 package decision
 
 import (
@@ -22,8 +23,8 @@ import (
 
 // CompositeExperimentService bridges together the various experiment decision services that ship by default with the SDK
 type CompositeExperimentService struct {
-	experimentBucketerService  ExperimentDecisionService
-	experimentTargetingService ExperimentDecisionService
+	experimentBucketerService  ExperimentService
+	experimentTargetingService ExperimentService
 }
 
 // NewCompositeExperimentService creates a new instance of the CompositeExperimentService

@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package evaluator //
 package evaluator
 
 import (
@@ -30,10 +31,10 @@ const (
 	// "not" operator negates the result of the given condition
 	notOperator = "not"
 	// "or" operator returns true if any of the conditions evaluate to true
-	orOperator = "or"
+	// orOperator = "or"
 )
 
-//TreeEvaluator evaluates a condition tree
+// TreeEvaluator evaluates a condition tree
 type TreeEvaluator struct {
 }
 
@@ -46,12 +47,12 @@ func NewTreeEvaluator() *TreeEvaluator {
 func (c TreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) bool {
 	// This wrapper method converts the conditionEvalResult to a boolean
 	result, _ := c.evaluate(node, condTreeParams)
-	return result == true
+	return result
 }
 
 // Helper method to recursively evaluate a condition tree
 // Returns the result of the evaluation and whether the evaluation of the condition is valid or not (to handle null bubbling)
-func (c TreeEvaluator) evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult bool, isValid bool) {
+func (c TreeEvaluator) evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
 	operator := node.Operator
 	if operator != "" {
 		switch operator {
@@ -59,9 +60,7 @@ func (c TreeEvaluator) evaluate(node *entities.TreeNode, condTreeParams *entitie
 			return c.evaluateAnd(node.Nodes, condTreeParams)
 		case notOperator:
 			return c.evaluateNot(node.Nodes, condTreeParams)
-		case orOperator:
-			fallthrough
-		default:
+		default: // orOperator
 			return c.evaluateOr(node.Nodes, condTreeParams)
 		}
 	}
@@ -87,13 +86,13 @@ func (c TreeEvaluator) evaluate(node *entities.TreeNode, condTreeParams *entitie
 	return result, true
 }
 
-func (c TreeEvaluator) evaluateAnd(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult bool, isValid bool) {
+func (c TreeEvaluator) evaluateAnd(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
 	sawInvalid := false
 	for _, node := range nodes {
 		result, isValid := c.evaluate(node, condTreeParams)
 		if !isValid {
 			return false, isValid
-		} else if result == false {
+		} else if !result {
 			return result, isValid
 		}
 	}
@@ -106,7 +105,7 @@ func (c TreeEvaluator) evaluateAnd(nodes []*entities.TreeNode, condTreeParams *e
 	return true, true
 }
 
-func (c TreeEvaluator) evaluateNot(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult bool, isValid bool) {
+func (c TreeEvaluator) evaluateNot(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
 	if len(nodes) > 0 {
 		result, isValid := c.evaluate(nodes[0], condTreeParams)
 		if !isValid {
@@ -117,13 +116,13 @@ func (c TreeEvaluator) evaluateNot(nodes []*entities.TreeNode, condTreeParams *e
 	return false, false
 }
 
-func (c TreeEvaluator) evaluateOr(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult bool, isValid bool) {
+func (c TreeEvaluator) evaluateOr(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
 	sawInvalid := false
 	for _, node := range nodes {
 		result, isValid := c.evaluate(node, condTreeParams)
 		if !isValid {
 			sawInvalid = true
-		} else if result == true {
+		} else if result {
 			return result, isValid
 		}
 	}

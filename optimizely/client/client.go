@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package client has client definitions
 package client
 
 import (
@@ -37,7 +38,7 @@ var logger = logging.GetLogger("Client")
 // OptimizelyClient is the entry point to the Optimizely SDK
 type OptimizelyClient struct {
 	configManager   optimizely.ProjectConfigManager
-	decisionService decision.DecisionService
+	decisionService decision.Service
 	eventProcessor  event.Processor
 	isValid         bool
 
@@ -55,15 +56,16 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 		}
 	}()
 
-	if isValid, err := o.isValidClient("IsFeatureEnabled"); !isValid {
+	var isValid bool
+	if isValid, err = o.isValidClient("IsFeatureEnabled"); !isValid {
 		return false, err
 	}
 
 	projectConfig := o.configManager.GetConfig()
-	feature, err := projectConfig.GetFeatureByKey(featureKey)
-	if err != nil {
-		logger.Error("Error retrieving feature", err)
-		return result, err
+	feature, e := projectConfig.GetFeatureByKey(featureKey)
+	if e != nil {
+		logger.Error("Error retrieving feature", e)
+		return result, e
 	}
 	featureDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &feature,
@@ -72,14 +74,14 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 
 	userID := userContext.ID
 	logger.Debug(fmt.Sprintf(`Evaluating feature "%s" for user "%s".`, featureKey, userID))
-	featureDecision, err := o.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
+	featureDecision, e1 := o.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
 
-	if err != nil {
-		logger.Error("Received an error while computing feature decision", err)
-		return result, err
+	if e1 != nil {
+		logger.Error("received an error while computing feature decision", e1)
+		return result, e1
 	}
 
-	result = (featureDecision.Variation.FeatureEnabled == true)
+	result = featureDecision.Variation.FeatureEnabled
 	if result {
 		logger.Info(fmt.Sprintf(`Feature "%s" is enabled for user "%s".`, featureKey, userID))
 	} else {
@@ -99,7 +101,7 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 
 	defer func() {
 		if r := recover(); r != nil {
-			errorMessage := fmt.Sprintf(`Optimizely SDK is panicking with the error "%s"`, string(debug.Stack()))
+			errorMessage := fmt.Sprintf(`optimizely SDK is panicking with the error "%s"`, string(debug.Stack()))
 			err = errors.New(errorMessage)
 			logger.Error(errorMessage, err)
 		}
@@ -125,7 +127,7 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 // Track take and event key with event tags and if the event is part of the config, send to events backend.
 func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}) (err error) {
 	if !o.isValid {
-		errorMessage := "Optimizely instance is not valid. Failing GetEnabledFeatures."
+		errorMessage := "optimizely instance is not valid; failing GetEnabledFeatures"
 		err = errors.New(errorMessage)
 		logger.Error(errorMessage, err)
 		return err
@@ -133,7 +135,7 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 
 	defer func() {
 		if r := recover(); r != nil {
-			errorMessage := fmt.Sprintf(`Optimizely SDK is panicking with the error "%s"`, string(debug.Stack()))
+			errorMessage := fmt.Sprintf(`optimizely SDK is panicking with the error "%s"`, string(debug.Stack()))
 			err = errors.New(errorMessage)
 			logger.Error(errorMessage, err)
 		}
@@ -145,7 +147,7 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 		userEvent := event.CreateConversionUserEvent(o.configManager.GetConfig(), configEvent, userContext, eventTags)
 		o.eventProcessor.ProcessEvent(userEvent)
 	} else {
-		errorMessage := fmt.Sprintf(`Optimizely SDK track: error getting event with key "%s"`, eventKey)
+		errorMessage := fmt.Sprintf(`optimizely SDK track: error getting event with key "%s"`, eventKey)
 		logger.Error(errorMessage, eventError)
 		return eventError
 	}
@@ -154,82 +156,83 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 }
 
 // GetFeatureVariableBoolean returns boolean feature variable value
-func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey string, variableKey string, userContext entities.UserContext) (value bool, err error) {
+func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey, variableKey string, userContext entities.UserContext) (value bool, err error) {
 	val, valueType, err := o.getFeatureVariable(featureKey, variableKey, userContext)
 	if err != nil {
 		return false, err
 	}
 	convertedValue, err := strconv.ParseBool(val)
 	if err != nil || valueType != entities.Boolean {
-		return false, fmt.Errorf("Variable value for key %s is invalid or wrong type", variableKey)
+		return false, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
 	}
 	return convertedValue, err
 }
 
 // GetFeatureVariableDouble returns double feature variable value
-func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey string, variableKey string, userContext entities.UserContext) (value float64, err error) {
+func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey, variableKey string, userContext entities.UserContext) (value float64, err error) {
 	val, valueType, err := o.getFeatureVariable(featureKey, variableKey, userContext)
 	if err != nil {
 		return 0, err
 	}
 	convertedValue, err := strconv.ParseFloat(val, 64)
 	if err != nil || valueType != entities.Double {
-		return 0, fmt.Errorf("Variable value for key %s is invalid or wrong type", variableKey)
+		return 0, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
 	}
 	return convertedValue, err
 }
 
 // GetFeatureVariableInteger returns integer feature variable value
-func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey string, variableKey string, userContext entities.UserContext) (value int, err error) {
+func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey, variableKey string, userContext entities.UserContext) (value int, err error) {
 	val, valueType, err := o.getFeatureVariable(featureKey, variableKey, userContext)
 	if err != nil {
 		return 0, err
 	}
 	convertedValue, err := strconv.Atoi(val)
 	if err != nil || valueType != entities.Integer {
-		return 0, fmt.Errorf("Variable value for key %s is invalid or wrong type", variableKey)
+		return 0, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
 	}
 	return convertedValue, err
 }
 
 // GetFeatureVariableString returns string feature variable value
-func (o *OptimizelyClient) GetFeatureVariableString(featureKey string, variableKey string, userContext entities.UserContext) (value string, err error) {
+func (o *OptimizelyClient) GetFeatureVariableString(featureKey, variableKey string, userContext entities.UserContext) (value string, err error) {
 	value, valueType, err := o.getFeatureVariable(featureKey, variableKey, userContext)
 	if err != nil {
 		return "", err
 	}
 	if valueType != entities.String {
-		return "", fmt.Errorf("Variable value for key %s is wrong type", variableKey)
+		return "", fmt.Errorf("variable value for key %s is wrong type", variableKey)
 	}
 	return value, err
 }
 
-func (o *OptimizelyClient) getFeatureVariable(featureKey string, variableKey string, userContext entities.UserContext) (value string, valueType entities.VariableType, err error) {
+func (o *OptimizelyClient) getFeatureVariable(featureKey, variableKey string, userContext entities.UserContext) (value string, valueType entities.VariableType, err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			errorMessage := fmt.Sprintf(`Optimizely SDK is panicking with the error "%s"`, string(debug.Stack()))
+			errorMessage := fmt.Sprintf(`optimizely SDK is panicking with the error "%s"`, string(debug.Stack()))
 			err = errors.New(errorMessage)
 			logger.Error(errorMessage, err)
 		}
 	}()
 
-	if isValid, err := o.isValidClient("getFeatureVariable"); !isValid {
+	var isValid bool
+	if isValid, err = o.isValidClient("getFeatureVariable"); !isValid {
 		return "", "", err
 	}
 
 	projectConfig := o.configManager.GetConfig()
 
-	feature, err := projectConfig.GetFeatureByKey(featureKey)
-	if err != nil {
-		logger.Error("Error retrieving feature", err)
-		return "", "", err
+	feature, e := projectConfig.GetFeatureByKey(featureKey)
+	if e != nil {
+		logger.Error("error retrieving feature", e)
+		return "", "", e
 	}
 
-	variable, err := projectConfig.GetVariableByKey(featureKey, variableKey)
-	if err != nil {
-		logger.Error("Error retrieving variable", err)
-		return "", "", err
+	variable, e1 := projectConfig.GetVariableByKey(featureKey, variableKey)
+	if e1 != nil {
+		logger.Error("error retrieving variable", e1)
+		return "", "", e1
 	}
 
 	var featureValue = variable.DefaultValue
@@ -239,8 +242,8 @@ func (o *OptimizelyClient) getFeatureVariable(featureKey string, variableKey str
 		ProjectConfig: projectConfig,
 	}
 
-	featureDecision, err := o.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
-	if err == nil {
+	featureDecision, e2 := o.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
+	if e2 == nil {
 		if v, ok := featureDecision.Variation.Variables[variable.ID]; ok && featureDecision.Variation.FeatureEnabled {
 			featureValue = v.Value
 		}
@@ -252,7 +255,7 @@ func (o *OptimizelyClient) getFeatureVariable(featureKey string, variableKey str
 
 func (o *OptimizelyClient) isValidClient(methodName string) (result bool, err error) {
 	if !o.isValid {
-		errorMessage := fmt.Sprintf("Optimizely instance is not valid. Failing %s.", methodName)
+		errorMessage := fmt.Sprintf("optimizely instance is not valid. Failing %s.", methodName)
 		err := errors.New(errorMessage)
 		logger.Error(errorMessage, nil)
 		return false, err

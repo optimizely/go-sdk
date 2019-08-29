@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package decision //
 package decision
 
 import (
@@ -27,8 +28,8 @@ var cfLogger = logging.GetLogger("CompositeFeatureService")
 
 // CompositeFeatureService is the default out-of-the-box feature decision service
 type CompositeFeatureService struct {
-	experimentDecisionService ExperimentDecisionService
-	rolloutDecisionService    FeatureDecisionService
+	experimentDecisionService ExperimentService
+	rolloutDecisionService    FeatureService
 }
 
 // NewCompositeFeatureService returns a new instance of the CompositeFeatureService

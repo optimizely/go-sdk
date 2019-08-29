@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package datafileprojectconfig //
 package datafileprojectconfig
 
 import (
@@ -30,19 +31,19 @@ var logger = logging.GetLogger("DatafileProjectConfig")
 // DatafileProjectConfig is a project config backed by a datafile
 type DatafileProjectConfig struct {
 	accountID            string
-	anonymizeIP          bool
-	attributeKeyToIDMap  map[string]string
+	projectID            string
+	revision             string
+	experimentKeyToIDMap map[string]string
 	audienceMap          map[string]entities.Audience
 	attributeMap         map[string]entities.Attribute
-	botFiltering         bool
 	eventMap             map[string]entities.Event
-	experimentKeyToIDMap map[string]string
+	attributeKeyToIDMap  map[string]string
 	experimentMap        map[string]entities.Experiment
 	featureMap           map[string]entities.Feature
 	groupMap             map[string]entities.Group
-	projectID            string
-	revision             string
 	rolloutMap           map[string]entities.Rollout
+	anonymizeIP          bool
+	botFiltering         bool
 }
 
 // GetProjectID returns projectID
@@ -122,10 +123,10 @@ func (c DatafileProjectConfig) GetFeatureByKey(featureKey string) (entities.Feat
 }
 
 // GetVariableByKey returns the featureVariable with the given key
-func (c DatafileProjectConfig) GetVariableByKey(featureKey string, variableKey string) (entities.Variable, error) {
+func (c DatafileProjectConfig) GetVariableByKey(featureKey, variableKey string) (entities.Variable, error) {
 
 	var variable entities.Variable
-	var err = fmt.Errorf("Variable with key %s not found", featureKey)
+	var err = fmt.Errorf("variable with key %s not found", featureKey)
 	if feature, ok := c.featureMap[featureKey]; ok {
 		for _, v := range feature.Variables {
 			if v.Key == variableKey {
