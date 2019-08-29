@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package notification //
 package notification
 
 import "github.com/optimizely/go-sdk/optimizely/entities"

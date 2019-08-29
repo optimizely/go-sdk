@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package utils //
 package utils
 
 import (
@@ -33,7 +34,7 @@ func GetBoolValue(value interface{}) (bool, error) {
 		}
 	}
 
-	return false, fmt.Errorf(`Value "%v" could not be converted to bool`, value)
+	return false, fmt.Errorf(`value "%v" could not be converted to bool`, value)
 }
 
 // GetFloatValue will attempt to convert the given value to a float64
@@ -47,7 +48,7 @@ func GetFloatValue(value interface{}) (float64, error) {
 		}
 	}
 
-	return 0, fmt.Errorf(`Value "%v" could not be converted to float`, value)
+	return 0, fmt.Errorf(`value "%v" could not be converted to float`, value)
 }
 
 // GetIntValue will attempt to convert the given value to an int64
@@ -60,7 +61,7 @@ func GetIntValue(value interface{}) (int64, error) {
 		}
 	}
 
-	return 0, fmt.Errorf(`Value "%v" could not be converted to int`, value)
+	return 0, fmt.Errorf(`value "%v" could not be converted to int`, value)
 }
 
 // GetStringValue will attempt to convert the given value to a string
@@ -72,5 +73,5 @@ func GetStringValue(value interface{}) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf(`Value "%v" could not be converted to string`, value)
+	return "", fmt.Errorf(`value "%v" could not be converted to string`, value)
 }
