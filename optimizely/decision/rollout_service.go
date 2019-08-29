@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package decision //
 package decision
 
 import (
@@ -24,8 +25,8 @@ import (
 
 // RolloutService makes a feature decision for a given feature rollout
 type RolloutService struct {
-	experimentBucketerService  ExperimentDecisionService
-	experimentTargetingService ExperimentDecisionService
+	experimentBucketerService  ExperimentService
+	experimentTargetingService ExperimentService
 }
 
 // NewRolloutService returns a new instance of the Rollout service
@@ -61,7 +62,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 
 	decision, _ := r.experimentTargetingService.GetDecision(experimentDecisionContext, userContext)
 	// if user fails rollout targeting rule we return out of it
-	if decision.DecisionMade == true {
+	if decision.DecisionMade {
 		featureDecision.DecisionMade = true
 		featureDecision.Reason = reasons.FailedRolloutTargeting
 		return featureDecision, nil

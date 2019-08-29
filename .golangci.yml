@@ -46,7 +46,7 @@ linters:
    - ineffassign
    - varcheck
    - stylecheck
-   - gochecknoinits
+   #- gochecknoinits
    - scopelint
    - gocritic
    - golint

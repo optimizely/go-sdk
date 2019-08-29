@@ -14,9 +14,10 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package entities //
 package entities
 
-//TreeNode in a condition tree
+// TreeNode in a condition tree
 type TreeNode struct {
 	Item     interface{} // can be a condition or a string
 	Operator string
@@ -24,13 +25,13 @@ type TreeNode struct {
 	Nodes []*TreeNode
 }
 
-//TreeParameters represents paramaters of a tree
+// TreeParameters represents parameters of a tree
 type TreeParameters struct {
 	User        *UserContext
 	AudienceMap map[string]Audience
 }
 
-//NewTreeParameters returns TreeParameters object
+// NewTreeParameters returns TreeParameters object
 func NewTreeParameters(user *UserContext, audience map[string]Audience) *TreeParameters {
 	return &TreeParameters{User: user, AudienceMap: audience}
 }

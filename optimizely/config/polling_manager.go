@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package config //
 package config
 
 import (
@@ -27,7 +28,7 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/logging"
 )
 
-const defaultPollingInterval = time.Duration(5 * time.Minute) // default to 5 minutes for polling
+const defaultPollingInterval = 5 * time.Minute // default to 5 minutes for polling
 
 // DatafileURLTemplate is used to construct the endpoint for retrieving the datafile from the CDN
 const DatafileURLTemplate = "https://cdn.optimizely.com/datafiles/%s.json"
