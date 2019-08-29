@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"runtime/debug"
 
 	"github.com/optimizely/go-sdk/optimizely/event"
@@ -54,11 +53,12 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 		}
 	}()
 
-	if isValid, err := o.isValidClient("IsFeatureEnabled"); !isValid {
+	projectConfig, err := o.GetProjectConfig()
+	if err != nil {
+		logger.Error("Error retrieving ProjectConfig", err)
 		return false, err
 	}
 
-	projectConfig := o.configManager.GetConfig()
 	feature, err := projectConfig.GetFeatureByKey(featureKey)
 	if err != nil {
 		logger.Error("Error retrieving feature", err)
@@ -104,11 +104,12 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 		}
 	}()
 
-	if isValid, err := o.isValidClient("GetEnabledFeatures"); !isValid {
+	projectConfig, err := o.GetProjectConfig()
+	if err != nil {
+		logger.Error("Error retrieving ProjectConfig", err)
 		return enabledFeatures, err
 	}
 
-	projectConfig := o.configManager.GetConfig()
 	featureList := projectConfig.GetFeatureList()
 	for _, feature := range featureList {
 		isEnabled, _ := o.IsFeatureEnabled(feature.Key, userContext)
@@ -174,11 +175,11 @@ func (o *OptimizelyClient) getFeatureVariable(featureKey string, variableKey str
 		}
 	}()
 
-	if isValid, err := o.isValidClient("getFeatureVariable"); !isValid {
+	projectConfig, err := o.GetProjectConfig()
+	if err != nil {
+		logger.Error("Error retrieving ProjectConfig", err)
 		return "", "", err
 	}
-
-	projectConfig := o.configManager.GetConfig()
 
 	feature, err := projectConfig.GetFeatureByKey(featureKey)
 	if err != nil {
@@ -210,18 +211,21 @@ func (o *OptimizelyClient) getFeatureVariable(featureKey string, variableKey str
 	return featureValue, variable.Type, nil
 }
 
-func (o *OptimizelyClient) isValidClient(methodName string) (result bool, err error) {
+// GetProjectConfig returns the current ProjectConfig or nil if the instance is not valid
+func (o *OptimizelyClient) GetProjectConfig() (projectConfig optimizely.ProjectConfig, err error) {
 	if !o.isValid {
-		errorMessage := fmt.Sprintf("Optimizely instance is not valid. Failing %s.", methodName)
+		errorMessage := fmt.Sprintf("Optimizely instance is not valid. Failing ")
 		err := errors.New(errorMessage)
 		logger.Error(errorMessage, nil)
-		return false, err
+		return nil, err
 	}
 
-	if reflect.ValueOf(o.configManager.GetConfig()).IsNil() {
-		return false, fmt.Errorf("project config is null")
+	projectConfig = o.configManager.GetConfig()
+	if projectConfig == nil {
+		return nil, fmt.Errorf("Project config is null")
 	}
-	return true, nil
+
+	return projectConfig, err
 }
 
 // Close closes the Optimizely instance and stops any ongoing tasks from its children components
