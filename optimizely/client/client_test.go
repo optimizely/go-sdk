@@ -440,7 +440,7 @@ func TestGetFeatureVariableBooleanWithValidValue(t *testing.T) {
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockConfigManager.On("GetConfig").Return(mockConfig, (error) (nil))
 
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
@@ -486,7 +486,7 @@ func TestGetFeatureVariableBooleanWithInvalidValue(t *testing.T) {
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockConfigManager.On("GetConfig").Return(mockConfig, (error) (nil))
 
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
@@ -533,7 +533,7 @@ func TestGetFeatureVariableBooleanWithInvalidValueType(t *testing.T) {
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockConfigManager.On("GetConfig").Return(mockConfig, (error) (nil))
 
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
@@ -580,7 +580,7 @@ func TestGetFeatureVariableBooleanWithEmptyValueType(t *testing.T) {
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockConfigManager.On("GetConfig").Return(mockConfig, (error) (nil))
 
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
@@ -627,7 +627,7 @@ func TestGetFeatureVariableBooleanReturnsDefaultValueIfFeatureNotEnabled(t *test
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockConfigManager.On("GetConfig").Return(mockConfig, (error) (nil))
 
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
@@ -697,7 +697,7 @@ func TestGetFeatureVariableDoubleWithValidValue(t *testing.T) {
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockConfigManager.On("GetConfig").Return(mockConfig, (error) (nil))
 
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
@@ -743,7 +743,7 @@ func TestGetFeatureVariableDoubleWithInvalidValue(t *testing.T) {
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockConfigManager.On("GetConfig").Return(mockConfig, (error) (nil))
 
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
@@ -790,7 +790,7 @@ func TestGetFeatureVariableDoubleWithInvalidValueType(t *testing.T) {
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockConfigManager.On("GetConfig").Return(mockConfig, (error) (nil))
 
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
@@ -837,7 +837,7 @@ func TestGetFeatureVariableDoubleWithEmptyValueType(t *testing.T) {
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockConfigManager.On("GetConfig").Return(mockConfig, (error) (nil))
 
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
@@ -884,7 +884,7 @@ func TestGetFeatureVariableDoubleReturnsDefaultValueIfFeatureNotEnabled(t *testi
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockConfigManager.On("GetConfig").Return(mockConfig, (error) (nil))
 
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
@@ -954,7 +954,7 @@ func TestGetFeatureVariableIntegerWithValidValue(t *testing.T) {
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockConfigManager.On("GetConfig").Return(mockConfig, (error) (nil))
 
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
@@ -1000,7 +1000,7 @@ func TestGetFeatureVariableIntegerWithInvalidValue(t *testing.T) {
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockConfigManager.On("GetConfig").Return(mockConfig, (error) (nil))
 
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
@@ -1047,7 +1047,7 @@ func TestGetFeatureVariableIntegerWithInvalidValueType(t *testing.T) {
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockConfigManager.On("GetConfig").Return(mockConfig, (error) (nil))
 
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
@@ -1094,7 +1094,7 @@ func TestGetFeatureVariableIntegerWithEmptyValueType(t *testing.T) {
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockConfigManager.On("GetConfig").Return(mockConfig, (error) (nil))
 
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
@@ -1141,7 +1141,7 @@ func TestGetFeatureVariableIntegerReturnsDefaultValueIfFeatureNotEnabled(t *test
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockConfigManager.On("GetConfig").Return(mockConfig, (error) (nil))
 
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
@@ -1351,7 +1351,7 @@ func TestGetFeatureVariableStringReturnsDefaultValueIfFeatureNotEnabled(t *testi
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig)
+	mockConfigManager.On("GetConfig").Return(mockConfig, (error) (nil))
 
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
