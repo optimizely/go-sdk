@@ -1,6 +1,7 @@
 package event
 
 import (
+	"context"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -8,7 +9,8 @@ import (
 )
 
 func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
-	q := NewQueueEventDispatcher()
+	ctx := context.TODO()
+	q := NewQueueEventDispatcher(ctx)
 
 	eventTags := map[string]interface{}{"revenue": 55.0, "value": 25.1}
 	config := TestConfig{}
