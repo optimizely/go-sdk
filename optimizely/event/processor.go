@@ -45,7 +45,7 @@ type QueueingEventProcessor struct {
 var pLogger = logging.GetLogger("EventProcessor")
 
 // NewEventProcessor returns a new instance of QueueingEventProcessor with queueSize and flushInterval
-func NewEventProcessor(ctx context.Context, batchSize int, queueSize int, flushInterval time.Duration) *QueueingEventProcessor {
+func NewEventProcessor(ctx context.Context, batchSize, queueSize int, flushInterval time.Duration) *QueueingEventProcessor {
 	p := &QueueingEventProcessor{
 		MaxQueueSize:    queueSize,
 		FlushInterval:   flushInterval,
