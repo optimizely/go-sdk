@@ -6,11 +6,7 @@ before_install:
   - go get github.com/mattn/goveralls
 git:
   depth: 1
-
-before_script:
-  - go get -u golang.org/x/lint/golint
 script:
-  - golint ./...
   - go test -v -race ./... -coverprofile=profile.cov
   - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
 stages:
@@ -24,7 +20,6 @@ jobs:
         - go get github.com/golangci/golangci-lint/cmd/golangci-lint
       script:
         - golangci-lint run --out-format=tab --tests=false optimizely/...
-
     - stage: 'Integration Tests'
       merge_mode: replace
       env: SDK=go
