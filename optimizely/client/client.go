@@ -266,8 +266,7 @@ func (o *OptimizelyClient) getFeatureVariable(featureKey, variableKey string, us
 // GetProjectConfig returns the current ProjectConfig or nil if the instance is not valid
 func (o *OptimizelyClient) GetProjectConfig() (projectConfig optimizely.ProjectConfig, err error) {
 	if !o.isValid {
-		err := fmt.Errorf("optimizely instance is not valid")
-		return nil, err
+		return nil, fmt.Errorf("optimizely instance is not valid")
 	}
 
 	projectConfig, err = o.configManager.GetConfig()
