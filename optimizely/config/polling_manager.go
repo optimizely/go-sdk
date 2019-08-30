@@ -48,6 +48,7 @@ type PollingProjectConfigManager struct {
 	pollingInterval time.Duration
 	projectConfig   optimizely.ProjectConfig
 	configLock      sync.RWMutex
+	err             error
 
 	ctx context.Context // context used for cancellation
 }
@@ -75,6 +76,7 @@ func (cm *PollingProjectConfigManager) activate(initialPayload []byte, init bool
 
 		cm.configLock.Lock()
 		cm.projectConfig = projectConfig
+		cm.err = err
 		cm.configLock.Unlock()
 	}
 
@@ -127,8 +129,8 @@ func NewPollingProjectConfigManager(ctx context.Context, sdkKey string) *Polling
 }
 
 // GetConfig returns the project config
-func (cm *PollingProjectConfigManager) GetConfig() optimizely.ProjectConfig {
+func (cm *PollingProjectConfigManager) GetConfig() (optimizely.ProjectConfig, error) {
 	cm.configLock.RLock()
 	defer cm.configLock.RUnlock()
-	return cm.projectConfig
+	return cm.projectConfig, cm.err
 }

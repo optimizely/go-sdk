@@ -82,8 +82,8 @@ func NewStaticProjectConfigManager(config optimizely.ProjectConfig) *StaticProje
 }
 
 // GetConfig returns the project config
-func (cm *StaticProjectConfigManager) GetConfig() optimizely.ProjectConfig {
+func (cm *StaticProjectConfigManager) GetConfig() (optimizely.ProjectConfig, error) {
 	cm.configLock.Lock()
 	defer cm.configLock.Unlock()
-	return cm.projectConfig
+	return cm.projectConfig, nil
 }
