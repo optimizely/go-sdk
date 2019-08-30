@@ -45,8 +45,8 @@ type ConversionEvent struct {
 
 // LogEvent represents a log event
 type LogEvent struct {
-	endPoint string
-	event    Batch
+	EndPoint string
+	Event    Batch
 }
 
 // Batch - Context about the event to send in batch

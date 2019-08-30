@@ -120,3 +120,37 @@ func TestCompositeExperimentServiceGetDecision(t *testing.T) {
 	mockExperimentDecisionService.AssertExpectations(t)
 	mockExperimentDecisionService2.AssertExpectations(t)
 }
+
+func TestCompositeExperimentServiceGetDecisionReturnsErrorWhenExperimentNotRunning(t *testing.T) {
+	experiment := &testExp1111
+	experiment.Status = entities.Paused
+	mockProjectConfig := new(mockProjectConfig)
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    experiment,
+		ProjectConfig: mockProjectConfig,
+	}
+
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	expectedExperimentDecision := ExperimentDecision{
+		Variation: testExp1111.Variations["2222"],
+		Decision: Decision{
+			DecisionMade: true,
+		},
+	}
+	mockExperimentDecisionService := new(MockExperimentDecisionService)
+	mockExperimentDecisionService.On("GetDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision, nil)
+
+	compositeExperimentService := &CompositeExperimentService{
+		experimentDecisionServices: []ExperimentDecisionService{
+			mockExperimentDecisionService,
+		},
+	}
+	decision, err := compositeExperimentService.GetDecision(testDecisionContext, testUserContext)
+
+	assert.Error(t, err)
+	assert.Equal(t, ExperimentDecision{}, decision)
+	mockExperimentDecisionService.AssertNotCalled(t, "GetDecision")
+}

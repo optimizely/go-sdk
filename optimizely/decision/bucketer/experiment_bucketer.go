@@ -35,6 +35,7 @@ func NewMurmurhashBucketer(hashSeed uint32) *MurmurhashBucketer {
 
 // Bucket buckets the user into the given experiment
 func (b MurmurhashBucketer) Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (entities.Variation, reasons.Reason, error) {
+
 	if experiment.GroupID != "" && group.Policy == "random" {
 		bucketKey := bucketingID + group.ID
 		bucketedExperimentID := b.bucketToEntity(bucketKey, group.TrafficAllocation)

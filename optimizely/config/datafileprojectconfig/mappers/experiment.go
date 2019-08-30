@@ -63,9 +63,11 @@ func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experimen
 	experiment := entities.Experiment{
 		AudienceIds:           rawExperiment.AudienceIds,
 		ID:                    rawExperiment.ID,
+		LayerID:               rawExperiment.LayerID,
+		Status:                rawExperiment.Status,
 		Key:                   rawExperiment.Key,
-		TrafficAllocation:     make([]entities.Range, len(rawExperiment.TrafficAllocation)),
 		Variations:            make(map[string]entities.Variation),
+		TrafficAllocation:     make([]entities.Range, len(rawExperiment.TrafficAllocation)),
 		AudienceConditionTree: audienceConditionTree,
 	}
 

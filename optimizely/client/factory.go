@@ -36,6 +36,7 @@ type Options struct {
 	Context              context.Context
 	ProjectConfigManager optimizely.ProjectConfigManager
 	DecisionService      decision.DecisionService
+	EventProcessor       *event.QueueingEventProcessor
 }
 
 // OptimizelyFactory is used to construct an instance of the OptimizelyClient
@@ -45,6 +46,7 @@ type OptimizelyFactory struct {
 }
 
 const defaultEventQueueSize = 10
+const defaultBatchSize = 10
 const defaultEventFlushInterval = 30 * time.Second
 
 // StaticClient returns a client initialized with a static project config
@@ -90,10 +92,10 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 	} else {
 		// if no context is provided, we create our own cancellable context and hand it over to the client so the client can shut down its child processes
 		ctx = context.Background()
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithCancel(ctx)
-		client.cancelFunc = cancel
 	}
+	var cancel context.CancelFunc
+	ctx, cancel = context.WithCancel(ctx)
+	client.cancelFunc = cancel
 
 	notificationCenter := notification.NewNotificationCenter()
 
@@ -117,8 +119,12 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 		client.decisionService = decision.NewCompositeService(notificationCenter)
 	}
 
-	// @TODO: allow event processor to be passed in
-	client.eventProcessor = event.NewEventProcessor(ctx, defaultEventQueueSize, defaultEventFlushInterval)
+	if clientOptions.EventProcessor != nil {
+		client.eventProcessor = clientOptions.EventProcessor
+	} else {
+		client.eventProcessor = event.NewEventProcessor(ctx, defaultBatchSize, defaultEventQueueSize, defaultEventFlushInterval)
+	}
+
 	client.isValid = true
 	return client, nil
 }

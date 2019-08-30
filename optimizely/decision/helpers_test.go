@@ -77,6 +77,7 @@ var testExp1111 = entities.Experiment{
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2222", EndOfRange: 10000},
 	},
+	Status: entities.Running,
 }
 
 // Simple feature test

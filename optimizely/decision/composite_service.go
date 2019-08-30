@@ -67,6 +67,9 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 				"source":          featureDecision.Source,
 			},
 		}
+		if userContext.Attributes == nil {
+			userContext.Attributes = map[string]interface{}{}
+		}
 		decisionNotification := notification.DecisionNotification{
 			DecisionInfo: decisionInfo,
 			Type:         notification.Feature,
