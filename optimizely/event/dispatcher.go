@@ -82,6 +82,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 			//remove it?
 			dispatcherLogger.Error("invalid type passed to event dispatcher", nil)
 			ed.q.Remove(1)
+			continue
 		}
 
 		dispatchEvent(event, func(success bool) {
