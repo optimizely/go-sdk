@@ -30,7 +30,7 @@ var int42Condition = e.Condition{
 }
 
 func TestConditionTreeEvaluateSimpleCondition(t *testing.T) {
-	conditionTreeEvaluator := NewTreeEvaluator()
+	conditionTreeEvaluator := NewMixedTreeEvaluator()
 	conditionTree := &e.TreeNode{
 		Operator: "or",
 		Nodes: []*e.TreeNode{
@@ -61,7 +61,7 @@ func TestConditionTreeEvaluateSimpleCondition(t *testing.T) {
 }
 
 func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
-	conditionTreeEvaluator := NewTreeEvaluator()
+	conditionTreeEvaluator := NewMixedTreeEvaluator()
 	conditionTree := &e.TreeNode{
 		Operator: "or",
 		Nodes: []*e.TreeNode{
@@ -116,7 +116,7 @@ func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
 }
 
 func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
-	conditionTreeEvaluator := NewTreeEvaluator()
+	conditionTreeEvaluator := NewMixedTreeEvaluator()
 	conditionTree := &e.TreeNode{
 		Operator: "and",
 		Nodes: []*e.TreeNode{
@@ -171,7 +171,7 @@ func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
 }
 
 func TestConditionTreeEvaluateNotCondition(t *testing.T) {
-	conditionTreeEvaluator := NewTreeEvaluator()
+	conditionTreeEvaluator := NewMixedTreeEvaluator()
 	// [or, [not, stringFooCondition], [not, boolTrueCondition]]
 	conditionTree := &e.TreeNode{
 		Operator: "or",
@@ -237,7 +237,7 @@ func TestConditionTreeEvaluateNotCondition(t *testing.T) {
 }
 
 func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
-	conditionTreeEvaluator := NewTreeEvaluator()
+	conditionTreeEvaluator := NewMixedTreeEvaluator()
 	// [or, [and, stringFooCondition, boolTrueCondition], [or, [not, stringFooCondition], int42Condition]]
 	conditionTree := &e.TreeNode{
 		Operator: "or",
@@ -371,7 +371,7 @@ func TestConditionTreeEvaluateAnAudienceTreeSingleAudience(t *testing.T) {
 		},
 	}
 
-	conditionTreeEvaluator := NewTreeEvaluator()
+	conditionTreeEvaluator := NewMixedTreeEvaluator()
 
 	// Test matches audience 11111
 	treeParams := &e.TreeParameters{
@@ -400,7 +400,7 @@ func TestConditionTreeEvaluateAnAudienceTreeMultipleAudiences(t *testing.T) {
 		},
 	}
 
-	conditionTreeEvaluator := NewTreeEvaluator()
+	conditionTreeEvaluator := NewMixedTreeEvaluator()
 
 	// Test only matches audience 11111
 	treeParams := &e.TreeParameters{

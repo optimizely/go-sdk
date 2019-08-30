@@ -34,17 +34,22 @@ const (
 	// orOperator = "or"
 )
 
-// TreeEvaluator evaluates a condition tree
-type TreeEvaluator struct {
+// TreeEvaluator evaluates a tree
+type TreeEvaluator interface {
+	Evaluate(*entities.TreeNode, *entities.TreeParameters) bool
 }
 
-// NewTreeEvaluator creates a condition tree evaluator with the out-of-the-box condition evaluators
-func NewTreeEvaluator() *TreeEvaluator {
-	return &TreeEvaluator{}
+// MixedTreeEvaluator evaluates a tree of mixed node types (condition node or audience nodes)
+type MixedTreeEvaluator struct {
+}
+
+// NewMixedTreeEvaluator creates a condition tree evaluator with the out-of-the-box condition evaluators
+func NewMixedTreeEvaluator() *MixedTreeEvaluator {
+	return &MixedTreeEvaluator{}
 }
 
 // Evaluate returns true if the userAttributes satisfy the given condition tree
-func (c TreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) bool {
+func (c MixedTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) bool {
 	// This wrapper method converts the conditionEvalResult to a boolean
 	result, _ := c.evaluate(node, condTreeParams)
 	return result
@@ -52,7 +57,7 @@ func (c TreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entitie
 
 // Helper method to recursively evaluate a condition tree
 // Returns the result of the evaluation and whether the evaluation of the condition is valid or not (to handle null bubbling)
-func (c TreeEvaluator) evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
+func (c MixedTreeEvaluator) evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
 	operator := node.Operator
 	if operator != "" {
 		switch operator {
@@ -86,7 +91,7 @@ func (c TreeEvaluator) evaluate(node *entities.TreeNode, condTreeParams *entitie
 	return result, true
 }
 
-func (c TreeEvaluator) evaluateAnd(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
+func (c MixedTreeEvaluator) evaluateAnd(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
 	sawInvalid := false
 	for _, node := range nodes {
 		result, isValid := c.evaluate(node, condTreeParams)
@@ -105,7 +110,7 @@ func (c TreeEvaluator) evaluateAnd(nodes []*entities.TreeNode, condTreeParams *e
 	return true, true
 }
 
-func (c TreeEvaluator) evaluateNot(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
+func (c MixedTreeEvaluator) evaluateNot(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
 	if len(nodes) > 0 {
 		result, isValid := c.evaluate(nodes[0], condTreeParams)
 		if !isValid {
@@ -116,7 +121,7 @@ func (c TreeEvaluator) evaluateNot(nodes []*entities.TreeNode, condTreeParams *e
 	return false, false
 }
 
-func (c TreeEvaluator) evaluateOr(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
+func (c MixedTreeEvaluator) evaluateOr(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
 	sawInvalid := false
 	for _, node := range nodes {
 		result, isValid := c.evaluate(node, condTreeParams)

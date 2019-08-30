@@ -55,7 +55,7 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 			func() {}() // cheat linters
 		}
 
-		if featureDecision.DecisionMade {
+		if featureDecision.Variation != nil {
 			break
 		}
 	}

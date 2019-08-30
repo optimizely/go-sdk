@@ -59,7 +59,6 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	bLogger.Debug(fmt.Sprintf(`Using bucketing ID: "%s"`, bucketingID))
 	// @TODO: handle error from bucketer
 	variation, reason, _ := s.bucketer.Bucket(bucketingID, *experiment, group)
-	experimentDecision.DecisionMade = true
 	experimentDecision.Reason = reason
 	experimentDecision.Variation = variation
 	return experimentDecision, nil

@@ -54,9 +54,8 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 		}
 
 		experimentDecision, err := f.experimentDecisionService.GetDecision(experimentDecisionContext, userContext)
-		// If we get an empty string Variation ID it means that the user is assigned no variation, hence we
-		// move onto Rollout evaluation
-		if experimentDecision.Variation.ID != "" {
+		// Variation not nil means we got a decision and should return it
+		if experimentDecision.Variation != nil {
 			featureDecision := FeatureDecision{
 				Experiment: experiment,
 				Decision:   experimentDecision.Decision,
