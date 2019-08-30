@@ -33,7 +33,7 @@ type TypedAudienceEvaluator struct {
 
 // NewTypedAudienceEvaluator creates a new instance of the TypedAudienceEvaluator
 func NewTypedAudienceEvaluator() *TypedAudienceEvaluator {
-	conditionTreeEvaluator := NewTreeEvaluator()
+	conditionTreeEvaluator := NewMixedTreeEvaluator()
 	return &TypedAudienceEvaluator{
 		conditionTreeEvaluator: *conditionTreeEvaluator,
 	}

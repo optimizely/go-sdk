@@ -81,7 +81,12 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 		return result, e1
 	}
 
-	result = featureDecision.Variation.FeatureEnabled
+	if featureDecision.Variation == nil {
+		result = false
+	} else {
+		result = featureDecision.Variation.FeatureEnabled
+	}
+
 	if result {
 		logger.Info(fmt.Sprintf(`Feature "%s" is enabled for user "%s".`, featureKey, userID))
 	} else {
@@ -90,7 +95,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 
 	if featureDecision.Source == decision.FeatureTest {
 		// send impression event for feature tests
-		impressionEvent := event.CreateImpressionUserEvent(projectConfig, featureDecision.Experiment, featureDecision.Variation, userContext)
+		impressionEvent := event.CreateImpressionUserEvent(projectConfig, featureDecision.Experiment, *featureDecision.Variation, userContext)
 		o.eventProcessor.ProcessEvent(impressionEvent)
 	}
 	return result, nil
@@ -243,7 +248,7 @@ func (o *OptimizelyClient) getFeatureVariable(featureKey, variableKey string, us
 	}
 
 	featureDecision, e2 := o.decisionService.GetFeatureDecision(featureDecisionContext, userContext)
-	if e2 == nil {
+	if e2 == nil && featureDecision.Variation != nil {
 		if v, ok := featureDecision.Variation.Variables[variable.ID]; ok && featureDecision.Variation.FeatureEnabled {
 			featureValue = v.Value
 		}

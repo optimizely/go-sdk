@@ -18,6 +18,7 @@
 package decision
 
 import (
+	"github.com/optimizely/go-sdk/optimizely/decision/evaluator"
 	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
 
 	"github.com/optimizely/go-sdk/optimizely/entities"
@@ -25,15 +26,15 @@ import (
 
 // RolloutService makes a feature decision for a given feature rollout
 type RolloutService struct {
-	experimentBucketerService  ExperimentService
-	experimentTargetingService ExperimentService
+	audienceTreeEvaluator     evaluator.TreeEvaluator
+	experimentBucketerService ExperimentService
 }
 
 // NewRolloutService returns a new instance of the Rollout service
 func NewRolloutService() *RolloutService {
 	return &RolloutService{
-		experimentBucketerService:  NewExperimentBucketerService(),
-		experimentTargetingService: NewExperimentTargetingService(),
+		audienceTreeEvaluator:     evaluator.NewMixedTreeEvaluator(),
+		experimentBucketerService: NewExperimentBucketerService(),
 	}
 }
 
@@ -60,15 +61,17 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		ProjectConfig: decisionContext.ProjectConfig,
 	}
 
-	decision, _ := r.experimentTargetingService.GetDecision(experimentDecisionContext, userContext)
 	// if user fails rollout targeting rule we return out of it
-	if decision.DecisionMade {
-		featureDecision.DecisionMade = true
-		featureDecision.Reason = reasons.FailedRolloutTargeting
-		return featureDecision, nil
+	if experiment.AudienceConditionTree != nil {
+		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
+		evalResult := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
+		if !evalResult {
+			featureDecision.Reason = reasons.FailedRolloutTargeting
+			return featureDecision, nil
+		}
 	}
 
-	decision, _ = r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext)
+	decision, _ := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext)
 	featureDecision.Decision = decision.Decision
 	featureDecision.Experiment = experiment
 	featureDecision.Variation = decision.Variation

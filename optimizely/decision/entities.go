@@ -47,8 +47,7 @@ const (
 
 // Decision contains base information about a decision
 type Decision struct {
-	DecisionMade bool
-	Reason       reasons.Reason
+	Reason reasons.Reason
 }
 
 // FeatureDecision contains the decision information about a feature
@@ -56,11 +55,11 @@ type FeatureDecision struct {
 	Decision
 	Source     Source
 	Experiment entities.Experiment
-	Variation  entities.Variation
+	Variation  *entities.Variation
 }
 
 // ExperimentDecision contains the decision information about an experiment
 type ExperimentDecision struct {
 	Decision
-	Variation entities.Variation
+	Variation *entities.Variation
 }

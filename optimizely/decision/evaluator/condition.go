@@ -91,7 +91,7 @@ func (c AudienceConditionEvaluator) Evaluate(audienceID string, condTreeParams *
 
 	if audience, ok := condTreeParams.AudienceMap[audienceID]; ok {
 		condTree := audience.ConditionTree
-		conditionTreeEvaluator := NewTreeEvaluator()
+		conditionTreeEvaluator := NewMixedTreeEvaluator()
 		retValue := conditionTreeEvaluator.Evaluate(condTree, condTreeParams)
 		return retValue, nil
 
