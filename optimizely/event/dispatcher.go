@@ -25,24 +25,6 @@ type HTTPEventDispatcher struct {
 
 // DispatchEvent dispatches event with callback
 func (*HTTPEventDispatcher) DispatchEvent(event LogEvent, callback func(success bool)) {
-	dispatchEvent(event, callback)
-}
-
-type QueueEventDispatcher struct {
-	q Queue
-	mux sync.Mutex
-}
-
-func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent, callback func(success bool)) {
-
-	ed.q.Add(event)
-	callback(true)
-	go func() {
-		ed.flushEvents()
-	}()
-}
-
-func dispatchEvent(event LogEvent, callback func(success bool)) {
 	jsonValue, _ := json.Marshal(event.event)
 	resp, err := http.Post(event.endPoint, jsonContentType, bytes.NewBuffer(jsonValue))
 	// also check response codes
@@ -63,6 +45,21 @@ func dispatchEvent(event LogEvent, callback func(success bool)) {
 	callback(success)
 }
 
+type QueueEventDispatcher struct {
+	eventQueue Queue
+	mux        sync.Mutex
+	dispatcher *HTTPEventDispatcher
+}
+
+func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent, callback func(success bool)) {
+
+	ed.eventQueue.Add(event)
+	callback(true)
+	go func() {
+		ed.flushEvents()
+	}()
+}
+
 func (ed *QueueEventDispatcher) flushEvents() {
 
 	ed.mux.Lock()
@@ -71,8 +68,8 @@ func (ed *QueueEventDispatcher) flushEvents() {
 		ed.mux.Unlock()
 	}()
 
-	for ed.q.Size() > 0 {
-		items := ed.q.Get(1)
+	for ed.eventQueue.Size() > 0 {
+		items := ed.eventQueue.Get(1)
 		if len(items) == 0 {
 			time.Sleep(5 * time.Second)
 			continue
@@ -81,13 +78,13 @@ func (ed *QueueEventDispatcher) flushEvents() {
 		if !ok {
 			//remove it?
 			dispatcherLogger.Error("invalid type passed to event dispatcher", nil)
-			ed.q.Remove(1)
+			ed.eventQueue.Remove(1)
 			continue
 		}
 
-		dispatchEvent(event, func(success bool) {
+		ed.dispatcher.DispatchEvent(event, func(success bool) {
 			if success {
-				ed.q.Remove(1)
+				ed.eventQueue.Remove(1)
 			} else {
 				// we failed.  Sleep 5 seconds and try again.  Or, should we exit and try the next time
 				// a log event is added?
@@ -98,6 +95,6 @@ func (ed *QueueEventDispatcher) flushEvents() {
 }
 
 func NewQueueEventDispatcher() Dispatcher {
-	dispatcher := &QueueEventDispatcher{q:NewInMemoryQueue(1000)}
+	dispatcher := &QueueEventDispatcher{eventQueue: NewInMemoryQueue(1000), dispatcher:&HTTPEventDispatcher{}}
 	return dispatcher
 }

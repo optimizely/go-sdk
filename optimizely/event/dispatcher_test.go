@@ -26,12 +26,12 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 	})
 
 	// its been queued
-	assert.Equal(t,1, qd.q.Size())
+	assert.Equal(t,1, qd.eventQueue.Size())
 
 	// give the queue a chance to run
 	time.Sleep(1 * time.Second)
 
 	// check the queue
-	assert.Equal(t,0, qd.q.Size())
+	assert.Equal(t,0, qd.eventQueue.Size())
 
 }
