@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package decision //
 package decision
 
 import (
@@ -21,18 +22,18 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/notification"
 )
 
-// DecisionService interface is used to make a decision for a given feature or experiment
-type DecisionService interface {
+// Service interface is used to make a decision for a given feature or experiment
+type Service interface {
 	GetFeatureDecision(FeatureDecisionContext, entities.UserContext) (FeatureDecision, error)
 	OnDecision(func(notification.DecisionNotification))
 }
 
-// ExperimentDecisionService can make a decision about an experiment
-type ExperimentDecisionService interface {
+// ExperimentService can make a decision about an experiment
+type ExperimentService interface {
 	GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error)
 }
 
-// FeatureDecisionService can make a decision about a Feature Flag (can be feature test or rollout)
-type FeatureDecisionService interface {
+// FeatureService can make a decision about a Feature Flag (can be feature test or rollout)
+type FeatureService interface {
 	GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error)
 }

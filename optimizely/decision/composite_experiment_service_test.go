@@ -47,7 +47,7 @@ func TestCompositeExperimentServiceGetDecision(t *testing.T) {
 
 	mockExperimentDecisionService2 := new(MockExperimentDecisionService)
 	compositeExperimentService := &CompositeExperimentService{
-		experimentDecisionServices: []ExperimentDecisionService{
+		experimentDecisionServices: []ExperimentService{
 			mockExperimentDecisionService,
 			mockExperimentDecisionService2,
 		},
@@ -78,7 +78,7 @@ func TestCompositeExperimentServiceGetDecision(t *testing.T) {
 	mockExperimentDecisionService2.On("GetDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision2, nil)
 
 	compositeExperimentService = &CompositeExperimentService{
-		experimentDecisionServices: []ExperimentDecisionService{
+		experimentDecisionServices: []ExperimentService{
 			mockExperimentDecisionService,
 			mockExperimentDecisionService2,
 		},
@@ -108,7 +108,7 @@ func TestCompositeExperimentServiceGetDecision(t *testing.T) {
 	mockExperimentDecisionService2.On("GetDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision2, nil)
 
 	compositeExperimentService = &CompositeExperimentService{
-		experimentDecisionServices: []ExperimentDecisionService{
+		experimentDecisionServices: []ExperimentService{
 			mockExperimentDecisionService,
 			mockExperimentDecisionService2,
 		},
@@ -144,7 +144,7 @@ func TestCompositeExperimentServiceGetDecisionReturnsErrorWhenExperimentNotRunni
 	mockExperimentDecisionService.On("GetDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision, nil)
 
 	compositeExperimentService := &CompositeExperimentService{
-		experimentDecisionServices: []ExperimentDecisionService{
+		experimentDecisionServices: []ExperimentService{
 			mockExperimentDecisionService,
 		},
 	}

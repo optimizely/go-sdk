@@ -17,6 +17,8 @@
 /**
  * This file contains mocks and test data to be used by test files throughout this package.
  */
+
+// Package decision //
 package decision
 
 import (

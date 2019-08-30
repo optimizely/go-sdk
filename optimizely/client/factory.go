@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package client has client facing factories
 package client
 
 import (
@@ -35,7 +36,7 @@ import (
 type Options struct {
 	Context              context.Context
 	ProjectConfigManager optimizely.ProjectConfigManager
-	DecisionService      decision.DecisionService
+	DecisionService      decision.Service
 	EventProcessor       *event.QueueingEventProcessor
 }
 
@@ -99,17 +100,18 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 
 	notificationCenter := notification.NewNotificationCenter()
 
-	if clientOptions.ProjectConfigManager != nil {
+	switch {
+	case clientOptions.ProjectConfigManager != nil:
 		client.configManager = clientOptions.ProjectConfigManager
-	} else if f.SDKKey != "" {
+	case f.SDKKey != "":
 		options := config.PollingProjectConfigManagerOptions{
 			Datafile: f.Datafile,
 		}
 		client.configManager = config.NewPollingProjectConfigManagerWithOptions(ctx, f.SDKKey, options)
-	} else if f.Datafile != nil {
+	case f.Datafile != nil:
 		staticConfigManager, _ := config.NewStaticProjectConfigManagerFromPayload(f.Datafile)
 		client.configManager = staticConfigManager
-	} else {
+	default:
 		return client, errors.New("unable to instantiate client: no project config manager, SDK key, or a Datafile provided")
 	}
 

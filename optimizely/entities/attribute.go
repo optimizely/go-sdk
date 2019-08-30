@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package entities //
 package entities
 
 // Attribute contains the user attribute definition

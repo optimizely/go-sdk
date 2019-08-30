@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package decision //
 package decision
 
 import (
@@ -25,7 +26,7 @@ import (
 
 // CompositeExperimentService bridges together the various experiment decision services that ship by default with the SDK
 type CompositeExperimentService struct {
-	experimentDecisionServices []ExperimentDecisionService
+	experimentDecisionServices []ExperimentService
 }
 
 // NewCompositeExperimentService creates a new instance of the CompositeExperimentService
@@ -34,7 +35,7 @@ func NewCompositeExperimentService() *CompositeExperimentService {
 	// 1. Targeting
 	// 2. Bucketing
 	// @TODO(mng): Prepend forced variation and whitelisting services
-	experimentDecisionServices := []ExperimentDecisionService{
+	experimentDecisionServices := []ExperimentService{
 		NewExperimentTargetingService(),
 		NewExperimentBucketerService(),
 	}
@@ -54,7 +55,7 @@ func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisi
 
 	for _, experimentService := range s.experimentDecisionServices {
 		decision, err := experimentService.GetDecision(decisionContext, userContext)
-		if decision.DecisionMade == true {
+		if decision.DecisionMade {
 			return decision, err
 		}
 	}
