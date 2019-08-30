@@ -2,6 +2,7 @@ package event
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -94,7 +95,14 @@ func (ed *QueueEventDispatcher) flushEvents() {
 	}
 }
 
-func NewQueueEventDispatcher() Dispatcher {
+func NewQueueEventDispatcher(ctx context.Context) Dispatcher {
 	dispatcher := &QueueEventDispatcher{eventQueue: NewInMemoryQueue(1000), dispatcher:&HTTPEventDispatcher{}}
+
+	go func() {
+		_ := <-ctx.Done()
+		dispatcher.flushEvents()
+		return
+	}()
+
 	return dispatcher
 }

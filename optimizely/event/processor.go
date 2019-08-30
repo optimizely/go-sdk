@@ -33,7 +33,7 @@ func NewEventProcessor(ctx context.Context, queueSize int, flushInterval time.Du
 		MaxQueueSize:    queueSize,
 		FlushInterval:   flushInterval,
 		Q:               NewInMemoryQueue(queueSize),
-		EventDispatcher: NewQueueEventDispatcher(),
+		EventDispatcher: NewQueueEventDispatcher(ctx),
 	}
 	p.BatchSize = 10
 	p.StartTicker(ctx)
@@ -80,6 +80,10 @@ func (p *QueueingEventProcessor) StartTicker(ctx context.Context) {
 			case <-ctx.Done():
 				pLogger.Debug("Event processor stopped, flushing events.")
 				p.FlushEvents()
+				d, ok := p.EventDispatcher.(*QueueEventDispatcher)
+				if ok {
+					d.flushEvents()
+				}
 				return
 			}
 		}
