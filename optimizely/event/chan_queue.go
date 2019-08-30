@@ -3,7 +3,6 @@ package event
 type ChanQueue struct {
 	ch chan interface{}
 	messages Queue
-	isValid func(value interface{}) bool
 }
 
 // Get returns queue for given count size
