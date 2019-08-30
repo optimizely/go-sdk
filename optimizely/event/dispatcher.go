@@ -99,7 +99,7 @@ func NewQueueEventDispatcher(ctx context.Context) Dispatcher {
 	dispatcher := &QueueEventDispatcher{eventQueue: NewInMemoryQueue(1000), dispatcher:&HTTPEventDispatcher{}}
 
 	go func() {
-		_ := <-ctx.Done()
+		_ = <-ctx.Done()
 		dispatcher.flushEvents()
 		return
 	}()
