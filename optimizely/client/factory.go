@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/optimizely/go-sdk/optimizely/event"
 
@@ -45,10 +44,6 @@ type OptimizelyFactory struct {
 	SDKKey   string
 	Datafile []byte
 }
-
-const defaultEventQueueSize = 10
-const defaultBatchSize = 10
-const defaultEventFlushInterval = 30 * time.Second
 
 // StaticClient returns a client initialized with a static project config
 func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
@@ -124,7 +119,7 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 	if clientOptions.EventProcessor != nil {
 		client.eventProcessor = clientOptions.EventProcessor
 	} else {
-		client.eventProcessor = event.NewEventProcessor(ctx, defaultBatchSize, defaultEventQueueSize, defaultEventFlushInterval)
+		client.eventProcessor = event.NewEventProcessor(ctx, event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval)
 	}
 
 	client.isValid = true
