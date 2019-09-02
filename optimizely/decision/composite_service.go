@@ -62,16 +62,19 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 
 	// @TODO: add errors
 	if s.notificationCenter != nil {
+		featureMap := map[string]interface{}{
+			"feature_key":     featureDecisionContext.Feature.Key,
+			"feature_enabled": false,
+			"source":          featureDecision.Source,
+		}
+		if featureDecision.Variation != nil {
+			featureMap["feature_enabled"] = featureDecision.Variation.FeatureEnabled
+		}
+
 		decisionInfo := map[string]interface{}{
-			"feature": map[string]interface{}{
-				"feature_key":     featureDecisionContext.Feature.Key,
-				"feature_enabled": featureDecision.Variation.FeatureEnabled,
-				"source":          featureDecision.Source,
-			},
+			"feature": featureMap,
 		}
-		if userContext.Attributes == nil {
-			userContext.Attributes = map[string]interface{}{}
-		}
+
 		decisionNotification := notification.DecisionNotification{
 			DecisionInfo: decisionInfo,
 			Type:         notification.Feature,

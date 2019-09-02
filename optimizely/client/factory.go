@@ -36,7 +36,7 @@ type Options struct {
 	Context              context.Context
 	ProjectConfigManager optimizely.ProjectConfigManager
 	DecisionService      decision.Service
-	EventProcessor       *event.QueueingEventProcessor
+	EventProcessor       event.Processor
 }
 
 // OptimizelyFactory is used to construct an instance of the OptimizelyClient
@@ -88,10 +88,10 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 	} else {
 		// if no context is provided, we create our own cancellable context and hand it over to the client so the client can shut down its child processes
 		ctx = context.Background()
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithCancel(ctx)
+		client.cancelFunc = cancel
 	}
-	var cancel context.CancelFunc
-	ctx, cancel = context.WithCancel(ctx)
-	client.cancelFunc = cancel
 
 	notificationCenter := notification.NewNotificationCenter()
 

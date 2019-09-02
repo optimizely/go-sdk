@@ -18,9 +18,6 @@
 package decision
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/optimizely/go-sdk/optimizely/decision/evaluator"
 	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
 	"github.com/optimizely/go-sdk/optimizely/entities"
@@ -47,12 +44,6 @@ func NewCompositeExperimentService() *CompositeExperimentService {
 
 // GetDecision returns a decision for the given experiment and user context
 func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
-
-	if decisionContext.Experiment.Status != entities.Running {
-		errorMessage := fmt.Sprintf("Experiment %s is not running", decisionContext.Experiment.Key)
-		err := errors.New(errorMessage)
-		return ExperimentDecision{}, err
-	}
 
 	experimentDecision := ExperimentDecision{}
 	experiment := decisionContext.Experiment

@@ -93,7 +93,6 @@ var testExp1111 = entities.Experiment{
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2222", EndOfRange: 10000},
 	},
-	Status: entities.Running,
 }
 
 // Simple feature test
@@ -123,7 +122,6 @@ var testExp1112 = entities.Experiment{
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2222", EndOfRange: 10000},
 	},
-	Status: entities.Running,
 }
 
 const testFeatRollout3334Key = "test_feature_rollout_3334_key"
