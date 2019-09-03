@@ -185,7 +185,7 @@ func main() {
 
 	if RunMemProfile == "true" || RunCPUProfile == "true" {
 
-		const RUN_NUMBER = 6
+		const RUN_NUMBER = 50
 		if RunMemProfile == "true" {
 			defer profile.Start(profile.MemProfile, profile.ProfilePath("."), profile.MemProfileRate(1)).Stop()
 		} else if RunCPUProfile == "true" {
