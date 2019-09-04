@@ -62,7 +62,7 @@ func (*HTTPEventDispatcher) DispatchEvent(event LogEvent, callback func(bool)) {
 	callback(success)
 }
 
-// A queued version of the event dispatcher that queues, returns success, and dispatches events in the background
+// QueueEventDispatcher is a queued version of the event dispatcher that queues, returns success, and dispatches events in the background
 type QueueEventDispatcher struct {
 	eventQueue     Queue
 	eventFlushLock sync.Mutex
@@ -113,7 +113,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 	}
 }
 
-// New Queue Event dispatcher
+// NewQueueEventDispatcher creates a dispatcher that queues in memory and then sends via go routine.
 func NewQueueEventDispatcher(ctx context.Context) Dispatcher {
 	dispatcher := &QueueEventDispatcher{eventQueue: NewInMemoryQueue(1000), dispatcher:&HTTPEventDispatcher{}}
 
