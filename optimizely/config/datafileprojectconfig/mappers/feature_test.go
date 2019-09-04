@@ -17,9 +17,9 @@
 package mappers
 
 import (
-	"encoding/json"
 	"testing"
 
+	"github.com/json-iterator/go"
 	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/assert"
@@ -35,6 +35,7 @@ func TestMapFeatures(t *testing.T) {
 	}`
 
 	var rawFeatureFlag datafileEntities.FeatureFlag
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
 	json.Unmarshal([]byte(testFeatureFlagString), &rawFeatureFlag)
 
 	rawFeatureFlags := []datafileEntities.FeatureFlag{rawFeatureFlag}
