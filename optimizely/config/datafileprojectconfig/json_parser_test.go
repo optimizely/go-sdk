@@ -17,7 +17,10 @@
 package datafileprojectconfig
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"testing"
 
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
@@ -58,4 +61,19 @@ func TestParseDatafilePasses(t *testing.T) {
 	}
 
 	assert.Equal(t, expectedDatafile, parsedDatafile)
+}
+
+func BenchmarkParseDatafilePasses(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		datafile, err := ioutil.ReadFile("test/100_entities.json")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		datafileStruct := &entities.Datafile{}
+
+		json.Unmarshal(datafile, &datafileStruct)
+
+	}
+
 }
