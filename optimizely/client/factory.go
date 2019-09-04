@@ -20,7 +20,6 @@ package client
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/optimizely/go-sdk/optimizely/event"
 
@@ -50,8 +49,7 @@ func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 	var configManager optimizely.ProjectConfigManager
 
 	if f.SDKKey != "" {
-		url := fmt.Sprintf(config.DatafileURLTemplate, f.SDKKey)
-		staticConfigManager, err := config.NewStaticProjectConfigManagerFromURL(url)
+		staticConfigManager, err := config.NewStaticProjectConfigManagerFromURL(f.SDKKey)
 
 		if err != nil {
 			return nil, err
