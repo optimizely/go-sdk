@@ -14,11 +14,13 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package config //
 package config
 
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -34,9 +36,9 @@ type StaticProjectConfigManager struct {
 }
 
 // NewStaticProjectConfigManagerFromURL returns new instance of StaticProjectConfigManager for URL
-func NewStaticProjectConfigManagerFromURL(URL string) (*StaticProjectConfigManager, error) {
-	downloadFile := func(URL string) ([]byte, error) {
-		response, err := http.Get(URL)
+func NewStaticProjectConfigManagerFromURL(sdkKey string) (*StaticProjectConfigManager, error) {
+	downloadFile := func() ([]byte, error) {
+		response, err := http.Get(fmt.Sprintf(DatafileURLTemplate, sdkKey))
 		if err != nil {
 			return nil, err
 		}
@@ -52,7 +54,7 @@ func NewStaticProjectConfigManagerFromURL(URL string) (*StaticProjectConfigManag
 		return data.Bytes(), nil
 	}
 
-	body, err := downloadFile(URL)
+	body, err := downloadFile()
 
 	if err != nil {
 		return nil, err
@@ -80,8 +82,8 @@ func NewStaticProjectConfigManager(config optimizely.ProjectConfig) *StaticProje
 }
 
 // GetConfig returns the project config
-func (cm *StaticProjectConfigManager) GetConfig() optimizely.ProjectConfig {
+func (cm *StaticProjectConfigManager) GetConfig() (optimizely.ProjectConfig, error) {
 	cm.configLock.Lock()
 	defer cm.configLock.Unlock()
-	return cm.projectConfig
+	return cm.projectConfig, nil
 }

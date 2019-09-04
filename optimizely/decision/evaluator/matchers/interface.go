@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package matchers //
 package matchers
 
 import "github.com/optimizely/go-sdk/optimizely/entities"

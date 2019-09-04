@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package notification //
 package notification
 
 import "fmt"
@@ -45,7 +46,7 @@ func (c *DefaultCenter) AddHandler(notificationType Type, handler func(interface
 		return manager.AddHandler(handler)
 	}
 
-	return -1, fmt.Errorf("No notification manager found for type %s", notificationType)
+	return -1, fmt.Errorf("no notification manager found for type %s", notificationType)
 }
 
 // Send sends the given notification payload to all listeners of type
@@ -55,5 +56,5 @@ func (c *DefaultCenter) Send(notificationType Type, notification interface{}) er
 		return nil
 	}
 
-	return fmt.Errorf("No notification manager found for type %s", notificationType)
+	return fmt.Errorf("no notification manager found for type %s", notificationType)
 }

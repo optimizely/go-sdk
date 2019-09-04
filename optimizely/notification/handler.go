@@ -14,9 +14,10 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package notification //
 package notification
 
 // Handler is a generic interface for Optimizely notification listeners
-type Handler interface {
-	handle(interface{})
-}
+// type Handler interface { - DO WE STILL NEED THIS ?
+//	handle(interface{})
+//}

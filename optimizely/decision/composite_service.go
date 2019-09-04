@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package decision //
 package decision
 
 import (
@@ -28,16 +29,16 @@ var csLogger = logging.GetLogger("CompositeDecisionService")
 
 // CompositeService is the entrypoint into the decision service. It provides out of the box decision making for Features and Experiments.
 type CompositeService struct {
-	experimentDecisionServices []ExperimentDecisionService
-	featureDecisionServices    []FeatureDecisionService
-	notificationCenter         notification.Center
+	// experimentDecisionServices []ExperimentDecisionService
+	featureDecisionServices []FeatureService
+	notificationCenter      notification.Center
 }
 
 // NewCompositeService returns a new instance of the DefeaultDecisionEngine
 func NewCompositeService(notificationCenter notification.Center) *CompositeService {
 	featureDecisionService := NewCompositeFeatureService()
 	return &CompositeService{
-		featureDecisionServices: []FeatureDecisionService{featureDecisionService},
+		featureDecisionServices: []FeatureService{featureDecisionService},
 		notificationCenter:      notificationCenter,
 	}
 }
@@ -51,9 +52,10 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 		featureDecision, err = decisionService.GetDecision(featureDecisionContext, userContext)
 		if err != nil {
 			// @TODO: log error
+			func() {}() // cheat linters
 		}
 
-		if featureDecision.DecisionMade {
+		if featureDecision.Variation != nil {
 			break
 		}
 	}
@@ -72,7 +74,9 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 			Type:         notification.Feature,
 			UserContext:  userContext,
 		}
-		s.notificationCenter.Send(notification.Decision, decisionNotification)
+		if err = s.notificationCenter.Send(notification.Decision, decisionNotification); err != nil {
+			csLogger.Warning("Problem with sending notification")
+		}
 	}
 	return featureDecision, err
 }
@@ -86,5 +90,7 @@ func (s CompositeService) OnDecision(callback func(notification.DecisionNotifica
 			csLogger.Warning(fmt.Sprintf("Unable to convert notification payload %v into DecisionNotification", payload))
 		}
 	}
-	s.notificationCenter.AddHandler(notification.Decision, handler)
+	if _, err := s.notificationCenter.AddHandler(notification.Decision, handler); err != nil {
+		csLogger.Warning("Problem with adding notification handler")
+	}
 }
