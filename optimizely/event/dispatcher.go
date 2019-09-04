@@ -96,7 +96,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 		}
 		event, ok := items[0].(LogEvent)
 		if !ok {
-			//remove it
+			// remove it
 			dispatcherLogger.Error("invalid type passed to event dispatcher", nil)
 			ed.eventQueue.Remove(1)
 			continue
