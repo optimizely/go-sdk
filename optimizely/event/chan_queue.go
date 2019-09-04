@@ -26,7 +26,7 @@ func (i *ChanQueue) Size() int {
 	return i.messages.Size()
 }
 
-// NewNSQueue returns new NSQ based queue with given queueSize
+// NewChanQueue returns new go channel based queue with given in memory queueSize
 func NewChanQueue(queueSize int) Queue {
 
 	ch := make(chan interface{})
