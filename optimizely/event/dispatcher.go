@@ -46,12 +46,14 @@ func (*HTTPEventDispatcher) DispatchEvent(event LogEvent, callback func(success 
 	callback(success)
 }
 
+// A queued version of the event dispatcher that queues, returns success, and dispatches events in the background
 type QueueEventDispatcher struct {
-	eventQueue Queue
-	mux        sync.Mutex
-	dispatcher *HTTPEventDispatcher
+	eventQueue     Queue
+	eventFlushLock sync.Mutex
+	dispatcher     *HTTPEventDispatcher
 }
 
+// DispatchEvent queues event with callback and calls flush in a go routine.
 func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent, callback func(success bool)) {
 
 	ed.eventQueue.Add(event)
@@ -61,12 +63,13 @@ func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent, callback func(succ
 	}()
 }
 
+// flush the events
 func (ed *QueueEventDispatcher) flushEvents() {
 
-	ed.mux.Lock()
+	ed.eventFlushLock.Lock()
 
 	defer func(){
-		ed.mux.Unlock()
+		ed.eventFlushLock.Unlock()
 	}()
 
 	for ed.eventQueue.Size() > 0 {
@@ -77,7 +80,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 		}
 		event, ok := items[0].(LogEvent)
 		if !ok {
-			//remove it?
+			//remove it
 			dispatcherLogger.Error("invalid type passed to event dispatcher", nil)
 			ed.eventQueue.Remove(1)
 			continue
@@ -87,21 +90,20 @@ func (ed *QueueEventDispatcher) flushEvents() {
 			if success {
 				ed.eventQueue.Remove(1)
 			} else {
-				// we failed.  Sleep 5 seconds and try again.  Or, should we exit and try the next time
-				// a log event is added?
+				// we failed.  Sleep 5 seconds and try again.  Or, should we exit and try the next time a log event is added?
 				time.Sleep(5 * time.Second)
 			}
 		})
 	}
 }
 
+// New Queue Event dispatcher
 func NewQueueEventDispatcher(ctx context.Context) Dispatcher {
 	dispatcher := &QueueEventDispatcher{eventQueue: NewInMemoryQueue(1000), dispatcher:&HTTPEventDispatcher{}}
 
 	go func() {
-		_ = <-ctx.Done()
+		<-ctx.Done()
 		dispatcher.flushEvents()
-		return
 	}()
 
 	return dispatcher
