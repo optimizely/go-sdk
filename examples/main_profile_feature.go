@@ -4,15 +4,15 @@
 package main
 
 import (
-	"encoding/json"
-	"github.com/optimizely/go-sdk/optimizely/client"
-	"github.com/optimizely/go-sdk/optimizely/decision"
-	"github.com/optimizely/go-sdk/optimizely/entities"
-	"github.com/optimizely/go-sdk/optimizely/notification"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
+
+	"github.com/optimizely/go-sdk/optimizely/client"
+	"github.com/optimizely/go-sdk/optimizely/decision"
+	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/optimizely/notification"
 
 	"github.com/pkg/profile"
 )
@@ -23,55 +23,8 @@ func stressTest() {
 		For the test app, the biggest json file is used with 100 entities.
 		DATAFILES_DIR has to be set to point to the path where 100_entities.json is located.
 	*/
-	type isFeatureEnabledRequestParams struct {
-		FeatureKey string                 `json:"feature_flag_key"`
-		UserID     string                 `json:"user_id"`
-		Attributes map[string]interface{} `json:"attributes"`
-	}
 
-	type Context struct {
-		CustomEventDispatcher string                   `json:"custom_event_dispatcher"`
-		RequestID             string                   `json:"request_id"`
-		UserProfileService    string                   `json:"user_profile_service"`
-		Datafile              string                   `json:"datafile"`
-		DispatchedEvents      []map[string]interface{} `json:"dispatched_events"`
-	}
-
-	strBytes := []byte(` { "context": {
-			"datafile": "100_entities.json",
-				"custom_event_dispatcher": "ProxyEventDispatcher",
-				"request_id": "4e3e37e3-c7ae-4cb6-bbb5-f6ef93c84d43",
-				"user_profile_service": "NoOpService",
-				"user_profiles": [],
-				"with_listener": []
-		},
-		"user_id": "test_user_1",
-			"feature_flag_key": "feature_5",
-			"attributes": {
-			"attr_5": "testvalue"
-		}
-	}`)
-
-	var params isFeatureEnabledRequestParams
-	err := json.Unmarshal(strBytes, &params)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var requestBodyMap map[string]*json.RawMessage
-
-	err = json.Unmarshal(strBytes, &requestBodyMap)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var fscCtx Context
-	err = json.Unmarshal(*requestBodyMap["context"], &fscCtx)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var datafileDir = path.Join(os.Getenv("DATAFILES_DIR"), fscCtx.Datafile)
+	var datafileDir = path.Join(os.Getenv("DATAFILES_DIR"), "100_entities.json")
 
 	datafile, err := ioutil.ReadFile(datafileDir)
 	if err != nil {
@@ -83,8 +36,10 @@ func stressTest() {
 	}
 
 	user := entities.UserContext{
-		ID:         params.UserID,
-		Attributes: params.Attributes,
+		ID: "test_user_1",
+		Attributes: map[string]interface{}{
+			"attr_5": "testvalue",
+		},
 	}
 
 	// Creates a default, canceleable context
@@ -99,7 +54,7 @@ func stressTest() {
 		log.Fatal(err)
 	}
 
-	clientApp.IsFeatureEnabled(params.FeatureKey, user)
+	clientApp.IsFeatureEnabled("feature_5", user)
 }
 
 var RunMemProfile = "false"
