@@ -37,15 +37,14 @@ func TestGetFeatureDecision(t *testing.T) {
 
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1111,
-		Variation:  testExp1111Var2222,
-		Decision:   Decision{DecisionMade: true},
+		Variation:  &testExp1111Var2222,
 	}
 
 	testFeatureDecisionService := new(MockFeatureDecisionService)
 	testFeatureDecisionService.On("GetDecision", decisionContext, userContext).Return(expectedFeatureDecision, nil)
 
 	decisionService := &CompositeService{
-		featureDecisionServices: []FeatureDecisionService{testFeatureDecisionService},
+		featureDecisionServices: []FeatureService{testFeatureDecisionService},
 	}
 	featureDecision, err := decisionService.GetFeatureDecision(decisionContext, userContext)
 	if err != nil {

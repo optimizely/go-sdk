@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package evaluator //
 package evaluator
 
 import (
@@ -44,7 +45,7 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 	// We should only be evaluating custom attributes
 
 	if condition.Type != customAttributeType {
-		return false, fmt.Errorf(`Unable to evaluator condition of type "%s"`, condition.Type)
+		return false, fmt.Errorf(`unable to evaluator condition of type "%s"`, condition.Type)
 	}
 
 	var matcher matchers.Matcher
@@ -74,7 +75,7 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 			Condition: condition,
 		}
 	default:
-		return false, fmt.Errorf(`Invalid Condition matcher "%s"`, condition.Match)
+		return false, fmt.Errorf(`invalid Condition matcher "%s"`, condition.Match)
 	}
 
 	user := *condTreeParams.User
@@ -90,11 +91,11 @@ func (c AudienceConditionEvaluator) Evaluate(audienceID string, condTreeParams *
 
 	if audience, ok := condTreeParams.AudienceMap[audienceID]; ok {
 		condTree := audience.ConditionTree
-		conditionTreeEvaluator := NewTreeEvaluator()
+		conditionTreeEvaluator := NewMixedTreeEvaluator()
 		retValue := conditionTreeEvaluator.Evaluate(condTree, condTreeParams)
 		return retValue, nil
 
 	}
 
-	return false, fmt.Errorf(`Unable to evaluate nested tree for audience ID "%s"`, audienceID)
+	return false, fmt.Errorf(`unable to evaluate nested tree for audience ID "%s"`, audienceID)
 }

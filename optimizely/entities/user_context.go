@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package entities //
 package entities
 
 import (
@@ -39,7 +40,7 @@ func (u UserContext) GetStringAttribute(attrName string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf(`No string attribute named "%s"`, attrName)
+	return "", fmt.Errorf(`no string attribute named "%s"`, attrName)
 }
 
 // GetBoolAttribute returns the bool value for the specified attribute name in the attributes map. Returns error if not found.
@@ -51,7 +52,7 @@ func (u UserContext) GetBoolAttribute(attrName string) (bool, error) {
 		}
 	}
 
-	return false, fmt.Errorf(`No bool attribute named "%s"`, attrName)
+	return false, fmt.Errorf(`no bool attribute named "%s"`, attrName)
 }
 
 // GetFloatAttribute returns the float64 value for the specified attribute name in the attributes map. Returns error if not found.
@@ -63,7 +64,7 @@ func (u UserContext) GetFloatAttribute(attrName string) (float64, error) {
 		}
 	}
 
-	return 0, fmt.Errorf(`No float attribute named "%s"`, attrName)
+	return 0, fmt.Errorf(`no float attribute named "%s"`, attrName)
 }
 
 // GetIntAttribute returns the int64 value for the specified attribute name in the attributes map. Returns error if not found.
@@ -75,7 +76,7 @@ func (u UserContext) GetIntAttribute(attrName string) (int64, error) {
 		}
 	}
 
-	return 0, fmt.Errorf(`No int attribute named "%s"`, attrName)
+	return 0, fmt.Errorf(`no int attribute named "%s"`, attrName)
 }
 
 // GetBucketingID returns the bucketing ID to use for the given user
@@ -87,7 +88,7 @@ func (u UserContext) GetBucketingID() (string, error) {
 	if value, ok := u.Attributes[bucketingIDAttributeName]; ok {
 		customBucketingID, err := u.GetStringAttribute(bucketingIDAttributeName)
 		if err != nil {
-			return bucketingID, fmt.Errorf(`Invalid bucketing ID provided: "%s"`, value)
+			return bucketingID, fmt.Errorf(`invalid bucketing ID provided: "%s"`, value)
 		}
 		bucketingID = customBucketingID
 	}

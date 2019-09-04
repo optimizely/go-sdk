@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package config //
 package config
 
 import (
@@ -71,7 +72,6 @@ type HTTPRequester struct {
 	client  http.Client
 	retries int
 	headers []Header
-	ttl     time.Duration // time-to-live
 }
 
 // NewHTTPRequester makes Requester with api and parameters. Sets defaults

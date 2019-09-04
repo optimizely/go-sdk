@@ -21,7 +21,7 @@ func TestUserAttributesGetStringAttribute(t *testing.T) {
 	// Test non-existent attr name
 	_, err := userContext.GetStringAttribute("string_bar")
 	if assert.Error(t, err) {
-		assert.Equal(t, err.Error(), `No string attribute named "string_bar"`)
+		assert.Equal(t, err.Error(), `no string attribute named "string_bar"`)
 	} else {
 		assert.Fail(t, "Error should have been thrown")
 	}
@@ -29,7 +29,7 @@ func TestUserAttributesGetStringAttribute(t *testing.T) {
 	// Test non-string attribute
 	_, err = userContext.GetStringAttribute("bool_true")
 	if assert.Error(t, err) {
-		assert.Equal(t, err.Error(), `No string attribute named "bool_true"`)
+		assert.Equal(t, err.Error(), `no string attribute named "bool_true"`)
 	} else {
 		assert.Fail(t, "Error should have been thrown")
 	}
@@ -50,14 +50,14 @@ func TestUserAttributesGetBoolAttribute(t *testing.T) {
 	// Test non-existent attr name
 	_, err := userContext.GetBoolAttribute("bool_false")
 	if assert.Error(t, err) {
-		assert.Equal(t, err.Error(), `No bool attribute named "bool_false"`)
+		assert.Equal(t, err.Error(), `no bool attribute named "bool_false"`)
 	} else {
 		assert.Fail(t, "Error should have been thrown")
 	}
 
 	_, err = userContext.GetBoolAttribute("string_foo")
 	if assert.Error(t, err) {
-		assert.Equal(t, err.Error(), `No bool attribute named "string_foo"`)
+		assert.Equal(t, err.Error(), `no bool attribute named "string_foo"`)
 	} else {
 		assert.Fail(t, "Error should have been thrown")
 	}
@@ -80,14 +80,14 @@ func TestUserAttributesGetFloatAttribute(t *testing.T) {
 	// Test non-existent attr name
 	_, err := userContext.GetFloatAttribute("bool_false")
 	if assert.Error(t, err) {
-		assert.Equal(t, err.Error(), `No float attribute named "bool_false"`)
+		assert.Equal(t, err.Error(), `no float attribute named "bool_false"`)
 	} else {
 		assert.Fail(t, "Error should have been thrown")
 	}
 
 	_, err = userContext.GetFloatAttribute("string_foo")
 	if assert.Error(t, err) {
-		assert.Equal(t, err.Error(), `No float attribute named "string_foo"`)
+		assert.Equal(t, err.Error(), `no float attribute named "string_foo"`)
 	} else {
 		assert.Fail(t, "Error should have been thrown")
 	}

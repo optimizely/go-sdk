@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package entities //
 package entities
 
 // Feature represents a feature flag
@@ -36,5 +37,19 @@ type Variable struct {
 	DefaultValue string
 	ID           string
 	Key          string
-	Type         string
+	Type         VariableType
 }
+
+// VariableType is the type of feature variable
+type VariableType string
+
+const (
+	// String - the feature-variable type is string
+	String VariableType = "string"
+	// Integer - the feature-variable type is integer
+	Integer VariableType = "integer"
+	// Double - the feature-variable type is double
+	Double VariableType = "double"
+	// Boolean - the feature-variable type is boolean
+	Boolean VariableType = "boolean"
+)

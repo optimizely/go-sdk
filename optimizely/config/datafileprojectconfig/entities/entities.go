@@ -14,7 +14,10 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package entities has entity definitions
 package entities
+
+import "github.com/optimizely/go-sdk/optimizely/entities"
 
 // Audience represents an Audience object from the Optimizely datafile
 type Audience struct {
@@ -53,10 +56,10 @@ type FeatureFlag struct {
 
 // Variable represents a Variable object from the Optimizely datafile
 type Variable struct {
-	DefaultValue string `json:"defaultValue"`
-	ID           string `json:"id"`
-	Key          string `json:"key"`
-	Type         string `json:"type"`
+	DefaultValue string                `json:"defaultValue"`
+	ID           string                `json:"id"`
+	Key          string                `json:"key"`
+	Type         entities.VariableType `json:"type"`
 }
 
 // trafficAllocation represents a traffic allocation range from the Optimizely datafile
@@ -94,18 +97,18 @@ type Rollout struct {
 
 // Datafile represents the datafile we get from Optimizely
 type Datafile struct {
-	AccountID      string        `json:"accountId"`
-	AnonymizeIP    bool          `json:"anonymizeIP"`
 	Attributes     []Attribute   `json:"attributes"`
 	Audiences      []Audience    `json:"audiences"`
-	BotFiltering   bool          `json:"botFiltering"`
 	Experiments    []Experiment  `json:"experiments"`
 	FeatureFlags   []FeatureFlag `json:"featureFlags"`
 	Events         []Event       `json:"events"`
-	ProjectID      string        `json:"projectId"`
-	Revision       string        `json:"revision"`
 	Rollouts       []Rollout     `json:"rollouts"`
 	TypedAudiences []Audience    `json:"typedAudiences"`
 	Variables      []string      `json:"variables"`
+	AccountID      string        `json:"accountId"`
+	ProjectID      string        `json:"projectId"`
+	Revision       string        `json:"revision"`
 	Version        string        `json:"version"`
+	AnonymizeIP    bool          `json:"anonymizeIP"`
+	BotFiltering   bool          `json:"botFiltering"`
 }
