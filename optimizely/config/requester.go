@@ -18,7 +18,6 @@
 package config
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -27,6 +26,8 @@ import (
 	"time"
 
 	"github.com/optimizely/go-sdk/optimizely/logging"
+
+	"github.com/json-iterator/go"
 )
 
 const defaultTTL = 5 * time.Second
@@ -103,6 +104,7 @@ func (r HTTPRequester) GetObj(result interface{}, headers ...Header) error {
 	if err != nil {
 		return err
 	}
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
 	return json.Unmarshal(b, result)
 }
 
