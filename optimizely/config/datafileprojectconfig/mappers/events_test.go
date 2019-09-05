@@ -26,9 +26,9 @@ import (
 
 func TestMapEvents(t *testing.T) {
 	const testEventString = `{
-		 "id": "some_id",
-         "key": "event1",
-		 "experimentIds": ["11111", "11112"]
+		"id": "some_id",
+		"key": "event1",
+		"experimentIds": ["11111", "11112"]
 	 }`
 
 	var rawEvent datafileEntities.Event
