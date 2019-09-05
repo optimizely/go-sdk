@@ -30,7 +30,6 @@ type Experiment struct {
 	AudienceIds           []string
 	ID                    string
 	LayerID               string
-	Status                ExperimentStatus
 	Key                   string
 	Variations            map[string]Variation
 	TrafficAllocation     []Range
@@ -49,19 +48,3 @@ type VariationVariable struct {
 	ID    string
 	Value string
 }
-
-// ExperimentStatus represents status of the experiment
-type ExperimentStatus string
-
-const (
-	// Running represents a running experiment
-	Running ExperimentStatus = "Running"
-	// Launched represents a launched experiment
-	Launched ExperimentStatus = "Launched"
-	// Paused represents a paused experiment
-	Paused ExperimentStatus = "Paused"
-	// NotStarted represents a experiment that is not started
-	NotStarted ExperimentStatus = "Not started"
-	// Archived represents a archived experiment
-	Archived ExperimentStatus = "Archived"
-)
