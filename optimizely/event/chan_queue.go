@@ -14,61 +14,49 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package datafileprojectconfig
+// Package event //
+package event
 
-import (
-	"fmt"
-	"io/ioutil"
-	"testing"
-
-	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
-	"github.com/stretchr/testify/assert"
-)
-
-func TestParseDatafilePasses(t *testing.T) {
-	testFeatureKey := "feature_test_1"
-	testFeatureID := "feature_id_123"
-	datafileString := fmt.Sprintf(`{
-		"projectId": "1337",
-		"accountId": "1338",
-		"version": "4",
-		"featureFlags": [
-			{
-				"key": "%s",
-				"id" : "%s"
-			}
-		]
-	}`, testFeatureKey, testFeatureID)
-
-	rawDatafile := []byte(datafileString)
-	parsedDatafile, err := Parse(rawDatafile)
-	if err != nil {
-		assert.Fail(t, err.Error())
-	}
-
-	expectedDatafile := &entities.Datafile{
-		AccountID: "1338",
-		ProjectID: "1337",
-		Version:   "4",
-		FeatureFlags: []entities.FeatureFlag{
-			entities.FeatureFlag{
-				Key: testFeatureKey,
-				ID:  testFeatureID,
-			},
-		},
-	}
-
-	assert.Equal(t, expectedDatafile, parsedDatafile)
+// ChanQueue is a go channel based queue that takes things from the channel and puts them in a in memory queue
+type ChanQueue struct {
+	ch chan interface{}
+	messages Queue
 }
 
-func BenchmarkParseDatafilePasses(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		datafile, err := ioutil.ReadFile("test/100_entities.json")
-		if err != nil {
-			fmt.Println("error opening file:", err)
+// Get returns queue for given count size
+func (i *ChanQueue) Get(count int) []interface{} {
+	return i.messages.Get(count)
+}
+
+// Add appends item to queue
+func (i *ChanQueue) Add(item interface{}) {
+	i.ch <- item
+}
+
+// Remove removes item from queue and returns elements slice
+func (i *ChanQueue) Remove(count int) []interface{} {
+	return i.messages.Remove(count)
+
+}
+
+// Size returns size of queue
+func (i *ChanQueue) Size() int {
+	return i.messages.Size()
+}
+
+// NewChanQueue returns new go channel based queue with given in memory queueSize
+func NewChanQueue(queueSize int) Queue {
+
+	ch := make(chan interface{})
+
+	i := &ChanQueue{ch:ch, messages: NewInMemoryQueue(queueSize)}
+
+	go func() {
+		for item := range i.ch {
+			i.messages.Add(item)
 		}
-		Parse(datafile)
+	}()
 
-	}
-
+	return i
 }
+
