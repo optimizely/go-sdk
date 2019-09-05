@@ -30,6 +30,8 @@ import (
 )
 
 const jsonContentType = "application/json"
+const maxRetries = 3
+
 var dispatcherLogger = logging.GetLogger("EventDispatcher")
 
 // Dispatcher dispatches events
@@ -88,10 +90,16 @@ func (ed *QueueEventDispatcher) flushEvents() {
 		ed.eventFlushLock.Unlock()
 	}()
 
+	retryCount := 0
+
 	for ed.eventQueue.Size() > 0 {
+		if retryCount > maxRetries {
+			break
+		}
+
 		items := ed.eventQueue.Get(1)
 		if len(items) == 0 {
-			time.Sleep(5 * time.Second)
+			// something happened.  Just continue and you should expect size to be zero.
 			continue
 		}
 		event, ok := items[0].(LogEvent)
@@ -105,9 +113,12 @@ func (ed *QueueEventDispatcher) flushEvents() {
 		ed.dispatcher.DispatchEvent(event, func(success bool) {
 			if success {
 				ed.eventQueue.Remove(1)
+				retryCount = 0
 			} else {
+				dispatcherLogger.Warning("dispatch event failed")
 				// we failed.  Sleep 5 seconds and try again.  Or, should we exit and try the next time a log event is added?
 				time.Sleep(5 * time.Second)
+				retryCount++
 			}
 		})
 	}
