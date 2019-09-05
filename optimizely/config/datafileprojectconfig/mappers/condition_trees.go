@@ -18,14 +18,15 @@
 package mappers
 
 import (
-	"encoding/json"
 	"errors"
 	"reflect"
 
+	"github.com/json-iterator/go"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
 var errEmptyTree = errors.New("empty tree")
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
 func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, retErr error) {

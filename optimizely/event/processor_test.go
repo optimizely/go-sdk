@@ -11,7 +11,7 @@ import (
 func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 	ctx := context.Background()
 
-	processor := NewEventProcessor(ctx, 100, 100)
+	processor := NewEventProcessor(ctx, 10, 100, 100)
 
 	impression := BuildTestImpressionEvent()
 
@@ -66,7 +66,7 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 	if ok {
 		assert.Equal(t, 1, len(result.Events))
 		evs := result.Events[0]
-		assert.Equal(t, 4, len(evs.event.Visitors))
+		assert.Equal(t, 4, len(evs.Event.Visitors))
 	}
 }
 
@@ -133,7 +133,7 @@ func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 	if ok {
 		assert.Equal(t, 3, len(result.Events))
 		evs := result.Events[len(result.Events)-1]
-		assert.Equal(t, 2, len(evs.event.Visitors))
+		assert.Equal(t, 2, len(evs.Event.Visitors))
 	}
 }
 
@@ -169,7 +169,7 @@ func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 	if ok {
 		assert.Equal(t, 3, len(result.Events))
 		evs := result.Events[len(result.Events)-1]
-		assert.Equal(t, 2, len(evs.event.Visitors))
+		assert.Equal(t, 2, len(evs.Event.Visitors))
 	}
 }
 
