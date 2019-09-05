@@ -17,7 +17,6 @@
 package mappers
 
 import (
-	"encoding/json"
 	"testing"
 
 	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
