@@ -52,17 +52,6 @@ type FeatureVariable struct {
 // IsFeatureEnabled returns true if the feature is enabled for the given user
 func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entities.UserContext) (result bool, err error) {
 
-	defer func() {
-		if r := recover(); r != nil {
-			errorMessage := fmt.Sprintf(`Optimizely SDK is panicking with the error "%s"`, string(debug.Stack()))
-			err = errors.New(errorMessage)
-			logger.Error(errorMessage, err)
-		}
-	}()
-
-	userID := userContext.ID
-	logger.Debug(fmt.Sprintf(`Evaluating feature "%s" for user "%s".`, featureKey, userID))
-
 	context, featureDecision, err := o.getFeatureDecision(featureKey, userContext)
 	if err != nil {
 		logger.Error("received an error while computing feature decision", err)
@@ -76,9 +65,9 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 	}
 
 	if result {
-		logger.Info(fmt.Sprintf(`Feature "%s" is enabled for user "%s".`, featureKey, userID))
+		logger.Info(fmt.Sprintf(`Feature "%s" is enabled for user "%s".`, featureKey, userContext.ID))
 	} else {
-		logger.Info(fmt.Sprintf(`Feature "%s" is not enabled for user "%s".`, featureKey, userID))
+		logger.Info(fmt.Sprintf(`Feature "%s" is not enabled for user "%s".`, featureKey, userContext.ID))
 	}
 
 	if featureDecision.Source == decision.FeatureTest {
@@ -86,7 +75,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 		impressionEvent := event.CreateImpressionUserEvent(context.ProjectConfig, featureDecision.Experiment, *featureDecision.Variation, userContext)
 		o.eventProcessor.ProcessEvent(impressionEvent)
 	}
-	return result, nil
+	return result, err
 }
 
 // GetEnabledFeatures returns an array containing the keys of all features in the project that are enabled for the given user.
@@ -115,7 +104,7 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 		}
 	}
 
-	return enabledFeatures, nil
+	return enabledFeatures, err
 }
 
 // Track take and event key with event tags and if the event is part of the config, send to events backend.
@@ -146,7 +135,7 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 		return err
 	}
 
-	return nil
+	return err
 }
 
 // GetFeatureVariableBoolean returns boolean feature variable value
@@ -257,20 +246,23 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext ent
 	defer func() {
 		if r := recover(); r != nil {
 			errorMessage := fmt.Sprintf(`optimizely SDK is panicking with the error "%s"`, string(debug.Stack()))
-			err := errors.New(errorMessage)
+			err = errors.New(errorMessage)
 			logger.Error(errorMessage, err)
 		}
 	}()
 
+	userID := userContext.ID
+	logger.Debug(fmt.Sprintf(`Evaluating feature "%s" for user "%s".`, featureKey, userID))
+
 	projectConfig, err := o.GetProjectConfig()
 	if err != nil {
-		logger.Error("Error calling getFeatureVariable", err)
+		logger.Error("Error calling getFeatureDecision", err)
 		return decisionContext, featureDecision, err
 	}
 
 	feature, err := projectConfig.GetFeatureByKey(featureKey)
 	if err != nil {
-		logger.Error("Error calling getFeatureVariable", err)
+		logger.Error("Error calling getFeatureDecision", err)
 		return decisionContext, featureDecision, err
 	}
 
@@ -281,11 +273,12 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext ent
 
 	featureDecision, err = o.decisionService.GetFeatureDecision(decisionContext, userContext)
 	if err != nil {
+		err = nil
 		logger.Warning("error making a decision")
-		return decisionContext, featureDecision, nil
+		return decisionContext, featureDecision, err
 	}
 
-	return decisionContext, featureDecision, nil
+	return decisionContext, featureDecision, err
 }
 
 // GetProjectConfig returns the current ProjectConfig or nil if the instance is not valid
