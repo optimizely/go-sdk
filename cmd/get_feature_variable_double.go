@@ -24,17 +24,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	userID      string
-	featureKey  string
-	variableKey string
-	eventKey    string
-)
-
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
+var getFeatureVariableDoubleCmd = &cobra.Command{
+	Use:   "get_feature_variable_double",
+	Short: "Get feature variable double",
+	Long:  `Returns double feature variable`,
 	Run: func(cmd *cobra.Command, args []string) {
 		optimizelyFactory := &client.OptimizelyFactory{
 			SDKKey: sdkKey,
@@ -52,15 +45,21 @@ var isFeatureEnabledCmd = &cobra.Command{
 			Attributes: map[string]interface{}{},
 		}
 
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
+		value, err := client.GetFeatureVariableDouble(featureKey, variableKey, user)
+		if err == nil {
+			fmt.Printf("Feature \"%s\" variable \"%s\" double value: %v\n", featureKey, variableKey, value)
+		} else {
+			fmt.Printf("Get feature \"%s\" variable \"%s\" double failed with error: %s\n", featureKey, variableKey, err)
+		}
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+	rootCmd.AddCommand(getFeatureVariableDoubleCmd)
+	getFeatureVariableDoubleCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
+	getFeatureVariableDoubleCmd.MarkFlagRequired("userId")
+	getFeatureVariableDoubleCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key for feature")
+	getFeatureVariableDoubleCmd.MarkFlagRequired("featureKey")
+	getFeatureVariableDoubleCmd.Flags().StringVarP(&variableKey, "variableKey", "v", "", "variable key for feature variable")
+	getFeatureVariableDoubleCmd.MarkFlagRequired("variableKey")
 }

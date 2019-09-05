@@ -24,17 +24,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	userID      string
-	featureKey  string
-	variableKey string
-	eventKey    string
-)
-
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
+var getEnabledFeaturesCmd = &cobra.Command{
+	Use:   "get_enabled_features",
+	Short: "Get enabled features",
+	Long:  `Returns enabled features`,
 	Run: func(cmd *cobra.Command, args []string) {
 		optimizelyFactory := &client.OptimizelyFactory{
 			SDKKey: sdkKey,
@@ -52,15 +45,13 @@ var isFeatureEnabledCmd = &cobra.Command{
 			Attributes: map[string]interface{}{},
 		}
 
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
+		features, _ := client.GetEnabledFeatures(user)
+		fmt.Printf("Enabled features for \"%s\": %v\n", userID, features)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+	rootCmd.AddCommand(getEnabledFeaturesCmd)
+	getEnabledFeaturesCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
+	getEnabledFeaturesCmd.MarkFlagRequired("userId")
 }
