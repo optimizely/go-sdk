@@ -1,3 +1,6 @@
+// to run the CPU profiling: go build -ldflags "-X main.RunCPUProfile=true" main.go && ./main
+// to run the Mem profiling: go build -ldflags "-X main.RunMemProfile=true" main.go && ./main
+
 package main
 
 import (
@@ -11,7 +14,15 @@ import (
 )
 
 func main() {
+
 	logging.SetLogLevel(logging.LogLevelDebug)
+	user := entities.UserContext{
+		ID: "mike ng",
+		Attributes: map[string]interface{}{
+			"country":      "Unknown",
+			"likes_donuts": true,
+		},
+	}
 	optimizelyFactory := &client.OptimizelyFactory{
 		SDKKey: "4SLpaJA1r1pgE6T2CoMs9q",
 	}
@@ -23,14 +34,6 @@ func main() {
 	if err != nil {
 		fmt.Printf("Error instantiating client: %s", err)
 		return
-	}
-
-	user := entities.UserContext{
-		ID: "mike ng",
-		Attributes: map[string]interface{}{
-			"country":      "Unknown",
-			"likes_donuts": true,
-		},
 	}
 
 	enabled, _ := app.IsFeatureEnabled("mutext_feat", user)
@@ -79,4 +82,5 @@ func main() {
 
 	enabled, _ = app.IsFeatureEnabled("mutext_feat", user)
 	fmt.Printf("Is feature enabled? %v\n", enabled)
+
 }
