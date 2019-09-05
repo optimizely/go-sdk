@@ -1,4 +1,4 @@
-// to run the CPU profiling: go build -ldflags "-X main.ProfileMode=mem" main_profile_feature.go && ./main_profile_feature
+// to run the CPU profiling: go build -ldflags "-X main.ProfileMode=mem" main.go && ./main
 
 package main
 
