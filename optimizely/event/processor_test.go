@@ -222,6 +222,6 @@ func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
 	if ok {
 		assert.Equal(t, 1, len(result.Events))
 		evs := result.Events[0]
-		assert.True(t, len(evs.event.Visitors) >= 1)
+		assert.True(t, len(evs.Event.Visitors) >= 1)
 	}
 }
