@@ -61,18 +61,18 @@ const RUN_NUMBER = 50
 
 func main() {
 
-	if ProfileMode != "" {
+	switch ProfileMode {
+	case "mem":
+		defer profile.Start(profile.MemProfile, profile.ProfilePath("."), profile.MemProfileRate(1)).Stop()
+	case "cpu":
+		defer profile.Start(profile.CPUProfile, profile.ProfilePath(".")).Stop()
+	default:
+		log.Println("ProfileMode should be set to mem or cpu")
 
-		switch ProfileMode {
-		case "mem":
-			defer profile.Start(profile.MemProfile, profile.ProfilePath("."), profile.MemProfileRate(1)).Stop()
-		case "cpu":
-			defer profile.Start(profile.CPUProfile, profile.ProfilePath(".")).Stop()
-		}
+	}
 
-		for i := 0; i < RUN_NUMBER; i++ {
-			stressTest()
-		}
+	for i := 0; i < RUN_NUMBER; i++ {
+		stressTest()
 	}
 
 }
