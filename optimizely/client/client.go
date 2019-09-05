@@ -246,8 +246,12 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext ent
 	defer func() {
 		if r := recover(); r != nil {
 			errorMessage := fmt.Sprintf(`optimizely SDK is panicking with the error "%s"`, string(debug.Stack()))
-			err = errors.New(errorMessage)
 			logger.Error(errorMessage, err)
+
+			// If we have a feature, then we can recover w/o throwing
+			if decisionContext.Feature == nil {
+				err = errors.New(errorMessage)
+			}
 		}
 	}()
 
