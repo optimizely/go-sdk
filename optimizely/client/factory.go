@@ -20,7 +20,6 @@ package client
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/optimizely/go-sdk/optimizely/event"
 
@@ -36,6 +35,7 @@ type Options struct {
 	Context              context.Context
 	ProjectConfigManager optimizely.ProjectConfigManager
 	DecisionService      decision.Service
+	EventProcessor       event.Processor
 }
 
 // OptimizelyFactory is used to construct an instance of the OptimizelyClient
@@ -43,9 +43,6 @@ type OptimizelyFactory struct {
 	SDKKey   string
 	Datafile []byte
 }
-
-const defaultEventQueueSize = 10
-const defaultEventFlushInterval = 30 * time.Second
 
 // StaticClient returns a client initialized with a static project config
 func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
@@ -117,8 +114,12 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 		client.decisionService = decision.NewCompositeService(notificationCenter)
 	}
 
-	// @TODO: allow event processor to be passed in
-	client.eventProcessor = event.NewEventProcessor(ctx, defaultEventQueueSize, defaultEventFlushInterval)
+	if clientOptions.EventProcessor != nil {
+		client.eventProcessor = clientOptions.EventProcessor
+	} else {
+		client.eventProcessor = event.NewEventProcessor(ctx, event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval)
+	}
+
 	client.isValid = true
 	return client, nil
 }

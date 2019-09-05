@@ -45,8 +45,9 @@ type HTTPEventDispatcher struct {
 
 // DispatchEvent dispatches event with callback
 func (*HTTPEventDispatcher) DispatchEvent(event LogEvent, callback func(bool)) {
-	jsonValue, _ := json.Marshal(event.event)
-	resp, err := http.Post(event.endPoint, jsonContentType, bytes.NewBuffer(jsonValue))
+
+	jsonValue, _ := json.Marshal(event.Event)
+	resp, err := http.Post(event.EndPoint, jsonContentType, bytes.NewBuffer(jsonValue))
 	// also check response codes
 	// resp.StatusCode == 400 is an error
 	var success bool

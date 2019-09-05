@@ -93,7 +93,7 @@ func TestCreateAndSendImpressionEvent(t *testing.T) {
 
 	impressionUserEvent := BuildTestImpressionEvent()
 
-	processor := NewEventProcessor(ctx, 100, 100)
+	processor := NewEventProcessor(ctx, 10, 100, 100)
 
 	processor.ProcessEvent(impressionUserEvent)
 
@@ -109,7 +109,7 @@ func TestCreateAndSendConversionEvent(t *testing.T) {
 
 	conversionUserEvent := BuildTestConversionEvent()
 
-	processor := NewEventProcessor(ctx, 100, 100)
+	processor := NewEventProcessor(ctx, 10, 100, 100)
 
 	processor.ProcessEvent(conversionUserEvent)
 
