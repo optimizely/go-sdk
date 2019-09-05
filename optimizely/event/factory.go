@@ -44,7 +44,7 @@ const revenueKey = "revenue"
 const valueKey = "value"
 
 func createLogEvent(event Batch) LogEvent {
-	return LogEvent{endPoint: eventEndPoint, event: event}
+	return LogEvent{EndPoint: eventEndPoint, Event: event}
 }
 
 func makeTimestamp() int64 {
@@ -240,6 +240,7 @@ func getEventAttributes(projectConfig optimizely.ProjectConfig, attributes map[s
 			efLogger.Debug(fmt.Sprintf("Unrecognized attribute %s provided. Pruning before sending event to Optimizely.", key))
 			continue
 		}
+		visitorAttribute.Key = attribute.Key
 		visitorAttribute.Value = value
 		visitorAttribute.AttributeType = attributeType
 
