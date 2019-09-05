@@ -17,6 +17,8 @@
 // Package entities //
 package entities
 
+import "errors"
+
 // Feature represents a feature flag
 type Feature struct {
 	ID                 string
@@ -53,3 +55,15 @@ const (
 	// Boolean - the feature-variable type is boolean
 	Boolean VariableType = "boolean"
 )
+
+// GetVariableByKey returns the featureVariable with the given key
+// TODO Make Variables a map not an array
+func (f Feature) GetVariableByKey(featureKey, variableKey string) (Variable, error) {
+	for _, v := range f.Variables {
+		if v.Key == variableKey {
+			return v, nil
+		}
+	}
+
+	return Variable{}, errors.New("Variable not found")
+}
