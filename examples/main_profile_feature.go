@@ -1,5 +1,4 @@
-// to run the CPU profiling: go build -ldflags "-X main.RunCPUProfile=true" main.go && ./main
-// to run the Mem profiling: go build -ldflags "-X main.RunMemProfile=true" main.go && ./main
+// to run the CPU profiling: go build -ldflags "-X main.ProfileMode=mem" main_profile_feature.go && ./main_profile_feature
 
 package main
 
@@ -17,7 +16,6 @@ import (
 	"github.com/pkg/profile"
 )
 
-// stressTest has everything that test app has. it is used to run profile
 func stressTest() {
 	/*
 		For the test app, the biggest json file is used with 100 entities.
@@ -57,17 +55,18 @@ func stressTest() {
 	clientApp.IsFeatureEnabled("feature_5", user)
 }
 
-var RunMemProfile = "false"
-var RunCPUProfile = "false"
+var ProfileMode = ""
+
+const RUN_NUMBER = 50
 
 func main() {
 
-	if RunMemProfile == "true" || RunCPUProfile == "true" {
+	if ProfileMode != "" {
 
-		const RUN_NUMBER = 50
-		if RunMemProfile == "true" {
+		switch ProfileMode {
+		case "mem":
 			defer profile.Start(profile.MemProfile, profile.ProfilePath("."), profile.MemProfileRate(1)).Stop()
-		} else if RunCPUProfile == "true" {
+		case "cpu":
 			defer profile.Start(profile.CPUProfile, profile.ProfilePath(".")).Stop()
 		}
 
