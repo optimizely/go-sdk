@@ -63,8 +63,10 @@ func TestParseDatafilePasses(t *testing.T) {
 
 func BenchmarkParseDatafilePasses(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		datafile, _ := ioutil.ReadFile("test/100_entities.json")
-
+		datafile, err := ioutil.ReadFile("test/100_entities.json")
+		if err != nil {
+			fmt.Println("error opening file:", err)
+		}
 		Parse(datafile)
 
 	}
