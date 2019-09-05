@@ -26,7 +26,7 @@ func stressTest() {
 
 	datafile, err := ioutil.ReadFile(datafileDir)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
 
 	optlyClient := &client.OptimizelyFactory{
@@ -49,7 +49,7 @@ func stressTest() {
 	}
 	clientApp, err := optlyClient.ClientWithOptions(clientOptions)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
 
 	clientApp.IsFeatureEnabled("feature_5", user)
