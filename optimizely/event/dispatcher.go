@@ -95,6 +95,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 
 	for ed.eventQueue.Size() > 0 {
 		if retryCount > maxRetries {
+			dispatcherLogger.Error(fmt.Sprintf("event failed to send %d times. It will retry on next event sent", maxRetries), nil)
 			break
 		}
 
@@ -113,6 +114,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 
 		ed.dispatcher.DispatchEvent(event, func(success bool) {
 			if success {
+				dispatcherLogger.Debug("event sent")
 				ed.eventQueue.Remove(1)
 				retryCount = 0
 			} else {
