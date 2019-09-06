@@ -14,61 +14,21 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package datafileprojectconfig
+// Package mappers ...
+package mappers
 
 import (
-	"fmt"
-	"io/ioutil"
-	"testing"
-
-	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
-	"github.com/stretchr/testify/assert"
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
+	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-func TestParseDatafilePasses(t *testing.T) {
-	testFeatureKey := "feature_test_1"
-	testFeatureID := "feature_id_123"
-	datafileString := fmt.Sprintf(`{
-		"projectId": "1337",
-		"accountId": "1338",
-		"version": "4",
-		"featureFlags": [
-			{
-				"key": "%s",
-				"id" : "%s"
-			}
-		]
-	}`, testFeatureKey, testFeatureID)
-
-	rawDatafile := []byte(datafileString)
-	parsedDatafile, err := Parse(rawDatafile)
-	if err != nil {
-		assert.Fail(t, err.Error())
+// MapEvents maps the raw datafile event entities to SDK Event entities
+func MapEvents(events []datafileEntities.Event) map[string]entities.Event {
+	eventMap := make(map[string]entities.Event)
+	for _, event := range events {
+		entityEvent := entities.Event{ID: event.ID, Key: event.Key, ExperimentIds: event.ExperimentIds}
+		eventMap[entityEvent.Key] = entityEvent
 	}
 
-	expectedDatafile := &entities.Datafile{
-		AccountID: "1338",
-		ProjectID: "1337",
-		Version:   "4",
-		FeatureFlags: []entities.FeatureFlag{
-			entities.FeatureFlag{
-				Key: testFeatureKey,
-				ID:  testFeatureID,
-			},
-		},
-	}
-
-	assert.Equal(t, expectedDatafile, parsedDatafile)
-}
-
-func BenchmarkParseDatafilePasses(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		datafile, err := ioutil.ReadFile("test/100_entities.json")
-		if err != nil {
-			fmt.Println("error opening file:", err)
-		}
-		Parse(datafile)
-
-	}
-
+	return eventMap
 }
