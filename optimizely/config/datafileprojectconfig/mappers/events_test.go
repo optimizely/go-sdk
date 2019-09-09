@@ -14,61 +14,35 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package datafileprojectconfig
+package mappers
 
 import (
-	"fmt"
-	"io/ioutil"
 	"testing"
 
-	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
+	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseDatafilePasses(t *testing.T) {
-	testFeatureKey := "feature_test_1"
-	testFeatureID := "feature_id_123"
-	datafileString := fmt.Sprintf(`{
-		"projectId": "1337",
-		"accountId": "1338",
-		"version": "4",
-		"featureFlags": [
-			{
-				"key": "%s",
-				"id" : "%s"
-			}
-		]
-	}`, testFeatureKey, testFeatureID)
+func TestMapEvents(t *testing.T) {
+	const testEventString = `{
+		"id": "some_id",
+		"key": "event1",
+		"experimentIds": ["11111", "11112"]
+	 }`
 
-	rawDatafile := []byte(datafileString)
-	parsedDatafile, err := Parse(rawDatafile)
-	if err != nil {
-		assert.Fail(t, err.Error())
-	}
+	var rawEvent datafileEntities.Event
+	json.Unmarshal([]byte(testEventString), &rawEvent)
 
-	expectedDatafile := &entities.Datafile{
-		AccountID: "1338",
-		ProjectID: "1337",
-		Version:   "4",
-		FeatureFlags: []entities.FeatureFlag{
-			entities.FeatureFlag{
-				Key: testFeatureKey,
-				ID:  testFeatureID,
-			},
+	rawEvents := []datafileEntities.Event{rawEvent}
+	eventsMap := MapEvents(rawEvents)
+	expectedEventMap := map[string]entities.Event{
+		"event1": entities.Event{
+			ID:            "some_id",
+			Key:           "event1",
+			ExperimentIds: []string{"11111", "11112"},
 		},
 	}
 
-	assert.Equal(t, expectedDatafile, parsedDatafile)
-}
-
-func BenchmarkParseDatafilePasses(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		datafile, err := ioutil.ReadFile("test/100_entities.json")
-		if err != nil {
-			fmt.Println("error opening file:", err)
-		}
-		Parse(datafile)
-
-	}
-
+	assert.Equal(t, expectedEventMap, eventsMap)
 }

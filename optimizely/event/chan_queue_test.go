@@ -14,61 +14,40 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package datafileprojectconfig
+// Package event //
+package event
 
 import (
-	"fmt"
-	"io/ioutil"
-	"testing"
-
-	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
 	"github.com/stretchr/testify/assert"
+	"testing"
+	"time"
 )
 
-func TestParseDatafilePasses(t *testing.T) {
-	testFeatureKey := "feature_test_1"
-	testFeatureID := "feature_id_123"
-	datafileString := fmt.Sprintf(`{
-		"projectId": "1337",
-		"accountId": "1338",
-		"version": "4",
-		"featureFlags": [
-			{
-				"key": "%s",
-				"id" : "%s"
-			}
-		]
-	}`, testFeatureKey, testFeatureID)
+func TestChanQueue_Add_Size_Remove(t *testing.T) {
+	q := NewChanQueue(100)
 
-	rawDatafile := []byte(datafileString)
-	parsedDatafile, err := Parse(rawDatafile)
-	if err != nil {
-		assert.Fail(t, err.Error())
-	}
+	impression := BuildTestImpressionEvent()
+	conversion := BuildTestConversionEvent()
 
-	expectedDatafile := &entities.Datafile{
-		AccountID: "1338",
-		ProjectID: "1337",
-		Version:   "4",
-		FeatureFlags: []entities.FeatureFlag{
-			entities.FeatureFlag{
-				Key: testFeatureKey,
-				ID:  testFeatureID,
-			},
-		},
-	}
+	q.Add(impression)
+	q.Add(impression)
+	q.Add(conversion)
 
-	assert.Equal(t, expectedDatafile, parsedDatafile)
-}
+	time.Sleep(2000 * time.Millisecond)
 
-func BenchmarkParseDatafilePasses(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		datafile, err := ioutil.ReadFile("test/100_entities.json")
-		if err != nil {
-			fmt.Println("error opening file:", err)
-		}
-		Parse(datafile)
+	items1 := q.Get(2)
 
-	}
+	assert.Equal(t, 2, len(items1))
 
+	q.Remove(1)
+
+	items2 := q.Get(1)
+
+	assert.True(t, len(items2) != 0)
+
+	allItems := q.Remove(3)
+
+	assert.True(t,len(allItems) > 0)
+
+	assert.Equal(t, 0, q.Size())
 }
