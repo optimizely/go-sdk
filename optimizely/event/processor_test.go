@@ -9,8 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func close(wg *sync.WaitGroup, cancelFn context.CancelFunc) {
+	cancelFn()
+	wg.Wait()
+}
 func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
-	ctx := context.Background()
+	ctx, cancelFn := context.WithCancel(context.Background())
 	var wg sync.WaitGroup
 	processor := NewEventProcessor(ctx, 10, 100, 100, &wg)
 
@@ -20,7 +24,7 @@ func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 
 	assert.Equal(t, 1, processor.EventsCount())
 
-	time.Sleep(2000 * time.Millisecond)
+	close(&wg, cancelFn)
 
 	assert.NotNil(t, processor.Ticker)
 
@@ -38,6 +42,7 @@ func (f *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 
 func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 	var wg sync.WaitGroup
+	ctx, cancelFn := context.WithCancel(context.Background())
 	processor := &QueueingEventProcessor{
 		MaxQueueSize:    100,
 		FlushInterval:   100,
@@ -46,7 +51,7 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 		wg:              &wg,
 	}
 	processor.BatchSize = 10
-	processor.StartTicker(context.TODO())
+	processor.StartTicker(ctx)
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -58,7 +63,7 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 
 	assert.Equal(t, 4, processor.EventsCount())
 
-	time.Sleep(200 * time.Millisecond)
+	close(&wg, cancelFn)
 
 	assert.NotNil(t, processor.Ticker)
 
@@ -96,18 +101,15 @@ func TestBatchEventProcessor_FlushesOnClose(t *testing.T) {
 
 	assert.Equal(t, 4, processor.EventsCount())
 
-	time.Sleep(500 * time.Millisecond)
-
 	// Triggers the flush in the processor
-	cancelFn()
-
-	time.Sleep(500 * time.Millisecond)
+	close(&wg, cancelFn)
 
 	assert.Equal(t, 0, processor.EventsCount())
 }
 
 func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 	var wg sync.WaitGroup
+	ctx, cancelFn := context.WithCancel(context.Background())
 	processor := &QueueingEventProcessor{
 		MaxQueueSize:    100,
 		FlushInterval:   100,
@@ -116,7 +118,7 @@ func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 		wg:              &wg,
 	}
 	processor.BatchSize = 10
-	processor.StartTicker(context.TODO())
+	processor.StartTicker(ctx)
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -129,7 +131,7 @@ func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 
 	assert.Equal(t, 4, processor.EventsCount())
 
-	time.Sleep(200 * time.Millisecond)
+	close(&wg, cancelFn)
 
 	assert.NotNil(t, processor.Ticker)
 
@@ -146,6 +148,7 @@ func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 
 func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 	var wg sync.WaitGroup
+	ctx, cancelFn := context.WithCancel(context.Background())
 	processor := &QueueingEventProcessor{
 		MaxQueueSize:    100,
 		FlushInterval:   100,
@@ -154,7 +157,7 @@ func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 		wg:              &wg,
 	}
 	processor.BatchSize = 10
-	processor.StartTicker(context.TODO())
+	processor.StartTicker(ctx)
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -167,7 +170,7 @@ func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 
 	assert.Equal(t, 4, processor.EventsCount())
 
-	time.Sleep(200 * time.Millisecond)
+	close(&wg, cancelFn)
 
 	assert.NotNil(t, processor.Ticker)
 
@@ -184,6 +187,7 @@ func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 
 func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
 	var wg sync.WaitGroup
+	ctx, cancelFn := context.WithCancel(context.Background())
 	processor := &QueueingEventProcessor{
 		MaxQueueSize:    100,
 		FlushInterval:   100,
@@ -192,7 +196,7 @@ func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
 		wg:              &wg,
 	}
 	processor.BatchSize = 10
-	processor.StartTicker(context.TODO())
+	processor.StartTicker(ctx)
 
 	impression := BuildTestImpressionEvent()
 
@@ -200,7 +204,7 @@ func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
 	processor.ProcessEvent(impression)
 	processor.ProcessEvent(impression)
 
-	time.Sleep(3000 * time.Millisecond)
+	close(&wg, cancelFn)
 
 	assert.NotNil(t, processor.Ticker)
 
@@ -209,9 +213,10 @@ func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
 
 func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
 	var wg sync.WaitGroup
+	ctx, cancelFn := context.WithCancel(context.Background())
 	processor := &QueueingEventProcessor{MaxQueueSize: 100, FlushInterval: 100, Q: NewChanQueue(100), EventDispatcher: &MockDispatcher{}, wg: &wg}
 	processor.BatchSize = 10
-	processor.StartTicker(context.TODO())
+	processor.StartTicker(ctx)
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -221,13 +226,11 @@ func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
 	processor.ProcessEvent(conversion)
 	processor.ProcessEvent(conversion)
 
-	time.Sleep(3000 * time.Millisecond)
+	close(&wg, cancelFn)
 
 	assert.NotNil(t, processor.Ticker)
 
 	assert.Equal(t, 0, processor.EventsCount())
-
-	time.Sleep(3000 * time.Millisecond)
 
 	result, ok := (processor.EventDispatcher).(*MockDispatcher)
 
