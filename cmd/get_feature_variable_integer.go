@@ -24,10 +24,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
+var getFeatureVariableIntegerCmd = &cobra.Command{
+	Use:   "get_feature_variable_integer",
+	Short: "Get feature variable integer",
+	Long:  `Returns integer feature variable`,
 	Run: func(cmd *cobra.Command, args []string) {
 		optimizelyFactory := &client.OptimizelyFactory{
 			SDKKey: sdkKey,
@@ -45,15 +45,21 @@ var isFeatureEnabledCmd = &cobra.Command{
 			Attributes: map[string]interface{}{},
 		}
 
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
+		value, err := client.GetFeatureVariableInteger(featureKey, variableKey, user)
+		if err == nil {
+			fmt.Printf("Feature \"%s\" variable \"%s\" integer value: %v\n", featureKey, variableKey, value)
+		} else {
+			fmt.Printf("Get feature \"%s\" variable \"%s\" integer failed with error: %s\n", featureKey, variableKey, err)
+		}
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+	rootCmd.AddCommand(getFeatureVariableIntegerCmd)
+	getFeatureVariableIntegerCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
+	getFeatureVariableIntegerCmd.MarkFlagRequired("userId")
+	getFeatureVariableIntegerCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key for feature")
+	getFeatureVariableIntegerCmd.MarkFlagRequired("featureKey")
+	getFeatureVariableIntegerCmd.Flags().StringVarP(&variableKey, "variableKey", "v", "", "variable key for feature variable")
+	getFeatureVariableIntegerCmd.MarkFlagRequired("variableKey")
 }
