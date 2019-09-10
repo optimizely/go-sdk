@@ -31,6 +31,8 @@ import (
 
 const jsonContentType = "application/json"
 const maxRetries = 3
+const defaultQueueSize = 1000
+const sleepTime = 5 * time.Second
 
 var dispatcherLogger = logging.GetLogger("EventDispatcher")
 
@@ -114,13 +116,15 @@ func (ed *QueueEventDispatcher) flushEvents() {
 
 		ed.dispatcher.DispatchEvent(event, func(success bool) {
 			if success {
-				dispatcherLogger.Debug("event sent")
+				dispatcherLogger.Debug(fmt.Sprintf("Dispatched log event %+v", event))
 				ed.eventQueue.Remove(1)
 				retryCount = 0
 			} else {
 				dispatcherLogger.Warning("dispatch event failed")
-				// we failed.  Sleep 5 seconds and try again.  Or, should we exit and try the next time a log event is added?
-				time.Sleep(5 * time.Second)
+				// we failed.  Sleep some seconds and try again.
+				time.Sleep(sleepTime)
+				// increase retryCount.  We exit if we have retried x times.
+				// we will retry again next event that is added.
 				retryCount++
 			}
 		})
@@ -129,7 +133,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 
 // NewQueueEventDispatcher creates a dispatcher that queues in memory and then sends via go routine.
 func NewQueueEventDispatcher(ctx context.Context) Dispatcher {
-	dispatcher := &QueueEventDispatcher{eventQueue: NewInMemoryQueue(1000), dispatcher:&HTTPEventDispatcher{}}
+	dispatcher := &QueueEventDispatcher{eventQueue: NewInMemoryQueue(defaultQueueSize), dispatcher:&HTTPEventDispatcher{}}
 
 	go func() {
 		<-ctx.Done()
