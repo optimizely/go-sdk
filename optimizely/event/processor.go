@@ -40,6 +40,8 @@ type QueueingEventProcessor struct {
 	Mux             sync.Mutex
 	Ticker          *time.Ticker
 	EventDispatcher Dispatcher
+
+	wg *sync.WaitGroup
 }
 
 // DefaultBatchSize holds the default value for the batch size
@@ -54,18 +56,21 @@ const DefaultEventFlushInterval = 30 * time.Second
 var pLogger = logging.GetLogger("EventProcessor")
 
 // NewEventProcessor returns a new instance of QueueingEventProcessor with queueSize and flushInterval
-func NewEventProcessor(ctx context.Context, batchSize, queueSize int, flushInterval time.Duration) *QueueingEventProcessor {
+func NewEventProcessor(ctx context.Context, batchSize, queueSize int, flushInterval time.Duration, wg *sync.WaitGroup) *QueueingEventProcessor {
 	p := &QueueingEventProcessor{
 		MaxQueueSize:    queueSize,
 		FlushInterval:   flushInterval,
 		Q:               NewInMemoryQueue(queueSize),
 		EventDispatcher: &HTTPEventDispatcher{},
+
+		wg: wg,
 	}
 	p.BatchSize = DefaultBatchSize
 	if batchSize > 0 {
 		p.BatchSize = batchSize
 	}
 
+	p.wg.Add(1)
 	p.StartTicker(ctx)
 	return p
 }
@@ -103,6 +108,8 @@ func (p *QueueingEventProcessor) StartTicker(ctx context.Context) {
 	}
 	p.Ticker = time.NewTicker(p.FlushInterval * time.Millisecond)
 	go func() {
+
+		defer p.wg.Done()
 		for {
 			select {
 			case <-p.Ticker.C:

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"runtime/debug"
 	"strconv"
+	"sync"
 
 	"github.com/optimizely/go-sdk/optimizely/event"
 
@@ -42,6 +43,7 @@ type OptimizelyClient struct {
 	isValid         bool
 
 	cancelFunc context.CancelFunc
+	wg         *sync.WaitGroup
 }
 
 // IsFeatureEnabled returns true if the feature is enabled for the given user
@@ -280,4 +282,5 @@ func (o *OptimizelyClient) GetProjectConfig() (projectConfig optimizely.ProjectC
 // Close closes the Optimizely instance and stops any ongoing tasks from its children components
 func (o *OptimizelyClient) Close() {
 	o.cancelFunc()
+	o.wg.Wait() //blocking call
 }

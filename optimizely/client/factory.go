@@ -20,6 +20,7 @@ package client
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"github.com/optimizely/go-sdk/optimizely/event"
 
@@ -76,8 +77,12 @@ func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 
 // ClientWithOptions returns a client initialized with the given configuration options
 func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*OptimizelyClient, error) {
+
+	var wg sync.WaitGroup
+
 	client := &OptimizelyClient{
 		isValid: false,
+		wg:      &wg,
 	}
 
 	var ctx context.Context
@@ -117,7 +122,7 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 	if clientOptions.EventProcessor != nil {
 		client.eventProcessor = clientOptions.EventProcessor
 	} else {
-		client.eventProcessor = event.NewEventProcessor(ctx, event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval)
+		client.eventProcessor = event.NewEventProcessor(ctx, event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval, &wg)
 	}
 
 	client.isValid = true
