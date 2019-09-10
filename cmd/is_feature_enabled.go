@@ -24,13 +24,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	userID      string
-	featureKey  string
-	variableKey string
-	eventKey    string
-)
-
 var isFeatureEnabledCmd = &cobra.Command{
 	Use:   "is_feature_enabled",
 	Short: "Is feature enabled?",
