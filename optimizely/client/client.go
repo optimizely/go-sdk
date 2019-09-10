@@ -282,5 +282,5 @@ func (o *OptimizelyClient) GetProjectConfig() (projectConfig optimizely.ProjectC
 // Close closes the Optimizely instance and stops any ongoing tasks from its children components
 func (o *OptimizelyClient) Close() {
 	o.cancelFunc()
-	o.wg.Wait() //blocking call
+	o.wg.Wait() // blocking call
 }
