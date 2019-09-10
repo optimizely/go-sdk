@@ -23,9 +23,9 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 
 	qd, _ := q.(*QueueEventDispatcher)
 
-	qd.DispatchEvent(logEvent, func(success bool) {
-		assert.True(t, success)
-	})
+	success, _ := qd.DispatchEvent(logEvent)
+
+	assert.True(t, success)
 
 	// its been queued
 	assert.Equal(t,1, qd.eventQueue.Size())

@@ -113,7 +113,9 @@ func (ed *QueueEventDispatcher) flushEvents() {
 			continue
 		}
 
-		ed.dispatcher.DispatchEvent(event, func(success bool) {
+		success, err := ed.dispatcher.DispatchEvent(event)
+
+		if err == nil {
 			if success {
 				dispatcherLogger.Debug(fmt.Sprintf("Dispatched log event %+v", event))
 				ed.eventQueue.Remove(1)
@@ -126,7 +128,9 @@ func (ed *QueueEventDispatcher) flushEvents() {
 				// we will retry again next event that is added.
 				retryCount++
 			}
-		})
+		} else {
+			dispatcherLogger.Error("Error dispatching ", err)
+		}
 	}
 }
 
