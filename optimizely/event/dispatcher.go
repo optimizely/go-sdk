@@ -30,7 +30,7 @@ const jsonContentType = "application/json"
 
 // Dispatcher dispatches events
 type Dispatcher interface {
-	DispatchEvent(event LogEvent, callback func(success bool))
+	DispatchEvent(event LogEvent) (bool, error)
 }
 
 // HTTPEventDispatcher is the HTTP implementation of the Dispatcher interface
@@ -40,7 +40,7 @@ type HTTPEventDispatcher struct {
 var dispatcherLogger = logging.GetLogger("EventDispatcher")
 
 // DispatchEvent dispatches event with callback
-func (*HTTPEventDispatcher) DispatchEvent(event LogEvent, callback func(bool)) {
+func (*HTTPEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 
 	jsonValue, _ := json.Marshal(event.Event)
 	resp, err := http.Post(event.EndPoint, jsonContentType, bytes.NewBuffer(jsonValue))
@@ -54,10 +54,9 @@ func (*HTTPEventDispatcher) DispatchEvent(event LogEvent, callback func(bool)) {
 		if resp.StatusCode == 204 {
 			success = true
 		} else {
-			fmt.Printf("http.Post invalid response %d", resp.StatusCode)
+			dispatcherLogger.Error(fmt.Sprintf("http.Post invalid response %d", resp.StatusCode), err)
 			success = false
 		}
 	}
-	callback(success)
-
+	return success, err
 }

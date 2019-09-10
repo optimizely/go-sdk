@@ -18,33 +18,40 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
+	"github.com/optimizely/go-sdk/optimizely/client"
+	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/spf13/cobra"
 )
 
-var (
-	userID      string
-	featureKey  string
-	variableKey string
-	eventKey    string
-	sdkKey      string
-)
+var getEnabledFeaturesCmd = &cobra.Command{
+	Use:   "get_enabled_features",
+	Short: "Get enabled features",
+	Long:  `Returns enabled features`,
+	Run: func(cmd *cobra.Command, args []string) {
+		optimizelyFactory := &client.OptimizelyFactory{
+			SDKKey: sdkKey,
+		}
 
-var rootCmd = &cobra.Command{
-	Use:   "go-sdk",
-	Short: "go-sdk provides cli access to your Optimizely fullstack project",
-}
+		client, err := optimizelyFactory.StaticClient()
 
-// Execute executes rootCmd, exits if error found
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+		if err != nil {
+			fmt.Printf("Error instantiating client: %s\n", err)
+			return
+		}
+
+		user := entities.UserContext{
+			ID:         userID,
+			Attributes: map[string]interface{}{},
+		}
+
+		features, _ := client.GetEnabledFeatures(user)
+		fmt.Printf("Enabled features for \"%s\": %v\n", userID, features)
+	},
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&sdkKey, "sdkKey", "s", "", "Optimizely project SDK key")
-	rootCmd.MarkPersistentFlagRequired("sdkKey")
+	rootCmd.AddCommand(getEnabledFeaturesCmd)
+	getEnabledFeaturesCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
+	getEnabledFeaturesCmd.MarkFlagRequired("userId")
 }

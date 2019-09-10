@@ -31,9 +31,9 @@ type MockDispatcher struct {
 	Events []LogEvent
 }
 
-func (f *MockDispatcher) DispatchEvent(event LogEvent, callback func(success bool)) {
+func (f *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	f.Events = append(f.Events, event)
-	callback(true)
+	return true, nil
 }
 
 func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {

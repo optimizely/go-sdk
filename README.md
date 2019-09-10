@@ -53,8 +53,14 @@ Usage:
   go-sdk [command]
 
 Available Commands:
-  help               Help about any command
-  is_feature_enabled Is feature enabled?
+  help                          Help about any command
+  is_feature_enabled            Is feature enabled?
+  get_enabled_features          Get enabled features
+  track                         Track a conversion event
+  get_feature_variable_boolean  Get feature variable boolean value
+  get_feature_variable_double   Get feature variable double value
+  get_feature_variable_integer  Get feature variable integer value
+  get_feature_variable_string   Get feature variable string value
 
 Flags:
   -h, --help            help for go-sdk
@@ -102,6 +108,105 @@ Usage:
 Flags:
   -f, --featureKey string   feature key to enable
   -h, --help                help for is_feature_enabled
+  -u, --userId string       user id
+
+Global Flags:
+  -s, --sdkKey string   Optimizely project SDK key
+  ```
+
+#### get_enabled_features
+```
+Returns enabled features for userId
+
+Usage:
+  go-sdk get_enabled_features [flags]
+
+Flags:
+  -h, --help                help for get_enabled_features
+  -u, --userId string       user id
+
+Global Flags:
+  -s, --sdkKey string   Optimizely project SDK key
+  ```
+
+#### track
+```
+Tracks a conversion event
+
+Usage:
+  go-sdk track [flags]
+
+Flags:
+  -e, --eventKey string     event key to track
+  -h, --help                help for track
+  -u, --userId string       user id
+
+Global Flags:
+  -s, --sdkKey string   Optimizely project SDK key
+  ```
+
+#### get_feature_variable_boolean
+```
+Returns feature variable boolean value
+
+Usage:
+  go-sdk get_feature_variable_boolean [flags]
+
+Flags:
+  -f, --featureKey string   feature key for feature
+  -v, --variableKey string  variable key for feature variable
+  -h, --help                help for get_feature_variable_boolean
+  -u, --userId string       user id
+
+Global Flags:
+  -s, --sdkKey string   Optimizely project SDK key
+  ```
+
+#### get_feature_variable_double
+```
+Returns feature variable double value
+
+Usage:
+  go-sdk get_feature_variable_double [flags]
+
+Flags:
+  -f, --featureKey string   feature key for feature
+  -v, --variableKey string  variable key for feature variable
+  -h, --help                help for get_feature_variable_double
+  -u, --userId string       user id
+
+Global Flags:
+  -s, --sdkKey string   Optimizely project SDK key
+  ```
+
+#### get_feature_variable_integer
+```
+Returns feature variable integer value
+
+Usage:
+  go-sdk get_feature_variable_integer [flags]
+
+Flags:
+  -f, --featureKey string   feature key for feature
+  -v, --variableKey string  variable key for feature variable
+  -h, --help                help for get_feature_variable_integer
+  -u, --userId string       user id
+
+Global Flags:
+  -s, --sdkKey string   Optimizely project SDK key
+  ```
+
+#### get_feature_variable_string
+```
+Returns feature variable string value
+
+Usage:
+  go-sdk get_feature_variable_string [flags]
+
+Flags:
+  -f, --featureKey string   feature key for feature
+  -v, --variableKey string  variable key for feature variable
+  -h, --help                help for get_feature_variable_string
   -u, --userId string       user id
 
 Global Flags:
