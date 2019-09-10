@@ -3,6 +3,7 @@ package event
 import (
 	"context"
 	"math/rand"
+	"sync"
 	"testing"
 	"time"
 
@@ -90,10 +91,11 @@ func BuildTestConversionEvent() UserEvent {
 
 func TestCreateAndSendImpressionEvent(t *testing.T) {
 	ctx := context.Background()
+	var wg sync.WaitGroup
 
 	impressionUserEvent := BuildTestImpressionEvent()
 
-	processor := NewEventProcessor(ctx, 10, 100, 100)
+	processor := NewEventProcessor(ctx, 10, 100, 100, &wg)
 
 	processor.ProcessEvent(impressionUserEvent)
 
@@ -106,10 +108,11 @@ func TestCreateAndSendImpressionEvent(t *testing.T) {
 
 func TestCreateAndSendConversionEvent(t *testing.T) {
 	ctx := context.Background()
+	var wg sync.WaitGroup
 
 	conversionUserEvent := BuildTestConversionEvent()
 
-	processor := NewEventProcessor(ctx, 10, 100, 100)
+	processor := NewEventProcessor(ctx, 10, 100, 100, &wg)
 
 	processor.ProcessEvent(conversionUserEvent)
 

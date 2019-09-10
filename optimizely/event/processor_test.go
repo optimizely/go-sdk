@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -10,8 +11,8 @@ import (
 
 func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 	ctx := context.Background()
-
-	processor := NewEventProcessor(ctx, 10, 100, 100)
+	var wg sync.WaitGroup
+	processor := NewEventProcessor(ctx, 10, 100, 100, &wg)
 
 	impression := BuildTestImpressionEvent()
 
@@ -36,11 +37,13 @@ func (f *MockDispatcher) DispatchEvent(event LogEvent, callback func(success boo
 }
 
 func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
+	var wg sync.WaitGroup
 	processor := &QueueingEventProcessor{
 		MaxQueueSize:    100,
 		FlushInterval:   100,
 		Q:               NewInMemoryQueue(100),
 		EventDispatcher: &MockDispatcher{},
+		wg:              &wg,
 	}
 	processor.BatchSize = 10
 	processor.StartTicker(context.TODO())
@@ -72,11 +75,13 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 
 func TestBatchEventProcessor_FlushesOnClose(t *testing.T) {
 	ctx, cancelFn := context.WithCancel(context.Background())
+	var wg sync.WaitGroup
 	processor := &QueueingEventProcessor{
 		MaxQueueSize:    100,
 		FlushInterval:   30 * time.Second,
 		Q:               NewInMemoryQueue(100),
 		EventDispatcher: &MockDispatcher{},
+		wg:              &wg,
 	}
 	processor.BatchSize = 10
 	processor.StartTicker(ctx)
@@ -102,11 +107,13 @@ func TestBatchEventProcessor_FlushesOnClose(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
+	var wg sync.WaitGroup
 	processor := &QueueingEventProcessor{
 		MaxQueueSize:    100,
 		FlushInterval:   100,
 		Q:               NewInMemoryQueue(100),
 		EventDispatcher: &MockDispatcher{},
+		wg:              &wg,
 	}
 	processor.BatchSize = 10
 	processor.StartTicker(context.TODO())
@@ -138,11 +145,13 @@ func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
+	var wg sync.WaitGroup
 	processor := &QueueingEventProcessor{
 		MaxQueueSize:    100,
 		FlushInterval:   100,
 		Q:               NewInMemoryQueue(100),
 		EventDispatcher: &MockDispatcher{},
+		wg:              &wg,
 	}
 	processor.BatchSize = 10
 	processor.StartTicker(context.TODO())
@@ -174,11 +183,13 @@ func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 }
 
 func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
-	processor:= &QueueingEventProcessor{
+	var wg sync.WaitGroup
+	processor := &QueueingEventProcessor{
 		MaxQueueSize:    100,
 		FlushInterval:   100,
 		Q:               NewChanQueue(100),
 		EventDispatcher: &HTTPEventDispatcher{},
+		wg:              &wg,
 	}
 	processor.BatchSize = 10
 	processor.StartTicker(context.TODO())
@@ -197,7 +208,8 @@ func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
 }
 
 func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
-	processor := &QueueingEventProcessor{MaxQueueSize: 100, FlushInterval: 100, Q: NewChanQueue(100), EventDispatcher: &MockDispatcher{}}
+	var wg sync.WaitGroup
+	processor := &QueueingEventProcessor{MaxQueueSize: 100, FlushInterval: 100, Q: NewChanQueue(100), EventDispatcher: &MockDispatcher{}, wg: &wg}
 	processor.BatchSize = 10
 	processor.StartTicker(context.TODO())
 

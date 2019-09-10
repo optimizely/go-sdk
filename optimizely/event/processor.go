@@ -70,7 +70,6 @@ func NewEventProcessor(ctx context.Context, batchSize, queueSize int, flushInter
 		p.BatchSize = batchSize
 	}
 
-	p.wg.Add(1)
 	p.StartTicker(ctx)
 	return p
 }
@@ -107,6 +106,7 @@ func (p *QueueingEventProcessor) StartTicker(ctx context.Context) {
 		return
 	}
 	p.Ticker = time.NewTicker(p.FlushInterval * time.Millisecond)
+	p.wg.Add(1)
 	go func() {
 
 		defer p.wg.Done()
