@@ -14,37 +14,35 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+package mappers
 
 import (
-	"fmt"
-	"os"
+	"testing"
 
-	"github.com/spf13/cobra"
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
+	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/stretchr/testify/assert"
 )
 
-var (
-	userID      string
-	featureKey  string
-	variableKey string
-	eventKey    string
-	sdkKey      string
-)
+func TestMapEvents(t *testing.T) {
+	const testEventString = `{
+		"id": "some_id",
+		"key": "event1",
+		"experimentIds": ["11111", "11112"]
+	 }`
 
-var rootCmd = &cobra.Command{
-	Use:   "go-sdk",
-	Short: "go-sdk provides cli access to your Optimizely fullstack project",
-}
+	var rawEvent datafileEntities.Event
+	json.Unmarshal([]byte(testEventString), &rawEvent)
 
-// Execute executes rootCmd, exits if error found
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	rawEvents := []datafileEntities.Event{rawEvent}
+	eventsMap := MapEvents(rawEvents)
+	expectedEventMap := map[string]entities.Event{
+		"event1": entities.Event{
+			ID:            "some_id",
+			Key:           "event1",
+			ExperimentIds: []string{"11111", "11112"},
+		},
 	}
-}
 
-func init() {
-	rootCmd.PersistentFlags().StringVarP(&sdkKey, "sdkKey", "s", "", "Optimizely project SDK key")
-	rootCmd.MarkPersistentFlagRequired("sdkKey")
+	assert.Equal(t, expectedEventMap, eventsMap)
 }

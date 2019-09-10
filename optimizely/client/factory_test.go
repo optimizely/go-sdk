@@ -30,9 +30,9 @@ type MockDispatcher struct {
 	Events []event.LogEvent
 }
 
-func (f *MockDispatcher) DispatchEvent(event event.LogEvent, callback func(success bool)) {
+func (f *MockDispatcher) DispatchEvent(event event.LogEvent) (bool, error) {
 	f.Events = append(f.Events, event)
-	callback(true)
+	return true, nil
 }
 
 func TestFactoryClientReturnsDefaultClient(t *testing.T) {

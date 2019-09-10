@@ -14,37 +14,40 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+// Package event //
+package event
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"testing"
+	"time"
 )
 
-var (
-	userID      string
-	featureKey  string
-	variableKey string
-	eventKey    string
-	sdkKey      string
-)
+func TestChanQueue_Add_Size_Remove(t *testing.T) {
+	q := NewChanQueue(100)
 
-var rootCmd = &cobra.Command{
-	Use:   "go-sdk",
-	Short: "go-sdk provides cli access to your Optimizely fullstack project",
-}
+	impression := BuildTestImpressionEvent()
+	conversion := BuildTestConversionEvent()
 
-// Execute executes rootCmd, exits if error found
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-}
+	q.Add(impression)
+	q.Add(impression)
+	q.Add(conversion)
 
-func init() {
-	rootCmd.PersistentFlags().StringVarP(&sdkKey, "sdkKey", "s", "", "Optimizely project SDK key")
-	rootCmd.MarkPersistentFlagRequired("sdkKey")
+	time.Sleep(2000 * time.Millisecond)
+
+	items1 := q.Get(2)
+
+	assert.Equal(t, 2, len(items1))
+
+	q.Remove(1)
+
+	items2 := q.Get(1)
+
+	assert.True(t, len(items2) != 0)
+
+	allItems := q.Remove(3)
+
+	assert.True(t,len(allItems) > 0)
+
+	assert.Equal(t, 0, q.Size())
 }

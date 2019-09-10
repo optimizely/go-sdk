@@ -14,37 +14,21 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+// Package mappers ...
+package mappers
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/spf13/cobra"
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
+	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-var (
-	userID      string
-	featureKey  string
-	variableKey string
-	eventKey    string
-	sdkKey      string
-)
-
-var rootCmd = &cobra.Command{
-	Use:   "go-sdk",
-	Short: "go-sdk provides cli access to your Optimizely fullstack project",
-}
-
-// Execute executes rootCmd, exits if error found
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+// MapEvents maps the raw datafile event entities to SDK Event entities
+func MapEvents(events []datafileEntities.Event) map[string]entities.Event {
+	eventMap := make(map[string]entities.Event)
+	for _, event := range events {
+		entityEvent := entities.Event{ID: event.ID, Key: event.Key, ExperimentIds: event.ExperimentIds}
+		eventMap[entityEvent.Key] = entityEvent
 	}
-}
 
-func init() {
-	rootCmd.PersistentFlags().StringVarP(&sdkKey, "sdkKey", "s", "", "Optimizely project SDK key")
-	rootCmd.MarkPersistentFlagRequired("sdkKey")
+	return eventMap
 }

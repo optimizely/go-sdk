@@ -38,7 +38,7 @@ var dispatcherLogger = logging.GetLogger("EventDispatcher")
 
 // Dispatcher dispatches events
 type Dispatcher interface {
-	DispatchEvent(event LogEvent, callback func(success bool))
+	DispatchEvent(event LogEvent) (bool, error)
 }
 
 // HTTPEventDispatcher is the HTTP implementation of the Dispatcher interface
@@ -46,7 +46,7 @@ type HTTPEventDispatcher struct {
 }
 
 // DispatchEvent dispatches event with callback
-func (*HTTPEventDispatcher) DispatchEvent(event LogEvent, callback func(bool)) {
+func (*HTTPEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 
 	jsonValue, _ := json.Marshal(event.Event)
 	resp, err := http.Post(event.EndPoint, jsonContentType, bytes.NewBuffer(jsonValue))
@@ -64,7 +64,7 @@ func (*HTTPEventDispatcher) DispatchEvent(event LogEvent, callback func(bool)) {
 			success = false
 		}
 	}
-	callback(success)
+	return success, err
 }
 
 // QueueEventDispatcher is a queued version of the event dispatcher that queues, returns success, and dispatches events in the background
@@ -75,13 +75,12 @@ type QueueEventDispatcher struct {
 }
 
 // DispatchEvent queues event with callback and calls flush in a go routine.
-func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent, callback func(bool)) {
-
+func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	ed.eventQueue.Add(event)
-	callback(true)
 	go func() {
 		ed.flushEvents()
 	}()
+	return true,nil
 }
 
 // flush the events

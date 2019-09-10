@@ -178,15 +178,16 @@ func (p *QueueingEventProcessor) FlushEvents() {
 			}
 		}
 		if batchEventCount > 0 {
-			p.EventDispatcher.DispatchEvent(createLogEvent(batchEvent), func(success bool) {
-				if success {
-					p.Remove(batchEventCount)
-					batchEventCount = 0
-					batchEvent = Batch{}
-				} else {
-					failedToSend = true
-				}
-			})
+			// TODO: figure out what to do with the error
+			if success, _ := p.EventDispatcher.DispatchEvent(createLogEvent(batchEvent)); success {
+				pLogger.Debug("Dispatched event successfully")
+				p.Remove(batchEventCount)
+				batchEventCount = 0
+				batchEvent = Batch{}
+			} else {
+				pLogger.Warning("Failed to dispatch event successfully")
+				failedToSend = true
+			}
 		}
 	}
 	p.Mux.Unlock()

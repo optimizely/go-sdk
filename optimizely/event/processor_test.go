@@ -30,9 +30,9 @@ type MockDispatcher struct {
 	Events []LogEvent
 }
 
-func (f *MockDispatcher) DispatchEvent(event LogEvent, callback func(success bool)) {
+func (f *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	f.Events = append(f.Events, event)
-	callback(true)
+	return true, nil
 }
 
 func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
@@ -170,5 +170,58 @@ func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 		assert.Equal(t, 3, len(result.Events))
 		evs := result.Events[len(result.Events)-1]
 		assert.Equal(t, 2, len(evs.Event.Visitors))
+	}
+}
+
+func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
+	processor:= &QueueingEventProcessor{
+		MaxQueueSize:    100,
+		FlushInterval:   100,
+		Q:               NewChanQueue(100),
+		EventDispatcher: &HTTPEventDispatcher{},
+	}
+	processor.BatchSize = 10
+	processor.StartTicker(context.TODO())
+
+	impression := BuildTestImpressionEvent()
+
+	processor.ProcessEvent(impression)
+	processor.ProcessEvent(impression)
+	processor.ProcessEvent(impression)
+
+	time.Sleep(3000 * time.Millisecond)
+
+	assert.NotNil(t, processor.Ticker)
+
+	assert.Equal(t, 0, processor.EventsCount())
+}
+
+func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
+	processor := &QueueingEventProcessor{MaxQueueSize: 100, FlushInterval: 100, Q: NewChanQueue(100), EventDispatcher: &MockDispatcher{}}
+	processor.BatchSize = 10
+	processor.StartTicker(context.TODO())
+
+	impression := BuildTestImpressionEvent()
+	conversion := BuildTestConversionEvent()
+
+	processor.ProcessEvent(impression)
+	processor.ProcessEvent(impression)
+	processor.ProcessEvent(conversion)
+	processor.ProcessEvent(conversion)
+
+	time.Sleep(3000 * time.Millisecond)
+
+	assert.NotNil(t, processor.Ticker)
+
+	assert.Equal(t, 0, processor.EventsCount())
+
+	time.Sleep(3000 * time.Millisecond)
+
+	result, ok := (processor.EventDispatcher).(*MockDispatcher)
+
+	if ok {
+		assert.Equal(t, 1, len(result.Events))
+		evs := result.Events[0]
+		assert.True(t, len(evs.Event.Visitors) >= 1)
 	}
 }
