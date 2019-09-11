@@ -53,7 +53,8 @@ type PollingProjectConfigManager struct {
 	exeCtx utils.ExecutionCtx // context used for execution control
 }
 
-func (cm *PollingProjectConfigManager) Sync(datafile []byte) {
+// SyncConfig gets current datafile and updates projectConfig
+func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	var e error
 	var code int
 	if len(datafile) == 0 {
@@ -64,6 +65,7 @@ func (cm *PollingProjectConfigManager) Sync(datafile []byte) {
 		}
 	}
 
+	// TODO: Compare revision numbers here and set projectConfig only if the revision number has changed
 	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(datafile)
 	if err != nil {
 		cmLogger.Error("failed to create project config", err)
@@ -78,7 +80,7 @@ func (cm *PollingProjectConfigManager) Sync(datafile []byte) {
 func (cm *PollingProjectConfigManager) start(initialDatafile []byte, init bool) {
 
 	if init {
-		cm.Sync(initialDatafile)
+		cm.SyncConfig(initialDatafile)
 		return
 	}
 
@@ -86,7 +88,7 @@ func (cm *PollingProjectConfigManager) start(initialDatafile []byte, init bool) 
 	for {
 		select {
 		case <-t.C:
-			cm.Sync([]byte{})
+			cm.SyncConfig([]byte{})
 		case <-cm.exeCtx.GetContext().Done():
 			cmLogger.Debug("Polling Config Manager Stopped")
 			return
@@ -112,7 +114,7 @@ func NewPollingProjectConfigManagerWithOptions(exeCtx utils.ExecutionCtx, sdkKey
 
 	pollingProjectConfigManager := PollingProjectConfigManager{requester: requester, pollingInterval: pollingInterval, exeCtx: exeCtx}
 
-	pollingProjectConfigManager.Sync(options.Datafile) // initial poll
+	pollingProjectConfigManager.SyncConfig(options.Datafile) // initial poll
 
 	cmLogger.Debug("Polling Config Manager Initiated")
 	go pollingProjectConfigManager.start([]byte{}, false)
