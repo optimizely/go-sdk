@@ -18,19 +18,17 @@
 package client
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"runtime/debug"
 	"strconv"
-	"sync"
-
-	"github.com/optimizely/go-sdk/optimizely/event"
 
 	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/optimizely/event"
 	"github.com/optimizely/go-sdk/optimizely/logging"
+	"github.com/optimizely/go-sdk/optimizely/utils"
 )
 
 var logger = logging.GetLogger("Client")
@@ -42,8 +40,7 @@ type OptimizelyClient struct {
 	eventProcessor  event.Processor
 	isValid         bool
 
-	cancelFunc context.CancelFunc
-	wg         *sync.WaitGroup
+	executionCtx utils.ExecutionCtx
 }
 
 // IsFeatureEnabled returns true if the feature is enabled for the given user
@@ -281,6 +278,5 @@ func (o *OptimizelyClient) GetProjectConfig() (projectConfig optimizely.ProjectC
 
 // Close closes the Optimizely instance and stops any ongoing tasks from its children components
 func (o *OptimizelyClient) Close() {
-	o.cancelFunc()
-	o.wg.Wait() // blocking call
+	o.executionCtx.TerminateAndWait()
 }

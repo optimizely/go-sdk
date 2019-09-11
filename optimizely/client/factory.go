@@ -18,9 +18,8 @@
 package client
 
 import (
-	"context"
 	"errors"
-	"sync"
+	"github.com/optimizely/go-sdk/optimizely/utils"
 
 	"github.com/optimizely/go-sdk/optimizely/event"
 
@@ -33,7 +32,6 @@ import (
 
 // Options are used to create an instance of the OptimizelyClient with custom configuration
 type Options struct {
-	Context              context.Context
 	ProjectConfigManager optimizely.ProjectConfigManager
 	DecisionService      decision.Service
 	EventProcessor       event.Processor
@@ -78,22 +76,10 @@ func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 // ClientWithOptions returns a client initialized with the given configuration options
 func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*OptimizelyClient, error) {
 
-	var wg sync.WaitGroup
-
+	executionCtx := utils.NewCancelableExecutionCtxExecutionCtx()
 	client := &OptimizelyClient{
-		isValid: false,
-		wg:      &wg,
-	}
-
-	var ctx context.Context
-	if clientOptions.Context != nil {
-		ctx = clientOptions.Context
-	} else {
-		// if no context is provided, we create our own cancellable context and hand it over to the client so the client can shut down its child processes
-		ctx = context.Background()
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithCancel(ctx)
-		client.cancelFunc = cancel
+		isValid:      false,
+		executionCtx: executionCtx,
 	}
 
 	notificationCenter := notification.NewNotificationCenter()
@@ -105,7 +91,7 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 		options := config.PollingProjectConfigManagerOptions{
 			Datafile: f.Datafile,
 		}
-		client.configManager = config.NewPollingProjectConfigManagerWithOptions(ctx, f.SDKKey, options)
+		client.configManager = config.NewPollingProjectConfigManagerWithOptions(executionCtx, f.SDKKey, options)
 	case f.Datafile != nil:
 		staticConfigManager, _ := config.NewStaticProjectConfigManagerFromPayload(f.Datafile)
 		client.configManager = staticConfigManager
@@ -122,7 +108,7 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 	if clientOptions.EventProcessor != nil {
 		client.eventProcessor = clientOptions.EventProcessor
 	} else {
-		client.eventProcessor = event.NewEventProcessor(ctx, event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval, &wg)
+		client.eventProcessor = event.NewEventProcessor(executionCtx, event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval)
 	}
 
 	client.isValid = true
