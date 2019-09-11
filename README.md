@@ -87,7 +87,7 @@ go install
 ```
 
 NOTE:
-We practice trunk-based development, and as such our default branch, `master` might not always be the most stable. We do tag releases on Github and you can pin your installation to those particular release versions. One way to do this is to use *Go Modules* for managing external dependencies:
+We practice trunk-based development, and as such our default branch, `master` might not always be the most stable. We do tag releases on Github and you can pin your installation to those particular release versions. One way to do this is to use [*Go Modules*](https://blog.golang.org/using-go-modules) for managing external dependencies:
 
 ```
 module mymodule
@@ -97,6 +97,12 @@ go 1.12
 require (
 	github.com/optimizely/go-sdk v0.1.0
 )
+```
+
+If you are already using `go.mod` in your application you can run the following:
+
+```
+go mod edit -require github.com/optimizely/go-sdk@v0.1.0
 ```
 
 NOTE:
