@@ -62,7 +62,7 @@ func NewEventProcessor(exeCtx utils.ExecutionCtx, batchSize, queueSize int, flus
 		MaxQueueSize:    queueSize,
 		FlushInterval:   flushInterval,
 		Q:               NewInMemoryQueue(queueSize),
-		EventDispatcher: NewQueueEventDispatcher(ctx),
+		EventDispatcher: NewQueueEventDispatcher(exeCtx.GetContext()),
 		wg: exeCtx.GetWaitSync(),
 	}
 	p.BatchSize = DefaultBatchSize
