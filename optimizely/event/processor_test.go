@@ -15,7 +15,7 @@ func close(wg *sync.WaitGroup, cancelFn context.CancelFunc) {
 	wg.Wait()
 }
 func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtxExecutionCtx()
+	exeCtx := utils.NewCancelableExecutionCtx()
 	processor := NewEventProcessor(exeCtx, 10, 100, 100)
 
 	impression := BuildTestImpressionEvent()
@@ -41,7 +41,7 @@ func (f *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 }
 
 func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtxExecutionCtx()
+	exeCtx := utils.NewCancelableExecutionCtx()
 	processor := &QueueingEventProcessor{
 		MaxQueueSize:    100,
 		FlushInterval:   100,
@@ -78,7 +78,7 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 }
 
 func TestBatchEventProcessor_FlushesOnClose(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtxExecutionCtx()
+	exeCtx := utils.NewCancelableExecutionCtx()
 	processor := &QueueingEventProcessor{
 		MaxQueueSize:    100,
 		FlushInterval:   30 * time.Second,
@@ -106,7 +106,7 @@ func TestBatchEventProcessor_FlushesOnClose(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtxExecutionCtx()
+	exeCtx := utils.NewCancelableExecutionCtx()
 	processor := &QueueingEventProcessor{
 		MaxQueueSize:    100,
 		FlushInterval:   100,
@@ -144,7 +144,7 @@ func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtxExecutionCtx()
+	exeCtx := utils.NewCancelableExecutionCtx()
 	processor := &QueueingEventProcessor{
 		MaxQueueSize:    100,
 		FlushInterval:   100,
@@ -182,7 +182,7 @@ func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 }
 
 func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtxExecutionCtx()
+	exeCtx := utils.NewCancelableExecutionCtx()
 	processor := &QueueingEventProcessor{
 		MaxQueueSize:    100,
 		FlushInterval:   100,
@@ -206,7 +206,7 @@ func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
 }
 
 func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtxExecutionCtx()
+	exeCtx := utils.NewCancelableExecutionCtx()
 	processor := &QueueingEventProcessor{MaxQueueSize: 100, FlushInterval: 100, Q: NewChanQueue(100), EventDispatcher: &MockDispatcher{}, wg: exeCtx.GetWaitSync()}
 	processor.BatchSize = 10
 	processor.StartTicker(exeCtx.GetContext())

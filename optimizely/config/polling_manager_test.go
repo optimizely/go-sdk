@@ -48,7 +48,7 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 		Requester: mockRequester,
 	}
 
-	exeCtx := utils.NewCancelableExecutionCtxExecutionCtx()
+	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
 	mockRequester.AssertExpectations(t)
 
@@ -67,7 +67,7 @@ func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
 	options := PollingProjectConfigManagerOptions{
 		Requester: mockRequester,
 	}
-	exeCtx := utils.NewCancelableExecutionCtxExecutionCtx()
+	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
 	mockRequester.AssertExpectations(t)
 

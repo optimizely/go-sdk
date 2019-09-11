@@ -40,8 +40,8 @@ type CancelableExecutionCtx struct {
 	CancelFunc context.CancelFunc
 }
 
-// NewCancelableExecutionCtxExecutionCtx returns constructed object
-func NewCancelableExecutionCtxExecutionCtx() *CancelableExecutionCtx {
+// NewCancelableExecutionCtx returns constructed object
+func NewCancelableExecutionCtx() *CancelableExecutionCtx {
 	ctx, cancelFn := context.WithCancel(context.Background())
 	var wg sync.WaitGroup
 

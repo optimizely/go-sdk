@@ -76,7 +76,7 @@ func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 // ClientWithOptions returns a client initialized with the given configuration options
 func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*OptimizelyClient, error) {
 
-	executionCtx := utils.NewCancelableExecutionCtxExecutionCtx()
+	executionCtx := utils.NewCancelableExecutionCtx()
 	client := &OptimizelyClient{
 		isValid:      false,
 		executionCtx: executionCtx,
