@@ -17,7 +17,7 @@
 package config
 
 import (
-	"context"
+	"github.com/optimizely/go-sdk/optimizely/utils"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,7 +47,9 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 	options := PollingProjectConfigManagerOptions{
 		Requester: mockRequester,
 	}
-	configManager := NewPollingProjectConfigManagerWithOptions(context.Background(), sdkKey, options)
+
+	exeCtx := utils.NewCancelableExecutionCtx()
+	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()
@@ -65,7 +67,8 @@ func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
 	options := PollingProjectConfigManagerOptions{
 		Requester: mockRequester,
 	}
-	configManager := NewPollingProjectConfigManagerWithOptions(context.Background(), sdkKey, options)
+	exeCtx := utils.NewCancelableExecutionCtx()
+	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
 	mockRequester.AssertExpectations(t)
 
 	_, err := configManager.GetConfig()

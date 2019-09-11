@@ -20,6 +20,7 @@ package event
 import (
 	"context"
 	"errors"
+	"github.com/optimizely/go-sdk/optimizely/utils"
 	"sync"
 	"time"
 
@@ -40,6 +41,8 @@ type QueueingEventProcessor struct {
 	Mux             sync.Mutex
 	Ticker          *time.Ticker
 	EventDispatcher Dispatcher
+
+	wg *sync.WaitGroup
 }
 
 // DefaultBatchSize holds the default value for the batch size
@@ -54,19 +57,21 @@ const DefaultEventFlushInterval = 30 * time.Second
 var pLogger = logging.GetLogger("EventProcessor")
 
 // NewEventProcessor returns a new instance of QueueingEventProcessor with queueSize and flushInterval
-func NewEventProcessor(ctx context.Context, batchSize, queueSize int, flushInterval time.Duration) *QueueingEventProcessor {
+func NewEventProcessor(exeCtx utils.ExecutionCtx, batchSize, queueSize int, flushInterval time.Duration) *QueueingEventProcessor {
 	p := &QueueingEventProcessor{
 		MaxQueueSize:    queueSize,
 		FlushInterval:   flushInterval,
 		Q:               NewInMemoryQueue(queueSize),
 		EventDispatcher: &HTTPEventDispatcher{},
+
+		wg: exeCtx.GetWaitSync(),
 	}
 	p.BatchSize = DefaultBatchSize
 	if batchSize > 0 {
 		p.BatchSize = batchSize
 	}
 
-	p.StartTicker(ctx)
+	p.StartTicker(exeCtx.GetContext())
 	return p
 }
 
@@ -102,7 +107,10 @@ func (p *QueueingEventProcessor) StartTicker(ctx context.Context) {
 		return
 	}
 	p.Ticker = time.NewTicker(p.FlushInterval * time.Millisecond)
+	p.wg.Add(1)
 	go func() {
+
+		defer p.wg.Done()
 		for {
 			select {
 			case <-p.Ticker.C:

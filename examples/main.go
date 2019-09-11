@@ -4,10 +4,7 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"time"
-
 	"github.com/optimizely/go-sdk/optimizely/client"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/optimizely/go-sdk/optimizely/logging"
@@ -40,32 +37,8 @@ func main() {
 	fmt.Printf("Is feature enabled? %v\n", enabled)
 
 	fmt.Println()
-
-	/************* ClientWithOptions - custom context  ********************/
-
-	optimizelyFactory = &client.OptimizelyFactory{
-		SDKKey: "4SLpaJA1r1pgE6T2CoMs9q",
-	}
-	ctx := context.Background()
-	ctx, cancelManager := context.WithCancel(ctx) // user can set up any context
-	clientOptions := client.Options{
-		Context: ctx,
-	}
-
-	app, err = optimizelyFactory.ClientWithOptions(clientOptions)
-	cancelManager() //  user can cancel anytime
-
-	if err != nil {
-		fmt.Printf("Error instantiating client: %s", err)
-		return
-	}
-
-	enabled, _ = app.IsFeatureEnabled("mutext_feat", user)
-	fmt.Printf("Is feature enabled? %v\n", enabled)
-
-	time.Sleep(1000 * time.Millisecond)
+	app.Close() //  user can close dispatcher
 	fmt.Println()
-
 	/************* Client ********************/
 
 	optimizelyFactory = &client.OptimizelyFactory{
@@ -73,7 +46,6 @@ func main() {
 	}
 
 	app, err = optimizelyFactory.Client()
-	app.Close() //  user can cancel anytime
 
 	if err != nil {
 		fmt.Printf("Error instantiating client: %s", err)
@@ -82,5 +54,5 @@ func main() {
 
 	enabled, _ = app.IsFeatureEnabled("mutext_feat", user)
 	fmt.Printf("Is feature enabled? %v\n", enabled)
-
+	app.Close() //  user can close dispatcher
 }
