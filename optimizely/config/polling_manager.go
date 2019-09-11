@@ -112,7 +112,7 @@ func NewPollingProjectConfigManagerWithOptions(exeCtx utils.ExecutionCtx, sdkKey
 
 	pollingProjectConfigManager := PollingProjectConfigManager{requester: requester, pollingInterval: pollingInterval, exeCtx: exeCtx}
 
-	pollingProjectConfigManager.start(options.Datafile, true) // initial poll
+	pollingProjectConfigManager.Sync(options.Datafile) // initial poll
 
 	cmLogger.Debug("Polling Config Manager Initiated")
 	go pollingProjectConfigManager.start([]byte{}, false)
