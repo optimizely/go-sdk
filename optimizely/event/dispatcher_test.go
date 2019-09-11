@@ -18,71 +18,39 @@
 package event
 
 import (
+	"context"
+	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
-func TestInMemoryQueue_Add_Size_Remove(t *testing.T) {
-	q := NewInMemoryQueue(5)
+func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
+	ctx := context.TODO()
+	q := NewQueueEventDispatcher(ctx)
 
-	q.Add(1)
-	q.Add(2)
-	q.Add(3)
+	eventTags := map[string]interface{}{"revenue": 55.0, "value": 25.1}
+	config := TestConfig{}
 
-	assert.Equal(t,3, q.Size())
+	conversionUserEvent := CreateConversionUserEvent(config, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext, eventTags)
 
-	items1 := q.Get(1)
+	batch := createBatchEvent(conversionUserEvent, createVisitorFromUserEvent(conversionUserEvent))
 
-	assert.Equal(t, 1, len(items1))
-	assert.Equal(t, 1, items1[0])
+	logEvent := createLogEvent(batch)
 
-	items2 := q.Get(5)
+	qd, _ := q.(*QueueEventDispatcher)
 
-	assert.Equal(t, 3, len(items2))
-	assert.Equal(t, 3, items2[2])
+	success, _ := qd.DispatchEvent(logEvent)
 
-	empty := q.Get(0)
-	assert.Equal(t, 0, len(empty))
+	assert.True(t, success)
 
-	allItems := q.Remove(3)
+	// its been queued
+	assert.Equal(t,1, qd.eventQueue.Size())
 
-	assert.Equal(t, 3, len(allItems))
+	// give the queue a chance to run
+	time.Sleep(1 * time.Second)
 
-	assert.Equal(t, 0, q.Size())
-}
+	// check the queue
+	assert.Equal(t,0, qd.eventQueue.Size())
 
-func TestInMemoryQueue_Concurrent(t *testing.T) {
-
-	q := NewInMemoryQueue(5)
-
-	quit := make(chan int)
-
-	go func() {
-		i := 5
-		for  i > 0 {
-			q.Add(i)
-			i--
-		}
-
-		quit <- 0
-	}()
-
-	go func() {
-		i := 5
-		for  i > 0 {
-			q.Add(i)
-			i--
-		}
-
-		quit <- 0
-	}()
-
-	<- quit
-
-	q.Remove(1)
-	q.Remove(1)
-
-	<- quit
-
-	assert.Equal(t, 8, q.Size())
 }

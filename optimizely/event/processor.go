@@ -62,8 +62,7 @@ func NewEventProcessor(exeCtx utils.ExecutionCtx, batchSize, queueSize int, flus
 		MaxQueueSize:    queueSize,
 		FlushInterval:   flushInterval,
 		Q:               NewInMemoryQueue(queueSize),
-		EventDispatcher: &HTTPEventDispatcher{},
-
+		EventDispatcher: NewQueueEventDispatcher(exeCtx.GetContext()),
 		wg: exeCtx.GetWaitSync(),
 	}
 	p.BatchSize = DefaultBatchSize
@@ -118,6 +117,10 @@ func (p *QueueingEventProcessor) StartTicker(ctx context.Context) {
 			case <-ctx.Done():
 				pLogger.Debug("Event processor stopped, flushing events.")
 				p.FlushEvents()
+				d, ok := p.EventDispatcher.(*QueueEventDispatcher)
+				if ok {
+					d.flushEvents()
+				}
 				return
 			}
 		}
