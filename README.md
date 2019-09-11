@@ -95,14 +95,14 @@ module mymodule
 go 1.12
 
 require (
-	github.com/optimizely/go-sdk v0.1.0
+	github.com/optimizely/go-sdk v0.2.0
 )
 ```
 
 If you are already using `go.mod` in your application you can run the following:
 
 ```
-go mod edit -require github.com/optimizely/go-sdk@v0.1.0
+go mod edit -require github.com/optimizely/go-sdk@v0.2.0
 ```
 
 NOTE:
