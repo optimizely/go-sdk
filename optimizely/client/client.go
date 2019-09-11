@@ -208,7 +208,7 @@ func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, us
 // GetFeatureVariableMap returns variation map based on the decision service
 func (o *OptimizelyClient) GetFeatureVariableMap(featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]string, err error) {
 	variableMap = make(map[string]string)
-	variableIdMap := make(map[string]string)
+	variableIDMap := make(map[string]string)
 	context, featureDecision, err := o.getFeatureDecision(featureKey, userContext)
 	if err != nil {
 		logger.Error("Optimizely SDK tracking error", err)
@@ -218,7 +218,7 @@ func (o *OptimizelyClient) GetFeatureVariableMap(featureKey string, userContext 
 	feature := context.Feature
 	for _, v := range feature.Variables {
 		variableMap[v.Key] = v.DefaultValue
-		variableIdMap[v.ID] = v.Key
+		variableIDMap[v.ID] = v.Key
 	}
 
 	enabled = featureDecision.Variation.FeatureEnabled
@@ -228,7 +228,7 @@ func (o *OptimizelyClient) GetFeatureVariableMap(featureKey string, userContext 
 	}
 
 	for _, v := range featureDecision.Variation.Variables {
-		if key, ok := variableIdMap[v.ID]; ok {
+		if key, ok := variableIDMap[v.ID]; ok {
 			variableMap[key] = v.Value
 		}
 	}
@@ -277,6 +277,7 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext ent
 		return decisionContext, featureDecision, err
 	}
 
+	// @TODO(yasir): send decision notification
 	return decisionContext, featureDecision, err
 }
 
