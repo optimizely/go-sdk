@@ -43,11 +43,6 @@ type OptimizelyClient struct {
 	executionCtx utils.ExecutionCtx
 }
 
-type FeatureVariable struct {
-	Type  entities.VariableType
-	Value string
-}
-
 // IsFeatureEnabled returns true if the feature is enabled for the given user
 func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entities.UserContext) (result bool, err error) {
 
@@ -229,7 +224,7 @@ func (o *OptimizelyClient) GetFeatureVariableMap(featureKey string, userContext 
 	enabled = featureDecision.Variation.FeatureEnabled
 
 	if featureDecision.Variation == nil || !featureDecision.Variation.FeatureEnabled {
-		return enabled, variableMap, nil
+		return enabled, variableMap, err
 	}
 
 	for _, v := range featureDecision.Variation.Variables {
@@ -238,7 +233,7 @@ func (o *OptimizelyClient) GetFeatureVariableMap(featureKey string, userContext 
 		}
 	}
 
-	return enabled, variableMap, nil
+	return enabled, variableMap, err
 }
 
 func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext entities.UserContext) (decisionContext decision.FeatureDecisionContext, featureDecision decision.FeatureDecision, err error) {
