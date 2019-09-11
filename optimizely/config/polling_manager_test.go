@@ -17,7 +17,7 @@
 package config
 
 import (
-	"context"
+	"github.com/optimizely/go-sdk/optimizely/utils"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,7 +47,30 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 	options := PollingProjectConfigManagerOptions{
 		Requester: mockRequester,
 	}
-	configManager := NewPollingProjectConfigManagerWithOptions(context.Background(), sdkKey, options)
+
+	exeCtx := utils.NewCancelableExecutionCtx()
+	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
 	mockRequester.AssertExpectations(t)
-	assert.Equal(t, projectConfig, configManager.GetConfig())
+
+	actual, err := configManager.GetConfig()
+	assert.NotNil(t, err)
+	assert.Equal(t, projectConfig, actual)
+}
+
+func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
+	mockDatafile := []byte("NOT-VALID")
+	mockRequester := new(MockRequester)
+	mockRequester.On("Get", []Header(nil)).Return(mockDatafile, 200, nil)
+
+	// Test we fetch using requester
+	sdkKey := "test_sdk_key"
+	options := PollingProjectConfigManagerOptions{
+		Requester: mockRequester,
+	}
+	exeCtx := utils.NewCancelableExecutionCtx()
+	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
+	mockRequester.AssertExpectations(t)
+
+	_, err := configManager.GetConfig()
+	assert.NotNil(t, err)
 }

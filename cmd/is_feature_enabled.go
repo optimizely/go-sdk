@@ -24,11 +24,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	userID      string
-	featurekKey string
-)
-
 var isFeatureEnabledCmd = &cobra.Command{
 	Use:   "is_feature_enabled",
 	Short: "Is feature enabled?",
@@ -50,15 +45,15 @@ var isFeatureEnabledCmd = &cobra.Command{
 			Attributes: map[string]interface{}{},
 		}
 
-		enabled, _ := client.IsFeatureEnabled(featurekKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featurekKey, userID, enabled)
+		enabled, _ := client.IsFeatureEnabled(featureKey, user)
+		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userID", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userID")
-	isFeatureEnabledCmd.Flags().StringVarP(&featurekKey, "featureKey", "f", "", "feature key to enable")
+	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
+	isFeatureEnabledCmd.MarkFlagRequired("userId")
+	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
 	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
 }

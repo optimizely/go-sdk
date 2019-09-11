@@ -14,13 +14,16 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package datafileprojectconfig //
 package datafileprojectconfig
 
 import (
-	"encoding/json"
-
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
+
+	"github.com/json-iterator/go"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // Parse parses the raw json datafile
 func Parse(jsonDatafile []byte) (*entities.Datafile, error) {

@@ -23,7 +23,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var sdkKey string
+var (
+	userID      string
+	featureKey  string
+	variableKey string
+	eventKey    string
+	sdkKey      string
+)
 
 var rootCmd = &cobra.Command{
 	Use:   "go-sdk",

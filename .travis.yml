@@ -1,3 +1,6 @@
+env:
+  - GO111MODULE=on
+
 language: go
 go:
   - 1.12.x
@@ -6,18 +9,20 @@ before_install:
   - go get github.com/mattn/goveralls
 git:
   depth: 1
-
-before_script:
-  - go get -u golang.org/x/lint/golint
 script:
-  - golint ./...
   - go test -v -race ./... -coverprofile=profile.cov
   - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
 stages:
+  - 'Lint'
   - 'Integration tests'
   - 'Test'
 jobs:
   include:
+    - stage: 'Lint'
+      install:
+        - go get github.com/golangci/golangci-lint/cmd/golangci-lint
+      script:
+        - golangci-lint run --out-format=tab --tests=false optimizely/...
     - stage: 'Integration Tests'
       merge_mode: replace
       env: SDK=go
@@ -29,4 +34,4 @@ jobs:
       script:
         - "$HOME/travisci-tools/fsc-trigger/trigger_fullstack-sdk-compat.sh"
       after_success: travis_terminate 0
-      
+

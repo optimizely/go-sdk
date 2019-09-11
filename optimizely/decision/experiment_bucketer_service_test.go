@@ -30,9 +30,9 @@ type MockBucketer struct {
 	mock.Mock
 }
 
-func (m *MockBucketer) Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (entities.Variation, reasons.Reason, error) {
+func (m *MockBucketer) Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (*entities.Variation, reasons.Reason, error) {
 	args := m.Called(bucketingID, experiment, group)
-	return args.Get(0).(entities.Variation), args.Get(1).(reasons.Reason), args.Error(2)
+	return args.Get(0).(*entities.Variation), args.Get(1).(reasons.Reason), args.Error(2)
 }
 
 func TestExperimentBucketerGetDecision(t *testing.T) {
@@ -47,14 +47,13 @@ func TestExperimentBucketerGetDecision(t *testing.T) {
 	}
 
 	expectedDecision := ExperimentDecision{
-		Variation: testExp1111Var2222,
+		Variation: &testExp1111Var2222,
 		Decision: Decision{
-			DecisionMade: true,
-			Reason:       reasons.BucketedIntoVariation,
+			Reason: reasons.BucketedIntoVariation,
 		},
 	}
 	mockBucketer := new(MockBucketer)
-	mockBucketer.On("Bucket", testUserContext.ID, testExp1111, entities.Group{}).Return(testExp1111Var2222, reasons.BucketedIntoVariation, nil)
+	mockBucketer.On("Bucket", testUserContext.ID, testExp1111, entities.Group{}).Return(&testExp1111Var2222, reasons.BucketedIntoVariation, nil)
 
 	experimentBucketerService := ExperimentBucketerService{
 		bucketer: mockBucketer,

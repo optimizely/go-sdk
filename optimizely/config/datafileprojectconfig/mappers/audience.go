@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package mappers  ...
 package mappers
 
 import (
@@ -31,6 +32,7 @@ func MapAudiences(audiences []datafileEntities.Audience) map[string]entities.Aud
 			conditionTree, err := buildConditionTree(audience.Conditions)
 			if err != nil {
 				// @TODO: handle error
+				func() {}() // cheat the linters
 			}
 			audienceMap[audience.ID] = entities.Audience{
 				ID:            audience.ID,

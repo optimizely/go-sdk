@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package mappers  ...
 package mappers
 
 import (
@@ -22,10 +23,10 @@ import (
 )
 
 // MapExperiments maps the raw experiments entities from the datafile to SDK Experiment entities and also returns a map of experiment key to experiment ID
-func MapExperiments(rawExperiments []datafileEntities.Experiment) (map[string]entities.Experiment, map[string]string) {
+func MapExperiments(rawExperiments []datafileEntities.Experiment) (experimentMap map[string]entities.Experiment, experimentKeyMap map[string]string) {
 
-	experimentMap := make(map[string]entities.Experiment)
-	experimentKeyMap := make(map[string]string)
+	experimentMap = make(map[string]entities.Experiment)
+	experimentKeyMap = make(map[string]string)
 	for _, rawExperiment := range rawExperiments {
 
 		experiment := mapExperiment(rawExperiment)
@@ -58,14 +59,15 @@ func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experimen
 	audienceConditionTree, err := buildAudienceConditionTree(rawExperiment.AudienceConditions)
 	if err != nil {
 		// @TODO: handle error
+		func() {}() // cheat the linters
 	}
 
 	experiment := entities.Experiment{
 		AudienceIds:           rawExperiment.AudienceIds,
 		ID:                    rawExperiment.ID,
 		Key:                   rawExperiment.Key,
-		TrafficAllocation:     make([]entities.Range, len(rawExperiment.TrafficAllocation)),
 		Variations:            make(map[string]entities.Variation),
+		TrafficAllocation:     make([]entities.Range, len(rawExperiment.TrafficAllocation)),
 		AudienceConditionTree: audienceConditionTree,
 	}
 

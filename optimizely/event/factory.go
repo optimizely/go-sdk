@@ -1,3 +1,20 @@
+/****************************************************************************
+ * Copyright 2019, Optimizely, Inc. and contributors                        *
+ *                                                                          *
+ * Licensed under the Apache License, Version 2.0 (the "License");          *
+ * you may not use this file except in compliance with the License.         *
+ * You may obtain a copy of the License at                                  *
+ *                                                                          *
+ *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *                                                                          *
+ * Unless required by applicable law or agreed to in writing, software      *
+ * distributed under the License is distributed on an "AS IS" BASIS,        *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+ * See the License for the specific language governing permissions and      *
+ * limitations under the License.                                           *
+ ***************************************************************************/
+
+// Package event //
 package event
 
 import (
@@ -27,7 +44,7 @@ const revenueKey = "revenue"
 const valueKey = "value"
 
 func createLogEvent(event Batch) LogEvent {
-	return LogEvent{endPoint: eventEndPoint, event: event}
+	return LogEvent{EndPoint: eventEndPoint, Event: event}
 }
 
 func makeTimestamp() int64 {
@@ -99,7 +116,7 @@ func createImpressionVisitor(userEvent UserEvent) Visitor {
 }
 
 // create a conversion event
-func createConversionEvent(projectConfig optimizely.ProjectConfig, event entities.Event, attributes map[string]interface{}, eventTags map[string]interface{}) ConversionEvent {
+func createConversionEvent(projectConfig optimizely.ProjectConfig, event entities.Event, attributes, eventTags map[string]interface{}) ConversionEvent {
 	conversion := ConversionEvent{}
 
 	conversion.Key = event.Key
@@ -213,14 +230,17 @@ func getEventAttributes(projectConfig optimizely.ProjectConfig, attributes map[s
 		}
 		visitorAttribute := VisitorAttribute{}
 		attribute, _ := projectConfig.GetAttributeByKey(key)
-		if attribute.ID != "" {
+
+		switch {
+		case attribute.ID != "":
 			visitorAttribute.EntityID = attribute.ID
-		} else if strings.HasPrefix(key, specialPrefix) {
+		case strings.HasPrefix(key, specialPrefix):
 			visitorAttribute.EntityID = key
-		} else {
+		default:
 			efLogger.Debug(fmt.Sprintf("Unrecognized attribute %s provided. Pruning before sending event to Optimizely.", key))
 			continue
 		}
+		visitorAttribute.Key = attribute.Key
 		visitorAttribute.Value = value
 		visitorAttribute.AttributeType = attributeType
 
@@ -243,7 +263,7 @@ func getRevenueValue(eventTags map[string]interface{}) (int64, error) {
 		return utils.GetIntValue(value)
 	}
 
-	return 0, errors.New("No event tag found for revenue")
+	return 0, errors.New("no event tag found for revenue")
 }
 
 // get a value attribute
@@ -252,5 +272,5 @@ func getTagValue(eventTags map[string]interface{}) (float64, error) {
 		return utils.GetFloatValue(value)
 	}
 
-	return 0, errors.New("No event tag found for value")
+	return 0, errors.New("no event tag found for value")
 }

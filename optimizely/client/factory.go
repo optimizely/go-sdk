@@ -14,13 +14,12 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package client has client facing factories
 package client
 
 import (
-	"context"
 	"errors"
-	"fmt"
-	"time"
+	"github.com/optimizely/go-sdk/optimizely/utils"
 
 	"github.com/optimizely/go-sdk/optimizely/event"
 
@@ -33,9 +32,9 @@ import (
 
 // Options are used to create an instance of the OptimizelyClient with custom configuration
 type Options struct {
-	Context              context.Context
 	ProjectConfigManager optimizely.ProjectConfigManager
-	DecisionService      decision.DecisionService
+	DecisionService      decision.Service
+	EventProcessor       event.Processor
 }
 
 // OptimizelyFactory is used to construct an instance of the OptimizelyClient
@@ -44,16 +43,12 @@ type OptimizelyFactory struct {
 	Datafile []byte
 }
 
-const defaultEventQueueSize = 10
-const defaultEventFlushInterval = 30 * time.Second
-
 // StaticClient returns a client initialized with a static project config
 func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 	var configManager optimizely.ProjectConfigManager
 
 	if f.SDKKey != "" {
-		url := fmt.Sprintf(config.DatafileURLTemplate, f.SDKKey)
-		staticConfigManager, err := config.NewStaticProjectConfigManagerFromURL(url)
+		staticConfigManager, err := config.NewStaticProjectConfigManagerFromURL(f.SDKKey)
 
 		if err != nil {
 			return nil, err
@@ -80,34 +75,27 @@ func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 
 // ClientWithOptions returns a client initialized with the given configuration options
 func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*OptimizelyClient, error) {
-	client := &OptimizelyClient{
-		isValid: false,
-	}
 
-	var ctx context.Context
-	if clientOptions.Context != nil {
-		ctx = clientOptions.Context
-	} else {
-		// if no context is provided, we create our own cancellable context and hand it over to the client so the client can shut down its child processes
-		ctx = context.Background()
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithCancel(ctx)
-		client.cancelFunc = cancel
+	executionCtx := utils.NewCancelableExecutionCtx()
+	client := &OptimizelyClient{
+		isValid:      false,
+		executionCtx: executionCtx,
 	}
 
 	notificationCenter := notification.NewNotificationCenter()
 
-	if clientOptions.ProjectConfigManager != nil {
+	switch {
+	case clientOptions.ProjectConfigManager != nil:
 		client.configManager = clientOptions.ProjectConfigManager
-	} else if f.SDKKey != "" {
+	case f.SDKKey != "":
 		options := config.PollingProjectConfigManagerOptions{
 			Datafile: f.Datafile,
 		}
-		client.configManager = config.NewPollingProjectConfigManagerWithOptions(ctx, f.SDKKey, options)
-	} else if f.Datafile != nil {
+		client.configManager = config.NewPollingProjectConfigManagerWithOptions(executionCtx, f.SDKKey, options)
+	case f.Datafile != nil:
 		staticConfigManager, _ := config.NewStaticProjectConfigManagerFromPayload(f.Datafile)
 		client.configManager = staticConfigManager
-	} else {
+	default:
 		return client, errors.New("unable to instantiate client: no project config manager, SDK key, or a Datafile provided")
 	}
 
@@ -117,8 +105,12 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 		client.decisionService = decision.NewCompositeService(notificationCenter)
 	}
 
-	// @TODO: allow event processor to be passed in
-	client.eventProcessor = event.NewEventProcessor(ctx, defaultEventQueueSize, defaultEventFlushInterval)
+	if clientOptions.EventProcessor != nil {
+		client.eventProcessor = clientOptions.EventProcessor
+	} else {
+		client.eventProcessor = event.NewEventProcessor(executionCtx, event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval)
+	}
+
 	client.isValid = true
 	return client, nil
 }

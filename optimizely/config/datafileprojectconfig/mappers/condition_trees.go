@@ -14,17 +14,19 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package mappers ...
 package mappers
 
 import (
-	"encoding/json"
 	"errors"
 	"reflect"
 
+	"github.com/json-iterator/go"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-var errEmptyTree = errors.New("Empty Tree")
+var errEmptyTree = errors.New("empty tree")
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
 func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, retErr error) {
@@ -32,7 +34,10 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 	var parsedConditions interface{}
 	switch v := conditions.(type) {
 	case string:
-		json.Unmarshal([]byte(v), &parsedConditions)
+		if err := json.Unmarshal([]byte(v), &parsedConditions); err != nil {
+			retErr = err
+			return
+		}
 	default:
 		parsedConditions = conditions
 	}
@@ -61,9 +66,9 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 			for i := 0; i < v.Len(); i++ {
 				n := &entities.TreeNode{}
 				typedV := v.Index(i).Interface()
-				switch typedV.(type) {
+				switch value := typedV.(type) {
 				case string:
-					n.Operator = typedV.(string)
+					n.Operator = value
 					root.Operator = n.Operator
 					continue
 
@@ -124,9 +129,7 @@ func buildAudienceConditionTree(conditions interface{}) (conditionTree *entities
 			for i := 0; i < v.Len(); i++ {
 				n := &entities.TreeNode{}
 				typedV := v.Index(i).Interface()
-				switch typedV.(type) {
-				case string:
-					value := typedV.(string)
+				if value, ok := typedV.(string); ok {
 					if stringInSlice(value, operators) {
 						n.Operator = typedV.(string)
 						root.Operator = n.Operator

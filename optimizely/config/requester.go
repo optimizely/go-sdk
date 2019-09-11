@@ -14,10 +14,10 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package config //
 package config
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -26,6 +26,8 @@ import (
 	"time"
 
 	"github.com/optimizely/go-sdk/optimizely/logging"
+
+	"github.com/json-iterator/go"
 )
 
 const defaultTTL = 5 * time.Second
@@ -71,7 +73,6 @@ type HTTPRequester struct {
 	client  http.Client
 	retries int
 	headers []Header
-	ttl     time.Duration // time-to-live
 }
 
 // NewHTTPRequester makes Requester with api and parameters. Sets defaults
@@ -103,6 +104,7 @@ func (r HTTPRequester) GetObj(result interface{}, headers ...Header) error {
 	if err != nil {
 		return err
 	}
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
 	return json.Unmarshal(b, result)
 }
 
