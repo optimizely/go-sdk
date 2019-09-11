@@ -18,7 +18,7 @@
 package optimizely
 
 // Version is the current version of the client
-const Version = "0.1.0-beta"
+const Version = "0.2.0"
 
 // ClientName is the name of the client
 const ClientName = "go-sdk"
