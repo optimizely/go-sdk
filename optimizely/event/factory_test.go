@@ -1,14 +1,13 @@
 package event
 
 import (
-	"context"
 	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/optimizely/go-sdk/optimizely"
-
 	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/optimizely/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -89,11 +88,10 @@ func BuildTestConversionEvent() UserEvent {
 }
 
 func TestCreateAndSendImpressionEvent(t *testing.T) {
-	ctx := context.Background()
 
 	impressionUserEvent := BuildTestImpressionEvent()
 
-	processor := NewEventProcessor(ctx, 10, 100, 100)
+	processor := NewEventProcessor(utils.NewCancelableExecutionCtx(), 10, 100, 100)
 
 	processor.ProcessEvent(impressionUserEvent)
 
@@ -105,11 +103,10 @@ func TestCreateAndSendImpressionEvent(t *testing.T) {
 }
 
 func TestCreateAndSendConversionEvent(t *testing.T) {
-	ctx := context.Background()
 
 	conversionUserEvent := BuildTestConversionEvent()
 
-	processor := NewEventProcessor(ctx, 10, 100, 100)
+	processor := NewEventProcessor(utils.NewCancelableExecutionCtx(), 10, 100, 100)
 
 	processor.ProcessEvent(conversionUserEvent)
 

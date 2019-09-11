@@ -18,7 +18,6 @@
 package config
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -26,6 +25,7 @@ import (
 	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/optimizely/logging"
+	"github.com/optimizely/go-sdk/optimizely/utils"
 )
 
 const defaultPollingInterval = 5 * time.Minute // default to 5 minutes for polling
@@ -50,7 +50,7 @@ type PollingProjectConfigManager struct {
 	configLock      sync.RWMutex
 	err             error
 
-	ctx context.Context // context used for cancellation
+	exeCtx utils.ExecutionCtx // context used for execution control
 }
 
 func (cm *PollingProjectConfigManager) activate(initialPayload []byte, init bool) {
@@ -89,7 +89,7 @@ func (cm *PollingProjectConfigManager) activate(initialPayload []byte, init bool
 		select {
 		case <-t.C:
 			update()
-		case <-cm.ctx.Done():
+		case <-cm.exeCtx.GetContext().Done():
 			cmLogger.Debug("Polling Config Manager Stopped")
 			return
 		}
@@ -97,7 +97,7 @@ func (cm *PollingProjectConfigManager) activate(initialPayload []byte, init bool
 }
 
 // NewPollingProjectConfigManagerWithOptions returns new instance of PollingProjectConfigManager with the given options
-func NewPollingProjectConfigManagerWithOptions(ctx context.Context, sdkKey string, options PollingProjectConfigManagerOptions) *PollingProjectConfigManager {
+func NewPollingProjectConfigManagerWithOptions(exeCtx utils.ExecutionCtx, sdkKey string, options PollingProjectConfigManagerOptions) *PollingProjectConfigManager {
 
 	var requester Requester
 	if options.Requester != nil {
@@ -112,7 +112,7 @@ func NewPollingProjectConfigManagerWithOptions(ctx context.Context, sdkKey strin
 		pollingInterval = defaultPollingInterval
 	}
 
-	pollingProjectConfigManager := PollingProjectConfigManager{requester: requester, pollingInterval: pollingInterval, ctx: ctx}
+	pollingProjectConfigManager := PollingProjectConfigManager{requester: requester, pollingInterval: pollingInterval, exeCtx: exeCtx}
 
 	pollingProjectConfigManager.activate(options.Datafile, true) // initial poll
 
@@ -122,9 +122,9 @@ func NewPollingProjectConfigManagerWithOptions(ctx context.Context, sdkKey strin
 }
 
 // NewPollingProjectConfigManager returns an instance of the polling config manager with the default configuration
-func NewPollingProjectConfigManager(ctx context.Context, sdkKey string) *PollingProjectConfigManager {
+func NewPollingProjectConfigManager(exeCtx utils.ExecutionCtx, sdkKey string) *PollingProjectConfigManager {
 	options := PollingProjectConfigManagerOptions{}
-	configManager := NewPollingProjectConfigManagerWithOptions(ctx, sdkKey, options)
+	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
 	return configManager
 }
 
