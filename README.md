@@ -247,3 +247,7 @@ License (BSD-3 Clause): https://github.com/google/uuid/blob/master/LICENSE
 testify
 Copyright (c) 2012-2018 Mat Ryer and Tyler Bunnell.
 License (MIT): https://github.com/stretchr/testify/blob/master/LICENSE
+
+json-iterator
+Copyright (c) 2016 json-iterator
+License (MIT): https://github.com/json-iterator/go/blob/master/LICENSE
