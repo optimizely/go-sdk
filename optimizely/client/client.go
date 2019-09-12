@@ -188,7 +188,7 @@ func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, us
 
 	context, featureDecision, err := o.getFeatureDecision(featureKey, userContext)
 	if err != nil {
-		return "", "", errors.New("error fetching project config")
+		return "", "", err
 	}
 
 	variable, err := context.ProjectConfig.GetVariableByKey(featureKey, variableKey)
@@ -205,31 +205,27 @@ func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, us
 	return variable.DefaultValue, variable.Type, err
 }
 
-// GetFeatureVariableMap returns variation map based on the decision service
-func (o *OptimizelyClient) GetFeatureVariableMap(featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]string, err error) {
+// GetAllFeatureVariables returns all the variables for a given feature along with the enabled state
+func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]string, err error) {
 	variableMap = make(map[string]string)
-	variableIDMap := make(map[string]string)
-	context, featureDecision, err := o.getFeatureDecision(featureKey, userContext)
+	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, userContext)
 	if err != nil {
 		logger.Error("Optimizely SDK tracking error", err)
 		return enabled, variableMap, err
 	}
 
-	feature := context.Feature
+	feature := decisionContext.Feature
+	if featureDecision.Variation != nil {
+		enabled = featureDecision.Variation.FeatureEnabled
+	}
+
 	for _, v := range feature.Variables {
 		variableMap[v.Key] = v.DefaultValue
-		variableIDMap[v.ID] = v.Key
-	}
 
-	enabled = featureDecision.Variation.FeatureEnabled
-
-	if featureDecision.Variation == nil || !featureDecision.Variation.FeatureEnabled {
-		return enabled, variableMap, err
-	}
-
-	for _, v := range featureDecision.Variation.Variables {
-		if key, ok := variableIDMap[v.ID]; ok {
-			variableMap[key] = v.Value
+		if enabled {
+			if variable, ok := featureDecision.Variation.Variables[v.ID]; ok {
+				variableMap[v.Key] = variable.Value
+			}
 		}
 	}
 
