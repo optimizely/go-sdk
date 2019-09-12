@@ -53,42 +53,42 @@ type PollingProjectConfigManager struct {
 	exeCtx utils.ExecutionCtx // context used for execution control
 }
 
-func (cm *PollingProjectConfigManager) activate(initialPayload []byte, init bool) {
+// SyncConfig gets current datafile and updates projectConfig
+func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
+	var e error
+	var code int
+	if len(datafile) == 0 {
+		datafile, code, e = cm.requester.Get()
 
-	update := func() {
-		var e error
-		var code int
-		var payload []byte
-		if init && len(initialPayload) > 0 {
-			payload = initialPayload
-		} else {
-			payload, code, e = cm.requester.Get()
-
-			if e != nil {
-				cmLogger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
-			}
+		if e != nil {
+			cmLogger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
 		}
-
-		projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(payload)
-		if err != nil {
-			cmLogger.Error("failed to create project config", err)
-		}
-
-		cm.configLock.Lock()
-		cm.projectConfig = projectConfig
-		cm.err = err
-		cm.configLock.Unlock()
 	}
+
+	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(datafile)
+	if err != nil {
+		cmLogger.Error("failed to create project config", err)
+	}
+
+	// TODO: Compare revision numbers here and set projectConfig only if the revision number has changed
+	cm.configLock.Lock()
+	cm.projectConfig = projectConfig
+	cm.err = err
+	cm.configLock.Unlock()
+}
+
+func (cm *PollingProjectConfigManager) start(initialDatafile []byte, init bool) {
 
 	if init {
-		update()
+		cm.SyncConfig(initialDatafile)
 		return
 	}
+
 	t := time.NewTicker(cm.pollingInterval)
 	for {
 		select {
 		case <-t.C:
-			update()
+			cm.SyncConfig([]byte{})
 		case <-cm.exeCtx.GetContext().Done():
 			cmLogger.Debug("Polling Config Manager Stopped")
 			return
@@ -114,10 +114,10 @@ func NewPollingProjectConfigManagerWithOptions(exeCtx utils.ExecutionCtx, sdkKey
 
 	pollingProjectConfigManager := PollingProjectConfigManager{requester: requester, pollingInterval: pollingInterval, exeCtx: exeCtx}
 
-	pollingProjectConfigManager.activate(options.Datafile, true) // initial poll
+	pollingProjectConfigManager.SyncConfig(options.Datafile) // initial poll
 
 	cmLogger.Debug("Polling Config Manager Initiated")
-	go pollingProjectConfigManager.activate([]byte{}, false)
+	go pollingProjectConfigManager.start([]byte{}, false)
 	return &pollingProjectConfigManager
 }
 
