@@ -39,12 +39,12 @@ var cmLogger = logging.GetLogger("PollingConfigManager")
 type PollingProjectConfigManagerOptions struct {
 	Datafile        []byte
 	PollingInterval time.Duration
-	Requester       Requester
+	Requester       utils.Requester
 }
 
 // PollingProjectConfigManager maintains a dynamic copy of the project config
 type PollingProjectConfigManager struct {
-	requester       Requester
+	requester       utils.Requester
 	pollingInterval time.Duration
 	projectConfig   optimizely.ProjectConfig
 	configLock      sync.RWMutex
@@ -99,12 +99,12 @@ func (cm *PollingProjectConfigManager) activate(initialPayload []byte, init bool
 // NewPollingProjectConfigManagerWithOptions returns new instance of PollingProjectConfigManager with the given options
 func NewPollingProjectConfigManagerWithOptions(exeCtx utils.ExecutionCtx, sdkKey string, options PollingProjectConfigManagerOptions) *PollingProjectConfigManager {
 
-	var requester Requester
+	var requester utils.Requester
 	if options.Requester != nil {
 		requester = options.Requester
 	} else {
 		url := fmt.Sprintf(DatafileURLTemplate, sdkKey)
-		requester = NewHTTPRequester(url)
+		requester = utils.NewHTTPRequester(url)
 	}
 
 	pollingInterval := options.PollingInterval

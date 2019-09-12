@@ -5,9 +5,13 @@ package main
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/optimizely/go-sdk/optimizely/client"
 	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/optimizely/event"
 	"github.com/optimizely/go-sdk/optimizely/logging"
+	"github.com/optimizely/go-sdk/optimizely/notification"
 )
 
 func main() {
@@ -55,4 +59,15 @@ func main() {
 	enabled, _ = app.IsFeatureEnabled("mutext_feat", user)
 	fmt.Printf("Is feature enabled? %v\n", enabled)
 	app.Close() //  user can close dispatcher
+
+	/************* Setting Polling Interval ********************/
+
+	notificationCenter := notification.NewNotificationCenter()
+
+	app = optimizelyFactory.GetClient(
+		client.ConfigManager("4SLpaJA1r1pgE6T2CoMs9q", time.Second, nil),
+		client.DecisionService(notificationCenter),
+		client.EventProcessor(event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
+	)
+	app.Close()
 }

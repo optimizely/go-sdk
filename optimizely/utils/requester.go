@@ -14,30 +14,35 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package config //
-package config
+// Package utils //
+package utils
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/optimizely/go-sdk/optimizely/logging"
 
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 )
 
 const defaultTTL = 5 * time.Second
 
 var requesterLogger = logging.GetLogger("Requester")
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // Requester is used to make outbound requests with
 type Requester interface {
 	Get(...Header) (response []byte, code int, err error)
 	GetObj(result interface{}, headers ...Header) error
+
+	Post(body interface{}, headers ...Header) (response []byte, code int, err error)
+	PostObj(body interface{}, result interface{}, headers ...Header) error
 }
 
 // Header element to be sent
@@ -92,24 +97,41 @@ func NewHTTPRequester(url string, params ...func(*HTTPRequester)) *HTTPRequester
 	return &res
 }
 
-// Get executes HTTP GET with uri and optional extra headers, returns body in []bytes
+// Get executes HTTP GET with url and optional extra headers, returns body in []bytes
 // url created as url+sdkKey.json
 func (r HTTPRequester) Get(headers ...Header) (response []byte, code int, err error) {
-	return r.Do("GET", headers)
+	return r.Do("GET", nil, headers)
 }
 
-// GetObj executes HTTP GET with uri and optional extra headers, returns filled object
+// GetObj executes HTTP GET with url and optional extra headers, returns filled object
 func (r HTTPRequester) GetObj(result interface{}, headers ...Header) error {
-	b, _, err := r.Do("GET", headers)
+	b, _, err := r.Do("GET", nil, headers)
 	if err != nil {
 		return err
 	}
-	var json = jsoniter.ConfigCompatibleWithStandardLibrary
+	return json.Unmarshal(b, result)
+}
+
+// Post executes HTTP POST with url, body and optional extra headers
+func (r HTTPRequester) Post(body interface{}, headers ...Header) (response []byte, code int, err error) {
+	b, err := json.Marshal(body)
+	if err != nil {
+		return nil, 400, err
+	}
+	return r.Do("POST", bytes.NewBuffer(b), headers)
+}
+
+// PostObj executes HTTP POST with uri, body and optional extra headers. Returns filled object
+func (r HTTPRequester) PostObj(body, result interface{}, headers ...Header) error {
+	b, _, err := r.Post(body, headers...)
+	if err != nil {
+		return err
+	}
 	return json.Unmarshal(b, result)
 }
 
 // Do executes request and returns response body for requested uri (sdkKey.json).
-func (r HTTPRequester) Do(method string, headers []Header) (response []byte, code int, err error) {
+func (r HTTPRequester) Do(method string, body io.Reader, headers []Header) (response []byte, code int, err error) {
 
 	single := func(request *http.Request) (response []byte, code int, e error) {
 		resp, doErr := r.client.Do(request)
@@ -137,8 +159,7 @@ func (r HTTPRequester) Do(method string, headers []Header) (response []byte, cod
 	}
 
 	requesterLogger.Debug(fmt.Sprintf("request %s", r.url))
-	req, err := http.NewRequest(method, r.url, nil)
-	log.Print(req)
+	req, err := http.NewRequest(method, r.url, body)
 	if err != nil {
 		requesterLogger.Error(fmt.Sprintf("failed to make request %s", r.url), err)
 		return nil, 0, err

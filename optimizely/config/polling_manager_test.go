@@ -17,21 +17,21 @@
 package config
 
 import (
-	"github.com/optimizely/go-sdk/optimizely/utils"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
+	"github.com/optimizely/go-sdk/optimizely/utils"
+
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 type MockRequester struct {
-	Requester
+	utils.Requester
 	mock.Mock
 }
 
-func (m *MockRequester) Get(headers ...Header) (response []byte, code int, err error) {
+func (m *MockRequester) Get(headers ...utils.Header) (response []byte, code int, err error) {
 	args := m.Called(headers)
 	return args.Get(0).([]byte), args.Int(1), args.Error(2)
 }
@@ -40,7 +40,7 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 	mockDatafile := []byte("{ revision: \"42\" }")
 	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []Header(nil)).Return(mockDatafile, 200, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, 200, nil)
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
@@ -60,7 +60,7 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
 	mockDatafile := []byte("NOT-VALID")
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []Header(nil)).Return(mockDatafile, 200, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, 200, nil)
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
