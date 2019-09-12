@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 Changes that have landed but are not yet released.
 - Support for running full feature tests with the SDK.
 
+## [0.2.0] - September 11th, 2019
+This release of the SDK introduces Feature Management capabilities for running both Feature Rollouts as well as Feature Tests using Optimizely Feature Management.
+
+### New Features
+- Introduces feature variable getters via `GetFeatureVariable*` for parameterizing your feature tests.
+- Introduces the `Track` API call for sending conversion events to Optimizely.
+- The `IsFeatureEnabled` API will now send impression events if there is a feature test attached to the feature being accessed.
+
+### Breaking Changes
+- Vendored packages have been removed in favor of declaring dependencies and their versions using `go.mod`.
+
 ## [0.1.0-beta] - August 23rd, 2019
 This is the initial release of the SDK, which includes support for running Feature Rollouts using Optimizely Feature Management.
 
