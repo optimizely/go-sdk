@@ -198,11 +198,11 @@ func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, us
 
 	if featureDecision.Variation != nil {
 		if v, ok := featureDecision.Variation.Variables[variable.ID]; ok && featureDecision.Variation.FeatureEnabled {
-			return v.Value, variable.Type, nil
+			return v.Value, variable.Type, err
 		}
 	}
 
-	return variable.DefaultValue, variable.Type, nil
+	return variable.DefaultValue, variable.Type, err
 }
 
 // GetFeatureVariableMap returns variation map based on the decision service
