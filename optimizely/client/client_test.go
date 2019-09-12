@@ -85,24 +85,22 @@ func (m *MockDecisionService) GetFeatureDecision(decisionContext decision.Featur
 	return args.Get(0).(decision.FeatureDecision), args.Error(1)
 }
 
-type PanicingDecisionService struct {
-
+type PanickingDecisionService struct {
 }
 
-func (m *PanicingDecisionService) GetFeatureDecision(decisionContext decision.FeatureDecisionContext, userContext entities.UserContext) (decision.FeatureDecision, error) {
-	panic("I'm panicing")
+func (m *PanickingDecisionService) GetFeatureDecision(decisionContext decision.FeatureDecisionContext, userContext entities.UserContext) (decision.FeatureDecision, error) {
+	panic("I'm panicking")
 }
 
-func (m *PanicingDecisionService) OnDecision(callback func(notification.DecisionNotification)) {
-	panic("I'm panicing")
+func (m *PanickingDecisionService) OnDecision(callback func(notification.DecisionNotification)) {
+	panic("I'm panicking")
 }
 
-type PanicingConfigManager struct {
-
+type PanickingConfigManager struct {
 }
 
-func (m *PanicingConfigManager) GetConfig() (optimizely.ProjectConfig, error) {
-	panic("I'm panicing")
+func (m *PanickingConfigManager) GetConfig() (optimizely.ProjectConfig, error) {
+	panic("I'm panicking")
 }
 
 type MockProcessor struct {
@@ -307,7 +305,7 @@ func TestIsFeatureEnabledPanic(t *testing.T) {
 	mockDecisionService := new(MockDecisionService)
 
 	client := OptimizelyClient{
-		configManager:   &PanicingConfigManager{},
+		configManager:   &PanickingConfigManager{},
 		decisionService: mockDecisionService,
 		isValid:         true,
 	}
@@ -418,7 +416,7 @@ func TestGetEnabledFeaturesPanic(t *testing.T) {
 	mockDecisionService := new(MockDecisionService)
 
 	client := OptimizelyClient{
-		configManager:   &PanicingConfigManager{},
+		configManager:   &PanickingConfigManager{},
 		decisionService: mockDecisionService,
 		isValid:         true,
 	}
@@ -671,7 +669,7 @@ func TestGetFeatureVariableBoolPanic(t *testing.T) {
 	mockDecisionService := new(MockDecisionService)
 
 	client := OptimizelyClient{
-		configManager:   &PanicingConfigManager{},
+		configManager:   &PanickingConfigManager{},
 		decisionService: mockDecisionService,
 		isValid:         true,
 	}
@@ -924,7 +922,7 @@ func TestGetFeatureVariableDoublePanic(t *testing.T) {
 	mockDecisionService := new(MockDecisionService)
 
 	client := OptimizelyClient{
-		configManager:   &PanicingConfigManager{},
+		configManager:   &PanickingConfigManager{},
 		decisionService: mockDecisionService,
 		isValid:         true,
 	}
@@ -1177,7 +1175,7 @@ func TestGetFeatureVariableIntegerPanic(t *testing.T) {
 	mockDecisionService := new(MockDecisionService)
 
 	client := OptimizelyClient{
-		configManager:   &PanicingConfigManager{},
+		configManager:   &PanickingConfigManager{},
 		decisionService: mockDecisionService,
 		isValid:         true,
 	}
@@ -1383,7 +1381,7 @@ func TestGetFeatureVariableStringPanic(t *testing.T) {
 	mockDecisionService := new(MockDecisionService)
 
 	client := OptimizelyClient{
-		configManager:   &PanicingConfigManager{},
+		configManager:   &PanickingConfigManager{},
 		decisionService: mockDecisionService,
 		isValid:         true,
 	}
@@ -1613,7 +1611,7 @@ func TestGetFeatureDecisionPanicProjectConfig(t *testing.T) {
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
 	client := OptimizelyClient{
-		configManager:   &PanicingConfigManager{},
+		configManager:   &PanickingConfigManager{},
 		decisionService: mockDecisionService,
 		isValid:         true,
 	}
@@ -1649,7 +1647,7 @@ func TestGetFeatureDecisionPanicDecisionService(t *testing.T) {
 
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
-		decisionService: &PanicingDecisionService{},
+		decisionService: &PanickingDecisionService{},
 		isValid:         true,
 	}
 
