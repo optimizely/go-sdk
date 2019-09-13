@@ -96,6 +96,10 @@ func (m *PanickingDecisionService) OnDecision(callback func(notification.Decisio
 	panic("I'm panicking")
 }
 
+func (m *PanickingDecisionService) RemoveOnDecision(id int) error {
+	panic("I'm panicking")
+}
+
 type PanickingConfigManager struct {
 }
 

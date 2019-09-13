@@ -26,6 +26,7 @@ import (
 type Service interface {
 	GetFeatureDecision(FeatureDecisionContext, entities.UserContext) (FeatureDecision, error)
 	OnDecision(func(notification.DecisionNotification)) (int, error)
+	RemoveOnDecision(id int) error
 }
 
 // ExperimentService can make a decision about an experiment
