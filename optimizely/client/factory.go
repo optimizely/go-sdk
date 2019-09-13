@@ -58,8 +58,8 @@ func (f OptimizelyFactory) GetClient(clientOptions ...OptionFunc) *OptimizelyCli
 	return appClient
 }
 
-// ConfigManager sets config manager on a client
-func ConfigManager(sdkKey string, pollingInterval time.Duration, dataFile []byte) OptionFunc {
+// PollingConfigManager sets polling config manager on a client
+func PollingConfigManager(sdkKey string, pollingInterval time.Duration, dataFile []byte) OptionFunc {
 	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
 		options := config.PollingProjectConfigManagerOptions{
 			Datafile:        dataFile,
@@ -69,17 +69,38 @@ func ConfigManager(sdkKey string, pollingInterval time.Duration, dataFile []byte
 	}
 }
 
-// DecisionService sets decision service on a client
-func DecisionService(notificationCenter notification.Center) OptionFunc {
+// ConfigManager sets polling config manager on a client
+func ConfigManager(configManager optimizely.ProjectConfigManager) OptionFunc {
+	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
+		f.configManager = configManager
+	}
+}
+
+// CompositeDecisionService sets decision service on a client
+func CompositeDecisionService(notificationCenter notification.Center) OptionFunc {
 	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
 		f.decisionService = decision.NewCompositeService(notificationCenter)
 	}
 }
 
-// EventProcessor sets event processor on a client
-func EventProcessor(batchSize, queueSize int, flushInterval time.Duration) OptionFunc {
+// DecisionService sets decision service on a client
+func DecisionService(decisionService decision.Service) OptionFunc {
+	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
+		f.decisionService = decisionService
+	}
+}
+
+// BatchEventProcessor sets event processor on a client
+func BatchEventProcessor(batchSize, queueSize int, flushInterval time.Duration) OptionFunc {
 	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
 		f.eventProcessor = event.NewEventProcessor(executionCtx, batchSize, queueSize, flushInterval)
+	}
+}
+
+// EventProcessor sets event processor on a client
+func EventProcessor(eventProcessor event.Processor) OptionFunc {
+	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
+		f.eventProcessor = eventProcessor
 	}
 }
 

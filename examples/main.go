@@ -65,9 +65,9 @@ func main() {
 	notificationCenter := notification.NewNotificationCenter()
 
 	app = optimizelyFactory.GetClient(
-		client.ConfigManager("4SLpaJA1r1pgE6T2CoMs9q", time.Second, nil),
-		client.DecisionService(notificationCenter),
-		client.EventProcessor(event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
+		client.PollingConfigManager("4SLpaJA1r1pgE6T2CoMs9q", time.Second, nil),
+		client.CompositeDecisionService(notificationCenter),
+		client.BatchEventProcessor(event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
 	)
 	app.Close()
 }
