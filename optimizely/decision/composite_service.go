@@ -88,7 +88,7 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 }
 
 // OnDecision registers a handler for Decision notifications
-func (s CompositeService) OnDecision(callback func(notification.DecisionNotification)) {
+func (s CompositeService) OnDecision(callback func(notification.DecisionNotification)) (int, error) {
 	handler := func(payload interface{}) {
 		if decisionNotification, ok := payload.(notification.DecisionNotification); ok {
 			callback(decisionNotification)
@@ -96,14 +96,19 @@ func (s CompositeService) OnDecision(callback func(notification.DecisionNotifica
 			csLogger.Warning(fmt.Sprintf("Unable to convert notification payload %v into DecisionNotification", payload))
 		}
 	}
-	if _, err := s.notificationCenter.AddHandler(notification.Decision, handler); err != nil {
+	id, err := s.notificationCenter.AddHandler(notification.Decision, handler)
+	if err != nil {
 		csLogger.Warning("Problem with adding notification handler")
+		return 0, err
 	}
+	return id, nil
 }
 
-// RemoveOnDecision removes all handlers for Decision notifications
-func (s CompositeService) RemoveOnDecision() {
-	if err := s.notificationCenter.RemoveHandler(notification.Decision); err != nil {
+// RemoveOnDecision removes handler for Decision notification with given id
+func (s CompositeService) RemoveOnDecision(id int) error {
+	if err := s.notificationCenter.RemoveHandler(id, notification.Decision); err != nil {
 		csLogger.Warning("Problem with removing notification handler")
+		return err
 	}
+	return nil
 }

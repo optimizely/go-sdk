@@ -22,7 +22,7 @@ import "fmt"
 // Center handles all notification listeners. It keeps track of the Manager for each type of notification.
 type Center interface {
 	AddHandler(Type, func(interface{})) (int, error)
-	RemoveHandler(Type) error
+	RemoveHandler(int, Type) error
 	Send(Type, interface{}) error
 }
 
@@ -50,10 +50,10 @@ func (c *DefaultCenter) AddHandler(notificationType Type, handler func(interface
 	return -1, fmt.Errorf("no notification manager found for type %s", notificationType)
 }
 
-// RemoveHandler removes all handlers for the given notification type
-func (c *DefaultCenter) RemoveHandler(notificationType Type) error {
-	if _, ok := c.managerMap[notificationType]; ok {
-		c.managerMap[notificationType] = NewAtomicManager()
+// RemoveHandler removes a handler for the given id and notification type
+func (c *DefaultCenter) RemoveHandler(id int, notificationType Type) error {
+	if manager, ok := c.managerMap[notificationType]; ok {
+		manager.RemoveHandler(id)
 		return nil
 	}
 

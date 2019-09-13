@@ -24,6 +24,7 @@ import (
 // Manager is a generic interface for managing notifications of a particular type
 type Manager interface {
 	AddHandler(func(interface{})) (int, error)
+	RemoveHandler(id int)
 	Send(message interface{})
 }
 
@@ -45,6 +46,14 @@ func (am *AtomicManager) AddHandler(newHandler func(interface{})) (int, error) {
 	atomic.AddUint32(&am.counter, 1)
 	am.handlers[am.counter] = newHandler
 	return int(am.counter), nil
+}
+
+// RemoveHandler removes handler with the given id
+func (am *AtomicManager) RemoveHandler(id int) {
+	counter := uint32(id)
+	if _, ok := am.handlers[counter]; ok {
+		delete(am.handlers, counter)
+	}
 }
 
 // Send sends the notification to the registered handlers
