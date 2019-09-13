@@ -95,14 +95,14 @@ module mymodule
 go 1.12
 
 require (
-	github.com/optimizely/go-sdk v0.1.0
+	github.com/optimizely/go-sdk v0.2.0
 )
 ```
 
 If you are already using `go.mod` in your application you can run the following:
 
 ```
-go mod edit -require github.com/optimizely/go-sdk@v0.1.0
+go mod edit -require github.com/optimizely/go-sdk@v0.2.0
 ```
 
 NOTE:
@@ -247,3 +247,7 @@ License (BSD-3 Clause): https://github.com/google/uuid/blob/master/LICENSE
 testify
 Copyright (c) 2012-2018 Mat Ryer and Tyler Bunnell.
 License (MIT): https://github.com/stretchr/testify/blob/master/LICENSE
+
+json-iterator
+Copyright (c) 2016 json-iterator
+License (MIT): https://github.com/json-iterator/go/blob/master/LICENSE
