@@ -100,3 +100,10 @@ func (s CompositeService) OnDecision(callback func(notification.DecisionNotifica
 		csLogger.Warning("Problem with adding notification handler")
 	}
 }
+
+// RemoveOnDecision removes all handlers for Decision notifications
+func (s CompositeService) RemoveOnDecision() {
+	if err := s.notificationCenter.RemoveHandler(notification.Decision); err != nil {
+		csLogger.Warning("Problem with removing notification handler")
+	}
+}

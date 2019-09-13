@@ -36,6 +36,11 @@ func TestNotificationCenter(t *testing.T) {
 	notificationCenter.AddHandler(Decision, mockReceiver2.handleNotification)
 	notificationCenter.Send(Decision, testDecisionNotification)
 
+	notificationCenter.RemoveHandler(Decision)
+	notificationCenter.Send(Decision, testDecisionNotification)
+
 	mockReceiver.AssertExpectations(t)
 	mockReceiver2.AssertExpectations(t)
+	mockReceiver.AssertNumberOfCalls(t, "handleNotification", 1)
+	mockReceiver2.AssertNumberOfCalls(t, "handleNotification", 1)
 }
