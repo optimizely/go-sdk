@@ -18,6 +18,7 @@
 package datafileprojectconfig
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/optimizely/go-sdk/optimizely/entities"
@@ -100,7 +101,9 @@ func TestGetEventByKey(t *testing.T) {
 func TestGetEventByKeyWithError(t *testing.T) {
 	config := &DatafileProjectConfig{}
 	_, err := config.GetEventByKey("key")
-	assert.NotNil(t, err)
+	if assert.Error(t, err) {
+		assert.Equal(t, fmt.Errorf(`event with key "key" not found`), err)
+	}
 }
 
 func TestGetFeatureByKey(t *testing.T) {
@@ -122,7 +125,9 @@ func TestGetFeatureByKey(t *testing.T) {
 func TestGetFeatureByKeyWithError(t *testing.T) {
 	config := &DatafileProjectConfig{}
 	_, err := config.GetFeatureByKey("key")
-	assert.NotNil(t, err)
+	if assert.Error(t, err) {
+		assert.Equal(t, fmt.Errorf(`feature with key "key" not found`), err)
+	}
 }
 
 func TestGetVariableByKey(t *testing.T) {
@@ -155,7 +160,9 @@ func TestGetVariableByKey(t *testing.T) {
 func TestGetVariableByKeyWithMissingFeatureError(t *testing.T) {
 	config := &DatafileProjectConfig{}
 	_, err := config.GetVariableByKey("featureKey", "variableKey")
-	assert.NotNil(t, err)
+	if assert.Error(t, err) {
+		assert.Equal(t, fmt.Errorf(`variable with key "featureKey" not found`), err)
+	}
 }
 
 func TestGetVariableByKeyWithMissingVariableError(t *testing.T) {
@@ -172,7 +179,9 @@ func TestGetVariableByKeyWithMissingVariableError(t *testing.T) {
 	}
 
 	_, err := config.GetVariableByKey(featureKey, variableKey)
-	assert.NotNil(t, err)
+	if assert.Error(t, err) {
+		assert.Equal(t, fmt.Errorf(`variable with key "featureKey" not found`), err)
+	}
 }
 
 func TestGetAttributeByKey(t *testing.T) {
@@ -201,7 +210,9 @@ func TestGetAttributeByKeyWithMissingKeyError(t *testing.T) {
 	config := &DatafileProjectConfig{}
 
 	_, err := config.GetAttributeByKey("key")
-	assert.NotNil(t, err)
+	if assert.Error(t, err) {
+		assert.Equal(t, fmt.Errorf(`attribute with key "key" not found`), err)
+	}
 }
 
 func TestGetAttributeByKeyWithMissingAttributeId(t *testing.T) {
@@ -215,7 +226,9 @@ func TestGetAttributeByKeyWithMissingAttributeId(t *testing.T) {
 	}
 
 	_, err := config.GetAttributeByKey(key)
-	assert.NotNil(t, err)
+	if assert.Error(t, err) {
+		assert.Equal(t, fmt.Errorf(`attribute with key "key" not found`), err)
+	}
 }
 
 func TestGetFeatureList(t *testing.T) {
@@ -254,7 +267,9 @@ func TestGetAudienceByID(t *testing.T) {
 func TestGetAudienceByIDMissingIDError(t *testing.T) {
 	config := &DatafileProjectConfig{}
 	_, err := config.GetAudienceByID("id")
-	assert.NotNil(t, err)
+	if assert.Error(t, err) {
+		assert.Equal(t, fmt.Errorf(`audience with ID "id" not found`), err)
+	}
 }
 
 func TestGetAudienceMap(t *testing.T) {
@@ -293,7 +308,9 @@ func TestGetExperimentByKey(t *testing.T) {
 func TestGetExperimentByKeyMissingKeyError(t *testing.T) {
 	config := &DatafileProjectConfig{}
 	_, err := config.GetExperimentByKey("key")
-	assert.NotNil(t, err)
+	if assert.Error(t, err) {
+		assert.Equal(t, fmt.Errorf(`experiment with key "key" not found`), err)
+	}
 }
 
 func TestGetExperimentByKeyMissingIDError(t *testing.T) {
@@ -307,7 +324,9 @@ func TestGetExperimentByKeyMissingIDError(t *testing.T) {
 	}
 
 	_, err := config.GetExperimentByKey(key)
-	assert.NotNil(t, err)
+	if assert.Error(t, err) {
+		assert.Equal(t, fmt.Errorf(`experiment with key "key" not found`), err)
+	}
 }
 
 func TestGetGroupByID(t *testing.T) {
@@ -329,5 +348,7 @@ func TestGetGroupByID(t *testing.T) {
 func TestGetGroupByIDMissingIDError(t *testing.T) {
 	config := &DatafileProjectConfig{}
 	_, err := config.GetGroupByID("id")
-	assert.NotNil(t, err)
+	if assert.Error(t, err) {
+		assert.Equal(t, fmt.Errorf(`group with ID "id" not found`), err)
+	}
 }
