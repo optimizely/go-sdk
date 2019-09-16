@@ -49,7 +49,6 @@ type OptionFunc func(*OptimizelyClient, utils.ExecutionCtx)
 func (f OptimizelyFactory) GetClient(clientOptions ...OptionFunc) *OptimizelyClient {
 	executionCtx := utils.NewCancelableExecutionCtx()
 	appClient := &OptimizelyClient{
-		isValid:      false,
 		executionCtx: executionCtx,
 	}
 	for _, opt := range clientOptions {
@@ -139,7 +138,6 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 
 	executionCtx := utils.NewCancelableExecutionCtx()
 	client := &OptimizelyClient{
-		isValid:      false,
 		executionCtx: executionCtx,
 	}
 
@@ -172,7 +170,6 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 		client.eventProcessor = event.NewEventProcessor(executionCtx, event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval)
 	}
 
-	client.isValid = true
 	return client, nil
 }
 

@@ -140,7 +140,6 @@ func TestTrack(t *testing.T) {
 		configManager:   ValidProjectConfigManager(),
 		decisionService: mockDecisionService,
 		eventProcessor:  mockProcessor,
-		isValid:         true,
 	}
 
 	err := client.Track("sample_conversion", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
@@ -160,28 +159,9 @@ func TestTrackFail(t *testing.T) {
 		configManager:   ValidProjectConfigManager(),
 		decisionService: mockDecisionService,
 		eventProcessor:  mockProcessor,
-		isValid:         true,
 	}
 
 	err := client.Track("bob", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
-
-	assert.NotNil(t, err)
-	assert.True(t, len(mockProcessor.Events) == 0)
-
-}
-
-func TestTrackInvalid(t *testing.T) {
-	mockProcessor := &MockProcessor{}
-	mockDecisionService := new(MockDecisionService)
-
-	client := OptimizelyClient{
-		configManager:   ValidProjectConfigManager(),
-		decisionService: mockDecisionService,
-		eventProcessor:  mockProcessor,
-		isValid:         false,
-	}
-
-	err := client.Track("sample_conversion", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
 
 	assert.NotNil(t, err)
 	assert.True(t, len(mockProcessor.Events) == 0)
@@ -227,7 +207,6 @@ func TestIsFeatureEnabled(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, _ := client.IsFeatureEnabled(testFeatureKey, testUserContext)
 	assert.True(t, result)
@@ -249,7 +228,6 @@ func TestIsFeatureEnabledErrorCases(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         false,
 	}
 	result, _ := client.IsFeatureEnabled(testFeatureKey, testUserContext)
 	assert.False(t, result)
@@ -267,7 +245,6 @@ func TestIsFeatureEnabledErrorCases(t *testing.T) {
 	client = OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, err := client.IsFeatureEnabled(testFeatureKey, testUserContext)
 	if assert.Error(t, err) {
@@ -288,7 +265,6 @@ func TestIsFeatureEnabledPanic(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 
 	// returning an error object will cause the Client to panic
@@ -366,7 +342,6 @@ func TestGetEnabledFeatures(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, err := client.GetEnabledFeatures(testUserContext)
 	assert.NoError(t, err)
@@ -386,7 +361,6 @@ func TestGetEnabledFeaturesErrorCases(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         false,
 	}
 	result, err := client.GetEnabledFeatures(testUserContext)
 	assert.Error(t, err)
@@ -405,7 +379,6 @@ func TestGetEnabledFeaturesPanic(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 
 	// returning an error object will cause the Client to panic
@@ -454,7 +427,6 @@ func TestGetFeatureVariableBooleanWithValidValue(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, _ := client.GetFeatureVariableBoolean(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, true, result)
@@ -500,7 +472,6 @@ func TestGetFeatureVariableBooleanWithInvalidValue(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, err := client.GetFeatureVariableBoolean(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, false, result)
@@ -547,7 +518,6 @@ func TestGetFeatureVariableBooleanWithInvalidValueType(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, err := client.GetFeatureVariableBoolean(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, false, result)
@@ -594,7 +564,6 @@ func TestGetFeatureVariableBooleanWithEmptyValueType(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, err := client.GetFeatureVariableBoolean(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, false, result)
@@ -641,7 +610,6 @@ func TestGetFeatureVariableBooleanReturnsDefaultValueIfFeatureNotEnabled(t *test
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, err := client.GetFeatureVariableBoolean(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, false, result)
@@ -662,7 +630,6 @@ func TestGetFeatureVariableBoolPanic(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 
 	// returning an error object will cause the Client to panic
@@ -711,7 +678,6 @@ func TestGetFeatureVariableDoubleWithValidValue(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, _ := client.GetFeatureVariableDouble(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, float64(5), result)
@@ -757,7 +723,6 @@ func TestGetFeatureVariableDoubleWithInvalidValue(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, err := client.GetFeatureVariableDouble(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, float64(0), result)
@@ -804,7 +769,6 @@ func TestGetFeatureVariableDoubleWithInvalidValueType(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, err := client.GetFeatureVariableDouble(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, float64(0), result)
@@ -851,7 +815,6 @@ func TestGetFeatureVariableDoubleWithEmptyValueType(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, err := client.GetFeatureVariableDouble(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, float64(0), result)
@@ -898,7 +861,6 @@ func TestGetFeatureVariableDoubleReturnsDefaultValueIfFeatureNotEnabled(t *testi
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, err := client.GetFeatureVariableDouble(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, float64(4), result)
@@ -919,7 +881,6 @@ func TestGetFeatureVariableDoublePanic(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 
 	// returning an error object will cause the Client to panic
@@ -968,7 +929,6 @@ func TestGetFeatureVariableIntegerWithValidValue(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, _ := client.GetFeatureVariableInteger(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, 5, result)
@@ -1014,7 +974,6 @@ func TestGetFeatureVariableIntegerWithInvalidValue(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, err := client.GetFeatureVariableInteger(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, 0, result)
@@ -1061,7 +1020,6 @@ func TestGetFeatureVariableIntegerWithInvalidValueType(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, err := client.GetFeatureVariableInteger(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, 0, result)
@@ -1108,7 +1066,6 @@ func TestGetFeatureVariableIntegerWithEmptyValueType(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, err := client.GetFeatureVariableInteger(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, 0, result)
@@ -1155,7 +1112,6 @@ func TestGetFeatureVariableIntegerReturnsDefaultValueIfFeatureNotEnabled(t *test
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, err := client.GetFeatureVariableInteger(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, 4, result)
@@ -1176,7 +1132,6 @@ func TestGetFeatureVariableIntegerPanic(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 
 	// returning an error object will cause the Client to panic
@@ -1225,7 +1180,6 @@ func TestGetFeatureVariableStringWithValidValue(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, _ := client.GetFeatureVariableString(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, testVariableValue, result)
@@ -1271,7 +1225,6 @@ func TestGetFeatureVariableStringWithInvalidValueType(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, err := client.GetFeatureVariableString(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, "", result)
@@ -1318,7 +1271,6 @@ func TestGetFeatureVariableStringWithEmptyValueType(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, err := client.GetFeatureVariableString(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, "", result)
@@ -1365,7 +1317,6 @@ func TestGetFeatureVariableStringReturnsDefaultValueIfFeatureNotEnabled(t *testi
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 	result, err := client.GetFeatureVariableString(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, "defaultString", result)
@@ -1386,7 +1337,6 @@ func TestGetFeatureVariableStringPanic(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         true,
 	}
 
 	// returning an error object will cause the Client to panic
@@ -1407,7 +1357,6 @@ func TestGetFeatureVariableErrorCases(t *testing.T) {
 	client := OptimizelyClient{
 		configManager:   mockConfigManager,
 		decisionService: mockDecisionService,
-		isValid:         false,
 	}
 	_, err1 := client.GetFeatureVariableBoolean("test_feature_key", "test_variable_key", testUserContext)
 	_, err2 := client.GetFeatureVariableDouble("test_feature_key", "test_variable_key", testUserContext)
@@ -1427,25 +1376,12 @@ func TestGetProjectConfigIsValid(t *testing.T) {
 
 	client := OptimizelyClient{
 		configManager: mockConfigManager,
-		isValid:       true,
 	}
 
 	actual, err := client.GetProjectConfig()
 
 	assert.Nil(t, err)
 	assert.Equal(t, mockConfigManager.projectConfig, actual)
-}
-
-func TestGetProjectConfigInvalid(t *testing.T) {
-	client := OptimizelyClient{
-		configManager: ValidProjectConfigManager(),
-		isValid:       false,
-	}
-
-	actual, err := client.GetProjectConfig()
-
-	assert.NotNil(t, err)
-	assert.Nil(t, actual)
 }
 
 // Helper Methods

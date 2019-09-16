@@ -38,7 +38,6 @@ type OptimizelyClient struct {
 	configManager   optimizely.ProjectConfigManager
 	decisionService decision.Service
 	eventProcessor  event.Processor
-	isValid         bool
 
 	executionCtx utils.ExecutionCtx
 }
@@ -130,12 +129,6 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 
 // Track take and event key with event tags and if the event is part of the config, send to events backend.
 func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}) (err error) {
-	if !o.isValid {
-		errorMessage := "optimizely instance is not valid; failing GetEnabledFeatures"
-		err = errors.New(errorMessage)
-		logger.Error(errorMessage, err)
-		return err
-	}
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -264,9 +257,6 @@ func (o *OptimizelyClient) getFeatureVariable(featureKey, variableKey string, us
 
 // GetProjectConfig returns the current ProjectConfig or nil if the instance is not valid
 func (o *OptimizelyClient) GetProjectConfig() (projectConfig optimizely.ProjectConfig, err error) {
-	if !o.isValid {
-		return nil, fmt.Errorf("optimizely instance is not valid")
-	}
 
 	projectConfig, err = o.configManager.GetConfig()
 	if err != nil {
