@@ -18,7 +18,6 @@
 package datafileprojectconfig
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/mappers"
@@ -76,6 +75,94 @@ func (c DatafileProjectConfig) GetBotFiltering() bool {
 	return c.botFiltering
 }
 
+// GetEventByKey returns the event with the given key
+func (c DatafileProjectConfig) GetEventByKey(eventKey string) (entities.Event, error) {
+	if event, ok := c.eventMap[eventKey]; ok {
+		return event, nil
+	}
+
+	return entities.Event{}, fmt.Errorf(`event with key "%s" not found`, eventKey)
+}
+
+// GetFeatureByKey returns the feature with the given key
+func (c DatafileProjectConfig) GetFeatureByKey(featureKey string) (entities.Feature, error) {
+	if feature, ok := c.featureMap[featureKey]; ok {
+		return feature, nil
+	}
+
+	return entities.Feature{}, fmt.Errorf(`feature with key "%s" not found`, featureKey)
+}
+
+// GetVariableByKey returns the featureVariable with the given key
+func (c DatafileProjectConfig) GetVariableByKey(featureKey, variableKey string) (entities.Variable, error) {
+
+	var variable entities.Variable
+	var err = fmt.Errorf(`variable with key "%s" not found`, featureKey)
+	if feature, ok := c.featureMap[featureKey]; ok {
+		for _, v := range feature.Variables {
+			if v.Key == variableKey {
+				variable = v
+				err = nil
+				break
+			}
+		}
+	}
+	return variable, err
+}
+
+// GetAttributeByKey returns the attribute with the given key
+func (c DatafileProjectConfig) GetAttributeByKey(key string) (entities.Attribute, error) {
+	if attributeID, ok := c.attributeKeyToIDMap[key]; ok {
+		if attribute, ok := c.attributeMap[attributeID]; ok {
+			return attribute, nil
+		}
+	}
+
+	return entities.Attribute{}, fmt.Errorf(`attribute with key "%s" not found`, key)
+}
+
+// GetFeatureList returns an array of all the features
+func (c DatafileProjectConfig) GetFeatureList() (featureList []entities.Feature) {
+	for _, feature := range c.featureMap {
+		featureList = append(featureList, feature)
+	}
+	return featureList
+}
+
+// GetAudienceByID returns the audience with the given ID
+func (c DatafileProjectConfig) GetAudienceByID(audienceID string) (entities.Audience, error) {
+	if audience, ok := c.audienceMap[audienceID]; ok {
+		return audience, nil
+	}
+
+	return entities.Audience{}, fmt.Errorf(`audience with ID "%s" not found`, audienceID)
+}
+
+// GetAudienceMap returns the audience map
+func (c DatafileProjectConfig) GetAudienceMap() map[string]entities.Audience {
+	return c.audienceMap
+}
+
+// GetExperimentByKey returns the experiment with the given key
+func (c DatafileProjectConfig) GetExperimentByKey(experimentKey string) (entities.Experiment, error) {
+	if experimentID, ok := c.experimentKeyToIDMap[experimentKey]; ok {
+		if experiment, ok := c.experimentMap[experimentID]; ok {
+			return experiment, nil
+		}
+	}
+
+	return entities.Experiment{}, fmt.Errorf(`experiment with key "%s" not found`, experimentKey)
+}
+
+// GetGroupByID returns the group with the given ID
+func (c DatafileProjectConfig) GetGroupByID(groupID string) (entities.Group, error) {
+	if group, ok := c.groupMap[groupID]; ok {
+		return group, nil
+	}
+
+	return entities.Group{}, fmt.Errorf(`group with ID "%s" not found`, groupID)
+}
+
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser
 func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, error) {
 	datafile, err := Parse(jsonDatafile)
@@ -107,95 +194,4 @@ func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, erro
 
 	logger.Info("Datafile is valid.")
 	return config, nil
-}
-
-// GetEventByKey returns the event with the given key
-func (c DatafileProjectConfig) GetEventByKey(eventKey string) (entities.Event, error) {
-	if event, ok := c.eventMap[eventKey]; ok {
-		return event, nil
-	}
-
-	errMessage := fmt.Sprintf("Event with key %s not found", eventKey)
-	return entities.Event{}, errors.New(errMessage)
-}
-
-// GetFeatureByKey returns the feature with the given key
-func (c DatafileProjectConfig) GetFeatureByKey(featureKey string) (entities.Feature, error) {
-	if feature, ok := c.featureMap[featureKey]; ok {
-		return feature, nil
-	}
-
-	errMessage := fmt.Sprintf("Feature with key %s not found", featureKey)
-	return entities.Feature{}, errors.New(errMessage)
-}
-
-// GetVariableByKey returns the featureVariable with the given key
-func (c DatafileProjectConfig) GetVariableByKey(featureKey, variableKey string) (entities.Variable, error) {
-
-	var variable entities.Variable
-	var err = fmt.Errorf("variable with key %s not found", featureKey)
-	if feature, ok := c.featureMap[featureKey]; ok {
-		for _, v := range feature.Variables {
-			if v.Key == variableKey {
-				variable = v
-				err = nil
-				break
-			}
-		}
-	}
-	return variable, err
-}
-
-// GetAttributeByKey returns the attribute with the given key
-func (c DatafileProjectConfig) GetAttributeByKey(key string) (entities.Attribute, error) {
-	if attributeID, ok := c.attributeKeyToIDMap[key]; ok {
-		return c.attributeMap[attributeID], nil
-	}
-
-	errMessage := fmt.Sprintf(`Attribute with key "%s" not found`, key)
-	return entities.Attribute{}, errors.New(errMessage)
-}
-
-// GetFeatureList returns an array of all the features
-func (c DatafileProjectConfig) GetFeatureList() (featureList []entities.Feature) {
-	for _, feature := range c.featureMap {
-		featureList = append(featureList, feature)
-	}
-	return featureList
-}
-
-// GetAudienceByID returns the audience with the given ID
-func (c DatafileProjectConfig) GetAudienceByID(audienceID string) (entities.Audience, error) {
-	if audience, ok := c.audienceMap[audienceID]; ok {
-		return audience, nil
-	}
-
-	errMessage := fmt.Sprintf(`Audience with ID "%s" not found`, audienceID)
-	return entities.Audience{}, errors.New(errMessage)
-}
-
-// GetAudienceMap returns the audience map
-func (c DatafileProjectConfig) GetAudienceMap() map[string]entities.Audience {
-	return c.audienceMap
-}
-
-// GetExperimentByKey returns the experiment with the given key
-func (c DatafileProjectConfig) GetExperimentByKey(experimentKey string) (entities.Experiment, error) {
-	if experimentID, ok := c.experimentKeyToIDMap[experimentKey]; ok {
-		experiment := c.experimentMap[experimentID]
-		return experiment, nil
-	}
-
-	errMessage := fmt.Sprintf(`Experiment with key "%s" not found`, experimentKey)
-	return entities.Experiment{}, errors.New(errMessage)
-}
-
-// GetGroupByID returns the group with the given ID
-func (c DatafileProjectConfig) GetGroupByID(groupID string) (entities.Group, error) {
-	if group, ok := c.groupMap[groupID]; ok {
-		return group, nil
-	}
-
-	errMessage := fmt.Sprintf(`Group with ID "%s" not found`, groupID)
-	return entities.Group{}, errors.New(errMessage)
 }
