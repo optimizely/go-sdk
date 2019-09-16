@@ -23,7 +23,7 @@ import (
 
 // FeatureExperimentService helps evaluate feature test associated with the feature
 type FeatureExperimentService struct {
-	featureExperimentDecisionService ExperimentService
+	featureExperimentService ExperimentService
 }
 
 // NewFeatureExperimentService returns a new instance of the FeatureExperimentService
@@ -33,5 +33,5 @@ func NewFeatureExperimentService() *CompositeExperimentService {
 
 // GetDecision returns a decision for the given feature test and user context
 func (f FeatureExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
-	return f.featureExperimentDecisionService.GetDecision(decisionContext, userContext)
+	return f.featureExperimentService.GetDecision(decisionContext, userContext)
 }

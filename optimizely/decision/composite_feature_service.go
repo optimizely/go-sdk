@@ -28,15 +28,15 @@ var cfLogger = logging.GetLogger("CompositeFeatureService")
 
 // CompositeFeatureService is the default out-of-the-box feature decision service
 type CompositeFeatureService struct {
-	featureExperimentDecisionService ExperimentService
-	rolloutDecisionService    FeatureService
+	featureExperimentService ExperimentService
+	rolloutDecisionService   FeatureService
 }
 
 // NewCompositeFeatureService returns a new instance of the CompositeFeatureService
 func NewCompositeFeatureService() *CompositeFeatureService {
 	return &CompositeFeatureService{
-		featureExperimentDecisionService: NewFeatureExperimentService(),
-		rolloutDecisionService:    NewRolloutService(),
+		featureExperimentService: NewFeatureExperimentService(),
+		rolloutDecisionService:   NewRolloutService(),
 	}
 }
 
@@ -45,7 +45,7 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 	feature := decisionContext.Feature
 
 	// Check if user is bucketed in feature experiment
-	if f.featureExperimentDecisionService != nil && len(feature.FeatureExperiments) > 0 {
+	if f.featureExperimentService != nil && len(feature.FeatureExperiments) > 0 {
 		// @TODO: add in a feature decision service that takes into account multiple experiments (via group mutex)
 		experiment := feature.FeatureExperiments[0]
 		experimentDecisionContext := ExperimentDecisionContext{
@@ -53,7 +53,7 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 			ProjectConfig: decisionContext.ProjectConfig,
 		}
 
-		experimentDecision, err := f.featureExperimentDecisionService.GetDecision(experimentDecisionContext, userContext)
+		experimentDecision, err := f.featureExperimentService.GetDecision(experimentDecisionContext, userContext)
 		// Variation not nil means we got a decision and should return it
 		if experimentDecision.Variation != nil {
 			featureDecision := FeatureDecision{
