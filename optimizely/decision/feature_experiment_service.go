@@ -21,6 +21,7 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
+// FeatureExperimentService helps evaluate feature test associated with the feature
 type FeatureExperimentService struct {
 	featureExperimentDecisionService ExperimentService
 }
