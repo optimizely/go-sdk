@@ -29,12 +29,21 @@ func TestAtomicManager(t *testing.T) {
 	mockReceiver.On("handleBetter", payload)
 
 	atomicManager := NewAtomicManager()
-	result, _ := atomicManager.AddHandler(mockReceiver.handle)
-	assert.Equal(t, 1, result)
+	result1, _ := atomicManager.AddHandler(mockReceiver.handle)
+	assert.Equal(t, 1, result1)
 
-	result, _ = atomicManager.AddHandler(mockReceiver.handleBetter)
-	assert.Equal(t, 2, result)
+	result2, _ := atomicManager.AddHandler(mockReceiver.handleBetter)
+	assert.Equal(t, 2, result2)
 
 	atomicManager.Send(payload)
 	mockReceiver.AssertExpectations(t)
+
+	atomicManager.RemoveHandler(result1)
+	atomicManager.Send(payload)
+	mockReceiver.AssertNumberOfCalls(t, "handle", 1)
+	mockReceiver.AssertNumberOfCalls(t, "handleBetter", 2)
+
+	atomicManager.RemoveHandler(result2)
+	atomicManager.Send(payload)
+	mockReceiver.AssertNumberOfCalls(t, "handleBetter", 2)
 }
