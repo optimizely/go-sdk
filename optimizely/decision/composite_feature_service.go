@@ -33,9 +33,9 @@ type CompositeFeatureService struct {
 }
 
 // NewCompositeFeatureService returns a new instance of the CompositeFeatureService
-func NewCompositeFeatureService() *CompositeFeatureService {
+func NewCompositeFeatureService(compositeExperimentService *CompositeExperimentService) *CompositeFeatureService {
 	return &CompositeFeatureService{
-		experimentDecisionService: NewCompositeExperimentService(),
+		experimentDecisionService: compositeExperimentService,
 		rolloutDecisionService:    NewRolloutService(),
 	}
 }

@@ -31,6 +31,8 @@ const (
 type DecisionNotificationType string
 
 const (
+	// ABTest is used when the decision is returned as part of evaluating an ab test
+	ABTest DecisionNotificationType = "ab-test"
 	// Feature is used when the decision is returned as part of evaluating a feature
 	Feature DecisionNotificationType = "feature"
 )

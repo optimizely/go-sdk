@@ -24,6 +24,7 @@ import (
 
 // Service interface is used to make a decision for a given feature or experiment
 type Service interface {
+	GetExperimentDecision(ExperimentDecisionContext, entities.UserContext) (ExperimentDecision, error)
 	GetFeatureDecision(FeatureDecisionContext, entities.UserContext) (FeatureDecision, error)
 	OnDecision(func(notification.DecisionNotification))
 }

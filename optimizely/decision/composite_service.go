@@ -29,18 +29,44 @@ var csLogger = logging.GetLogger("CompositeDecisionService")
 
 // CompositeService is the entrypoint into the decision service. It provides out of the box decision making for Features and Experiments.
 type CompositeService struct {
-	// experimentDecisionServices []ExperimentDecisionService
-	featureDecisionServices []FeatureService
-	notificationCenter      notification.Center
+	compositeExperimentService ExperimentService
+	featureDecisionServices    []FeatureService
+	notificationCenter         notification.Center
 }
 
 // NewCompositeService returns a new instance of the DefeaultDecisionEngine
 func NewCompositeService(notificationCenter notification.Center) *CompositeService {
-	featureDecisionService := NewCompositeFeatureService()
+	compositeExperimentService := NewCompositeExperimentService()
+	featureDecisionService := NewCompositeFeatureService(compositeExperimentService)
 	return &CompositeService{
-		featureDecisionServices: []FeatureService{featureDecisionService},
-		notificationCenter:      notificationCenter,
+		compositeExperimentService: compositeExperimentService,
+		featureDecisionServices:    []FeatureService{featureDecisionService},
+		notificationCenter:         notificationCenter,
 	}
+}
+
+// GetExperimentDecision returns a decision for the given experiment key
+func (s CompositeService) GetExperimentDecision(experimentDecisionContext ExperimentDecisionContext, userContext entities.UserContext) (experimentDecision ExperimentDecision, err error) {
+	experimentDecision, err = s.compositeExperimentService.GetDecision(experimentDecisionContext, userContext)
+
+	if s.notificationCenter != nil && experimentDecision.Variation != nil {
+		decisionInfo := map[string]interface{}{
+			"experimentKey": experimentDecisionContext.Experiment.Key,
+			"variationKey":  experimentDecision.Variation.Key,
+		}
+
+		decisionNotification := notification.DecisionNotification{
+			DecisionInfo: decisionInfo,
+			Type:         notification.ABTest,
+			UserContext:  userContext,
+		}
+
+		if err = s.notificationCenter.Send(notification.Decision, decisionNotification); err != nil {
+			csLogger.Warning("Error sending sending notification")
+		}
+	}
+
+	return experimentDecision, err
 }
 
 // GetFeatureDecision returns a decision for the given feature key

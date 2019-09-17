@@ -43,6 +43,29 @@ type OptimizelyClient struct {
 	executionCtx utils.ExecutionCtx
 }
 
+// Activate returns the variation that the user is bucketed into. Returns an empty string if the user is not bucketed into any variation.
+// It also sends an impression if the user is bucketed into a variation.
+func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.UserContext) (string, error) {
+	decisionContext, experimentDecision, err := o.getExperimentDecision(experimentKey, userContext)
+	if experimentDecision.Variation != nil {
+		impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *decisionContext.Experiment, *experimentDecision.Variation, userContext)
+		o.eventProcessor.ProcessEvent(impressionEvent)
+		return experimentDecision.Variation.Key, err
+	}
+
+	return "", err
+}
+
+// GetVariation returns the variation the user is bucketed info. Returns an empty string if the user is not bucketed into any variation.
+func (o *OptimizelyClient) GetVariation(experimentKey string, userContext entities.UserContext) (string, error) {
+	_, experimentDecision, err := o.getExperimentDecision(experimentKey, userContext)
+	if experimentDecision.Variation == nil {
+		return "", err
+	}
+
+	return experimentDecision.Variation.Key, err
+}
+
 // IsFeatureEnabled returns true if the feature is enabled for the given user
 func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entities.UserContext) (result bool, err error) {
 
@@ -230,6 +253,41 @@ func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext
 	}
 
 	return enabled, variableMap, err
+}
+
+func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userContext entities.UserContext) (decisionContext decision.ExperimentDecisionContext, experimentDecision decision.ExperimentDecision, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			errorMessage := fmt.Sprintf(`optimizely SDK is panicking with the error "%s"`, string(debug.Stack()))
+			err = errors.New(errorMessage)
+			logger.Error(errorMessage, err)
+		}
+	}()
+
+	projectConfig, err := o.GetProjectConfig()
+	if err != nil {
+		logger.Error("Error retrieving project config", err)
+		return decisionContext, experimentDecision, err
+	}
+
+	experiment, err := projectConfig.GetExperimentByKey(experimentKey)
+	if err != nil {
+		logger.Error("Error retrieving experiment", err)
+		return decisionContext, experimentDecision, err
+	}
+
+	decisionContext = decision.ExperimentDecisionContext{
+		Experiment:    &experiment,
+		ProjectConfig: projectConfig,
+	}
+
+	experimentDecision, err = o.decisionService.GetExperimentDecision(decisionContext, userContext)
+	if experimentDecision.Variation != nil {
+		logger.Info(fmt.Sprintf(`Got variation "%s" for user %s.`, experimentDecision.Variation.Key, userContext.ID))
+	} else {
+		logger.Info(fmt.Sprintf(`No variation for user "%s": %s`, userContext.ID, experimentDecision.Reason))
+	}
+	return decisionContext, experimentDecision, err
 }
 
 func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext entities.UserContext) (decisionContext decision.FeatureDecisionContext, featureDecision decision.FeatureDecision, err error) {

@@ -19,6 +19,7 @@ package client
 
 import (
 	"errors"
+
 	"github.com/optimizely/go-sdk/optimizely/utils"
 
 	"github.com/optimizely/go-sdk/optimizely/event"
