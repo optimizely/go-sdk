@@ -46,9 +46,8 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 
 	// Check if user is bucketed in feature experiment
 	if f.featureExperimentService != nil && len(feature.FeatureExperiments) > 0 {
-		// @TODO this can be improved by getting group ID first and determining experiment ID and then bucketing in experiment ID
-		for idx := 0; idx < len(feature.FeatureExperiments); idx++ {
-			experiment := feature.FeatureExperiments[idx]
+		// @TODO this can be improved by getting group ID first and determining experiment and then bucketing in experiment
+		for _, experiment := range feature.FeatureExperiments {
 			experimentDecisionContext := ExperimentDecisionContext{
 				Experiment:    &experiment,
 				ProjectConfig: decisionContext.ProjectConfig,
