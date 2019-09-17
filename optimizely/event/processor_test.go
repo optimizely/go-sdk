@@ -18,19 +18,14 @@
 package event
 
 import (
-	"context"
-	"github.com/optimizely/go-sdk/optimizely/utils"
-	"sync"
 	"testing"
 	"time"
+
+	"github.com/optimizely/go-sdk/optimizely/utils"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func close(wg *sync.WaitGroup, cancelFn context.CancelFunc) {
-	cancelFn()
-	wg.Wait()
-}
 func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
 	processor := NewEventProcessor(exeCtx, 10, 100, 100)

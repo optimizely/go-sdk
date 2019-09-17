@@ -38,9 +38,8 @@ func (f *MockDispatcher) DispatchEvent(event event.LogEvent) (bool, error) {
 func TestFactoryClientReturnsDefaultClient(t *testing.T) {
 	factory := OptimizelyFactory{}
 
-	client, err := factory.Client()
+	_, err := factory.Client()
 	expectedErr := errors.New("unable to instantiate client: no project config manager, SDK key, or a Datafile provided")
-	assert.False(t, client.isValid)
 	if assert.Error(t, err) {
 		assert.Equal(t, err, expectedErr)
 	}
@@ -52,7 +51,6 @@ func TestClientWithSDKKey(t *testing.T) {
 	clientOptions := Options{}
 
 	client, err := factory.ClientWithOptions(clientOptions)
-	assert.True(t, client.isValid)
 	assert.NoError(t, err)
 	assert.NotNil(t, client.configManager)
 	assert.NotNil(t, client.decisionService)
@@ -67,7 +65,6 @@ func TestClientWithProjectConfigManagerInOptions(t *testing.T) {
 	clientOptions := Options{ProjectConfigManager: configManager}
 
 	client, err := factory.ClientWithOptions(clientOptions)
-	assert.True(t, client.isValid)
 	assert.NoError(t, err)
 	assert.NotNil(t, client.configManager)
 	assert.NotNil(t, client.decisionService)
@@ -82,7 +79,6 @@ func TestClientWithNoDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 	clientOptions := Options{ProjectConfigManager: configManager}
 
 	client, err := factory.ClientWithOptions(clientOptions)
-	assert.True(t, client.isValid)
 	assert.NoError(t, err)
 	assert.NotNil(t, client.configManager)
 	assert.NotNil(t, client.decisionService)
@@ -108,7 +104,6 @@ func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 	}
 
 	client, err := factory.ClientWithOptions(clientOptions)
-	assert.True(t, client.isValid)
 	assert.NoError(t, err)
 	assert.Equal(t, decisionService, client.decisionService)
 	assert.Equal(t, processor, client.eventProcessor)
@@ -119,9 +114,8 @@ func TestClientWithOptionsErrorCase(t *testing.T) {
 	factory := OptimizelyFactory{}
 	clientOptions := Options{}
 
-	client, err := factory.ClientWithOptions(clientOptions)
+	_, err := factory.ClientWithOptions(clientOptions)
 	expectedErr := errors.New("unable to instantiate client: no project config manager, SDK key, or a Datafile provided")
-	assert.False(t, client.isValid)
 	if assert.Error(t, err) {
 		assert.Equal(t, err, expectedErr)
 	}
