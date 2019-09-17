@@ -38,7 +38,6 @@ type OptimizelyClient struct {
 	configManager   optimizely.ProjectConfigManager
 	decisionService decision.Service
 	eventProcessor  event.Processor
-	isValid         bool
 
 	executionCtx utils.ExecutionCtx
 }
@@ -279,9 +278,6 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext ent
 
 // GetProjectConfig returns the current ProjectConfig or nil if the instance is not valid
 func (o *OptimizelyClient) GetProjectConfig() (projectConfig optimizely.ProjectConfig, err error) {
-	if !o.isValid {
-		return nil, fmt.Errorf("optimizely instance is not valid")
-	}
 
 	projectConfig, err = o.configManager.GetConfig()
 	if err != nil {

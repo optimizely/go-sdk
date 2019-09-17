@@ -18,18 +18,15 @@
 package event
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
 	"github.com/optimizely/go-sdk/optimizely/logging"
+	"github.com/optimizely/go-sdk/optimizely/utils"
 )
 
-const jsonContentType = "application/json"
 const maxRetries = 3
 const defaultQueueSize = 1000
 const sleepTime = 5 * time.Second
@@ -48,8 +45,9 @@ type HTTPEventDispatcher struct {
 // DispatchEvent dispatches event with callback
 func (*HTTPEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 
-	jsonValue, _ := json.Marshal(event.Event)
-	resp, err := http.Post(event.EndPoint, jsonContentType, bytes.NewBuffer(jsonValue))
+	requester := utils.NewHTTPRequester(event.EndPoint)
+	_, code, err := requester.Post(event.Event)
+
 	// also check response codes
 	// resp.StatusCode == 400 is an error
 	var success bool
@@ -57,10 +55,10 @@ func (*HTTPEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 		dispatcherLogger.Error("http.Post failed:", err)
 		success = false
 	} else {
-		if resp.StatusCode == 204 {
+		if code == 204 {
 			success = true
 		} else {
-			dispatcherLogger.Error(fmt.Sprintf("http.Post invalid response %d", resp.StatusCode), nil)
+			dispatcherLogger.Error(fmt.Sprintf("http.Post invalid response %d", code), nil)
 			success = false
 		}
 	}
@@ -80,7 +78,7 @@ func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	go func() {
 		ed.flushEvents()
 	}()
-	return true,nil
+	return true, nil
 }
 
 // flush the events
@@ -88,7 +86,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 
 	ed.eventFlushLock.Lock()
 
-	defer func(){
+	defer func() {
 		ed.eventFlushLock.Unlock()
 	}()
 
@@ -136,7 +134,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 
 // NewQueueEventDispatcher creates a dispatcher that queues in memory and then sends via go routine.
 func NewQueueEventDispatcher(ctx context.Context) Dispatcher {
-	dispatcher := &QueueEventDispatcher{eventQueue: NewInMemoryQueue(defaultQueueSize), dispatcher:&HTTPEventDispatcher{}}
+	dispatcher := &QueueEventDispatcher{eventQueue: NewInMemoryQueue(defaultQueueSize), dispatcher: &HTTPEventDispatcher{}}
 
 	go func() {
 		<-ctx.Done()

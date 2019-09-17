@@ -19,15 +19,14 @@ package client
 
 import (
 	"errors"
-	"github.com/optimizely/go-sdk/optimizely/utils"
-
-	"github.com/optimizely/go-sdk/optimizely/event"
-
-	"github.com/optimizely/go-sdk/optimizely/notification"
+	"time"
 
 	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/config"
 	"github.com/optimizely/go-sdk/optimizely/decision"
+	"github.com/optimizely/go-sdk/optimizely/event"
+	"github.com/optimizely/go-sdk/optimizely/notification"
+	"github.com/optimizely/go-sdk/optimizely/utils"
 )
 
 // Options are used to create an instance of the OptimizelyClient with custom configuration
@@ -41,6 +40,67 @@ type Options struct {
 type OptimizelyFactory struct {
 	SDKKey   string
 	Datafile []byte
+}
+
+// OptionFunc is a type to a proper func
+type OptionFunc func(*OptimizelyClient, utils.ExecutionCtx)
+
+// GetClient gets client and sets some parameters
+func (f OptimizelyFactory) GetClient(clientOptions ...OptionFunc) *OptimizelyClient {
+	executionCtx := utils.NewCancelableExecutionCtx()
+	appClient := &OptimizelyClient{
+		executionCtx: executionCtx,
+	}
+	for _, opt := range clientOptions {
+		opt(appClient, executionCtx)
+	}
+	return appClient
+}
+
+// PollingConfigManager sets polling config manager on a client
+func PollingConfigManager(sdkKey string, pollingInterval time.Duration, dataFile []byte) OptionFunc {
+	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
+		options := config.PollingProjectConfigManagerOptions{
+			Datafile:        dataFile,
+			PollingInterval: pollingInterval,
+		}
+		f.configManager = config.NewPollingProjectConfigManagerWithOptions(f.executionCtx, sdkKey, options)
+	}
+}
+
+// ConfigManager sets polling config manager on a client
+func ConfigManager(configManager optimizely.ProjectConfigManager) OptionFunc {
+	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
+		f.configManager = configManager
+	}
+}
+
+// CompositeDecisionService sets decision service on a client
+func CompositeDecisionService(notificationCenter notification.Center) OptionFunc {
+	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
+		f.decisionService = decision.NewCompositeService(notificationCenter)
+	}
+}
+
+// DecisionService sets decision service on a client
+func DecisionService(decisionService decision.Service) OptionFunc {
+	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
+		f.decisionService = decisionService
+	}
+}
+
+// BatchEventProcessor sets event processor on a client
+func BatchEventProcessor(batchSize, queueSize int, flushInterval time.Duration) OptionFunc {
+	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
+		f.eventProcessor = event.NewEventProcessor(executionCtx, batchSize, queueSize, flushInterval)
+	}
+}
+
+// EventProcessor sets event processor on a client
+func EventProcessor(eventProcessor event.Processor) OptionFunc {
+	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
+		f.eventProcessor = eventProcessor
+	}
 }
 
 // StaticClient returns a client initialized with a static project config
@@ -78,7 +138,6 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 
 	executionCtx := utils.NewCancelableExecutionCtx()
 	client := &OptimizelyClient{
-		isValid:      false,
 		executionCtx: executionCtx,
 	}
 
@@ -111,7 +170,6 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 		client.eventProcessor = event.NewEventProcessor(executionCtx, event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval)
 	}
 
-	client.isValid = true
 	return client, nil
 }
 
