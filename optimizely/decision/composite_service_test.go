@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/optimizely/notification"
 )
 
 func TestGetFeatureDecision(t *testing.T) {
@@ -53,4 +54,46 @@ func TestGetFeatureDecision(t *testing.T) {
 	// Test assertions
 	assert.Equal(t, expectedFeatureDecision, featureDecision)
 	testFeatureDecisionService.AssertExpectations(t)
+}
+
+func TestOnDecision(t *testing.T) {
+
+	mockProjectConfig := new(mockProjectConfig)
+	decisionContext := FeatureDecisionContext{
+		Feature:       &testFeat3333,
+		ProjectConfig: mockProjectConfig,
+	}
+
+	userContext := entities.UserContext{
+		ID: "test_user",
+	}
+
+	expectedFeatureDecision := FeatureDecision{
+		Experiment: testExp1111,
+		Variation:  &testExp1111Var2222,
+	}
+
+	testFeatureDecisionService := new(MockFeatureDecisionService)
+	testFeatureDecisionService.On("GetDecision", decisionContext, userContext).Return(expectedFeatureDecision, nil)
+
+	notificationCenter := notification.NewNotificationCenter()
+	decisionService := &CompositeService{
+		featureDecisionServices: []FeatureService{testFeatureDecisionService},
+		notificationCenter:      notificationCenter,
+	}
+
+	var numberOfCalls = 0
+	callback := func(notification notification.DecisionNotification) {
+		numberOfCalls++
+	}
+	id, _ := decisionService.OnDecision(callback)
+
+	assert.NotEqual(t, id, 0)
+	decisionService.GetFeatureDecision(decisionContext, userContext)
+	assert.Equal(t, numberOfCalls, 1)
+
+	err := decisionService.RemoveOnDecision(id)
+	assert.Nil(t, err)
+	decisionService.GetFeatureDecision(decisionContext, userContext)
+	assert.Equal(t, numberOfCalls, 1)
 }
