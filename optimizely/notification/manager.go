@@ -50,9 +50,9 @@ func (am *AtomicManager) Add(newHandler func(interface{})) (int, error) {
 
 // Remove removes handler with the given id
 func (am *AtomicManager) Remove(id int) {
-	counter := uint32(id)
-	if _, ok := am.handlers[counter]; ok {
-		delete(am.handlers, counter)
+	handlerID := uint32(id)
+	if _, ok := am.handlers[handlerID]; ok {
+		delete(am.handlers, handlerID)
 	}
 }
 
