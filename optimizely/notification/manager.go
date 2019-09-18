@@ -23,8 +23,8 @@ import (
 
 // Manager is a generic interface for managing notifications of a particular type
 type Manager interface {
-	AddHandler(func(interface{})) (int, error)
-	RemoveHandler(id int)
+	Add(func(interface{})) (int, error)
+	Remove(id int)
 	Send(message interface{})
 }
 
@@ -41,15 +41,15 @@ func NewAtomicManager() *AtomicManager {
 	}
 }
 
-// AddHandler adds the given handler
-func (am *AtomicManager) AddHandler(newHandler func(interface{})) (int, error) {
+// Add adds the given handler
+func (am *AtomicManager) Add(newHandler func(interface{})) (int, error) {
 	atomic.AddUint32(&am.counter, 1)
 	am.handlers[am.counter] = newHandler
 	return int(am.counter), nil
 }
 
-// RemoveHandler removes handler with the given id
-func (am *AtomicManager) RemoveHandler(id int) {
+// Remove removes handler with the given id
+func (am *AtomicManager) Remove(id int) {
 	counter := uint32(id)
 	if _, ok := am.handlers[counter]; ok {
 		delete(am.handlers, counter)
