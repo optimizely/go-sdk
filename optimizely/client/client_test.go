@@ -92,7 +92,11 @@ func (m *PanickingDecisionService) GetFeatureDecision(decisionContext decision.F
 	panic("I'm panicking")
 }
 
-func (m *PanickingDecisionService) OnDecision(callback func(notification.DecisionNotification)) {
+func (m *PanickingDecisionService) OnDecision(callback func(notification.DecisionNotification)) (int, error) {
+	panic("I'm panicking")
+}
+
+func (m *PanickingDecisionService) RemoveOnDecision(id int) error {
 	panic("I'm panicking")
 }
 
