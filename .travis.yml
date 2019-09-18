@@ -7,15 +7,13 @@ go:
   - 1.8.x
   - master
 before_install:
-  - go get golang.org/x/tools/cmd/cover
-  - go get github.com/modocache/gover
+  - go get github.com/go-playground/overalls
   - go get github.com/mattn/goveralls
 git:
   depth: 1
 script:
-  - go test -v -race ./...
-  - $GOPATH/bin/gover
-  - $GOPATH/bin/goveralls -coverprofile=gover.coverprofile -service=travis-ci
+  - $GOPATH/bin/overalls -project=github.com/optimizely/go-sdk -covermode=count -debug -- -coverpkg=./...
+  - $GOPATH/bin/goveralls -coverprofile=overalls.coverprofile -service=travis-ci
 stages:
   - 'Lint'
   - 'Integration tests'
