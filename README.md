@@ -1,7 +1,7 @@
 # Optimizely Go SDK
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/optimizely/go-sdk)](https://goreportcard.com/report/github.com/optimizely/go-sdk)
-[![Coverage Status](https://coveralls.io/repos/github/optimizely/go-sdk/badge.svg?branch=go-alpha)](https://coveralls.io/github/optimizely/go-sdk?branch=go-alpha)
+[![Coverage Status](https://coveralls.io/repos/github/optimizely/go-sdk/badge.svg?branch=master)](https://coveralls.io/github/optimizely/go-sdk?branch=master)
 
 ## Usage
 
