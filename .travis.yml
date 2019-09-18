@@ -13,7 +13,7 @@ before_install:
 git:
   depth: 1
 script:
-  - go test ./...
+  - go test -v -race ./...
   - $GOPATH/bin/gover
   - $GOPATH/bin/goveralls -coverprofile=gover.coverprofile -service=travis-ci
 stages:
