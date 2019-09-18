@@ -105,7 +105,7 @@ func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T
 
 func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing.T) {
 	mockDatafile1 := []byte(`{"revision":"42","projectId":"1000"}`)
-	mockDatafile2 := []byte(`{"revision":"43","projectId":"1001"}`)
+	mockDatafile2 := []byte(`{"revision":"43","projectId":"1000"}`)
 	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
 	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
 	mockRequester := new(MockRequester)
