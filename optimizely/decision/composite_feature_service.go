@@ -46,30 +46,32 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 
 	// Check if user is bucketed in feature experiment
 	if f.featureExperimentService != nil && len(feature.FeatureExperiments) > 0 {
-		// @TODO: add in a feature decision service that takes into account multiple experiments (via group mutex)
-		experiment := feature.FeatureExperiments[0]
-		experimentDecisionContext := ExperimentDecisionContext{
-			Experiment:    &experiment,
-			ProjectConfig: decisionContext.ProjectConfig,
-		}
-
-		experimentDecision, err := f.featureExperimentService.GetDecision(experimentDecisionContext, userContext)
-		// Variation not nil means we got a decision and should return it
-		if experimentDecision.Variation != nil {
-			featureDecision := FeatureDecision{
-				Experiment: experiment,
-				Decision:   experimentDecision.Decision,
-				Variation:  experimentDecision.Variation,
-				Source:     FeatureTest,
+		// @TODO this can be improved by getting group ID first and determining experiment and then bucketing in experiment
+		for _, experiment := range feature.FeatureExperiments {
+			featureExperiment := experiment
+			experimentDecisionContext := ExperimentDecisionContext{
+				Experiment:    &featureExperiment,
+				ProjectConfig: decisionContext.ProjectConfig,
 			}
 
-			cfLogger.Debug(fmt.Sprintf(
-				`Decision made for feature test with key "%s" for user "%s" with the following reason: "%s".`,
-				feature.Key,
-				userContext.ID,
-				featureDecision.Reason,
-			))
-			return featureDecision, err
+			experimentDecision, err := f.featureExperimentService.GetDecision(experimentDecisionContext, userContext)
+			// Variation not nil means we got a decision and should return it
+			if experimentDecision.Variation != nil {
+				featureDecision := FeatureDecision{
+					Experiment: experiment,
+					Decision:   experimentDecision.Decision,
+					Variation:  experimentDecision.Variation,
+					Source:     FeatureTest,
+				}
+
+				cfLogger.Debug(fmt.Sprintf(
+					`Decision made for feature test with key "%s" for user "%s" with the following reason: "%s".`,
+					feature.Key,
+					userContext.ID,
+					featureDecision.Reason,
+				))
+				return featureDecision, err
+			}
 		}
 	}
 
