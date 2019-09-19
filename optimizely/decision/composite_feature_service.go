@@ -48,8 +48,9 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 	if f.featureExperimentService != nil && len(feature.FeatureExperiments) > 0 {
 		// @TODO this can be improved by getting group ID first and determining experiment and then bucketing in experiment
 		for _, experiment := range feature.FeatureExperiments {
+			featureExperiment := experiment
 			experimentDecisionContext := ExperimentDecisionContext{
-				Experiment:    &experiment,
+				Experiment:    &featureExperiment,
 				ProjectConfig: decisionContext.ProjectConfig,
 			}
 
