@@ -114,5 +114,5 @@ func TestBucketExclusionGroups(t *testing.T) {
 	// since the bucket value maps to experiment 1, the user will not be bucketed for experiment 2
 	bucketedVariation, reason, _ = bucketer.Bucket("ppid2", experiment2, exclusionGroup)
 	assert.Nil(t, bucketedVariation)
-	assert.Equal(t, reasons.NotInGroup, reason)
+	assert.Equal(t, reasons.NotBucketedIntoVariation, reason)
 }

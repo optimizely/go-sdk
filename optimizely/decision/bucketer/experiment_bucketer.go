@@ -56,8 +56,8 @@ func (b MurmurhashBucketer) Bucket(bucketingID string, experiment entities.Exper
 		bucketKey := bucketingID + group.ID
 		bucketedExperimentID := b.bucketToEntity(bucketKey, group.TrafficAllocation)
 		if bucketedExperimentID == "" || bucketedExperimentID != experiment.ID {
-			// User is not bucketed into an experiment in the exclusion group, return nil variation
-			return nil, reasons.NotInGroup, nil
+			// User is not bucketed into provided experiment in mutex group
+			return nil, reasons.NotBucketedIntoVariation, nil
 		}
 	}
 
