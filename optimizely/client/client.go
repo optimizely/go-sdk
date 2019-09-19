@@ -76,12 +76,11 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 
 	defer func() {
 		if r := recover(); r != nil {
-			switch r.(type) {
+			switch t := r.(type) {
 			case error:
-				err = r.(error)
+				err = t
 			case string:
-				strErr := r.(string)
-				err = errors.New(strErr)
+				err = errors.New(t)
 			default:
 				err = errors.New("unexpected error")
 			}
@@ -114,12 +113,11 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 
 	defer func() {
 		if r := recover(); r != nil {
-			switch r.(type) {
+			switch t := r.(type) {
 			case error:
-				err = r.(error)
+				err = t
 			case string:
-				strErr := r.(string)
-				err = errors.New(strErr)
+				err = errors.New(t)
 			default:
 				err = errors.New("unexpected error")
 			}
@@ -254,12 +252,11 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext ent
 	defer func() {
 		var e error
 		if r := recover(); r != nil {
-			switch r.(type) {
+			switch t := r.(type) {
 			case error:
-				e = r.(error)
+				e = t
 			case string:
-				strErr := r.(string)
-				e = errors.New(strErr)
+				e = errors.New(t)
 			default:
 				e = errors.New("unexpected error")
 			}
