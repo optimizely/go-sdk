@@ -76,9 +76,18 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 
 	defer func() {
 		if r := recover(); r != nil {
-			errorMessage := fmt.Sprintf(`optimizely SDK is panicking with the error "%s"`, string(debug.Stack()))
-			err = errors.New(errorMessage)
+			switch r.(type) {
+			case error:
+				err = r.(error)
+			case string:
+				strErr := r.(string)
+				err = errors.New(strErr)
+			default:
+				err = errors.New("unexpected error")
+			}
+			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
 			logger.Error(errorMessage, err)
+			logger.Debug(string(debug.Stack()))
 		}
 	}()
 
@@ -105,9 +114,18 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 
 	defer func() {
 		if r := recover(); r != nil {
-			errorMessage := fmt.Sprintf(`optimizely SDK is panicking with the error "%s"`, string(debug.Stack()))
-			err = errors.New(errorMessage)
+			switch r.(type) {
+			case error:
+				err = r.(error)
+			case string:
+				strErr := r.(string)
+				err = errors.New(strErr)
+			default:
+				err = errors.New("unexpected error")
+			}
+			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
 			logger.Error(errorMessage, err)
+			logger.Debug(string(debug.Stack()))
 		}
 	}()
 
@@ -234,13 +252,24 @@ func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext
 func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext entities.UserContext) (decisionContext decision.FeatureDecisionContext, featureDecision decision.FeatureDecision, err error) {
 
 	defer func() {
+		var e error
 		if r := recover(); r != nil {
-			errorMessage := fmt.Sprintf(`optimizely SDK is panicking with the error "%s"`, string(debug.Stack()))
-			logger.Error(errorMessage, err)
+			switch r.(type) {
+			case error:
+				e = r.(error)
+			case string:
+				strErr := r.(string)
+				e = errors.New(strErr)
+			default:
+				e = errors.New("unexpected error")
+			}
+			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
+			logger.Error(errorMessage, e)
+			logger.Debug(string(debug.Stack()))
 
 			// If we have a feature, then we can recover w/o throwing
 			if decisionContext.Feature == nil {
-				err = errors.New(errorMessage)
+				err = e
 			}
 		}
 	}()
