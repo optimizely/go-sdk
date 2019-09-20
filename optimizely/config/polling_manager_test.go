@@ -78,8 +78,8 @@ func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
 }
 
 func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T) {
-	mockDatafile1 := []byte(`{"revision":"42","projectId":"1000"}`)
-	mockDatafile2 := []byte(`{"revision":"42","projectId":"1001"}`)
+	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true}`)
+	mockDatafile2 := []byte(`{"revision":"42","botFiltering":false}`)
 	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, 200, nil)
@@ -104,8 +104,8 @@ func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T
 }
 
 func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing.T) {
-	mockDatafile1 := []byte(`{"revision":"42","projectId":"1000"}`)
-	mockDatafile2 := []byte(`{"revision":"43","projectId":"1000"}`)
+	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true}`)
+	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false}`)
 	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
 	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
 	mockRequester := new(MockRequester)
