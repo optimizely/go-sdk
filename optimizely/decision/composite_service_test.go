@@ -19,68 +19,60 @@ package decision
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/optimizely/go-sdk/optimizely/notification"
 )
 
-func TestGetFeatureDecision(t *testing.T) {
-	mockProjectConfig := new(mockProjectConfig)
-	decisionContext := FeatureDecisionContext{
-		Feature:       &testFeat3333,
-		ProjectConfig: mockProjectConfig,
-	}
-
-	userContext := entities.UserContext{
-		ID: "test_user",
-	}
-
-	expectedFeatureDecision := FeatureDecision{
-		Experiment: testExp1111,
-		Variation:  &testExp1111Var2222,
-	}
-
-	testFeatureDecisionService := new(MockFeatureDecisionService)
-	testFeatureDecisionService.On("GetDecision", decisionContext, userContext).Return(expectedFeatureDecision, nil)
-
-	decisionService := &CompositeService{
-		featureDecisionServices: []FeatureService{testFeatureDecisionService},
-	}
-	featureDecision, err := decisionService.GetFeatureDecision(decisionContext, userContext)
-	if err != nil {
-	}
-
-	// Test assertions
-	assert.Equal(t, expectedFeatureDecision, featureDecision)
-	testFeatureDecisionService.AssertExpectations(t)
+type FeatureTestSuite struct {
+	suite.Suite
+	decisionContext    FeatureDecisionContext
+	mockFeatureService *MockFeatureDecisionService
+	testUserContext    entities.UserContext
 }
 
-func TestOnDecision(t *testing.T) {
-
-	mockProjectConfig := new(mockProjectConfig)
-	decisionContext := FeatureDecisionContext{
+func (s *FeatureTestSuite) SetupTest() {
+	mockConfig := new(mockProjectConfig)
+	s.decisionContext = FeatureDecisionContext{
 		Feature:       &testFeat3333,
-		ProjectConfig: mockProjectConfig,
+		ProjectConfig: mockConfig,
 	}
-
-	userContext := entities.UserContext{
+	s.mockFeatureService = new(MockFeatureDecisionService)
+	s.testUserContext = entities.UserContext{
 		ID: "test_user",
 	}
+}
 
+func (s *FeatureTestSuite) TestGetFeatureDecision() {
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1111,
 		Variation:  &testExp1111Var2222,
 	}
+	decisionService := &CompositeService{
+		compositeFeatureService: s.mockFeatureService,
+	}
+	s.mockFeatureService.On("GetDecision", s.decisionContext, s.testUserContext).Return(expectedFeatureDecision, nil)
+	featureDecision, err := decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
 
-	testFeatureDecisionService := new(MockFeatureDecisionService)
-	testFeatureDecisionService.On("GetDecision", decisionContext, userContext).Return(expectedFeatureDecision, nil)
+	// Test assertions
+	s.Equal(expectedFeatureDecision, featureDecision)
+	s.NoError(err)
+	s.mockFeatureService.AssertExpectations(s.T())
+}
 
+func (s *FeatureTestSuite) TestDecisionListeners() {
+	expectedFeatureDecision := FeatureDecision{
+		Experiment: testExp1111,
+		Variation:  &testExp1111Var2222,
+	}
 	notificationCenter := notification.NewNotificationCenter()
 	decisionService := &CompositeService{
-		featureDecisionServices: []FeatureService{testFeatureDecisionService},
+		compositeFeatureService: s.mockFeatureService,
 		notificationCenter:      notificationCenter,
 	}
+	s.mockFeatureService.On("GetDecision", s.decisionContext, s.testUserContext).Return(expectedFeatureDecision, nil)
+	decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
 
 	var numberOfCalls = 0
 	callback := func(notification notification.DecisionNotification) {
@@ -88,12 +80,15 @@ func TestOnDecision(t *testing.T) {
 	}
 	id, _ := decisionService.OnDecision(callback)
 
-	assert.NotEqual(t, id, 0)
-	decisionService.GetFeatureDecision(decisionContext, userContext)
-	assert.Equal(t, numberOfCalls, 1)
+	s.NotEqual(id, 0)
+	decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
+	s.Equal(numberOfCalls, 1)
 
 	err := decisionService.RemoveOnDecision(id)
-	assert.Nil(t, err)
-	decisionService.GetFeatureDecision(decisionContext, userContext)
-	assert.Equal(t, numberOfCalls, 1)
+	s.NoError(err)
+	decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
+	s.Equal(numberOfCalls, 1)
+}
+func TestFeatureTestSuite(t *testing.T) {
+	suite.Run(t, new(FeatureTestSuite))
 }

@@ -22,8 +22,8 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
 
 	"github.com/optimizely/go-sdk/optimizely/entities"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 )
 
 type MockBucketer struct {
@@ -35,13 +35,23 @@ func (m *MockBucketer) Bucket(bucketingID string, experiment entities.Experiment
 	return args.Get(0).(*entities.Variation), args.Get(1).(reasons.Reason), args.Error(2)
 }
 
-func TestExperimentBucketerGetDecision(t *testing.T) {
+type ExperimentBucketerTestSuite struct {
+	suite.Suite
+	mockBucketer        *MockBucketer
+	testDecisionContext ExperimentDecisionContext
+}
+
+func (s *ExperimentBucketerTestSuite) SetupTest() {
+	s.mockBucketer = new(MockBucketer)
+
 	mockProjectConfig := new(mockProjectConfig)
-	testDecisionContext := ExperimentDecisionContext{
+	s.testDecisionContext = ExperimentDecisionContext{
 		Experiment:    &testExp1111,
 		ProjectConfig: mockProjectConfig,
 	}
+}
 
+func (s *ExperimentBucketerTestSuite) TestGetDecisionNoTargeting() {
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
 	}
@@ -52,12 +62,17 @@ func TestExperimentBucketerGetDecision(t *testing.T) {
 			Reason: reasons.BucketedIntoVariation,
 		},
 	}
-	mockBucketer := new(MockBucketer)
-	mockBucketer.On("Bucket", testUserContext.ID, testExp1111, entities.Group{}).Return(&testExp1111Var2222, reasons.BucketedIntoVariation, nil)
+
+	s.mockBucketer.On("Bucket", testUserContext.ID, testExp1111, entities.Group{}).Return(&testExp1111Var2222, reasons.BucketedIntoVariation, nil)
 
 	experimentBucketerService := ExperimentBucketerService{
-		bucketer: mockBucketer,
+		bucketer: s.mockBucketer,
 	}
-	decision, _ := experimentBucketerService.GetDecision(testDecisionContext, testUserContext)
-	assert.Equal(t, expectedDecision, decision)
+	decision, err := experimentBucketerService.GetDecision(s.testDecisionContext, testUserContext)
+	s.Equal(expectedDecision, decision)
+	s.NoError(err)
+}
+
+func TestExperimentBucketerTestSuite(t *testing.T) {
+	suite.Run(t, new(ExperimentBucketerTestSuite))
 }
