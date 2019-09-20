@@ -37,7 +37,8 @@ func (m *MockRequester) Get(headers ...utils.Header) (response []byte, code int,
 }
 
 func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
-	mockDatafile := []byte("{ revision: \"42\" }")
+
+	mockDatafile := []byte(`{"revision":"42"}`)
 	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, 200, nil)
@@ -53,7 +54,8 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
+	assert.NotNil(t, actual)
 	assert.Equal(t, projectConfig, actual)
 }
 
@@ -73,4 +75,58 @@ func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
 
 	_, err := configManager.GetConfig()
 	assert.NotNil(t, err)
+}
+
+func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T) {
+	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true}`)
+	mockDatafile2 := []byte(`{"revision":"42","botFiltering":false}`)
+	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
+	mockRequester := new(MockRequester)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, 200, nil)
+
+	sdkKey := "test_sdk_key"
+	options := PollingProjectConfigManagerOptions{
+		Requester: mockRequester,
+	}
+
+	exeCtx := utils.NewCancelableExecutionCtx()
+	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
+	mockRequester.AssertExpectations(t)
+
+	actual, err := configManager.GetConfig()
+	assert.Nil(t, err)
+	assert.NotNil(t, actual)
+	assert.Equal(t, projectConfig1, actual)
+
+	configManager.SyncConfig(mockDatafile2)
+	actual, err = configManager.GetConfig()
+	assert.Equal(t, projectConfig1, actual)
+}
+
+func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing.T) {
+	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true}`)
+	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false}`)
+	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
+	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
+	mockRequester := new(MockRequester)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, 200, nil)
+
+	// Test we fetch using requester
+	sdkKey := "test_sdk_key"
+	options := PollingProjectConfigManagerOptions{
+		Requester: mockRequester,
+	}
+
+	exeCtx := utils.NewCancelableExecutionCtx()
+	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
+	mockRequester.AssertExpectations(t)
+
+	actual, err := configManager.GetConfig()
+	assert.Nil(t, err)
+	assert.NotNil(t, actual)
+	assert.Equal(t, projectConfig1, actual)
+
+	configManager.SyncConfig(mockDatafile2)
+	actual, err = configManager.GetConfig()
+	assert.Equal(t, projectConfig2, actual)
 }

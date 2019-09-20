@@ -70,9 +70,17 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 		cmLogger.Error("failed to create project config", err)
 	}
 
-	// TODO: Compare revision numbers here and set projectConfig only if the revision number has changed
 	cm.configLock.Lock()
-	cm.projectConfig = projectConfig
+	if cm.projectConfig != nil {
+		if cm.projectConfig.GetRevision() == projectConfig.GetRevision() {
+			cmLogger.Debug(fmt.Sprintf("No datafile updates. Current revision number: %s", cm.projectConfig.GetRevision()))
+		} else {
+			cmLogger.Debug(fmt.Sprintf("Received new datafile and updated config. Old revision number: %s. New revision number: %s", cm.projectConfig.GetRevision(), projectConfig.GetRevision()))
+			cm.projectConfig = projectConfig
+		}
+	} else {
+		cm.projectConfig = projectConfig
+	}
 	cm.err = err
 	cm.configLock.Unlock()
 }
