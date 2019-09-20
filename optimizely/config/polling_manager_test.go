@@ -18,6 +18,7 @@ package config
 
 import (
 	"testing"
+	"time"
 
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/optimizely/utils"
@@ -51,6 +52,8 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
+	time.Sleep(1 * time.Second) // since the setting config mgr is done in the goroutine always
+
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()
@@ -71,6 +74,8 @@ func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
 	}
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
+	time.Sleep(1 * time.Second) // since the setting config mgr is done in the goroutine always
+
 	mockRequester.AssertExpectations(t)
 
 	_, err := configManager.GetConfig()
@@ -91,6 +96,8 @@ func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T
 
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
+	time.Sleep(1 * time.Second) // since the setting config mgr is done in the goroutine always
+
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()
@@ -119,6 +126,8 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
+	time.Sleep(1 * time.Second) // since the setting config mgr is done in the goroutine always
+
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()

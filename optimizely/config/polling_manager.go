@@ -30,6 +30,8 @@ import (
 
 const defaultPollingInterval = 5 * time.Minute // default to 5 minutes for polling
 
+const defaultWaitConfig = 10 * time.Second // default to 10 seconds for initial config retrieval
+
 // DatafileURLTemplate is used to construct the endpoint for retrieving the datafile from the CDN
 const DatafileURLTemplate = "https://cdn.optimizely.com/datafiles/%s.json"
 
@@ -85,12 +87,10 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	cm.configLock.Unlock()
 }
 
-func (cm *PollingProjectConfigManager) start(initialDatafile []byte, init bool) {
+func (cm *PollingProjectConfigManager) start(initialDatafile []byte) {
 
-	if init {
-		cm.SyncConfig(initialDatafile)
-		return
-	}
+	cm.SyncConfig(initialDatafile) // since ticker waits first by default, initially we want to run right away with datafile as an option
+	cmLogger.Debug("Polling Config Manager Initiated")
 
 	t := time.NewTicker(cm.pollingInterval)
 	for {
@@ -122,10 +122,7 @@ func NewPollingProjectConfigManagerWithOptions(exeCtx utils.ExecutionCtx, sdkKey
 
 	pollingProjectConfigManager := PollingProjectConfigManager{requester: requester, pollingInterval: pollingInterval, exeCtx: exeCtx}
 
-	pollingProjectConfigManager.SyncConfig(options.Datafile) // initial poll
-
-	cmLogger.Debug("Polling Config Manager Initiated")
-	go pollingProjectConfigManager.start([]byte{}, false)
+	go pollingProjectConfigManager.start(options.Datafile)
 	return &pollingProjectConfigManager
 }
 
@@ -138,6 +135,26 @@ func NewPollingProjectConfigManager(exeCtx utils.ExecutionCtx, sdkKey string) *P
 
 // GetConfig returns the project config
 func (cm *PollingProjectConfigManager) GetConfig() (optimizely.ProjectConfig, error) {
+	cm.configLock.RLock()
+
+	if cm.projectConfig != nil {
+		defer cm.configLock.RUnlock()
+		return cm.projectConfig, cm.err
+	}
+
+	cm.configLock.RUnlock()
+	startTs := time.Now()
+	for time.Now().Before(startTs.Add(defaultWaitConfig)) {
+		cm.configLock.RLock()
+		if cm.projectConfig != nil {
+			defer cm.configLock.RUnlock()
+			return cm.projectConfig, cm.err
+		}
+		cm.configLock.RUnlock()
+		cmLogger.Debug("Waiting for Polling Manager to be initialized")
+		time.Sleep(time.Second)
+	}
+	cmLogger.Debug("Cannot Initialize Polling Manager")
 	cm.configLock.RLock()
 	defer cm.configLock.RUnlock()
 	return cm.projectConfig, cm.err
