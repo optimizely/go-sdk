@@ -12,7 +12,7 @@ before_install:
 git:
   depth: 1
 script:
-  - $GOPATH/bin/overalls -project=github.com/optimizely/go-sdk -covermode=atomic -debug -- -coverpkg=./... -race -v -ignore=[.git,cmd,examples]
+  - $GOPATH/bin/overalls -project=github.com/optimizely/go-sdk -covermode=atomic -ignore=[.git,.cmd,.examples] -- -coverpkg=./... -race -v 
   - $GOPATH/bin/goveralls -coverprofile=overalls.coverprofile -service=travis-ci
 stages:
   - 'Lint'
