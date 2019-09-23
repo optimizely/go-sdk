@@ -37,18 +37,13 @@ func (m *MockBucketer) Bucket(bucketingID string, experiment entities.Experiment
 
 type ExperimentBucketerTestSuite struct {
 	suite.Suite
-	mockBucketer        *MockBucketer
-	testDecisionContext ExperimentDecisionContext
+	mockBucketer *MockBucketer
+	mockConfig   *mockProjectConfig
 }
 
 func (s *ExperimentBucketerTestSuite) SetupTest() {
 	s.mockBucketer = new(MockBucketer)
-
-	mockProjectConfig := new(mockProjectConfig)
-	s.testDecisionContext = ExperimentDecisionContext{
-		Experiment:    &testExp1111,
-		ProjectConfig: mockProjectConfig,
-	}
+	s.mockConfig = new(mockProjectConfig)
 }
 
 func (s *ExperimentBucketerTestSuite) TestGetDecisionNoTargeting() {
@@ -63,14 +58,76 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionNoTargeting() {
 		},
 	}
 
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1111,
+		ProjectConfig: s.mockConfig,
+	}
 	s.mockBucketer.On("Bucket", testUserContext.ID, testExp1111, entities.Group{}).Return(&testExp1111Var2222, reasons.BucketedIntoVariation, nil)
 
 	experimentBucketerService := ExperimentBucketerService{
 		bucketer: s.mockBucketer,
 	}
-	decision, err := experimentBucketerService.GetDecision(s.testDecisionContext, testUserContext)
+	decision, err := experimentBucketerService.GetDecision(testDecisionContext, testUserContext)
 	s.Equal(expectedDecision, decision)
 	s.NoError(err)
+}
+
+func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingPasses() {
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	expectedDecision := ExperimentDecision{
+		Variation: &testTargetedExp1116Var2228,
+		Decision: Decision{
+			Reason: reasons.BucketedIntoVariation,
+		},
+	}
+	s.mockBucketer.On("Bucket", testUserContext.ID, testTargetedExp1116, entities.Group{}).Return(&testTargetedExp1116Var2228, reasons.BucketedIntoVariation, nil)
+
+	mockAudienceTreeEvaluator := new(MockAudienceTreeEvaluator)
+	mockAudienceTreeEvaluator.On("Evaluate", mock.Anything, mock.Anything).Return(true)
+	experimentBucketerService := ExperimentBucketerService{
+		audienceTreeEvaluator: mockAudienceTreeEvaluator,
+		bucketer:              s.mockBucketer,
+	}
+	s.mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
+
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testTargetedExp1116,
+		ProjectConfig: s.mockConfig,
+	}
+	decision, err := experimentBucketerService.GetDecision(testDecisionContext, testUserContext)
+	s.Equal(expectedDecision, decision)
+	s.NoError(err)
+}
+
+func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingFails() {
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	expectedDecision := ExperimentDecision{
+		Decision: Decision{
+			Reason: reasons.FailedAudienceTargeting,
+		},
+	}
+	mockAudienceTreeEvaluator := new(MockAudienceTreeEvaluator)
+	mockAudienceTreeEvaluator.On("Evaluate", mock.Anything, mock.Anything).Return(false)
+	experimentBucketerService := ExperimentBucketerService{
+		audienceTreeEvaluator: mockAudienceTreeEvaluator,
+		bucketer:              s.mockBucketer,
+	}
+	s.mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
+
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testTargetedExp1116,
+		ProjectConfig: s.mockConfig,
+	}
+	decision, err := experimentBucketerService.GetDecision(testDecisionContext, testUserContext)
+	s.Equal(expectedDecision, decision)
+	s.NoError(err)
+	s.mockBucketer.AssertNotCalled(s.T(), "Bucket")
 }
 
 func TestExperimentBucketerTestSuite(t *testing.T) {
