@@ -1,0 +1,69 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"os"
+	"testing"
+
+	"github.com/DATA-DOG/godog"
+	"github.com/DATA-DOG/godog/colors"
+	"github.com/optimizely/go-sdk/support"
+)
+
+var opt = godog.Options{Output: colors.Colored(os.Stdout)}
+var Godogs int
+
+func init() {
+	godog.BindFlags("godog.", flag.CommandLine, &opt)
+}
+
+func TestMain(m *testing.M) {
+	flag.Parse()
+	opt.Paths = flag.Args()
+
+	status := godog.RunWithOptions("godogs", func(s *godog.Suite) {
+		FeatureContext(s)
+	}, opt)
+
+	if st := m.Run(); st > status {
+		status = st
+	}
+	os.Exit(status)
+}
+
+func thereAreGodogs(available int) error {
+	Godogs = available
+	return nil
+}
+
+func iEat(num int) error {
+	if Godogs < num {
+		return fmt.Errorf("you cannot eat %d godogs, there are %d available", num, Godogs)
+	}
+	Godogs -= num
+	return nil
+}
+
+func thereShouldBeRemaining(remaining int) error {
+	if Godogs != remaining {
+		return fmt.Errorf("expected %d godogs to be remaining, but there is %d", remaining, Godogs)
+	}
+	return nil
+}
+
+func FeatureContext(s *godog.Suite) {
+
+	context := new(support.Context)
+
+	s.Step(`^the datafile is "([^"]*)"$`, context.TheDatafileIs)
+	s.Step(`^(\d+) "([^"]*)" listener is added$`, context.ListenerIsAdded)
+	s.Step(`^is_feature_enabled is called with arguments$`, context.IsFeatureEnabledIsCalledWithArguments)
+	s.Step(`^the result should be "([^"]*)"$`, context.TheResultShouldBe)
+	s.Step(`^in the response, "([^"]*)" should be "([^"]*)"$`, context.InTheResponseKeyShouldBeEqualsObject)
+	s.Step(`^there are no dispatched events$`, context.ThereAreNoDispatchedEvents)
+
+	s.BeforeScenario(func(interface{}) {
+		Godogs = 0 // clean the state before every scenario
+	})
+}
