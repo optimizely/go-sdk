@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"testing"
 
@@ -32,26 +31,6 @@ func TestMain(m *testing.M) {
 	os.Exit(status)
 }
 
-func thereAreGodogs(available int) error {
-	Godogs = available
-	return nil
-}
-
-func iEat(num int) error {
-	if Godogs < num {
-		return fmt.Errorf("you cannot eat %d godogs, there are %d available", num, Godogs)
-	}
-	Godogs -= num
-	return nil
-}
-
-func thereShouldBeRemaining(remaining int) error {
-	if Godogs != remaining {
-		return fmt.Errorf("expected %d godogs to be remaining, but there is %d", remaining, Godogs)
-	}
-	return nil
-}
-
 func FeatureContext(s *godog.Suite) {
 
 	context := new(support.Context)
@@ -63,7 +42,7 @@ func FeatureContext(s *godog.Suite) {
 	s.Step(`^in the response, "([^"]*)" should be "([^"]*)"$`, context.InTheResponseKeyShouldBeEqualsObject)
 	s.Step(`^there are no dispatched events$`, context.ThereAreNoDispatchedEvents)
 
-	s.BeforeScenario(func(interface{}) {
-		Godogs = 0 // clean the state before every scenario
-	})
+	// s.BeforeScenario(func(interface{}) {
+	// 	Godogs = 0 // clean the state before every scenario
+	// })
 }
