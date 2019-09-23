@@ -58,11 +58,23 @@ var pLogger = logging.GetLogger("EventProcessor")
 
 // NewEventProcessor returns a new instance of QueueingEventProcessor with queueSize and flushInterval
 func NewEventProcessor(exeCtx utils.ExecutionCtx, batchSize, queueSize int, flushInterval time.Duration) *QueueingEventProcessor {
+	p := NewCustomEventProcessor(exeCtx, batchSize, queueSize, flushInterval, NewInMemoryQueue(queueSize), NewQueueEventDispatcher(exeCtx.GetContext()))
+	p.BatchSize = DefaultBatchSize
+	if batchSize > 0 {
+		p.BatchSize = batchSize
+	}
+
+	p.StartTicker(exeCtx.GetContext())
+	return p
+}
+
+// NewCustomEventProcessor returns a new QueueingEventProcessor with the queue passed in and the dispatcher passed in.
+func NewCustomEventProcessor(exeCtx utils.ExecutionCtx, batchSize, queueSize int, flushInterval time.Duration, q Queue, dispatcher Dispatcher) *QueueingEventProcessor {
 	p := &QueueingEventProcessor{
 		MaxQueueSize:    queueSize,
 		FlushInterval:   flushInterval,
-		Q:               NewInMemoryQueue(queueSize),
-		EventDispatcher: NewQueueEventDispatcher(exeCtx.GetContext()),
+		Q:               q,
+		EventDispatcher: dispatcher,
 		wg: exeCtx.GetWaitSync(),
 	}
 	p.BatchSize = DefaultBatchSize
