@@ -18,20 +18,53 @@
 package decision
 
 import (
+	"fmt"
+
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
 // FeatureExperimentService helps evaluate feature test associated with the feature
 type FeatureExperimentService struct {
-	featureExperimentService ExperimentService
+	compositeExperimentService ExperimentService
 }
 
 // NewFeatureExperimentService returns a new instance of the FeatureExperimentService
-func NewFeatureExperimentService() *CompositeExperimentService {
-	return NewCompositeExperimentService()
+func NewFeatureExperimentService() *FeatureExperimentService {
+	return &FeatureExperimentService{
+		compositeExperimentService: NewCompositeExperimentService(),
+	}
 }
 
 // GetDecision returns a decision for the given feature test and user context
-func (f FeatureExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
-	return f.featureExperimentService.GetDecision(decisionContext, userContext)
+func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
+	feature := decisionContext.Feature
+	// @TODO this can be improved by getting group ID first and determining experiment and then bucketing in experiment
+	for _, experiment := range feature.FeatureExperiments {
+		featureExperiment := experiment
+		experimentDecisionContext := ExperimentDecisionContext{
+			Experiment:    &featureExperiment,
+			ProjectConfig: decisionContext.ProjectConfig,
+		}
+
+		experimentDecision, err := f.compositeExperimentService.GetDecision(experimentDecisionContext, userContext)
+		// Variation not nil means we got a decision and should return it
+		if experimentDecision.Variation != nil {
+			featureDecision := FeatureDecision{
+				Experiment: experiment,
+				Decision:   experimentDecision.Decision,
+				Variation:  experimentDecision.Variation,
+				Source:     FeatureTest,
+			}
+
+			cfLogger.Debug(fmt.Sprintf(
+				`Decision made for feature test with key "%s" for user "%s" with the following reason: "%s".`,
+				feature.Key,
+				userContext.ID,
+				featureDecision.Reason,
+			))
+			return featureDecision, err
+		}
+	}
+
+	return FeatureDecision{}, nil
 }

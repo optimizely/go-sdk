@@ -62,6 +62,7 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1112,
 		Variation:  &testExp1112Var2222,
+		Source:     Rollout,
 	}
 	decision, _ := testRolloutService.GetDecision(testFeatureDecisionContext, testUserContext)
 	assert.Equal(t, expectedFeatureDecision, decision)
@@ -92,6 +93,7 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 			Reason: reasons.NotBucketedIntoVariation,
 		},
 		Experiment: testExp1112,
+		Source:     Rollout,
 	}
 	decision, _ = testRolloutService.GetDecision(testFeatureDecisionContext, testUserContext)
 	assert.Equal(t, expectedFeatureDecision, decision)

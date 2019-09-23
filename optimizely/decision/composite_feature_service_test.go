@@ -17,100 +17,87 @@
 package decision
 
 import (
+	"testing"
+
 	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
 	"github.com/optimizely/go-sdk/optimizely/entities"
-	"github.com/stretchr/testify/assert"
-	"testing"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestCompositeFeatureServiceGetDecisionFeatureExperiment(t *testing.T) {
-	mockProjectConfig := new(mockProjectConfig)
-	testFeatureDecisionContext := FeatureDecisionContext{
-		Feature:       &testFeat3335,
-		ProjectConfig: mockProjectConfig,
-	}
-	testExperimentDecisionContext := ExperimentDecisionContext{
-		Experiment:    &testExp1113,
-		ProjectConfig: mockProjectConfig,
-	}
-	mockExperimentDecision := ExperimentDecision{
-		Decision:  Decision{reasons.BucketedIntoVariation},
-		Variation: &testExp1113Var2223,
-	}
+type CompositeFeatureServiceTestSuite struct {
+	suite.Suite
+	mockFeatureService         *MockFeatureDecisionService
+	mockFeatureService2        *MockFeatureDecisionService
+	testFeatureDecisionContext FeatureDecisionContext
+}
 
+func (s *CompositeFeatureServiceTestSuite) SetupTest() {
+	mockConfig := new(mockProjectConfig)
+
+	s.mockFeatureService = new(MockFeatureDecisionService)
+	s.mockFeatureService2 = new(MockFeatureDecisionService)
+
+	// Setup test data
+	s.testFeatureDecisionContext = FeatureDecisionContext{
+		Feature:       &testFeat3335,
+		ProjectConfig: mockConfig,
+	}
+}
+
+func (s *CompositeFeatureServiceTestSuite) TestGetDecision() {
+	// Test that we return the first decision that is made and the next decision service does not get called
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
 	}
 
-	mockExperimentService := new(MockExperimentDecisionService)
-	mockRolloutService := new(MockFeatureDecisionService)
-	// Mock to return decision from feature experiment service
-	mockExperimentService.On("GetDecision", testExperimentDecisionContext, testUserContext).Return(mockExperimentDecision, nil)
-
-	// Decision is returned from feature test evaluation
 	expectedDecision := FeatureDecision{
 		Decision:   Decision{reasons.BucketedIntoVariation},
 		Source:     FeatureTest,
 		Experiment: testExp1113,
 		Variation:  &testExp1113Var2223,
 	}
+	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext).Return(expectedDecision, nil)
 
 	compositeFeatureService := &CompositeFeatureService{
-		featureExperimentService: mockExperimentService,
-		rolloutDecisionService:   mockRolloutService,
+		featureServices: []FeatureService{
+			s.mockFeatureService,
+			s.mockFeatureService2,
+		},
 	}
-	actualDecision, err := compositeFeatureService.GetDecision(testFeatureDecisionContext, testUserContext)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedDecision, actualDecision)
+	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext)
+	s.Equal(expectedDecision, decision)
+	s.NoError(err)
+	s.mockFeatureService.AssertExpectations(s.T())
+	s.mockFeatureService2.AssertNotCalled(s.T(), "GetDecision")
 }
 
-func TestCompositeFeatureServiceGetDecisionRollout(t *testing.T) {
-	mockProjectConfig := new(mockProjectConfig)
-	testFeatureDecisionContext := FeatureDecisionContext{
-		Feature:       &testFeat3335,
-		ProjectConfig: mockProjectConfig,
-	}
-	testExperimentDecisionContext1 := ExperimentDecisionContext{
-		Experiment:    &testExp1113,
-		ProjectConfig: mockProjectConfig,
-	}
-	testExperimentDecisionContext2 := ExperimentDecisionContext{
-		Experiment:    &testExp1114,
-		ProjectConfig: mockProjectConfig,
-	}
-
-	// Mock to not bucket user in feature experiment
-	mockExperimentDecision := ExperimentDecision{
-		Decision:  Decision{reasons.NotBucketedIntoVariation},
-		Variation: nil,
-	}
-
+func (s *CompositeFeatureServiceTestSuite) TestGetDecisionFallthrough() {
+	// test that we move onto the next decision service if no decision is made
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
 	}
 
-	mockFeatureDecision := FeatureDecision{
-		Decision:   Decision{reasons.BucketedIntoVariation},
-		Source:     Rollout,
-		Experiment: testExp1115,
-		Variation:  &testExp1115Var2227,
+	nilDecision := FeatureDecision{}
+	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext).Return(nilDecision, nil)
+
+	expectedDecision := FeatureDecision{
+		Variation: &testExp1113Var2223,
 	}
-
-	mockExperimentService := new(MockExperimentDecisionService)
-	mockRolloutService := new(MockFeatureDecisionService)
-	// Mock to return decision from feature experiment service which causes rollout service to be called
-	mockExperimentService.On("GetDecision", testExperimentDecisionContext1, testUserContext).Return(mockExperimentDecision, nil)
-	mockExperimentService.On("GetDecision", testExperimentDecisionContext2, testUserContext).Return(mockExperimentDecision, nil)
-	mockRolloutService.On("GetDecision", testFeatureDecisionContext, testUserContext).Return(mockFeatureDecision, nil)
-
-	// Decision is returned from rollout evaluation
-	expectedDecision := mockFeatureDecision
+	s.mockFeatureService2.On("GetDecision", s.testFeatureDecisionContext, testUserContext).Return(expectedDecision, nil)
 
 	compositeFeatureService := &CompositeFeatureService{
-		featureExperimentService: mockExperimentService,
-		rolloutDecisionService:   mockRolloutService,
+		featureServices: []FeatureService{
+			s.mockFeatureService,
+			s.mockFeatureService2,
+		},
 	}
-	actualDecision, err := compositeFeatureService.GetDecision(testFeatureDecisionContext, testUserContext)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedDecision, actualDecision)
+	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext)
+	s.Equal(expectedDecision, decision)
+	s.NoError(err)
+	s.mockFeatureService.AssertExpectations(s.T())
+	s.mockFeatureService2.AssertExpectations(s.T())
+}
+
+func TestCompositeFeatureTestSuite(t *testing.T) {
+	suite.Run(t, new(CompositeFeatureServiceTestSuite))
 }

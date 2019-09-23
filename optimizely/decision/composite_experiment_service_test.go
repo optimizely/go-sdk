@@ -45,7 +45,7 @@ func (s *CompositeExperimentTestSuite) SetupTest() {
 }
 
 func (s *CompositeExperimentTestSuite) TestGetDecision() {
-	// test that we return out of the decision making and the next one doesn't get called
+	// test that we return out of the decision making and the next one does not get called
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
 	}
@@ -68,7 +68,7 @@ func (s *CompositeExperimentTestSuite) TestGetDecision() {
 }
 
 func (s *CompositeExperimentTestSuite) TestGetDecisionFallthrough() {
-	// test that we move on to the next decision service if no decision is made
+	// test that we move onto the next decision service if no decision is made
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
 	}

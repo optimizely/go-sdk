@@ -28,65 +28,27 @@ var cfLogger = logging.GetLogger("CompositeFeatureService")
 
 // CompositeFeatureService is the default out-of-the-box feature decision service
 type CompositeFeatureService struct {
-	featureExperimentService ExperimentService
-	rolloutDecisionService   FeatureService
+	featureServices []FeatureService
 }
 
 // NewCompositeFeatureService returns a new instance of the CompositeFeatureService
 func NewCompositeFeatureService() *CompositeFeatureService {
 	return &CompositeFeatureService{
-		featureExperimentService: NewFeatureExperimentService(),
-		rolloutDecisionService:   NewRolloutService(),
+		featureServices: []FeatureService{
+			NewFeatureExperimentService(),
+			NewRolloutService(),
+		},
 	}
 }
 
 // GetDecision returns a decision for the given feature and user context
 func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
-	feature := decisionContext.Feature
-
-	// Check if user is bucketed in feature experiment
-	if f.featureExperimentService != nil && len(feature.FeatureExperiments) > 0 {
-		// @TODO this can be improved by getting group ID first and determining experiment and then bucketing in experiment
-		for _, experiment := range feature.FeatureExperiments {
-			featureExperiment := experiment
-			experimentDecisionContext := ExperimentDecisionContext{
-				Experiment:    &featureExperiment,
-				ProjectConfig: decisionContext.ProjectConfig,
-			}
-
-			experimentDecision, err := f.featureExperimentService.GetDecision(experimentDecisionContext, userContext)
-			// Variation not nil means we got a decision and should return it
-			if experimentDecision.Variation != nil {
-				featureDecision := FeatureDecision{
-					Experiment: experiment,
-					Decision:   experimentDecision.Decision,
-					Variation:  experimentDecision.Variation,
-					Source:     FeatureTest,
-				}
-
-				cfLogger.Debug(fmt.Sprintf(
-					`Decision made for feature test with key "%s" for user "%s" with the following reason: "%s".`,
-					feature.Key,
-					userContext.ID,
-					featureDecision.Reason,
-				))
-				return featureDecision, err
-			}
+	for _, featureDecisionService := range f.featureServices {
+		featureDecision, err := featureDecisionService.GetDecision(decisionContext, userContext)
+		if featureDecision.Variation != nil {
+			return featureDecision, err
 		}
 	}
 
-	featureDecisionContext := FeatureDecisionContext{
-		Feature:       feature,
-		ProjectConfig: decisionContext.ProjectConfig,
-	}
-	featureDecision, err := f.rolloutDecisionService.GetDecision(featureDecisionContext, userContext)
-	featureDecision.Source = Rollout
-	cfLogger.Debug(fmt.Sprintf(
-		`Decision made for feature rollout with key "%s" for user "%s" with the following reason: "%s".`,
-		feature.Key,
-		userContext.ID,
-		featureDecision.Reason,
-	))
-
-	return featureDecision, err
+	return FeatureDecision{}, fmt.Errorf("No decision was made for feature %s", decisionContext.Feature.Key)
 }
