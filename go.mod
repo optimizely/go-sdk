@@ -9,3 +9,7 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/twmb/murmur3 v1.0.0
 )
+
+
+// Work around issue wtih git.apache.org/thrift.git
+replace git.apache.org/thrift.git => github.com/apache/thrift v0.12.0

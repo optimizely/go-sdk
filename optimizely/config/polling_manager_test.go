@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
+	"github.com/optimizely/go-sdk/optimizely/notification"
 	"github.com/optimizely/go-sdk/optimizely/utils"
 
 	"github.com/stretchr/testify/assert"
@@ -129,4 +130,44 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 	configManager.SyncConfig(mockDatafile2)
 	actual, err = configManager.GetConfig()
 	assert.Equal(t, projectConfig2, actual)
+}
+
+func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
+	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true}`)
+	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false}`)
+
+	mockRequester := new(MockRequester)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, 200, nil)
+
+	// Test we fetch using requester
+	sdkKey := "test_sdk_key"
+	options := PollingProjectConfigManagerOptions{
+		Requester:          mockRequester,
+		NotificationCenter: notification.NewNotificationCenter(),
+	}
+
+	exeCtx := utils.NewCancelableExecutionCtx()
+	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
+
+	var numberOfCalls = 0
+	callback := func(notification notification.ProjectConfigUpdateNotification) {
+		numberOfCalls++
+	}
+	id, _ := configManager.OnProjectConfigUpdate(callback)
+	mockRequester.AssertExpectations(t)
+
+	actual, err := configManager.GetConfig()
+	assert.Nil(t, err)
+	assert.NotNil(t, actual)
+
+	configManager.SyncConfig(mockDatafile2)
+	actual, err = configManager.GetConfig()
+	assert.Nil(t, err)
+	assert.NotNil(t, actual)
+
+	assert.NotEqual(t, id, 0)
+	assert.Equal(t, numberOfCalls, 1)
+
+	err = configManager.RemoveOnProjectConfigUpdate(id)
+	assert.Nil(t, err)
 }
