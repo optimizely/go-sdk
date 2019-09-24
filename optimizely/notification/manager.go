@@ -18,8 +18,13 @@
 package notification
 
 import (
+	"fmt"
 	"sync/atomic"
+
+	"github.com/optimizely/go-sdk/optimizely/logging"
 )
+
+var managerLogger = logging.GetLogger("NotificationManager")
 
 // Manager is a generic interface for managing notifications of a particular type
 type Manager interface {
@@ -53,7 +58,10 @@ func (am *AtomicManager) Remove(id int) {
 	handlerID := uint32(id)
 	if _, ok := am.handlers[handlerID]; ok {
 		delete(am.handlers, handlerID)
+		return
 	}
+	managerLogger.Debug(fmt.Sprintf("Handler for id:%d not found", id))
+
 }
 
 // Send sends the notification to the registered handlers
