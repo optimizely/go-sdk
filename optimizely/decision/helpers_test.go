@@ -137,13 +137,15 @@ var testFeatRollout3334 = entities.Feature{
 
 // Feature with test and rollout
 const testFeat3335Key = "test_feature_3335_key"
+
 // Will use this experiment for feature test
 const testExp1113Key = "test_experiment_1113"
+
 var testExp1113Var2223 = entities.Variation{ID: "2223", Key: "2223", FeatureEnabled: true}
 var testExp1113Var2224 = entities.Variation{ID: "2224", Key: "2224", FeatureEnabled: false}
 var testExp1113 = entities.Experiment{
-	ID:  "1113",
-	Key: testExp1113Key,
+	ID:      "1113",
+	Key:     testExp1113Key,
 	GroupID: "6666",
 	Variations: map[string]entities.Variation{
 		"2223": testExp1113Var2223,
@@ -154,12 +156,14 @@ var testExp1113 = entities.Experiment{
 		entities.Range{EntityID: "2224", EndOfRange: 10000},
 	},
 }
+
 const testExp1114Key = "test_experiment_1114"
+
 var testExp1114Var2225 = entities.Variation{ID: "2225", Key: "2225", FeatureEnabled: true}
 var testExp1114Var2226 = entities.Variation{ID: "2226", Key: "2226", FeatureEnabled: false}
 var testExp1114 = entities.Experiment{
-	ID:  "1114",
-	Key: testExp1114Key,
+	ID:      "1114",
+	Key:     testExp1114Key,
 	GroupID: "6666",
 	Variations: map[string]entities.Variation{
 		"2225": testExp1114Var2225,
@@ -171,7 +175,7 @@ var testExp1114 = entities.Experiment{
 	},
 }
 var testGroup6666 = entities.Group{
-	ID: "6666",
+	ID:     "6666",
 	Policy: "random",
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "1113", EndOfRange: 3000},
@@ -181,6 +185,7 @@ var testGroup6666 = entities.Group{
 
 // Will use this experiment for rollout
 const testExp1115Key = "test_experiment_1115"
+
 var testExp1115Var2227 = entities.Variation{ID: "2227", Key: "2227", FeatureEnabled: true}
 var testExp1115 = entities.Experiment{
 	ID:  "1115",
@@ -193,11 +198,27 @@ var testExp1115 = entities.Experiment{
 	},
 }
 var testFeat3335 = entities.Feature{
-	ID: "3335",
-	Key: testFeat3335Key,
+	ID:                 "3335",
+	Key:                testFeat3335Key,
 	FeatureExperiments: []entities.Experiment{testExp1113, testExp1114},
 	Rollout: entities.Rollout{
-    	ID:          "4445",
-	    Experiments: []entities.Experiment{testExp1115},
+		ID:          "4445",
+		Experiments: []entities.Experiment{testExp1115},
+	},
+}
+
+// Targeted experiment
+const testTargetedExp1116Key = "test_targeted_experiment_1116"
+
+var testTargetedExp1116Var2228 = entities.Variation{ID: "2228", Key: "2228"}
+var testTargetedExp1116 = entities.Experiment{
+	AudienceConditionTree: &entities.TreeNode{Operator: "or", Item: "7771"},
+	ID:  "1116",
+	Key: testTargetedExp1116Key,
+	Variations: map[string]entities.Variation{
+		"2228": testTargetedExp1116Var2228,
+	},
+	TrafficAllocation: []entities.Range{
+		entities.Range{EntityID: "2228", EndOfRange: 10000},
 	},
 }

@@ -19,6 +19,8 @@ package decision
 import (
 	"testing"
 
+	"github.com/optimizely/go-sdk/optimizely/decision/evaluator"
+
 	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
 
 	"github.com/stretchr/testify/assert"
@@ -62,6 +64,7 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1112,
 		Variation:  &testExp1112Var2222,
+		Source:     Rollout,
 	}
 	decision, _ := testRolloutService.GetDecision(testFeatureDecisionContext, testUserContext)
 	assert.Equal(t, expectedFeatureDecision, decision)
@@ -92,6 +95,7 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 			Reason: reasons.NotBucketedIntoVariation,
 		},
 		Experiment: testExp1112,
+		Source:     Rollout,
 	}
 	decision, _ = testRolloutService.GetDecision(testFeatureDecisionContext, testUserContext)
 	assert.Equal(t, expectedFeatureDecision, decision)
@@ -114,4 +118,10 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 	assert.Nil(t, decision.Variation)
 	mockAudienceTreeEvaluator.AssertExpectations(t)
 	mockExperimentBucketerService.AssertNotCalled(t, "GetDecision")
+}
+
+func TestNewRolloutService(t *testing.T) {
+	rolloutService := NewRolloutService()
+	assert.IsType(t, &evaluator.MixedTreeEvaluator{}, rolloutService.audienceTreeEvaluator)
+	assert.IsType(t, &ExperimentBucketerService{}, rolloutService.experimentBucketerService)
 }
