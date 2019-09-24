@@ -40,7 +40,9 @@ func NewRolloutService() *RolloutService {
 
 // GetDecision returns a decision for the given feature and user context
 func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
-	featureDecision := FeatureDecision{}
+	featureDecision := FeatureDecision{
+		Source: Rollout,
+	}
 	feature := decisionContext.Feature
 	rollout := feature.Rollout
 	if rollout.ID == "" {
@@ -75,6 +77,5 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	featureDecision.Decision = decision.Decision
 	featureDecision.Experiment = experiment
 	featureDecision.Variation = decision.Variation
-
 	return featureDecision, nil
 }

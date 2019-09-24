@@ -19,55 +19,49 @@ package decision
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/optimizely/go-sdk/optimizely/notification"
 )
 
-func TestGetFeatureDecision(t *testing.T) {
-	mockProjectConfig := new(mockProjectConfig)
-	decisionContext := FeatureDecisionContext{
-		Feature:       &testFeat3333,
-		ProjectConfig: mockProjectConfig,
-	}
+type CompositeServiceTestSuite struct {
+	suite.Suite
+	decisionContext    FeatureDecisionContext
+	mockFeatureService *MockFeatureDecisionService
+	testUserContext    entities.UserContext
+}
 
-	userContext := entities.UserContext{
+func (s *CompositeServiceTestSuite) SetupTest() {
+	mockConfig := new(mockProjectConfig)
+	s.decisionContext = FeatureDecisionContext{
+		Feature:       &testFeat3333,
+		ProjectConfig: mockConfig,
+	}
+	s.mockFeatureService = new(MockFeatureDecisionService)
+	s.testUserContext = entities.UserContext{
 		ID: "test_user",
 	}
+}
 
+func (s *CompositeServiceTestSuite) TestGetFeatureDecision() {
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1111,
 		Variation:  &testExp1111Var2222,
 	}
-
-	testFeatureDecisionService := new(MockFeatureDecisionService)
-	testFeatureDecisionService.On("GetDecision", decisionContext, userContext).Return(expectedFeatureDecision, nil)
-
 	decisionService := &CompositeService{
-		featureDecisionServices: []FeatureService{testFeatureDecisionService},
+		compositeFeatureService: s.mockFeatureService,
 	}
-	featureDecision, err := decisionService.GetFeatureDecision(decisionContext, userContext)
-	if err != nil {
-	}
+	s.mockFeatureService.On("GetDecision", s.decisionContext, s.testUserContext).Return(expectedFeatureDecision, nil)
+	featureDecision, err := decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
 
 	// Test assertions
-	assert.Equal(t, expectedFeatureDecision, featureDecision)
-	testFeatureDecisionService.AssertExpectations(t)
+	s.Equal(expectedFeatureDecision, featureDecision)
+	s.NoError(err)
+	s.mockFeatureService.AssertExpectations(s.T())
 }
 
-func TestOnDecision(t *testing.T) {
-
-	mockProjectConfig := new(mockProjectConfig)
-	decisionContext := FeatureDecisionContext{
-		Feature:       &testFeat3333,
-		ProjectConfig: mockProjectConfig,
-	}
-
-	userContext := entities.UserContext{
-		ID: "test_user",
-	}
-
+func (s *CompositeServiceTestSuite) TestDecisionListeners() {
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1111,
 		Variation:  &testExp1111Var2222,
@@ -80,6 +74,8 @@ func TestOnDecision(t *testing.T) {
 		featureDecisionServices: []FeatureService{testFeatureDecisionService},
 		sdkKey:                  "sdkKey",
 	}
+	s.mockFeatureService.On("GetDecision", s.decisionContext, s.testUserContext).Return(expectedFeatureDecision, nil)
+	decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
 
 	var numberOfCalls = 0
 	callback := func(notification notification.DecisionNotification) {
@@ -87,12 +83,24 @@ func TestOnDecision(t *testing.T) {
 	}
 	id, _ := decisionService.OnDecision(callback)
 
-	assert.NotEqual(t, id, 0)
-	decisionService.GetFeatureDecision(decisionContext, userContext)
-	assert.Equal(t, numberOfCalls, 1)
+	s.NotEqual(id, 0)
+	decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
+	s.Equal(numberOfCalls, 1)
 
 	err := decisionService.RemoveOnDecision(id)
-	assert.Nil(t, err)
-	decisionService.GetFeatureDecision(decisionContext, userContext)
-	assert.Equal(t, numberOfCalls, 1)
+	s.NoError(err)
+	decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
+	s.Equal(numberOfCalls, 1)
+}
+
+func (s *CompositeServiceTestSuite) TestNewCompositeService() {
+	notificationCenter := notification.NewNotificationCenter()
+	compositeService := NewCompositeService(notificationCenter)
+	s.Equal(notificationCenter, compositeService.notificationCenter)
+	s.IsType(&CompositeExperimentService{}, compositeService.compositeExperimentService)
+	s.IsType(&CompositeFeatureService{}, compositeService.compositeFeatureService)
+}
+
+func TestCompositeServiceTestSuite(t *testing.T) {
+	suite.Run(t, new(CompositeServiceTestSuite))
 }

@@ -29,36 +29,27 @@ var csLogger = logging.GetLogger("CompositeDecisionService")
 
 // CompositeService is the entrypoint into the decision service. It provides out of the box decision making for Features and Experiments.
 type CompositeService struct {
-	// experimentDecisionServices []ExperimentDecisionService
-	featureDecisionServices []FeatureService
-	sdkKey                  string
+	compositeExperimentService ExperimentService
+	compositeFeatureService    FeatureService
+	sdkKey                     string
 }
 
-// NewCompositeService returns a new instance of the DefeaultDecisionEngine
+// NewCompositeService returns a new instance of the CompositeService with the defaults
 func NewCompositeService(sdkKey string) *CompositeService {
-	featureDecisionService := NewCompositeFeatureService()
+	// @TODO: add factory method with option funcs to accept custom feature and experiment services
+	compositeFeatureDecisionService := NewCompositeFeatureService()
+	compositeExperimentService := NewCompositeExperimentService()
 	return &CompositeService{
-		featureDecisionServices: []FeatureService{featureDecisionService},
-		sdkKey:                  sdkKey,
+		compositeExperimentService: compositeExperimentService,
+		compositeFeatureService:    compositeFeatureDecisionService,
+
+		sdkKey: sdkKey,
 	}
 }
 
 // GetFeatureDecision returns a decision for the given feature key
 func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
-	var featureDecision FeatureDecision
-	var err error
-	// loop through the different features decision services until we get a decision
-	for _, decisionService := range s.featureDecisionServices {
-		featureDecision, err = decisionService.GetDecision(featureDecisionContext, userContext)
-		if err != nil {
-			// @TODO: log error
-			func() {}() // cheat linters
-		}
-
-		if featureDecision.Variation != nil {
-			break
-		}
-	}
+	featureDecision, err := s.compositeFeatureService.GetDecision(featureDecisionContext, userContext)
 
 	// @TODO: add errors
 	featureInfo := map[string]interface{}{
