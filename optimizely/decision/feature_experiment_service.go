@@ -39,8 +39,7 @@ func NewFeatureExperimentService() *FeatureExperimentService {
 func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
 	feature := decisionContext.Feature
 	// @TODO this can be improved by getting group ID first and determining experiment and then bucketing in experiment
-	for _, experiment := range feature.FeatureExperiments {
-		featureExperiment := experiment
+	for _, featureExperiment := range feature.FeatureExperiments {
 		experimentDecisionContext := ExperimentDecisionContext{
 			Experiment:    &featureExperiment,
 			ProjectConfig: decisionContext.ProjectConfig,
@@ -50,7 +49,7 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 		// Variation not nil means we got a decision and should return it
 		if experimentDecision.Variation != nil {
 			featureDecision := FeatureDecision{
-				Experiment: experiment,
+				Experiment: featureExperiment,
 				Decision:   experimentDecision.Decision,
 				Variation:  experimentDecision.Variation,
 				Source:     FeatureTest,

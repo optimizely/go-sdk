@@ -25,14 +25,14 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/notification"
 )
 
-type FeatureTestSuite struct {
+type CompositeServiceTestSuite struct {
 	suite.Suite
 	decisionContext    FeatureDecisionContext
 	mockFeatureService *MockFeatureDecisionService
 	testUserContext    entities.UserContext
 }
 
-func (s *FeatureTestSuite) SetupTest() {
+func (s *CompositeServiceTestSuite) SetupTest() {
 	mockConfig := new(mockProjectConfig)
 	s.decisionContext = FeatureDecisionContext{
 		Feature:       &testFeat3333,
@@ -44,7 +44,7 @@ func (s *FeatureTestSuite) SetupTest() {
 	}
 }
 
-func (s *FeatureTestSuite) TestGetFeatureDecision() {
+func (s *CompositeServiceTestSuite) TestGetFeatureDecision() {
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1111,
 		Variation:  &testExp1111Var2222,
@@ -61,7 +61,7 @@ func (s *FeatureTestSuite) TestGetFeatureDecision() {
 	s.mockFeatureService.AssertExpectations(s.T())
 }
 
-func (s *FeatureTestSuite) TestDecisionListeners() {
+func (s *CompositeServiceTestSuite) TestDecisionListeners() {
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1111,
 		Variation:  &testExp1111Var2222,
@@ -89,6 +89,15 @@ func (s *FeatureTestSuite) TestDecisionListeners() {
 	decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
 	s.Equal(numberOfCalls, 1)
 }
-func TestFeatureTestSuite(t *testing.T) {
-	suite.Run(t, new(FeatureTestSuite))
+
+func (s *CompositeServiceTestSuite) TestNewCompositeService() {
+	notificationCenter := notification.NewNotificationCenter()
+	compositeService := NewCompositeService(notificationCenter)
+	s.Equal(notificationCenter, compositeService.notificationCenter)
+	s.IsType(&CompositeExperimentService{}, compositeService.compositeExperimentService)
+	s.IsType(&CompositeFeatureService{}, compositeService.compositeFeatureService)
+}
+
+func TestCompositeServiceTestSuite(t *testing.T) {
+	suite.Run(t, new(CompositeServiceTestSuite))
 }

@@ -107,6 +107,11 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionMutex() {
 	s.mockExperimentService.AssertExpectations(s.T())
 }
 
+func (s *FeatureExperimentServiceTestSuite) TestNewFeatureExperimentService() {
+	featureExperimentService := NewFeatureExperimentService()
+	s.IsType(&CompositeExperimentService{}, featureExperimentService.compositeExperimentService)
+}
+
 func TestFeatureExperimentServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(FeatureExperimentServiceTestSuite))
 }

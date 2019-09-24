@@ -19,6 +19,8 @@ package decision
 import (
 	"testing"
 
+	"github.com/optimizely/go-sdk/optimizely/decision/evaluator"
+
 	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
 
 	"github.com/stretchr/testify/assert"
@@ -116,4 +118,10 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 	assert.Nil(t, decision.Variation)
 	mockAudienceTreeEvaluator.AssertExpectations(t)
 	mockExperimentBucketerService.AssertNotCalled(t, "GetDecision")
+}
+
+func TestNewRolloutService(t *testing.T) {
+	rolloutService := NewRolloutService()
+	assert.IsType(t, &evaluator.MixedTreeEvaluator{}, rolloutService.audienceTreeEvaluator)
+	assert.IsType(t, &ExperimentBucketerService{}, rolloutService.experimentBucketerService)
 }

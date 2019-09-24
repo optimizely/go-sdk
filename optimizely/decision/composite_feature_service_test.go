@@ -98,6 +98,14 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionFallthrough() {
 	s.mockFeatureService2.AssertExpectations(s.T())
 }
 
+func (s *CompositeFeatureServiceTestSuite) TestNewCompositeFeatureService() {
+	// Assert that the service is instantiated with the correct child services in the right order
+	compositeFeatureService := NewCompositeFeatureService()
+	s.Equal(2, len(compositeFeatureService.featureServices))
+	s.IsType(&FeatureExperimentService{}, compositeFeatureService.featureServices[0])
+	s.IsType(&RolloutService{}, compositeFeatureService.featureServices[1])
+}
+
 func TestCompositeFeatureTestSuite(t *testing.T) {
 	suite.Run(t, new(CompositeFeatureServiceTestSuite))
 }
