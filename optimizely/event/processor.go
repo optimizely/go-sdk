@@ -65,6 +65,14 @@ func NewEventProcessor(exeCtx utils.ExecutionCtx, batchSize, queueSize int, flus
 
 // NewCustomEventProcessor returns a new QueueingEventProcessor with the queue passed in and the dispatcher passed in.
 func NewCustomEventProcessor(exeCtx utils.ExecutionCtx, batchSize, queueSize int, flushInterval time.Duration, q Queue, dispatcher Dispatcher) *QueueingEventProcessor {
+	if q == nil {
+		q = NewInMemoryQueue(queueSize)
+	}
+
+	if dispatcher == nil {
+		dispatcher = NewQueueEventDispatcher(exeCtx.GetContext())
+	}
+
 	p := &QueueingEventProcessor{
 		MaxQueueSize:    queueSize,
 		FlushInterval:   flushInterval,

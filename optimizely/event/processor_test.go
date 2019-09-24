@@ -18,6 +18,8 @@
 package event
 
 import (
+	"errors"
+	"github.com/segmentio/timers"
 	"testing"
 	"time"
 
@@ -43,11 +45,33 @@ func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 	assert.Equal(t, 0, processor.EventsCount())
 }
 
+func TestCustomEventProcessor_Create(t *testing.T) {
+	exeCtx := utils.NewCancelableExecutionCtx()
+	processor := NewCustomEventProcessor(exeCtx, 10, 10, 100, nil, nil)
+
+	impression := BuildTestImpressionEvent()
+
+	processor.ProcessEvent(impression)
+
+	assert.Equal(t, 1, processor.EventsCount())
+
+	exeCtx.TerminateAndWait()
+
+	assert.NotNil(t, processor.Ticker)
+
+	assert.Equal(t, 0, processor.EventsCount())
+}
+
 type MockDispatcher struct {
+	ShouldFail bool
 	Events []LogEvent
 }
 
 func (f *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
+	if f.ShouldFail {
+		return false, errors.New("Failed to dispatch")
+	}
+
 	f.Events = append(f.Events, event)
 	return true, nil
 }
@@ -86,6 +110,88 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 		assert.Equal(t, 1, len(result.Events))
 		evs := result.Events[0]
 		assert.Equal(t, 4, len(evs.Event.Visitors))
+	}
+}
+
+func TestDefaultEventProcessor_QSizeMet(t *testing.T) {
+	exeCtx := utils.NewCancelableExecutionCtx()
+	processor := &QueueingEventProcessor{
+		MaxQueueSize:    2,
+		FlushInterval:   100,
+		Q:               NewInMemoryQueue(2),
+		EventDispatcher: &MockDispatcher{},
+		wg:              exeCtx.GetWaitSync(),
+	}
+	processor.BatchSize = 10
+	processor.StartTicker(exeCtx.GetContext())
+
+	impression := BuildTestImpressionEvent()
+	conversion := BuildTestConversionEvent()
+
+	processor.ProcessEvent(impression)
+	processor.ProcessEvent(impression)
+
+	assert.Equal(t, 2, processor.EventsCount())
+
+	timers.Sleep(exeCtx.GetContext(), 100 * time.Millisecond)
+
+	result, ok := (processor.EventDispatcher).(*MockDispatcher)
+
+	if ok {
+		assert.Equal(t, 1, len(result.Events))
+		evs := result.Events[0]
+		assert.Equal(t, 2, len(evs.Event.Visitors))
+
+	}
+
+	processor.ProcessEvent(conversion)
+	processor.ProcessEvent(conversion)
+
+	assert.Equal(t, 2, processor.EventsCount())
+
+	exeCtx.TerminateAndWait()
+
+	assert.NotNil(t, processor.Ticker)
+
+	assert.Equal(t, 0, processor.EventsCount())
+
+	if ok {
+		assert.Equal(t, 2, len(result.Events))
+	}
+}
+
+func TestDefaultEventProcessor_FailedDispatch(t *testing.T) {
+	exeCtx := utils.NewCancelableExecutionCtx()
+	processor := &QueueingEventProcessor{
+		MaxQueueSize:    100,
+		FlushInterval:   100,
+		Q:               NewInMemoryQueue(100),
+		EventDispatcher: &MockDispatcher{ShouldFail:true},
+		wg:              exeCtx.GetWaitSync(),
+	}
+	processor.BatchSize = 10
+	processor.StartTicker(exeCtx.GetContext())
+
+	impression := BuildTestImpressionEvent()
+	conversion := BuildTestConversionEvent()
+
+	processor.ProcessEvent(impression)
+	processor.ProcessEvent(impression)
+	processor.ProcessEvent(conversion)
+	processor.ProcessEvent(conversion)
+
+	assert.Equal(t, 4, processor.EventsCount())
+
+	exeCtx.TerminateAndWait()
+
+	assert.NotNil(t, processor.Ticker)
+
+	assert.Equal(t, 4, processor.EventsCount())
+
+	result, ok := (processor.EventDispatcher).(*MockDispatcher)
+
+	if ok {
+		assert.Equal(t, 0, len(result.Events))
 	}
 }
 
