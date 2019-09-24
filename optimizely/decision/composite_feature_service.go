@@ -50,5 +50,5 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 		}
 	}
 
-	return FeatureDecision{}, fmt.Errorf("No decision was made for feature %s", decisionContext.Feature.Key)
+	return FeatureDecision{}, fmt.Errorf("no decision was made for feature %s", decisionContext.Feature.Key)
 }
