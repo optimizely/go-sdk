@@ -33,11 +33,7 @@ type DefaultCenter struct {
 
 // NewNotificationCenter returns a new notification center
 func NewNotificationCenter() *DefaultCenter {
-	decisionNotificationManager := NewAtomicManager()
-	projectConfigUpdateNotificationManager := NewAtomicManager()
 	managerMap := make(map[Type]Manager)
-	managerMap[Decision] = decisionNotificationManager
-	managerMap[ProjectConfigUpdate] = projectConfigUpdateNotificationManager
 	return &DefaultCenter{
 		managerMap: managerMap,
 	}
@@ -45,11 +41,14 @@ func NewNotificationCenter() *DefaultCenter {
 
 // AddHandler adds a handler for the given notification type
 func (c *DefaultCenter) AddHandler(notificationType Type, handler func(interface{})) (int, error) {
-	if manager, ok := c.managerMap[notificationType]; ok {
-		return manager.Add(handler)
+	var manager Manager
+	var ok bool
+	if manager, ok = c.managerMap[notificationType]; !ok {
+		manager = NewAtomicManager()
+		c.managerMap[notificationType] = manager
 	}
 
-	return -1, fmt.Errorf("no notification manager found for type %s", notificationType)
+	return manager.Add(handler)
 }
 
 // RemoveHandler removes a handler for the given id and notification type

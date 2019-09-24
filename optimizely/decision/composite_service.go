@@ -31,15 +31,15 @@ var csLogger = logging.GetLogger("CompositeDecisionService")
 type CompositeService struct {
 	// experimentDecisionServices []ExperimentDecisionService
 	featureDecisionServices []FeatureService
-	notificationCenter      notification.Center
+	sdkKey                  string
 }
 
 // NewCompositeService returns a new instance of the DefeaultDecisionEngine
-func NewCompositeService(notificationCenter notification.Center) *CompositeService {
+func NewCompositeService(sdkKey string) *CompositeService {
 	featureDecisionService := NewCompositeFeatureService()
 	return &CompositeService{
 		featureDecisionServices: []FeatureService{featureDecisionService},
-		notificationCenter:      notificationCenter,
+		sdkKey:                  sdkKey,
 	}
 }
 
@@ -61,29 +61,28 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 	}
 
 	// @TODO: add errors
-	if s.notificationCenter != nil {
-		featureInfo := map[string]interface{}{
-			"feature_key":     featureDecisionContext.Feature.Key,
-			"feature_enabled": false,
-			"source":          featureDecision.Source,
-		}
-		if featureDecision.Variation != nil {
-			featureInfo["feature_enabled"] = featureDecision.Variation.FeatureEnabled
-		}
-
-		decisionInfo := map[string]interface{}{
-			"feature": featureInfo,
-		}
-
-		decisionNotification := notification.DecisionNotification{
-			DecisionInfo: decisionInfo,
-			Type:         notification.Feature,
-			UserContext:  userContext,
-		}
-		if err = s.notificationCenter.Send(notification.Decision, decisionNotification); err != nil {
-			csLogger.Warning("Problem with sending notification")
-		}
+	featureInfo := map[string]interface{}{
+		"feature_key":     featureDecisionContext.Feature.Key,
+		"feature_enabled": false,
+		"source":          featureDecision.Source,
 	}
+	if featureDecision.Variation != nil {
+		featureInfo["feature_enabled"] = featureDecision.Variation.FeatureEnabled
+	}
+
+	decisionInfo := map[string]interface{}{
+		"feature": featureInfo,
+	}
+
+	decisionNotification := notification.DecisionNotification{
+		DecisionInfo: decisionInfo,
+		Type:         notification.Feature,
+		UserContext:  userContext,
+	}
+	if err = notification.Send(s.sdkKey, notification.Decision, decisionNotification); err != nil {
+		csLogger.Warning("Problem with sending notification")
+	}
+
 	return featureDecision, err
 }
 
@@ -96,7 +95,7 @@ func (s CompositeService) OnDecision(callback func(notification.DecisionNotifica
 			csLogger.Warning(fmt.Sprintf("Unable to convert notification payload %v into DecisionNotification", payload))
 		}
 	}
-	id, err := s.notificationCenter.AddHandler(notification.Decision, handler)
+	id, err := notification.RegisterHandler(s.sdkKey, notification.Decision, handler)
 	if err != nil {
 		csLogger.Warning("Problem with adding notification handler")
 		return 0, err
@@ -106,7 +105,7 @@ func (s CompositeService) OnDecision(callback func(notification.DecisionNotifica
 
 // RemoveOnDecision removes handler for Decision notification with given id
 func (s CompositeService) RemoveOnDecision(id int) error {
-	if err := s.notificationCenter.RemoveHandler(id, notification.Decision); err != nil {
+	if err := notification.RemoveHandler(s.sdkKey, notification.Decision, id); err != nil {
 		csLogger.Warning("Problem with removing notification handler")
 		return err
 	}

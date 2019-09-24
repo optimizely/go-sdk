@@ -76,10 +76,9 @@ func TestOnDecision(t *testing.T) {
 	testFeatureDecisionService := new(MockFeatureDecisionService)
 	testFeatureDecisionService.On("GetDecision", decisionContext, userContext).Return(expectedFeatureDecision, nil)
 
-	notificationCenter := notification.NewNotificationCenter()
 	decisionService := &CompositeService{
 		featureDecisionServices: []FeatureService{testFeatureDecisionService},
-		notificationCenter:      notificationCenter,
+		sdkKey:                  "sdkKey",
 	}
 
 	var numberOfCalls = 0
