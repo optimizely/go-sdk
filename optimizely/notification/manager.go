@@ -51,9 +51,7 @@ func (am *AtomicManager) Add(newHandler func(interface{})) (int, error) {
 // Remove removes handler with the given id
 func (am *AtomicManager) Remove(id int) {
 	handlerID := uint32(id)
-	if _, ok := am.handlers[handlerID]; ok {
-		delete(am.handlers, handlerID)
-	}
+	delete(am.handlers, handlerID)
 }
 
 // Send sends the notification to the registered handlers

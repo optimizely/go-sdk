@@ -20,9 +20,9 @@ jobs:
   include:
     - stage: 'Lint'
       install:
-        - go get github.com/golangci/golangci-lint/cmd/golangci-lint
+        - curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.19.0
       script:
-        - golangci-lint run --out-format=tab --tests=false optimizely/...
+        - $GOPATH/bin/golangci-lint run --out-format=tab --tests=false optimizely/...
     - stage: 'Integration Tests'
       merge_mode: replace
       env: SDK=go
@@ -34,4 +34,3 @@ jobs:
       script:
         - "$HOME/travisci-tools/fsc-trigger/trigger_fullstack-sdk-compat.sh"
       after_success: travis_terminate 0
-
