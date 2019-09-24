@@ -64,7 +64,7 @@ func TestCustomEventProcessor_Create(t *testing.T) {
 
 type MockDispatcher struct {
 	ShouldFail bool
-	Events []LogEvent
+	Events Queue
 }
 
 func (f *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
@@ -72,7 +72,7 @@ func (f *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 		return false, errors.New("Failed to dispatch")
 	}
 
-	f.Events = append(f.Events, event)
+	f.Events.Add(event)
 	return true, nil
 }
 
@@ -82,7 +82,7 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 		MaxQueueSize:    100,
 		FlushInterval:   100,
 		Q:               NewInMemoryQueue(100),
-		EventDispatcher: &MockDispatcher{},
+		EventDispatcher: &MockDispatcher{Events:NewInMemoryQueue(100)},
 		wg:              exeCtx.GetWaitSync(),
 	}
 	processor.BatchSize = 10
@@ -107,9 +107,10 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 	result, ok := (processor.EventDispatcher).(*MockDispatcher)
 
 	if ok {
-		assert.Equal(t, 1, len(result.Events))
-		evs := result.Events[0]
-		assert.Equal(t, 4, len(evs.Event.Visitors))
+		assert.Equal(t, 1, result.Events.Size())
+		evs := result.Events.Get(1)
+		logEvent, _ := evs[0].(LogEvent)
+		assert.Equal(t, 4, len(logEvent.Event.Visitors))
 	}
 }
 
@@ -119,7 +120,7 @@ func TestDefaultEventProcessor_QSizeMet(t *testing.T) {
 		MaxQueueSize:    2,
 		FlushInterval:   100,
 		Q:               NewInMemoryQueue(2),
-		EventDispatcher: &MockDispatcher{},
+		EventDispatcher: &MockDispatcher{Events:NewInMemoryQueue(2)},
 		wg:              exeCtx.GetWaitSync(),
 	}
 	processor.BatchSize = 10
@@ -138,9 +139,10 @@ func TestDefaultEventProcessor_QSizeMet(t *testing.T) {
 	result, ok := (processor.EventDispatcher).(*MockDispatcher)
 
 	if ok {
-		assert.Equal(t, 1, len(result.Events))
-		evs := result.Events[0]
-		assert.Equal(t, 2, len(evs.Event.Visitors))
+		assert.Equal(t, 1, result.Events.Size())
+		evs := result.Events.Get(1)
+		logEvent, _ := evs[0].(LogEvent)
+		assert.Equal(t, 2, len(logEvent.Event.Visitors))
 
 	}
 
@@ -156,7 +158,7 @@ func TestDefaultEventProcessor_QSizeMet(t *testing.T) {
 	assert.Equal(t, 0, processor.EventsCount())
 
 	if ok {
-		assert.Equal(t, 2, len(result.Events))
+		assert.Equal(t, 2, result.Events.Size())
 	}
 }
 
@@ -166,7 +168,7 @@ func TestDefaultEventProcessor_FailedDispatch(t *testing.T) {
 		MaxQueueSize:    100,
 		FlushInterval:   100,
 		Q:               NewInMemoryQueue(100),
-		EventDispatcher: &MockDispatcher{ShouldFail:true},
+		EventDispatcher: &MockDispatcher{ShouldFail:true, Events:NewInMemoryQueue(100)},
 		wg:              exeCtx.GetWaitSync(),
 	}
 	processor.BatchSize = 10
@@ -191,7 +193,7 @@ func TestDefaultEventProcessor_FailedDispatch(t *testing.T) {
 	result, ok := (processor.EventDispatcher).(*MockDispatcher)
 
 	if ok {
-		assert.Equal(t, 0, len(result.Events))
+		assert.Equal(t, 0, result.Events.Size())
 	}
 }
 
@@ -201,7 +203,7 @@ func TestBatchEventProcessor_FlushesOnClose(t *testing.T) {
 		MaxQueueSize:    100,
 		FlushInterval:   30 * time.Second,
 		Q:               NewInMemoryQueue(100),
-		EventDispatcher: &MockDispatcher{},
+		EventDispatcher: &MockDispatcher{Events:NewInMemoryQueue(100)},
 		wg:              exeCtx.GetWaitSync(),
 	}
 	processor.BatchSize = 10
@@ -229,7 +231,7 @@ func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 		MaxQueueSize:    100,
 		FlushInterval:   100,
 		Q:               NewInMemoryQueue(100),
-		EventDispatcher: &MockDispatcher{},
+		EventDispatcher: &MockDispatcher{Events:NewInMemoryQueue(100)},
 		wg:              exeCtx.GetWaitSync(),
 	}
 	processor.BatchSize = 10
@@ -255,9 +257,10 @@ func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 	result, ok := (processor.EventDispatcher).(*MockDispatcher)
 
 	if ok {
-		assert.Equal(t, 3, len(result.Events))
-		evs := result.Events[len(result.Events)-1]
-		assert.Equal(t, 2, len(evs.Event.Visitors))
+		assert.Equal(t, 3, result.Events.Size())
+		evs := result.Events.Get(3)
+		logEvent, _ := evs[len(evs)-1].(LogEvent)
+		assert.Equal(t, 2, len(logEvent.Event.Visitors))
 	}
 }
 
@@ -267,7 +270,7 @@ func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 		MaxQueueSize:    100,
 		FlushInterval:   100,
 		Q:               NewInMemoryQueue(100),
-		EventDispatcher: &MockDispatcher{},
+		EventDispatcher: &MockDispatcher{Events:NewInMemoryQueue(100)},
 		wg:              exeCtx.GetWaitSync(),
 	}
 	processor.BatchSize = 10
@@ -293,9 +296,10 @@ func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 	result, ok := (processor.EventDispatcher).(*MockDispatcher)
 
 	if ok {
-		assert.Equal(t, 3, len(result.Events))
-		evs := result.Events[len(result.Events)-1]
-		assert.Equal(t, 2, len(evs.Event.Visitors))
+		assert.Equal(t, 3, result.Events.Size())
+		evs := result.Events.Get(3)
+		logEvent, _ := evs[len(evs)-1].(LogEvent)
+		assert.Equal(t, 2, len(logEvent.Event.Visitors))
 	}
 }
 
@@ -325,7 +329,7 @@ func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
 
 func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := &QueueingEventProcessor{MaxQueueSize: 100, FlushInterval: 100, Q: NewChanQueue(100), EventDispatcher: &MockDispatcher{}, wg: exeCtx.GetWaitSync()}
+	processor := &QueueingEventProcessor{MaxQueueSize: 100, FlushInterval: 100, Q: NewChanQueue(100), EventDispatcher: &MockDispatcher{Events:NewInMemoryQueue(100)}, wg: exeCtx.GetWaitSync()}
 	processor.BatchSize = 10
 	processor.StartTicker(exeCtx.GetContext())
 
@@ -346,8 +350,9 @@ func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
 	result, ok := (processor.EventDispatcher).(*MockDispatcher)
 
 	if ok {
-		assert.Equal(t, 1, len(result.Events))
-		evs := result.Events[0]
-		assert.True(t, len(evs.Event.Visitors) >= 1)
+		assert.Equal(t, 1, result.Events.Size())
+		evs := result.Events.Get(1)
+		logEvent, _ := evs[0].(LogEvent)
+		assert.True(t, len(logEvent.Event.Visitors) >= 1)
 	}
 }
