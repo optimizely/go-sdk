@@ -21,6 +21,8 @@ import (
 	"fmt"
 
 	"github.com/optimizely/go-sdk/optimizely/decision/bucketer"
+	"github.com/optimizely/go-sdk/optimizely/decision/evaluator"
+	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/optimizely/go-sdk/optimizely/logging"
 )
@@ -30,14 +32,16 @@ var bLogger = logging.GetLogger("ExperimentBucketerService")
 
 // ExperimentBucketerService makes a decision using the experiment bucketer
 type ExperimentBucketerService struct {
-	bucketer bucketer.ExperimentBucketer
+	audienceTreeEvaluator evaluator.TreeEvaluator
+	bucketer              bucketer.ExperimentBucketer
 }
 
 // NewExperimentBucketerService returns a new instance of the ExperimentBucketerService
 func NewExperimentBucketerService() *ExperimentBucketerService {
 	// @TODO(mng): add experiment override service
 	return &ExperimentBucketerService{
-		bucketer: *bucketer.NewMurmurhashBucketer(bucketer.DefaultHashSeed),
+		audienceTreeEvaluator: evaluator.NewMixedTreeEvaluator(),
+		bucketer:              *bucketer.NewMurmurhashBucketer(bucketer.DefaultHashSeed),
 	}
 }
 
@@ -45,6 +49,17 @@ func NewExperimentBucketerService() *ExperimentBucketerService {
 func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
 	experimentDecision := ExperimentDecision{}
 	experiment := decisionContext.Experiment
+
+	// Determine if user can be part of the experiment
+	if experiment.AudienceConditionTree != nil {
+		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
+		evalResult := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
+		if !evalResult {
+			experimentDecision.Reason = reasons.FailedAudienceTargeting
+			return experimentDecision, nil
+		}
+	}
+
 	var group entities.Group
 	if experiment.GroupID != "" {
 		// @TODO: figure out what to do if group is not found

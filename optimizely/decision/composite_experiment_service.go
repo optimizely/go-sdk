@@ -18,15 +18,12 @@
 package decision
 
 import (
-	"github.com/optimizely/go-sdk/optimizely/decision/evaluator"
-	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
 // CompositeExperimentService bridges together the various experiment decision services that ship by default with the SDK
 type CompositeExperimentService struct {
-	audienceTreeEvaluator evaluator.TreeEvaluator
-	experimentServices    []ExperimentService
+	experimentServices []ExperimentService
 }
 
 // NewCompositeExperimentService creates a new instance of the CompositeExperimentService
@@ -35,7 +32,6 @@ func NewCompositeExperimentService() *CompositeExperimentService {
 	// 1. Bucketing
 	// @TODO(mng): Prepend forced variation and whitelisting services
 	return &CompositeExperimentService{
-		audienceTreeEvaluator: evaluator.NewMixedTreeEvaluator(),
 		experimentServices: []ExperimentService{
 			NewExperimentBucketerService(),
 		},
@@ -46,19 +42,8 @@ func NewCompositeExperimentService() *CompositeExperimentService {
 func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
 
 	experimentDecision := ExperimentDecision{}
-	experiment := decisionContext.Experiment
 
-	// Determine if user can be part of the experiment
-	if experiment.AudienceConditionTree != nil {
-		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
-		evalResult := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
-		if !evalResult {
-			experimentDecision.Reason = reasons.FailedAudienceTargeting
-			return experimentDecision, nil
-		}
-	}
-
-	// User passed targeting (or the experiment is untargeted), so run through the various decision services
+	// Run through the various decision services until we get a decision
 	for _, experimentService := range s.experimentServices {
 		if decision, err := experimentService.GetDecision(decisionContext, userContext); decision.Variation != nil {
 			return decision, err
