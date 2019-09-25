@@ -56,6 +56,7 @@ const DefaultEventFlushInterval = 30 * time.Second
 
 var pLogger = logging.GetLogger("EventProcessor")
 
+// QPOption is the QueuingProcessor options that give you the ability to add one more more options before the processor is initialized.
 type QPOption func(qp *QueueingEventProcessor)
 
 // NewEventProcessor returns a new instance of QueueingEventProcessor with queueSize and flushInterval
