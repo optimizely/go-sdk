@@ -104,6 +104,19 @@ func BuildTestConversionEvent() UserEvent {
 	return conversionUserEvent
 }
 
+func TestCreateEmptyEvent(t *testing.T) {
+
+	impressionUserEvent := BuildTestImpressionEvent()
+
+	impressionUserEvent.Impression = nil
+	impressionUserEvent.Conversion = nil
+
+	visitor := createVisitorFromUserEvent(impressionUserEvent)
+
+	assert.Nil(t, visitor.Snapshots)
+
+}
+
 func TestCreateAndSendImpressionEvent(t *testing.T) {
 
 	impressionUserEvent := BuildTestImpressionEvent()
