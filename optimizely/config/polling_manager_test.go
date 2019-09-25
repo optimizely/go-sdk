@@ -46,12 +46,9 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
-	options := PollingProjectConfigManagerOptions{
-		Requester: mockRequester,
-	}
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
+	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, SetRequester(mockRequester))
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()
@@ -67,11 +64,9 @@ func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
-	options := PollingProjectConfigManagerOptions{
-		Requester: mockRequester,
-	}
+
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
+	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, SetRequester(mockRequester))
 	mockRequester.AssertExpectations(t)
 
 	_, err := configManager.GetConfig()
@@ -86,12 +81,9 @@ func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, 200, nil)
 
 	sdkKey := "test_sdk_key"
-	options := PollingProjectConfigManagerOptions{
-		Requester: mockRequester,
-	}
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
+	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, SetRequester(mockRequester))
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()
@@ -114,12 +106,9 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
-	options := PollingProjectConfigManagerOptions{
-		Requester: mockRequester,
-	}
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
+	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, SetRequester(mockRequester))
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()
@@ -141,13 +130,9 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
-	options := PollingProjectConfigManagerOptions{
-		Requester:          mockRequester,
-		NotificationCenter: notification.NewNotificationCenter(),
-	}
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
+	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, SetRequester(mockRequester), SetNotification(notification.NewNotificationCenter()))
 
 	var numberOfCalls = 0
 	callback := func(notification notification.ProjectConfigUpdateNotification) {
