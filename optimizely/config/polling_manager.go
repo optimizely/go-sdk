@@ -25,6 +25,7 @@ import (
 	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/optimizely/logging"
+	"github.com/optimizely/go-sdk/optimizely/notification"
 	"github.com/optimizely/go-sdk/optimizely/utils"
 )
 
@@ -37,18 +38,20 @@ var cmLogger = logging.GetLogger("PollingConfigManager")
 
 // PollingProjectConfigManagerOptions used to create an instance with custom configuration
 type PollingProjectConfigManagerOptions struct {
-	Datafile        []byte
-	PollingInterval time.Duration
-	Requester       utils.Requester
+	Datafile           []byte
+	PollingInterval    time.Duration
+	Requester          utils.Requester
+	NotificationCenter notification.Center
 }
 
 // PollingProjectConfigManager maintains a dynamic copy of the project config
 type PollingProjectConfigManager struct {
-	requester       utils.Requester
-	pollingInterval time.Duration
-	projectConfig   optimizely.ProjectConfig
-	configLock      sync.RWMutex
-	err             error
+	requester          utils.Requester
+	pollingInterval    time.Duration
+	projectConfig      optimizely.ProjectConfig
+	configLock         sync.RWMutex
+	err                error
+	notificationCenter notification.Center
 
 	exeCtx utils.ExecutionCtx // context used for execution control
 }
@@ -77,6 +80,16 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 		} else {
 			cmLogger.Debug(fmt.Sprintf("Received new datafile and updated config. Old revision number: %s. New revision number: %s", cm.projectConfig.GetRevision(), projectConfig.GetRevision()))
 			cm.projectConfig = projectConfig
+
+			if cm.notificationCenter != nil {
+				projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
+					Type:     notification.ProjectConfigUpdate,
+					Revision: cm.projectConfig.GetRevision(),
+				}
+				if err = cm.notificationCenter.Send(notification.ProjectConfigUpdate, projectConfigUpdateNotification); err != nil {
+					cmLogger.Warning("Problem with sending notification")
+				}
+			}
 		}
 	} else {
 		cm.projectConfig = projectConfig
@@ -120,7 +133,7 @@ func NewPollingProjectConfigManagerWithOptions(exeCtx utils.ExecutionCtx, sdkKey
 		pollingInterval = defaultPollingInterval
 	}
 
-	pollingProjectConfigManager := PollingProjectConfigManager{requester: requester, pollingInterval: pollingInterval, exeCtx: exeCtx}
+	pollingProjectConfigManager := PollingProjectConfigManager{requester: requester, pollingInterval: pollingInterval, notificationCenter: options.NotificationCenter, exeCtx: exeCtx}
 
 	pollingProjectConfigManager.SyncConfig(options.Datafile) // initial poll
 
@@ -141,4 +154,30 @@ func (cm *PollingProjectConfigManager) GetConfig() (optimizely.ProjectConfig, er
 	cm.configLock.RLock()
 	defer cm.configLock.RUnlock()
 	return cm.projectConfig, cm.err
+}
+
+// OnProjectConfigUpdate registers a handler for ProjectConfigUpdate notifications
+func (cm *PollingProjectConfigManager) OnProjectConfigUpdate(callback func(notification.ProjectConfigUpdateNotification)) (int, error) {
+	handler := func(payload interface{}) {
+		if projectConfigUpdateNotification, ok := payload.(notification.ProjectConfigUpdateNotification); ok {
+			callback(projectConfigUpdateNotification)
+		} else {
+			cmLogger.Warning(fmt.Sprintf("Unable to convert notification payload %v into ProjectConfigUpdateNotification", payload))
+		}
+	}
+	id, err := cm.notificationCenter.AddHandler(notification.ProjectConfigUpdate, handler)
+	if err != nil {
+		cmLogger.Warning("Problem with adding notification handler")
+		return 0, err
+	}
+	return id, nil
+}
+
+// RemoveOnProjectConfigUpdate removes handler for ProjectConfigUpdate notification with given id
+func (cm *PollingProjectConfigManager) RemoveOnProjectConfigUpdate(id int) error {
+	if err := cm.notificationCenter.RemoveHandler(id, notification.ProjectConfigUpdate); err != nil {
+		cmLogger.Warning("Problem with removing notification handler")
+		return err
+	}
+	return nil
 }

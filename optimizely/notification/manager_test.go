@@ -46,4 +46,7 @@ func TestAtomicManager(t *testing.T) {
 	atomicManager.Remove(result2)
 	atomicManager.Send(payload)
 	mockReceiver.AssertNumberOfCalls(t, "handleBetter", 2)
+
+	// Sanity check by calling remove with a incorrect handler id
+	atomicManager.Remove(55)
 }
