@@ -67,11 +67,8 @@ func (s *CompositeServiceTestSuite) TestDecisionListeners() {
 		Variation:  &testExp1111Var2222,
 	}
 
-	testFeatureDecisionService := new(MockFeatureDecisionService)
-	testFeatureDecisionService.On("GetDecision", decisionContext, userContext).Return(expectedFeatureDecision, nil)
-
 	decisionService := &CompositeService{
-		featureDecisionServices: []FeatureService{testFeatureDecisionService},
+		compositeFeatureService: s.mockFeatureService,
 		sdkKey:                  "sdkKey",
 	}
 	s.mockFeatureService.On("GetDecision", s.decisionContext, s.testUserContext).Return(expectedFeatureDecision, nil)
@@ -94,9 +91,7 @@ func (s *CompositeServiceTestSuite) TestDecisionListeners() {
 }
 
 func (s *CompositeServiceTestSuite) TestNewCompositeService() {
-	notificationCenter := notification.NewNotificationCenter()
-	compositeService := NewCompositeService(notificationCenter)
-	s.Equal(notificationCenter, compositeService.notificationCenter)
+	compositeService := NewCompositeService("sdkKey")
 	s.IsType(&CompositeExperimentService{}, compositeService.compositeExperimentService)
 	s.IsType(&CompositeFeatureService{}, compositeService.compositeFeatureService)
 }

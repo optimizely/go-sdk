@@ -19,41 +19,38 @@ package notification
 
 import "fmt"
 
-// Center handles all notification listeners. It keeps track of the Manager for each type of notification.
-type Center interface {
-	AddHandler(Type, func(interface{})) (int, error)
-	RemoveHandler(int, Type) error
-	Send(Type, interface{}) error
-}
-
-// DefaultCenter contains all the notification managers
-type DefaultCenter struct {
-	managerMap map[Type]Manager
-}
-
-// NewNotificationCenter returns a new notification center
-func NewNotificationCenter() *DefaultCenter {
-	managerMap := make(map[Type]Manager)
-	return &DefaultCenter{
-		managerMap: managerMap,
-	}
-}
+// Maintains a map of notification managers mapped by SDK Key and Type
+var managerMaps = make(map[string]map[Type]Manager)
 
 // AddHandler adds a handler for the given notification type
-func (c *DefaultCenter) AddHandler(notificationType Type, handler func(interface{})) (int, error) {
-	var manager Manager
+func AddHandler(sdkKey string, notificationType Type, handler func(interface{})) (int, error) {
+	var managerMap map[Type]Manager
 	var ok bool
-	if manager, ok = c.managerMap[notificationType]; !ok {
+	if managerMap, ok = managerMaps[sdkKey]; !ok {
+		// create a managerMap for the given SDK key if there isn't one yet
+		managerMap = make(map[Type]Manager)
+		managerMaps[sdkKey] = managerMap
+	}
+
+	var manager Manager
+	if manager, ok = managerMap[notificationType]; !ok {
+		// create a manager for the given notification type if there isn't one yet
 		manager = NewAtomicManager()
-		c.managerMap[notificationType] = manager
+		managerMap[notificationType] = manager
 	}
 
 	return manager.Add(handler)
 }
 
 // RemoveHandler removes a handler for the given id and notification type
-func (c *DefaultCenter) RemoveHandler(id int, notificationType Type) error {
-	if manager, ok := c.managerMap[notificationType]; ok {
+func RemoveHandler(sdkKey string, id int, notificationType Type) error {
+	var managerMap map[Type]Manager
+	var ok bool
+	if managerMap, ok = managerMaps[sdkKey]; !ok {
+		return fmt.Errorf(`no notification managers found for SDK Key %s`, sdkKey)
+	}
+
+	if manager, ok := managerMap[notificationType]; ok {
 		manager.Remove(id)
 		return nil
 	}
@@ -62,11 +59,23 @@ func (c *DefaultCenter) RemoveHandler(id int, notificationType Type) error {
 }
 
 // Send sends the given notification payload to all listeners of type
-func (c *DefaultCenter) Send(notificationType Type, notification interface{}) error {
-	if manager, ok := c.managerMap[notificationType]; ok {
+func Send(sdkKey string, notificationType Type, notification interface{}) error {
+	var managerMap map[Type]Manager
+	var ok bool
+	if managerMap, ok = managerMaps[sdkKey]; !ok {
+		return fmt.Errorf(`no notification managers found for SDK Key %s`, sdkKey)
+	}
+
+	if manager, ok := managerMap[notificationType]; ok {
 		manager.Send(notification)
 		return nil
 	}
 
 	return fmt.Errorf("no notification manager found for type %s", notificationType)
+}
+
+// ClearAllHandlers removes all registered notification handlers
+func ClearAllHandlers() {
+	// reset to an empty map
+	managerMaps = make(map[string]map[Type]Manager)
 }

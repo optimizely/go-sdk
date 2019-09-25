@@ -70,7 +70,7 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 		Type:         notification.Feature,
 		UserContext:  userContext,
 	}
-	if err = notification.Send(s.sdkKey, notification.Decision, decisionNotification); err != nil {
+	if e := notification.Send(s.sdkKey, notification.Decision, decisionNotification); e != nil {
 		csLogger.Warning("Problem with sending notification")
 	}
 
@@ -86,7 +86,7 @@ func (s CompositeService) OnDecision(callback func(notification.DecisionNotifica
 			csLogger.Warning(fmt.Sprintf("Unable to convert notification payload %v into DecisionNotification", payload))
 		}
 	}
-	id, err := notification.RegisterHandler(s.sdkKey, notification.Decision, handler)
+	id, err := notification.AddHandler(s.sdkKey, notification.Decision, handler)
 	if err != nil {
 		csLogger.Warning("Problem with adding notification handler")
 		return 0, err
@@ -96,7 +96,7 @@ func (s CompositeService) OnDecision(callback func(notification.DecisionNotifica
 
 // RemoveOnDecision removes handler for Decision notification with given id
 func (s CompositeService) RemoveOnDecision(id int) error {
-	if err := notification.RemoveHandler(s.sdkKey, notification.Decision, id); err != nil {
+	if err := notification.RemoveHandler(s.sdkKey, id, notification.Decision); err != nil {
 		csLogger.Warning("Problem with removing notification handler")
 		return err
 	}

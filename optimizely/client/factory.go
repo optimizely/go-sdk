@@ -25,7 +25,6 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/config"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/event"
-	"github.com/optimizely/go-sdk/optimizely/notification"
 	"github.com/optimizely/go-sdk/optimizely/utils"
 )
 
@@ -76,9 +75,9 @@ func ConfigManager(configManager optimizely.ProjectConfigManager) OptionFunc {
 }
 
 // CompositeDecisionService sets decision service on a client
-func CompositeDecisionService(notificationCenter notification.Center) OptionFunc {
+func CompositeDecisionService(sdkKey string) OptionFunc {
 	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
-		f.decisionService = decision.NewCompositeService(notificationCenter)
+		f.decisionService = decision.NewCompositeService(sdkKey)
 	}
 }
 
@@ -141,8 +140,6 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 		executionCtx: executionCtx,
 	}
 
-	notificationCenter := notification.NewNotificationCenter()
-
 	switch {
 	case clientOptions.ProjectConfigManager != nil:
 		client.configManager = clientOptions.ProjectConfigManager
@@ -161,7 +158,7 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 	if clientOptions.DecisionService != nil {
 		client.decisionService = clientOptions.DecisionService
 	} else {
-		client.decisionService = decision.NewCompositeService(notificationCenter)
+		client.decisionService = decision.NewCompositeService(f.SDKKey)
 	}
 
 	if clientOptions.EventProcessor != nil {
