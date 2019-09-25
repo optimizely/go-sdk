@@ -37,9 +37,9 @@ func FeatureContext(s *godog.Suite) {
 
 	s.Step(`^the datafile is "([^"]*)"$`, context.TheDatafileIs)
 	s.Step(`^(\d+) "([^"]*)" listener is added$`, context.ListenerIsAdded)
-	s.Step(`^is_feature_enabled is called with arguments$`, context.IsFeatureEnabledIsCalledWithArguments)
+	s.Step(`^([^\\\"]*) is called with arguments$`, context.IsCalledWithArguments)
 	s.Step(`^the result should be "([^"]*)"$`, context.TheResultShouldBe)
-	s.Step(`^in the response, "([^"]*)" should be "([^"]*)"$`, context.InTheResponseKeyShouldBeEqualsObject)
+	s.Step(`^in the response, "([^"]*)" should be "([^"]*)"$`, context.InTheResponseKeyShouldBeObject)
 	s.Step(`^there are no dispatched events$`, context.ThereAreNoDispatchedEvents)
 
 	// s.BeforeScenario(func(interface{}) {
