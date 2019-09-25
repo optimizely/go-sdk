@@ -47,7 +47,7 @@ func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 
 func TestCustomEventProcessor_Create(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewCustomEventProcessor(exeCtx, 10, 10, 100, nil, nil)
+	processor := NewEventProcessor(exeCtx, 10, 10, 100)
 
 	impression := BuildTestImpressionEvent()
 
@@ -78,15 +78,10 @@ func (f *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 
 func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := &QueueingEventProcessor{
-		MaxQueueSize:    100,
-		FlushInterval:   100,
-		Q:               NewInMemoryQueue(100),
-		EventDispatcher: &MockDispatcher{Events:NewInMemoryQueue(100)},
-		wg:              exeCtx.GetWaitSync(),
-	}
-	processor.BatchSize = 10
-	processor.StartTicker(exeCtx.GetContext())
+	processor := NewEventProcessor(exeCtx, 10, 100, 100, func (qp *QueueingEventProcessor) {
+		qp.Q = NewInMemoryQueue(100)
+		qp.EventDispatcher = &MockDispatcher{Events:NewInMemoryQueue(100)}
+	})
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -116,15 +111,10 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 
 func TestDefaultEventProcessor_QSizeMet(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := &QueueingEventProcessor{
-		MaxQueueSize:    2,
-		FlushInterval:   100,
-		Q:               NewInMemoryQueue(2),
-		EventDispatcher: &MockDispatcher{Events:NewInMemoryQueue(2)},
-		wg:              exeCtx.GetWaitSync(),
-	}
-	processor.BatchSize = 10
-	processor.StartTicker(exeCtx.GetContext())
+	processor := NewEventProcessor(exeCtx, 10, 2, 100, func (qp *QueueingEventProcessor) {
+		qp.Q = NewInMemoryQueue(2)
+		qp.EventDispatcher = &MockDispatcher{Events:NewInMemoryQueue(100)}
+	})
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -164,15 +154,10 @@ func TestDefaultEventProcessor_QSizeMet(t *testing.T) {
 
 func TestDefaultEventProcessor_FailedDispatch(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := &QueueingEventProcessor{
-		MaxQueueSize:    100,
-		FlushInterval:   100,
-		Q:               NewInMemoryQueue(100),
-		EventDispatcher: &MockDispatcher{ShouldFail:true, Events:NewInMemoryQueue(100)},
-		wg:              exeCtx.GetWaitSync(),
-	}
-	processor.BatchSize = 10
-	processor.StartTicker(exeCtx.GetContext())
+	processor := NewEventProcessor(exeCtx, 10, 100, 100, func (qp *QueueingEventProcessor) {
+		qp.Q = NewInMemoryQueue(100)
+		qp.EventDispatcher = &MockDispatcher{ShouldFail: true, Events:NewInMemoryQueue(100)}
+	})
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -199,15 +184,10 @@ func TestDefaultEventProcessor_FailedDispatch(t *testing.T) {
 
 func TestBatchEventProcessor_FlushesOnClose(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := &QueueingEventProcessor{
-		MaxQueueSize:    100,
-		FlushInterval:   30 * time.Second,
-		Q:               NewInMemoryQueue(100),
-		EventDispatcher: &MockDispatcher{Events:NewInMemoryQueue(100)},
-		wg:              exeCtx.GetWaitSync(),
-	}
-	processor.BatchSize = 10
-	processor.StartTicker(exeCtx.GetContext())
+	processor := NewEventProcessor(exeCtx, 10, 100, 30 * time.Second, func (qp *QueueingEventProcessor) {
+		qp.Q = NewInMemoryQueue(100)
+		qp.EventDispatcher = &MockDispatcher{Events:NewInMemoryQueue(100)}
+	})
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -227,15 +207,10 @@ func TestBatchEventProcessor_FlushesOnClose(t *testing.T) {
 
 func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := &QueueingEventProcessor{
-		MaxQueueSize:    100,
-		FlushInterval:   100,
-		Q:               NewInMemoryQueue(100),
-		EventDispatcher: &MockDispatcher{Events:NewInMemoryQueue(100)},
-		wg:              exeCtx.GetWaitSync(),
-	}
-	processor.BatchSize = 10
-	processor.StartTicker(exeCtx.GetContext())
+	processor := NewEventProcessor(exeCtx, 10, 100, 100, func (qp *QueueingEventProcessor) {
+		qp.Q = NewInMemoryQueue(100)
+		qp.EventDispatcher = &MockDispatcher{Events:NewInMemoryQueue(100)}
+	})
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -266,15 +241,10 @@ func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 
 func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := &QueueingEventProcessor{
-		MaxQueueSize:    100,
-		FlushInterval:   100,
-		Q:               NewInMemoryQueue(100),
-		EventDispatcher: &MockDispatcher{Events:NewInMemoryQueue(100)},
-		wg:              exeCtx.GetWaitSync(),
-	}
-	processor.BatchSize = 10
-	processor.StartTicker(exeCtx.GetContext())
+	processor := NewEventProcessor(exeCtx, 10, 100, 100, func (qp *QueueingEventProcessor) {
+		qp.Q = NewInMemoryQueue(100)
+		qp.EventDispatcher = &MockDispatcher{Events:NewInMemoryQueue(100)}
+	})
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -305,15 +275,10 @@ func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 
 func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := &QueueingEventProcessor{
-		MaxQueueSize:    100,
-		FlushInterval:   100,
-		Q:               NewChanQueue(100),
-		EventDispatcher: &HTTPEventDispatcher{},
-		wg:              exeCtx.GetWaitSync(),
-	}
-	processor.BatchSize = 10
-	processor.StartTicker(exeCtx.GetContext())
+	processor := NewEventProcessor(exeCtx, 10, 100, 100, func (qp *QueueingEventProcessor) {
+		qp.Q = NewInMemoryQueue(100)
+		qp.EventDispatcher = &HTTPEventDispatcher{}
+	})
 
 	impression := BuildTestImpressionEvent()
 
@@ -329,9 +294,10 @@ func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
 
 func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := &QueueingEventProcessor{MaxQueueSize: 100, FlushInterval: 100, Q: NewChanQueue(100), EventDispatcher: &MockDispatcher{Events:NewInMemoryQueue(100)}, wg: exeCtx.GetWaitSync()}
-	processor.BatchSize = 10
-	processor.StartTicker(exeCtx.GetContext())
+	processor := NewEventProcessor(exeCtx, 10, 100, 100, func (qp *QueueingEventProcessor) {
+		qp.Q = NewInMemoryQueue(100)
+		qp.EventDispatcher = &MockDispatcher{Events:NewInMemoryQueue(100)}
+	})
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
