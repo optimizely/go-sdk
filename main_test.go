@@ -7,7 +7,7 @@ import (
 
 	"github.com/DATA-DOG/godog"
 	"github.com/DATA-DOG/godog/colors"
-	"github.com/optimizely/go-sdk/support"
+	"github.com/optimizely/go-sdk/fscTest/support"
 )
 
 var opt = godog.Options{Output: colors.Colored(os.Stdout)}
