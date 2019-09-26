@@ -25,32 +25,71 @@ import (
 	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/optimizely/logging"
+	"github.com/optimizely/go-sdk/optimizely/notification"
 	"github.com/optimizely/go-sdk/optimizely/utils"
 )
 
-const defaultPollingInterval = 5 * time.Minute // default to 5 minutes for polling
+// DefaultPollingInterval sets default interval for polling manager
+const DefaultPollingInterval = 5 * time.Minute // default to 5 minutes for polling
 
 // DatafileURLTemplate is used to construct the endpoint for retrieving the datafile from the CDN
 const DatafileURLTemplate = "https://cdn.optimizely.com/datafiles/%s.json"
 
 var cmLogger = logging.GetLogger("PollingConfigManager")
 
-// PollingProjectConfigManagerOptions used to create an instance with custom configuration
-type PollingProjectConfigManagerOptions struct {
-	Datafile        []byte
-	PollingInterval time.Duration
-	Requester       utils.Requester
-}
-
 // PollingProjectConfigManager maintains a dynamic copy of the project config
 type PollingProjectConfigManager struct {
-	requester       utils.Requester
-	pollingInterval time.Duration
-	projectConfig   optimizely.ProjectConfig
-	configLock      sync.RWMutex
-	err             error
+	requester          utils.Requester
+	pollingInterval    time.Duration
+	notificationCenter notification.Center
+	initDatafile       []byte
 
-	exeCtx utils.ExecutionCtx // context used for execution control
+	configLock    sync.RWMutex
+	err           error
+	projectConfig optimizely.ProjectConfig
+	exeCtx        utils.ExecutionCtx // context used for execution control
+}
+
+// OptionFunc is a type to a proper func
+type OptionFunc func(*PollingProjectConfigManager)
+
+// DefaultRequester is an optional function, sets default requester based on a key.
+func DefaultRequester(sdkKey string) OptionFunc {
+	return func(p *PollingProjectConfigManager) {
+
+		url := fmt.Sprintf(DatafileURLTemplate, sdkKey)
+		requester := utils.NewHTTPRequester(url)
+
+		p.requester = requester
+	}
+}
+
+// Requester is an optional function, sets a passed requester
+func Requester(requester utils.Requester) OptionFunc {
+	return func(p *PollingProjectConfigManager) {
+		p.requester = requester
+	}
+}
+
+// PollingInterval is an optional function, sets a passed polling interval
+func PollingInterval(interval time.Duration) OptionFunc {
+	return func(p *PollingProjectConfigManager) {
+		p.pollingInterval = interval
+	}
+}
+
+// NotificationCenter is an optional function, sets a passed notification
+func NotificationCenter(notificationCenter notification.Center) OptionFunc {
+	return func(p *PollingProjectConfigManager) {
+		p.notificationCenter = notificationCenter
+	}
+}
+
+// InitialDatafile is an optional function, sets a passed datafile
+func InitialDatafile(datafile []byte) OptionFunc {
+	return func(p *PollingProjectConfigManager) {
+		p.initDatafile = datafile
+	}
 }
 
 // SyncConfig gets current datafile and updates projectConfig
@@ -77,6 +116,16 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 		} else {
 			cmLogger.Debug(fmt.Sprintf("Received new datafile and updated config. Old revision number: %s. New revision number: %s", cm.projectConfig.GetRevision(), projectConfig.GetRevision()))
 			cm.projectConfig = projectConfig
+
+			if cm.notificationCenter != nil {
+				projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
+					Type:     notification.ProjectConfigUpdate,
+					Revision: cm.projectConfig.GetRevision(),
+				}
+				if err = cm.notificationCenter.Send(notification.ProjectConfigUpdate, projectConfigUpdateNotification); err != nil {
+					cmLogger.Warning("Problem with sending notification")
+				}
+			}
 		}
 	} else {
 		cm.projectConfig = projectConfig
@@ -85,12 +134,7 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	cm.configLock.Unlock()
 }
 
-func (cm *PollingProjectConfigManager) start(initialDatafile []byte, init bool) {
-
-	if init {
-		cm.SyncConfig(initialDatafile)
-		return
-	}
+func (cm *PollingProjectConfigManager) start() {
 
 	t := time.NewTicker(cm.pollingInterval)
 	for {
@@ -104,36 +148,22 @@ func (cm *PollingProjectConfigManager) start(initialDatafile []byte, init bool) 
 	}
 }
 
-// NewPollingProjectConfigManagerWithOptions returns new instance of PollingProjectConfigManager with the given options
-func NewPollingProjectConfigManagerWithOptions(exeCtx utils.ExecutionCtx, sdkKey string, options PollingProjectConfigManagerOptions) *PollingProjectConfigManager {
+// NewPollingProjectConfigManager returns an instance of the polling config manager with the customized configuration
+func NewPollingProjectConfigManager(exeCtx utils.ExecutionCtx, sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
+	url := fmt.Sprintf(DatafileURLTemplate, sdkKey)
 
-	var requester utils.Requester
-	if options.Requester != nil {
-		requester = options.Requester
-	} else {
-		url := fmt.Sprintf(DatafileURLTemplate, sdkKey)
-		requester = utils.NewHTTPRequester(url)
+	pollingProjectConfigManager := PollingProjectConfigManager{exeCtx: exeCtx, pollingInterval: DefaultPollingInterval, requester: utils.NewHTTPRequester(url)}
+
+	for _, opt := range pollingMangerOptions {
+		opt(&pollingProjectConfigManager)
 	}
 
-	pollingInterval := options.PollingInterval
-	if pollingInterval == 0 {
-		pollingInterval = defaultPollingInterval
-	}
-
-	pollingProjectConfigManager := PollingProjectConfigManager{requester: requester, pollingInterval: pollingInterval, exeCtx: exeCtx}
-
-	pollingProjectConfigManager.SyncConfig(options.Datafile) // initial poll
+	initDatafile := pollingProjectConfigManager.initDatafile
+	pollingProjectConfigManager.SyncConfig(initDatafile) // initial poll
 
 	cmLogger.Debug("Polling Config Manager Initiated")
-	go pollingProjectConfigManager.start([]byte{}, false)
+	go pollingProjectConfigManager.start()
 	return &pollingProjectConfigManager
-}
-
-// NewPollingProjectConfigManager returns an instance of the polling config manager with the default configuration
-func NewPollingProjectConfigManager(exeCtx utils.ExecutionCtx, sdkKey string) *PollingProjectConfigManager {
-	options := PollingProjectConfigManagerOptions{}
-	configManager := NewPollingProjectConfigManagerWithOptions(exeCtx, sdkKey, options)
-	return configManager
 }
 
 // GetConfig returns the project config
@@ -141,4 +171,30 @@ func (cm *PollingProjectConfigManager) GetConfig() (optimizely.ProjectConfig, er
 	cm.configLock.RLock()
 	defer cm.configLock.RUnlock()
 	return cm.projectConfig, cm.err
+}
+
+// OnProjectConfigUpdate registers a handler for ProjectConfigUpdate notifications
+func (cm *PollingProjectConfigManager) OnProjectConfigUpdate(callback func(notification.ProjectConfigUpdateNotification)) (int, error) {
+	handler := func(payload interface{}) {
+		if projectConfigUpdateNotification, ok := payload.(notification.ProjectConfigUpdateNotification); ok {
+			callback(projectConfigUpdateNotification)
+		} else {
+			cmLogger.Warning(fmt.Sprintf("Unable to convert notification payload %v into ProjectConfigUpdateNotification", payload))
+		}
+	}
+	id, err := cm.notificationCenter.AddHandler(notification.ProjectConfigUpdate, handler)
+	if err != nil {
+		cmLogger.Warning("Problem with adding notification handler")
+		return 0, err
+	}
+	return id, nil
+}
+
+// RemoveOnProjectConfigUpdate removes handler for ProjectConfigUpdate notification with given id
+func (cm *PollingProjectConfigManager) RemoveOnProjectConfigUpdate(id int) error {
+	if err := cm.notificationCenter.RemoveHandler(id, notification.ProjectConfigUpdate); err != nil {
+		cmLogger.Warning("Problem with removing notification handler")
+		return err
+	}
+	return nil
 }
