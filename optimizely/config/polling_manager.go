@@ -78,8 +78,8 @@ func PollingInterval(interval time.Duration) OptionFunc {
 	}
 }
 
-// Notification is an optional function, sets a passed notification
-func Notification(notificationCenter notification.Center) OptionFunc {
+// NotificationCenter is an optional function, sets a passed notification
+func NotificationCenter(notificationCenter notification.Center) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.notificationCenter = notificationCenter
 	}
