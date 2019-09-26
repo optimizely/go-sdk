@@ -80,7 +80,7 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 		return
 	}
 
-	previousRevision := "null"
+	var previousRevision string
 	if cm.projectConfig != nil {
 		previousRevision = cm.projectConfig.GetRevision()
 	}
