@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/DATA-DOG/godog/gherkin"
-	"github.com/optimizely/go-sdk/fscTest/optimizely/datamodels"
+	"github.com/optimizely/go-sdk/Tests/integration/optimizely/datamodels"
 )
 
 // Context holds both request and response for a scenario

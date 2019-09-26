@@ -7,8 +7,8 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/optimizely/go-sdk/fscTest/optimizely/datamodels"
-	"github.com/optimizely/go-sdk/fscTest/optimizely/listener"
+	"github.com/optimizely/go-sdk/Tests/integration/optimizely/datamodels"
+	"github.com/optimizely/go-sdk/Tests/integration/optimizely/listener"
 	"github.com/optimizely/go-sdk/optimizely/client"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
