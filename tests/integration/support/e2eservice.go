@@ -70,6 +70,23 @@ func ProcessRequest(request datamodels.RequestParams) (*datamodels.ResponseParam
 			return &responseParams, err
 		}
 		break
+	case "get_feature_variable":
+		var params datamodels.GetFeatureVariableRequestParams
+		err := yaml.Unmarshal([]byte(request.Arguments), &params)
+		if err == nil {
+			user := entities.UserContext{
+				ID:         params.UserID,
+				Attributes: params.Attributes,
+			}
+			value, valueType, err := client.GetFeatureVariable(params.FeatureKey, params.VariableKey, user)
+			if err == nil {
+				responseParams.Result = value
+				responseParams.Type = valueType
+			}
+			responseParams.ListenerCalled = listenersCalled()
+			return &responseParams, err
+		}
+		break
 	case "get_feature_variable_integer":
 		var params datamodels.GetFeatureVariableRequestParams
 		err := yaml.Unmarshal([]byte(request.Arguments), &params)

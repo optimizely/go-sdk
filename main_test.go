@@ -10,7 +10,7 @@ import (
 	"github.com/optimizely/go-sdk/tests/integration/support"
 )
 
-var opt = godog.Options{Output: colors.Colored(os.Stdout), Tags: "@ALL"}
+var opt = godog.Options{Output: colors.Colored(os.Stdout)}
 var Godogs int
 
 func init() {
@@ -38,12 +38,14 @@ func FeatureContext(s *godog.Suite) {
 	s.Step(`^the datafile is "([^"]*)"$`, context.TheDatafileIs)
 	s.Step(`^(\d+) "([^"]*)" listener is added$`, context.ListenerIsAdded)
 	s.Step(`^([^\\\"]*) is called with arguments$`, context.IsCalledWithArguments)
-	s.Step(`^the result should be "([^"]*)"$`, context.TheResultShouldBeString)
-	s.Step(`^the result should be (\d+)$`, context.TheResultShouldBeInteger)
-	s.Step(`^the result should be (\d+)\.(\d+)$`, context.TheResultShouldBeFloat)
+	s.Step(`^the result should be (?:string )?"([^"]*)"$`, context.TheResultShouldBeString)
+	s.Step(`^the result should be (?:integer )?(\d+)$`, context.TheResultShouldBeInteger)
+	s.Step(`^the result should be (?:double )?(\d+)\.(\d+)$`, context.TheResultShouldBeFloat)
 	s.Step(`^the result should be boolean "([^"]*)"$`, context.TheResultShouldBeBoolean)
 	s.Step(`^in the response, "([^"]*)" should be "([^"]*)"$`, context.InTheResponseKeyShouldBeObject)
+	s.Step(`^in the response, "([^"]*)" should match$`, context.InTheResponseShouldMatch)
 	s.Step(`^there are no dispatched events$`, context.ThereAreNoDispatchedEvents)
+	s.Step(`^dispatched events payloads include$`, context.DispatchedEventsPayloadsInclude)
 
 	// s.BeforeScenario(func(interface{}) {
 	// 	Godogs = 0 // clean the state before every scenario
