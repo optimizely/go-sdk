@@ -29,13 +29,6 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/utils"
 )
 
-// Options are used to create an instance of the OptimizelyClient with custom configuration
-type Options struct {
-	ProjectConfigManager optimizely.ProjectConfigManager
-	DecisionService      decision.Service
-	EventProcessor       event.Processor
-}
-
 // OptimizelyFactory is used to construct an instance of the OptimizelyClient
 type OptimizelyFactory struct {
 	SDKKey   string
@@ -45,26 +38,40 @@ type OptimizelyFactory struct {
 // OptionFunc is a type to a proper func
 type OptionFunc func(*OptimizelyClient, utils.ExecutionCtx)
 
-// GetClient gets client and sets some parameters
-func (f OptimizelyFactory) GetClient(clientOptions ...OptionFunc) *OptimizelyClient {
+// Client gets client and sets some parameters
+func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClient, error) {
+
 	executionCtx := utils.NewCancelableExecutionCtx()
+	notificationCenter := notification.NewNotificationCenter()
+
 	appClient := &OptimizelyClient{
-		executionCtx: executionCtx,
+		executionCtx:    executionCtx,
+		decisionService: decision.NewCompositeService(notificationCenter),
+		eventProcessor:  event.NewEventProcessor(executionCtx, event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
 	}
+
 	for _, opt := range clientOptions {
 		opt(appClient, executionCtx)
 	}
-	return appClient
+
+	if f.SDKKey == "" && f.Datafile == nil && appClient.configManager == nil {
+		return nil, errors.New("unable to instantiate client: no project config manager, SDK key, or a Datafile provided")
+	}
+
+	if appClient.configManager == nil { // if it was not passed then assign here
+
+		appClient.configManager = config.NewPollingProjectConfigManager(executionCtx, f.SDKKey,
+			config.InitialDatafile(f.Datafile), config.PollingInterval(config.DefaultPollingInterval), config.NotificationCenter(notificationCenter))
+	}
+
+	return appClient, nil
 }
 
 // PollingConfigManager sets polling config manager on a client
-func PollingConfigManager(sdkKey string, pollingInterval time.Duration, dataFile []byte) OptionFunc {
+func PollingConfigManager(sdkKey string, pollingInterval time.Duration, initDataFile []byte, notificationCenter notification.Center) OptionFunc {
 	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
-		options := config.PollingProjectConfigManagerOptions{
-			Datafile:        dataFile,
-			PollingInterval: pollingInterval,
-		}
-		f.configManager = config.NewPollingProjectConfigManagerWithOptions(f.executionCtx, sdkKey, options)
+		f.configManager = config.NewPollingProjectConfigManager(f.executionCtx, sdkKey, config.InitialDatafile(initDataFile),
+			config.PollingInterval(pollingInterval), config.NotificationCenter(notificationCenter))
 	}
 }
 
@@ -126,57 +133,12 @@ func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 		configManager = staticConfigManager
 	}
 
-	clientOptions := Options{
-		ProjectConfigManager: configManager,
-	}
-	client, err := f.ClientWithOptions(clientOptions)
-	return client, err
-}
-
-// ClientWithOptions returns a client initialized with the given configuration options
-func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*OptimizelyClient, error) {
-
-	executionCtx := utils.NewCancelableExecutionCtx()
-	client := &OptimizelyClient{
-		executionCtx: executionCtx,
-	}
-
 	notificationCenter := notification.NewNotificationCenter()
 
-	switch {
-	case clientOptions.ProjectConfigManager != nil:
-		client.configManager = clientOptions.ProjectConfigManager
-	case f.SDKKey != "":
-		options := config.PollingProjectConfigManagerOptions{
-			Datafile: f.Datafile,
-		}
-		client.configManager = config.NewPollingProjectConfigManagerWithOptions(executionCtx, f.SDKKey, options)
-	case f.Datafile != nil:
-		staticConfigManager, _ := config.NewStaticProjectConfigManagerFromPayload(f.Datafile)
-		client.configManager = staticConfigManager
-	default:
-		return client, errors.New("unable to instantiate client: no project config manager, SDK key, or a Datafile provided")
-	}
-
-	if clientOptions.DecisionService != nil {
-		client.decisionService = clientOptions.DecisionService
-	} else {
-		client.decisionService = decision.NewCompositeService(notificationCenter)
-	}
-
-	if clientOptions.EventProcessor != nil {
-		client.eventProcessor = clientOptions.EventProcessor
-	} else {
-		client.eventProcessor = event.NewEventProcessor(executionCtx, event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval)
-	}
-
-	return client, nil
-}
-
-// Client returns a client initialized with the defaults
-func (f OptimizelyFactory) Client() (*OptimizelyClient, error) {
-	// Creates a default, canceleable context
-	clientOptions := Options{}
-	client, err := f.ClientWithOptions(clientOptions)
-	return client, err
+	optlyClient, e := f.Client(
+		ConfigManager(configManager),
+		CompositeDecisionService(notificationCenter),
+		BatchEventProcessor(event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
+	)
+	return optlyClient, e
 }

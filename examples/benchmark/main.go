@@ -44,10 +44,7 @@ func stressTest() {
 	notificationCenter := notification.NewNotificationCenter()
 	decisionService := decision.NewCompositeService(notificationCenter)
 
-	clientOptions := client.Options{
-		DecisionService: decisionService,
-	}
-	clientApp, err := optlyClient.ClientWithOptions(clientOptions)
+	clientApp, err := optlyClient.Client(client.DecisionService(decisionService))
 	if err != nil {
 		log.Print(err)
 	}

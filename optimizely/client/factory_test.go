@@ -23,6 +23,7 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/config"
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/optimizely/event"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,13 +49,11 @@ func TestFactoryClientReturnsDefaultClient(t *testing.T) {
 func TestClientWithSDKKey(t *testing.T) {
 	factory := OptimizelyFactory{SDKKey: "1212"}
 
-	clientOptions := Options{}
-
-	client, err := factory.ClientWithOptions(clientOptions)
+	optimizelyClient, err := factory.Client()
 	assert.NoError(t, err)
-	assert.NotNil(t, client.configManager)
-	assert.NotNil(t, client.decisionService)
-	assert.NotNil(t, client.eventProcessor)
+	assert.NotNil(t, optimizelyClient.configManager)
+	assert.NotNil(t, optimizelyClient.decisionService)
+	assert.NotNil(t, optimizelyClient.eventProcessor)
 }
 
 func TestClientWithProjectConfigManagerInOptions(t *testing.T) {
@@ -62,27 +61,11 @@ func TestClientWithProjectConfigManagerInOptions(t *testing.T) {
 	projectConfig := datafileprojectconfig.DatafileProjectConfig{}
 	configManager := config.NewStaticProjectConfigManager(projectConfig)
 
-	clientOptions := Options{ProjectConfigManager: configManager}
-
-	client, err := factory.ClientWithOptions(clientOptions)
+	optimizelyClient, err := factory.Client(ConfigManager(configManager))
 	assert.NoError(t, err)
-	assert.NotNil(t, client.configManager)
-	assert.NotNil(t, client.decisionService)
-	assert.NotNil(t, client.eventProcessor)
-}
-
-func TestClientWithNoDecisionServiceAndEventProcessorInOptions(t *testing.T) {
-	factory := OptimizelyFactory{}
-	projectConfig := datafileprojectconfig.DatafileProjectConfig{}
-	configManager := config.NewStaticProjectConfigManager(projectConfig)
-
-	clientOptions := Options{ProjectConfigManager: configManager}
-
-	client, err := factory.ClientWithOptions(clientOptions)
-	assert.NoError(t, err)
-	assert.NotNil(t, client.configManager)
-	assert.NotNil(t, client.decisionService)
-	assert.NotNil(t, client.eventProcessor)
+	assert.NotNil(t, optimizelyClient.configManager)
+	assert.NotNil(t, optimizelyClient.decisionService)
+	assert.NotNil(t, optimizelyClient.eventProcessor)
 }
 
 func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
@@ -97,26 +80,8 @@ func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 		EventDispatcher: &MockDispatcher{},
 	}
 
-	clientOptions := Options{
-		ProjectConfigManager: configManager,
-		DecisionService:      decisionService,
-		EventProcessor:       processor,
-	}
-
-	client, err := factory.ClientWithOptions(clientOptions)
+	optimizelyClient, err := factory.Client(ConfigManager(configManager), DecisionService(decisionService), EventProcessor(processor))
 	assert.NoError(t, err)
-	assert.Equal(t, decisionService, client.decisionService)
-	assert.Equal(t, processor, client.eventProcessor)
-}
-
-func TestClientWithOptionsErrorCase(t *testing.T) {
-	// Error when no config manager, sdk key, or datafile is provided
-	factory := OptimizelyFactory{}
-	clientOptions := Options{}
-
-	_, err := factory.ClientWithOptions(clientOptions)
-	expectedErr := errors.New("unable to instantiate client: no project config manager, SDK key, or a Datafile provided")
-	if assert.Error(t, err) {
-		assert.Equal(t, err, expectedErr)
-	}
+	assert.Equal(t, decisionService, optimizelyClient.decisionService)
+	assert.Equal(t, processor, optimizelyClient.eventProcessor)
 }
