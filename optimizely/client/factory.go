@@ -25,7 +25,6 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/config"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/event"
-	"github.com/optimizely/go-sdk/optimizely/notification"
 	"github.com/optimizely/go-sdk/optimizely/utils"
 )
 
@@ -42,11 +41,10 @@ type OptionFunc func(*OptimizelyClient, utils.ExecutionCtx)
 func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClient, error) {
 
 	executionCtx := utils.NewCancelableExecutionCtx()
-	notificationCenter := notification.NewNotificationCenter()
 
 	appClient := &OptimizelyClient{
 		executionCtx:    executionCtx,
-		decisionService: decision.NewCompositeService(notificationCenter),
+		decisionService: decision.NewCompositeService(f.SDKKey),
 		eventProcessor:  event.NewEventProcessor(executionCtx, event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
 	}
 
@@ -61,17 +59,17 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 	if appClient.configManager == nil { // if it was not passed then assign here
 
 		appClient.configManager = config.NewPollingProjectConfigManager(executionCtx, f.SDKKey,
-			config.InitialDatafile(f.Datafile), config.PollingInterval(config.DefaultPollingInterval), config.NotificationCenter(notificationCenter))
+			config.InitialDatafile(f.Datafile), config.PollingInterval(config.DefaultPollingInterval))
 	}
 
 	return appClient, nil
 }
 
 // PollingConfigManager sets polling config manager on a client
-func PollingConfigManager(sdkKey string, pollingInterval time.Duration, initDataFile []byte, notificationCenter notification.Center) OptionFunc {
+func PollingConfigManager(sdkKey string, pollingInterval time.Duration, initDataFile []byte) OptionFunc {
 	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
 		f.configManager = config.NewPollingProjectConfigManager(f.executionCtx, sdkKey, config.InitialDatafile(initDataFile),
-			config.PollingInterval(pollingInterval), config.NotificationCenter(notificationCenter))
+			config.PollingInterval(pollingInterval))
 	}
 }
 
@@ -83,9 +81,9 @@ func ConfigManager(configManager optimizely.ProjectConfigManager) OptionFunc {
 }
 
 // CompositeDecisionService sets decision service on a client
-func CompositeDecisionService(notificationCenter notification.Center) OptionFunc {
+func CompositeDecisionService(sdkKey string) OptionFunc {
 	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
-		f.decisionService = decision.NewCompositeService(notificationCenter)
+		f.decisionService = decision.NewCompositeService(sdkKey)
 	}
 }
 
@@ -133,11 +131,9 @@ func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 		configManager = staticConfigManager
 	}
 
-	notificationCenter := notification.NewNotificationCenter()
-
 	optlyClient, e := f.Client(
 		ConfigManager(configManager),
-		CompositeDecisionService(notificationCenter),
+		CompositeDecisionService(f.SDKKey),
 		BatchEventProcessor(event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
 	)
 	return optlyClient, e
