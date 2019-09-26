@@ -99,33 +99,37 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	}
 
 	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(datafile)
-	if err != nil {
-		cmLogger.Error("failed to create project config", err)
-	}
 
 	cm.configLock.Lock()
-	if cm.projectConfig != nil {
-		if cm.projectConfig.GetRevision() == projectConfig.GetRevision() {
-			cmLogger.Debug(fmt.Sprintf("No datafile updates. Current revision number: %s", cm.projectConfig.GetRevision()))
-		} else {
-			cmLogger.Debug(fmt.Sprintf("Received new datafile and updated config. Old revision number: %s. New revision number: %s", cm.projectConfig.GetRevision(), projectConfig.GetRevision()))
-			cm.projectConfig = projectConfig
-
-			if cm.notificationCenter != nil {
-				projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
-					Type:     notification.ProjectConfigUpdate,
-					Revision: cm.projectConfig.GetRevision(),
-				}
-				if err = cm.notificationCenter.Send(notification.ProjectConfigUpdate, projectConfigUpdateNotification); err != nil {
-					cmLogger.Warning("Problem with sending notification")
-				}
-			}
-		}
-	} else {
-		cm.projectConfig = projectConfig
+	defer func() {
+		cm.err = err
+		cm.configLock.Unlock()
+	}()
+	if err != nil {
+		cmLogger.Error("failed to create project config", err)
+		return
 	}
-	cm.err = err
-	cm.configLock.Unlock()
+
+	var previousRevision string
+	if cm.projectConfig != nil {
+		previousRevision = cm.projectConfig.GetRevision()
+	}
+	if projectConfig.GetRevision() == previousRevision {
+		cmLogger.Debug(fmt.Sprintf("No datafile updates. Current revision number: %s", cm.projectConfig.GetRevision()))
+		return
+	}
+	cmLogger.Debug(fmt.Sprintf("New datafile set with revision: %s. Old revision: %s", projectConfig.GetRevision(), previousRevision))
+	cm.projectConfig = projectConfig
+
+	if cm.notificationCenter != nil {
+		projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
+			Type:     notification.ProjectConfigUpdate,
+			Revision: cm.projectConfig.GetRevision(),
+		}
+		if err = cm.notificationCenter.Send(notification.ProjectConfigUpdate, projectConfigUpdateNotification); err != nil {
+			cmLogger.Warning("Problem with sending notification")
+		}
+	}
 }
 
 func (cm *PollingProjectConfigManager) start() {
