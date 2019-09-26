@@ -92,7 +92,7 @@ func (s *CompositeServiceTestSuite) TestDecisionListeners() {
 
 func (s *CompositeServiceTestSuite) TestNewCompositeService() {
 	notificationCenter := notification.NewNotificationCenter()
-	compositeService := NewCompositeService(notificationCenter)
+	compositeService := NewCompositeService("sdk_key")
 	s.Equal(notificationCenter, compositeService.notificationCenter)
 	s.IsType(&CompositeExperimentService{}, compositeService.compositeExperimentService)
 	s.IsType(&CompositeFeatureService{}, compositeService.compositeFeatureService)
