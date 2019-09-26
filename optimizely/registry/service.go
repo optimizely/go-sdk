@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package registry is the global access point for retrieving instances of services by SDK Key //
 package registry
 
 import (
