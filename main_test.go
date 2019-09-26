@@ -10,7 +10,7 @@ import (
 	"github.com/optimizely/go-sdk/tests/integration/support"
 )
 
-var opt = godog.Options{Output: colors.Colored(os.Stdout)}
+var opt = godog.Options{Output: colors.Colored(os.Stdout), Tags: "@ALL"}
 var Godogs int
 
 func init() {
@@ -38,7 +38,10 @@ func FeatureContext(s *godog.Suite) {
 	s.Step(`^the datafile is "([^"]*)"$`, context.TheDatafileIs)
 	s.Step(`^(\d+) "([^"]*)" listener is added$`, context.ListenerIsAdded)
 	s.Step(`^([^\\\"]*) is called with arguments$`, context.IsCalledWithArguments)
-	s.Step(`^the result should be "([^"]*)"$`, context.TheResultShouldBe)
+	s.Step(`^the result should be "([^"]*)"$`, context.TheResultShouldBeString)
+	s.Step(`^the result should be (\d+)$`, context.TheResultShouldBeInteger)
+	s.Step(`^the result should be (\d+)\.(\d+)$`, context.TheResultShouldBeFloat)
+	s.Step(`^the result should be boolean "([^"]*)"$`, context.TheResultShouldBeBoolean)
 	s.Step(`^in the response, "([^"]*)" should be "([^"]*)"$`, context.InTheResponseKeyShouldBeObject)
 	s.Step(`^there are no dispatched events$`, context.ThereAreNoDispatchedEvents)
 

@@ -70,6 +70,70 @@ func ProcessRequest(request datamodels.RequestParams) (*datamodels.ResponseParam
 			return &responseParams, err
 		}
 		break
+	case "get_feature_variable_integer":
+		var params datamodels.GetFeatureVariableRequestParams
+		err := yaml.Unmarshal([]byte(request.Arguments), &params)
+		if err == nil {
+			user := entities.UserContext{
+				ID:         params.UserID,
+				Attributes: params.Attributes,
+			}
+			value, err := client.GetFeatureVariableInteger(params.FeatureKey, params.VariableKey, user)
+			if err == nil {
+				responseParams.Result = value
+			}
+			responseParams.ListenerCalled = listenersCalled()
+			return &responseParams, err
+		}
+		break
+	case "get_feature_variable_double":
+		var params datamodels.GetFeatureVariableRequestParams
+		err := yaml.Unmarshal([]byte(request.Arguments), &params)
+		if err == nil {
+			user := entities.UserContext{
+				ID:         params.UserID,
+				Attributes: params.Attributes,
+			}
+			value, err := client.GetFeatureVariableDouble(params.FeatureKey, params.VariableKey, user)
+			if err == nil {
+				responseParams.Result = value
+			}
+			responseParams.ListenerCalled = listenersCalled()
+			return &responseParams, err
+		}
+		break
+	case "get_feature_variable_boolean":
+		var params datamodels.GetFeatureVariableRequestParams
+		err := yaml.Unmarshal([]byte(request.Arguments), &params)
+		if err == nil {
+			user := entities.UserContext{
+				ID:         params.UserID,
+				Attributes: params.Attributes,
+			}
+			value, err := client.GetFeatureVariableBoolean(params.FeatureKey, params.VariableKey, user)
+			if err == nil {
+				responseParams.Result = value
+			}
+			responseParams.ListenerCalled = listenersCalled()
+			return &responseParams, err
+		}
+		break
+	case "get_feature_variable_string":
+		var params datamodels.GetFeatureVariableRequestParams
+		err := yaml.Unmarshal([]byte(request.Arguments), &params)
+		if err == nil {
+			user := entities.UserContext{
+				ID:         params.UserID,
+				Attributes: params.Attributes,
+			}
+			value, err := client.GetFeatureVariableString(params.FeatureKey, params.VariableKey, user)
+			if err == nil {
+				responseParams.Result = value
+			}
+			responseParams.ListenerCalled = listenersCalled()
+			return &responseParams, err
+		}
+		break
 	default:
 		break
 	}

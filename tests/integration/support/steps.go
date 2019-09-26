@@ -2,6 +2,7 @@ package support
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/DATA-DOG/godog/gherkin"
 	"github.com/optimizely/go-sdk/Tests/integration/optimizely/datamodels"
@@ -40,9 +41,35 @@ func (c *Context) IsCalledWithArguments(arg1 string, arg2 *gherkin.DocString) er
 	return fmt.Errorf("invalid api or arguments")
 }
 
-// TheResultShouldBe represents a step in the feature file
-func (c *Context) TheResultShouldBe(arg1 string) error {
+// TheResultShouldBeString represents a step in the feature file
+func (c *Context) TheResultShouldBeString(arg1 string) error {
 	if arg1 == c.responseParams.Result {
+		return nil
+	}
+	return fmt.Errorf("incorrect result")
+}
+
+// TheResultShouldBeInteger represents a step in the feature file
+func (c *Context) TheResultShouldBeInteger(arg1 int) error {
+	if arg1 == c.responseParams.Result {
+		return nil
+	}
+	return fmt.Errorf("incorrect result")
+}
+
+// TheResultShouldBeFloat represents a step in the feature file
+func (c *Context) TheResultShouldBeFloat(arg1, arg2 int) error {
+	floatvalue, _ := strconv.ParseFloat(fmt.Sprintf("%v.%v", arg1, arg2), 64)
+	if floatvalue == c.responseParams.Result {
+		return nil
+	}
+	return fmt.Errorf("incorrect result")
+}
+
+// TheResultShouldBeBoolean represents a step in the feature file
+func (c *Context) TheResultShouldBeBoolean(arg1 string) error {
+	boolValue, _ := strconv.ParseBool(arg1)
+	if boolValue == c.responseParams.Result {
 		return nil
 	}
 	return fmt.Errorf("incorrect result")
