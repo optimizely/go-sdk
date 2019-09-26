@@ -92,7 +92,8 @@ func DecisionService(decisionService decision.Service) OptionFunc {
 // BatchEventProcessor sets event processor on a client
 func BatchEventProcessor(batchSize, queueSize int, flushInterval time.Duration) OptionFunc {
 	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
-		f.eventProcessor = event.NewEventProcessor(executionCtx, batchSize, queueSize, flushInterval)
+		f.eventProcessor = event.NewEventProcessor(executionCtx, event.ProcessorBatchSize(batchSize),
+			event.ProcessorQueueSize(queueSize), event.ProcessorFlushInterval(flushInterval))
 	}
 }
 
@@ -167,7 +168,8 @@ func (f OptimizelyFactory) ClientWithOptions(clientOptions Options) (*Optimizely
 	if clientOptions.EventProcessor != nil {
 		client.eventProcessor = clientOptions.EventProcessor
 	} else {
-		client.eventProcessor = event.NewEventProcessor(executionCtx, event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval)
+		client.eventProcessor = event.NewEventProcessor(executionCtx, event.ProcessorBatchSize(event.DefaultBatchSize),
+			event.ProcessorQueueSize(event.DefaultEventQueueSize), event.ProcessorFlushInterval(event.DefaultEventFlushInterval))
 	}
 
 	return client, nil

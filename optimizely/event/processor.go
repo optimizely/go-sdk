@@ -57,30 +57,62 @@ const DefaultEventFlushInterval = 30 * time.Second
 var pLogger = logging.GetLogger("EventProcessor")
 
 // QPOption is the QueuingProcessor options that give you the ability to add one more more options before the processor is initialized.
-type QPOption func(qp *QueueingEventProcessor)
+type QPConfigOption func(qp *QueueingEventProcessor)
+
+func ProcessorBatchSize(bsize int) QPConfigOption {
+	return func(qp *QueueingEventProcessor) {
+		qp.BatchSize = bsize
+	}
+}
+
+func ProcessorQueueSize(qsize int) QPConfigOption {
+	return func(qp *QueueingEventProcessor) {
+		qp.MaxQueueSize = qsize
+	}
+}
+
+func ProcessorFlushInterval(flushInterval time.Duration) QPConfigOption {
+	return func(qp *QueueingEventProcessor) {
+		qp.FlushInterval = flushInterval
+	}
+}
+
+func ProcessorQ(q Queue) QPConfigOption {
+	return func(qp *QueueingEventProcessor) {
+		qp.Q = q
+	}
+}
+
+func ProcessorDispatcher(d Dispatcher) QPConfigOption {
+	return func(qp *QueueingEventProcessor) {
+		qp.EventDispatcher = d
+	}
+}
 
 // NewEventProcessor returns a new instance of QueueingEventProcessor with queueSize and flushInterval
-func NewEventProcessor(exeCtx utils.ExecutionCtx, batchSize, queueSize int, flushInterval time.Duration, options ...QPOption) *QueueingEventProcessor {
+func NewEventProcessor(exeCtx utils.ExecutionCtx, options ...QPConfigOption) *QueueingEventProcessor {
 	p := &QueueingEventProcessor{
-		MaxQueueSize:    queueSize,
-		FlushInterval:   flushInterval,
-		Q:               nil,
-		EventDispatcher: nil,
 		wg: exeCtx.GetWaitSync(),
-	}
-
-	if batchSize > 0 {
-		p.BatchSize = batchSize
-	} else {
-		p.BatchSize = DefaultBatchSize
 	}
 
 	for _, opt := range options {
 		opt(p)
 	}
 
+	if p.MaxQueueSize == 0 {
+		p.MaxQueueSize = defaultQueueSize
+	}
+
+	if p.FlushInterval == 0 {
+		p.FlushInterval = DefaultEventFlushInterval
+	}
+
+	if p.BatchSize == 0 {
+		p.BatchSize = DefaultBatchSize
+	}
+
 	if p.Q == nil {
-		p.Q = NewInMemoryQueue(queueSize)
+		p.Q = NewInMemoryQueue(p.MaxQueueSize)
 	}
 
 	if p.EventDispatcher == nil {
