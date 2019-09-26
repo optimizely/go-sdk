@@ -53,8 +53,8 @@ type PollingProjectConfigManager struct {
 // OptionFunc is a type to a proper func
 type OptionFunc func(*PollingProjectConfigManager)
 
-// SetDefaultRequester is an optional function, sets default requester based on a key.
-func SetDefaultRequester(sdkKey string) OptionFunc {
+// DefaultRequester is an optional function, sets default requester based on a key.
+func DefaultRequester(sdkKey string) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 
 		url := fmt.Sprintf(DatafileURLTemplate, sdkKey)
@@ -64,29 +64,29 @@ func SetDefaultRequester(sdkKey string) OptionFunc {
 	}
 }
 
-// SetRequester is an optional function, sets a passed requester
-func SetRequester(requester utils.Requester) OptionFunc {
+// Requester is an optional function, sets a passed requester
+func Requester(requester utils.Requester) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.requester = requester
 	}
 }
 
-// SetPollingInterval is an optional function, sets a passed polling interval
-func SetPollingInterval(interval time.Duration) OptionFunc {
+// PollingInterval is an optional function, sets a passed polling interval
+func PollingInterval(interval time.Duration) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.pollingInterval = interval
 	}
 }
 
-// SetNotification is an optional function, sets a passed notification
-func SetNotification(notificationCenter notification.Center) OptionFunc {
+// Notification is an optional function, sets a passed notification
+func Notification(notificationCenter notification.Center) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.notificationCenter = notificationCenter
 	}
 }
 
-// SetInitialDatafile is an optional function, sets a passed datafile
-func SetInitialDatafile(datafile []byte) OptionFunc {
+// InitialDatafile is an optional function, sets a passed datafile
+func InitialDatafile(datafile []byte) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.initDatafile = datafile
 	}

@@ -61,7 +61,7 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 	if appClient.configManager == nil { // if it was not passed then assign here
 
 		appClient.configManager = config.NewPollingProjectConfigManager(executionCtx, f.SDKKey,
-			config.SetInitialDatafile(f.Datafile), config.SetPollingInterval(config.DefaultPollingInterval), config.SetNotification(notificationCenter))
+			config.InitialDatafile(f.Datafile), config.PollingInterval(config.DefaultPollingInterval), config.Notification(notificationCenter))
 	}
 
 	return appClient, nil
@@ -70,8 +70,8 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 // PollingConfigManager sets polling config manager on a client
 func PollingConfigManager(sdkKey string, pollingInterval time.Duration, initDataFile []byte, notificationCenter notification.Center) OptionFunc {
 	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
-		f.configManager = config.NewPollingProjectConfigManager(f.executionCtx, sdkKey, config.SetInitialDatafile(initDataFile),
-			config.SetPollingInterval(pollingInterval), config.SetNotification(notificationCenter))
+		f.configManager = config.NewPollingProjectConfigManager(f.executionCtx, sdkKey, config.InitialDatafile(initDataFile),
+			config.PollingInterval(pollingInterval), config.Notification(notificationCenter))
 	}
 }
 

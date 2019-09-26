@@ -49,11 +49,11 @@ func TestFactoryClientReturnsDefaultClient(t *testing.T) {
 func TestClientWithSDKKey(t *testing.T) {
 	factory := OptimizelyFactory{SDKKey: "1212"}
 
-	app, err := factory.Client()
+	optimizelyClient, err := factory.Client()
 	assert.NoError(t, err)
-	assert.NotNil(t, app.configManager)
-	assert.NotNil(t, app.decisionService)
-	assert.NotNil(t, app.eventProcessor)
+	assert.NotNil(t, optimizelyClient.configManager)
+	assert.NotNil(t, optimizelyClient.decisionService)
+	assert.NotNil(t, optimizelyClient.eventProcessor)
 }
 
 func TestClientWithProjectConfigManagerInOptions(t *testing.T) {
@@ -61,11 +61,11 @@ func TestClientWithProjectConfigManagerInOptions(t *testing.T) {
 	projectConfig := datafileprojectconfig.DatafileProjectConfig{}
 	configManager := config.NewStaticProjectConfigManager(projectConfig)
 
-	app, err := factory.Client(ConfigManager(configManager))
+	optimizelyClient, err := factory.Client(ConfigManager(configManager))
 	assert.NoError(t, err)
-	assert.NotNil(t, app.configManager)
-	assert.NotNil(t, app.decisionService)
-	assert.NotNil(t, app.eventProcessor)
+	assert.NotNil(t, optimizelyClient.configManager)
+	assert.NotNil(t, optimizelyClient.decisionService)
+	assert.NotNil(t, optimizelyClient.eventProcessor)
 }
 
 func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
@@ -80,8 +80,8 @@ func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 		EventDispatcher: &MockDispatcher{},
 	}
 
-	app, err := factory.Client(ConfigManager(configManager), DecisionService(decisionService), EventProcessor(processor))
+	optimizelyClient, err := factory.Client(ConfigManager(configManager), DecisionService(decisionService), EventProcessor(processor))
 	assert.NoError(t, err)
-	assert.Equal(t, decisionService, app.decisionService)
-	assert.Equal(t, processor, app.eventProcessor)
+	assert.Equal(t, decisionService, optimizelyClient.decisionService)
+	assert.Equal(t, processor, optimizelyClient.eventProcessor)
 }

@@ -30,18 +30,18 @@ func main() {
 
 	/************* StaticClient ********************/
 
-	app, err := optimizelyFactory.StaticClient()
+	optimizelyClient, err := optimizelyFactory.StaticClient()
 
 	if err != nil {
 		fmt.Printf("Error instantiating client: %s", err)
 		return
 	}
 
-	enabled, _ := app.IsFeatureEnabled("mutext_feat", user)
+	enabled, _ := optimizelyClient.IsFeatureEnabled("mutext_feat", user)
 	fmt.Printf("Is feature enabled? %v\n", enabled)
 
 	fmt.Println()
-	app.Close() //  user can close dispatcher
+	optimizelyClient.Close() //  user can close dispatcher
 	fmt.Println()
 	/************* Client ********************/
 
@@ -49,25 +49,25 @@ func main() {
 		SDKKey: "4SLpaJA1r1pgE6T2CoMs9q",
 	}
 
-	app, err = optimizelyFactory.Client()
+	optimizelyClient, err = optimizelyFactory.Client()
 
 	if err != nil {
 		fmt.Printf("Error instantiating client: %s", err)
 		return
 	}
 
-	enabled, _ = app.IsFeatureEnabled("mutext_feat", user)
+	enabled, _ = optimizelyClient.IsFeatureEnabled("mutext_feat", user)
 	fmt.Printf("Is feature enabled? %v\n", enabled)
-	app.Close() //  user can close dispatcher
+	optimizelyClient.Close() //  user can close dispatcher
 
 	/************* Setting Polling Interval ********************/
 
 	notificationCenter := notification.NewNotificationCenter()
 
-	app, _ = optimizelyFactory.Client(
+	optimizelyClient, _ = optimizelyFactory.Client(
 		client.PollingConfigManager("4SLpaJA1r1pgE6T2CoMs9q", time.Second, nil, notificationCenter),
 		client.CompositeDecisionService(notificationCenter),
 		client.BatchEventProcessor(event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
 	)
-	app.Close()
+	optimizelyClient.Close()
 }
