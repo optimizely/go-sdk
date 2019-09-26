@@ -26,6 +26,7 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/optimizely/logging"
 	"github.com/optimizely/go-sdk/optimizely/notification"
+	"github.com/optimizely/go-sdk/optimizely/registry"
 	"github.com/optimizely/go-sdk/optimizely/utils"
 )
 
@@ -75,13 +76,6 @@ func Requester(requester utils.Requester) OptionFunc {
 func PollingInterval(interval time.Duration) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.pollingInterval = interval
-	}
-}
-
-// NotificationCenter is an optional function, sets a passed notification
-func NotificationCenter(notificationCenter notification.Center) OptionFunc {
-	return func(p *PollingProjectConfigManager) {
-		p.notificationCenter = notificationCenter
 	}
 }
 
@@ -152,7 +146,12 @@ func (cm *PollingProjectConfigManager) start() {
 func NewPollingProjectConfigManager(exeCtx utils.ExecutionCtx, sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
 	url := fmt.Sprintf(DatafileURLTemplate, sdkKey)
 
-	pollingProjectConfigManager := PollingProjectConfigManager{exeCtx: exeCtx, pollingInterval: DefaultPollingInterval, requester: utils.NewHTTPRequester(url)}
+	pollingProjectConfigManager := PollingProjectConfigManager{
+		exeCtx:             exeCtx,
+		notificationCenter: registry.GetNotificationCenter(sdkKey),
+		pollingInterval:    DefaultPollingInterval,
+		requester:          utils.NewHTTPRequester(url),
+	}
 
 	for _, opt := range pollingMangerOptions {
 		opt(&pollingProjectConfigManager)
