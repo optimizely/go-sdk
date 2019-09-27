@@ -11,11 +11,11 @@ Changes that have landed but are not yet released.	Changes that have landed but 
 ## [1.0.0-beta1] - September 27th, 2019
 
 ### New Features
-- We've added decision listeners and project config update listeners.
+- Added decision listeners and project config update listeners.
 - Added optional configuration parameters to NewProcessor.
 
 ### Breaking Changes
-- This method OptimizelyFactory.ClientWithOptions() has been removed in favor of OptimizelyFactory.Client(clientOptions ...OptionFunc)
+- This method `OptimizelyFactory.ClientWithOptions()` has been removed in favor of `OptimizelyFactory.Client(clientOptions ...OptionFunc)`
 
 ## [0.2.0] - September 11th, 2019
 This release of the SDK introduces Feature Management capabilities for running both Feature Rollouts as well as Feature Tests using Optimizely Feature Management.
