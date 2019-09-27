@@ -56,33 +56,37 @@ const DefaultEventFlushInterval = 30 * time.Second
 
 var pLogger = logging.GetLogger("EventProcessor")
 
-// QPOption is the QueuingProcessor options that give you the ability to add one more more options before the processor is initialized.
+// QPConfigOption is the QueuingProcessor options that give you the ability to add one more more options before the processor is initialized.
 type QPConfigOption func(qp *QueueingEventProcessor)
 
+// ProcessorBatchSize sets the batch size as a config option to be passed into the NewProcessor method
 func ProcessorBatchSize(bsize int) QPConfigOption {
 	return func(qp *QueueingEventProcessor) {
 		qp.BatchSize = bsize
 	}
 }
 
+// ProcessorQueueSize sets the queue size as a config option to be passed into the NewProcessor method
 func ProcessorQueueSize(qsize int) QPConfigOption {
 	return func(qp *QueueingEventProcessor) {
 		qp.MaxQueueSize = qsize
 	}
 }
 
+// ProcessorFlushInterval sets the flush interval as a config option to be passed into the NewProcessor method
 func ProcessorFlushInterval(flushInterval time.Duration) QPConfigOption {
 	return func(qp *QueueingEventProcessor) {
 		qp.FlushInterval = flushInterval
 	}
 }
 
+// ProcessorQ sets the Queue as a config option to be passed into the NewProcessor method
 func ProcessorQ(q Queue) QPConfigOption {
 	return func(qp *QueueingEventProcessor) {
 		qp.Q = q
 	}
 }
-
+// ProcessorDispatcher sets the dispatcher as a config option to be passed into the NewProcessor method
 func ProcessorDispatcher(d Dispatcher) QPConfigOption {
 	return func(qp *QueueingEventProcessor) {
 		qp.EventDispatcher = d
