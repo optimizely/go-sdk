@@ -59,35 +59,35 @@ var pLogger = logging.GetLogger("EventProcessor")
 // QPConfigOption is the QueuingProcessor options that give you the ability to add one more more options before the processor is initialized.
 type QPConfigOption func(qp *QueueingEventProcessor)
 
-// ProcessorBatchSize sets the batch size as a config option to be passed into the NewProcessor method
-func ProcessorBatchSize(bsize int) QPConfigOption {
+// BatchSize sets the batch size as a config option to be passed into the NewProcessor method
+func BatchSize(bsize int) QPConfigOption {
 	return func(qp *QueueingEventProcessor) {
 		qp.BatchSize = bsize
 	}
 }
 
-// ProcessorQueueSize sets the queue size as a config option to be passed into the NewProcessor method
-func ProcessorQueueSize(qsize int) QPConfigOption {
+// QueueSize sets the queue size as a config option to be passed into the NewProcessor method
+func QueueSize(qsize int) QPConfigOption {
 	return func(qp *QueueingEventProcessor) {
 		qp.MaxQueueSize = qsize
 	}
 }
 
-// ProcessorFlushInterval sets the flush interval as a config option to be passed into the NewProcessor method
-func ProcessorFlushInterval(flushInterval time.Duration) QPConfigOption {
+// FlushInterval sets the flush interval as a config option to be passed into the NewProcessor method
+func FlushInterval(flushInterval time.Duration) QPConfigOption {
 	return func(qp *QueueingEventProcessor) {
 		qp.FlushInterval = flushInterval
 	}
 }
 
-// ProcessorQ sets the Queue as a config option to be passed into the NewProcessor method
-func ProcessorQ(q Queue) QPConfigOption {
+// PQ sets the Processor Queue as a config option to be passed into the NewProcessor method
+func PQ(q Queue) QPConfigOption {
 	return func(qp *QueueingEventProcessor) {
 		qp.Q = q
 	}
 }
-// ProcessorDispatcher sets the dispatcher as a config option to be passed into the NewProcessor method
-func ProcessorDispatcher(d Dispatcher) QPConfigOption {
+// PDispatcher sets the Processor Dispatcher as a config option to be passed into the NewProcessor method
+func PDispatcher(d Dispatcher) QPConfigOption {
 	return func(qp *QueueingEventProcessor) {
 		qp.EventDispatcher = d
 	}

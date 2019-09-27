@@ -19,10 +19,8 @@ package event
 
 import (
 	"errors"
-	"github.com/segmentio/timers"
 	"testing"
 	"time"
-
 	"github.com/optimizely/go-sdk/optimizely/utils"
 
 	"github.com/stretchr/testify/assert"
@@ -30,7 +28,7 @@ import (
 
 func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewEventProcessor(exeCtx, ProcessorFlushInterval(100))
+	processor := NewEventProcessor(exeCtx, FlushInterval(100))
 
 	impression := BuildTestImpressionEvent()
 
@@ -47,7 +45,7 @@ func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 
 func TestCustomEventProcessor_Create(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewEventProcessor(exeCtx, ProcessorQueueSize(10), ProcessorFlushInterval(100))
+	processor := NewEventProcessor(exeCtx, QueueSize(10), FlushInterval(100))
 
 	impression := BuildTestImpressionEvent()
 
@@ -78,8 +76,8 @@ func (f *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 
 func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewEventProcessor(exeCtx, ProcessorFlushInterval(100), ProcessorQueueSize(100),
-		ProcessorQ(NewInMemoryQueue(100)), ProcessorDispatcher(&MockDispatcher{Events:NewInMemoryQueue(100)}))
+	processor := NewEventProcessor(exeCtx, FlushInterval(100), QueueSize(100),
+		PQ(NewInMemoryQueue(100)), PDispatcher(&MockDispatcher{Events: NewInMemoryQueue(100)}))
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -109,8 +107,8 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 
 func TestDefaultEventProcessor_QSizeMet(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewEventProcessor(exeCtx, ProcessorQueueSize(2), ProcessorFlushInterval(100),
-		ProcessorQ( NewInMemoryQueue(2)), ProcessorDispatcher(&MockDispatcher{Events:NewInMemoryQueue(100)}))
+	processor := NewEventProcessor(exeCtx, QueueSize(2), FlushInterval(100),
+		PQ( NewInMemoryQueue(2)), PDispatcher(&MockDispatcher{Events: NewInMemoryQueue(100)}))
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -120,7 +118,7 @@ func TestDefaultEventProcessor_QSizeMet(t *testing.T) {
 
 	assert.Equal(t, 2, processor.EventsCount())
 
-	timers.Sleep(exeCtx.GetContext(), 100 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	result, ok := (processor.EventDispatcher).(*MockDispatcher)
 
@@ -150,8 +148,8 @@ func TestDefaultEventProcessor_QSizeMet(t *testing.T) {
 
 func TestDefaultEventProcessor_FailedDispatch(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewEventProcessor(exeCtx, ProcessorQueueSize(100), ProcessorFlushInterval(100),
-		ProcessorQ(NewInMemoryQueue(100)), ProcessorDispatcher(&MockDispatcher{ShouldFail: true, Events:NewInMemoryQueue(100)}))
+	processor := NewEventProcessor(exeCtx, QueueSize(100), FlushInterval(100),
+		PQ(NewInMemoryQueue(100)), PDispatcher(&MockDispatcher{ShouldFail: true, Events:NewInMemoryQueue(100)}))
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -178,8 +176,8 @@ func TestDefaultEventProcessor_FailedDispatch(t *testing.T) {
 
 func TestBatchEventProcessor_FlushesOnClose(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewEventProcessor(exeCtx, ProcessorQueueSize(100), ProcessorQ(NewInMemoryQueue(100)),
-		ProcessorDispatcher(&MockDispatcher{Events:NewInMemoryQueue(100)}))
+	processor := NewEventProcessor(exeCtx, QueueSize(100), PQ(NewInMemoryQueue(100)),
+		PDispatcher(&MockDispatcher{Events: NewInMemoryQueue(100)}))
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -199,8 +197,8 @@ func TestBatchEventProcessor_FlushesOnClose(t *testing.T) {
 
 func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewEventProcessor(exeCtx, ProcessorQueueSize(100), ProcessorFlushInterval(100),
-		ProcessorQ(NewInMemoryQueue(100)), ProcessorDispatcher(&MockDispatcher{Events:NewInMemoryQueue(100)}))
+	processor := NewEventProcessor(exeCtx, QueueSize(100), FlushInterval(100),
+		PQ(NewInMemoryQueue(100)), PDispatcher(&MockDispatcher{Events: NewInMemoryQueue(100)}))
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -231,8 +229,8 @@ func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 
 func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewEventProcessor(exeCtx, ProcessorQueueSize(100), ProcessorFlushInterval(100),
-		ProcessorQ(NewInMemoryQueue(100)), ProcessorDispatcher(&MockDispatcher{Events:NewInMemoryQueue(100)}))
+	processor := NewEventProcessor(exeCtx, QueueSize(100), FlushInterval(100),
+		PQ(NewInMemoryQueue(100)), PDispatcher(&MockDispatcher{Events: NewInMemoryQueue(100)}))
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -263,8 +261,8 @@ func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 
 func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewEventProcessor(exeCtx, ProcessorQueueSize(100), ProcessorFlushInterval(100),
-		ProcessorQ(NewInMemoryQueue(100)), ProcessorDispatcher(&HTTPEventDispatcher{}))
+	processor := NewEventProcessor(exeCtx, QueueSize(100), FlushInterval(100),
+		PQ(NewInMemoryQueue(100)), PDispatcher(&HTTPEventDispatcher{}))
 
 	impression := BuildTestImpressionEvent()
 
@@ -280,8 +278,8 @@ func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
 
 func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewEventProcessor(exeCtx, ProcessorQueueSize(100), ProcessorFlushInterval(100),
-		ProcessorQ(NewInMemoryQueue(100)), ProcessorDispatcher(&MockDispatcher{Events:NewInMemoryQueue(100)}))
+	processor := NewEventProcessor(exeCtx, QueueSize(100), FlushInterval(100),
+		PQ(NewInMemoryQueue(100)), PDispatcher(&MockDispatcher{Events: NewInMemoryQueue(100)}))
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
