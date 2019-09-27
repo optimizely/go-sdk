@@ -13,7 +13,7 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/optimizely/go-sdk/optimizely/notification"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func setupOptimizelyClient(requestParams datamodels.RequestParams) (*client.OptimizelyClient, decision.Service, error) {

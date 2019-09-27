@@ -46,8 +46,7 @@ func FeatureContext(s *godog.Suite) {
 	s.Step(`^in the response, "([^"]*)" should match$`, context.InTheResponseShouldMatch)
 	s.Step(`^there are no dispatched events$`, context.ThereAreNoDispatchedEvents)
 	s.Step(`^dispatched events payloads include$`, context.DispatchedEventsPayloadsInclude)
-
-	// s.BeforeScenario(func(interface{}) {
-	// 	Godogs = 0 // clean the state before every scenario
-	// })
+	s.BeforeScenario(func(interface{}) {
+		context.Reset()
+	})
 }
