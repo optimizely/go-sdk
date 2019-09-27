@@ -23,6 +23,7 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/optimizely/go-sdk/optimizely/logging"
 	"github.com/optimizely/go-sdk/optimizely/notification"
+	"github.com/optimizely/go-sdk/optimizely/registry"
 )
 
 var csLogger = logging.GetLogger("CompositeDecisionService")
@@ -35,14 +36,14 @@ type CompositeService struct {
 }
 
 // NewCompositeService returns a new instance of the CompositeService with the defaults
-func NewCompositeService(notificationCenter notification.Center) *CompositeService {
+func NewCompositeService(sdkKey string) *CompositeService {
 	// @TODO: add factory method with option funcs to accept custom feature and experiment services
 	compositeFeatureDecisionService := NewCompositeFeatureService()
 	compositeExperimentService := NewCompositeExperimentService()
 	return &CompositeService{
 		compositeExperimentService: compositeExperimentService,
 		compositeFeatureService:    compositeFeatureDecisionService,
-		notificationCenter:         notificationCenter,
+		notificationCenter:         registry.GetNotificationCenter(sdkKey),
 	}
 }
 

@@ -26,6 +26,7 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/optimizely/logging"
 	"github.com/optimizely/go-sdk/optimizely/notification"
+	"github.com/optimizely/go-sdk/optimizely/registry"
 	"github.com/optimizely/go-sdk/optimizely/utils"
 )
 
@@ -78,13 +79,6 @@ func PollingInterval(interval time.Duration) OptionFunc {
 	}
 }
 
-// NotificationCenter is an optional function, sets a passed notification
-func NotificationCenter(notificationCenter notification.Center) OptionFunc {
-	return func(p *PollingProjectConfigManager) {
-		p.notificationCenter = notificationCenter
-	}
-}
-
 // InitialDatafile is an optional function, sets a passed datafile
 func InitialDatafile(datafile []byte) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
@@ -105,33 +99,37 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	}
 
 	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(datafile)
-	if err != nil {
-		cmLogger.Error("failed to create project config", err)
-	}
 
 	cm.configLock.Lock()
-	if cm.projectConfig != nil {
-		if cm.projectConfig.GetRevision() == projectConfig.GetRevision() {
-			cmLogger.Debug(fmt.Sprintf("No datafile updates. Current revision number: %s", cm.projectConfig.GetRevision()))
-		} else {
-			cmLogger.Debug(fmt.Sprintf("Received new datafile and updated config. Old revision number: %s. New revision number: %s", cm.projectConfig.GetRevision(), projectConfig.GetRevision()))
-			cm.projectConfig = projectConfig
-
-			if cm.notificationCenter != nil {
-				projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
-					Type:     notification.ProjectConfigUpdate,
-					Revision: cm.projectConfig.GetRevision(),
-				}
-				if err = cm.notificationCenter.Send(notification.ProjectConfigUpdate, projectConfigUpdateNotification); err != nil {
-					cmLogger.Warning("Problem with sending notification")
-				}
-			}
-		}
-	} else {
-		cm.projectConfig = projectConfig
+	defer func() {
+		cm.err = err
+		cm.configLock.Unlock()
+	}()
+	if err != nil {
+		cmLogger.Error("failed to create project config", err)
+		return
 	}
-	cm.err = err
-	cm.configLock.Unlock()
+
+	var previousRevision string
+	if cm.projectConfig != nil {
+		previousRevision = cm.projectConfig.GetRevision()
+	}
+	if projectConfig.GetRevision() == previousRevision {
+		cmLogger.Debug(fmt.Sprintf("No datafile updates. Current revision number: %s", cm.projectConfig.GetRevision()))
+		return
+	}
+	cmLogger.Debug(fmt.Sprintf("New datafile set with revision: %s. Old revision: %s", projectConfig.GetRevision(), previousRevision))
+	cm.projectConfig = projectConfig
+
+	if cm.notificationCenter != nil {
+		projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
+			Type:     notification.ProjectConfigUpdate,
+			Revision: cm.projectConfig.GetRevision(),
+		}
+		if err = cm.notificationCenter.Send(notification.ProjectConfigUpdate, projectConfigUpdateNotification); err != nil {
+			cmLogger.Warning("Problem with sending notification")
+		}
+	}
 }
 
 func (cm *PollingProjectConfigManager) start() {
@@ -152,7 +150,12 @@ func (cm *PollingProjectConfigManager) start() {
 func NewPollingProjectConfigManager(exeCtx utils.ExecutionCtx, sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
 	url := fmt.Sprintf(DatafileURLTemplate, sdkKey)
 
-	pollingProjectConfigManager := PollingProjectConfigManager{exeCtx: exeCtx, pollingInterval: DefaultPollingInterval, requester: utils.NewHTTPRequester(url)}
+	pollingProjectConfigManager := PollingProjectConfigManager{
+		exeCtx:             exeCtx,
+		notificationCenter: registry.GetNotificationCenter(sdkKey),
+		pollingInterval:    DefaultPollingInterval,
+		requester:          utils.NewHTTPRequester(url),
+	}
 
 	for _, opt := range pollingMangerOptions {
 		opt(&pollingProjectConfigManager)

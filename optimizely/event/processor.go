@@ -56,21 +56,75 @@ const DefaultEventFlushInterval = 30 * time.Second
 
 var pLogger = logging.GetLogger("EventProcessor")
 
+// QPConfigOption is the QueuingProcessor options that give you the ability to add one more more options before the processor is initialized.
+type QPConfigOption func(qp *QueueingEventProcessor)
+
+// BatchSize sets the batch size as a config option to be passed into the NewProcessor method
+func BatchSize(bsize int) QPConfigOption {
+	return func(qp *QueueingEventProcessor) {
+		qp.BatchSize = bsize
+	}
+}
+
+// QueueSize sets the queue size as a config option to be passed into the NewProcessor method
+func QueueSize(qsize int) QPConfigOption {
+	return func(qp *QueueingEventProcessor) {
+		qp.MaxQueueSize = qsize
+	}
+}
+
+// FlushInterval sets the flush interval as a config option to be passed into the NewProcessor method
+func FlushInterval(flushInterval time.Duration) QPConfigOption {
+	return func(qp *QueueingEventProcessor) {
+		qp.FlushInterval = flushInterval
+	}
+}
+
+// PQ sets the Processor Queue as a config option to be passed into the NewProcessor method
+func PQ(q Queue) QPConfigOption {
+	return func(qp *QueueingEventProcessor) {
+		qp.Q = q
+	}
+}
+// PDispatcher sets the Processor Dispatcher as a config option to be passed into the NewProcessor method
+func PDispatcher(d Dispatcher) QPConfigOption {
+	return func(qp *QueueingEventProcessor) {
+		qp.EventDispatcher = d
+	}
+}
+
 // NewEventProcessor returns a new instance of QueueingEventProcessor with queueSize and flushInterval
-func NewEventProcessor(exeCtx utils.ExecutionCtx, batchSize, queueSize int, flushInterval time.Duration) *QueueingEventProcessor {
+func NewEventProcessor(exeCtx utils.ExecutionCtx, options ...QPConfigOption) *QueueingEventProcessor {
 	p := &QueueingEventProcessor{
-		MaxQueueSize:    queueSize,
-		FlushInterval:   flushInterval,
-		Q:               NewInMemoryQueue(queueSize),
-		EventDispatcher: NewQueueEventDispatcher(exeCtx.GetContext()),
 		wg: exeCtx.GetWaitSync(),
 	}
-	p.BatchSize = DefaultBatchSize
-	if batchSize > 0 {
-		p.BatchSize = batchSize
+
+	for _, opt := range options {
+		opt(p)
+	}
+
+	if p.MaxQueueSize == 0 {
+		p.MaxQueueSize = defaultQueueSize
+	}
+
+	if p.FlushInterval == 0 {
+		p.FlushInterval = DefaultEventFlushInterval
+	}
+
+	if p.BatchSize == 0 {
+		p.BatchSize = DefaultBatchSize
+	}
+
+	if p.Q == nil {
+		p.Q = NewInMemoryQueue(p.MaxQueueSize)
+	}
+
+	if p.EventDispatcher == nil {
+		p.EventDispatcher = NewQueueEventDispatcher(exeCtx.GetContext())
 	}
 
 	p.StartTicker(exeCtx.GetContext())
+
 	return p
 }
 

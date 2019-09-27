@@ -11,7 +11,6 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/client"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
-	"github.com/optimizely/go-sdk/optimizely/notification"
 
 	"github.com/pkg/profile"
 )
@@ -41,8 +40,7 @@ func stressTest() {
 	}
 
 	// Creates a default, canceleable context
-	notificationCenter := notification.NewNotificationCenter()
-	decisionService := decision.NewCompositeService(notificationCenter)
+	decisionService := decision.NewCompositeService("sdk_key")
 
 	clientApp, err := optlyClient.Client(client.DecisionService(decisionService))
 	if err != nil {

@@ -132,7 +132,7 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, Requester(mockRequester), NotificationCenter(notification.NewNotificationCenter()))
+	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, Requester(mockRequester))
 
 	var numberOfCalls = 0
 	callback := func(notification notification.ProjectConfigUpdateNotification) {
