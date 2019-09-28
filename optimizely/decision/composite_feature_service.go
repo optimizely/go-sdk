@@ -32,10 +32,10 @@ type CompositeFeatureService struct {
 }
 
 // NewCompositeFeatureService returns a new instance of the CompositeFeatureService
-func NewCompositeFeatureService() *CompositeFeatureService {
+func NewCompositeFeatureService(compositeExperimentService ExperimentService) *CompositeFeatureService {
 	return &CompositeFeatureService{
 		featureServices: []FeatureService{
-			NewFeatureExperimentService(),
+			NewFeatureExperimentService(compositeExperimentService),
 			NewRolloutService(),
 		},
 	}

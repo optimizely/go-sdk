@@ -108,8 +108,9 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionMutex() {
 }
 
 func (s *FeatureExperimentServiceTestSuite) TestNewFeatureExperimentService() {
-	featureExperimentService := NewFeatureExperimentService()
-	s.IsType(&CompositeExperimentService{}, featureExperimentService.compositeExperimentService)
+	compositeExperimentService := &CompositeExperimentService{}
+	featureExperimentService := NewFeatureExperimentService(compositeExperimentService)
+	s.IsType(compositeExperimentService, featureExperimentService.compositeExperimentService)
 }
 
 func TestFeatureExperimentServiceTestSuite(t *testing.T) {

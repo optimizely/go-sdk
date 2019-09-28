@@ -42,6 +42,41 @@ type OptimizelyClient struct {
 	executionCtx utils.ExecutionCtx
 }
 
+// Activate returns the key of the variation the user is bucketed into and sends an impression event to the Optimizely log endpoint
+func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.UserContext) (result string, err error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			switch t := r.(type) {
+			case error:
+				err = t
+			case string:
+				err = errors.New(t)
+			default:
+				err = errors.New("unexpected error")
+			}
+			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
+			logger.Error(errorMessage, err)
+			logger.Debug(string(debug.Stack()))
+		}
+	}()
+
+	decisionContext, experimentDecision, err := o.getExperimentDecision(experimentKey, userContext)
+	if err != nil {
+		logger.Error("received an error while computing experiment decision", err)
+		return result, err
+	}
+
+	if experimentDecision.Variation != nil {
+		// send an impression event
+		result = experimentDecision.Variation.Key
+		impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *decisionContext.Experiment, *experimentDecision.Variation, userContext)
+		o.eventProcessor.ProcessEvent(impressionEvent)
+	}
+
+	return result, err
+}
+
 // IsFeatureEnabled returns true if the feature is enabled for the given user
 func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entities.UserContext) (result bool, err error) {
 
@@ -122,45 +157,6 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 	}
 
 	return enabledFeatures, err
-}
-
-// Track take and event key with event tags and if the event is part of the config, send to events backend.
-func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}) (err error) {
-
-	defer func() {
-		if r := recover(); r != nil {
-			switch t := r.(type) {
-			case error:
-				err = t
-			case string:
-				err = errors.New(t)
-			default:
-				err = errors.New("unexpected error")
-			}
-			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
-			logger.Error(errorMessage, err)
-			logger.Debug(string(debug.Stack()))
-		}
-	}()
-
-	projectConfig, err := o.GetProjectConfig()
-	if err != nil {
-		logger.Error("Optimizely SDK tracking error", err)
-		return err
-	}
-
-	configEvent, err := projectConfig.GetEventByKey(eventKey)
-
-	if err == nil {
-		userEvent := event.CreateConversionUserEvent(projectConfig, configEvent, userContext, eventTags)
-		o.eventProcessor.ProcessEvent(userEvent)
-	} else {
-		errorMessage := fmt.Sprintf(`optimizely SDK track: error getting event with key "%s"`, eventKey)
-		logger.Error(errorMessage, err)
-		return err
-	}
-
-	return err
 }
 
 // GetFeatureVariableBoolean returns boolean feature variable value
@@ -364,43 +360,107 @@ func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext
 	return enabled, variableMap, err
 }
 
-func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext entities.UserContext) (decisionContext decision.FeatureDecisionContext, featureDecision decision.FeatureDecision, err error) {
+// GetVariation returns the key of the variation the user is bucketed into
+func (o *OptimizelyClient) GetVariation(experimentKey string, userContext entities.UserContext) (result string, err error) {
 
 	defer func() {
-		var e error
 		if r := recover(); r != nil {
 			switch t := r.(type) {
 			case error:
-				e = t
+				err = t
 			case string:
-				e = errors.New(t)
+				err = errors.New(t)
 			default:
-				e = errors.New("unexpected error")
+				err = errors.New("unexpected error")
 			}
 			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
-			logger.Error(errorMessage, e)
+			logger.Error(errorMessage, err)
 			logger.Debug(string(debug.Stack()))
+		}
+	}()
 
-			// If we have a feature, then we can recover w/o throwing
-			if decisionContext.Feature == nil {
-				err = e
+	_, experimentDecision, err := o.getExperimentDecision(experimentKey, userContext)
+	if err != nil {
+		logger.Error("received an error while computing experiment decision", err)
+	}
+
+	if experimentDecision.Variation != nil {
+		result = experimentDecision.Variation.Key
+	}
+
+	return result, err
+}
+
+// Track take and event key with event tags and if the event is part of the config, send to events backend.
+func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}) (err error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			switch t := r.(type) {
+			case error:
+				err = t
+			case string:
+				err = errors.New(t)
+			default:
+				err = errors.New("unexpected error")
 			}
+			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
+			logger.Error(errorMessage, err)
+			logger.Debug(string(debug.Stack()))
+		}
+	}()
+
+	projectConfig, err := o.GetProjectConfig()
+	if err != nil {
+		logger.Error("Optimizely SDK tracking error", err)
+		return err
+	}
+
+	configEvent, err := projectConfig.GetEventByKey(eventKey)
+
+	if err == nil {
+		userEvent := event.CreateConversionUserEvent(projectConfig, configEvent, userContext, eventTags)
+		o.eventProcessor.ProcessEvent(userEvent)
+	} else {
+		errorMessage := fmt.Sprintf(`optimizely SDK track: error getting event with key "%s"`, eventKey)
+		logger.Error(errorMessage, err)
+		return err
+	}
+
+	return err
+}
+
+func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext entities.UserContext) (decisionContext decision.FeatureDecisionContext, featureDecision decision.FeatureDecision, err error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			switch t := r.(type) {
+			case error:
+				err = t
+			case string:
+				err = errors.New(t)
+			default:
+				err = errors.New("unexpected error")
+			}
+			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
+			logger.Error(errorMessage, err)
+			logger.Debug(string(debug.Stack()))
 		}
 	}()
 
 	userID := userContext.ID
 	logger.Debug(fmt.Sprintf(`Evaluating feature "%s" for user "%s".`, featureKey, userID))
 
-	projectConfig, err := o.GetProjectConfig()
-	if err != nil {
-		logger.Error("Error calling getFeatureDecision", err)
-		return decisionContext, featureDecision, err
+	projectConfig, e := o.GetProjectConfig()
+	if e != nil {
+		logger.Error("Error calling getFeatureDecision", e)
+		return decisionContext, featureDecision, e
 	}
 
-	feature, err := projectConfig.GetFeatureByKey(featureKey)
-	if err != nil {
-		logger.Error("Error calling getFeatureDecision", err)
-		return decisionContext, featureDecision, err
+	feature, e := projectConfig.GetFeatureByKey(featureKey)
+	if e != nil {
+		logger.Error("Error calling getFeatureDecision", e)
+		return decisionContext, featureDecision, e
 	}
 
 	decisionContext = decision.FeatureDecisionContext{
@@ -415,8 +475,46 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext ent
 		return decisionContext, featureDecision, err
 	}
 
-	// @TODO(yasir): send decision notification
 	return decisionContext, featureDecision, err
+}
+
+func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userContext entities.UserContext) (decisionContext decision.ExperimentDecisionContext, experimentDecision decision.ExperimentDecision, err error) {
+
+	userID := userContext.ID
+	logger.Debug(fmt.Sprintf(`Evaluating experiment "%s" for user "%s".`, experimentKey, userID))
+
+	projectConfig, e := o.GetProjectConfig()
+	if e != nil {
+		logger.Error("Error calling getExperimentDecision", e)
+		return decisionContext, experimentDecision, e
+	}
+
+	experiment, e := projectConfig.GetExperimentByKey(experimentKey)
+	if e != nil {
+		logger.Error("Error calling getExperimentDecision", e)
+		return decisionContext, experimentDecision, e
+	}
+
+	decisionContext = decision.ExperimentDecisionContext{
+		Experiment:    &experiment,
+		ProjectConfig: projectConfig,
+	}
+
+	experimentDecision, err = o.decisionService.GetExperimentDecision(decisionContext, userContext)
+	if err != nil {
+		err = nil
+		logger.Warning(fmt.Sprintf(`error making a decision for experiment "%s"`, experimentKey))
+		return decisionContext, experimentDecision, err
+	}
+
+	if experimentDecision.Variation != nil {
+		result := experimentDecision.Variation.Key
+		logger.Info(fmt.Sprintf(`User "%s" is bucketed into variation "%s" of experiment "%s".`, userContext.ID, result, experimentKey))
+	} else {
+		logger.Info(fmt.Sprintf(`User "%s" is not bucketed into any variation for experiment "%s".`, userContext.ID, experimentKey))
+	}
+
+	return decisionContext, experimentDecision, err
 }
 
 // GetProjectConfig returns the current ProjectConfig or nil if the instance is not valid

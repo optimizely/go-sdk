@@ -38,8 +38,8 @@ type CompositeService struct {
 // NewCompositeService returns a new instance of the CompositeService with the defaults
 func NewCompositeService(sdkKey string) *CompositeService {
 	// @TODO: add factory method with option funcs to accept custom feature and experiment services
-	compositeFeatureDecisionService := NewCompositeFeatureService()
 	compositeExperimentService := NewCompositeExperimentService()
+	compositeFeatureDecisionService := NewCompositeFeatureService(compositeExperimentService)
 	return &CompositeService{
 		compositeExperimentService: compositeExperimentService,
 		compositeFeatureService:    compositeFeatureDecisionService,
@@ -76,6 +76,30 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 		}
 	}
 	return featureDecision, err
+}
+
+// GetExperimentDecision returns a decision for the given experiment key
+func (s CompositeService) GetExperimentDecision(experimentDecisionContext ExperimentDecisionContext, userContext entities.UserContext) (experimentDecision ExperimentDecision, err error) {
+	experimentDecision, err = s.compositeExperimentService.GetDecision(experimentDecisionContext, userContext)
+
+	if s.notificationCenter != nil && experimentDecision.Variation != nil {
+		decisionInfo := map[string]interface{}{
+			"experimentKey": experimentDecisionContext.Experiment.Key,
+			"variationKey":  experimentDecision.Variation.Key,
+		}
+
+		decisionNotification := notification.DecisionNotification{
+			DecisionInfo: decisionInfo,
+			Type:         notification.ABTest,
+			UserContext:  userContext,
+		}
+
+		if err = s.notificationCenter.Send(notification.Decision, decisionNotification); err != nil {
+			csLogger.Warning("Error sending sending notification")
+		}
+	}
+
+	return experimentDecision, err
 }
 
 // OnDecision registers a handler for Decision notifications
