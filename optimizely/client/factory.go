@@ -45,7 +45,8 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 	appClient := &OptimizelyClient{
 		executionCtx:    executionCtx,
 		decisionService: decision.NewCompositeService(f.SDKKey),
-		eventProcessor:  event.NewEventProcessor(executionCtx, event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
+		eventProcessor:  event.NewEventProcessor(executionCtx, event.BatchSize(event.DefaultBatchSize),
+		event.QueueSize(event.DefaultEventQueueSize), event.FlushInterval(event.DefaultEventFlushInterval)),
 	}
 
 	for _, opt := range clientOptions {
@@ -97,7 +98,8 @@ func DecisionService(decisionService decision.Service) OptionFunc {
 // BatchEventProcessor sets event processor on a client
 func BatchEventProcessor(batchSize, queueSize int, flushInterval time.Duration) OptionFunc {
 	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
-		f.eventProcessor = event.NewEventProcessor(executionCtx, batchSize, queueSize, flushInterval)
+		f.eventProcessor = event.NewEventProcessor(executionCtx, event.BatchSize(batchSize),
+			event.QueueSize(queueSize), event.FlushInterval(flushInterval))
 	}
 }
 

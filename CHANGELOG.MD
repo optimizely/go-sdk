@@ -5,8 +5,17 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-Changes that have landed but are not yet released.
-- Support for running full feature tests with the SDK.
+Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
+ - None
+
+## [1.0.0-beta1] - September 27th, 2019
+
+### New Features
+- Added decision listeners and project config update listeners.
+- Added optional configuration parameters to NewProcessor.
+
+### Breaking Changes
+- This method `OptimizelyFactory.ClientWithOptions()` has been removed in favor of `OptimizelyFactory.Client(clientOptions ...OptionFunc)`
 
 ## [0.2.0] - September 11th, 2019
 This release of the SDK introduces Feature Management capabilities for running both Feature Rollouts as well as Feature Tests using Optimizely Feature Management.
