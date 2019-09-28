@@ -35,8 +35,10 @@ jobs:
       script:
         - "$HOME/travisci-tools/fsc-trigger/trigger_fullstack-sdk-compat.sh"
     - stage: 'Integration as unit test'
-      script:
+      install:
         - scripts/get-fsc-tests.sh
+        - go get
+      script:
         - go test
       after_success: travis_terminate 0
       
