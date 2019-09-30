@@ -27,6 +27,7 @@ import (
 
 	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
+	"github.com/optimizely/go-sdk/optimizely/notification"
 )
 
 // StaticProjectConfigManager maintains a static copy of the project config
@@ -86,4 +87,14 @@ func (cm *StaticProjectConfigManager) GetConfig() (optimizely.ProjectConfig, err
 	cm.configLock.Lock()
 	defer cm.configLock.Unlock()
 	return cm.projectConfig, nil
+}
+
+// RemoveOnProjectConfigUpdate here satisfies interface
+func (cm *StaticProjectConfigManager) RemoveOnProjectConfigUpdate(id int) error {
+	return errors.New("RemoveOnProjectConfigUpdate does not have any effect on StaticProjectConfigManager")
+}
+
+// OnProjectConfigUpdate here satisfies interface
+func (cm *StaticProjectConfigManager) OnProjectConfigUpdate(callback func(notification.ProjectConfigUpdateNotification)) (int, error) {
+	return 0, errors.New("OnProjectConfigUpdate does not have any effect on StaticProjectConfigManager")
 }
