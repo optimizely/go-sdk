@@ -11,6 +11,7 @@ mkdir -p ./features
 cp -r ./$FSC_PATH/features/support/datafiles/*.json ./features
 mkdir -p ./fsc-datafiles
 cp -r ./$FSC_PATH/features/* ./fsc-datafiles
-export DATAFILES_DIR = $TRAVIS_BUILD_DIR/fsc-datafiles
+export DATAFILES_DIR=$TRAVIS_BUILD_DIR/fsc-datafiles
+# TODO: Need to delete it. 
 ls $DATAFILES_DIR
 echo "Ready for testing."
