@@ -30,11 +30,13 @@ func setupOptimizelyClient(requestParams datamodels.RequestParams) (*client.Opti
 	notificationCenter := notification.NewNotificationCenter()
 	decisionService := decision.NewCompositeService(notificationCenter)
 
-	clientOptions := client.Options{
-		DecisionService: decisionService,
-	}
+	// clientOptions := client.Options{
+	// 	DecisionService: decisionService,
+	// }
 
-	client, err := optimizelyFactory.ClientWithOptions(clientOptions)
+	client, err := optimizelyFactory.Client(
+		client.CompositeDecisionService(notificationCenter),
+	)
 	return client, decisionService, nil
 }
 

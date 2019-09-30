@@ -47,6 +47,6 @@ func FeatureContext(s *godog.Suite) {
 	s.Step(`^there are no dispatched events$`, context.ThereAreNoDispatchedEvents)
 	s.Step(`^dispatched events payloads include$`, context.DispatchedEventsPayloadsInclude)
 	s.BeforeScenario(func(interface{}) {
-		context.Reset()
+		// context.Reset()
 	})
 }
