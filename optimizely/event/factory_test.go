@@ -104,11 +104,24 @@ func BuildTestConversionEvent() UserEvent {
 	return conversionUserEvent
 }
 
+func TestCreateEmptyEvent(t *testing.T) {
+
+	impressionUserEvent := BuildTestImpressionEvent()
+
+	impressionUserEvent.Impression = nil
+	impressionUserEvent.Conversion = nil
+
+	visitor := createVisitorFromUserEvent(impressionUserEvent)
+
+	assert.Nil(t, visitor.Snapshots)
+
+}
+
 func TestCreateAndSendImpressionEvent(t *testing.T) {
 
 	impressionUserEvent := BuildTestImpressionEvent()
 
-	processor := NewEventProcessor(utils.NewCancelableExecutionCtx(), 10, 100, 100)
+	processor := NewEventProcessor(utils.NewCancelableExecutionCtx(), BatchSize(10), QueueSize(100), FlushInterval(100))
 
 	processor.ProcessEvent(impressionUserEvent)
 
@@ -123,7 +136,7 @@ func TestCreateAndSendConversionEvent(t *testing.T) {
 
 	conversionUserEvent := BuildTestConversionEvent()
 
-	processor := NewEventProcessor(utils.NewCancelableExecutionCtx(), 10, 100, 100)
+	processor := NewEventProcessor(utils.NewCancelableExecutionCtx(), FlushInterval(100))
 
 	processor.ProcessEvent(conversionUserEvent)
 

@@ -11,11 +11,10 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/optimizely/go-sdk/optimizely/event"
 	"github.com/optimizely/go-sdk/optimizely/logging"
-	"github.com/optimizely/go-sdk/optimizely/notification"
 )
 
 func main() {
-
+	sdkKey := "4SLpaJA1r1pgE6T2CoMs9q"
 	logging.SetLogLevel(logging.LogLevelDebug)
 	user := entities.UserContext{
 		ID: "mike ng",
@@ -25,7 +24,7 @@ func main() {
 		},
 	}
 	optimizelyFactory := &client.OptimizelyFactory{
-		SDKKey: "4SLpaJA1r1pgE6T2CoMs9q",
+		SDKKey: sdkKey,
 	}
 
 	/************* StaticClient ********************/
@@ -46,7 +45,7 @@ func main() {
 	/************* Client ********************/
 
 	optimizelyFactory = &client.OptimizelyFactory{
-		SDKKey: "4SLpaJA1r1pgE6T2CoMs9q",
+		SDKKey: sdkKey,
 	}
 
 	optimizelyClient, err = optimizelyFactory.Client()
@@ -62,11 +61,9 @@ func main() {
 
 	/************* Setting Polling Interval ********************/
 
-	notificationCenter := notification.NewNotificationCenter()
-
 	optimizelyClient, _ = optimizelyFactory.Client(
-		client.PollingConfigManager("4SLpaJA1r1pgE6T2CoMs9q", time.Second, nil, notificationCenter),
-		client.CompositeDecisionService(notificationCenter),
+		client.PollingConfigManager(sdkKey, time.Second, nil),
+		client.CompositeDecisionService(sdkKey),
 		client.BatchEventProcessor(event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
 	)
 	optimizelyClient.Close()
