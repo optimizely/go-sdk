@@ -91,10 +91,10 @@ func (cm *StaticProjectConfigManager) GetConfig() (optimizely.ProjectConfig, err
 
 // RemoveOnProjectConfigUpdate here satisfies interface
 func (cm *StaticProjectConfigManager) RemoveOnProjectConfigUpdate(id int) error {
-	return errors.New("RemoveOnProjectConfigUpdate does not have any effect on StaticProjectConfigManager")
+	return errors.New("method RemoveOnProjectConfigUpdate does not have any effect on StaticProjectConfigManager")
 }
 
 // OnProjectConfigUpdate here satisfies interface
 func (cm *StaticProjectConfigManager) OnProjectConfigUpdate(callback func(notification.ProjectConfigUpdateNotification)) (int, error) {
-	return 0, errors.New("OnProjectConfigUpdate does not have any effect on StaticProjectConfigManager")
+	return 0, errors.New("method OnProjectConfigUpdate does not have any effect on StaticProjectConfigManager")
 }
