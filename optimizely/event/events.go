@@ -68,51 +68,51 @@ type LogEvent struct {
 
 // Batch - Context about the event to send in batch
 type Batch struct {
-	Revision        string    `json:"revision"`
-	AccountID       string    `json:"account_id"`
-	ClientVersion   string    `json:"client_version"`
-	Visitors        []Visitor `json:"visitors"`
-	ProjectID       string    `json:"project_id"`
-	ClientName      string    `json:"client_name"`
-	AnonymizeIP     bool      `json:"anonymize_ip"`
-	EnrichDecisions bool      `json:"enrich_decisions"`
+	Revision        string    `json:"revision" yaml:"revision"`
+	AccountID       string    `json:"account_id" yaml:"account_id"`
+	ClientVersion   string    `json:"client_version" yaml:"client_version"`
+	Visitors        []Visitor `json:"visitors" yaml:"visitors"`
+	ProjectID       string    `json:"project_id" yaml:"project_id"`
+	ClientName      string    `json:"client_name" yaml:"client_name"`
+	AnonymizeIP     bool      `json:"anonymize_ip" yaml:"anonymize_ip"`
+	EnrichDecisions bool      `json:"enrich_decisions" yaml:"enrich_decisions"`
 }
 
 // Visitor represents a visitor of an eventbatch
 type Visitor struct {
-	Attributes []VisitorAttribute `json:"attributes"`
-	Snapshots  []Snapshot         `json:"snapshots"`
-	VisitorID  string             `json:"visitor_id"`
+	Attributes []VisitorAttribute `json:"attributes" yaml:"attributes"`
+	Snapshots  []Snapshot         `json:"snapshots" yaml:"snapshots"`
+	VisitorID  string             `json:"visitor_id" yaml:"visitor_id"`
 }
 
 // VisitorAttribute represents an attribute of a visitor
 type VisitorAttribute struct {
-	Value         interface{} `json:"value"`
-	Key           string      `json:"key"`
-	AttributeType string      `json:"type"`
-	EntityID      string      `json:"entity_id"`
+	Value         interface{} `json:"value" yaml:"value"`
+	Key           string      `json:"key" yaml:"key"`
+	AttributeType string      `json:"type" yaml:"type"`
+	EntityID      string      `json:"entity_id" yaml:"entity_id"`
 }
 
 // Snapshot represents a snapshot of a visitor
 type Snapshot struct {
-	Decisions []Decision      `json:"decisions"`
-	Events    []SnapshotEvent `json:"events"`
+	Decisions []Decision      `json:"decisions" yaml:"decisions"`
+	Events    []SnapshotEvent `json:"events" yaml:"events"`
 }
 
 // Decision represents a decision of a snapshot
 type Decision struct {
-	VariationID  string `json:"variation_id"`
-	CampaignID   string `json:"campaign_id"`
-	ExperimentID string `json:"experiment_id"`
+	VariationID  string `json:"variation_id" yaml:"variation_id"`
+	CampaignID   string `json:"campaign_id" yaml:"campaign_id"`
+	ExperimentID string `json:"experiment_id" yaml:"experiment_id"`
 }
 
 // SnapshotEvent represents an event of a snapshot
 type SnapshotEvent struct {
-	EntityID  string                 `json:"entity_id"`
-	Key       string                 `json:"key"`
-	Timestamp int64                  `json:"timestamp"`
-	UUID      string                 `json:"uuid"`
-	Tags      map[string]interface{} `json:"tags,omitempty"`
-	Revenue   *int64                 `json:"revenue,omitempty"`
-	Value     *float64               `json:"value,omitempty"`
+	EntityID  string                 `json:"entity_id" yaml:"entity_id"`
+	Key       string                 `json:"key" yaml:"key"`
+	Timestamp int64                  `json:"timestamp" yaml:"timestamp"`
+	UUID      string                 `json:"uuid" yaml:"uuid"`
+	Tags      map[string]interface{} `json:"tags,omitempty" yaml:"tags,omitempty"`
+	Revenue   *int64                 `json:"revenue,omitempty" yaml:"revenue,omitempty"`
+	Value     *float64               `json:"value,omitempty" yaml:"value,omitempty"`
 }

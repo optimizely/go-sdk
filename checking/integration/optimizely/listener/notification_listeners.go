@@ -7,7 +7,7 @@ import (
 )
 
 // AddListener - Adds Notification Listeners
-func AddListener(decisionService decision.Service, params datamodels.RequestParams) (getListenersCalled func() []datamodels.DecisionListenerModel) {
+func AddListener(decisionService decision.Service, params *datamodels.RequestParams) (getListenersCalled func() []datamodels.DecisionListenerModel) {
 	var listenersCalled []datamodels.DecisionListenerModel
 	getListenersCalled = func() []datamodels.DecisionListenerModel {
 		return listenersCalled

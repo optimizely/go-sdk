@@ -1,6 +1,8 @@
 package datamodels
 
-import "github.com/optimizely/go-sdk/optimizely/entities"
+import (
+	"github.com/optimizely/go-sdk/optimizely/entities"
+)
 
 // ResponseParams represents result for a scenario
 type ResponseParams struct {

@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/DATA-DOG/godog"
+	"github.com/optimizely/go-sdk/optimizely/event"
+
 	"github.com/DATA-DOG/godog/gherkin"
 	"github.com/optimizely/go-sdk/checking/integration/optimizely/datamodels"
+	"github.com/optimizely/go-sdk/checking/integration/optimizely/eventdispatcher"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"gopkg.in/yaml.v3"
 )
@@ -34,9 +36,9 @@ func (c *Context) ListenerIsAdded(numberOfListeners int, ListenerName string) er
 
 // IsCalledWithArguments represents a step in the feature file
 func (c *Context) IsCalledWithArguments(arg1 string, arg2 *gherkin.DocString) error {
-	c.requestParams.ApiName = arg1
+	c.requestParams.APIName = arg1
 	c.requestParams.Arguments = arg2.Content
-	result, err := ProcessRequest(c.requestParams)
+	result, err := ProcessRequest(&c.requestParams)
 	if err == nil {
 		c.responseParams.Result = result.Result
 		c.responseParams.ListenerCalled = result.ListenerCalled
@@ -103,6 +105,15 @@ func (c *Context) TheResultShouldBeBoolean(arg1 string) error {
 	return fmt.Errorf("incorrect result")
 }
 
+// TheResultShouldBeFalse represents a step in the feature file
+func (c *Context) TheResultShouldBeFalse() error {
+	boolValue, _ := strconv.ParseBool(c.responseParams.Result.(string))
+	if boolValue == false {
+		return nil
+	}
+	return fmt.Errorf("incorrect result")
+}
+
 // InTheResponseKeyShouldBeObject represents a step in the feature file
 func (c *Context) InTheResponseKeyShouldBeObject(arg1, arg2 string) error {
 	switch arg1 {
@@ -145,7 +156,15 @@ func (c *Context) ThereAreNoDispatchedEvents() error {
 
 // DispatchedEventsPayloadsInclude represents a step in the feature file
 func (c *Context) DispatchedEventsPayloadsInclude(arg1 *gherkin.DocString) error {
-	return godog.ErrPending
+	requestedBatchEvents := []event.Batch{}
+	if err := yaml.Unmarshal([]byte(arg1.Content), &requestedBatchEvents); err != nil {
+		return fmt.Errorf("Invalid request for dispatched Events")
+	}
+	dispatchedEvents := c.requestParams.DependencyModel.Dispatcher.(eventdispatcher.EventReceiver).GetEvents()
+	if Check(requestedBatchEvents, dispatchedEvents) {
+		return nil
+	}
+	return fmt.Errorf("DispatchedEvents not equal")
 }
 
 // Reset clears all data before each scenario
