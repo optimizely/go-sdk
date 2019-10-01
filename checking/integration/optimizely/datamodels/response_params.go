@@ -6,5 +6,5 @@ import "github.com/optimizely/go-sdk/optimizely/entities"
 type ResponseParams struct {
 	Result         interface{}
 	Type           entities.VariableType
-	ListenerCalled []map[string]interface{}
+	ListenerCalled []DecisionListenerModel
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/DATA-DOG/godog/gherkin"
 	"github.com/optimizely/go-sdk/checking/integration/optimizely/datamodels"
 	"github.com/optimizely/go-sdk/optimizely/entities"
+	"gopkg.in/yaml.v3"
 )
 
 // Context holds both request and response for a scenario
@@ -38,6 +39,7 @@ func (c *Context) IsCalledWithArguments(arg1 string, arg2 *gherkin.DocString) er
 	result, err := ProcessRequest(c.requestParams)
 	if err == nil {
 		c.responseParams.Result = result.Result
+		c.responseParams.ListenerCalled = result.ListenerCalled
 		return nil
 	}
 	return fmt.Errorf("invalid api or arguments")
@@ -117,7 +119,20 @@ func (c *Context) InTheResponseKeyShouldBeObject(arg1, arg2 string) error {
 
 // InTheResponseShouldMatch represents a step in the feature file
 func (c *Context) InTheResponseShouldMatch(arg1 string, arg2 *gherkin.DocString) error {
-	return godog.ErrPending
+	switch arg1 {
+	case "listener_called":
+		var requestListenersCalled []datamodels.DecisionListenerModel
+		if err := yaml.Unmarshal([]byte(arg2.Content), &requestListenersCalled); err != nil {
+			break
+		}
+		if Check(requestListenersCalled, c.responseParams.ListenerCalled) {
+			return nil
+		}
+		break
+	default:
+		break
+	}
+	return fmt.Errorf("response for %s not equal", arg1)
 }
 
 // ThereAreNoDispatchedEvents represents a step in the feature file
@@ -131,4 +146,10 @@ func (c *Context) ThereAreNoDispatchedEvents() error {
 // DispatchedEventsPayloadsInclude represents a step in the feature file
 func (c *Context) DispatchedEventsPayloadsInclude(arg1 *gherkin.DocString) error {
 	return godog.ErrPending
+}
+
+// Reset clears all data before each scenario
+func (c *Context) Reset() {
+	c.requestParams = datamodels.RequestParams{}
+	c.responseParams = datamodels.ResponseParams{}
 }

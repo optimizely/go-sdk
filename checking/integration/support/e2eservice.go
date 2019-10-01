@@ -12,8 +12,7 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/client"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
-	"github.com/optimizely/go-sdk/optimizely/notification"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func setupOptimizelyClient(requestParams datamodels.RequestParams) (*client.OptimizelyClient, decision.Service, error) {
@@ -27,16 +26,9 @@ func setupOptimizelyClient(requestParams datamodels.RequestParams) (*client.Opti
 		Datafile: datafile,
 	}
 	// Creates a default, canceleable context
-	notificationCenter := notification.NewNotificationCenter()
-	decisionService := decision.NewCompositeService(notificationCenter)
+	decisionService := decision.NewCompositeService("")
 
-	// clientOptions := client.Options{
-	// 	DecisionService: decisionService,
-	// }
-
-	client, err := optimizelyFactory.Client(
-		client.CompositeDecisionService(notificationCenter),
-	)
+	client, err := optimizelyFactory.Client(client.DecisionService(decisionService))
 	return client, decisionService, nil
 }
 

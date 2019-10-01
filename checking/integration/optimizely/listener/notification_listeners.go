@@ -7,9 +7,9 @@ import (
 )
 
 // AddListener - Adds Notification Listeners
-func AddListener(decisionService decision.Service, params datamodels.RequestParams) (getListenersCalled func() []map[string]interface{}) {
-	var listenersCalled []map[string]interface{}
-	getListenersCalled = func() []map[string]interface{} {
+func AddListener(decisionService decision.Service, params datamodels.RequestParams) (getListenersCalled func() []datamodels.DecisionListenerModel) {
+	var listenersCalled []datamodels.DecisionListenerModel
+	getListenersCalled = func() []datamodels.DecisionListenerModel {
 		return listenersCalled
 	}
 	if len(params.Listeners) < 1 {
@@ -21,31 +21,31 @@ func AddListener(decisionService decision.Service, params datamodels.RequestPara
 			switch listenerType {
 			case "Decision":
 				callback := func(notification notification.DecisionNotification) {
-					var listenerResponseMap = make(map[string]interface{})
-					listenerResponseMap["type"] = notification.Type
-					listenerResponseMap["user_id"] = notification.UserContext.ID
 
+					model := datamodels.DecisionListenerModel{}
+					model.Type = notification.Type
+					model.UserID = notification.UserContext.ID
 					if notification.UserContext.Attributes == nil {
-						listenerResponseMap["attributes"] = make(map[string]interface{})
+						model.Attributes = make(map[string]interface{})
 					} else {
-						listenerResponseMap["attributes"] = notification.UserContext.Attributes
+						model.Attributes = notification.UserContext.Attributes
 					}
 
 					decisionInfoDict := make(map[string]interface{})
-
 					switch notificationType := notification.Type; notificationType {
 					case "feature":
 						decisionInfoDict = notification.DecisionInfo["feature"].(map[string]interface{})
-						decisionInfoDict["source_info"] = make(map[string]interface{})
-						if source, ok := notification.DecisionInfo["source"]; ok && source == "feature-test" {
+						source := string(decisionInfoDict["source"].(decision.Source))
+						decisionInfoDict["source"] = source
+
+						if source == "feature-test" {
 							if sourceInfo, ok := notification.DecisionInfo["source_info"].(map[string]interface{}); ok {
 								if experimentKey, ok := sourceInfo["experiment_key"].(string); ok {
 									if variationKey, ok := sourceInfo["variation_key"].(string); ok {
-										decisionInfoDict["source_info"] =
-											map[string]string{
-												"experiment_key": experimentKey,
-												"variation_key":  variationKey,
-											}
+										dict := make(map[string]interface{})
+										dict["experiment_key"] = experimentKey
+										dict["variation_key"] = variationKey
+										decisionInfoDict["source_info"] = dict
 									}
 								}
 							}
@@ -54,8 +54,8 @@ func AddListener(decisionService decision.Service, params datamodels.RequestPara
 					default:
 					}
 
-					listenerResponseMap["decision_info"] = decisionInfoDict
-					listenersCalled = append(listenersCalled, listenerResponseMap)
+					model.DecisionInfo = decisionInfoDict
+					listenersCalled = append(listenersCalled, model)
 				}
 				decisionService.OnDecision(callback)
 				break
