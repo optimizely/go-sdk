@@ -8,7 +8,7 @@ matrix:
     go: "1.12"
   - name: "1.8 unit test"
     go: "1.8.x"
-  - name: "master unit test"
+  - name: "Master unit test"
     go: "master"
     script:
       - echo "Sohail"
@@ -23,7 +23,7 @@ script:
 stages:
   - 'Lint'
   - 'Integration tests'
-  - 'Test'
+  - 'Master unit test'
 jobs:
   include:
     - stage: 'Lint'
