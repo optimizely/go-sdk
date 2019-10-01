@@ -144,183 +144,6 @@ func TestTrackFail(t *testing.T) {
 
 }
 
-func TestIsFeatureEnabled(t *testing.T) {
-	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testVariation := entities.Variation{
-		ID:             "22222",
-		Key:            "22222",
-		FeatureEnabled: true,
-	}
-	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
-	}
-	testFeatureKey := "test_feature_key"
-	testFeature := entities.Feature{
-		ID:                 "22222",
-		Key:                testFeatureKey,
-		FeatureExperiments: []entities.Experiment{testExperiment},
-	}
-	// Test happy path
-	mockConfig := new(MockProjectConfig)
-	mockConfig.On("GetFeatureByKey", testFeatureKey).Return(testFeature, nil)
-	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
-	// Set up the mock decision service and its return value
-	testDecisionContext := decision.FeatureDecisionContext{
-		Feature:       &testFeature,
-		ProjectConfig: mockConfig,
-	}
-
-	expectedFeatureDecision := decision.FeatureDecision{
-		Experiment: testExperiment,
-		Variation:  &testVariation,
-	}
-
-	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
-
-	client := OptimizelyClient{
-		ConfigManager:   mockConfigManager,
-		DecisionService: mockDecisionService,
-	}
-	result, _ := client.IsFeatureEnabled(testFeatureKey, testUserContext)
-	assert.True(t, result)
-	mockConfig.AssertExpectations(t)
-	mockConfigManager.AssertExpectations(t)
-	mockDecisionService.AssertExpectations(t)
-}
-
-func TestIsFeatureEnabledErrorCases(t *testing.T) {
-	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testFeatureKey := "test_feature_key"
-
-	// Test instance invalid
-	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(nil, errors.New("no project config available"))
-	mockDecisionService := new(MockDecisionService)
-
-	client := OptimizelyClient{
-		ConfigManager:   mockConfigManager,
-		DecisionService: mockDecisionService,
-	}
-	result, _ := client.IsFeatureEnabled(testFeatureKey, testUserContext)
-	assert.False(t, result)
-	mockDecisionService.AssertNotCalled(t, "GetFeatureDecision")
-
-	// Test invalid feature key
-	expectedError := errors.New("Invalid feature key")
-	mockConfig := new(MockProjectConfig)
-	mockConfig.On("GetFeatureByKey", testFeatureKey).Return(entities.Feature{}, expectedError)
-
-	mockConfigManager = new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
-	mockDecisionService = new(MockDecisionService)
-	client = OptimizelyClient{
-		ConfigManager:   mockConfigManager,
-		DecisionService: mockDecisionService,
-	}
-	result, err := client.IsFeatureEnabled(testFeatureKey, testUserContext)
-	if assert.Error(t, err) {
-		assert.Equal(t, expectedError, err)
-	}
-	assert.False(t, result)
-	mockConfigManager.AssertExpectations(t)
-	mockDecisionService.AssertNotCalled(t, "GetDecision")
-}
-
-func TestIsFeatureEnabledPanic(t *testing.T) {
-	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testFeatureKey := "test_feature_key"
-
-	mockDecisionService := new(MockDecisionService)
-
-	client := OptimizelyClient{
-		ConfigManager:   &PanickingConfigManager{},
-		DecisionService: mockDecisionService,
-	}
-
-	// ensure that the client calms back down and recovers
-	result, err := client.IsFeatureEnabled(testFeatureKey, testUserContext)
-	assert.False(t, result)
-	assert.True(t, assert.Error(t, err))
-}
-
-func TestGetEnabledFeatures(t *testing.T) {
-	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testVariationEnabled := entities.Variation{
-		ID:             "22222",
-		Key:            "22222",
-		FeatureEnabled: true,
-	}
-	testVariationDisabled := entities.Variation{
-		ID:             "22222",
-		Key:            "22222",
-		FeatureEnabled: false,
-	}
-	testExperimentEnabled := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariationEnabled},
-	}
-	testExperimentDisabled := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariationDisabled},
-	}
-	testFeatureEnabledKey := "test_feature_enabled_key"
-	testFeatureEnabled := entities.Feature{
-		ID:                 "22222",
-		Key:                testFeatureEnabledKey,
-		FeatureExperiments: []entities.Experiment{testExperimentEnabled},
-	}
-	testFeatureDisabledKey := "test_feature_disabled_key"
-	testFeatureDisabled := entities.Feature{
-		ID:                 "22222",
-		Key:                testFeatureDisabledKey,
-		FeatureExperiments: []entities.Experiment{testExperimentDisabled},
-	}
-	featureList := []entities.Feature{testFeatureEnabled, testFeatureDisabled}
-	// Test happy path
-	mockConfig := new(MockProjectConfig)
-	mockConfig.On("GetFeatureByKey", testFeatureEnabledKey).Return(testFeatureEnabled, nil)
-	mockConfig.On("GetFeatureByKey", testFeatureDisabledKey).Return(testFeatureDisabled, nil)
-	mockConfig.On("GetFeatureList").Return(featureList)
-	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
-	// Set up the mock decision service and its return value
-	testDecisionContextEnabled := decision.FeatureDecisionContext{
-		Feature:       &testFeatureEnabled,
-		ProjectConfig: mockConfig,
-	}
-	testDecisionContextDisabled := decision.FeatureDecisionContext{
-		Feature:       &testFeatureDisabled,
-		ProjectConfig: mockConfig,
-	}
-
-	expectedFeatureDecisionEnabled := decision.FeatureDecision{
-		Experiment: testExperimentEnabled,
-		Variation:  &testVariationEnabled,
-	}
-	expectedFeatureDecisionDisabled := decision.FeatureDecision{
-		Experiment: testExperimentDisabled,
-		Variation:  &testVariationDisabled,
-	}
-
-	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContextEnabled, testUserContext).Return(expectedFeatureDecisionEnabled, nil)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContextDisabled, testUserContext).Return(expectedFeatureDecisionDisabled, nil)
-
-	client := OptimizelyClient{
-		ConfigManager:   mockConfigManager,
-		DecisionService: mockDecisionService,
-	}
-	result, err := client.GetEnabledFeatures(testUserContext)
-	assert.NoError(t, err)
-	assert.ElementsMatch(t, result, []string{testFeatureEnabledKey})
-	mockConfig.AssertExpectations(t)
-	mockConfigManager.AssertExpectations(t)
-	mockDecisionService.AssertExpectations(t)
-}
-
 func TestGetEnabledFeaturesErrorCases(t *testing.T) {
 	testUserContext := entities.UserContext{ID: "test_user_1"}
 
@@ -1639,7 +1462,7 @@ func (s *ClientTestSuiteAB) SetupTest() {
 
 func (s *ClientTestSuiteAB) TestActivate() {
 	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testExperiment := getTestExperiment("test_exp_1")
+	testExperiment := makeTestExperiment("test_exp_1")
 	s.mockConfig.On("GetExperimentByKey", "test_exp_1").Return(testExperiment, nil)
 
 	testDecisionContext := decision.ExperimentDecisionContext{
@@ -1683,7 +1506,7 @@ func (s *ClientTestSuiteAB) TestActivatePanics() {
 
 func (s *ClientTestSuiteAB) TestGetVariation() {
 	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testExperiment := getTestExperiment("test_exp_1")
+	testExperiment := makeTestExperiment("test_exp_1")
 	s.mockConfig.On("GetExperimentByKey", "test_exp_1").Return(testExperiment, nil)
 
 	testDecisionContext := decision.ExperimentDecisionContext{
@@ -1723,6 +1546,152 @@ func (s *ClientTestSuiteAB) TestGetVariationPanics() {
 	s.EqualError(err, "I'm panicking")
 }
 
+type ClientTestSuiteFM struct {
+	suite.Suite
+	mockConfig          *MockProjectConfig
+	mockConfigManager   *MockProjectConfigManager
+	mockDecisionService *MockDecisionService
+	mockEventProcessor  *MockEventProcessor
+}
+
+func (s *ClientTestSuiteFM) SetupTest() {
+	s.mockConfig = new(MockProjectConfig)
+	s.mockConfigManager = new(MockProjectConfigManager)
+	s.mockConfigManager.On("GetConfig").Return(s.mockConfig, nil)
+	s.mockDecisionService = new(MockDecisionService)
+	s.mockEventProcessor = new(MockEventProcessor)
+}
+
+func (s *ClientTestSuiteFM) TestIsFeatureEnabled() {
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+
+	// Test happy path
+	testVariation := makeTestVariation("green", true)
+	testExperiment := makeTestExperimentWithVariations("number_1", []entities.Variation{testVariation})
+	testFeature := makeTestFeatureWithExperiment("feature_1", testExperiment)
+	s.mockConfig.On("GetFeatureByKey", testFeature.Key).Return(testFeature, nil)
+	s.mockConfigManager.On("GetConfig").Return(s.mockConfig, nil)
+
+	// Set up the mock decision service and its return value
+	testDecisionContext := decision.FeatureDecisionContext{
+		Feature:       &testFeature,
+		ProjectConfig: s.mockConfig,
+	}
+
+	expectedFeatureDecision := decision.FeatureDecision{
+		Experiment: testExperiment,
+		Variation:  &testVariation,
+	}
+
+	s.mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+
+	client := OptimizelyClient{
+		ConfigManager:   s.mockConfigManager,
+		DecisionService: s.mockDecisionService,
+	}
+	result, _ := client.IsFeatureEnabled(testFeature.Key, testUserContext)
+	s.True(result)
+	s.mockConfig.AssertExpectations(s.T())
+	s.mockConfigManager.AssertExpectations(s.T())
+	s.mockDecisionService.AssertExpectations(s.T())
+}
+
+func (s *ClientTestSuiteFM) TestIsFeatureEnabledErrorCases() {
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	testFeatureKey := "test_feature_key"
+
+	// Test instance invalid
+	s.mockConfigManager.On("GetConfig").Return(nil, errors.New("no project config available"))
+
+	client := OptimizelyClient{
+		ConfigManager:   s.mockConfigManager,
+		DecisionService: s.mockDecisionService,
+	}
+	result, _ := client.IsFeatureEnabled(testFeatureKey, testUserContext)
+	s.False(result)
+	s.mockDecisionService.AssertNotCalled(s.T(), "GetFeatureDecision")
+
+	// Test invalid feature key
+	expectedError := errors.New("Invalid feature key")
+	s.mockConfig.On("GetFeatureByKey", testFeatureKey).Return(entities.Feature{}, expectedError)
+	s.mockConfigManager.On("GetConfig").Return(s.mockConfig, nil)
+
+	client = OptimizelyClient{
+		ConfigManager:   s.mockConfigManager,
+		DecisionService: s.mockDecisionService,
+	}
+	result, err := client.IsFeatureEnabled(testFeatureKey, testUserContext)
+	if s.Error(err) {
+		s.Equal(expectedError, err)
+	}
+	s.False(result)
+	s.mockConfigManager.AssertExpectations(s.T())
+	s.mockDecisionService.AssertNotCalled(s.T(), "GetDecision")
+}
+
+func (s *ClientTestSuiteFM) TestIsFeatureEnabledPanic() {
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	testFeatureKey := "test_feature_key"
+
+	client := OptimizelyClient{
+		ConfigManager: &PanickingConfigManager{},
+	}
+
+	// ensure that the client calms back down and recovers
+	result, err := client.IsFeatureEnabled(testFeatureKey, testUserContext)
+	s.False(result)
+	s.Error(err)
+}
+
+func (s *ClientTestSuiteFM) TestGetEnabledFeatures() {
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	testVariationEnabled := makeTestVariation("a", true)
+	testVariationDisabled := makeTestVariation("b", false)
+	testExperimentEnabled := makeTestExperimentWithVariations("enabled_exp", []entities.Variation{testVariationEnabled})
+	testExperimentDisabled := makeTestExperimentWithVariations("disabled_exp", []entities.Variation{testVariationDisabled})
+	testFeatureEnabled := makeTestFeatureWithExperiment("enabled_feat", testExperimentEnabled)
+	testFeatureDisabled := makeTestFeatureWithExperiment("disabled_feat", testExperimentDisabled)
+
+	featureList := []entities.Feature{testFeatureEnabled, testFeatureDisabled}
+	s.mockConfig.On("GetFeatureByKey", testFeatureEnabled.Key).Return(testFeatureEnabled, nil)
+	s.mockConfig.On("GetFeatureByKey", testFeatureDisabled.Key).Return(testFeatureDisabled, nil)
+	s.mockConfig.On("GetFeatureList").Return(featureList)
+	s.mockConfigManager.On("GetConfig").Return(s.mockConfig, nil)
+
+	testDecisionContextEnabled := decision.FeatureDecisionContext{
+		Feature:       &testFeatureEnabled,
+		ProjectConfig: s.mockConfig,
+	}
+	testDecisionContextDisabled := decision.FeatureDecisionContext{
+		Feature:       &testFeatureDisabled,
+		ProjectConfig: s.mockConfig,
+	}
+
+	expectedFeatureDecisionEnabled := decision.FeatureDecision{
+		Experiment: testExperimentEnabled,
+		Variation:  &testVariationEnabled,
+	}
+	expectedFeatureDecisionDisabled := decision.FeatureDecision{
+		Experiment: testExperimentDisabled,
+		Variation:  &testVariationDisabled,
+	}
+
+	s.mockDecisionService.On("GetFeatureDecision", testDecisionContextEnabled, testUserContext).Return(expectedFeatureDecisionEnabled, nil)
+	s.mockDecisionService.On("GetFeatureDecision", testDecisionContextDisabled, testUserContext).Return(expectedFeatureDecisionDisabled, nil)
+
+	client := OptimizelyClient{
+		ConfigManager:   s.mockConfigManager,
+		DecisionService: s.mockDecisionService,
+	}
+	result, err := client.GetEnabledFeatures(testUserContext)
+	s.NoError(err)
+	s.ElementsMatch(result, []string{testFeatureEnabled.Key})
+	s.mockConfig.AssertExpectations(s.T())
+	s.mockConfigManager.AssertExpectations(s.T())
+	s.mockDecisionService.AssertExpectations(s.T())
+}
+
 func TestClientTestSuite(t *testing.T) {
 	suite.Run(t, new(ClientTestSuiteAB))
+	suite.Run(t, new(ClientTestSuiteFM))
 }
