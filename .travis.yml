@@ -10,8 +10,6 @@ matrix:
     go: "1.8.x"
   - name: "Master unit test"
     go: "master"
-    script:
-      - echo "Sohail"
 before_install:
   - go get github.com/go-playground/overalls
   - go get github.com/mattn/goveralls
