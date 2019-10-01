@@ -101,6 +101,7 @@ func (m *MockEventProcessor) ProcessEvent(userEvent event.UserEvent) {
 }
 
 type PanickingConfigManager struct {
+	optimizely.ProjectConfigManager
 }
 
 func (m *PanickingConfigManager) GetConfig() (optimizely.ProjectConfig, error) {

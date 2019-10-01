@@ -1655,9 +1655,9 @@ func (s *ClientTestSuiteAB) TestActivate() {
 	s.mockEventProcessor.On("ProcessEvent", mock.AnythingOfType("event.UserEvent"))
 
 	testClient := OptimizelyClient{
-		configManager:   s.mockConfigManager,
-		decisionService: s.mockDecisionService,
-		eventProcessor:  s.mockEventProcessor,
+		ConfigManager:   s.mockConfigManager,
+		DecisionService: s.mockDecisionService,
+		EventProcessor:  s.mockEventProcessor,
 	}
 
 	variationKey, err := testClient.Activate("test_exp_1", testUserContext)
@@ -1672,8 +1672,8 @@ func (s *ClientTestSuiteAB) TestActivatePanics() {
 	// ensure that we recover if the SDK panics while getting variation
 	testUserContext := entities.UserContext{}
 	testClient := OptimizelyClient{
-		configManager:   new(PanickingConfigManager),
-		decisionService: s.mockDecisionService,
+		ConfigManager:   new(PanickingConfigManager),
+		DecisionService: s.mockDecisionService,
 	}
 
 	variationKey, err := testClient.Activate("test_exp_1", testUserContext)
@@ -1698,8 +1698,8 @@ func (s *ClientTestSuiteAB) TestGetVariation() {
 	s.mockDecisionService.On("GetExperimentDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision, nil)
 
 	testClient := OptimizelyClient{
-		configManager:   s.mockConfigManager,
-		decisionService: s.mockDecisionService,
+		ConfigManager:   s.mockConfigManager,
+		DecisionService: s.mockDecisionService,
 	}
 
 	variationKey, err := testClient.GetVariation("test_exp_1", testUserContext)
@@ -1714,8 +1714,8 @@ func (s *ClientTestSuiteAB) TestGetVariationPanics() {
 	// ensure that we recover if the SDK panics while getting variation
 	testUserContext := entities.UserContext{}
 	testClient := OptimizelyClient{
-		configManager:   new(PanickingConfigManager),
-		decisionService: s.mockDecisionService,
+		ConfigManager:   new(PanickingConfigManager),
+		DecisionService: s.mockDecisionService,
 	}
 
 	variationKey, err := testClient.GetVariation("test_exp_1", testUserContext)
