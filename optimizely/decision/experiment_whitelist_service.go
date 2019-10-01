@@ -47,7 +47,7 @@ func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisi
 
 	experiment, err := decisionContext.ProjectConfig.GetExperimentByKey(decisionContext.Experiment.Key)
 	if err != nil {
-		return decision, fmt.Errorf("error looking up experiment in decision context: %w", err)
+		return decision, fmt.Errorf("error looking up experiment in decision context: %v", err)
 	}
 
 	userEntry, ok := s.whitelist[userContext.ID]
