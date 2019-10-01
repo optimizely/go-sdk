@@ -30,6 +30,9 @@ const (
 	Decision Type = "decision"
 	// ProjectConfigUpdate notification type
 	ProjectConfigUpdate Type = "project_config_update"
+
+	// ABTest is used when the decision is returned as part of evaluating an ab test
+	ABTest DecisionNotificationType = "ab-test"
 	// Feature is used when the decision is returned as part of evaluating a feature
 	Feature DecisionNotificationType = "feature"
 )

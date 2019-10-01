@@ -29,9 +29,9 @@ type FeatureExperimentService struct {
 }
 
 // NewFeatureExperimentService returns a new instance of the FeatureExperimentService
-func NewFeatureExperimentService() *FeatureExperimentService {
+func NewFeatureExperimentService(compositeExperimentService ExperimentService) *FeatureExperimentService {
 	return &FeatureExperimentService{
-		compositeExperimentService: NewCompositeExperimentService(),
+		compositeExperimentService: compositeExperimentService,
 	}
 }
 
