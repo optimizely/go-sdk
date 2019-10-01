@@ -25,14 +25,14 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/notification"
 )
 
-type CompositeServiceTestSuite struct {
+type CompositeServiceFeatureTestSuite struct {
 	suite.Suite
 	decisionContext    FeatureDecisionContext
 	mockFeatureService *MockFeatureDecisionService
 	testUserContext    entities.UserContext
 }
 
-func (s *CompositeServiceTestSuite) SetupTest() {
+func (s *CompositeServiceFeatureTestSuite) SetupTest() {
 	mockConfig := new(mockProjectConfig)
 	s.decisionContext = FeatureDecisionContext{
 		Feature:       &testFeat3333,
@@ -44,7 +44,7 @@ func (s *CompositeServiceTestSuite) SetupTest() {
 	}
 }
 
-func (s *CompositeServiceTestSuite) TestGetFeatureDecision() {
+func (s *CompositeServiceFeatureTestSuite) TestGetFeatureDecision() {
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1111,
 		Variation:  &testExp1111Var2222,
@@ -61,7 +61,7 @@ func (s *CompositeServiceTestSuite) TestGetFeatureDecision() {
 	s.mockFeatureService.AssertExpectations(s.T())
 }
 
-func (s *CompositeServiceTestSuite) TestDecisionListeners() {
+func (s *CompositeServiceFeatureTestSuite) TestDecisionListeners() {
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1111,
 		Variation:  &testExp1111Var2222,
@@ -90,7 +90,7 @@ func (s *CompositeServiceTestSuite) TestDecisionListeners() {
 	s.Equal(numberOfCalls, 1)
 }
 
-func (s *CompositeServiceTestSuite) TestNewCompositeService() {
+func (s *CompositeServiceFeatureTestSuite) TestNewCompositeService() {
 	notificationCenter := notification.NewNotificationCenter()
 	compositeService := NewCompositeService("sdk_key")
 	s.Equal(notificationCenter, compositeService.notificationCenter)
@@ -98,6 +98,70 @@ func (s *CompositeServiceTestSuite) TestNewCompositeService() {
 	s.IsType(&CompositeFeatureService{}, compositeService.compositeFeatureService)
 }
 
-func TestCompositeServiceTestSuite(t *testing.T) {
-	suite.Run(t, new(CompositeServiceTestSuite))
+type CompositeServiceExperimentTestSuite struct {
+	suite.Suite
+	decisionContext       ExperimentDecisionContext
+	mockExperimentService *MockExperimentDecisionService
+	testUserContext       entities.UserContext
+}
+
+func (s *CompositeServiceExperimentTestSuite) SetupTest() {
+	mockConfig := new(mockProjectConfig)
+	s.decisionContext = ExperimentDecisionContext{
+		Experiment:    &testExp1111,
+		ProjectConfig: mockConfig,
+	}
+	s.mockExperimentService = new(MockExperimentDecisionService)
+	s.testUserContext = entities.UserContext{
+		ID: "test_user",
+	}
+}
+
+func (s *CompositeServiceExperimentTestSuite) TestGetExperimentDecision() {
+	expectedExperimentDecision := ExperimentDecision{
+		Variation: &testExp1111Var2222,
+	}
+	decisionService := &CompositeService{
+		compositeExperimentService: s.mockExperimentService,
+	}
+	s.mockExperimentService.On("GetDecision", s.decisionContext, s.testUserContext).Return(expectedExperimentDecision, nil)
+	experimentDecision, err := decisionService.GetExperimentDecision(s.decisionContext, s.testUserContext)
+
+	// Test assertions
+	s.Equal(expectedExperimentDecision, experimentDecision)
+	s.NoError(err)
+	s.mockExperimentService.AssertExpectations(s.T())
+}
+
+func (s *CompositeServiceExperimentTestSuite) TestDecisionListeners() {
+	expectedExperimentDecision := ExperimentDecision{
+		Variation: &testExp1111Var2222,
+	}
+	notificationCenter := notification.NewNotificationCenter()
+	decisionService := &CompositeService{
+		compositeExperimentService: s.mockExperimentService,
+		notificationCenter:         notificationCenter,
+	}
+	s.mockExperimentService.On("GetDecision", s.decisionContext, s.testUserContext).Return(expectedExperimentDecision, nil)
+	decisionService.GetExperimentDecision(s.decisionContext, s.testUserContext)
+
+	var numberOfCalls = 0
+	callback := func(notification notification.DecisionNotification) {
+		numberOfCalls++
+	}
+	id, _ := decisionService.OnDecision(callback)
+
+	s.NotEqual(id, 0)
+	decisionService.GetExperimentDecision(s.decisionContext, s.testUserContext)
+	s.Equal(numberOfCalls, 1)
+
+	err := decisionService.RemoveOnDecision(id)
+	s.NoError(err)
+	decisionService.GetExperimentDecision(s.decisionContext, s.testUserContext)
+	s.Equal(numberOfCalls, 1)
+}
+
+func TestCompositeServiceTestSuites(t *testing.T) {
+	suite.Run(t, new(CompositeServiceExperimentTestSuite))
+	suite.Run(t, new(CompositeServiceFeatureTestSuite))
 }
