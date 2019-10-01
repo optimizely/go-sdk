@@ -51,9 +51,9 @@ func TestClientWithSDKKey(t *testing.T) {
 
 	optimizelyClient, err := factory.Client()
 	assert.NoError(t, err)
-	assert.NotNil(t, optimizelyClient.configManager)
-	assert.NotNil(t, optimizelyClient.decisionService)
-	assert.NotNil(t, optimizelyClient.eventProcessor)
+	assert.NotNil(t, optimizelyClient.ConfigManager)
+	assert.NotNil(t, optimizelyClient.DecisionService)
+	assert.NotNil(t, optimizelyClient.EventProcessor)
 }
 
 func TestClientWithProjectConfigManagerInOptions(t *testing.T) {
@@ -63,9 +63,9 @@ func TestClientWithProjectConfigManagerInOptions(t *testing.T) {
 
 	optimizelyClient, err := factory.Client(ConfigManager(configManager))
 	assert.NoError(t, err)
-	assert.NotNil(t, optimizelyClient.configManager)
-	assert.NotNil(t, optimizelyClient.decisionService)
-	assert.NotNil(t, optimizelyClient.eventProcessor)
+	assert.NotNil(t, optimizelyClient.ConfigManager)
+	assert.NotNil(t, optimizelyClient.DecisionService)
+	assert.NotNil(t, optimizelyClient.EventProcessor)
 }
 
 func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
@@ -82,6 +82,6 @@ func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 
 	optimizelyClient, err := factory.Client(ConfigManager(configManager), DecisionService(decisionService), EventProcessor(processor))
 	assert.NoError(t, err)
-	assert.Equal(t, decisionService, optimizelyClient.decisionService)
-	assert.Equal(t, processor, optimizelyClient.eventProcessor)
+	assert.Equal(t, decisionService, optimizelyClient.DecisionService)
+	assert.Equal(t, processor, optimizelyClient.EventProcessor)
 }

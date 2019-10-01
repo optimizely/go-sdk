@@ -35,9 +35,9 @@ var logger = logging.GetLogger("Client")
 
 // OptimizelyClient is the entry point to the Optimizely SDK
 type OptimizelyClient struct {
-	configManager   optimizely.ProjectConfigManager
-	decisionService decision.Service
-	eventProcessor  event.Processor
+	ConfigManager   optimizely.ProjectConfigManager
+	DecisionService decision.Service
+	EventProcessor  event.Processor
 
 	executionCtx utils.ExecutionCtx
 }
@@ -71,7 +71,7 @@ func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.U
 		// send an impression event
 		result = experimentDecision.Variation.Key
 		impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *decisionContext.Experiment, *experimentDecision.Variation, userContext)
-		o.eventProcessor.ProcessEvent(impressionEvent)
+		o.EventProcessor.ProcessEvent(impressionEvent)
 	}
 
 	return result, err
@@ -117,7 +117,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 	if featureDecision.Source == decision.FeatureTest {
 		// send impression event for feature tests
 		impressionEvent := event.CreateImpressionUserEvent(context.ProjectConfig, featureDecision.Experiment, *featureDecision.Variation, userContext)
-		o.eventProcessor.ProcessEvent(impressionEvent)
+		o.EventProcessor.ProcessEvent(impressionEvent)
 	}
 	return result, err
 }
@@ -425,7 +425,7 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 	}
 
 	userEvent := event.CreateConversionUserEvent(projectConfig, configEvent, userContext, eventTags)
-	o.eventProcessor.ProcessEvent(userEvent)
+	o.EventProcessor.ProcessEvent(userEvent)
 	return nil
 }
 
@@ -467,7 +467,7 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext ent
 		ProjectConfig: projectConfig,
 	}
 
-	featureDecision, err = o.decisionService.GetFeatureDecision(decisionContext, userContext)
+	featureDecision, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext)
 	if err != nil {
 		logger.Warning("error making a decision")
 		return decisionContext, featureDecision, err
@@ -498,7 +498,7 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 		ProjectConfig: projectConfig,
 	}
 
-	experimentDecision, err = o.decisionService.GetExperimentDecision(decisionContext, userContext)
+	experimentDecision, err = o.DecisionService.GetExperimentDecision(decisionContext, userContext)
 	if err != nil {
 		logger.Warning(fmt.Sprintf(`error making a decision for experiment "%s"`, experimentKey))
 		return decisionContext, experimentDecision, err
@@ -517,7 +517,7 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 // GetProjectConfig returns the current ProjectConfig or nil if the instance is not valid
 func (o *OptimizelyClient) GetProjectConfig() (projectConfig optimizely.ProjectConfig, err error) {
 
-	projectConfig, err = o.configManager.GetConfig()
+	projectConfig, err = o.ConfigManager.GetConfig()
 	if err != nil {
 		return nil, err
 	}
