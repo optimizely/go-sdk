@@ -1,11 +1,10 @@
 env:
   - GO111MODULE=on
 language: go
-matrix:
-  include:
-  - go: "1.12"
-  - go: "1.8.x"
-  - go: "master"
+go:
+  - 1.12.x
+  - 1.8.x
+  - master
 before_install:
   - go get github.com/go-playground/overalls
   - go get github.com/mattn/goveralls
