@@ -410,24 +410,23 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 		}
 	}()
 
-	projectConfig, err := o.GetProjectConfig()
-	if err != nil {
-		logger.Error("Optimizely SDK tracking error", err)
-		return err
+	projectConfig, e := o.GetProjectConfig()
+	if e != nil {
+		logger.Error("Optimizely SDK tracking error", e)
+		return e
 	}
 
-	configEvent, err := projectConfig.GetEventByKey(eventKey)
+	configEvent, e := projectConfig.GetEventByKey(eventKey)
 
-	if err == nil {
-		userEvent := event.CreateConversionUserEvent(projectConfig, configEvent, userContext, eventTags)
-		o.eventProcessor.ProcessEvent(userEvent)
-	} else {
+	if e != nil {
 		errorMessage := fmt.Sprintf(`optimizely SDK track: error getting event with key "%s"`, eventKey)
-		logger.Error(errorMessage, err)
-		return err
+		logger.Error(errorMessage, e)
+		return e
 	}
 
-	return err
+	userEvent := event.CreateConversionUserEvent(projectConfig, configEvent, userContext, eventTags)
+	o.eventProcessor.ProcessEvent(userEvent)
+	return nil
 }
 
 func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext entities.UserContext) (decisionContext decision.FeatureDecisionContext, featureDecision decision.FeatureDecision, err error) {
@@ -470,7 +469,6 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext ent
 
 	featureDecision, err = o.decisionService.GetFeatureDecision(decisionContext, userContext)
 	if err != nil {
-		err = nil
 		logger.Warning("error making a decision")
 		return decisionContext, featureDecision, err
 	}
@@ -502,7 +500,6 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 
 	experimentDecision, err = o.decisionService.GetExperimentDecision(decisionContext, userContext)
 	if err != nil {
-		err = nil
 		logger.Warning(fmt.Sprintf(`error making a decision for experiment "%s"`, experimentKey))
 		return decisionContext, experimentDecision, err
 	}

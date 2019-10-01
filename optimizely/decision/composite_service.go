@@ -80,7 +80,9 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 
 // GetExperimentDecision returns a decision for the given experiment key
 func (s CompositeService) GetExperimentDecision(experimentDecisionContext ExperimentDecisionContext, userContext entities.UserContext) (experimentDecision ExperimentDecision, err error) {
-	experimentDecision, err = s.compositeExperimentService.GetDecision(experimentDecisionContext, userContext)
+	if experimentDecision, err = s.compositeExperimentService.GetDecision(experimentDecisionContext, userContext); err != nil {
+		return experimentDecision, err
+	}
 
 	if s.notificationCenter != nil && experimentDecision.Variation != nil {
 		decisionInfo := map[string]interface{}{

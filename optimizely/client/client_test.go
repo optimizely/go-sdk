@@ -1529,7 +1529,7 @@ func TestGetFeatureDecisionErrFeatureDecision(t *testing.T) {
 	}
 
 	_, _, err := client.getFeatureDecision(testFeatureKey, testUserContext)
-	assert.Nil(t, err)
+	assert.Error(t, err)
 }
 
 func TestGetAllFeatureVariables(t *testing.T) {
@@ -1657,6 +1657,19 @@ func (s *ClientTestSuiteAB) TestActivate() {
 	s.mockConfig.AssertExpectations(s.T())
 	s.mockDecisionService.AssertExpectations(s.T())
 	s.mockEventProcessor.AssertExpectations(s.T())
+}
+
+func (s *ClientTestSuiteAB) TestActivatePanics() {
+	// ensure that we recover if the SDK panics while getting variation
+	testUserContext := entities.UserContext{}
+	testClient := OptimizelyClient{
+		configManager:   new(PanickingConfigManager),
+		decisionService: s.mockDecisionService,
+	}
+
+	variationKey, err := testClient.Activate("test_exp_1", testUserContext)
+	s.Equal("", variationKey)
+	s.EqualError(err, "I'm panicking")
 }
 
 func (s *ClientTestSuiteAB) TestGetVariation() {
