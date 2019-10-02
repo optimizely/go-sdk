@@ -1,4 +1,4 @@
-package eventdispatcher
+package optlyplugins
 
 import (
 	"time"

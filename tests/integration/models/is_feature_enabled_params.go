@@ -1,4 +1,4 @@
-package datamodels
+package models
 
 // IsFeatureEnabledRequestParams represents params required for isFeatureEnabled API
 type IsFeatureEnabledRequestParams struct {

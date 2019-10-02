@@ -7,16 +7,16 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/event"
 
 	"github.com/DATA-DOG/godog/gherkin"
-	"github.com/optimizely/go-sdk/checking/integration/optimizely/datamodels"
-	"github.com/optimizely/go-sdk/checking/integration/optimizely/eventdispatcher"
 	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/tests/integration/models"
+	"github.com/optimizely/go-sdk/tests/integration/optlyplugins"
 	"gopkg.in/yaml.v3"
 )
 
 // Context holds both request and response for a scenario
 type Context struct {
-	requestParams  datamodels.RequestParams
-	responseParams datamodels.ResponseParams
+	requestParams  models.RequestParams
+	responseParams models.ResponseParams
 }
 
 // TheDatafileIs represents a step in the feature file
@@ -132,7 +132,7 @@ func (c *Context) InTheResponseKeyShouldBeObject(arg1, arg2 string) error {
 func (c *Context) InTheResponseShouldMatch(arg1 string, arg2 *gherkin.DocString) error {
 	switch arg1 {
 	case "listener_called":
-		var requestListenersCalled []datamodels.DecisionListenerModel
+		var requestListenersCalled []models.DecisionListener
 		if err := yaml.Unmarshal([]byte(arg2.Content), &requestListenersCalled); err != nil {
 			break
 		}
@@ -160,7 +160,7 @@ func (c *Context) DispatchedEventsPayloadsInclude(arg1 *gherkin.DocString) error
 	if err := yaml.Unmarshal([]byte(arg1.Content), &requestedBatchEvents); err != nil {
 		return fmt.Errorf("Invalid request for dispatched Events")
 	}
-	dispatchedEvents := c.requestParams.DependencyModel.Dispatcher.(eventdispatcher.EventReceiver).GetEvents()
+	dispatchedEvents := c.requestParams.DependencyModel.Dispatcher.(optlyplugins.EventReceiver).GetEvents()
 	if Check(requestedBatchEvents, dispatchedEvents) {
 		return nil
 	}
@@ -169,6 +169,6 @@ func (c *Context) DispatchedEventsPayloadsInclude(arg1 *gherkin.DocString) error
 
 // Reset clears all data before each scenario
 func (c *Context) Reset() {
-	c.requestParams = datamodels.RequestParams{}
-	c.responseParams = datamodels.ResponseParams{}
+	c.requestParams = models.RequestParams{}
+	c.responseParams = models.ResponseParams{}
 }

@@ -1,15 +1,15 @@
 package listener
 
 import (
-	"github.com/optimizely/go-sdk/checking/integration/optimizely/datamodels"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/notification"
+	"github.com/optimizely/go-sdk/tests/integration/models"
 )
 
 // AddListener - Adds Notification Listeners
-func AddListener(decisionService decision.Service, params *datamodels.RequestParams) (getListenersCalled func() []datamodels.DecisionListenerModel) {
-	var listenersCalled []datamodels.DecisionListenerModel
-	getListenersCalled = func() []datamodels.DecisionListenerModel {
+func AddListener(decisionService decision.Service, params *models.RequestParams) (getListenersCalled func() []models.DecisionListener) {
+	var listenersCalled []models.DecisionListener
+	getListenersCalled = func() []models.DecisionListener {
 		return listenersCalled
 	}
 	if len(params.Listeners) < 1 {
@@ -22,7 +22,7 @@ func AddListener(decisionService decision.Service, params *datamodels.RequestPar
 			case "Decision":
 				callback := func(notification notification.DecisionNotification) {
 
-					model := datamodels.DecisionListenerModel{}
+					model := models.DecisionListener{}
 					model.Type = notification.Type
 					model.UserID = notification.UserContext.ID
 					if notification.UserContext.Attributes == nil {

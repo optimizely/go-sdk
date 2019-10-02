@@ -1,4 +1,4 @@
-package datamodels
+package models
 
 import (
 	"github.com/optimizely/go-sdk/optimizely/entities"
@@ -8,5 +8,5 @@ import (
 type ResponseParams struct {
 	Result         interface{}
 	Type           entities.VariableType
-	ListenerCalled []DecisionListenerModel
+	ListenerCalled []DecisionListener
 }

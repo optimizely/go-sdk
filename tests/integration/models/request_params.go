@@ -1,4 +1,4 @@
-package datamodels
+package models
 
 import (
 	"github.com/optimizely/go-sdk/optimizely"

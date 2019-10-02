@@ -7,19 +7,19 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/optimizely/go-sdk/checking/integration/optimizely/datamodels"
-	"github.com/optimizely/go-sdk/checking/integration/optimizely/eventdispatcher"
-	"github.com/optimizely/go-sdk/checking/integration/optimizely/listener"
 	"github.com/optimizely/go-sdk/optimizely/client"
 	"github.com/optimizely/go-sdk/optimizely/config"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/optimizely/go-sdk/optimizely/event"
 	"github.com/optimizely/go-sdk/optimizely/utils"
+	"github.com/optimizely/go-sdk/tests/integration/models"
+	"github.com/optimizely/go-sdk/tests/integration/optlyplugins"
+	"github.com/optimizely/go-sdk/tests/integration/optlyplugins/listener"
 	"gopkg.in/yaml.v3"
 )
 
-func setupOptimizelyClient(requestParams *datamodels.RequestParams) {
+func setupOptimizelyClient(requestParams *models.RequestParams) {
 	if requestParams.DependencyModel != nil {
 		return
 	}
@@ -38,21 +38,21 @@ func setupOptimizelyClient(requestParams *datamodels.RequestParams) {
 	}
 
 	executionCtx := utils.NewCancelableExecutionCtx()
-	eventProcessor := event.NewEventProcessor(executionCtx, event.BatchSize(datamodels.EventProcessorDefaultBatchSize), event.QueueSize(datamodels.EventProcessorDefaultQueueSize), event.FlushInterval(datamodels.EventProcessorDefaultFlushInterval))
+	eventProcessor := event.NewEventProcessor(executionCtx, event.BatchSize(models.EventProcessorDefaultBatchSize), event.QueueSize(models.EventProcessorDefaultQueueSize), event.FlushInterval(models.EventProcessorDefaultFlushInterval))
 
 	optimizelyFactory := &client.OptimizelyFactory{
 		Datafile: datafile,
 	}
 
 	decisionService := decision.NewCompositeService("")
-	eventProcessor.EventDispatcher = &eventdispatcher.ProxyEventDispatcher{}
+	eventProcessor.EventDispatcher = &optlyplugins.ProxyEventDispatcher{}
 
 	client, err := optimizelyFactory.Client(
 		client.ConfigManager(configManager),
 		client.DecisionService(decisionService),
 		client.EventProcessor(eventProcessor))
 
-	sdkDependencyModel := datamodels.SDKDependencyModel{}
+	sdkDependencyModel := models.SDKDependencyModel{}
 	sdkDependencyModel.Client = client
 	sdkDependencyModel.DecisionService = decisionService
 	sdkDependencyModel.Dispatcher = eventProcessor.EventDispatcher
@@ -62,7 +62,7 @@ func setupOptimizelyClient(requestParams *datamodels.RequestParams) {
 }
 
 // ProcessRequest processes request with arguments
-func ProcessRequest(request *datamodels.RequestParams) (*datamodels.ResponseParams, error) {
+func ProcessRequest(request *models.RequestParams) (*models.ResponseParams, error) {
 
 	setupOptimizelyClient(request)
 	if request.DependencyModel == nil {
@@ -70,11 +70,11 @@ func ProcessRequest(request *datamodels.RequestParams) (*datamodels.ResponsePara
 	}
 	listenersCalled := listener.AddListener(request.DependencyModel.DecisionService, request)
 
-	responseParams := datamodels.ResponseParams{}
+	responseParams := models.ResponseParams{}
 
 	switch request.APIName {
 	case "is_feature_enabled":
-		var params datamodels.IsFeatureEnabledRequestParams
+		var params models.IsFeatureEnabledRequestParams
 		err := yaml.Unmarshal([]byte(request.Arguments), &params)
 		if err == nil {
 			user := entities.UserContext{
@@ -94,7 +94,7 @@ func ProcessRequest(request *datamodels.RequestParams) (*datamodels.ResponsePara
 		}
 		break
 	case "get_feature_variable":
-		var params datamodels.GetFeatureVariableRequestParams
+		var params models.GetFeatureVariableParams
 		err := yaml.Unmarshal([]byte(request.Arguments), &params)
 		if err == nil {
 			user := entities.UserContext{
@@ -111,7 +111,7 @@ func ProcessRequest(request *datamodels.RequestParams) (*datamodels.ResponsePara
 		}
 		break
 	case "get_feature_variable_integer":
-		var params datamodels.GetFeatureVariableRequestParams
+		var params models.GetFeatureVariableParams
 		err := yaml.Unmarshal([]byte(request.Arguments), &params)
 		if err == nil {
 			user := entities.UserContext{
@@ -127,7 +127,7 @@ func ProcessRequest(request *datamodels.RequestParams) (*datamodels.ResponsePara
 		}
 		break
 	case "get_feature_variable_double":
-		var params datamodels.GetFeatureVariableRequestParams
+		var params models.GetFeatureVariableParams
 		err := yaml.Unmarshal([]byte(request.Arguments), &params)
 		if err == nil {
 			user := entities.UserContext{
@@ -143,7 +143,7 @@ func ProcessRequest(request *datamodels.RequestParams) (*datamodels.ResponsePara
 		}
 		break
 	case "get_feature_variable_boolean":
-		var params datamodels.GetFeatureVariableRequestParams
+		var params models.GetFeatureVariableParams
 		err := yaml.Unmarshal([]byte(request.Arguments), &params)
 		if err == nil {
 			user := entities.UserContext{
@@ -159,7 +159,7 @@ func ProcessRequest(request *datamodels.RequestParams) (*datamodels.ResponsePara
 		}
 		break
 	case "get_feature_variable_string":
-		var params datamodels.GetFeatureVariableRequestParams
+		var params models.GetFeatureVariableParams
 		err := yaml.Unmarshal([]byte(request.Arguments), &params)
 		if err == nil {
 			user := entities.UserContext{

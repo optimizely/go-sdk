@@ -1,11 +1,11 @@
-package datamodels
+package models
 
 import (
 	"github.com/optimizely/go-sdk/optimizely/notification"
 )
 
-// DecisionListenerModel represents a decision notification
-type DecisionListenerModel struct {
+// DecisionListener represents a decision notification
+type DecisionListener struct {
 	Type         notification.DecisionNotificationType `yaml:"type"`
 	UserID       string                                `yaml:"user_id"`
 	Attributes   map[string]interface{}                `yaml:"attributes"`
