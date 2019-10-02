@@ -48,7 +48,8 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, Requester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager.Start(exeCtx)
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()
@@ -66,7 +67,8 @@ func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, Requester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager.Start(exeCtx)
 	mockRequester.AssertExpectations(t)
 
 	_, err := configManager.GetConfig()
@@ -83,7 +85,8 @@ func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, Requester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager.Start(exeCtx)
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()
@@ -108,7 +111,8 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, Requester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager.Start(exeCtx)
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()
@@ -132,7 +136,8 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, Requester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager.Start(exeCtx)
 
 	var numberOfCalls = 0
 	callback := func(notification notification.ProjectConfigUpdateNotification) {

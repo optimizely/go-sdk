@@ -18,11 +18,11 @@
 package event
 
 import (
-	"context"
 	"errors"
-	"github.com/optimizely/go-sdk/optimizely/utils"
 	"sync"
 	"time"
+
+	"github.com/optimizely/go-sdk/optimizely/utils"
 
 	"github.com/optimizely/go-sdk/optimizely/logging"
 )
@@ -41,8 +41,6 @@ type QueueingEventProcessor struct {
 	Mux             sync.Mutex
 	Ticker          *time.Ticker
 	EventDispatcher Dispatcher
-
-	wg *sync.WaitGroup
 }
 
 // DefaultBatchSize holds the default value for the batch size
@@ -86,6 +84,7 @@ func PQ(q Queue) QPConfigOption {
 		qp.Q = q
 	}
 }
+
 // PDispatcher sets the Processor Dispatcher as a config option to be passed into the NewProcessor method
 func PDispatcher(d Dispatcher) QPConfigOption {
 	return func(qp *QueueingEventProcessor) {
@@ -94,10 +93,8 @@ func PDispatcher(d Dispatcher) QPConfigOption {
 }
 
 // NewEventProcessor returns a new instance of QueueingEventProcessor with queueSize and flushInterval
-func NewEventProcessor(exeCtx utils.ExecutionCtx, options ...QPConfigOption) *QueueingEventProcessor {
-	p := &QueueingEventProcessor{
-		wg: exeCtx.GetWaitSync(),
-	}
+func NewEventProcessor(options ...QPConfigOption) *QueueingEventProcessor {
+	p := &QueueingEventProcessor{}
 
 	for _, opt := range options {
 		opt(p)
@@ -119,13 +116,16 @@ func NewEventProcessor(exeCtx utils.ExecutionCtx, options ...QPConfigOption) *Qu
 		p.Q = NewInMemoryQueue(p.MaxQueueSize)
 	}
 
+	return p
+}
+
+// Start initializes the event processor
+func (p *QueueingEventProcessor) Start(exeCtx utils.ExecutionCtx) {
 	if p.EventDispatcher == nil {
 		p.EventDispatcher = NewQueueEventDispatcher(exeCtx.GetContext())
 	}
 
-	p.StartTicker(exeCtx.GetContext())
-
-	return p
+	p.startTicker(exeCtx)
 }
 
 // ProcessEvent processes the given impression event
@@ -155,20 +155,21 @@ func (p *QueueingEventProcessor) Remove(count int) []interface{} {
 }
 
 // StartTicker starts new ticker for flushing events
-func (p *QueueingEventProcessor) StartTicker(ctx context.Context) {
+func (p *QueueingEventProcessor) startTicker(exeCtx utils.ExecutionCtx) {
 	if p.Ticker != nil {
 		return
 	}
 	p.Ticker = time.NewTicker(p.FlushInterval * time.Millisecond)
-	p.wg.Add(1)
+	wg := exeCtx.GetWaitSync()
+	wg.Add(1)
 	go func() {
 
-		defer p.wg.Done()
+		defer wg.Done()
 		for {
 			select {
 			case <-p.Ticker.C:
 				p.FlushEvents()
-			case <-ctx.Done():
+			case <-exeCtx.GetContext().Done():
 				pLogger.Debug("Event processor stopped, flushing events.")
 				p.FlushEvents()
 				d, ok := p.EventDispatcher.(*QueueEventDispatcher)

@@ -48,7 +48,6 @@ type PollingProjectConfigManager struct {
 	configLock    sync.RWMutex
 	err           error
 	projectConfig optimizely.ProjectConfig
-	exeCtx        utils.ExecutionCtx // context used for execution control
 }
 
 // OptionFunc is a type to a proper func
@@ -132,26 +131,28 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	}
 }
 
-func (cm *PollingProjectConfigManager) start() {
-
-	t := time.NewTicker(cm.pollingInterval)
-	for {
-		select {
-		case <-t.C:
-			cm.SyncConfig([]byte{})
-		case <-cm.exeCtx.GetContext().Done():
-			cmLogger.Debug("Polling Config Manager Stopped")
-			return
+// Start starts the polling
+func (cm *PollingProjectConfigManager) Start(exeCtx utils.ExecutionCtx) {
+	go func() {
+		cmLogger.Debug("Polling Config Manager Initiated")
+		t := time.NewTicker(cm.pollingInterval)
+		for {
+			select {
+			case <-t.C:
+				cm.SyncConfig([]byte{})
+			case <-exeCtx.GetContext().Done():
+				cmLogger.Debug("Polling Config Manager Stopped")
+				return
+			}
 		}
-	}
+	}()
 }
 
 // NewPollingProjectConfigManager returns an instance of the polling config manager with the customized configuration
-func NewPollingProjectConfigManager(exeCtx utils.ExecutionCtx, sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
+func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
 	url := fmt.Sprintf(DatafileURLTemplate, sdkKey)
 
 	pollingProjectConfigManager := PollingProjectConfigManager{
-		exeCtx:             exeCtx,
 		notificationCenter: registry.GetNotificationCenter(sdkKey),
 		pollingInterval:    DefaultPollingInterval,
 		requester:          utils.NewHTTPRequester(url),
@@ -163,9 +164,6 @@ func NewPollingProjectConfigManager(exeCtx utils.ExecutionCtx, sdkKey string, po
 
 	initDatafile := pollingProjectConfigManager.initDatafile
 	pollingProjectConfigManager.SyncConfig(initDatafile) // initial poll
-
-	cmLogger.Debug("Polling Config Manager Initiated")
-	go pollingProjectConfigManager.start()
 	return &pollingProjectConfigManager
 }
 

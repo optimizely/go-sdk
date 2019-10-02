@@ -61,7 +61,7 @@ func TestClientWithProjectConfigManagerInOptions(t *testing.T) {
 	projectConfig := datafileprojectconfig.DatafileProjectConfig{}
 	configManager := config.NewStaticProjectConfigManager(projectConfig)
 
-	optimizelyClient, err := factory.Client(ConfigManager(configManager))
+	optimizelyClient, err := factory.Client(WithConfigManager(configManager))
 	assert.NoError(t, err)
 	assert.NotNil(t, optimizelyClient.ConfigManager)
 	assert.NotNil(t, optimizelyClient.DecisionService)
@@ -80,7 +80,7 @@ func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 		EventDispatcher: &MockDispatcher{},
 	}
 
-	optimizelyClient, err := factory.Client(ConfigManager(configManager), DecisionService(decisionService), EventProcessor(processor))
+	optimizelyClient, err := factory.Client(WithConfigManager(configManager), WithDecisionService(decisionService), WithEventProcessor(processor))
 	assert.NoError(t, err)
 	assert.Equal(t, decisionService, optimizelyClient.DecisionService)
 	assert.Equal(t, processor, optimizelyClient.EventProcessor)
