@@ -15,7 +15,6 @@ script:
 stages:
   - 'Lint'
   - 'Integration tests'
-  - 'Integration as unit test'
   - 'Test'
 jobs:
   include:
@@ -24,21 +23,11 @@ jobs:
         - curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.19.0
       script:
         - $GOPATH/bin/golangci-lint run --out-format=tab --tests=false optimizely/...
-    - stage: 'Integration Tests'
-      merge_mode: replace
-      env: SDK=go
-      cache: false
-      language: minimal
-      install: skip
-      before_script:
-        - mkdir $HOME/travisci-tools && pushd $HOME/travisci-tools && git init && git pull https://$CI_USER_TOKEN@github.com/optimizely/travisci-tools.git && popd
-      script:
-        - "$HOME/travisci-tools/fsc-trigger/trigger_fullstack-sdk-compat.sh"
-    - stage: 'Integration as unit test'
+    - stage: 'Integration tests'
       install:
         - scripts/get-fsc-tests.sh
         - go get
       script:
-        - go test
+        - go test -count=1 -v -race ./...
       after_success: travis_terminate 0
       
