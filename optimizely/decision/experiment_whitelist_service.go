@@ -38,18 +38,8 @@ func NewExperimentWhitelistService(whitelist map[string]map[string]string) *Expe
 	}
 }
 
-// GetDecision returns a decision with a variation when an entry is found for a given experiment key and user ID
-func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (decision ExperimentDecision, err error) {
-	if decisionContext.Experiment == nil {
-		return decision, errors.New("decisionContext Experiment is nil")
-	}
-
-	experiment, err := decisionContext.ProjectConfig.GetExperimentByKey(decisionContext.Experiment.Key)
-	if err != nil {
-		return decision, fmt.Errorf("error looking up experiment in decision context: %v", err)
-	}
-
-	experimentEntry, ok := s.whitelist[decisionContext.Experiment.Key]
+func (s ExperimentWhitelistService) getForcedVariationDecision(experiment entities.Experiment, userContext entities.UserContext) (decision ExperimentDecision, err error) {
+	experimentEntry, ok := s.whitelist[experiment.Key]
 	if !ok {
 		decision.Reason = reasons.NoWhitelistVariationAssignment
 		return decision, nil
@@ -70,4 +60,18 @@ func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisi
 	decision.Reason = reasons.WhitelistVariationAssignmentFound
 	decision.Variation = &variation
 	return decision, nil
+}
+
+// GetDecision returns a decision with a variation when an entry is found for a given experiment key and user ID
+func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (decision ExperimentDecision, err error) {
+	if decisionContext.Experiment == nil {
+		return decision, errors.New("decisionContext Experiment is nil")
+	}
+
+	experiment, err := decisionContext.ProjectConfig.GetExperimentByKey(decisionContext.Experiment.Key)
+	if err != nil {
+		return decision, fmt.Errorf("error looking up experiment in decision context: %v", err)
+	}
+
+	return s.getForcedVariationDecision(experiment, userContext)
 }
