@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
-
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 

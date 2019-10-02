@@ -18,10 +18,11 @@
 package decision
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
 	"github.com/optimizely/go-sdk/optimizely/entities"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -42,15 +43,7 @@ func (s *ExperimentWhitelistServiceTestSuite) TestWhitelistIncludesDecision() {
 	}
 	whitelistService := NewExperimentWhitelistService(whitelist)
 
-	mockExp := entities.Experiment{
-		Key: "test_experiment_1111",
-		Variations: map[string]entities.Variation{
-			"2222": entities.Variation{
-				Key: "2222",
-			},
-		},
-	}
-	s.mockConfig.On("GetExperimentByKey", mock.Anything).Return(mockExp, nil)
+	s.mockConfig.On("GetExperimentByKey", "test_experiment_1111").Return(testExp1111, nil)
 
 	testDecisionContext := ExperimentDecisionContext{
 		Experiment:    &testExp1111,
@@ -65,7 +58,159 @@ func (s *ExperimentWhitelistServiceTestSuite) TestWhitelistIncludesDecision() {
 
 	s.NoError(err)
 	s.NotNil(decision.Variation)
-	s.Exactly("2222", decision.Variation.Key)
+}
+
+func (s *ExperimentWhitelistServiceTestSuite) TestNoUserEntryInWhitelist() {
+	whitelist := map[string]map[string]string{
+		"test_user_2": {
+			"test_experiment_1111": "2222",
+		},
+	}
+	whitelistService := NewExperimentWhitelistService(whitelist)
+
+	s.mockConfig.On("GetExperimentByKey", "test_experiment_1111").Return(testExp1111, nil)
+
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1111,
+		ProjectConfig: s.mockConfig,
+	}
+
+	// user context has test_user_1, but there's only a whitelist entry for test_user_2
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	decision, err := whitelistService.GetDecision(testDecisionContext, testUserContext)
+
+	s.NoError(err)
+	s.Nil(decision.Variation)
+	s.Exactly(decision.Reason, reasons.NoWhitelistVariationAssignment)
+}
+
+func (s *ExperimentWhitelistServiceTestSuite) TestNoVariationInUserEntry() {
+	whitelist := map[string]map[string]string{
+		"test_user_1": {
+			"test_experiment_1113": "2223",
+		},
+	}
+	whitelistService := NewExperimentWhitelistService(whitelist)
+
+	s.mockConfig.On("GetExperimentByKey", "test_experiment_1111").Return(testExp1111, nil)
+
+	// decision context has testExp1111, but there's only a whitelist entry for testExp1113
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1111,
+		ProjectConfig: s.mockConfig,
+	}
+
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	decision, err := whitelistService.GetDecision(testDecisionContext, testUserContext)
+
+	s.NoError(err)
+	s.Nil(decision.Variation)
+	s.Exactly(decision.Reason, reasons.NoWhitelistVariationAssignment)
+}
+
+func (s *ExperimentWhitelistServiceTestSuite) TestInvalidVariationInUserEntry() {
+	whitelist := map[string]map[string]string{
+		"test_user_1": {
+			// Whitelist has assigned 222222222 for test_experiment_1111, but no such variation exists
+			"test_experiment_1111": "222222222",
+		},
+	}
+	whitelistService := NewExperimentWhitelistService(whitelist)
+
+	s.mockConfig.On("GetExperimentByKey", "test_experiment_1111").Return(testExp1111, nil)
+
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1111,
+		ProjectConfig: s.mockConfig,
+	}
+
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	decision, err := whitelistService.GetDecision(testDecisionContext, testUserContext)
+
+	s.NoError(err)
+	s.Nil(decision.Variation)
+	s.Exactly(decision.Reason, reasons.InvalidWhitelistVariationAssignment)
+}
+
+func (s *ExperimentWhitelistServiceTestSuite) TestEmptyWhitelist() {
+	whitelist := map[string]map[string]string{}
+	whitelistService := NewExperimentWhitelistService(whitelist)
+
+	s.mockConfig.On("GetExperimentByKey", "test_experiment_1111").Return(testExp1111, nil)
+
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1111,
+		ProjectConfig: s.mockConfig,
+	}
+
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	decision, err := whitelistService.GetDecision(testDecisionContext, testUserContext)
+
+	s.NoError(err)
+	s.Nil(decision.Variation)
+	s.Exactly(decision.Reason, reasons.NoWhitelistVariationAssignment)
+}
+
+func (s *ExperimentWhitelistServiceTestSuite) TestNoExperimentInDecisionContext() {
+	whitelist := map[string]map[string]string{
+		"test_user_1": {
+			"test_experiment_1111": "2222",
+		},
+	}
+	whitelistService := NewExperimentWhitelistService(whitelist)
+
+	s.mockConfig.On("GetExperimentByKey", "test_experiment_1111").Return(testExp1111, nil)
+
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    nil,
+		ProjectConfig: s.mockConfig,
+	}
+
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	decision, err := whitelistService.GetDecision(testDecisionContext, testUserContext)
+
+	s.Error(err)
+	s.Nil(decision.Variation)
+}
+
+func (s *ExperimentWhitelistServiceTestSuite) TestNoExperimentInProjectConfig() {
+	whitelist := map[string]map[string]string{
+		"test_user_1": {
+			"test_experiment_1111": "2222",
+		},
+	}
+	whitelistService := NewExperimentWhitelistService(whitelist)
+
+	s.mockConfig.On("GetExperimentByKey", "test_experiment_1111").Return(entities.Experiment{}, errors.New("Experiment not found"))
+
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1111,
+		ProjectConfig: s.mockConfig,
+	}
+
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	decision, err := whitelistService.GetDecision(testDecisionContext, testUserContext)
+
+	s.Error(err)
+	s.Nil(decision.Variation)
 }
 
 func TestExperimentWhitelistTestSuite(t *testing.T) {
