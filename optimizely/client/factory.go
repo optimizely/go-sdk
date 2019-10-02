@@ -44,22 +44,22 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 
 	appClient := &OptimizelyClient{
 		executionCtx:    executionCtx,
-		decisionService: decision.NewCompositeService(f.SDKKey),
-		eventProcessor:  event.NewEventProcessor(executionCtx, event.BatchSize(event.DefaultBatchSize),
-		event.QueueSize(event.DefaultEventQueueSize), event.FlushInterval(event.DefaultEventFlushInterval)),
+		DecisionService: decision.NewCompositeService(f.SDKKey),
+		EventProcessor: event.NewEventProcessor(executionCtx, event.BatchSize(event.DefaultBatchSize),
+			event.QueueSize(event.DefaultEventQueueSize), event.FlushInterval(event.DefaultEventFlushInterval)),
 	}
 
 	for _, opt := range clientOptions {
 		opt(appClient, executionCtx)
 	}
 
-	if f.SDKKey == "" && f.Datafile == nil && appClient.configManager == nil {
+	if f.SDKKey == "" && f.Datafile == nil && appClient.ConfigManager == nil {
 		return nil, errors.New("unable to instantiate client: no project config manager, SDK key, or a Datafile provided")
 	}
 
-	if appClient.configManager == nil { // if it was not passed then assign here
+	if appClient.ConfigManager == nil { // if it was not passed then assign here
 
-		appClient.configManager = config.NewPollingProjectConfigManager(executionCtx, f.SDKKey,
+		appClient.ConfigManager = config.NewPollingProjectConfigManager(executionCtx, f.SDKKey,
 			config.InitialDatafile(f.Datafile), config.PollingInterval(config.DefaultPollingInterval))
 	}
 
@@ -69,36 +69,44 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 // PollingConfigManager sets polling config manager on a client
 func PollingConfigManager(sdkKey string, pollingInterval time.Duration, initDataFile []byte) OptionFunc {
 	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
-		f.configManager = config.NewPollingProjectConfigManager(f.executionCtx, sdkKey, config.InitialDatafile(initDataFile),
+		f.ConfigManager = config.NewPollingProjectConfigManager(f.executionCtx, sdkKey, config.InitialDatafile(initDataFile),
 			config.PollingInterval(pollingInterval))
+	}
+}
+
+// PollingConfigManagerRequester sets polling config manager on a client
+func PollingConfigManagerRequester(requester utils.Requester, pollingInterval time.Duration, initDataFile []byte) OptionFunc {
+	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
+		f.ConfigManager = config.NewPollingProjectConfigManager(f.executionCtx, "", config.InitialDatafile(initDataFile),
+			config.PollingInterval(pollingInterval), config.Requester(requester))
 	}
 }
 
 // ConfigManager sets polling config manager on a client
 func ConfigManager(configManager optimizely.ProjectConfigManager) OptionFunc {
 	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
-		f.configManager = configManager
+		f.ConfigManager = configManager
 	}
 }
 
 // CompositeDecisionService sets decision service on a client
 func CompositeDecisionService(sdkKey string) OptionFunc {
 	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
-		f.decisionService = decision.NewCompositeService(sdkKey)
+		f.DecisionService = decision.NewCompositeService(sdkKey)
 	}
 }
 
 // DecisionService sets decision service on a client
 func DecisionService(decisionService decision.Service) OptionFunc {
 	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
-		f.decisionService = decisionService
+		f.DecisionService = decisionService
 	}
 }
 
 // BatchEventProcessor sets event processor on a client
 func BatchEventProcessor(batchSize, queueSize int, flushInterval time.Duration) OptionFunc {
 	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
-		f.eventProcessor = event.NewEventProcessor(executionCtx, event.BatchSize(batchSize),
+		f.EventProcessor = event.NewEventProcessor(executionCtx, event.BatchSize(batchSize),
 			event.QueueSize(queueSize), event.FlushInterval(flushInterval))
 	}
 }
@@ -106,7 +114,7 @@ func BatchEventProcessor(batchSize, queueSize int, flushInterval time.Duration) 
 // EventProcessor sets event processor on a client
 func EventProcessor(eventProcessor event.Processor) OptionFunc {
 	return func(f *OptimizelyClient, executionCtx utils.ExecutionCtx) {
-		f.eventProcessor = eventProcessor
+		f.EventProcessor = eventProcessor
 	}
 }
 

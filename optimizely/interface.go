@@ -19,6 +19,7 @@ package optimizely
 
 import (
 	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/optimizely/notification"
 )
 
 // ProjectConfig contains the parsed project entities
@@ -43,4 +44,6 @@ type ProjectConfig interface {
 // ProjectConfigManager manages the config
 type ProjectConfigManager interface {
 	GetConfig() (ProjectConfig, error)
+	RemoveOnProjectConfigUpdate(id int) error
+	OnProjectConfigUpdate(callback func(notification.ProjectConfigUpdateNotification)) (int, error)
 }
