@@ -37,8 +37,8 @@ func (s *ExperimentWhitelistServiceTestSuite) SetupTest() {
 
 func (s *ExperimentWhitelistServiceTestSuite) TestWhitelistIncludesDecision() {
 	whitelist := map[string]map[string]string{
-		"test_user_1": {
-			"test_experiment_1111": "2222",
+		"test_experiment_1111": {
+			"test_user_1": "2222",
 		},
 	}
 	whitelistService := NewExperimentWhitelistService(whitelist)
@@ -62,8 +62,8 @@ func (s *ExperimentWhitelistServiceTestSuite) TestWhitelistIncludesDecision() {
 
 func (s *ExperimentWhitelistServiceTestSuite) TestNoUserEntryInWhitelist() {
 	whitelist := map[string]map[string]string{
-		"test_user_2": {
-			"test_experiment_1111": "2222",
+		"test_experiment_1111": {
+			"test_user_2": "2222",
 		},
 	}
 	whitelistService := NewExperimentWhitelistService(whitelist)
@@ -89,8 +89,8 @@ func (s *ExperimentWhitelistServiceTestSuite) TestNoUserEntryInWhitelist() {
 
 func (s *ExperimentWhitelistServiceTestSuite) TestNoVariationInUserEntry() {
 	whitelist := map[string]map[string]string{
-		"test_user_1": {
-			"test_experiment_1113": "2223",
+		"test_experiment_1113": {
+			"test_user_1": "2223",
 		},
 	}
 	whitelistService := NewExperimentWhitelistService(whitelist)
@@ -116,9 +116,9 @@ func (s *ExperimentWhitelistServiceTestSuite) TestNoVariationInUserEntry() {
 
 func (s *ExperimentWhitelistServiceTestSuite) TestInvalidVariationInUserEntry() {
 	whitelist := map[string]map[string]string{
-		"test_user_1": {
-			// Whitelist has assigned 222222222 for test_experiment_1111, but no such variation exists
-			"test_experiment_1111": "222222222",
+		"test_experiment_1111": {
+			// Whitelist has assigned 222222222 for this user, but no such variation exists
+			"test_user_1": "222222222",
 		},
 	}
 	whitelistService := NewExperimentWhitelistService(whitelist)
@@ -165,8 +165,8 @@ func (s *ExperimentWhitelistServiceTestSuite) TestEmptyWhitelist() {
 
 func (s *ExperimentWhitelistServiceTestSuite) TestNoExperimentInDecisionContext() {
 	whitelist := map[string]map[string]string{
-		"test_user_1": {
-			"test_experiment_1111": "2222",
+		"test_experiment_1111": {
+			"test_user_1": "2222",
 		},
 	}
 	whitelistService := NewExperimentWhitelistService(whitelist)
@@ -190,8 +190,8 @@ func (s *ExperimentWhitelistServiceTestSuite) TestNoExperimentInDecisionContext(
 
 func (s *ExperimentWhitelistServiceTestSuite) TestNoExperimentInProjectConfig() {
 	whitelist := map[string]map[string]string{
-		"test_user_1": {
-			"test_experiment_1111": "2222",
+		"test_experiment_1111": {
+			"test_user_1": "2222",
 		},
 	}
 	whitelistService := NewExperimentWhitelistService(whitelist)

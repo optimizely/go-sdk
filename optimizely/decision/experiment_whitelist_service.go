@@ -26,7 +26,7 @@ import (
 )
 
 // ExperimentWhitelistService makes a decision using a whitelist (a set of experiment + variation assignments for a set of users)
-// whitelist should be a map of user ID, to a map of Experiment key to Variation key
+// whitelist should be a map of experiment key, to a map of user ID to Variation key
 type ExperimentWhitelistService struct {
 	whitelist map[string]map[string]string
 }
@@ -38,7 +38,7 @@ func NewExperimentWhitelistService(whitelist map[string]map[string]string) *Expe
 	}
 }
 
-// GetDecision returns a decision with a variation when an entry is found for a given user ID and experiment key
+// GetDecision returns a decision with a variation when an entry is found for a given experiment key and user ID
 func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (decision ExperimentDecision, err error) {
 	if decisionContext.Experiment == nil {
 		return decision, errors.New("decisionContext Experiment is nil")
@@ -49,13 +49,13 @@ func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisi
 		return decision, fmt.Errorf("error looking up experiment in decision context: %v", err)
 	}
 
-	userEntry, ok := s.whitelist[userContext.ID]
+	experimentEntry, ok := s.whitelist[decisionContext.Experiment.Key]
 	if !ok {
 		decision.Reason = reasons.NoWhitelistVariationAssignment
 		return decision, nil
 	}
 
-	variationKey, ok := userEntry[decisionContext.Experiment.Key]
+	variationKey, ok := experimentEntry[userContext.ID]
 	if !ok {
 		decision.Reason = reasons.NoWhitelistVariationAssignment
 		return decision, nil
