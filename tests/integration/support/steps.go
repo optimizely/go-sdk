@@ -18,6 +18,7 @@ import (
 type ScenarioCtx struct {
 	apiOptions  models.RequestParams
 	apiResponse models.ResponseParams
+	wrapper     ClientWrapper
 }
 
 // TheDatafileIs represents a step in the feature file
@@ -37,9 +38,15 @@ func (c *ScenarioCtx) ListenerIsAdded(numberOfListeners int, ListenerName string
 
 // IsCalledWithArguments represents a step in the feature file
 func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.DocString) error {
+	// Check if its a new scenario
+	if c.wrapper == (ClientWrapper{}) {
+		c.wrapper = NewWrapper(c.apiOptions.DatafileName)
+	}
 	c.apiOptions.APIName = apiName
 	c.apiOptions.Arguments = arguments.Content
-	result, err := ProcessRequest(&c.apiOptions)
+	result, err := c.wrapper.ProcessRequest(c.apiOptions)
+	//Reset listeners so that same listener is not added twice for a scenario
+	c.apiOptions.Listeners = nil
 	if err == nil {
 		c.apiResponse.Result = result.Result
 		c.apiResponse.ListenerCalled = result.ListenerCalled
@@ -162,7 +169,7 @@ func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) 
 	if err != nil {
 		return fmt.Errorf("Invalid request for dispatched Events")
 	}
-	dispatchedEvents := c.apiOptions.DependencyModel.Dispatcher.(optlyplugins.EventReceiver).GetEvents()
+	dispatchedEvents := c.wrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
 	if Check(requestedBatchEvents, dispatchedEvents) {
 		return nil
 	}
@@ -173,6 +180,7 @@ func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) 
 func (c *ScenarioCtx) Reset() {
 	c.apiOptions = models.RequestParams{}
 	c.apiResponse = models.ResponseParams{}
+	c.wrapper = ClientWrapper{}
 }
 
 func getDispatchedEventsFromYaml(s string) ([]event.Batch, error) {

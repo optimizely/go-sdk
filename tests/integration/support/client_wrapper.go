@@ -3,10 +3,12 @@ package support
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
 
+	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/client"
 	"github.com/optimizely/go-sdk/optimizely/config"
 	"github.com/optimizely/go-sdk/optimizely/decision"
@@ -19,22 +21,29 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func setupOptimizelyClient(requestParams *models.RequestParams) {
-	if requestParams.DependencyModel != nil {
-		return
-	}
+// ClientWrapper - wrapper around the optimizely client that keeps track of various custom components used with the client
+type ClientWrapper struct {
+	Client          *client.OptimizelyClient
+	DecisionService decision.Service
+	Config          optimizely.ProjectConfig
+	EventDispatcher event.Dispatcher
+}
+
+// NewWrapper returns a new instance of the optly wrapper
+func NewWrapper(datafileName string) ClientWrapper {
+
 	datafileDir := os.Getenv("DATAFILES_DIR")
-	datafile, err := ioutil.ReadFile(filepath.Clean(path.Join(datafileDir, requestParams.DatafileName)))
+	datafile, err := ioutil.ReadFile(filepath.Clean(path.Join(datafileDir, datafileName)))
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
 	configManager, err := config.NewStaticProjectConfigManagerFromPayload(datafile)
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
 	projectConfig, err := configManager.GetConfig()
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
 
 	executionCtx := utils.NewCancelableExecutionCtx()
@@ -51,25 +60,22 @@ func setupOptimizelyClient(requestParams *models.RequestParams) {
 		client.ConfigManager(configManager),
 		client.DecisionService(decisionService),
 		client.EventProcessor(eventProcessor))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	sdkDependencyModel := models.SDKDependencyModel{}
-	sdkDependencyModel.Client = client
-	sdkDependencyModel.DecisionService = decisionService
-	sdkDependencyModel.Dispatcher = eventProcessor.EventDispatcher
-	sdkDependencyModel.Config = projectConfig
-
-	requestParams.DependencyModel = &sdkDependencyModel
+	return ClientWrapper{
+		Client:          client,
+		DecisionService: decisionService,
+		EventDispatcher: eventProcessor.EventDispatcher,
+		Config:          projectConfig,
+	}
 }
 
 // ProcessRequest processes request with arguments
-func ProcessRequest(request *models.RequestParams) (*models.ResponseParams, error) {
+func (c *ClientWrapper) ProcessRequest(request models.RequestParams) (*models.ResponseParams, error) {
 
-	setupOptimizelyClient(request)
-	if request.DependencyModel == nil {
-		return nil, fmt.Errorf("Request failure")
-	}
-
-	listenersCalled := request.DependencyModel.DecisionService.(*listener.TestCompositeService).AddListener(request)
+	listenersCalled := c.DecisionService.(*listener.TestCompositeService).AddListener(request)
 	responseParams := models.ResponseParams{}
 
 	switch request.APIName {
@@ -82,7 +88,7 @@ func ProcessRequest(request *models.RequestParams) (*models.ResponseParams, erro
 				Attributes: params.Attributes,
 			}
 
-			isEnabled, err := request.DependencyModel.Client.IsFeatureEnabled(params.FeatureKey, user)
+			isEnabled, err := c.Client.IsFeatureEnabled(params.FeatureKey, user)
 			result := "false"
 			if err == nil && isEnabled {
 				result = "true"
@@ -101,7 +107,7 @@ func ProcessRequest(request *models.RequestParams) (*models.ResponseParams, erro
 				ID:         params.UserID,
 				Attributes: params.Attributes,
 			}
-			value, valueType, err := request.DependencyModel.Client.GetFeatureVariable(params.FeatureKey, params.VariableKey, user)
+			value, valueType, err := c.Client.GetFeatureVariable(params.FeatureKey, params.VariableKey, user)
 			if err == nil {
 				responseParams.Result = value
 				responseParams.Type = valueType
@@ -118,7 +124,7 @@ func ProcessRequest(request *models.RequestParams) (*models.ResponseParams, erro
 				ID:         params.UserID,
 				Attributes: params.Attributes,
 			}
-			value, err := request.DependencyModel.Client.GetFeatureVariableInteger(params.FeatureKey, params.VariableKey, user)
+			value, err := c.Client.GetFeatureVariableInteger(params.FeatureKey, params.VariableKey, user)
 			if err == nil {
 				responseParams.Result = value
 			}
@@ -134,7 +140,7 @@ func ProcessRequest(request *models.RequestParams) (*models.ResponseParams, erro
 				ID:         params.UserID,
 				Attributes: params.Attributes,
 			}
-			value, err := request.DependencyModel.Client.GetFeatureVariableDouble(params.FeatureKey, params.VariableKey, user)
+			value, err := c.Client.GetFeatureVariableDouble(params.FeatureKey, params.VariableKey, user)
 			if err == nil {
 				responseParams.Result = value
 			}
@@ -150,7 +156,7 @@ func ProcessRequest(request *models.RequestParams) (*models.ResponseParams, erro
 				ID:         params.UserID,
 				Attributes: params.Attributes,
 			}
-			value, err := request.DependencyModel.Client.GetFeatureVariableBoolean(params.FeatureKey, params.VariableKey, user)
+			value, err := c.Client.GetFeatureVariableBoolean(params.FeatureKey, params.VariableKey, user)
 			if err == nil {
 				responseParams.Result = value
 			}
@@ -166,7 +172,7 @@ func ProcessRequest(request *models.RequestParams) (*models.ResponseParams, erro
 				ID:         params.UserID,
 				Attributes: params.Attributes,
 			}
-			value, err := request.DependencyModel.Client.GetFeatureVariableString(params.FeatureKey, params.VariableKey, user)
+			value, err := c.Client.GetFeatureVariableString(params.FeatureKey, params.VariableKey, user)
 			if err == nil {
 				responseParams.Result = value
 			}
