@@ -38,6 +38,9 @@ jobs:
       merge_mode: merge
       env: GIMME_GO_VERSION=1.8.x
       script:
+        - echo $GOPATH
+        - echo $HOME
+        - ls $HOME
         # -coverprofile was not introduced in 1.8
         - go test -v -race ./...
     - <<: *test
