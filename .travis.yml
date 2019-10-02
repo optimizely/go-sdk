@@ -32,11 +32,14 @@ jobs:
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
       merge_mode: merge
       script:
-      - go test -v -race ./... -coverprofile=profile.cov
+        - go test -v -race ./... -coverprofile=profile.cov
     - <<: *test
       stage: 'Test'
       merge_mode: merge
       env: GIMME_GO_VERSION=1.8.x
+      script:
+        # -coverprofile was not introduced in 1.8
+        - go test -v -race ./...
     - <<: *test
       stage: 'Test'
       merge_mode: merge
