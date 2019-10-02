@@ -213,12 +213,32 @@ const testTargetedExp1116Key = "test_targeted_experiment_1116"
 var testTargetedExp1116Var2228 = entities.Variation{ID: "2228", Key: "2228"}
 var testTargetedExp1116 = entities.Experiment{
 	AudienceConditionTree: &entities.TreeNode{Operator: "or", Item: "7771"},
-	ID:  "1116",
-	Key: testTargetedExp1116Key,
+	ID:                    "1116",
+	Key:                   testTargetedExp1116Key,
 	Variations: map[string]entities.Variation{
 		"2228": testTargetedExp1116Var2228,
 	},
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2228", EndOfRange: 10000},
+	},
+}
+
+// Experiment with a whitelist
+const testExpWhitelistKey = "test_experiment_whitelist"
+
+var testExpWhitelistVar2229 = entities.Variation{ID: "2229", Key: "2229"}
+var testExpWhitelist = entities.Experiment{
+	ID:  "1117",
+	Key: testExpWhitelistKey,
+	Variations: map[string]entities.Variation{
+		"2229": testExpWhitelistVar2229,
+	},
+	TrafficAllocation: []entities.Range{
+		entities.Range{EntityID: "2229", EndOfRange: 10000},
+	},
+	UserIDToVariationKeyMap: map[string]string{
+		"test_user_1": "2229",
+		// Note: this is an invalid entry, there is no variation 2230 in this experiment
+		"test_user_2": "2230",
 	},
 }

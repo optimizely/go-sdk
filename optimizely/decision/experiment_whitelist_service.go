@@ -25,45 +25,18 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/entities"
 )
 
-// ExperimentWhitelistService makes a decision using a whitelist (a set of experiment + variation assignments for a set of users)
-// whitelist should be a map of experiment key, to a map of user ID to Variation key
-type ExperimentWhitelistService struct {
-	whitelist map[string]map[string]string
-}
+// ExperimentWhitelistService makes a decision using an experiment's whitelist (a map of user id to variation keys)
+type ExperimentWhitelistService struct{}
 
 // NewExperimentWhitelistService returns a new instance of ExperimentWhitelistService
-func NewExperimentWhitelistService(whitelist map[string]map[string]string) *ExperimentWhitelistService {
-	return &ExperimentWhitelistService{
-		whitelist: whitelist,
-	}
+func NewExperimentWhitelistService() *ExperimentWhitelistService {
+	return &ExperimentWhitelistService{}
 }
 
-func (s ExperimentWhitelistService) getForcedVariationDecision(experiment entities.Experiment, userContext entities.UserContext) (decision ExperimentDecision, err error) {
-	experimentEntry, ok := s.whitelist[experiment.Key]
-	if !ok {
-		decision.Reason = reasons.NoWhitelistVariationAssignment
-		return decision, nil
-	}
+// GetDecision returns a decision with a variation when a variation assignment is found in the experiment whitelist for the given user and experiment
+func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
+	decision := ExperimentDecision{}
 
-	variationKey, ok := experimentEntry[userContext.ID]
-	if !ok {
-		decision.Reason = reasons.NoWhitelistVariationAssignment
-		return decision, nil
-	}
-
-	variation, ok := experiment.Variations[variationKey]
-	if !ok {
-		decision.Reason = reasons.InvalidWhitelistVariationAssignment
-		return decision, nil
-	}
-
-	decision.Reason = reasons.WhitelistVariationAssignmentFound
-	decision.Variation = &variation
-	return decision, nil
-}
-
-// GetDecision returns a decision with a variation when an entry is found for a given experiment key and user ID
-func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (decision ExperimentDecision, err error) {
 	if decisionContext.Experiment == nil {
 		return decision, errors.New("decisionContext Experiment is nil")
 	}
@@ -73,5 +46,20 @@ func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisi
 		return decision, fmt.Errorf("error looking up experiment in decision context: %v", err)
 	}
 
-	return s.getForcedVariationDecision(experiment, userContext)
+	variationKey, ok := experiment.UserIDToVariationKeyMap[userContext.ID]
+	if !ok {
+		decision.Reason = reasons.NoWhitelistVariationAssignment
+		return decision, err
+	}
+
+	variation, ok := experiment.Variations[variationKey]
+	if !ok {
+		decision.Reason = reasons.InvalidWhitelistVariationAssignment
+		return decision, err
+	}
+
+	decision.Reason = reasons.WhitelistVariationAssignmentFound
+	decision.Variation = &variation
+	return decision, err
+
 }
