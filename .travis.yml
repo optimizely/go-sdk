@@ -4,7 +4,6 @@ git:
   depth: 1
 install:
   - eval "$(gimme)"
-  - make build
 stages:
   - 'Lint'
   - 'Integration tests'
