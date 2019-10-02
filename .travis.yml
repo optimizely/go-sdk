@@ -7,7 +7,7 @@ install:
 stages:
   - 'Lint'
   - 'Integration tests'
-  - 'Test'
+  - 'Unit test'
 jobs:
   include:
     - stage: 'Lint'
@@ -28,13 +28,13 @@ jobs:
         - "$HOME/travisci-tools/fsc-trigger/trigger_fullstack-sdk-compat.sh"
       after_success: travis_terminate 0
     - &test
-      stage: 'Test'
+      stage: 'Unit test'
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
       merge_mode: merge
       script:
         - go test -v -race ./... -coverprofile=profile.cov
     - <<: *test
-      stage: 'Test'
+      stage: 'Unit test'
       merge_mode: merge
       env: GIMME_GO_VERSION=1.8.x
       before_script:
@@ -48,7 +48,7 @@ jobs:
         # -coverprofile was not introduced in 1.8
         - go test -v -race ./...
     - <<: *test
-      stage: 'Test'
+      stage: 'Unit test'
       merge_mode: merge
       env: GIMME_GO_VERSION=1.12.x
       before_script:      
