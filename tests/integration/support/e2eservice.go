@@ -44,7 +44,7 @@ func setupOptimizelyClient(requestParams *models.RequestParams) {
 		Datafile: datafile,
 	}
 
-	decisionService := decision.NewCompositeService("")
+	decisionService := &listener.TestCompositeService{CompositeService: *decision.NewCompositeService("")}
 	eventProcessor.EventDispatcher = &optlyplugins.ProxyEventDispatcher{}
 
 	client, err := optimizelyFactory.Client(
@@ -68,8 +68,8 @@ func ProcessRequest(request *models.RequestParams) (*models.ResponseParams, erro
 	if request.DependencyModel == nil {
 		return nil, fmt.Errorf("Request failure")
 	}
-	listenersCalled := listener.AddListener(request.DependencyModel.DecisionService, request)
 
+	listenersCalled := request.DependencyModel.DecisionService.(*listener.TestCompositeService).AddListener(request)
 	responseParams := models.ResponseParams{}
 
 	switch request.APIName {

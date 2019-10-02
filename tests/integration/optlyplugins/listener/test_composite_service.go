@@ -6,8 +6,14 @@ import (
 	"github.com/optimizely/go-sdk/tests/integration/models"
 )
 
+// TestCompositeService represents a CompositeService with custom implementations
+type TestCompositeService struct {
+	decision.CompositeService
+}
+
 // AddListener - Adds Notification Listeners
-func AddListener(decisionService decision.Service, params *models.RequestParams) (getListenersCalled func() []models.DecisionListener) {
+func (c *TestCompositeService) AddListener(params *models.RequestParams) (getListenersCalled func() []models.DecisionListener) {
+
 	var listenersCalled []models.DecisionListener
 	getListenersCalled = func() []models.DecisionListener {
 		return listenersCalled
@@ -57,7 +63,7 @@ func AddListener(decisionService decision.Service, params *models.RequestParams)
 					model.DecisionInfo = decisionInfoDict
 					listenersCalled = append(listenersCalled, model)
 				}
-				decisionService.OnDecision(callback)
+				c.OnDecision(callback)
 				break
 			default:
 				break
