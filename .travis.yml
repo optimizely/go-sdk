@@ -29,13 +29,11 @@ jobs:
       after_success: travis_terminate 0
     - &test
       stage: 'Unit test'
-      env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
-      merge_mode: merge
+      env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64      
       script:
         - go test -v -race ./... -coverprofile=profile.cov
     - <<: *test
       stage: 'Unit test'
-      merge_mode: merge
       env: GIMME_GO_VERSION=1.8.x
       before_script:
         # GO module was not introduced earlier. need symlink to search in GOPATH
@@ -49,7 +47,6 @@ jobs:
         - go test -v -race ./...
     - <<: *test
       stage: 'Unit test'
-      merge_mode: merge
       env: GIMME_GO_VERSION=1.12.x
       before_script:      
         - go get github.com/mattn/goveralls
