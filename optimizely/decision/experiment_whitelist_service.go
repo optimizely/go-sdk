@@ -40,7 +40,7 @@ func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisi
 		return decision, errors.New("decisionContext Experiment is nil")
 	}
 
-	variationKey, ok := decisionContext.Experiment.UserIDToVariationKeyMap[userContext.ID]
+	variationKey, ok := decisionContext.Experiment.Whitelist[userContext.ID]
 	if !ok {
 		decision.Reason = reasons.NoWhitelistVariationAssignment
 		return decision, nil

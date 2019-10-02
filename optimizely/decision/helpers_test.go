@@ -236,7 +236,7 @@ var testExpWhitelist = entities.Experiment{
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2229", EndOfRange: 10000},
 	},
-	UserIDToVariationKeyMap: map[string]string{
+	Whitelist: map[string]string{
 		"test_user_1": "2229",
 		// Note: this is an invalid entry, there is no variation 2230 in this experiment
 		"test_user_2": "2230",
