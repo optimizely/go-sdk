@@ -37,6 +37,9 @@ jobs:
       stage: 'Test'
       merge_mode: merge
       env: GIMME_GO_VERSION=1.8.x
+      before_script:
+        # GO module was not introduced earlier. need symlink to search in GOPATH
+        - pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely optimizely && popd
       script:
         - echo $GOPATH
         - echo $HOME
