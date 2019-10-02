@@ -40,7 +40,7 @@ func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.D
 	c.apiOptions.APIName = apiName
 	c.apiOptions.Arguments = arguments.Content
 	result, err := ProcessRequest(&c.apiOptions)
-	if err != nil {
+	if err == nil {
 		c.apiResponse.Result = result.Result
 		c.apiResponse.ListenerCalled = result.ListenerCalled
 		return nil
