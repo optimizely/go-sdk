@@ -18,7 +18,6 @@
 package decision
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
@@ -38,8 +37,6 @@ func (s *ExperimentWhitelistServiceTestSuite) SetupTest() {
 }
 
 func (s *ExperimentWhitelistServiceTestSuite) TestWhitelistIncludesDecision() {
-	s.mockConfig.On("GetExperimentByKey", "test_experiment_whitelist").Return(testExpWhitelist, nil)
-
 	testDecisionContext := ExperimentDecisionContext{
 		Experiment:    &testExpWhitelist,
 		ProjectConfig: s.mockConfig,
@@ -56,16 +53,14 @@ func (s *ExperimentWhitelistServiceTestSuite) TestWhitelistIncludesDecision() {
 }
 
 func (s *ExperimentWhitelistServiceTestSuite) TestNoUserEntryInWhitelist() {
-	s.mockConfig.On("GetExperimentByKey", "test_experiment_whitelist").Return(testExp1111, nil)
-
 	testDecisionContext := ExperimentDecisionContext{
 		Experiment:    &testExpWhitelist,
 		ProjectConfig: s.mockConfig,
 	}
 
-	// user context has test_user_1, but there's only a whitelist entry for test_user_2
+	// user context has test_user_3, but there's only a whitelist entry for test_user_1 and test_user_2
 	testUserContext := entities.UserContext{
-		ID: "test_user_1",
+		ID: "test_user_3",
 	}
 
 	decision, err := s.whitelistService.GetDecision(testDecisionContext, testUserContext)
@@ -76,8 +71,6 @@ func (s *ExperimentWhitelistServiceTestSuite) TestNoUserEntryInWhitelist() {
 }
 
 func (s *ExperimentWhitelistServiceTestSuite) TestEmptyWhitelist() {
-	s.mockConfig.On("GetExperimentByKey", "test_experiment_1111").Return(testExp1111, nil)
-
 	testDecisionContext := ExperimentDecisionContext{
 		// testExp1111 has no whitelist
 		Experiment:    &testExp1111,
@@ -96,8 +89,6 @@ func (s *ExperimentWhitelistServiceTestSuite) TestEmptyWhitelist() {
 }
 
 func (s *ExperimentWhitelistServiceTestSuite) TestInvalidVariationInUserEntry() {
-	s.mockConfig.On("GetExperimentByKey", "test_experiment_whitelist").Return(testExpWhitelist, nil)
-
 	testDecisionContext := ExperimentDecisionContext{
 		Experiment:    &testExpWhitelist,
 		ProjectConfig: s.mockConfig,
@@ -126,26 +117,6 @@ func (s *ExperimentWhitelistServiceTestSuite) TestNoExperimentInDecisionContext(
 	}
 
 	decision, err := s.whitelistService.GetDecision(testDecisionContext, testUserContext)
-
-	s.Error(err)
-	s.Nil(decision.Variation)
-}
-
-func (s *ExperimentWhitelistServiceTestSuite) TestNoExperimentInProjectConfig() {
-	whitelistService := NewExperimentWhitelistService()
-
-	s.mockConfig.On("GetExperimentByKey", "test_experiment_whitelist").Return(entities.Experiment{}, errors.New("Experiment not found"))
-
-	testDecisionContext := ExperimentDecisionContext{
-		Experiment:    &testExpWhitelist,
-		ProjectConfig: s.mockConfig,
-	}
-
-	testUserContext := entities.UserContext{
-		ID: "test_user_1",
-	}
-
-	decision, err := whitelistService.GetDecision(testDecisionContext, testUserContext)
 
 	s.Error(err)
 	s.Nil(decision.Variation)

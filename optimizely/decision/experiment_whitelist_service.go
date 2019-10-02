@@ -19,7 +19,6 @@ package decision
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
 	"github.com/optimizely/go-sdk/optimizely/entities"
@@ -41,25 +40,19 @@ func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisi
 		return decision, errors.New("decisionContext Experiment is nil")
 	}
 
-	experiment, err := decisionContext.ProjectConfig.GetExperimentByKey(decisionContext.Experiment.Key)
-	if err != nil {
-		return decision, fmt.Errorf("error looking up experiment in decision context: %v", err)
-	}
-
-	variationKey, ok := experiment.UserIDToVariationKeyMap[userContext.ID]
+	variationKey, ok := decisionContext.Experiment.UserIDToVariationKeyMap[userContext.ID]
 	if !ok {
 		decision.Reason = reasons.NoWhitelistVariationAssignment
-		return decision, err
+		return decision, nil
 	}
 
-	variation, ok := experiment.Variations[variationKey]
+	variation, ok := decisionContext.Experiment.Variations[variationKey]
 	if !ok {
 		decision.Reason = reasons.InvalidWhitelistVariationAssignment
-		return decision, err
+		return decision, nil
 	}
 
 	decision.Reason = reasons.WhitelistVariationAssignmentFound
 	decision.Variation = &variation
-	return decision, err
-
+	return decision, nil
 }
