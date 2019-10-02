@@ -72,8 +72,8 @@ func NewWrapper(datafileName string) ClientWrapper {
 	}
 }
 
-// ProcessRequest processes request with arguments
-func (c *ClientWrapper) ProcessRequest(request models.RequestParams) (*models.ResponseParams, error) {
+// InvokeAPI processes request with arguments
+func (c *ClientWrapper) InvokeAPI(request models.RequestParams) (*models.ResponseParams, error) {
 
 	listenersCalled := c.DecisionService.(*listener.TestCompositeService).AddListener(request)
 	responseParams := models.ResponseParams{}

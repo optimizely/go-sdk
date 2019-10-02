@@ -44,7 +44,7 @@ func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.D
 	}
 	c.apiOptions.APIName = apiName
 	c.apiOptions.Arguments = arguments.Content
-	result, err := c.wrapper.ProcessRequest(c.apiOptions)
+	result, err := c.wrapper.InvokeAPI(c.apiOptions)
 	//Reset listeners so that same listener is not added twice for a scenario
 	c.apiOptions.Listeners = nil
 	if err == nil {
