@@ -3,7 +3,9 @@ package support
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/optimizely/go-sdk/optimizely/event"
 
@@ -165,7 +167,7 @@ func (c *ScenarioCtx) ThereAreNoDispatchedEvents() error {
 
 // DispatchedEventsPayloadsInclude represents a step in the feature file
 func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) error {
-	requestedBatchEvents, err := getDispatchedEventsFromYaml(value.Content)
+	requestedBatchEvents, err := c.getDispatchedEventsFromYaml(value.Content)
 	if err != nil {
 		return fmt.Errorf("Invalid request for dispatched Events")
 	}
@@ -183,9 +185,10 @@ func (c *ScenarioCtx) Reset() {
 	c.wrapper = ClientWrapper{}
 }
 
-func getDispatchedEventsFromYaml(s string) ([]event.Batch, error) {
+func (c *ScenarioCtx) getDispatchedEventsFromYaml(s string) ([]event.Batch, error) {
 	var eventsArray []map[string]interface{}
-	if err := yaml.Unmarshal([]byte(s), &eventsArray); err != nil {
+	parsedString := c.parseTemplate(s)
+	if err := yaml.Unmarshal([]byte(parsedString), &eventsArray); err != nil {
 		return nil, err
 	}
 	jsonString, err := json.Marshal(eventsArray)
@@ -197,4 +200,48 @@ func getDispatchedEventsFromYaml(s string) ([]event.Batch, error) {
 		return nil, err
 	}
 	return requestedBatchEvents, nil
+}
+
+func (c *ScenarioCtx) parseTemplate(s string) string {
+
+	parsedString := strings.Replace(s, "{{datafile.projectId}}", c.wrapper.Config.GetProjectID(), -1)
+
+	re := regexp.MustCompile(`{{#expId}}(\S+)*{{/expId}}`)
+	matches := re.FindStringSubmatch(parsedString)
+	if len(matches) > 1 {
+		if exp, err := c.wrapper.Config.GetExperimentByKey(matches[1]); err == nil {
+			parsedString = strings.Replace(parsedString, matches[0], exp.ID, -1)
+		}
+	}
+
+	re = regexp.MustCompile(`{{#eventId}}(\S+)*{{/eventId}}`)
+	matches = re.FindStringSubmatch(parsedString)
+	if len(matches) > 1 {
+		if event, err := c.wrapper.Config.GetEventByKey(matches[1]); err == nil {
+			parsedString = strings.Replace(parsedString, matches[0], event.ID, -1)
+		}
+	}
+
+	re = regexp.MustCompile(`{{#expCampaignId}}(\S+)*{{/expCampaignId}}`)
+	matches = re.FindStringSubmatch(parsedString)
+	if len(matches) > 1 {
+		if exp, err := c.wrapper.Config.GetExperimentByKey(matches[1]); err == nil {
+			parsedString = strings.Replace(parsedString, matches[0], exp.LayerID, -1)
+		}
+	}
+
+	re = regexp.MustCompile(`{{#varId}}(\S+)*{{/varId}}`)
+	matches = re.FindStringSubmatch(parsedString)
+	if len(matches) > 1 {
+		expVarKey := strings.Split(matches[1], ".")
+		if exp, err := c.wrapper.Config.GetExperimentByKey(expVarKey[0]); err == nil {
+			for _, variation := range exp.Variations {
+				if variation.Key == expVarKey[1] {
+					parsedString = strings.Replace(parsedString, matches[0], variation.ID, -1)
+					break
+				}
+			}
+		}
+	}
+	return parsedString
 }
