@@ -68,7 +68,7 @@ type LogEvent struct {
 
 // Batch - Context about the event to send in batch
 type Batch struct {
-	Revision        string    `json:"revision""`
+	Revision        string    `json:"revision"`
 	AccountID       string    `json:"account_id"`
 	ClientVersion   string    `json:"client_version"`
 	Visitors        []Visitor `json:"visitors"`
