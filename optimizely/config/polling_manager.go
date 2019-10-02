@@ -86,6 +86,14 @@ func InitialDatafile(datafile []byte) OptionFunc {
 	}
 }
 
+// WithProjectConfigUpdateCallback is an optional function that adds a callback for project config updates
+// @TODO: refactor all other OptionFunc to be prefixed with "With"
+func WithProjectConfigUpdateCallback(callback func(notification.ProjectConfigUpdateNotification)) OptionFunc {
+	return func(p *PollingProjectConfigManager) {
+		p.OnProjectConfigUpdate(callback)
+	}
+}
+
 // SyncConfig gets current datafile and updates projectConfig
 func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	var e error

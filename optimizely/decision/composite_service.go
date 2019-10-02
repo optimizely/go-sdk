@@ -28,6 +28,9 @@ import (
 
 var csLogger = logging.GetLogger("CompositeDecisionService")
 
+// OptionFunc is a type to a proper func
+type OptionFunc func(*CompositeService)
+
 // CompositeService is the entrypoint into the decision service. It provides out of the box decision making for Features and Experiments.
 type CompositeService struct {
 	compositeExperimentService ExperimentService
@@ -36,14 +39,34 @@ type CompositeService struct {
 }
 
 // NewCompositeService returns a new instance of the CompositeService with the defaults
-func NewCompositeService(sdkKey string) *CompositeService {
+func NewCompositeService(sdkKey string, options ...OptionFunc) *CompositeService {
 	// @TODO: add factory method with option funcs to accept custom feature and experiment services
 	compositeExperimentService := NewCompositeExperimentService()
 	compositeFeatureDecisionService := NewCompositeFeatureService(compositeExperimentService)
-	return &CompositeService{
+	compositeService := &CompositeService{
 		compositeExperimentService: compositeExperimentService,
 		compositeFeatureService:    compositeFeatureDecisionService,
 		notificationCenter:         registry.GetNotificationCenter(sdkKey),
+	}
+
+	for _, opt := range options {
+		opt(compositeService)
+	}
+
+	return compositeService
+}
+
+// WithExperimentService is an optional function that allows for overriding the decision service's experiment service
+func WithExperimentService(experimentService ExperimentService) OptionFunc {
+	return func(s *CompositeService) {
+		s.compositeExperimentService = experimentService
+	}
+}
+
+// WithDecisionCallback is an optional function that adds a callback handler for when decisions are made
+func WithDecisionCallback(callback func(notification.DecisionNotification)) OptionFunc {
+	return func(s *CompositeService) {
+		s.OnDecision(callback)
 	}
 }
 

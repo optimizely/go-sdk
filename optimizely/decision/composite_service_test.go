@@ -19,6 +19,7 @@ package decision
 import (
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/optimizely/go-sdk/optimizely/entities"
@@ -115,6 +116,25 @@ func (s *CompositeServiceExperimentTestSuite) SetupTest() {
 	s.testUserContext = entities.UserContext{
 		ID: "test_user",
 	}
+}
+
+func (s *CompositeServiceExperimentTestSuite) TestConstructorWithOptions() {
+	listener := new(mockListener)
+	listener.On("callback", mock.AnythingOfType("notification.DecisionNotification"))
+
+	expectedExperimentDecision := ExperimentDecision{
+		Variation: &testExp1111Var2222,
+	}
+	s.mockExperimentService.On("GetDecision", s.decisionContext, s.testUserContext).Return(expectedExperimentDecision, nil)
+
+	decisionService := NewCompositeService("test_sdk_key", WithExperimentService(s.mockExperimentService), WithDecisionCallback(listener.callback))
+	experimentDecision, err := decisionService.GetExperimentDecision(s.decisionContext, s.testUserContext)
+
+	// Test assertions
+	s.Equal(expectedExperimentDecision, experimentDecision)
+	s.NoError(err)
+	s.mockExperimentService.AssertExpectations(s.T())
+	listener.AssertExpectations(s.T())
 }
 
 func (s *CompositeServiceExperimentTestSuite) TestGetExperimentDecision() {

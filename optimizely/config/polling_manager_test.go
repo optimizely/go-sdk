@@ -37,6 +37,14 @@ func (m *MockRequester) Get(headers ...utils.Header) (response []byte, code int,
 	return args.Get(0).([]byte), args.Int(1), args.Error(2)
 }
 
+type mockListener struct {
+	mock.Mock
+}
+
+func (m *mockListener) callback(payload notification.ProjectConfigUpdateNotification) {
+	m.Called(payload)
+}
+
 func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 
 	mockDatafile := []byte(`{"revision":"42"}`)
@@ -45,16 +53,20 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, 200, nil)
 
 	// Test we fetch using requester
-	sdkKey := "test_sdk_key"
+	sdkKey := "test_sdk_key_1"
 
+	expectedPayload := notification.ProjectConfigUpdateNotification{Type: notification.ProjectConfigUpdate, Revision: "42"}
+	listener := new(mockListener)
+	listener.On("callback", expectedPayload)
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, Requester(mockRequester))
+	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, Requester(mockRequester), WithProjectConfigUpdateCallback(listener.callback))
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, actual)
 	assert.Equal(t, projectConfig, actual)
+	listener.AssertExpectations(t)
 }
 
 func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {

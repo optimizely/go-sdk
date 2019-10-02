@@ -22,9 +22,11 @@
 package decision
 
 import (
+	"github.com/stretchr/testify/mock"
+
 	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/entities"
-	"github.com/stretchr/testify/mock"
+	"github.com/optimizely/go-sdk/optimizely/notification"
 )
 
 // Mock implementation of ProjectConfig
@@ -78,6 +80,14 @@ type MockAudienceTreeEvaluator struct {
 func (m *MockAudienceTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) bool {
 	args := m.Called(node, condTreeParams)
 	return args.Bool(0)
+}
+
+type mockListener struct {
+	mock.Mock
+}
+
+func (m *mockListener) callback(payload notification.DecisionNotification) {
+	m.Called(payload)
 }
 
 // Single variation experiment
@@ -213,8 +223,8 @@ const testTargetedExp1116Key = "test_targeted_experiment_1116"
 var testTargetedExp1116Var2228 = entities.Variation{ID: "2228", Key: "2228"}
 var testTargetedExp1116 = entities.Experiment{
 	AudienceConditionTree: &entities.TreeNode{Operator: "or", Item: "7771"},
-	ID:  "1116",
-	Key: testTargetedExp1116Key,
+	ID:                    "1116",
+	Key:                   testTargetedExp1116Key,
 	Variations: map[string]entities.Variation{
 		"2228": testTargetedExp1116Var2228,
 	},
