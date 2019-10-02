@@ -115,6 +115,14 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionNoDecisionsMade() {
 	s.mockExperimentService2.AssertExpectations(s.T())
 }
 
+func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentService() {
+	// Assert that the service is instantiated with the correct child services in the right order
+	compositeExperimentService := NewCompositeExperimentService()
+	s.Equal(2, len(compositeExperimentService.experimentServices))
+	s.IsType(&ExperimentWhitelistService{}, compositeExperimentService.experimentServices[0])
+	s.IsType(&ExperimentBucketerService{}, compositeExperimentService.experimentServices[1])
+}
+
 func TestCompositeExperimentTestSuite(t *testing.T) {
 	suite.Run(t, new(CompositeExperimentTestSuite))
 }
