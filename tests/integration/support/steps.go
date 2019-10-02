@@ -1,6 +1,7 @@
 package support
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -13,74 +14,74 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Context holds both request and response for a scenario
-type Context struct {
-	requestParams  models.RequestParams
-	responseParams models.ResponseParams
+// ScenarioCtx holds both apiOptions and apiResponse for a scenario
+type ScenarioCtx struct {
+	apiOptions  models.RequestParams
+	apiResponse models.ResponseParams
 }
 
 // TheDatafileIs represents a step in the feature file
-func (c *Context) TheDatafileIs(datafileName string) error {
-	c.requestParams.DatafileName = datafileName
+func (c *ScenarioCtx) TheDatafileIs(datafileName string) error {
+	c.apiOptions.DatafileName = datafileName
 	return nil
 }
 
 // ListenerIsAdded represents a step in the feature file
-func (c *Context) ListenerIsAdded(numberOfListeners int, ListenerName string) error {
-	if c.requestParams.Listeners == nil {
-		c.requestParams.Listeners = make(map[string]int)
+func (c *ScenarioCtx) ListenerIsAdded(numberOfListeners int, ListenerName string) error {
+	if c.apiOptions.Listeners == nil {
+		c.apiOptions.Listeners = make(map[string]int)
 	}
-	c.requestParams.Listeners[ListenerName] = numberOfListeners
+	c.apiOptions.Listeners[ListenerName] = numberOfListeners
 	return nil
 }
 
 // IsCalledWithArguments represents a step in the feature file
-func (c *Context) IsCalledWithArguments(arg1 string, arg2 *gherkin.DocString) error {
-	c.requestParams.APIName = arg1
-	c.requestParams.Arguments = arg2.Content
-	result, err := ProcessRequest(&c.requestParams)
-	if err == nil {
-		c.responseParams.Result = result.Result
-		c.responseParams.ListenerCalled = result.ListenerCalled
+func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.DocString) error {
+	c.apiOptions.APIName = apiName
+	c.apiOptions.Arguments = arguments.Content
+	result, err := ProcessRequest(&c.apiOptions)
+	if err != nil {
+		c.apiResponse.Result = result.Result
+		c.apiResponse.ListenerCalled = result.ListenerCalled
 		return nil
 	}
 	return fmt.Errorf("invalid api or arguments")
 }
 
 // TheResultShouldBeString represents a step in the feature file
-func (c *Context) TheResultShouldBeString(arg1 string) error {
-	if c.responseParams.Type != "" && c.responseParams.Type != entities.String {
+func (c *ScenarioCtx) TheResultShouldBeString(result string) error {
+	if c.apiResponse.Type != "" && c.apiResponse.Type != entities.String {
 		return fmt.Errorf("incorrect type")
 	}
-	if arg1 == c.responseParams.Result {
+	if result == c.apiResponse.Result {
 		return nil
 	}
 	return fmt.Errorf("incorrect result")
 }
 
 // TheResultShouldBeInteger represents a step in the feature file
-func (c *Context) TheResultShouldBeInteger(arg1 int) error {
-	if c.responseParams.Type != "" && c.responseParams.Type != entities.Integer {
+func (c *ScenarioCtx) TheResultShouldBeInteger(result int) error {
+	if c.apiResponse.Type != "" && c.apiResponse.Type != entities.Integer {
 		return fmt.Errorf("incorrect type")
 	}
-	responseIntValue := c.responseParams.Result
-	if stringIntValue, ok := c.responseParams.Result.(string); ok {
+	responseIntValue := c.apiResponse.Result
+	if stringIntValue, ok := c.apiResponse.Result.(string); ok {
 		responseIntValue, _ = strconv.Atoi(stringIntValue)
 	}
-	if arg1 == responseIntValue {
+	if result == responseIntValue {
 		return nil
 	}
 	return fmt.Errorf("incorrect result")
 }
 
 // TheResultShouldBeFloat represents a step in the feature file
-func (c *Context) TheResultShouldBeFloat(arg1, arg2 int) error {
-	floatvalue, _ := strconv.ParseFloat(fmt.Sprintf("%v.%v", arg1, arg2), 64)
-	if c.responseParams.Type != "" && c.responseParams.Type != entities.Double {
+func (c *ScenarioCtx) TheResultShouldBeFloat(lv, rv int) error {
+	floatvalue, _ := strconv.ParseFloat(fmt.Sprintf("%v.%v", lv, rv), 64)
+	if c.apiResponse.Type != "" && c.apiResponse.Type != entities.Double {
 		return fmt.Errorf("incorrect type")
 	}
-	responseFloatValue := c.responseParams.Result
-	if stringFloatValue, ok := c.responseParams.Result.(string); ok {
+	responseFloatValue := c.apiResponse.Result
+	if stringFloatValue, ok := c.apiResponse.Result.(string); ok {
 		responseFloatValue, _ = strconv.ParseFloat(stringFloatValue, 64)
 	}
 	if floatvalue == responseFloatValue {
@@ -90,13 +91,13 @@ func (c *Context) TheResultShouldBeFloat(arg1, arg2 int) error {
 }
 
 // TheResultShouldBeBoolean represents a step in the feature file
-func (c *Context) TheResultShouldBeBoolean(arg1 string) error {
-	boolValue, _ := strconv.ParseBool(arg1)
-	if c.responseParams.Type != "" && c.responseParams.Type != entities.Boolean {
+func (c *ScenarioCtx) TheResultShouldBeBoolean(result string) error {
+	boolValue, _ := strconv.ParseBool(result)
+	if c.apiResponse.Type != "" && c.apiResponse.Type != entities.Boolean {
 		return fmt.Errorf("incorrect type")
 	}
-	responseBoolValue := c.responseParams.Result
-	if stringBoolValue, ok := c.responseParams.Result.(string); ok {
+	responseBoolValue := c.apiResponse.Result
+	if stringBoolValue, ok := c.apiResponse.Result.(string); ok {
 		responseBoolValue, _ = strconv.ParseBool(stringBoolValue)
 	}
 	if boolValue == responseBoolValue {
@@ -106,8 +107,8 @@ func (c *Context) TheResultShouldBeBoolean(arg1 string) error {
 }
 
 // TheResultShouldBeFalse represents a step in the feature file
-func (c *Context) TheResultShouldBeFalse() error {
-	boolValue, _ := strconv.ParseBool(c.responseParams.Result.(string))
+func (c *ScenarioCtx) TheResultShouldBeFalse() error {
+	boolValue, _ := strconv.ParseBool(c.apiResponse.Result.(string))
 	if boolValue == false {
 		return nil
 	}
@@ -115,10 +116,10 @@ func (c *Context) TheResultShouldBeFalse() error {
 }
 
 // InTheResponseKeyShouldBeObject represents a step in the feature file
-func (c *Context) InTheResponseKeyShouldBeObject(arg1, arg2 string) error {
-	switch arg1 {
+func (c *ScenarioCtx) InTheResponseKeyShouldBeObject(argumentType, value string) error {
+	switch argumentType {
 	case "listener_called":
-		if arg2 == "NULL" && c.responseParams.ListenerCalled == nil {
+		if value == "NULL" && c.apiResponse.ListenerCalled == nil {
 			return nil
 		}
 		break
@@ -129,38 +130,39 @@ func (c *Context) InTheResponseKeyShouldBeObject(arg1, arg2 string) error {
 }
 
 // InTheResponseShouldMatch represents a step in the feature file
-func (c *Context) InTheResponseShouldMatch(arg1 string, arg2 *gherkin.DocString) error {
-	switch arg1 {
+func (c *ScenarioCtx) InTheResponseShouldMatch(argumentType string, value *gherkin.DocString) error {
+	switch argumentType {
 	case "listener_called":
 		var requestListenersCalled []models.DecisionListener
-		if err := yaml.Unmarshal([]byte(arg2.Content), &requestListenersCalled); err != nil {
+
+		if err := yaml.Unmarshal([]byte(value.Content), &requestListenersCalled); err != nil {
 			break
 		}
-		if Check(requestListenersCalled, c.responseParams.ListenerCalled) {
+		if Check(requestListenersCalled, c.apiResponse.ListenerCalled) {
 			return nil
 		}
 		break
 	default:
 		break
 	}
-	return fmt.Errorf("response for %s not equal", arg1)
+	return fmt.Errorf("response for %s not equal", argumentType)
 }
 
 // ThereAreNoDispatchedEvents represents a step in the feature file
-func (c *Context) ThereAreNoDispatchedEvents() error {
-	if len(c.responseParams.ListenerCalled) == 0 {
+func (c *ScenarioCtx) ThereAreNoDispatchedEvents() error {
+	if len(c.apiResponse.ListenerCalled) == 0 {
 		return nil
 	}
 	return fmt.Errorf("listenersCalled should be empty")
 }
 
 // DispatchedEventsPayloadsInclude represents a step in the feature file
-func (c *Context) DispatchedEventsPayloadsInclude(arg1 *gherkin.DocString) error {
-	requestedBatchEvents := []event.Batch{}
-	if err := yaml.Unmarshal([]byte(arg1.Content), &requestedBatchEvents); err != nil {
+func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) error {
+	requestedBatchEvents, err := getDispatchedEventsFromYaml(value.Content)
+	if err != nil {
 		return fmt.Errorf("Invalid request for dispatched Events")
 	}
-	dispatchedEvents := c.requestParams.DependencyModel.Dispatcher.(optlyplugins.EventReceiver).GetEvents()
+	dispatchedEvents := c.apiOptions.DependencyModel.Dispatcher.(optlyplugins.EventReceiver).GetEvents()
 	if Check(requestedBatchEvents, dispatchedEvents) {
 		return nil
 	}
@@ -168,7 +170,23 @@ func (c *Context) DispatchedEventsPayloadsInclude(arg1 *gherkin.DocString) error
 }
 
 // Reset clears all data before each scenario
-func (c *Context) Reset() {
-	c.requestParams = models.RequestParams{}
-	c.responseParams = models.ResponseParams{}
+func (c *ScenarioCtx) Reset() {
+	c.apiOptions = models.RequestParams{}
+	c.apiResponse = models.ResponseParams{}
+}
+
+func getDispatchedEventsFromYaml(s string) ([]event.Batch, error) {
+	var eventsArray []map[string]interface{}
+	if err := yaml.Unmarshal([]byte(s), &eventsArray); err != nil {
+		return nil, err
+	}
+	jsonString, err := json.Marshal(eventsArray)
+	if err != nil {
+		return nil, err
+	}
+	requestedBatchEvents := []event.Batch{}
+	if err := json.Unmarshal([]byte(jsonString), &requestedBatchEvents); err != nil {
+		return nil, err
+	}
+	return requestedBatchEvents, nil
 }

@@ -28,6 +28,6 @@ jobs:
         - scripts/get-fsc-tests.sh
         - go get
       script:
-        - go test -count=1 -v -race ./...
+        - go test -count=1
       after_success: travis_terminate 0
       

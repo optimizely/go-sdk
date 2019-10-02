@@ -33,7 +33,7 @@ func TestMain(m *testing.M) {
 
 func FeatureContext(s *godog.Suite) {
 
-	context := new(support.Context)
+	context := new(support.ScenarioCtx)
 
 	s.Step(`^the datafile is "([^"]*)"$`, context.TheDatafileIs)
 	s.Step(`^(\d+) "([^"]*)" listener is added$`, context.ListenerIsAdded)
