@@ -31,7 +31,7 @@ type Experiment struct {
 	ID                    string
 	LayerID               string
 	Key                   string
-	Variations            map[string]Variation
+	Variations            map[string]Variation // keyed by variation ID
 	TrafficAllocation     []Range
 	GroupID               string
 	AudienceConditionTree *TreeNode
