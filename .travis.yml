@@ -41,7 +41,10 @@ jobs:
         # GO module was not introduced earlier. need symlink to search in GOPATH
         - mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely optimizely && popd
       script:
+        # Need to download packages explicitly
         - go get -v -d ./...
+        # This pkg not in go 1.8
+        - go get github.com/stretchr/testify
         # -coverprofile was not introduced in 1.8
         - go test -v -race ./...
     - <<: *test
