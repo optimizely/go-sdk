@@ -17,7 +17,6 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/utils"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 	"github.com/optimizely/go-sdk/tests/integration/optlyplugins"
-	"github.com/optimizely/go-sdk/tests/integration/optlyplugins/listener"
 	"gopkg.in/yaml.v3"
 )
 
@@ -53,7 +52,7 @@ func NewWrapper(datafileName string) ClientWrapper {
 		Datafile: datafile,
 	}
 
-	decisionService := &listener.TestCompositeService{CompositeService: *decision.NewCompositeService("")}
+	decisionService := &optlyplugins.TestCompositeService{CompositeService: *decision.NewCompositeService("")}
 	eventProcessor.EventDispatcher = &optlyplugins.ProxyEventDispatcher{}
 
 	client, err := optimizelyFactory.Client(
@@ -75,7 +74,7 @@ func NewWrapper(datafileName string) ClientWrapper {
 // InvokeAPI processes request with arguments
 func (c *ClientWrapper) InvokeAPI(request models.RequestParams) (*models.ResponseParams, error) {
 
-	listenersCalled := c.DecisionService.(*listener.TestCompositeService).AddListener(request)
+	listenersCalled := c.DecisionService.(*optlyplugins.TestCompositeService).AddListener(request)
 	responseParams := models.ResponseParams{}
 
 	switch request.APIName {

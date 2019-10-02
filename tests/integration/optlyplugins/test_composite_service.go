@@ -1,4 +1,4 @@
-package listener
+package optlyplugins
 
 import (
 	"github.com/optimizely/go-sdk/optimizely/decision"
@@ -41,7 +41,12 @@ func (c *TestCompositeService) AddListener(params models.RequestParams) (getList
 					switch notificationType := notification.Type; notificationType {
 					case "feature":
 						decisionInfoDict = notification.DecisionInfo["feature"].(map[string]interface{})
-						source := string(decisionInfoDict["source"].(decision.Source))
+						source := ""
+						if decisionSource, ok := decisionInfoDict["source"].(decision.Source); ok {
+							source = string(decisionSource)
+						} else {
+							source = decisionInfoDict["source"].(string)
+						}
 						decisionInfoDict["source"] = source
 
 						if source == "feature-test" {
