@@ -40,10 +40,8 @@ jobs:
       before_script:
         # GO module was not introduced earlier. need symlink to search in GOPATH
         - mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely optimizely && popd
-        - echo $(pwd)
-        - cd $TRAVIS_BUILD_DIR
       script:
-        - go get
+        - go get -v -d ./...
         # -coverprofile was not introduced in 1.8
         - go test -v -race ./...
     - <<: *test
