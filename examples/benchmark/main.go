@@ -42,7 +42,7 @@ func stressTest() {
 	// Creates a default, canceleable context
 	decisionService := decision.NewCompositeService("sdk_key")
 
-	clientApp, err := optlyClient.Client(client.DecisionService(decisionService))
+	clientApp, err := optlyClient.Client(client.WithDecisionService(decisionService))
 	if err != nil {
 		log.Print(err)
 	}
