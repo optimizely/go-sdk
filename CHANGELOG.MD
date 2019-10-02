@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
  - None
 
+## [1.0.0-beta2] - October 2nd, 2019
+
+### New Features
+- Introduces the `Activate` and `GetVariation` APIs for running A/B tests.
+- Makes the top-level client components public: `DecisionService, ConfigManager, EventProcessor`.
+
 ## [1.0.0-beta1] - September 27th, 2019
 
 ### New Features
