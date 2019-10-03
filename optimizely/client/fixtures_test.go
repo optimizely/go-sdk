@@ -78,6 +78,28 @@ func (c *MockProjectConfig) GetBotFiltering() bool {
 	return false
 }
 
+type MockProjectConfigManager struct {
+	projectConfig optimizely.ProjectConfig
+	mock.Mock
+}
+
+func (p *MockProjectConfigManager) GetConfig() (optimizely.ProjectConfig, error) {
+	if p.projectConfig != nil {
+		return p.projectConfig, nil
+	}
+
+	args := p.Called()
+	return args.Get(0).(optimizely.ProjectConfig), args.Error(1)
+}
+
+func (p *MockProjectConfigManager) OnProjectConfigUpdate(callback func(notification.ProjectConfigUpdateNotification)) (int, error) {
+	return 0, nil
+}
+
+func (p *MockProjectConfigManager) RemoveOnProjectConfigUpdate(id int) error {
+	return nil
+}
+
 type MockDecisionService struct {
 	decision.Service
 	mock.Mock
