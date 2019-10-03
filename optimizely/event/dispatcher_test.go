@@ -29,6 +29,10 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 	ctx := context.TODO()
 	q := NewQueueEventDispatcher(ctx)
 
+	if qed, ok := q.(*QueueEventDispatcher); ok {
+		qed.Dispatcher = &MockDispatcher{}
+	}
+
 	eventTags := map[string]interface{}{"revenue": 55.0, "value": 25.1}
 	config := TestConfig{}
 
