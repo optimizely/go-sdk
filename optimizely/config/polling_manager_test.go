@@ -172,7 +172,9 @@ func TestDefaultRequester(t *testing.T) {
 	sdkKey := "test_sdk_key"
 	DefaultRequester(sdkKey)
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, DefaultRequester(sdkKey))
+	configManager := NewPollingProjectConfigManager(sdkKey, DefaultRequester(sdkKey))
+	configManager.Start(exeCtx)
+
 	requester := configManager.requester
 	assert.NotNil(t, requester)
 	assert.Equal(t, requester.String(), "{url: https://cdn.optimizely.com/datafiles/test_sdk_key.json, timeout: 5s, retries: 1}")
@@ -183,7 +185,8 @@ func TestPollingInterval(t *testing.T) {
 	sdkKey := "test_sdk_key"
 	DefaultRequester(sdkKey)
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, PollingInterval(5*time.Second))
+	configManager := NewPollingProjectConfigManager(sdkKey, PollingInterval(5*time.Second))
+	configManager.Start(exeCtx)
 
 	assert.Equal(t, configManager.pollingInterval, 5*time.Second)
 }
@@ -193,7 +196,8 @@ func TestInitialDatafile(t *testing.T) {
 	sdkKey := "test_sdk_key"
 	DefaultRequester(sdkKey)
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, InitialDatafile([]byte("test")))
+	configManager := NewPollingProjectConfigManager(sdkKey, InitialDatafile([]byte("test")))
+	configManager.Start(exeCtx)
 
 	assert.Equal(t, configManager.initDatafile, []byte("test"))
 }
