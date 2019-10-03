@@ -43,6 +43,8 @@ type Requester interface {
 
 	Post(body interface{}, headers ...Header) (response []byte, code int, err error)
 	PostObj(body interface{}, result interface{}, headers ...Header) error
+
+	String() string
 }
 
 // Header element to be sent
