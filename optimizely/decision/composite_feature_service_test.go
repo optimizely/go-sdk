@@ -17,6 +17,7 @@
 package decision
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/optimizely/go-sdk/optimizely/decision/reasons"
@@ -82,6 +83,35 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionFallthrough() {
 
 	expectedDecision := FeatureDecision{
 		Variation: &testExp1113Var2223,
+	}
+	s.mockFeatureService2.On("GetDecision", s.testFeatureDecisionContext, testUserContext).Return(expectedDecision, nil)
+
+	compositeFeatureService := &CompositeFeatureService{
+		featureServices: []FeatureService{
+			s.mockFeatureService,
+			s.mockFeatureService2,
+		},
+	}
+	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext)
+	s.Equal(expectedDecision, decision)
+	s.NoError(err)
+	s.mockFeatureService.AssertExpectations(s.T())
+	s.mockFeatureService2.AssertExpectations(s.T())
+}
+
+func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsError() {
+	// test that we move onto the next decision service if an inner service returns an error
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	shouldBeIgnoredDecision := FeatureDecision{
+		Variation: &testExp1113Var2223,
+	}
+	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext).Return(shouldBeIgnoredDecision, errors.New("Error making decision"))
+
+	expectedDecision := FeatureDecision{
+		Variation: &testExp1113Var2224,
 	}
 	s.mockFeatureService2.On("GetDecision", s.testFeatureDecisionContext, testUserContext).Return(expectedDecision, nil)
 

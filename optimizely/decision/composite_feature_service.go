@@ -45,7 +45,10 @@ func NewCompositeFeatureService(compositeExperimentService ExperimentService) *C
 func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
 	for _, featureDecisionService := range f.featureServices {
 		featureDecision, err := featureDecisionService.GetDecision(decisionContext, userContext)
-		if featureDecision.Variation != nil {
+		if err != nil {
+			cfLogger.Debug(fmt.Sprintf("%v", err))
+		}
+		if featureDecision.Variation != nil && err == nil {
 			return featureDecision, err
 		}
 	}
