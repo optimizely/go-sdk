@@ -18,6 +18,7 @@
 package decision
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/optimizely/go-sdk/optimizely/entities"
@@ -53,5 +54,5 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 		}
 	}
 
-	return FeatureDecision{}, fmt.Errorf("no decision was made for feature %s", decisionContext.Feature.Key)
+	return FeatureDecision{}, errors.New("no decision was made")
 }

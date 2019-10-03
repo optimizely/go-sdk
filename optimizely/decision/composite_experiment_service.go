@@ -18,8 +18,14 @@
 package decision
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/optimizely/logging"
 )
+
+var ceLogger = logging.GetLogger("CompositeExperimentService")
 
 // CompositeExperimentService bridges together the various experiment decision services that ship by default with the SDK
 type CompositeExperimentService struct {
@@ -42,15 +48,18 @@ func NewCompositeExperimentService() *CompositeExperimentService {
 
 // GetDecision returns a decision for the given experiment and user context
 func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
-
 	experimentDecision := ExperimentDecision{}
 
 	// Run through the various decision services until we get a decision
 	for _, experimentService := range s.experimentServices {
-		if decision, err := experimentService.GetDecision(decisionContext, userContext); decision.Variation != nil {
+		decision, err := experimentService.GetDecision(decisionContext, userContext)
+		if err != nil {
+			ceLogger.Debug(fmt.Sprintf("%v", err))
+		}
+		if decision.Variation != nil && err == nil {
 			return decision, err
 		}
 	}
 
-	return experimentDecision, nil
+	return experimentDecision, errors.New("no decision was made")
 }
