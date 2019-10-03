@@ -18,7 +18,7 @@ jobs:
         - $GOPATH/bin/golangci-lint run --out-format=tab --tests=false optimizely/...
     - stage: 'Integration Tests'
       merge_mode: replace
-      env: SDK=go
+      env: SDK=go SDK_BRANCH=$TRAVIS_PULL_REQUEST_BRANCH
       cache: false
       language: minimal
       install: skip
@@ -29,7 +29,7 @@ jobs:
       after_success: travis_terminate 0
     - &test
       stage: 'Unit test'
-      env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64      
+      env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
       script:
         - go test -v -race ./... -coverprofile=profile.cov
     - <<: *test
@@ -48,7 +48,7 @@ jobs:
     - <<: *test
       stage: 'Unit test'
       env: GIMME_GO_VERSION=1.12.x
-      before_script:      
+      before_script:
         - go get github.com/mattn/goveralls
       after_success:
         - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
