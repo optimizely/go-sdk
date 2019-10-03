@@ -18,16 +18,14 @@
 package config
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"sync"
 
 	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/optimizely/notification"
+	"github.com/optimizely/go-sdk/optimizely/utils"
 )
 
 // StaticProjectConfigManager maintains a static copy of the project config
@@ -38,30 +36,14 @@ type StaticProjectConfigManager struct {
 
 // NewStaticProjectConfigManagerFromURL returns new instance of StaticProjectConfigManager for URL
 func NewStaticProjectConfigManagerFromURL(sdkKey string) (*StaticProjectConfigManager, error) {
-	downloadFile := func() ([]byte, error) {
-		response, err := http.Get(fmt.Sprintf(DatafileURLTemplate, sdkKey))
-		if err != nil {
-			return nil, err
-		}
-		defer response.Body.Close()
-		if response.StatusCode != http.StatusOK {
-			return nil, errors.New(response.Status)
-		}
-		var data bytes.Buffer
-		_, err = io.Copy(&data, response.Body)
-		if err != nil {
-			return nil, err
-		}
-		return data.Bytes(), nil
+
+	requester := utils.NewHTTPRequester(fmt.Sprintf(DatafileURLTemplate, sdkKey))
+	datafile, code, e := requester.Get()
+	if e != nil {
+		cmLogger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
 	}
 
-	body, err := downloadFile()
-
-	if err != nil {
-		return nil, err
-	}
-
-	return NewStaticProjectConfigManagerFromPayload(body)
+	return NewStaticProjectConfigManagerFromPayload(datafile)
 }
 
 // NewStaticProjectConfigManagerFromPayload returns new instance of StaticProjectConfigManager for payload

@@ -24,6 +24,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestBuildAudienceConditionTreeEmpty(t *testing.T) {
+	conditionString := ""
+	var conditions interface{}
+	json.Unmarshal([]byte(conditionString), &conditions)
+	conditionTree, err := buildAudienceConditionTree(conditions)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, (*entities.TreeNode)(nil), conditionTree)
+}
+
 func TestBuildAudienceConditionTreeSimpleAudienceCondition(t *testing.T) {
 	conditionString := "[ \"and\", [ \"or\", [ \"or\",  \"12\", \"123\", \"1234\"] ] ]"
 	var conditions interface{}

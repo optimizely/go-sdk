@@ -17,6 +17,8 @@
 package config
 
 import (
+	"errors"
+	"github.com/optimizely/go-sdk/optimizely/notification"
 	"testing"
 
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
@@ -29,4 +31,45 @@ func TestNewStaticProjectConfigManager(t *testing.T) {
 
 	actual, _ := configManager.GetConfig()
 	assert.Equal(t, projectConfig, actual)
+}
+
+func TestNewStaticProjectConfigManagerFromPayload(t *testing.T) {
+
+	mockDatafile := []byte(`{"accountId":"42","projectId":"123""}`)
+	configManager, err := NewStaticProjectConfigManagerFromPayload(mockDatafile)
+	assert.NotNil(t, err)
+
+	mockDatafile = []byte(`{"accountId":"42","projectId":"123"}`)
+	configManager, err = NewStaticProjectConfigManagerFromPayload(mockDatafile)
+	assert.Nil(t, err)
+
+	actual, _ := configManager.GetConfig()
+	assert.NotNil(t, actual)
+}
+
+func TestNewStaticProjectConfigManagerFromURL(t *testing.T) {
+
+	configManager, err := NewStaticProjectConfigManagerFromURL("no_key_exists")
+	assert.NotNil(t, err)
+	assert.Nil(t, configManager)
+}
+
+func TestNewStaticProjectConfigManagerOnDecision(t *testing.T) {
+	mockDatafile := []byte(`{"accountId":"42","projectId":"123"}`)
+	configManager, err := NewStaticProjectConfigManagerFromPayload(mockDatafile)
+	assert.Nil(t, err)
+
+	callback := func(notification notification.ProjectConfigUpdateNotification) {
+
+	}
+	id, err := configManager.OnProjectConfigUpdate(callback)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, err, errors.New("method OnProjectConfigUpdate does not have any effect on StaticProjectConfigManager"))
+	assert.Equal(t, id, 0)
+
+	err = configManager.RemoveOnProjectConfigUpdate(id)
+	assert.NotNil(t, err)
+	assert.Equal(t, err, errors.New("method RemoveOnProjectConfigUpdate does not have any effect on StaticProjectConfigManager"))
+
 }
