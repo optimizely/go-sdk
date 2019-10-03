@@ -92,3 +92,48 @@ func TestUserAttributesGetFloatAttribute(t *testing.T) {
 		assert.Fail(t, "Error should have been thrown")
 	}
 }
+
+func TestUserAttributesGetIntAttribute(t *testing.T) {
+	userContext := UserContext{
+		Attributes: map[string]interface{}{
+			"int_42":    42,
+			"float_4_2": 42.0,
+		},
+	}
+
+	// Test happy path
+	intAttribute1, _ := userContext.GetIntAttribute("int_42")
+	intAttribute2, _ := userContext.GetIntAttribute("float_4_2")
+	assert.Equal(t, int64(42), intAttribute1)
+	assert.Equal(t, int64(42), intAttribute2)
+
+	// Test non-existent attr name
+	_, err := userContext.GetIntAttribute("bool_false")
+	if assert.Error(t, err) {
+		assert.Equal(t, err.Error(), `no int attribute named "bool_false"`)
+	} else {
+		assert.Fail(t, "Error should have been thrown")
+	}
+
+	_, err = userContext.GetIntAttribute("string_foo")
+	if assert.Error(t, err) {
+		assert.Equal(t, err.Error(), `no int attribute named "string_foo"`)
+	} else {
+		assert.Fail(t, "Error should have been thrown")
+	}
+}
+
+func TestGetBucketingID(t *testing.T) {
+	userContext := UserContext{
+		ID: "12312",
+		Attributes: map[string]interface{}{
+			"int_42":    42,
+			"float_4_2": 42.0,
+		},
+	}
+
+	id, err := userContext.GetBucketingID()
+
+	assert.Nil(t, err)
+	assert.Equal(t, id, "12312")
+}
