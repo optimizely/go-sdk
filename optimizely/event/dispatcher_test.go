@@ -30,7 +30,7 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 	q := NewQueueEventDispatcher(ctx)
 
 	if qed, ok := q.(*QueueEventDispatcher); ok {
-		qed.Dispatcher = &MockDispatcher{}
+		qed.Dispatcher = &MockDispatcher{Events: NewInMemoryQueue(100)}
 	}
 
 	eventTags := map[string]interface{}{"revenue": 55.0, "value": 25.1}
