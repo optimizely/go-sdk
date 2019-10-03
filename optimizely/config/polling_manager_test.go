@@ -56,7 +56,7 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, actual)
 	assert.Equal(t, projectConfig, actual)
-	exeCtx.TerminateAndWait() // just sending sygnal and improving coverage
+	exeCtx.TerminateAndWait() // just sending signal and improving coverage
 }
 
 func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
