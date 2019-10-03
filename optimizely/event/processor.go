@@ -126,6 +126,7 @@ func (p *QueueingEventProcessor) Start(exeCtx utils.ExecutionCtx) {
 	}
 
 	p.startTicker(exeCtx)
+	pLogger.Debug("Batch event processor started")
 }
 
 // ProcessEvent processes the given impression event

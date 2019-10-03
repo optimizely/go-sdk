@@ -24,34 +24,11 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/optimizely/go-sdk/optimizely/event"
-	"github.com/optimizely/go-sdk/optimizely/notification"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
-
-type MockProjectConfigManager struct {
-	projectConfig optimizely.ProjectConfig
-	mock.Mock
-}
-
-func (p *MockProjectConfigManager) GetConfig() (optimizely.ProjectConfig, error) {
-	if p.projectConfig != nil {
-		return p.projectConfig, nil
-	}
-
-	args := p.Called()
-	return args.Get(0).(optimizely.ProjectConfig), args.Error(1)
-}
-
-func (p *MockProjectConfigManager) OnProjectConfigUpdate(callback func(notification.ProjectConfigUpdateNotification)) (int, error) {
-	return 0, nil
-}
-
-func (p *MockProjectConfigManager) RemoveOnProjectConfigUpdate(id int) error {
-	return nil
-}
 
 func ValidProjectConfigManager() *MockProjectConfigManager {
 	p := new(MockProjectConfigManager)
