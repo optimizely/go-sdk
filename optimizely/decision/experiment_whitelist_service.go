@@ -25,6 +25,7 @@ import (
 )
 
 // ExperimentWhitelistService makes a decision using an experiment's whitelist (a map of user id to variation keys)
+// Implements the ExperimentService interface
 type ExperimentWhitelistService struct{}
 
 // NewExperimentWhitelistService returns a new instance of ExperimentWhitelistService
