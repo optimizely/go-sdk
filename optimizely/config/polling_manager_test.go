@@ -18,6 +18,7 @@ package config
 
 import (
 	"testing"
+	"time"
 
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/optimizely/notification"
@@ -56,6 +57,7 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, actual)
 	assert.Equal(t, projectConfig, actual)
+	exeCtx.TerminateAndWait() // just sending signal and improving coverage
 }
 
 func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
@@ -160,4 +162,38 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 
 	err = configManager.RemoveOnProjectConfigUpdate(id)
 	assert.Nil(t, err)
+
+	err = configManager.RemoveOnProjectConfigUpdate(id)
+	assert.Nil(t, err)
+}
+
+func TestDefaultRequester(t *testing.T) {
+
+	sdkKey := "test_sdk_key"
+	DefaultRequester(sdkKey)
+	exeCtx := utils.NewCancelableExecutionCtx()
+	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, DefaultRequester(sdkKey))
+	requester := configManager.requester
+	assert.NotNil(t, requester)
+	assert.Equal(t, requester.String(), "{url: https://cdn.optimizely.com/datafiles/test_sdk_key.json, timeout: 5s, retries: 1}")
+}
+
+func TestPollingInterval(t *testing.T) {
+
+	sdkKey := "test_sdk_key"
+	DefaultRequester(sdkKey)
+	exeCtx := utils.NewCancelableExecutionCtx()
+	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, PollingInterval(5*time.Second))
+
+	assert.Equal(t, configManager.pollingInterval, 5*time.Second)
+}
+
+func TestInitialDatafile(t *testing.T) {
+
+	sdkKey := "test_sdk_key"
+	DefaultRequester(sdkKey)
+	exeCtx := utils.NewCancelableExecutionCtx()
+	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, InitialDatafile([]byte("test")))
+
+	assert.Equal(t, configManager.initDatafile, []byte("test"))
 }
