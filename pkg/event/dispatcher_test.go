@@ -14,46 +14,43 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+// Package event //
+package event
 
 import (
-	"fmt"
-
-	"github.com/optimizely/go-sdk/pkg/client"
+	"context"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"testing"
+	"time"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
+func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
+	ctx := context.TODO()
+	q := NewQueueEventDispatcher(ctx)
 
-		client, err := optimizelyFactory.StaticClient()
+	eventTags := map[string]interface{}{"revenue": 55.0, "value": 25.1}
+	config := TestConfig{}
 
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
+	conversionUserEvent := CreateConversionUserEvent(config, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext, eventTags)
 
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
+	batch := createBatchEvent(conversionUserEvent, createVisitorFromUserEvent(conversionUserEvent))
 
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
-}
+	logEvent := createLogEvent(batch)
 
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+	qd, _ := q.(*QueueEventDispatcher)
+
+	success, _ := qd.DispatchEvent(logEvent)
+
+	assert.True(t, success)
+
+	// its been queued
+	assert.Equal(t,1, qd.eventQueue.Size())
+
+	// give the queue a chance to run
+	time.Sleep(1 * time.Second)
+
+	// check the queue
+	assert.Equal(t,0, qd.eventQueue.Size())
+
 }

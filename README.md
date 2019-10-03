@@ -9,7 +9,7 @@
 To start using the SDK, create an instance using our factory method:
 
 ```
-import "github.com/optimizely/go-sdk/optimizely/client"
+import "github.com/optimizely/go-sdk/pkg/client"
 
 optimizelyFactory := &client.OptimizelyFactory{
   SDKKey: "[SDK_KEY_HERE]",
@@ -29,8 +29,8 @@ client, err := optimizelyFactory.Client()
 ### Feature Rollouts
 ```
 import (
-  "github.com/optimizely/go-sdk/optimizely/client"
-  "github.com/optimizely/go-sdk/optimizely/entities"
+  "github.com/optimizely/go-sdk/pkg/client"
+  "github.com/optimizely/go-sdk/pkg/entities"
 )
 
 user := entities.UserContext{

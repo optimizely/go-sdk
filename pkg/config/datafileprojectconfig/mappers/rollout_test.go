@@ -14,46 +14,39 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+package mappers
 
 import (
-	"fmt"
+	"testing"
 
-	"github.com/optimizely/go-sdk/pkg/client"
+	datafileEntities "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
+func TestMapRollouts(t *testing.T) {
+	const testRolloutString = `{
+		 "id": "21111",
+		 "experiments": [
+			 { "id": "11111", "key": "exp_11111" },
+			 { "id": "11112", "key": "exp_11112" }
+		 ]
+	 }`
 
-		client, err := optimizelyFactory.StaticClient()
+	var rawRollout datafileEntities.Rollout
+	json.Unmarshal([]byte(testRolloutString), &rawRollout)
 
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
+	rawRollouts := []datafileEntities.Rollout{rawRollout}
+	rolloutMap := MapRollouts(rawRollouts)
+	expectedRolloutMap := map[string]entities.Rollout{
+		"21111": entities.Rollout{
+			ID: "21111",
+			Experiments: []entities.Experiment{
+				entities.Experiment{ID: "11111", Key: "exp_11111", Variations: map[string]entities.Variation{}, TrafficAllocation: []entities.Range{}},
+				entities.Experiment{ID: "11112", Key: "exp_11112", Variations: map[string]entities.Variation{}, TrafficAllocation: []entities.Range{}},
+			},
+		},
+	}
 
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
-
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+	assert.Equal(t, expectedRolloutMap, rolloutMap)
 }

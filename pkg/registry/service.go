@@ -14,46 +14,23 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+// Package registry is the global access point for retrieving instances of services by SDK Key //
+package registry
 
 import (
-	"fmt"
-
-	"github.com/optimizely/go-sdk/pkg/client"
-	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
+	"github.com/optimizely/go-sdk/pkg/notification"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
+var notificationCenterCache = make(map[string]notification.Center)
 
-		client, err := optimizelyFactory.StaticClient()
+// GetNotificationCenter returns the notification center instance associated with the given SDK Key or creates a new one if not found
+func GetNotificationCenter(sdkKey string) notification.Center {
+	var notificationCenter notification.Center
+	var ok bool
+	if notificationCenter, ok = notificationCenterCache[sdkKey]; !ok {
+		notificationCenter = notification.NewNotificationCenter()
+		notificationCenterCache[sdkKey] = notificationCenter
+	}
 
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
-
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
-
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+	return notificationCenter
 }

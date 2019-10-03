@@ -14,46 +14,31 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+// Package matchers //
+package matchers
 
 import (
 	"fmt"
 
-	"github.com/optimizely/go-sdk/pkg/client"
+	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers/utils"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
-
-		client, err := optimizelyFactory.StaticClient()
-
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
-
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
-
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
+// LtMatcher matches against the "lt" match type
+type LtMatcher struct {
+	Condition entities.Condition
 }
 
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+// Match returns true if the user's attribute is less than the condition's string value
+func (m LtMatcher) Match(user entities.UserContext) (bool, error) {
+
+	if floatValue, ok := utils.ToFloat(m.Condition.Value); ok {
+		attributeValue, err := user.GetFloatAttribute(m.Condition.Name)
+		if err != nil {
+			return false, err
+		}
+		return floatValue > attributeValue, nil
+	}
+
+	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
 }

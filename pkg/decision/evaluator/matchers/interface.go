@@ -14,46 +14,12 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+// Package matchers //
+package matchers
 
-import (
-	"fmt"
+import "github.com/optimizely/go-sdk/pkg/entities"
 
-	"github.com/optimizely/go-sdk/pkg/client"
-	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
-)
-
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
-
-		client, err := optimizelyFactory.StaticClient()
-
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
-
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
-
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+// Matcher matches the condition against the user's attributes
+type Matcher interface {
+	Match(entities.UserContext) (bool, error)
 }

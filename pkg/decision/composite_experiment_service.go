@@ -14,46 +14,41 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+// Package decision //
+package decision
 
 import (
-	"fmt"
-
-	"github.com/optimizely/go-sdk/pkg/client"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
-
-		client, err := optimizelyFactory.StaticClient()
-
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
-
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
-
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
+// CompositeExperimentService bridges together the various experiment decision services that ship by default with the SDK
+type CompositeExperimentService struct {
+	experimentServices []ExperimentService
 }
 
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+// NewCompositeExperimentService creates a new instance of the CompositeExperimentService
+func NewCompositeExperimentService() *CompositeExperimentService {
+	// These decision services are applied in order:
+	// 1. Bucketing
+	// @TODO(mng): Prepend forced variation and whitelisting services
+	return &CompositeExperimentService{
+		experimentServices: []ExperimentService{
+			NewExperimentBucketerService(),
+		},
+	}
+}
+
+// GetDecision returns a decision for the given experiment and user context
+func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
+
+	experimentDecision := ExperimentDecision{}
+
+	// Run through the various decision services until we get a decision
+	for _, experimentService := range s.experimentServices {
+		if decision, err := experimentService.GetDecision(decisionContext, userContext); decision.Variation != nil {
+			return decision, err
+		}
+	}
+
+	return experimentDecision, nil
 }

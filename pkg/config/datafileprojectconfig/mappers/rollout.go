@@ -14,46 +14,33 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+// Package mappers ...
+package mappers
 
 import (
-	"fmt"
-
-	"github.com/optimizely/go-sdk/pkg/client"
+	datafileEntities "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
+// MapRollouts maps the raw datafile rollout entities to SDK Rollout entities
+func MapRollouts(rollouts []datafileEntities.Rollout) map[string]entities.Rollout {
+	rolloutMap := make(map[string]entities.Rollout)
+	for _, rollout := range rollouts {
+		rolloutMap[rollout.ID] = mapRollout(rollout)
+	}
 
-		client, err := optimizelyFactory.StaticClient()
-
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
-
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
-
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
+	return rolloutMap
 }
 
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+func mapRollout(datafileRollout datafileEntities.Rollout) entities.Rollout {
+	rolloutExperiments := make([]entities.Experiment, len(datafileRollout.Experiments))
+	for i, datafileExperiment := range datafileRollout.Experiments {
+		experiment := mapExperiment(datafileExperiment)
+		rolloutExperiments[i] = experiment
+	}
+
+	return entities.Rollout{
+		ID:          datafileRollout.ID,
+		Experiments: rolloutExperiments,
+	}
 }
