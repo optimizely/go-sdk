@@ -22,8 +22,27 @@ import (
 	"testing"
 
 	"github.com/optimizely/go-sdk/optimizely/entities"
+
 	"github.com/stretchr/testify/assert"
 )
+
+func TestNewDatafileProjectConfigNil(t *testing.T) {
+	projectConfig, err := NewDatafileProjectConfig(nil)
+	assert.NotNil(t, err)
+	assert.Nil(t, projectConfig)
+}
+
+func TestNewDatafileProjectConfigNotNil(t *testing.T) {
+	dpc := DatafileProjectConfig{accountID: "123", revision: "1", projectID: "12345"}
+	jsonDatafileStr := `{"accountID": "123", "revision": "1", "projectId": "12345"}`
+	jsonDatafile := []byte(jsonDatafileStr)
+	projectConfig, err := NewDatafileProjectConfig(jsonDatafile)
+	assert.Nil(t, err)
+	assert.NotNil(t, projectConfig)
+	assert.Equal(t, dpc.accountID, projectConfig.accountID)
+	assert.Equal(t, dpc.revision, projectConfig.revision)
+	assert.Equal(t, dpc.projectID, projectConfig.projectID)
+}
 
 func TestGetProjectID(t *testing.T) {
 	projectID := "projectID"

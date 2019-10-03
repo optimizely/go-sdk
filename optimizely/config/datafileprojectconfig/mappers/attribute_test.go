@@ -25,24 +25,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMapAudiencesEmptyList(t *testing.T) {
+func TestMapAttributesWithEmptyList(t *testing.T) {
 
-	audienceMap := MapAudiences(nil)
+	attributeMap, attributeKeyToIDMap := MapAttributes(nil)
 
-	expectedAudienceMap := map[string]entities.Audience{}
+	expectedAttributeMap := map[string]entities.Attribute{}
+	expectedAttributeKeyToIDMap := map[string]string{}
 
-	assert.Equal(t, audienceMap, expectedAudienceMap)
-
+	assert.Equal(t, attributeMap, expectedAttributeMap)
+	assert.Equal(t, attributeKeyToIDMap, expectedAttributeKeyToIDMap)
 }
-func TestMapAudiences(t *testing.T) {
+func TestMapAttributes(t *testing.T) {
 
-	audienceList := []datafileEntities.Audience{{ID: "1", Name: "one"}, {ID: "2", Name: "two"},
-		{ID: "3", Name: "three"}, {ID: "2", Name: "four"}, {ID: "5", Name: "one"}}
+	attrList := []datafileEntities.Attribute{{ID: "1", Key: "one"}, {ID: "2", Key: "two"},
+		{ID: "3", Key: "three"}, {ID: "2", Key: "four"}, {ID: "5", Key: "one"}}
 
-	audienceMap := MapAudiences(audienceList)
+	attributeMap, attributeKeyToIDMap := MapAttributes(attrList)
 
-	expectedAudienceMap := map[string]entities.Audience{"1": {ID: "1", Name: "one"}, "2": {ID: "2", Name: "two"},
-		"3": {ID: "3", Name: "three"}, "5": {ID: "5", Name: "one"}}
+	expectedAttributeMap := map[string]entities.Attribute{"1": {"1", "one"},
+		"2": {"2", "two"}, "3": {"3", "three"}, "5": {"5", "one"}}
+	expectedAttributeKeyToIDMap := map[string]string{"one": "5", "three": "3", "two": "2"}
 
-	assert.Equal(t, audienceMap, expectedAudienceMap)
+	assert.Equal(t, attributeMap, expectedAttributeMap)
+	assert.Equal(t, attributeKeyToIDMap, expectedAttributeKeyToIDMap)
 }
