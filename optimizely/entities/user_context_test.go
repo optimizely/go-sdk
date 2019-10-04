@@ -1,6 +1,7 @@
 package entities
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -135,5 +136,32 @@ func TestGetBucketingID(t *testing.T) {
 	id, err := userContext.GetBucketingID()
 
 	assert.Nil(t, err)
+	assert.Equal(t, id, "12312")
+
+	userContext = UserContext{
+		ID: "12312",
+		Attributes: map[string]interface{}{
+			"int_42":            42,
+			"float_4_2":         42.0,
+			"$opt_bucketing_id": "234",
+		},
+	}
+
+	id, err = userContext.GetBucketingID()
+	assert.Nil(t, err)
+	assert.Equal(t, id, "234")
+
+	userContext = UserContext{
+		ID: "12312",
+		Attributes: map[string]interface{}{
+			"int_42":            42,
+			"float_4_2":         42.0,
+			"$opt_bucketing_id": 234,
+		},
+	}
+
+	id, err = userContext.GetBucketingID()
+	assert.NotNil(t, err)
+	assert.Equal(t, err, errors.New(`invalid bucketing ID provided: "234"`))
 	assert.Equal(t, id, "12312")
 }

@@ -29,6 +29,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestHeaders(t *testing.T) {
+	requester := &HTTPRequester{}
+	fn := Headers(Header{"one", "1"})
+	fn(requester)
+	assert.Equal(t, []Header{{"one", "1"}}, requester.headers)
+}
+
+func TestAddHeaders(t *testing.T) {
+
+	req, _ := http.NewRequest("GET", "", nil)
+	requester := &HTTPRequester{}
+	headers := []Header{{"one", "1"}}
+
+	fn := Headers(Header{"two", "2"})
+	fn(requester)
+	requester.addHeaders(req, headers)
+	assert.Equal(t, req.Header, http.Header{"One": []string{"1"}, "Two": []string{"2"}})
+}
+
 func TestGet(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -68,6 +87,7 @@ func TestGetObj(t *testing.T) {
 		}
 		if r.URL.String() == "/bad" {
 			w.WriteHeader(400)
+			fmt.Fprintln(w, `bad bad response`)
 		}
 	}))
 	defer ts.Close()
@@ -78,6 +98,74 @@ func TestGetObj(t *testing.T) {
 	err := httpreq.GetObj(&r)
 	assert.Nil(t, err)
 	assert.Equal(t, resp{Fld1: "Hello, client", Fld2: 123}, r)
+
+	httpreq = NewHTTPRequester(ts.URL + "/bad")
+	err = httpreq.GetObj(&r)
+	assert.NotNil(t, err)
+}
+
+func TestPost(t *testing.T) {
+
+	type body struct {
+		Fld1 string
+		Fld2 int
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Print(">request: ", r)
+		if r.URL.String() == "/good" {
+			fmt.Fprintln(w, "Hello, client")
+		}
+		if r.URL.String() == "/bad" {
+			w.WriteHeader(400)
+		}
+	}))
+	defer ts.Close()
+	b := body{"one", 1}
+	var httpreq Requester
+	httpreq = NewHTTPRequester(ts.URL + "/good")
+	resp, code, err := httpreq.Post(b)
+
+	assert.Nil(t, err)
+	assert.Equal(t, "Hello, client\n", string(resp))
+	assert.Equal(t, code, 200)
+
+	httpreq = NewHTTPRequester(ts.URL + "/bad")
+	_, code, err = httpreq.Post(nil)
+	assert.Equal(t, errors.New("400 Bad Request"), err)
+	assert.Equal(t, code, 400)
+}
+
+func TestPostObj(t *testing.T) {
+
+	type body struct {
+		Fld1 string
+		Fld2 int
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Print(">request: ", r)
+		if r.URL.String() == "/good" {
+			fmt.Fprintln(w, `{"fld1":"Hello, client", "fld2": 123}`)
+		}
+		if r.URL.String() == "/bad" {
+			w.WriteHeader(400)
+			fmt.Fprintln(w, `bad bad response`)
+		}
+	}))
+	defer ts.Close()
+
+	var httpreq Requester
+	httpreq = NewHTTPRequester(ts.URL + "/good")
+	b := body{"one", 1}
+	r := body{}
+	err := httpreq.PostObj(b, &r)
+	assert.Nil(t, err)
+	assert.Equal(t, body{Fld1: "Hello, client", Fld2: 123}, r)
+
+	httpreq = NewHTTPRequester(ts.URL + "/bad")
+	err = httpreq.PostObj(b, &r)
+	assert.NotNil(t, err)
 }
 
 func TestGetBad(t *testing.T) {

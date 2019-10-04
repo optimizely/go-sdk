@@ -88,7 +88,7 @@ func (u UserContext) GetBucketingID() (string, error) {
 	if value, ok := u.Attributes[bucketingIDAttributeName]; ok {
 		customBucketingID, err := u.GetStringAttribute(bucketingIDAttributeName)
 		if err != nil {
-			return bucketingID, fmt.Errorf(`invalid bucketing ID provided: "%s"`, value)
+			return bucketingID, fmt.Errorf(`invalid bucketing ID provided: "%v"`, value)
 		}
 		bucketingID = customBucketingID
 	}

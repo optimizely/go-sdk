@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"github.com/stretchr/testify/mock"
 )
 
@@ -23,6 +22,20 @@ func (m *MockOptimizelyLogger) SetLogLevel(level LogLevel) {
 	m.Called(level)
 }
 
+func TestNamedLoggerDebug(t *testing.T) {
+	testLogMessage := "Test debug message"
+	expectedLogMessage := "[test-debug][Debug] Test debug message"
+	testLogger := new(MockOptimizelyLogger)
+	testLogger.On("Log", LogLevelDebug, expectedLogMessage)
+
+	SetLogger(testLogger)
+
+	logProducer := GetLogger("test-debug")
+	logProducer.Debug(testLogMessage)
+	testLogger.AssertExpectations(t)
+	assert.Equal(t, []string{expectedLogMessage}, testLogger.loggedMessages)
+}
+
 func TestNamedLoggerInfo(t *testing.T) {
 	testLogMessage := "Test info message"
 	expectedLogMessage := "[test-info][Info] Test info message"
@@ -33,6 +46,20 @@ func TestNamedLoggerInfo(t *testing.T) {
 
 	logProducer := GetLogger("test-info")
 	logProducer.Info(testLogMessage)
+	testLogger.AssertExpectations(t)
+	assert.Equal(t, []string{expectedLogMessage}, testLogger.loggedMessages)
+}
+
+func TestNamedLoggerWarning(t *testing.T) {
+	testLogMessage := "Test warn message"
+	expectedLogMessage := "[test-warn][Warning] Test warn message"
+	testLogger := new(MockOptimizelyLogger)
+	testLogger.On("Log", LogLevelWarning, expectedLogMessage)
+
+	SetLogger(testLogger)
+
+	logProducer := GetLogger("test-warn")
+	logProducer.Warning(testLogMessage)
 	testLogger.AssertExpectations(t)
 	assert.Equal(t, []string{expectedLogMessage}, testLogger.loggedMessages)
 }
