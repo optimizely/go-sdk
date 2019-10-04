@@ -20,7 +20,6 @@ jobs:
       env: GIMME_GO_VERSION=1.12.x
       install:
         - scripts/get-fsc-tests.sh
-        - go get
       script:
         - go test -tags=integration
       after_success: travis_terminate 0
