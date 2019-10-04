@@ -19,6 +19,7 @@ jobs:
     - stage: 'Integration tests'
       env: GIMME_GO_VERSION=1.12.x
       install:
+        - eval "$(gimme)"
         - scripts/get-fsc-tests.sh
       script:
         - go test -tags=integration
