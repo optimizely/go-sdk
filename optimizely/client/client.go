@@ -149,34 +149,15 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 
 	featureList := projectConfig.GetFeatureList()
 	for _, feature := range featureList {
-		isEnabled, _ := o.IsFeatureEnabled(feature.Key, userContext)
-
-		if isEnabled {
+		if isEnabled, _ := o.IsFeatureEnabled(feature.Key, userContext); isEnabled {
 			enabledFeatures = append(enabledFeatures, feature.Key)
 		}
 	}
-
 	return enabledFeatures, err
 }
 
 // GetFeatureVariableBoolean returns boolean feature variable value
 func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey, variableKey string, userContext entities.UserContext) (value bool, err error) {
-
-	defer func() {
-		if r := recover(); r != nil {
-			switch t := r.(type) {
-			case error:
-				err = t
-			case string:
-				err = errors.New(t)
-			default:
-				err = errors.New("unexpected error")
-			}
-			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
-			logger.Error(errorMessage, err)
-			logger.Debug(string(debug.Stack()))
-		}
-	}()
 
 	val, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
 	if err != nil {
@@ -192,22 +173,6 @@ func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey, variableKey str
 // GetFeatureVariableDouble returns double feature variable value
 func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey, variableKey string, userContext entities.UserContext) (value float64, err error) {
 
-	defer func() {
-		if r := recover(); r != nil {
-			switch t := r.(type) {
-			case error:
-				err = t
-			case string:
-				err = errors.New(t)
-			default:
-				err = errors.New("unexpected error")
-			}
-			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
-			logger.Error(errorMessage, err)
-			logger.Debug(string(debug.Stack()))
-		}
-	}()
-
 	val, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
 	if err != nil {
 		return 0, err
@@ -221,22 +186,6 @@ func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey, variableKey stri
 
 // GetFeatureVariableInteger returns integer feature variable value
 func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey, variableKey string, userContext entities.UserContext) (value int, err error) {
-
-	defer func() {
-		if r := recover(); r != nil {
-			switch t := r.(type) {
-			case error:
-				err = t
-			case string:
-				err = errors.New(t)
-			default:
-				err = errors.New("unexpected error")
-			}
-			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
-			logger.Error(errorMessage, err)
-			logger.Debug(string(debug.Stack()))
-		}
-	}()
 
 	val, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
 	if err != nil {
@@ -252,22 +201,6 @@ func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey, variableKey str
 // GetFeatureVariableString returns string feature variable value
 func (o *OptimizelyClient) GetFeatureVariableString(featureKey, variableKey string, userContext entities.UserContext) (value string, err error) {
 
-	defer func() {
-		if r := recover(); r != nil {
-			switch t := r.(type) {
-			case error:
-				err = t
-			case string:
-				err = errors.New(t)
-			default:
-				err = errors.New("unexpected error")
-			}
-			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
-			logger.Error(errorMessage, err)
-			logger.Debug(string(debug.Stack()))
-		}
-	}()
-
 	value, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
 	if err != nil {
 		return "", err
@@ -280,22 +213,6 @@ func (o *OptimizelyClient) GetFeatureVariableString(featureKey, variableKey stri
 
 // GetFeatureVariable returns feature as a string along with it's associated type
 func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, userContext entities.UserContext) (value string, valueType entities.VariableType, err error) {
-
-	defer func() {
-		if r := recover(); r != nil {
-			switch t := r.(type) {
-			case error:
-				err = t
-			case string:
-				err = errors.New(t)
-			default:
-				err = errors.New("unexpected error")
-			}
-			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
-			logger.Error(errorMessage, err)
-			logger.Debug(string(debug.Stack()))
-		}
-	}()
 
 	context, featureDecision, err := o.getFeatureDecision(featureKey, userContext)
 	if err != nil {
@@ -318,22 +235,6 @@ func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, us
 
 // GetAllFeatureVariables returns all the variables for a given feature along with the enabled state
 func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]string, err error) {
-
-	defer func() {
-		if r := recover(); r != nil {
-			switch t := r.(type) {
-			case error:
-				err = t
-			case string:
-				err = errors.New(t)
-			default:
-				err = errors.New("unexpected error")
-			}
-			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
-			logger.Error(errorMessage, err)
-			logger.Debug(string(debug.Stack()))
-		}
-	}()
 
 	variableMap = make(map[string]string)
 	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, userContext)

@@ -17,7 +17,9 @@
 package client
 
 import (
+	"context"
 	"errors"
+	"sync"
 	"testing"
 
 	"github.com/optimizely/go-sdk/optimizely"
@@ -29,6 +31,25 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
+
+var exeCtxSignalFlag bool
+
+type ExecutionCtx struct {
+	Wg  *sync.WaitGroup
+	Ctx context.Context
+}
+
+func (ctx ExecutionCtx) TerminateAndWait() {
+	exeCtxSignalFlag = true
+}
+
+func (ctx ExecutionCtx) GetContext() context.Context {
+	return ctx.Ctx
+}
+
+func (ctx ExecutionCtx) GetWaitSync() *sync.WaitGroup {
+	return ctx.Wg
+}
 
 func ValidProjectConfigManager() *MockProjectConfigManager {
 	p := new(MockProjectConfigManager)
@@ -121,6 +142,22 @@ func TestTrackFail(t *testing.T) {
 
 }
 
+func TestTrackPanics(t *testing.T) {
+	mockProcessor := &MockProcessor{}
+	mockDecisionService := new(MockDecisionService)
+
+	client := OptimizelyClient{
+		ConfigManager:   new(PanickingConfigManager),
+		DecisionService: mockDecisionService,
+		EventProcessor:  mockProcessor,
+	}
+
+	err := client.Track("bob", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
+
+	assert.Error(t, err)
+	assert.True(t, len(mockProcessor.Events) == 0)
+
+}
 func TestGetEnabledFeaturesErrorCases(t *testing.T) {
 	testUserContext := entities.UserContext{ID: "test_user_1"}
 
@@ -1389,6 +1426,53 @@ func TestGetAllFeatureVariables(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestGetAllFeatureVariablesWithError(t *testing.T) {
+	testFeatureKey := "test_feature_key"
+	testVariableKey := "test_feature_flag_key"
+	testVariableValue := "teststring"
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	testVariationVariable := entities.VariationVariable{
+		ID:    "1",
+		Value: testVariableValue,
+	}
+	testVariable := entities.Variable{
+		DefaultValue: "defaultString",
+		ID:           "1",
+		Key:          testVariableKey,
+		Type:         entities.String,
+	}
+	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
+	testExperiment := entities.Experiment{
+		ID:         "111111",
+		Variations: map[string]entities.Variation{"22222": testVariation},
+	}
+	testFeature := getTestFeature(testFeatureKey, testExperiment)
+	testFeature.Variables = make([]entities.Variable, 1)
+	testFeature.Variables[0] = testVariable
+	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
+	mockConfigManager := new(MockProjectConfigManager)
+	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
+
+	testDecisionContext := decision.FeatureDecisionContext{
+		Feature:       &testFeature,
+		ProjectConfig: mockConfig,
+	}
+
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	mockDecisionService := new(MockDecisionService)
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, errors.New(""))
+
+	client := OptimizelyClient{
+		ConfigManager:   mockConfigManager,
+		DecisionService: mockDecisionService,
+	}
+
+	enabled, variationMap, err := client.GetAllFeatureVariables(testFeatureKey, testUserContext)
+	assert.False(t, enabled)
+	assert.Equal(t, "", variationMap[testVariableKey])
+	assert.NotNil(t, err)
+}
+
 // Helper Methods
 func getTestFeatureDecision(experiment entities.Experiment, variation entities.Variation, decisionMade bool) decision.FeatureDecision {
 	return decision.FeatureDecision{
@@ -1441,6 +1525,7 @@ func (s *ClientTestSuiteAB) TestActivate() {
 	testUserContext := entities.UserContext{ID: "test_user_1"}
 	testExperiment := makeTestExperiment("test_exp_1")
 	s.mockConfig.On("GetExperimentByKey", "test_exp_1").Return(testExperiment, nil)
+	s.mockConfig.On("GetExperimentByKey", "test_exp_2").Return(testExperiment, errors.New(""))
 
 	testDecisionContext := decision.ExperimentDecisionContext{
 		Experiment:    &testExperiment,
@@ -1460,9 +1545,14 @@ func (s *ClientTestSuiteAB) TestActivate() {
 		EventProcessor:  s.mockEventProcessor,
 	}
 
-	variationKey, err := testClient.Activate("test_exp_1", testUserContext)
-	s.NoError(err)
-	s.Equal(expectedVariation.Key, variationKey)
+	variationKey1, err1 := testClient.Activate("test_exp_1", testUserContext)
+	s.NoError(err1)
+	s.Equal(expectedVariation.Key, variationKey1)
+
+	variationKey2, err2 := testClient.Activate("test_exp_2", testUserContext)
+	s.Error(err2)
+	s.Equal("", variationKey2)
+
 	s.mockConfig.AssertExpectations(s.T())
 	s.mockDecisionService.AssertExpectations(s.T())
 	s.mockEventProcessor.AssertExpectations(s.T())
@@ -1504,6 +1594,35 @@ func (s *ClientTestSuiteAB) TestGetVariation() {
 
 	variationKey, err := testClient.GetVariation("test_exp_1", testUserContext)
 	s.NoError(err)
+	s.Equal(expectedVariation.Key, variationKey)
+	s.mockConfig.AssertExpectations(s.T())
+	s.mockDecisionService.AssertExpectations(s.T())
+	s.mockEventProcessor.AssertNotCalled(s.T(), "ProcessEvent", mock.AnythingOfType("event.UserEvent"))
+}
+
+func (s *ClientTestSuiteAB) TestGetVariationWithError() {
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	testExperiment := makeTestExperiment("test_exp_1")
+	s.mockConfig.On("GetExperimentByKey", "test_exp_1").Return(testExperiment, nil)
+
+	testDecisionContext := decision.ExperimentDecisionContext{
+		Experiment:    &testExperiment,
+		ProjectConfig: s.mockConfig,
+	}
+
+	expectedVariation := testExperiment.Variations["v2"]
+	expectedExperimentDecision := decision.ExperimentDecision{
+		Variation: &expectedVariation,
+	}
+	s.mockDecisionService.On("GetExperimentDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision, errors.New(""))
+
+	testClient := OptimizelyClient{
+		ConfigManager:   s.mockConfigManager,
+		DecisionService: s.mockDecisionService,
+	}
+
+	variationKey, err := testClient.GetVariation("test_exp_1", testUserContext)
+	s.Error(err)
 	s.Equal(expectedVariation.Key, variationKey)
 	s.mockConfig.AssertExpectations(s.T())
 	s.mockDecisionService.AssertExpectations(s.T())
@@ -1558,6 +1677,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabled() {
 	expectedFeatureDecision := decision.FeatureDecision{
 		Experiment: testExperiment,
 		Variation:  &testVariation,
+		Source:     decision.FeatureTest,
 	}
 
 	s.mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
@@ -1568,6 +1688,42 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabled() {
 	}
 	result, _ := client.IsFeatureEnabled(testFeature.Key, testUserContext)
 	s.True(result)
+	s.mockConfig.AssertExpectations(s.T())
+	s.mockConfigManager.AssertExpectations(s.T())
+	s.mockDecisionService.AssertExpectations(s.T())
+}
+
+func (s *ClientTestSuiteFM) TestIsFeatureEnabledWithDecisionError() {
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+
+	// Test happy path
+	testVariation := makeTestVariation("green", true)
+	testExperiment := makeTestExperimentWithVariations("number_1", []entities.Variation{testVariation})
+	testFeature := makeTestFeatureWithExperiment("feature_1", testExperiment)
+	s.mockConfig.On("GetFeatureByKey", testFeature.Key).Return(testFeature, nil)
+	s.mockConfigManager.On("GetConfig").Return(s.mockConfig, nil)
+
+	// Set up the mock decision service and its return value
+	testDecisionContext := decision.FeatureDecisionContext{
+		Feature:       &testFeature,
+		ProjectConfig: s.mockConfig,
+	}
+
+	expectedFeatureDecision := decision.FeatureDecision{
+		Experiment: testExperiment,
+		Variation:  &testVariation,
+		Source:     decision.FeatureTest,
+	}
+
+	s.mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, errors.New(""))
+
+	client := OptimizelyClient{
+		ConfigManager:   s.mockConfigManager,
+		DecisionService: s.mockDecisionService,
+	}
+	result, err := client.IsFeatureEnabled(testFeature.Key, testUserContext)
+	s.False(result)
+	s.NotNil(err)
 	s.mockConfig.AssertExpectations(s.T())
 	s.mockConfigManager.AssertExpectations(s.T())
 	s.mockDecisionService.AssertExpectations(s.T())
@@ -1666,6 +1822,23 @@ func (s *ClientTestSuiteFM) TestGetEnabledFeatures() {
 	s.mockConfig.AssertExpectations(s.T())
 	s.mockConfigManager.AssertExpectations(s.T())
 	s.mockDecisionService.AssertExpectations(s.T())
+}
+
+func TestClose(t *testing.T) {
+	mockProcessor := &MockProcessor{}
+	mockDecisionService := new(MockDecisionService)
+
+	client := OptimizelyClient{
+		ConfigManager:   ValidProjectConfigManager(),
+		DecisionService: mockDecisionService,
+		EventProcessor:  mockProcessor,
+		executionCtx:    new(ExecutionCtx),
+	}
+
+	assert.False(t, exeCtxSignalFlag)
+	client.Close()
+	assert.True(t, exeCtxSignalFlag)
+
 }
 
 func TestClientTestSuite(t *testing.T) {

@@ -18,7 +18,12 @@ package client
 
 import (
 	"errors"
+	"fmt"
+	"log"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/optimizely/go-sdk/optimizely/config"
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
@@ -51,6 +56,34 @@ func TestClientWithSDKKey(t *testing.T) {
 	factory := OptimizelyFactory{SDKKey: "1212"}
 
 	optimizelyClient, err := factory.Client()
+	assert.NoError(t, err)
+	assert.NotNil(t, optimizelyClient.ConfigManager)
+	assert.NotNil(t, optimizelyClient.DecisionService)
+	assert.NotNil(t, optimizelyClient.EventProcessor)
+}
+
+func TestClientWithPollingConfigManager(t *testing.T) {
+	factory := OptimizelyFactory{}
+
+	optimizelyClient, err := factory.Client(WithPollingConfigManager("1212", time.Hour, nil))
+	assert.NoError(t, err)
+	assert.NotNil(t, optimizelyClient.ConfigManager)
+	assert.NotNil(t, optimizelyClient.DecisionService)
+	assert.NotNil(t, optimizelyClient.EventProcessor)
+}
+
+func TestClientWithPollingConfigManagerRequester(t *testing.T) {
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Print(">request: ", r)
+		if r.URL.String() == "/good" {
+			fmt.Fprintln(w, "Hello, client")
+		}
+	}))
+
+	factory := OptimizelyFactory{}
+	requester := utils.NewHTTPRequester(ts.URL + "/good")
+	optimizelyClient, err := factory.Client(WithPollingConfigManagerRequester(requester, time.Minute, nil))
 	assert.NoError(t, err)
 	assert.NotNil(t, optimizelyClient.ConfigManager)
 	assert.NotNil(t, optimizelyClient.DecisionService)
@@ -106,4 +139,9 @@ func TestStaticClient(t *testing.T) {
 
 	parsedConfig, _ := optlyClient.ConfigManager.GetConfig()
 	assert.Equal(t, "42", parsedConfig.GetRevision())
+
+	factory = OptimizelyFactory{SDKKey: "key_does_not_exist", Datafile: nil}
+	optlyClient, err = factory.StaticClient()
+	assert.Error(t, err)
+	assert.Nil(t, optlyClient)
 }
