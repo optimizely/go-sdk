@@ -14,46 +14,54 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+package matchers
 
 import (
-	"fmt"
+	"testing"
 
-	"github.com/optimizely/go-sdk/pkg/client"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
+func TestSubstringMatcher(t *testing.T) {
+	matcher := SubstringMatcher{
+		Condition: entities.Condition{
+			Match: "substring",
+			Value: "foo",
+			Name:  "string_foo",
+		},
+	}
 
-		client, err := optimizelyFactory.StaticClient()
+	// Test match
+	user := entities.UserContext{
+		Attributes: map[string]interface{}{
+			"string_foo": "foobar",
+		},
+	}
 
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
+	result, err := matcher.Match(user)
+	assert.NoError(t, err)
+	assert.True(t, result)
 
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
+	// Test no match
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"string_foo": "bar",
+		},
+	}
 
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
-}
+	result, err = matcher.Match(user)
+	assert.NoError(t, err)
+	assert.False(t, result)
 
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+	// Test error case
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"not_string_foo": "foo",
+		},
+	}
+
+	_, err = matcher.Match(user)
+	assert.Error(t, err)
 }

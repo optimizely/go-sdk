@@ -19,8 +19,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/optimizely/go-sdk/optimizely/client"
-	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/pkg/client"
+	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/spf13/cobra"
 )
 

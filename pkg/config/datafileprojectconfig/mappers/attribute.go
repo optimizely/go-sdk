@@ -14,46 +14,28 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+// Package mappers  ...
+package mappers
 
 import (
-	"fmt"
-
-	"github.com/optimizely/go-sdk/pkg/client"
+	datafileEntities "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
+// MapAttributes maps the raw datafile attribute entities to SDK Attribute entities
+func MapAttributes(attributes []datafileEntities.Attribute) (attributeMap map[string]entities.Attribute, attributeKeyToIDMap map[string]string) {
+
+	attributeMap = make(map[string]entities.Attribute)
+	attributeKeyToIDMap = make(map[string]string)
+	for _, attribute := range attributes {
+		_, ok := attributeMap[attribute.ID]
+		if !ok {
+			attributeMap[attribute.ID] = entities.Attribute{
+				ID:  attribute.ID,
+				Key: attribute.Key,
+			}
+			attributeKeyToIDMap[attribute.Key] = attribute.ID
 		}
-
-		client, err := optimizelyFactory.StaticClient()
-
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
-
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
-
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+	}
+	return attributeMap, attributeKeyToIDMap
 }

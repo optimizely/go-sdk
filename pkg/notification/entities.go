@@ -14,46 +14,38 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+// Package notification //
+package notification
 
-import (
-	"fmt"
+import "github.com/optimizely/go-sdk/pkg/entities"
 
-	"github.com/optimizely/go-sdk/pkg/client"
-	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
+// Type is the type of notification
+type Type string
+
+// DecisionNotificationType is the type of decision notification
+type DecisionNotificationType string
+
+const (
+	// Decision notification type
+	Decision Type = "decision"
+	// ProjectConfigUpdate notification type
+	ProjectConfigUpdate Type = "project_config_update"
+
+	// ABTest is used when the decision is returned as part of evaluating an ab test
+	ABTest DecisionNotificationType = "ab-test"
+	// Feature is used when the decision is returned as part of evaluating a feature
+	Feature DecisionNotificationType = "feature"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
-
-		client, err := optimizelyFactory.StaticClient()
-
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
-
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
-
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
+// DecisionNotification is a notification triggered when a decision is made for either a feature or an experiment
+type DecisionNotification struct {
+	Type         DecisionNotificationType
+	UserContext  entities.UserContext
+	DecisionInfo map[string]interface{}
 }
 
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+// ProjectConfigUpdateNotification is a notification triggered when a project config is updated
+type ProjectConfigUpdateNotification struct {
+	Type     Type
+	Revision string
 }
