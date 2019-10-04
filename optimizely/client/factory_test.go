@@ -18,6 +18,10 @@ package client
 
 import (
 	"errors"
+	"fmt"
+	"log"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -61,7 +65,7 @@ func TestClientWithSDKKey(t *testing.T) {
 func TestClientWithPollingConfigManager(t *testing.T) {
 	factory := OptimizelyFactory{}
 
-	optimizelyClient, err := factory.Client(WithPollingConfigManager("1212", time.Second, nil))
+	optimizelyClient, err := factory.Client(WithPollingConfigManager("1212", time.Hour, nil))
 	assert.NoError(t, err)
 	assert.NotNil(t, optimizelyClient.ConfigManager)
 	assert.NotNil(t, optimizelyClient.DecisionService)
@@ -69,9 +73,17 @@ func TestClientWithPollingConfigManager(t *testing.T) {
 }
 
 func TestClientWithPollingConfigManagerRequester(t *testing.T) {
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Print(">request: ", r)
+		if r.URL.String() == "/good" {
+			fmt.Fprintln(w, "Hello, client")
+		}
+	}))
+
 	factory := OptimizelyFactory{}
-	requester := utils.HTTPRequester{}
-	optimizelyClient, err := factory.Client(WithPollingConfigManagerRequester(requester, time.Second, nil))
+	requester := utils.NewHTTPRequester(ts.URL + "/good")
+	optimizelyClient, err := factory.Client(WithPollingConfigManagerRequester(requester, time.Minute, nil))
 	assert.NoError(t, err)
 	assert.NotNil(t, optimizelyClient.ConfigManager)
 	assert.NotNil(t, optimizelyClient.DecisionService)

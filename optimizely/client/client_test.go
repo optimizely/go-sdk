@@ -1441,8 +1441,7 @@ func TestGetAllFeatureVariablesWithError(t *testing.T) {
 		Key:          testVariableKey,
 		Type:         entities.String,
 	}
-	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
-	testVariation.FeatureEnabled = true
+	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
 		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
@@ -1546,17 +1545,17 @@ func (s *ClientTestSuiteAB) TestActivate() {
 		EventProcessor:  s.mockEventProcessor,
 	}
 
-	variationKey, err := testClient.Activate("test_exp_1", testUserContext)
-	variationKey1, err1 := testClient.Activate("test_exp_2", testUserContext)
-	s.NoError(err)
-	s.Equal(expectedVariation.Key, variationKey)
+	variationKey1, err1 := testClient.Activate("test_exp_1", testUserContext)
+	s.NoError(err1)
+	s.Equal(expectedVariation.Key, variationKey1)
+
+	variationKey2, err2 := testClient.Activate("test_exp_2", testUserContext)
+	s.Error(err2)
+	s.Equal("", variationKey2)
+
 	s.mockConfig.AssertExpectations(s.T())
 	s.mockDecisionService.AssertExpectations(s.T())
 	s.mockEventProcessor.AssertExpectations(s.T())
-
-	s.Error(err1)
-	s.Equal("", variationKey1)
-
 }
 
 func (s *ClientTestSuiteAB) TestActivatePanics() {
@@ -1722,8 +1721,9 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledWithDecisionError() {
 		ConfigManager:   s.mockConfigManager,
 		DecisionService: s.mockDecisionService,
 	}
-	result, _ := client.IsFeatureEnabled(testFeature.Key, testUserContext)
+	result, err := client.IsFeatureEnabled(testFeature.Key, testUserContext)
 	s.False(result)
+	s.NotNil(err)
 	s.mockConfig.AssertExpectations(s.T())
 	s.mockConfigManager.AssertExpectations(s.T())
 	s.mockDecisionService.AssertExpectations(s.T())
