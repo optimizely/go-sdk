@@ -14,46 +14,38 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+package mappers
 
 import (
-	"fmt"
+	"testing"
 
-	"github.com/optimizely/go-sdk/pkg/client"
+	datafileEntities "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
+
+	"github.com/stretchr/testify/assert"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
+func TestMapAttributesWithEmptyList(t *testing.T) {
 
-		client, err := optimizelyFactory.StaticClient()
+	attributeMap, attributeKeyToIDMap := MapAttributes(nil)
 
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
+	expectedAttributeMap := map[string]entities.Attribute{}
+	expectedAttributeKeyToIDMap := map[string]string{}
 
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
-
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
+	assert.Equal(t, attributeMap, expectedAttributeMap)
+	assert.Equal(t, attributeKeyToIDMap, expectedAttributeKeyToIDMap)
 }
+func TestMapAttributes(t *testing.T) {
 
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+	attrList := []datafileEntities.Attribute{{ID: "1", Key: "one"}, {ID: "2", Key: "two"},
+		{ID: "3", Key: "three"}, {ID: "2", Key: "four"}, {ID: "5", Key: "one"}}
+
+	attributeMap, attributeKeyToIDMap := MapAttributes(attrList)
+
+	expectedAttributeMap := map[string]entities.Attribute{"1": {"1", "one"},
+		"2": {"2", "two"}, "3": {"3", "three"}, "5": {"5", "one"}}
+	expectedAttributeKeyToIDMap := map[string]string{"one": "5", "three": "3", "two": "2"}
+
+	assert.Equal(t, attributeMap, expectedAttributeMap)
+	assert.Equal(t, attributeKeyToIDMap, expectedAttributeKeyToIDMap)
 }

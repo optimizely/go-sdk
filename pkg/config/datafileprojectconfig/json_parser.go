@@ -14,46 +14,26 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+// Package datafileprojectconfig //
+package datafileprojectconfig
 
 import (
-	"fmt"
+	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
 
-	"github.com/optimizely/go-sdk/pkg/client"
-	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
+	"github.com/json-iterator/go"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
-		client, err := optimizelyFactory.StaticClient()
+// Parse parses the raw json datafile
+func Parse(jsonDatafile []byte) (*entities.Datafile, error) {
 
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
+	datafile := &entities.Datafile{}
 
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
+	err := json.Unmarshal(jsonDatafile, &datafile)
+	if err != nil {
+		return nil, err
+	}
 
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+	return datafile, nil
 }

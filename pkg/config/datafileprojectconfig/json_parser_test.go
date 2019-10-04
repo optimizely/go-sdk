@@ -14,46 +14,61 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+package datafileprojectconfig
 
 import (
 	"fmt"
+	"io/ioutil"
+	"testing"
 
-	"github.com/optimizely/go-sdk/pkg/client"
-	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
+	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
+	"github.com/stretchr/testify/assert"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
+func TestParseDatafilePasses(t *testing.T) {
+	testFeatureKey := "feature_test_1"
+	testFeatureID := "feature_id_123"
+	datafileString := fmt.Sprintf(`{
+		"projectId": "1337",
+		"accountId": "1338",
+		"version": "4",
+		"featureFlags": [
+			{
+				"key": "%s",
+				"id" : "%s"
+			}
+		]
+	}`, testFeatureKey, testFeatureID)
 
-		client, err := optimizelyFactory.StaticClient()
+	rawDatafile := []byte(datafileString)
+	parsedDatafile, err := Parse(rawDatafile)
+	if err != nil {
+		assert.Fail(t, err.Error())
+	}
 
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
+	expectedDatafile := &entities.Datafile{
+		AccountID: "1338",
+		ProjectID: "1337",
+		Version:   "4",
+		FeatureFlags: []entities.FeatureFlag{
+			entities.FeatureFlag{
+				Key: testFeatureKey,
+				ID:  testFeatureID,
+			},
+		},
+	}
 
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
-
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
+	assert.Equal(t, expectedDatafile, parsedDatafile)
 }
 
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+func BenchmarkParseDatafilePasses(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		datafile, err := ioutil.ReadFile("test/100_entities.json")
+		if err != nil {
+			fmt.Println("error opening file:", err)
+		}
+		Parse(datafile)
+
+	}
+
 }
