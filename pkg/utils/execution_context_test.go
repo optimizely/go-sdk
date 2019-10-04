@@ -14,46 +14,33 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+// Package utils //
+package utils
 
 import (
-	"fmt"
+	"reflect"
+	"testing"
 
-	"github.com/optimizely/go-sdk/pkg/client"
-	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
+func TestNewCancelableExecutionCtx(t *testing.T) {
 
-		client, err := optimizelyFactory.StaticClient()
+	var exeCtx ExecutionCtx
+	exeCtx = NewCancelableExecutionCtx()
 
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
-
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
-
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
+	assert.True(t, reflect.TypeOf(exeCtx) == reflect.TypeOf(&CancelableExecutionCtx{}))
+	assert.NotNil(t, exeCtx.GetContext())
+	assert.NotNil(t, exeCtx.GetWaitSync())
 }
 
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+func TestTerminateAndWait(t *testing.T) {
+
+	exeCtx := &CancelableExecutionCtx{}
+	exeCtx.TerminateAndWait()
+	assert.Nil(t, exeCtx.CancelFunc)
+
+	exeCtx = NewCancelableExecutionCtx()
+	exeCtx.TerminateAndWait()
+	assert.NotNil(t, exeCtx.CancelFunc)
 }

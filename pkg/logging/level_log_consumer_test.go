@@ -14,46 +14,23 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+package logging
 
 import (
-	"fmt"
+	"testing"
 
-	"github.com/optimizely/go-sdk/pkg/client"
-	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
+func TestNewStdoutFilteredLevelLogConsumer(t *testing.T) {
+	newLogger := NewStdoutFilteredLevelLogConsumer(LogLevelInfo)
 
-		client, err := optimizelyFactory.StaticClient()
+	assert.Equal(t, newLogger.level, LogLevel(2))
+	assert.NotNil(t, newLogger.logger)
 
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
+	newLogger.SetLogLevel(3)
+	assert.Equal(t, newLogger.level, LogLevel(3))
 
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
-
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+	newLogger.Log(1, "this is hidden")
+	newLogger.Log(4, "this is visible")
 }

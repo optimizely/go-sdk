@@ -14,46 +14,36 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+// Package pkg //
+package pkg
 
 import (
-	"fmt"
-
-	"github.com/optimizely/go-sdk/pkg/client"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
+	"github.com/optimizely/go-sdk/pkg/notification"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
-
-		client, err := optimizelyFactory.StaticClient()
-
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
-
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
-
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
+// ProjectConfig contains the parsed project entities
+type ProjectConfig interface {
+	GetAccountID() string
+	GetAnonymizeIP() bool
+	GetAttributeID(id string) string // returns "" if there is no id
+	GetAttributeByKey(key string) (entities.Attribute, error)
+	GetAudienceByID(string) (entities.Audience, error)
+	GetAudienceMap() map[string]entities.Audience
+	GetBotFiltering() bool
+	GetEventByKey(string) (entities.Event, error)
+	GetExperimentByKey(string) (entities.Experiment, error)
+	GetFeatureByKey(string) (entities.Feature, error)
+	GetVariableByKey(featureKey string, variableKey string) (entities.Variable, error)
+	GetFeatureList() []entities.Feature
+	GetGroupByID(string) (entities.Group, error)
+	GetProjectID() string
+	GetRevision() string
 }
 
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+// ProjectConfigManager manages the config
+type ProjectConfigManager interface {
+	GetConfig() (ProjectConfig, error)
+	RemoveOnProjectConfigUpdate(id int) error
+	OnProjectConfigUpdate(callback func(notification.ProjectConfigUpdateNotification)) (int, error)
 }

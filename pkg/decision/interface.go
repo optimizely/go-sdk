@@ -14,46 +14,28 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+// Package decision //
+package decision
 
 import (
-	"fmt"
-
-	"github.com/optimizely/go-sdk/pkg/client"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
+	"github.com/optimizely/go-sdk/pkg/notification"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
-
-		client, err := optimizelyFactory.StaticClient()
-
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
-
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
-
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
+// Service interface is used to make a decision for a given feature or experiment
+type Service interface {
+	GetFeatureDecision(FeatureDecisionContext, entities.UserContext) (FeatureDecision, error)
+	GetExperimentDecision(ExperimentDecisionContext, entities.UserContext) (ExperimentDecision, error)
+	OnDecision(func(notification.DecisionNotification)) (int, error)
+	RemoveOnDecision(id int) error
 }
 
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+// ExperimentService can make a decision about an experiment
+type ExperimentService interface {
+	GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error)
+}
+
+// FeatureService can make a decision about a Feature Flag (can be feature test or rollout)
+type FeatureService interface {
+	GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error)
 }

@@ -14,46 +14,21 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+// Package mappers ...
+package mappers
 
 import (
-	"fmt"
-
-	"github.com/optimizely/go-sdk/pkg/client"
+	datafileEntities "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
+// MapEvents maps the raw datafile event entities to SDK Event entities
+func MapEvents(events []datafileEntities.Event) map[string]entities.Event {
+	eventMap := make(map[string]entities.Event)
+	for _, event := range events {
+		entityEvent := entities.Event{ID: event.ID, Key: event.Key, ExperimentIds: event.ExperimentIds}
+		eventMap[entityEvent.Key] = entityEvent
+	}
 
-		client, err := optimizelyFactory.StaticClient()
-
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
-
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
-
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+	return eventMap
 }

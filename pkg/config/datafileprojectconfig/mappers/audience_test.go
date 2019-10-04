@@ -14,46 +14,36 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+// Package mappers //
+package mappers
 
 import (
-	"fmt"
+	"testing"
 
-	"github.com/optimizely/go-sdk/pkg/client"
+	datafileEntities "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
+
+	"github.com/stretchr/testify/assert"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
+func TestMapAudiencesEmptyList(t *testing.T) {
 
-		client, err := optimizelyFactory.StaticClient()
+	audienceMap := MapAudiences(nil)
 
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
+	expectedAudienceMap := map[string]entities.Audience{}
 
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
+	assert.Equal(t, audienceMap, expectedAudienceMap)
 
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
 }
+func TestMapAudiences(t *testing.T) {
 
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+	audienceList := []datafileEntities.Audience{{ID: "1", Name: "one"}, {ID: "2", Name: "two"},
+		{ID: "3", Name: "three"}, {ID: "2", Name: "four"}, {ID: "5", Name: "one"}}
+
+	audienceMap := MapAudiences(audienceList)
+
+	expectedAudienceMap := map[string]entities.Audience{"1": {ID: "1", Name: "one"}, "2": {ID: "2", Name: "two"},
+		"3": {ID: "3", Name: "three"}, "5": {ID: "5", Name: "one"}}
+
+	assert.Equal(t, audienceMap, expectedAudienceMap)
 }

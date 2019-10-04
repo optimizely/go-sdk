@@ -14,46 +14,35 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+package mappers
 
 import (
-	"fmt"
+	"testing"
 
-	"github.com/optimizely/go-sdk/pkg/client"
+	datafileEntities "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
 )
 
-var isFeatureEnabledCmd = &cobra.Command{
-	Use:   "is_feature_enabled",
-	Short: "Is feature enabled?",
-	Long:  `Determines if a feature is enabled`,
-	Run: func(cmd *cobra.Command, args []string) {
-		optimizelyFactory := &client.OptimizelyFactory{
-			SDKKey: sdkKey,
-		}
+func TestMapEvents(t *testing.T) {
+	const testEventString = `{
+		"id": "some_id",
+		"key": "event1",
+		"experimentIds": ["11111", "11112"]
+	 }`
 
-		client, err := optimizelyFactory.StaticClient()
+	var rawEvent datafileEntities.Event
+	json.Unmarshal([]byte(testEventString), &rawEvent)
 
-		if err != nil {
-			fmt.Printf("Error instantiating client: %s\n", err)
-			return
-		}
+	rawEvents := []datafileEntities.Event{rawEvent}
+	eventsMap := MapEvents(rawEvents)
+	expectedEventMap := map[string]entities.Event{
+		"event1": entities.Event{
+			ID:            "some_id",
+			Key:           "event1",
+			ExperimentIds: []string{"11111", "11112"},
+		},
+	}
 
-		user := entities.UserContext{
-			ID:         userID,
-			Attributes: map[string]interface{}{},
-		}
-
-		enabled, _ := client.IsFeatureEnabled(featureKey, user)
-		fmt.Printf("Is feature \"%s\" enabled for \"%s\"? %t\n", featureKey, userID, enabled)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(isFeatureEnabledCmd)
-	isFeatureEnabledCmd.Flags().StringVarP(&userID, "userId", "u", "", "user id")
-	isFeatureEnabledCmd.MarkFlagRequired("userId")
-	isFeatureEnabledCmd.Flags().StringVarP(&featureKey, "featureKey", "f", "", "feature key to enable")
-	isFeatureEnabledCmd.MarkFlagRequired("featureKey")
+	assert.Equal(t, expectedEventMap, eventsMap)
 }
