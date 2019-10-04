@@ -35,6 +35,7 @@ type Experiment struct {
 	TrafficAllocation     []Range
 	GroupID               string
 	AudienceConditionTree *TreeNode
+	Whitelist             map[string]string
 }
 
 // Range represents bucketing range that the specify entityID falls into
