@@ -117,6 +117,7 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionNoDecisionsMade() {
 }
 
 func (s *CompositeExperimentTestSuite) TestGetDecisionReturnsError() {
+	// Assert that we continue to the next inner service when an inner service GetDecision returns an error
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
 	}
