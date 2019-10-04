@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/client"
@@ -173,6 +174,23 @@ func (c *ClientWrapper) InvokeAPI(request models.RequestParams) (*models.Respons
 			if err == nil {
 				responseParams.Result = value
 			}
+			responseParams.ListenerCalled = listenersCalled()
+			return &responseParams, err
+		}
+		break
+	case "get_enabled_features":
+		var params models.GetEnabledFeaturesParams
+		err := yaml.Unmarshal([]byte(request.Arguments), &params)
+		if err == nil {
+			enabledFeatures := ""
+			user := entities.UserContext{
+				ID:         params.UserID,
+				Attributes: params.Attributes,
+			}
+			if values, err := c.Client.GetEnabledFeatures(user); err == nil {
+				enabledFeatures = strings.Join(values, ",")
+			}
+			responseParams.Result = enabledFeatures
 			responseParams.ListenerCalled = listenersCalled()
 			return &responseParams, err
 		}

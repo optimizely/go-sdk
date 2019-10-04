@@ -45,8 +45,10 @@ func FeatureContext(s *godog.Suite) {
 	s.Step(`^the result should be (?:double )?(\d+)\.(\d+)$`, context.TheResultShouldBeFloat)
 	s.Step(`^the result should be boolean "([^"]*)"$`, context.TheResultShouldBeBoolean)
 	s.Step(`^the result should be \'false\'$`, context.TheResultShouldBeFalse)
+	s.Step(`^the result should match list "([^"]*)"$`, context.TheResultShouldMatchList)
 	s.Step(`^in the response, "([^"]*)" should be "([^"]*)"$`, context.InTheResponseKeyShouldBeObject)
 	s.Step(`^in the response, "([^"]*)" should match$`, context.InTheResponseShouldMatch)
+	s.Step(`^in the response, "([^"]*)" should have each one of these$`, context.InTheResponseShouldHaveEachOneOfThese)
 	s.Step(`^there are no dispatched events$`, context.ThereAreNoDispatchedEvents)
 	s.Step(`^dispatched events payloads include$`, context.DispatchedEventsPayloadsInclude)
 	s.BeforeScenario(func(interface{}) {

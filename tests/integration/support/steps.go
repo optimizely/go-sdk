@@ -124,6 +124,14 @@ func (c *ScenarioCtx) TheResultShouldBeFalse() error {
 	return fmt.Errorf("incorrect result")
 }
 
+// TheResultShouldMatchList represents a step in the feature file
+func (c *ScenarioCtx) TheResultShouldMatchList(list string) error {
+	if c.apiResponse.Result == list {
+		return nil
+	}
+	return fmt.Errorf("incorrect result")
+}
+
 // InTheResponseKeyShouldBeObject represents a step in the feature file
 func (c *ScenarioCtx) InTheResponseKeyShouldBeObject(argumentType, value string) error {
 	switch argumentType {
@@ -140,6 +148,25 @@ func (c *ScenarioCtx) InTheResponseKeyShouldBeObject(argumentType, value string)
 
 // InTheResponseShouldMatch represents a step in the feature file
 func (c *ScenarioCtx) InTheResponseShouldMatch(argumentType string, value *gherkin.DocString) error {
+	switch argumentType {
+	case "listener_called":
+		var requestListenersCalled []models.DecisionListener
+
+		if err := yaml.Unmarshal([]byte(value.Content), &requestListenersCalled); err != nil {
+			break
+		}
+		if Check(requestListenersCalled, c.apiResponse.ListenerCalled) {
+			return nil
+		}
+		break
+	default:
+		break
+	}
+	return fmt.Errorf("response for %s not equal", argumentType)
+}
+
+// InTheResponseShouldHaveEachOneOfThese represents a step in the feature file
+func (c *ScenarioCtx) InTheResponseShouldHaveEachOneOfThese(argumentType string, value *gherkin.DocString) error {
 	switch argumentType {
 	case "listener_called":
 		var requestListenersCalled []models.DecisionListener
