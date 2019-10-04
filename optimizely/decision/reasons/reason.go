@@ -37,4 +37,10 @@ const (
 	NotBucketedIntoVariation Reason = "Not bucketed into a variation"
 	// NotInGroup - the user is not bucketed into the mutex group
 	NotInGroup Reason = "Not bucketed into any experiment in mutex group"
+	// NoWhitelistVariationAssignment - there is no variation assignment for the given user and experiment
+	NoWhitelistVariationAssignment Reason = "No whitelist variation assignment"
+	// InvalidWhitelistVariationAssignment - A variation assignment was found for the given user and experiment, but no variation with that key exists in the given experiment
+	InvalidWhitelistVariationAssignment Reason = "Invalid whitelist variation assignment"
+	// WhitelistVariationAssignmentFound - a valid variation assignment was found for the given user and experiment
+	WhitelistVariationAssignmentFound Reason = "Whitelist variation assignment found"
 )

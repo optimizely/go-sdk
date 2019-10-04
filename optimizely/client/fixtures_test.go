@@ -18,6 +18,8 @@
 package client
 
 import (
+	"fmt"
+
 	"github.com/optimizely/go-sdk/optimizely"
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
@@ -76,6 +78,28 @@ func (c *MockProjectConfig) GetBotFiltering() bool {
 	return false
 }
 
+type MockProjectConfigManager struct {
+	projectConfig optimizely.ProjectConfig
+	mock.Mock
+}
+
+func (p *MockProjectConfigManager) GetConfig() (optimizely.ProjectConfig, error) {
+	if p.projectConfig != nil {
+		return p.projectConfig, nil
+	}
+
+	args := p.Called()
+	return args.Get(0).(optimizely.ProjectConfig), args.Error(1)
+}
+
+func (p *MockProjectConfigManager) OnProjectConfigUpdate(callback func(notification.ProjectConfigUpdateNotification)) (int, error) {
+	return 0, nil
+}
+
+func (p *MockProjectConfigManager) RemoveOnProjectConfigUpdate(id int) error {
+	return nil
+}
+
 type MockDecisionService struct {
 	decision.Service
 	mock.Mock
@@ -128,7 +152,7 @@ func (m *PanickingDecisionService) RemoveOnDecision(id int) error {
 }
 
 // Helper methods for creating test entities
-func getTestExperiment(experimentKey string) entities.Experiment {
+func makeTestExperiment(experimentKey string) entities.Experiment {
 	return entities.Experiment{
 		Key: experimentKey,
 		Variations: map[string]entities.Variation{
@@ -136,4 +160,34 @@ func getTestExperiment(experimentKey string) entities.Experiment {
 			"v2": entities.Variation{Key: "v2"},
 		},
 	}
+}
+
+func makeTestVariation(variationKey string, featureEnabled bool) entities.Variation {
+	return entities.Variation{
+		ID:             fmt.Sprintf("test_variation_%s", variationKey),
+		Key:            variationKey,
+		FeatureEnabled: featureEnabled,
+	}
+}
+
+func makeTestExperimentWithVariations(experimentKey string, variations []entities.Variation) entities.Experiment {
+	variationsMap := make(map[string]entities.Variation)
+	for _, variation := range variations {
+		variationsMap[variation.ID] = variation
+	}
+	return entities.Experiment{
+		Key:        experimentKey,
+		ID:         fmt.Sprintf("test_experiment_%s", experimentKey),
+		Variations: variationsMap,
+	}
+}
+
+func makeTestFeatureWithExperiment(featureKey string, experiment entities.Experiment) entities.Feature {
+	testFeature := entities.Feature{
+		ID:                 fmt.Sprintf("test_feature_%s", featureKey),
+		Key:                featureKey,
+		FeatureExperiments: []entities.Experiment{experiment},
+	}
+
+	return testFeature
 }

@@ -18,6 +18,7 @@ package config
 
 import (
 	"testing"
+	"time"
 
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/optimizely/notification"
@@ -48,13 +49,15 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, Requester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager.Start(exeCtx)
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, actual)
 	assert.Equal(t, projectConfig, actual)
+	exeCtx.TerminateAndWait() // just sending signal and improving coverage
 }
 
 func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
@@ -66,7 +69,8 @@ func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, Requester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager.Start(exeCtx)
 	mockRequester.AssertExpectations(t)
 
 	_, err := configManager.GetConfig()
@@ -83,7 +87,8 @@ func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, Requester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager.Start(exeCtx)
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()
@@ -108,7 +113,8 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, Requester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager.Start(exeCtx)
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()
@@ -132,7 +138,8 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(exeCtx, sdkKey, Requester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager.Start(exeCtx)
 
 	var numberOfCalls = 0
 	callback := func(notification notification.ProjectConfigUpdateNotification) {
@@ -155,4 +162,42 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 
 	err = configManager.RemoveOnProjectConfigUpdate(id)
 	assert.Nil(t, err)
+
+	err = configManager.RemoveOnProjectConfigUpdate(id)
+	assert.Nil(t, err)
+}
+
+func TestDefaultRequester(t *testing.T) {
+
+	sdkKey := "test_sdk_key"
+	DefaultRequester(sdkKey)
+	exeCtx := utils.NewCancelableExecutionCtx()
+	configManager := NewPollingProjectConfigManager(sdkKey, DefaultRequester(sdkKey))
+	configManager.Start(exeCtx)
+
+	requester := configManager.requester
+	assert.NotNil(t, requester)
+	assert.Equal(t, requester.String(), "{url: https://cdn.optimizely.com/datafiles/test_sdk_key.json, timeout: 5s, retries: 1}")
+}
+
+func TestPollingInterval(t *testing.T) {
+
+	sdkKey := "test_sdk_key"
+	DefaultRequester(sdkKey)
+	exeCtx := utils.NewCancelableExecutionCtx()
+	configManager := NewPollingProjectConfigManager(sdkKey, PollingInterval(5*time.Second))
+	configManager.Start(exeCtx)
+
+	assert.Equal(t, configManager.pollingInterval, 5*time.Second)
+}
+
+func TestInitialDatafile(t *testing.T) {
+
+	sdkKey := "test_sdk_key"
+	DefaultRequester(sdkKey)
+	exeCtx := utils.NewCancelableExecutionCtx()
+	configManager := NewPollingProjectConfigManager(sdkKey, InitialDatafile([]byte("test")))
+	configManager.Start(exeCtx)
+
+	assert.Equal(t, configManager.initDatafile, []byte("test"))
 }

@@ -23,6 +23,7 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/config"
 	"github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/optimizely/event"
+	"github.com/optimizely/go-sdk/optimizely/utils"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -61,7 +62,7 @@ func TestClientWithProjectConfigManagerInOptions(t *testing.T) {
 	projectConfig := datafileprojectconfig.DatafileProjectConfig{}
 	configManager := config.NewStaticProjectConfigManager(projectConfig)
 
-	optimizelyClient, err := factory.Client(ConfigManager(configManager))
+	optimizelyClient, err := factory.Client(WithConfigManager(configManager))
 	assert.NoError(t, err)
 	assert.NotNil(t, optimizelyClient.ConfigManager)
 	assert.NotNil(t, optimizelyClient.DecisionService)
@@ -80,8 +81,29 @@ func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 		EventDispatcher: &MockDispatcher{},
 	}
 
-	optimizelyClient, err := factory.Client(ConfigManager(configManager), DecisionService(decisionService), EventProcessor(processor))
+	optimizelyClient, err := factory.Client(WithConfigManager(configManager), WithDecisionService(decisionService), WithEventProcessor(processor))
 	assert.NoError(t, err)
 	assert.Equal(t, decisionService, optimizelyClient.DecisionService)
 	assert.Equal(t, processor, optimizelyClient.EventProcessor)
+}
+
+func TestClientWithCustomCtx(t *testing.T) {
+	factory := OptimizelyFactory{}
+	testExecutionCtx := utils.NewCancelableExecutionCtx()
+	mockConfigManager := new(MockProjectConfigManager)
+	client, err := factory.Client(
+		WithConfigManager(mockConfigManager),
+		WithExecutionContext(testExecutionCtx),
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, client.executionCtx, testExecutionCtx)
+}
+
+func TestStaticClient(t *testing.T) {
+	factory := OptimizelyFactory{Datafile: []byte(`{"revision": "42"}`)}
+	optlyClient, err := factory.StaticClient()
+	assert.NoError(t, err)
+
+	parsedConfig, _ := optlyClient.ConfigManager.GetConfig()
+	assert.Equal(t, "42", parsedConfig.GetRevision())
 }

@@ -14,4 +14,36 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package mappers //
 package mappers
+
+import (
+	"testing"
+
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
+	"github.com/optimizely/go-sdk/optimizely/entities"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestMapAudiencesEmptyList(t *testing.T) {
+
+	audienceMap := MapAudiences(nil)
+
+	expectedAudienceMap := map[string]entities.Audience{}
+
+	assert.Equal(t, audienceMap, expectedAudienceMap)
+
+}
+func TestMapAudiences(t *testing.T) {
+
+	audienceList := []datafileEntities.Audience{{ID: "1", Name: "one"}, {ID: "2", Name: "two"},
+		{ID: "3", Name: "three"}, {ID: "2", Name: "four"}, {ID: "5", Name: "one"}}
+
+	audienceMap := MapAudiences(audienceList)
+
+	expectedAudienceMap := map[string]entities.Audience{"1": {ID: "1", Name: "one"}, "2": {ID: "2", Name: "two"},
+		"3": {ID: "3", Name: "three"}, "5": {ID: "5", Name: "one"}}
+
+	assert.Equal(t, audienceMap, expectedAudienceMap)
+}

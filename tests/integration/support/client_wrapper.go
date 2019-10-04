@@ -14,7 +14,6 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/decision"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/optimizely/go-sdk/optimizely/event"
-	"github.com/optimizely/go-sdk/optimizely/utils"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 	"github.com/optimizely/go-sdk/tests/integration/optlyplugins"
 	"gopkg.in/yaml.v3"
@@ -45,8 +44,7 @@ func NewWrapper(datafileName string) ClientWrapper {
 		log.Fatal(err)
 	}
 
-	executionCtx := utils.NewCancelableExecutionCtx()
-	eventProcessor := event.NewEventProcessor(executionCtx, event.BatchSize(models.EventProcessorDefaultBatchSize), event.QueueSize(models.EventProcessorDefaultQueueSize), event.FlushInterval(models.EventProcessorDefaultFlushInterval))
+	eventProcessor := event.NewEventProcessor(event.BatchSize(models.EventProcessorDefaultBatchSize), event.QueueSize(models.EventProcessorDefaultQueueSize), event.FlushInterval(models.EventProcessorDefaultFlushInterval))
 
 	optimizelyFactory := &client.OptimizelyFactory{
 		Datafile: datafile,
@@ -56,9 +54,9 @@ func NewWrapper(datafileName string) ClientWrapper {
 	eventProcessor.EventDispatcher = &optlyplugins.ProxyEventDispatcher{}
 
 	client, err := optimizelyFactory.Client(
-		client.ConfigManager(configManager),
-		client.DecisionService(decisionService),
-		client.EventProcessor(eventProcessor))
+		client.WithConfigManager(configManager),
+		client.WithDecisionService(decisionService),
+		client.WithEventProcessor(eventProcessor))
 	if err != nil {
 		log.Fatal(err)
 	}

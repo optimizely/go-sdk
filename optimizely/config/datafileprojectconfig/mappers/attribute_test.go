@@ -14,47 +14,38 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package event //
-package event
+package mappers
 
 import (
-	"context"
-	"github.com/optimizely/go-sdk/optimizely/entities"
-	"github.com/stretchr/testify/assert"
 	"testing"
-	"time"
+
+	datafileEntities "github.com/optimizely/go-sdk/optimizely/config/datafileprojectconfig/entities"
+	"github.com/optimizely/go-sdk/optimizely/entities"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
-	ctx := context.TODO()
-	q := NewQueueEventDispatcher(ctx)
+func TestMapAttributesWithEmptyList(t *testing.T) {
 
-	if qed, ok := q.(*QueueEventDispatcher); ok {
-		qed.Dispatcher = &MockDispatcher{Events: NewInMemoryQueue(100)}
-	}
+	attributeMap, attributeKeyToIDMap := MapAttributes(nil)
 
-	eventTags := map[string]interface{}{"revenue": 55.0, "value": 25.1}
-	config := TestConfig{}
+	expectedAttributeMap := map[string]entities.Attribute{}
+	expectedAttributeKeyToIDMap := map[string]string{}
 
-	conversionUserEvent := CreateConversionUserEvent(config, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext, eventTags)
+	assert.Equal(t, attributeMap, expectedAttributeMap)
+	assert.Equal(t, attributeKeyToIDMap, expectedAttributeKeyToIDMap)
+}
+func TestMapAttributes(t *testing.T) {
 
-	batch := createBatchEvent(conversionUserEvent, createVisitorFromUserEvent(conversionUserEvent))
+	attrList := []datafileEntities.Attribute{{ID: "1", Key: "one"}, {ID: "2", Key: "two"},
+		{ID: "3", Key: "three"}, {ID: "2", Key: "four"}, {ID: "5", Key: "one"}}
 
-	logEvent := createLogEvent(batch)
+	attributeMap, attributeKeyToIDMap := MapAttributes(attrList)
 
-	qd, _ := q.(*QueueEventDispatcher)
+	expectedAttributeMap := map[string]entities.Attribute{"1": {"1", "one"},
+		"2": {"2", "two"}, "3": {"3", "three"}, "5": {"5", "one"}}
+	expectedAttributeKeyToIDMap := map[string]string{"one": "5", "three": "3", "two": "2"}
 
-	success, _ := qd.DispatchEvent(logEvent)
-
-	assert.True(t, success)
-
-	// its been queued
-	assert.Equal(t,1, qd.eventQueue.Size())
-
-	// give the queue a chance to run
-	time.Sleep(1 * time.Second)
-
-	// check the queue
-	assert.Equal(t,0, qd.eventQueue.Size())
-
+	assert.Equal(t, attributeMap, expectedAttributeMap)
+	assert.Equal(t, attributeKeyToIDMap, expectedAttributeKeyToIDMap)
 }
