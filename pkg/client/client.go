@@ -55,7 +55,7 @@ func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.U
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("pkg SDK is panicking with the error:")
+			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
 			logger.Error(errorMessage, err)
 			logger.Debug(string(debug.Stack()))
 		}
@@ -90,7 +90,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("pkg SDK is panicking with the error:")
+			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
 			logger.Error(errorMessage, err)
 			logger.Debug(string(debug.Stack()))
 		}
@@ -135,7 +135,7 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("pkg SDK is panicking with the error:")
+			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
 			logger.Error(errorMessage, err)
 			logger.Debug(string(debug.Stack()))
 		}
@@ -274,7 +274,7 @@ func (o *OptimizelyClient) GetVariation(experimentKey string, userContext entiti
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("pkg SDK is panicking with the error:")
+			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
 			logger.Error(errorMessage, err)
 			logger.Debug(string(debug.Stack()))
 		}
@@ -305,7 +305,7 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("pkg SDK is panicking with the error:")
+			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
 			logger.Error(errorMessage, err)
 			logger.Debug(string(debug.Stack()))
 		}
@@ -320,7 +320,7 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 	configEvent, e := projectConfig.GetEventByKey(eventKey)
 
 	if e != nil {
-		errorMessage := fmt.Sprintf(`pkg SDK track: error getting event with key "%s"`, eventKey)
+		errorMessage := fmt.Sprintf(`optimizely SDK track: error getting event with key "%s"`, eventKey)
 		logger.Error(errorMessage, e)
 		return e
 	}
@@ -342,7 +342,7 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext ent
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("pkg SDK is panicking with the error:")
+			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
 			logger.Error(errorMessage, err)
 			logger.Debug(string(debug.Stack()))
 		}
