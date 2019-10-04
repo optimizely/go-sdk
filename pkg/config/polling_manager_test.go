@@ -177,7 +177,7 @@ func TestDefaultRequester(t *testing.T) {
 
 	requester := configManager.requester
 	assert.NotNil(t, requester)
-	assert.Equal(t, requester.String(), "{url: https://cdn.pkg.com/datafiles/test_sdk_key.json, timeout: 5s, retries: 1}")
+	assert.Equal(t, requester.String(), "{url: https://cdn.optimizely.com/datafiles/test_sdk_key.json, timeout: 5s, retries: 1}")
 }
 
 func TestPollingInterval(t *testing.T) {
