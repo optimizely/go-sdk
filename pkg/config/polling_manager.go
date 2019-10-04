@@ -34,7 +34,7 @@ import (
 const DefaultPollingInterval = 5 * time.Minute // default to 5 minutes for polling
 
 // DatafileURLTemplate is used to construct the endpoint for retrieving the datafile from the CDN
-const DatafileURLTemplate = "https://cdn.pkg.com/datafiles/%s.json"
+const DatafileURLTemplate = "https://cdn.optimizely.com/datafiles/%s.json"
 
 var cmLogger = logging.GetLogger("PollingConfigManager")
 

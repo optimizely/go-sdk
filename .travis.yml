@@ -23,7 +23,7 @@ jobs:
       language: minimal
       install: skip
       before_script:
-        - mkdir $HOME/travisci-tools && pushd $HOME/travisci-tools && git init && git pull https://$CI_USER_TOKEN@github.com/pkg/travisci-tools.git && popd
+        - mkdir $HOME/travisci-tools && pushd $HOME/travisci-tools && git init && git pull https://$CI_USER_TOKEN@github.com/optimizely/travisci-tools.git && popd
       script:
         # TODO: Remove sohail/gosdkonly branch specification here, after
         # we can run FSC tests on master: https://optimizely.atlassian.net/browse/OASIS-5425
