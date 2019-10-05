@@ -18,11 +18,9 @@ jobs:
         - $GOPATH/bin/golangci-lint run --out-format=tab --tests=false optimizely/...
     - stage: 'Integration tests'
       env: GIMME_GO_VERSION=1.12.x
-      install:
-        - eval "$(gimme)"
-        - source scripts/get-fsc-tests.sh
       script:
-        - go test -tags=integration
+        - source scripts/get-fsc-tests.sh
+        - go test ./tests/integration/
       after_success: travis_terminate 0
     - &test
       stage: 'Unit test'

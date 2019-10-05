@@ -10,6 +10,7 @@ import (
 	"github.com/optimizely/go-sdk/optimizely/event"
 
 	"github.com/DATA-DOG/godog/gherkin"
+	"github.com/facebookarchive/subset"
 	"github.com/optimizely/go-sdk/optimizely/entities"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 	"github.com/optimizely/go-sdk/tests/integration/optlyplugins"
@@ -18,8 +19,8 @@ import (
 
 // ScenarioCtx holds both apiOptions and apiResponse for a scenario
 type ScenarioCtx struct {
-	apiOptions  models.RequestParams
-	apiResponse models.ResponseParams
+	apiOptions  models.APIOptions
+	apiResponse models.APIResponse
 	wrapper     ClientWrapper
 }
 
@@ -155,7 +156,7 @@ func (c *ScenarioCtx) InTheResponseShouldMatch(argumentType string, value *gherk
 		if err := yaml.Unmarshal([]byte(value.Content), &requestListenersCalled); err != nil {
 			break
 		}
-		if Check(requestListenersCalled, c.apiResponse.ListenerCalled) {
+		if subset.Check(requestListenersCalled, c.apiResponse.ListenerCalled) {
 			return nil
 		}
 		break
@@ -174,7 +175,7 @@ func (c *ScenarioCtx) InTheResponseShouldHaveEachOneOfThese(argumentType string,
 		if err := yaml.Unmarshal([]byte(value.Content), &requestListenersCalled); err != nil {
 			break
 		}
-		if Check(requestListenersCalled, c.apiResponse.ListenerCalled) {
+		if subset.Check(requestListenersCalled, c.apiResponse.ListenerCalled) {
 			return nil
 		}
 		break
@@ -199,7 +200,7 @@ func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) 
 		return fmt.Errorf("Invalid request for dispatched Events")
 	}
 	dispatchedEvents := c.wrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
-	if Check(requestedBatchEvents, dispatchedEvents) {
+	if subset.Check(requestedBatchEvents, dispatchedEvents) {
 		return nil
 	}
 	return fmt.Errorf("DispatchedEvents not equal")
@@ -207,8 +208,8 @@ func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) 
 
 // Reset clears all data before each scenario
 func (c *ScenarioCtx) Reset() {
-	c.apiOptions = models.RequestParams{}
-	c.apiResponse = models.ResponseParams{}
+	c.apiOptions = models.APIOptions{}
+	c.apiResponse = models.APIResponse{}
 	c.wrapper = ClientWrapper{}
 }
 

@@ -71,10 +71,10 @@ func NewWrapper(datafileName string) ClientWrapper {
 }
 
 // InvokeAPI processes request with arguments
-func (c *ClientWrapper) InvokeAPI(request models.RequestParams) (*models.ResponseParams, error) {
+func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (*models.APIResponse, error) {
 
 	listenersCalled := c.DecisionService.(*optlyplugins.TestCompositeService).AddListener(request)
-	responseParams := models.ResponseParams{}
+	responseParams := models.APIResponse{}
 
 	switch request.APIName {
 	case "is_feature_enabled":

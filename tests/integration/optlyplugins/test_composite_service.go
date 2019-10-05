@@ -12,7 +12,7 @@ type TestCompositeService struct {
 }
 
 // AddListener - Adds Notification Listeners
-func (c *TestCompositeService) AddListener(params models.RequestParams) (getListenersCalled func() []models.DecisionListener) {
+func (c *TestCompositeService) AddListener(params models.APIOptions) (getListenersCalled func() []models.DecisionListener) {
 
 	var listenersCalled []models.DecisionListener
 	getListenersCalled = func() []models.DecisionListener {
