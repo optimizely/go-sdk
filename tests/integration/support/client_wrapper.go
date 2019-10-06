@@ -9,12 +9,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/optimizely/go-sdk/optimizely"
-	"github.com/optimizely/go-sdk/optimizely/client"
-	"github.com/optimizely/go-sdk/optimizely/config"
-	"github.com/optimizely/go-sdk/optimizely/decision"
-	"github.com/optimizely/go-sdk/optimizely/entities"
-	"github.com/optimizely/go-sdk/optimizely/event"
+	"github.com/optimizely/go-sdk/pkg"
+	"github.com/optimizely/go-sdk/pkg/client"
+	"github.com/optimizely/go-sdk/pkg/config"
+	"github.com/optimizely/go-sdk/pkg/decision"
+	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 	"github.com/optimizely/go-sdk/tests/integration/optlyplugins"
 	"gopkg.in/yaml.v3"
@@ -24,7 +24,7 @@ import (
 type ClientWrapper struct {
 	Client          *client.OptimizelyClient
 	DecisionService decision.Service
-	Config          optimizely.ProjectConfig
+	Config          pkg.ProjectConfig
 	EventDispatcher event.Dispatcher
 }
 

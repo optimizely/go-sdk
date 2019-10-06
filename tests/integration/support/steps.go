@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/optimizely/go-sdk/optimizely/event"
+	"github.com/optimizely/go-sdk/pkg/event"
 
 	"github.com/DATA-DOG/godog/gherkin"
 	"github.com/facebookarchive/subset"
-	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 	"github.com/optimizely/go-sdk/tests/integration/optlyplugins"
 	"gopkg.in/yaml.v3"

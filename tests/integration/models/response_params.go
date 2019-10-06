@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/optimizely/go-sdk/optimizely/entities"
+	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
 // APIResponse represents result for a scenario

@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/optimizely/go-sdk/optimizely/notification"
+	"github.com/optimizely/go-sdk/pkg/notification"
 )
 
 // DecisionListener represents a decision notification

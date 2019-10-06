@@ -15,7 +15,7 @@ jobs:
       before_script:
         - curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.19.0
       script:
-        - $GOPATH/bin/golangci-lint run --out-format=tab --tests=false optimizely/...
+        - $GOPATH/bin/golangci-lint run --out-format=tab --tests=false pkg/...
     - stage: 'Integration tests'
       env: GIMME_GO_VERSION=1.12.x
       script:
@@ -32,7 +32,7 @@ jobs:
       env: GIMME_GO_VERSION=1.8.x
       before_script:
         # GO module was not introduced earlier. need symlink to search in GOPATH
-        - mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely optimizely && popd
+        - mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely pkg && popd
       script:
         # Need to download packages explicitly
         - go get -v -d ./...

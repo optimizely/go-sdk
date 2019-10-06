@@ -3,7 +3,7 @@ package optlyplugins
 import (
 	"time"
 
-	"github.com/optimizely/go-sdk/optimizely/event"
+	"github.com/optimizely/go-sdk/pkg/event"
 )
 
 // EventReceiver returns dispatched events

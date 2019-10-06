@@ -1,8 +1,8 @@
 package optlyplugins
 
 import (
-	"github.com/optimizely/go-sdk/optimizely/decision"
-	"github.com/optimizely/go-sdk/optimizely/notification"
+	"github.com/optimizely/go-sdk/pkg/decision"
+	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 )
 
