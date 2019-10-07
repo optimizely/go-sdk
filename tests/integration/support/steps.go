@@ -26,7 +26,7 @@ type ScenarioCtx struct {
 
 // TheDatafileIs represents a step in the feature file
 func (c *ScenarioCtx) TheDatafileIs(datafileName string) error {
-	c.apiOptions.DatafileName = datafileName
+	c.wrapper = NewWrapper(datafileName)
 	return nil
 }
 
@@ -41,10 +41,6 @@ func (c *ScenarioCtx) ListenerIsAdded(numberOfListeners int, ListenerName string
 
 // IsCalledWithArguments represents a step in the feature file
 func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.DocString) error {
-	// Check if its a new scenario
-	if c.wrapper == (ClientWrapper{}) {
-		c.wrapper = NewWrapper(c.apiOptions.DatafileName)
-	}
 	c.apiOptions.APIName = apiName
 	c.apiOptions.Arguments = arguments.Content
 	result, err := c.wrapper.InvokeAPI(c.apiOptions)
