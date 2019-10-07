@@ -100,7 +100,7 @@ func (c DatafileProjectConfig) GetVariableByKey(featureKey, variableKey string) 
 	var err = fmt.Errorf(`variable with key "%s" not found`, featureKey)
 	if feature, ok := c.featureMap[featureKey]; ok {
 
-		if v, ok := feature.VariablesMap[variableKey]; ok {
+		if v, ok := feature.VariableMap[variableKey]; ok {
 			variable = v
 			err = nil
 		}

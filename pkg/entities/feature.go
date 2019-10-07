@@ -23,7 +23,7 @@ type Feature struct {
 	Key                string
 	FeatureExperiments []Experiment
 	Rollout            Rollout
-	VariablesMap       map[string]Variable
+	VariableMap        map[string]Variable
 }
 
 // Rollout represents a feature rollout

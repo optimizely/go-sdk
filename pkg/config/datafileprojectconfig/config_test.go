@@ -157,10 +157,10 @@ func TestGetVariableByKey(t *testing.T) {
 		Key: variableKey,
 	}
 
-	variablesMap := map[string]entities.Variable{variable.Key: variable}
+	variableMap := map[string]entities.Variable{variable.Key: variable}
 
 	feature := entities.Feature{
-		VariablesMap: variablesMap,
+		VariableMap: variableMap,
 	}
 
 	featureMap := make(map[string]entities.Feature)

@@ -62,7 +62,7 @@ func TestMapFeatures(t *testing.T) {
 			Key:                "test_feature_21111",
 			Rollout:            rollout,
 			FeatureExperiments: []entities.Experiment{experiment31111, experiment31112},
-			VariablesMap:       map[string]entities.Variable{variable.Key: variable},
+			VariableMap:        map[string]entities.Variable{variable.Key: variable},
 		},
 	}
 
