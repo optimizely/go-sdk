@@ -1400,8 +1400,7 @@ func TestGetAllFeatureVariables(t *testing.T) {
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
-	testFeature.Variables = make([]entities.Variable, 1)
-	testFeature.Variables[0] = testVariable
+	testFeature.VariablesMap = map[string]entities.Variable{testVariable.Key: testVariable}
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
 	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
@@ -1447,8 +1446,7 @@ func TestGetAllFeatureVariablesWithError(t *testing.T) {
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
-	testFeature.Variables = make([]entities.Variable, 1)
-	testFeature.Variables[0] = testVariable
+	testFeature.VariablesMap = map[string]entities.Variable{testVariable.Key: testVariable}
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
 	mockConfigManager := new(MockProjectConfigManager)
 	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
