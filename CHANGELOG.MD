@@ -6,7 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
- - None
+
+### Breaking Changes
+- Refactored EventProcessor and ConfigManager components to no longer require an ExecutionContext be passed in during construction. It will be injected into them by the client factory. [#130](https://github.com/optimizely/go-sdk/pull/130)
+- Moved the entire `optimizely` package from `github.com/optimizely/go-sdk/optimizely` to `github.com/optimizely/go-sdk/pkg` to better follow convention and best practices. [#135](https://github.com/optimizely/go-sdk/pull/135)
 
 ## [1.0.0-beta2] - October 2nd, 2019
 
