@@ -18,13 +18,16 @@
 package event
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/pkg/notification"
+	"github.com/optimizely/go-sdk/pkg/registry"
+	"github.com/optimizely/go-sdk/pkg/utils"
 	"sync"
 	"time"
-
-	"github.com/optimizely/go-sdk/pkg/utils"
-
-	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 // Processor processes events
@@ -34,6 +37,7 @@ type Processor interface {
 
 // QueueingEventProcessor is used out of the box by the SDK
 type QueueingEventProcessor struct {
+	sdkKey 			string
 	MaxQueueSize    int           // max size of the queue before flush
 	FlushInterval   time.Duration // in milliseconds
 	BatchSize       int
@@ -89,6 +93,13 @@ func PQ(q Queue) QPConfigOption {
 func PDispatcher(d Dispatcher) QPConfigOption {
 	return func(qp *QueueingEventProcessor) {
 		qp.EventDispatcher = d
+	}
+}
+
+// PDispatcher sets the Processor Dispatcher as a config option to be passed into the NewProcessor method
+func SDKKey(sdkKey string) QPConfigOption {
+	return func(qp *QueueingEventProcessor) {
+		qp.sdkKey = sdkKey
 	}
 }
 
@@ -210,7 +221,7 @@ func (p *QueueingEventProcessor) FlushEvents() {
 
 	for p.EventsCount() > 0 {
 		if failedToSend {
-			pLogger.Error("last Event Batch failed to send; retry on next flush", errors.New("dispatcher failed"))
+			pLogger.Error("last Event Batch failed to send; retry on next flush", errors.New("Dispatcher failed"))
 			break
 		}
 		events := p.GetEvents(p.BatchSize)
@@ -242,7 +253,27 @@ func (p *QueueingEventProcessor) FlushEvents() {
 		}
 		if batchEventCount > 0 {
 			// TODO: figure out what to do with the error
-			if success, _ := p.EventDispatcher.DispatchEvent(createLogEvent(batchEvent)); success {
+			logEvent := createLogEvent(batchEvent)
+			// we have to marshal the log event in order to send.  maybe we should just pass marshaled data to dispatch
+			{
+				b, err := json.Marshal(logEvent)
+				if err != nil {
+					pLogger.Error("Error json marshalling event", err)
+					return
+				}
+
+				notificationCenter := registry.GetNotificationCenter(p.sdkKey)
+				if notificationCenter == nil {
+					pLogger.Error("Problem with sending notification",
+						errors.New("No notification center for sdk key"))
+					return
+				}
+
+				notificationCenter.Send(notification.LogEvent, bytes.NewBuffer(b))
+
+
+			}
+			if success, _ := p.EventDispatcher.DispatchEvent(logEvent); success {
 				pLogger.Debug("Dispatched event successfully")
 				p.Remove(batchEventCount)
 				batchEventCount = 0
@@ -254,4 +285,39 @@ func (p *QueueingEventProcessor) FlushEvents() {
 		}
 	}
 	p.Mux.Unlock()
+}
+
+// OnEventDispatch registers a handler for LogEvent notifications
+func (p *QueueingEventProcessor) OnEventDispatch(callback func(eventNotification *bytes.Buffer)) (int, error) {
+	notificationCenter := registry.GetNotificationCenter(p.sdkKey)
+	if notificationCenter == nil {
+		return 0, errors.New("No notification center for sdk key")
+	}
+
+	handler := func(payload interface{}) {
+		if ev, ok := payload.(*bytes.Buffer); ok {
+			callback(ev)
+		} else {
+			pLogger.Warning(fmt.Sprintf("Unable to convert notification payload %v into LogEventNotification", payload))
+		}
+	}
+	id, err := notificationCenter.AddHandler(notification.LogEvent, handler)
+	if err != nil {
+		pLogger.Error("Problem with adding notification handler", err)
+		return 0, err
+	}
+	return id, nil
+}
+
+// RemoveOnEventDispatch removes handler for LogEvent notification with given id
+func (p *QueueingEventProcessor) RemoveOnEventDispatch(id int) error {
+	notificationCenter := registry.GetNotificationCenter(p.sdkKey)
+	if notificationCenter == nil {
+		return errors.New("No notification center for sdk key.")
+	}
+	if err := notificationCenter.RemoveHandler(id, notification.LogEvent); err != nil {
+		pLogger.Warning("Problem with removing notification handler")
+		return err
+	}
+	return nil
 }
