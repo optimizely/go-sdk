@@ -39,7 +39,7 @@ jobs:
       env: GIMME_GO_VERSION=1.8.x
       before_script:
         # GO module was not introduced earlier. need symlink to search in GOPATH
-        - mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely pkg && popd
+        - mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely optimizely && popd
       script:
         # Need to download packages explicitly
         - go get -v -d ./...
