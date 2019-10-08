@@ -1,7 +1,6 @@
 package support
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -28,8 +27,8 @@ type ClientWrapper struct {
 	EventDispatcher event.Dispatcher
 }
 
-// NewWrapper returns a new instance of the optly wrapper
-func NewWrapper(datafileName string) ClientWrapper {
+// NewClientWrapper returns a new instance of the optly wrapper
+func NewClientWrapper(datafileName string) ClientWrapper {
 
 	datafileDir := os.Getenv("DATAFILES_DIR")
 	datafile, err := ioutil.ReadFile(filepath.Clean(path.Join(datafileDir, datafileName)))
@@ -73,13 +72,14 @@ func NewWrapper(datafileName string) ClientWrapper {
 // InvokeAPI processes request with arguments
 func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (*models.APIResponse, error) {
 
-	listenersCalled := c.DecisionService.(*optlyplugins.TestCompositeService).AddListener(request)
+	listenersCalled := c.DecisionService.(*optlyplugins.TestCompositeService).AddListeners(request)
 	responseParams := models.APIResponse{}
+	var err error
 
 	switch request.APIName {
 	case "is_feature_enabled":
 		var params models.IsFeatureEnabledRequestParams
-		err := yaml.Unmarshal([]byte(request.Arguments), &params)
+		err = yaml.Unmarshal([]byte(request.Arguments), &params)
 		if err == nil {
 			user := entities.UserContext{
 				ID:         params.UserID,
@@ -91,15 +91,12 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (*models.APIRespons
 			if err == nil && isEnabled {
 				result = "true"
 			}
-
 			responseParams.Result = result
-			responseParams.ListenerCalled = listenersCalled()
-			return &responseParams, err
 		}
 		break
 	case "get_feature_variable":
 		var params models.GetFeatureVariableParams
-		err := yaml.Unmarshal([]byte(request.Arguments), &params)
+		err = yaml.Unmarshal([]byte(request.Arguments), &params)
 		if err == nil {
 			user := entities.UserContext{
 				ID:         params.UserID,
@@ -110,13 +107,11 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (*models.APIRespons
 				responseParams.Result = value
 				responseParams.Type = valueType
 			}
-			responseParams.ListenerCalled = listenersCalled()
-			return &responseParams, err
 		}
 		break
 	case "get_feature_variable_integer":
 		var params models.GetFeatureVariableParams
-		err := yaml.Unmarshal([]byte(request.Arguments), &params)
+		err = yaml.Unmarshal([]byte(request.Arguments), &params)
 		if err == nil {
 			user := entities.UserContext{
 				ID:         params.UserID,
@@ -126,13 +121,11 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (*models.APIRespons
 			if err == nil {
 				responseParams.Result = value
 			}
-			responseParams.ListenerCalled = listenersCalled()
-			return &responseParams, err
 		}
 		break
 	case "get_feature_variable_double":
 		var params models.GetFeatureVariableParams
-		err := yaml.Unmarshal([]byte(request.Arguments), &params)
+		err = yaml.Unmarshal([]byte(request.Arguments), &params)
 		if err == nil {
 			user := entities.UserContext{
 				ID:         params.UserID,
@@ -142,13 +135,11 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (*models.APIRespons
 			if err == nil {
 				responseParams.Result = value
 			}
-			responseParams.ListenerCalled = listenersCalled()
-			return &responseParams, err
 		}
 		break
 	case "get_feature_variable_boolean":
 		var params models.GetFeatureVariableParams
-		err := yaml.Unmarshal([]byte(request.Arguments), &params)
+		err = yaml.Unmarshal([]byte(request.Arguments), &params)
 		if err == nil {
 			user := entities.UserContext{
 				ID:         params.UserID,
@@ -158,13 +149,11 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (*models.APIRespons
 			if err == nil {
 				responseParams.Result = value
 			}
-			responseParams.ListenerCalled = listenersCalled()
-			return &responseParams, err
 		}
 		break
 	case "get_feature_variable_string":
 		var params models.GetFeatureVariableParams
-		err := yaml.Unmarshal([]byte(request.Arguments), &params)
+		err = yaml.Unmarshal([]byte(request.Arguments), &params)
 		if err == nil {
 			user := entities.UserContext{
 				ID:         params.UserID,
@@ -174,13 +163,11 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (*models.APIRespons
 			if err == nil {
 				responseParams.Result = value
 			}
-			responseParams.ListenerCalled = listenersCalled()
-			return &responseParams, err
 		}
 		break
 	case "get_enabled_features":
 		var params models.GetEnabledFeaturesParams
-		err := yaml.Unmarshal([]byte(request.Arguments), &params)
+		err = yaml.Unmarshal([]byte(request.Arguments), &params)
 		if err == nil {
 			enabledFeatures := ""
 			user := entities.UserContext{
@@ -191,12 +178,12 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (*models.APIRespons
 				enabledFeatures = strings.Join(values, ",")
 			}
 			responseParams.Result = enabledFeatures
-			responseParams.ListenerCalled = listenersCalled()
-			return &responseParams, err
 		}
 		break
 	default:
 		break
 	}
-	return nil, fmt.Errorf("invalid request params")
+
+	responseParams.ListenerCalled = listenersCalled()
+	return &responseParams, err
 }

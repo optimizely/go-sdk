@@ -1,13 +1,8 @@
 package support
 
 import (
-	"encoding/json"
 	"fmt"
-	"regexp"
 	"strconv"
-	"strings"
-
-	"github.com/optimizely/go-sdk/pkg/event"
 
 	"github.com/DATA-DOG/godog/gherkin"
 	"github.com/facebookarchive/subset"
@@ -19,14 +14,14 @@ import (
 
 // ScenarioCtx holds both apiOptions and apiResponse for a scenario
 type ScenarioCtx struct {
-	apiOptions  models.APIOptions
-	apiResponse models.APIResponse
-	wrapper     ClientWrapper
+	apiOptions    models.APIOptions
+	apiResponse   models.APIResponse
+	clientWrapper ClientWrapper
 }
 
 // TheDatafileIs represents a step in the feature file
 func (c *ScenarioCtx) TheDatafileIs(datafileName string) error {
-	c.wrapper = NewWrapper(datafileName)
+	c.clientWrapper = NewClientWrapper(datafileName)
 	return nil
 }
 
@@ -43,7 +38,7 @@ func (c *ScenarioCtx) ListenerIsAdded(numberOfListeners int, ListenerName string
 func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.DocString) error {
 	c.apiOptions.APIName = apiName
 	c.apiOptions.Arguments = arguments.Content
-	result, err := c.wrapper.InvokeAPI(c.apiOptions)
+	result, err := c.clientWrapper.InvokeAPI(c.apiOptions)
 	//Reset listeners so that same listener is not added twice for a scenario
 	c.apiOptions.Listeners = nil
 	if err == nil {
@@ -96,8 +91,8 @@ func (c *ScenarioCtx) TheResultShouldBeFloat(lv, rv int) error {
 	return fmt.Errorf("incorrect result")
 }
 
-// TheResultShouldBeBoolean represents a step in the feature file
-func (c *ScenarioCtx) TheResultShouldBeBoolean(result string) error {
+// TheResultShouldBeTypedBoolean represents a step in the feature file
+func (c *ScenarioCtx) TheResultShouldBeTypedBoolean(result string) error {
 	boolValue, _ := strconv.ParseBool(result)
 	if c.apiResponse.Type != "" && c.apiResponse.Type != entities.Boolean {
 		return fmt.Errorf("incorrect type")
@@ -112,8 +107,8 @@ func (c *ScenarioCtx) TheResultShouldBeBoolean(result string) error {
 	return fmt.Errorf("incorrect result")
 }
 
-// TheResultShouldBeFalse represents a step in the feature file
-func (c *ScenarioCtx) TheResultShouldBeFalse() error {
+// TheResultShouldBeBoolean represents a step in the feature file
+func (c *ScenarioCtx) TheResultShouldBeBoolean() error {
 	boolValue, _ := strconv.ParseBool(c.apiResponse.Result.(string))
 	if boolValue == false {
 		return nil
@@ -195,77 +190,9 @@ func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) 
 	if err != nil {
 		return fmt.Errorf("Invalid request for dispatched Events")
 	}
-	dispatchedEvents := c.wrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
+	dispatchedEvents := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
 	if subset.Check(requestedBatchEvents, dispatchedEvents) {
 		return nil
 	}
 	return fmt.Errorf("DispatchedEvents not equal")
-}
-
-// Reset clears all data before each scenario
-func (c *ScenarioCtx) Reset() {
-	c.apiOptions = models.APIOptions{}
-	c.apiResponse = models.APIResponse{}
-	c.wrapper = ClientWrapper{}
-}
-
-func (c *ScenarioCtx) getDispatchedEventsFromYaml(s string) ([]event.Batch, error) {
-	var eventsArray []map[string]interface{}
-	parsedString := c.parseTemplate(s)
-	if err := yaml.Unmarshal([]byte(parsedString), &eventsArray); err != nil {
-		return nil, err
-	}
-	jsonString, err := json.Marshal(eventsArray)
-	if err != nil {
-		return nil, err
-	}
-	requestedBatchEvents := []event.Batch{}
-	if err := json.Unmarshal([]byte(jsonString), &requestedBatchEvents); err != nil {
-		return nil, err
-	}
-	return requestedBatchEvents, nil
-}
-
-func (c *ScenarioCtx) parseTemplate(s string) string {
-
-	parsedString := strings.Replace(s, "{{datafile.projectId}}", c.wrapper.Config.GetProjectID(), -1)
-
-	re := regexp.MustCompile(`{{#expId}}(\S+)*{{/expId}}`)
-	matches := re.FindStringSubmatch(parsedString)
-	if len(matches) > 1 {
-		if exp, err := c.wrapper.Config.GetExperimentByKey(matches[1]); err == nil {
-			parsedString = strings.Replace(parsedString, matches[0], exp.ID, -1)
-		}
-	}
-
-	re = regexp.MustCompile(`{{#eventId}}(\S+)*{{/eventId}}`)
-	matches = re.FindStringSubmatch(parsedString)
-	if len(matches) > 1 {
-		if event, err := c.wrapper.Config.GetEventByKey(matches[1]); err == nil {
-			parsedString = strings.Replace(parsedString, matches[0], event.ID, -1)
-		}
-	}
-
-	re = regexp.MustCompile(`{{#expCampaignId}}(\S+)*{{/expCampaignId}}`)
-	matches = re.FindStringSubmatch(parsedString)
-	if len(matches) > 1 {
-		if exp, err := c.wrapper.Config.GetExperimentByKey(matches[1]); err == nil {
-			parsedString = strings.Replace(parsedString, matches[0], exp.LayerID, -1)
-		}
-	}
-
-	re = regexp.MustCompile(`{{#varId}}(\S+)*{{/varId}}`)
-	matches = re.FindStringSubmatch(parsedString)
-	if len(matches) > 1 {
-		expVarKey := strings.Split(matches[1], ".")
-		if exp, err := c.wrapper.Config.GetExperimentByKey(expVarKey[0]); err == nil {
-			for _, variation := range exp.Variations {
-				if variation.Key == expVarKey[1] {
-					parsedString = strings.Replace(parsedString, matches[0], variation.ID, -1)
-					break
-				}
-			}
-		}
-	}
-	return parsedString
 }
