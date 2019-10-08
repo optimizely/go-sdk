@@ -248,7 +248,7 @@ func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext
 		enabled = featureDecision.Variation.FeatureEnabled
 	}
 
-	for _, v := range feature.Variables {
+	for _, v := range feature.VariableMap {
 		variableMap[v.Key] = v.DefaultValue
 
 		if enabled {
