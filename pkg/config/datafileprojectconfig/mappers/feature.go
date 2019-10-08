@@ -42,17 +42,17 @@ func MapFeatures(featureFlags []datafileEntities.FeatureFlag, rolloutMap map[str
 			}
 		}
 
-		var variables = []entities.Variable{}
+		variableMap := map[string]entities.Variable{}
 		for _, variable := range featureFlag.Variables {
-			variables = append(variables, entities.Variable{
+			variableMap[variable.Key] = entities.Variable{
 				DefaultValue: variable.DefaultValue,
 				ID:           variable.ID,
 				Key:          variable.Key,
-				Type:         variable.Type})
+				Type:         variable.Type}
 		}
 
 		feature.FeatureExperiments = featureExperiments
-		feature.Variables = variables
+		feature.VariableMap = variableMap
 		featureMap[featureFlag.Key] = feature
 	}
 	return featureMap

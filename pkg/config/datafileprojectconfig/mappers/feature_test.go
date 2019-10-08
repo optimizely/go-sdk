@@ -19,7 +19,7 @@ package mappers
 import (
 	"testing"
 
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 	datafileEntities "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/stretchr/testify/assert"
@@ -62,7 +62,7 @@ func TestMapFeatures(t *testing.T) {
 			Key:                "test_feature_21111",
 			Rollout:            rollout,
 			FeatureExperiments: []entities.Experiment{experiment31111, experiment31112},
-			Variables:          []entities.Variable{variable},
+			VariableMap:        map[string]entities.Variable{variable.Key: variable},
 		},
 	}
 
