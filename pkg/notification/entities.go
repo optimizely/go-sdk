@@ -38,7 +38,7 @@ const (
 	ABTest DecisionNotificationType = "ab-test"
 	// Feature is used when the decision is returned as part of evaluating a feature
 	Feature DecisionNotificationType = "feature"
-	// LogEventNotification notificationType
+	// LogEvent notification type
 	LogEvent Type = "log_event_notification"
 )
 
@@ -55,8 +55,8 @@ type ProjectConfigUpdateNotification struct {
 	Revision string
 }
 
+// LogEventNotification is the notification triggered before log event is dispatched.
 type LogEventNotification struct {
 	Type         Type
 	LogEvent  	 *bytes.Buffer
 }
-

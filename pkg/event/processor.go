@@ -96,7 +96,8 @@ func PDispatcher(d Dispatcher) QPConfigOption {
 	}
 }
 
-// PDispatcher sets the Processor Dispatcher as a config option to be passed into the NewProcessor method
+// SDKKey sets the SDKKey used to register for notifications.  This should be removed when the project
+// config supports sdk key.
 func SDKKey(sdkKey string) QPConfigOption {
 	return func(qp *QueueingEventProcessor) {
 		qp.sdkKey = sdkKey
@@ -221,7 +222,7 @@ func (p *QueueingEventProcessor) FlushEvents() {
 
 	for p.EventsCount() > 0 {
 		if failedToSend {
-			pLogger.Error("last Event Batch failed to send; retry on next flush", errors.New("Dispatcher failed"))
+			pLogger.Error("last Event Batch failed to send; retry on next flush", errors.New("Dispatcher failed."))
 			break
 		}
 		events := p.GetEvents(p.BatchSize)
@@ -258,18 +259,22 @@ func (p *QueueingEventProcessor) FlushEvents() {
 			{
 				b, err := json.Marshal(logEvent)
 				if err != nil {
-					pLogger.Error("Error json marshalling event", err)
+					pLogger.Error("Error json marshaling event.", err)
 					return
 				}
 
 				notificationCenter := registry.GetNotificationCenter(p.sdkKey)
 				if notificationCenter == nil {
 					pLogger.Error("Problem with sending notification",
-						errors.New("No notification center for sdk key"))
+						errors.New("No notification center for sdk key."))
 					return
 				}
 
-				notificationCenter.Send(notification.LogEvent, bytes.NewBuffer(b))
+				err = notificationCenter.Send(notification.LogEvent, bytes.NewBuffer(b))
+
+				if err != nil {
+					pLogger.Error("Send Log Event notification failed.", err)
+				}
 
 
 			}
@@ -291,7 +296,7 @@ func (p *QueueingEventProcessor) FlushEvents() {
 func (p *QueueingEventProcessor) OnEventDispatch(callback func(eventNotification *bytes.Buffer)) (int, error) {
 	notificationCenter := registry.GetNotificationCenter(p.sdkKey)
 	if notificationCenter == nil {
-		return 0, errors.New("No notification center for sdk key")
+		return 0, errors.New("No notification center for sdk key.")
 	}
 
 	handler := func(payload interface{}) {
@@ -303,7 +308,7 @@ func (p *QueueingEventProcessor) OnEventDispatch(callback func(eventNotification
 	}
 	id, err := notificationCenter.AddHandler(notification.LogEvent, handler)
 	if err != nil {
-		pLogger.Error("Problem with adding notification handler", err)
+		pLogger.Error("Problem with adding notification handler.", err)
 		return 0, err
 	}
 	return id, nil
@@ -316,7 +321,7 @@ func (p *QueueingEventProcessor) RemoveOnEventDispatch(id int) error {
 		return errors.New("No notification center for sdk key.")
 	}
 	if err := notificationCenter.RemoveHandler(id, notification.LogEvent); err != nil {
-		pLogger.Warning("Problem with removing notification handler")
+		pLogger.Warning("Problem with removing notification handler.")
 		return err
 	}
 	return nil
