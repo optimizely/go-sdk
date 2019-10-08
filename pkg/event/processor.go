@@ -222,7 +222,7 @@ func (p *QueueingEventProcessor) FlushEvents() {
 
 	for p.EventsCount() > 0 {
 		if failedToSend {
-			pLogger.Error("last Event Batch failed to send; retry on next flush", errors.New("Dispatcher failed."))
+			pLogger.Error("last Event Batch failed to send; retry on next flush", errors.New("dispatcher failed"))
 			break
 		}
 		events := p.GetEvents(p.BatchSize)
@@ -266,7 +266,7 @@ func (p *QueueingEventProcessor) FlushEvents() {
 				notificationCenter := registry.GetNotificationCenter(p.sdkKey)
 				if notificationCenter == nil {
 					pLogger.Error("Problem with sending notification",
-						errors.New("No notification center for sdk key."))
+						errors.New("no notification center for sdk key"))
 					return
 				}
 
@@ -296,7 +296,7 @@ func (p *QueueingEventProcessor) FlushEvents() {
 func (p *QueueingEventProcessor) OnEventDispatch(callback func(eventNotification *bytes.Buffer)) (int, error) {
 	notificationCenter := registry.GetNotificationCenter(p.sdkKey)
 	if notificationCenter == nil {
-		return 0, errors.New("No notification center for sdk key.")
+		return 0, errors.New("no notification center for sdk key")
 	}
 
 	handler := func(payload interface{}) {
@@ -318,7 +318,7 @@ func (p *QueueingEventProcessor) OnEventDispatch(callback func(eventNotification
 func (p *QueueingEventProcessor) RemoveOnEventDispatch(id int) error {
 	notificationCenter := registry.GetNotificationCenter(p.sdkKey)
 	if notificationCenter == nil {
-		return errors.New("No notification center for sdk key.")
+		return errors.New("no notification center for sdk key")
 	}
 	if err := notificationCenter.RemoveHandler(id, notification.LogEvent); err != nil {
 		pLogger.Warning("Problem with removing notification handler.")
