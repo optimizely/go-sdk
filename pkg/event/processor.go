@@ -264,11 +264,6 @@ func (p *QueueingEventProcessor) FlushEvents() {
 				}
 
 				notificationCenter := registry.GetNotificationCenter(p.sdkKey)
-				if notificationCenter == nil {
-					pLogger.Error("Problem with sending notification",
-						errors.New("no notification center for sdk key"))
-					return
-				}
 
 				err = notificationCenter.Send(notification.LogEvent, bytes.NewBuffer(b))
 
@@ -295,9 +290,6 @@ func (p *QueueingEventProcessor) FlushEvents() {
 // OnEventDispatch registers a handler for LogEvent notifications
 func (p *QueueingEventProcessor) OnEventDispatch(callback func(eventNotification *bytes.Buffer)) (int, error) {
 	notificationCenter := registry.GetNotificationCenter(p.sdkKey)
-	if notificationCenter == nil {
-		return 0, errors.New("no notification center for sdk key")
-	}
 
 	handler := func(payload interface{}) {
 		if ev, ok := payload.(*bytes.Buffer); ok {
@@ -317,9 +309,7 @@ func (p *QueueingEventProcessor) OnEventDispatch(callback func(eventNotification
 // RemoveOnEventDispatch removes handler for LogEvent notification with given id
 func (p *QueueingEventProcessor) RemoveOnEventDispatch(id int) error {
 	notificationCenter := registry.GetNotificationCenter(p.sdkKey)
-	if notificationCenter == nil {
-		return errors.New("no notification center for sdk key")
-	}
+
 	if err := notificationCenter.RemoveHandler(id, notification.LogEvent); err != nil {
 		pLogger.Warning("Problem with removing notification handler.")
 		return err

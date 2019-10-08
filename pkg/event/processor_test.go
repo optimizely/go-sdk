@@ -82,7 +82,8 @@ func (f *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 func TestDefaultEventProcessor_LogEventNotification(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
 	processor := NewEventProcessor(FlushInterval(100), QueueSize(100),
-		PQ(NewInMemoryQueue(100)), PDispatcher(&MockDispatcher{Events: NewInMemoryQueue(100)}))
+		PQ(NewInMemoryQueue(100)), PDispatcher(&MockDispatcher{Events: NewInMemoryQueue(100)}),
+		SDKKey("fakeSDKKey"))
 
 	var logEvent LogEvent
 
