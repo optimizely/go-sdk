@@ -9,7 +9,7 @@
 To start using the SDK, create an instance using our factory method:
 
 ```
-import "github.com/optimizely/go-sdk/optimizely/client"
+import "github.com/optimizely/go-sdk/pkg/client"
 
 optimizelyFactory := &client.OptimizelyFactory{
   SDKKey: "[SDK_KEY_HERE]",
@@ -29,8 +29,8 @@ client, err := optimizelyFactory.Client()
 ### Feature Rollouts
 ```
 import (
-  "github.com/optimizely/go-sdk/optimizely/client"
-  "github.com/optimizely/go-sdk/optimizely/entities"
+  "github.com/optimizely/go-sdk/pkg/client"
+  "github.com/optimizely/go-sdk/pkg/entities"
 )
 
 user := entities.UserContext{
@@ -95,14 +95,14 @@ module mymodule
 go 1.12
 
 require (
-	github.com/optimizely/go-sdk v0.2.0
+	github.com/optimizely/go-sdk v1.0.0-beta2
 )
 ```
 
 If you are already using `go.mod` in your application you can run the following:
 
 ```
-go mod edit -require github.com/optimizely/go-sdk@v0.2.0
+go mod edit -require github.com/optimizely/go-sdk@v1.0.0-beta2
 ```
 
 NOTE:
@@ -111,7 +111,7 @@ go get github.com/optimizely/go-sdk/...
 ```
 or
 ```$sh
-go get github.com/optimizely/go-sdk/optimizely
+go get github.com/optimizely/go-sdk/pkg
 ```
 will install it as a package to pkg directory, rather than src directory. It could be useful for future development and vendoring.
 
