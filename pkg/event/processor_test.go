@@ -19,9 +19,8 @@ package event
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
-	"github.com/optimizely/go-sdk/pkg/registry"
-	"github.com/segmentio/objconv/json"
 	"testing"
 	"time"
 
@@ -81,7 +80,6 @@ func (f *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 }
 
 func TestDefaultEventProcessor_LogEventNotification(t *testing.T) {
-	registry.GetNotificationCenter("")
 	exeCtx := utils.NewCancelableExecutionCtx()
 	processor := NewEventProcessor(FlushInterval(100), QueueSize(100),
 		PQ(NewInMemoryQueue(100)), PDispatcher(&MockDispatcher{Events: NewInMemoryQueue(100)}))
