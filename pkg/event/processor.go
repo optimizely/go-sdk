@@ -18,8 +18,6 @@
 package event
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/optimizely/go-sdk/pkg/logging"
@@ -255,23 +253,12 @@ func (p *QueueingEventProcessor) FlushEvents() {
 		if batchEventCount > 0 {
 			// TODO: figure out what to do with the error
 			logEvent := createLogEvent(batchEvent)
-			// we have to marshal the log event in order to send.  maybe we should just pass marshaled data to dispatch
-			{
-				b, err := json.Marshal(logEvent)
-				if err != nil {
-					pLogger.Error("Error json marshaling event.", err)
-					return
-				}
+			notificationCenter := registry.GetNotificationCenter(p.sdkKey)
 
-				notificationCenter := registry.GetNotificationCenter(p.sdkKey)
+			err := notificationCenter.Send(notification.LogEvent, logEvent)
 
-				err = notificationCenter.Send(notification.LogEvent, bytes.NewBuffer(b))
-
-				if err != nil {
-					pLogger.Error("Send Log Event notification failed.", err)
-				}
-
-
+			if err != nil {
+				pLogger.Error("Send Log Event notification failed.", err)
 			}
 			if success, _ := p.EventDispatcher.DispatchEvent(logEvent); success {
 				pLogger.Debug("Dispatched event successfully")
@@ -288,11 +275,11 @@ func (p *QueueingEventProcessor) FlushEvents() {
 }
 
 // OnEventDispatch registers a handler for LogEvent notifications
-func (p *QueueingEventProcessor) OnEventDispatch(callback func(eventNotification *bytes.Buffer)) (int, error) {
+func (p *QueueingEventProcessor) OnEventDispatch(callback func(eventNotification LogEvent)) (int, error) {
 	notificationCenter := registry.GetNotificationCenter(p.sdkKey)
 
 	handler := func(payload interface{}) {
-		if ev, ok := payload.(*bytes.Buffer); ok {
+		if ev, ok := payload.(LogEvent); ok {
 			callback(ev)
 		} else {
 			pLogger.Warning(fmt.Sprintf("Unable to convert notification payload %v into LogEventNotification", payload))

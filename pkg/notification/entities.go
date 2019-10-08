@@ -18,7 +18,6 @@
 package notification
 
 import (
-	"bytes"
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
@@ -58,5 +57,5 @@ type ProjectConfigUpdateNotification struct {
 // LogEventNotification is the notification triggered before log event is dispatched.
 type LogEventNotification struct {
 	Type         Type
-	LogEvent  	 *bytes.Buffer
+	LogEvent  	 interface{}
 }

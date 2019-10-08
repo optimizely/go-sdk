@@ -18,8 +18,6 @@
 package event
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -87,11 +85,8 @@ func TestDefaultEventProcessor_LogEventNotification(t *testing.T) {
 
 	var logEvent LogEvent
 
-	id, _ := processor.OnEventDispatch(func(eventNotification *bytes.Buffer) {
-		logEvent = LogEvent{}
-		if err := json.Unmarshal(eventNotification.Bytes(), &logEvent); err == nil {
-
-		}
+	id, _ := processor.OnEventDispatch(func(eventNotification LogEvent) {
+		logEvent = eventNotification
 	})
 	processor.Start(exeCtx)
 
