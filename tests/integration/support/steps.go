@@ -186,7 +186,8 @@ func (c *ScenarioCtx) ThereAreNoDispatchedEvents() error {
 
 // DispatchedEventsPayloadsInclude represents a step in the feature file
 func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) error {
-	requestedBatchEvents, err := c.getDispatchedEventsFromYaml(value.Content)
+
+	requestedBatchEvents, err := getDispatchedEventsFromYaml(value.Content, c.clientWrapper.Config)
 	if err != nil {
 		return fmt.Errorf("Invalid request for dispatched Events")
 	}
@@ -195,4 +196,11 @@ func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) 
 		return nil
 	}
 	return fmt.Errorf("DispatchedEvents not equal")
+}
+
+// Reset clears all data before each scenario
+func (c *ScenarioCtx) Reset() {
+	c.apiOptions = models.APIOptions{}
+	c.apiResponse = models.APIResponse{}
+	c.clientWrapper = ClientWrapper{}
 }
