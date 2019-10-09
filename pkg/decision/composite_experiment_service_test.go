@@ -17,6 +17,7 @@
 package decision
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -109,8 +110,42 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionNoDecisionsMade() {
 	}
 	decision, err := compositeExperimentService.GetDecision(s.testDecisionContext, testUserContext)
 
-	s.NoError(err)
+	s.Error(err)
 	s.Equal(expectedExperimentDecision2, decision)
+	s.mockExperimentService.AssertExpectations(s.T())
+	s.mockExperimentService2.AssertExpectations(s.T())
+}
+
+func (s *CompositeExperimentTestSuite) TestGetDecisionReturnsError() {
+	// Assert that we continue to the next inner service when an inner service GetDecision returns an error
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1114,
+		ProjectConfig: s.mockConfig,
+	}
+
+	shouldBeIgnoredDecision := ExperimentDecision{
+		Variation: &testExp1114Var2225,
+	}
+	s.mockExperimentService.On("GetDecision", testDecisionContext, testUserContext).Return(shouldBeIgnoredDecision, errors.New("Error making decision"))
+
+	expectedDecision := ExperimentDecision{
+		Variation: &testExp1114Var2226,
+	}
+	s.mockExperimentService2.On("GetDecision", testDecisionContext, testUserContext).Return(expectedDecision, nil)
+
+	compositeExperimentService := &CompositeExperimentService{
+		experimentServices: []ExperimentService{
+			s.mockExperimentService,
+			s.mockExperimentService2,
+		},
+	}
+	decision, err := compositeExperimentService.GetDecision(testDecisionContext, testUserContext)
+	s.Equal(expectedDecision, decision)
+	s.NoError(err)
 	s.mockExperimentService.AssertExpectations(s.T())
 	s.mockExperimentService2.AssertExpectations(s.T())
 }
