@@ -46,7 +46,8 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		executionCtx:    executionCtx,
 		DecisionService: decision.NewCompositeService(f.SDKKey),
 		EventProcessor: event.NewEventProcessor(event.BatchSize(event.DefaultBatchSize),
-			event.QueueSize(event.DefaultEventQueueSize), event.FlushInterval(event.DefaultEventFlushInterval)),
+			event.QueueSize(event.DefaultEventQueueSize), event.FlushInterval(event.DefaultEventFlushInterval),
+			event.SDKKey(f.SDKKey)),
 	}
 
 	for _, opt := range clientOptions {

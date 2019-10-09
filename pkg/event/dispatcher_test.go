@@ -58,3 +58,59 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 	assert.Equal(t, 0, qd.eventQueue.Size())
 
 }
+
+func TestQueueEventDispatcher_InvalidEvent(t *testing.T) {
+	ctx := context.TODO()
+	q := NewQueueEventDispatcher(ctx)
+
+
+	config := TestConfig{}
+
+	if qed, ok := q.(*QueueEventDispatcher); ok {
+		qed.Dispatcher = &MockDispatcher{Events: NewInMemoryQueue(100)}
+		qed.eventQueue.Add(config)
+	}
+
+	qd, _ := q.(*QueueEventDispatcher)
+
+	assert.Equal(t, 1, qd.eventQueue.Size())
+
+	// give the queue a chance to run
+	qd.flushEvents()
+
+	// check the queue. bad event type should be removed.  but, not sent.
+	assert.Equal(t, 0, qd.eventQueue.Size())
+
+}
+
+func TestQueueEventDispatcher_FailDispath(t *testing.T) {
+	ctx := context.TODO()
+	q := NewQueueEventDispatcher(ctx)
+
+	if qed, ok := q.(*QueueEventDispatcher); ok {
+		qed.Dispatcher = &MockDispatcher{ShouldFail: true, Events: NewInMemoryQueue(100)}
+	}
+
+	eventTags := map[string]interface{}{"revenue": 55.0, "value": 25.1}
+	config := TestConfig{}
+
+	conversionUserEvent := CreateConversionUserEvent(config, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext, eventTags)
+
+	batch := createBatchEvent(conversionUserEvent, createVisitorFromUserEvent(conversionUserEvent))
+
+	logEvent := createLogEvent(batch)
+
+	q.DispatchEvent(logEvent)
+
+	qd, _ := q.(*QueueEventDispatcher)
+
+	assert.Equal(t, 1, qd.eventQueue.Size())
+
+	// give the queue a chance to run
+	qd.flushEvents()
+
+	// check the queue. bad event type should be removed.  but, not sent.
+	assert.Equal(t, 1, qd.eventQueue.Size())
+
+}
+

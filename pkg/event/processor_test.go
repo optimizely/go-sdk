@@ -77,6 +77,40 @@ func (f *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	return true, nil
 }
 
+func TestDefaultEventProcessor_LogEventNotification(t *testing.T) {
+	exeCtx := utils.NewCancelableExecutionCtx()
+	processor := NewEventProcessor(FlushInterval(100), QueueSize(100),
+		PQ(NewInMemoryQueue(100)), PDispatcher(&MockDispatcher{Events: NewInMemoryQueue(100)}),
+		SDKKey("fakeSDKKey"))
+
+	var logEvent LogEvent
+
+	id, _ := processor.OnEventDispatch(func(eventNotification LogEvent) {
+		logEvent = eventNotification
+	})
+	processor.Start(exeCtx)
+
+	impression := BuildTestImpressionEvent()
+	conversion := BuildTestConversionEvent()
+
+	processor.ProcessEvent(impression)
+	processor.ProcessEvent(impression)
+	processor.ProcessEvent(conversion)
+	processor.ProcessEvent(conversion)
+
+	assert.Equal(t, 4, processor.EventsCount())
+
+	exeCtx.TerminateAndWait()
+
+	assert.NotNil(t, logEvent)
+	assert.Equal(t, 4, len(logEvent.Event.Visitors))
+
+	err := processor.RemoveOnEventDispatch(id)
+
+	assert.Nil(t, err)
+
+}
+
 func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
 	processor := NewEventProcessor(FlushInterval(100), QueueSize(100),
