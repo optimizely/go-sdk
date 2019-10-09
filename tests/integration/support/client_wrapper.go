@@ -63,43 +63,45 @@ func NewClientWrapper(datafileName string) ClientWrapper {
 }
 
 // InvokeAPI processes request with arguments
-func (c *ClientWrapper) InvokeAPI(request models.APIOptions, response *models.APIResponse) error {
+func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (models.APIResponse, error) {
 
 	c.DecisionService.(*optlyplugins.TestCompositeService).AddListeners(request.Listeners)
+	var response models.APIResponse
 	var err error
 
 	switch request.APIName {
 	case "is_feature_enabled":
-		err = c.isFeatureEnabled(request, response)
+		response, err = c.isFeatureEnabled(request)
 		break
 	case "get_feature_variable":
-		err = c.getFeatureVariable(request, response)
+		response, err = c.getFeatureVariable(request)
 		break
 	case "get_feature_variable_integer":
-		err = c.getFeatureVariableInteger(request, response)
+		response, err = c.getFeatureVariableInteger(request)
 		break
 	case "get_feature_variable_double":
-		err = c.getFeatureVariableDouble(request, response)
+		response, err = c.getFeatureVariableDouble(request)
 		break
 	case "get_feature_variable_boolean":
-		err = c.getFeatureVariableBoolean(request, response)
+		response, err = c.getFeatureVariableBoolean(request)
 		break
 	case "get_feature_variable_string":
-		err = c.getFeatureVariableString(request, response)
+		response, err = c.getFeatureVariableString(request)
 		break
 	case "get_enabled_features":
-		err = c.getEnabledFeatures(request, response)
+		response, err = c.getEnabledFeatures(request)
 		break
 	default:
 		break
 	}
 
 	response.ListenerCalled = c.DecisionService.(*optlyplugins.TestCompositeService).GetListenersCalled()
-	return err
+	return response, err
 }
 
-func (c *ClientWrapper) isFeatureEnabled(request models.APIOptions, response *models.APIResponse) error {
+func (c *ClientWrapper) isFeatureEnabled(request models.APIOptions) (models.APIResponse, error) {
 	var params models.IsFeatureEnabledRequestParams
+	var response models.APIResponse
 	err := yaml.Unmarshal([]byte(request.Arguments), &params)
 	if err == nil {
 		user := entities.UserContext{
@@ -114,11 +116,12 @@ func (c *ClientWrapper) isFeatureEnabled(request models.APIOptions, response *mo
 		}
 		response.Result = result
 	}
-	return err
+	return response, err
 }
 
-func (c *ClientWrapper) getFeatureVariable(request models.APIOptions, response *models.APIResponse) error {
+func (c *ClientWrapper) getFeatureVariable(request models.APIOptions) (models.APIResponse, error) {
 	var params models.GetFeatureVariableParams
+	var response models.APIResponse
 	err := yaml.Unmarshal([]byte(request.Arguments), &params)
 	if err == nil {
 		user := entities.UserContext{
@@ -131,11 +134,12 @@ func (c *ClientWrapper) getFeatureVariable(request models.APIOptions, response *
 			response.Type = valueType
 		}
 	}
-	return err
+	return response, err
 }
 
-func (c *ClientWrapper) getFeatureVariableInteger(request models.APIOptions, response *models.APIResponse) error {
+func (c *ClientWrapper) getFeatureVariableInteger(request models.APIOptions) (models.APIResponse, error) {
 	var params models.GetFeatureVariableParams
+	var response models.APIResponse
 	err := yaml.Unmarshal([]byte(request.Arguments), &params)
 	if err == nil {
 		user := entities.UserContext{
@@ -147,11 +151,12 @@ func (c *ClientWrapper) getFeatureVariableInteger(request models.APIOptions, res
 			response.Result = value
 		}
 	}
-	return err
+	return response, err
 }
 
-func (c *ClientWrapper) getFeatureVariableDouble(request models.APIOptions, response *models.APIResponse) error {
+func (c *ClientWrapper) getFeatureVariableDouble(request models.APIOptions) (models.APIResponse, error) {
 	var params models.GetFeatureVariableParams
+	var response models.APIResponse
 	err := yaml.Unmarshal([]byte(request.Arguments), &params)
 	if err == nil {
 		user := entities.UserContext{
@@ -163,11 +168,12 @@ func (c *ClientWrapper) getFeatureVariableDouble(request models.APIOptions, resp
 			response.Result = value
 		}
 	}
-	return err
+	return response, err
 }
 
-func (c *ClientWrapper) getFeatureVariableBoolean(request models.APIOptions, response *models.APIResponse) error {
+func (c *ClientWrapper) getFeatureVariableBoolean(request models.APIOptions) (models.APIResponse, error) {
 	var params models.GetFeatureVariableParams
+	var response models.APIResponse
 	err := yaml.Unmarshal([]byte(request.Arguments), &params)
 	if err == nil {
 		user := entities.UserContext{
@@ -179,11 +185,12 @@ func (c *ClientWrapper) getFeatureVariableBoolean(request models.APIOptions, res
 			response.Result = value
 		}
 	}
-	return err
+	return response, err
 }
 
-func (c *ClientWrapper) getFeatureVariableString(request models.APIOptions, response *models.APIResponse) error {
+func (c *ClientWrapper) getFeatureVariableString(request models.APIOptions) (models.APIResponse, error) {
 	var params models.GetFeatureVariableParams
+	var response models.APIResponse
 	err := yaml.Unmarshal([]byte(request.Arguments), &params)
 	if err == nil {
 		user := entities.UserContext{
@@ -195,11 +202,12 @@ func (c *ClientWrapper) getFeatureVariableString(request models.APIOptions, resp
 			response.Result = value
 		}
 	}
-	return err
+	return response, err
 }
 
-func (c *ClientWrapper) getEnabledFeatures(request models.APIOptions, response *models.APIResponse) error {
+func (c *ClientWrapper) getEnabledFeatures(request models.APIOptions) (models.APIResponse, error) {
 	var params models.GetEnabledFeaturesParams
+	var response models.APIResponse
 	err := yaml.Unmarshal([]byte(request.Arguments), &params)
 	if err == nil {
 		enabledFeatures := ""
@@ -212,5 +220,5 @@ func (c *ClientWrapper) getEnabledFeatures(request models.APIOptions, response *
 		}
 		response.Result = enabledFeatures
 	}
-	return err
+	return response, err
 }

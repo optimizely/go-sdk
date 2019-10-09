@@ -38,7 +38,8 @@ func (c *ScenarioCtx) ListenerIsAdded(numberOfListeners int, ListenerName string
 func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.DocString) error {
 	c.apiOptions.APIName = apiName
 	c.apiOptions.Arguments = arguments.Content
-	err := c.clientWrapper.InvokeAPI(c.apiOptions, &c.apiResponse)
+	response, err := c.clientWrapper.InvokeAPI(c.apiOptions)
+	c.apiResponse = response
 	//Reset listeners so that same listener is not added twice for a scenario
 	c.apiOptions.Listeners = nil
 	if err == nil {
