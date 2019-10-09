@@ -1,8 +1,6 @@
 package optlyplugins
 
 import (
-	"time"
-
 	"github.com/optimizely/go-sdk/pkg/event"
 )
 
@@ -24,7 +22,6 @@ func (d *ProxyEventDispatcher) DispatchEvent(event event.LogEvent) (bool, error)
 
 // GetEvents returns dispatched events
 func (d *ProxyEventDispatcher) GetEvents() []event.Batch {
-	time.Sleep(600 * time.Millisecond)
 	if d.events == nil {
 		d.events = []event.Batch{}
 	}

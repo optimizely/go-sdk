@@ -16,11 +16,18 @@ jobs:
         - curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.19.0
       script:
         - $GOPATH/bin/golangci-lint run --out-format=tab --tests=false pkg/...
-    - stage: 'Integration tests'
-      env: GIMME_GO_VERSION=1.12.x
+    - stage: 'Integration Tests'
+      merge_mode: replace
+      env: SDK=go SDK_BRANCH=$TRAVIS_PULL_REQUEST_BRANCH
+      cache: false
+      language: minimal
+      install: skip
+      before_script:
+        - mkdir $HOME/travisci-tools && pushd $HOME/travisci-tools && git init && git pull https://$CI_USER_TOKEN@github.com/optimizely/travisci-tools.git && popd
       script:
-        - source scripts/get-fsc-tests.sh
-        - go test ./tests/integration/
+        # TODO: Remove sohail/gosdkonly branch specification here, after
+        # we can run FSC tests on master: https://optimizely.atlassian.net/browse/OASIS-5425
+        - $HOME/travisci-tools/trigger-script-with-status-update.sh sohail/gosdkonly
       after_success: travis_terminate 0
     - &test
       stage: 'Unit test'
@@ -32,7 +39,7 @@ jobs:
       env: GIMME_GO_VERSION=1.8.x
       before_script:
         # GO module was not introduced earlier. need symlink to search in GOPATH
-        - mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely pkg && popd
+        - mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely optimizely && popd
       script:
         # Need to download packages explicitly
         - go get -v -d ./...
