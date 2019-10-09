@@ -10,7 +10,7 @@ import (
 	"github.com/optimizely/go-sdk/tests/integration/support"
 )
 
-var opt = godog.Options{Output: colors.Colored(os.Stdout)}
+var opt = godog.Options{Output: colors.Colored(os.Stdout), Tags: "~@FEATURE_ROLLOUT"}
 var Godogs int
 
 func init() {
