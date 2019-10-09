@@ -2,7 +2,7 @@
 
 #### Setup
 1. Check the `GOPATH` env variable.
-2. Clone sdk repo repo under this path.
+2. Clone sdk repo under this path.
    `$GOPATH/src/github.com/optimizely/`
 3. Open terminal and switch directory to the cloned sdk `$GOPATH/src/github.com/optimizely/go-sdk`.
 4. Run the following command to fetch dependencies: <pre>``` go get ```</pre>
