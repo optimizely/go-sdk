@@ -275,7 +275,7 @@ func (p *QueueingEventProcessor) FlushEvents() {
 }
 
 // OnEventDispatch registers a handler for LogEvent notifications
-func (p *QueueingEventProcessor) OnEventDispatch(callback func(eventNotification LogEvent)) (int, error) {
+func (p *QueueingEventProcessor) OnEventDispatch(callback func(logEvent LogEvent)) (int, error) {
 	notificationCenter := registry.GetNotificationCenter(p.sdkKey)
 
 	handler := func(payload interface{}) {
