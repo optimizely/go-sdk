@@ -38,12 +38,10 @@ func (c *ScenarioCtx) ListenerIsAdded(numberOfListeners int, ListenerName string
 func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.DocString) error {
 	c.apiOptions.APIName = apiName
 	c.apiOptions.Arguments = arguments.Content
-	result, err := c.clientWrapper.InvokeAPI(c.apiOptions)
+	err := c.clientWrapper.InvokeAPI(c.apiOptions, &c.apiResponse)
 	//Reset listeners so that same listener is not added twice for a scenario
 	c.apiOptions.Listeners = nil
 	if err == nil {
-		c.apiResponse.Result = result.Result
-		c.apiResponse.ListenerCalled = result.ListenerCalled
 		return nil
 	}
 	return fmt.Errorf("invalid api or arguments")
@@ -187,7 +185,11 @@ func (c *ScenarioCtx) ThereAreNoDispatchedEvents() error {
 // DispatchedEventsPayloadsInclude represents a step in the feature file
 func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) error {
 
-	requestedBatchEvents, err := getDispatchedEventsFromYaml(value.Content, c.clientWrapper.Config)
+	config, err := c.clientWrapper.Client.GetProjectConfig()
+	if err != nil {
+		return fmt.Errorf("Invalid Project Config")
+	}
+	requestedBatchEvents, err := getDispatchedEventsFromYaml(value.Content, config)
 	if err != nil {
 		return fmt.Errorf("Invalid request for dispatched Events")
 	}
