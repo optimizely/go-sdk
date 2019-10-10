@@ -45,9 +45,9 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 	appClient := &OptimizelyClient{
 		executionCtx:    executionCtx,
 		DecisionService: decision.NewCompositeService(f.SDKKey),
-		EventProcessor: event.NewEventProcessor(event.BatchSize(event.DefaultBatchSize),
-			event.QueueSize(event.DefaultEventQueueSize), event.FlushInterval(event.DefaultEventFlushInterval),
-			event.SDKKey(f.SDKKey)),
+		EventProcessor: event.NewEventProcessor(event.WithBatchSize(event.DefaultBatchSize),
+			event.WithQueueSize(event.DefaultEventQueueSize), event.WithFlushInterval(event.DefaultEventFlushInterval),
+			event.WithSDKKey(f.SDKKey)),
 	}
 
 	for _, opt := range clientOptions {
@@ -68,8 +68,8 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		pollingConfigManager.Start(appClient.executionCtx)
 	}
 
-	if queueingProcessor, ok := appClient.EventProcessor.(*event.QueueingEventProcessor); ok {
-		queueingProcessor.Start(appClient.executionCtx)
+	if batchProcessor, ok := appClient.EventProcessor.(*event.BatchEventProcessor); ok {
+		batchProcessor.Start(appClient.executionCtx)
 	}
 
 	return appClient, nil
@@ -115,8 +115,8 @@ func WithDecisionService(decisionService decision.Service) OptionFunc {
 // WithBatchEventProcessor sets event processor on a client
 func WithBatchEventProcessor(batchSize, queueSize int, flushInterval time.Duration) OptionFunc {
 	return func(f *OptimizelyClient) {
-		f.EventProcessor = event.NewEventProcessor(event.BatchSize(batchSize),
-			event.QueueSize(queueSize), event.FlushInterval(flushInterval))
+		f.EventProcessor = event.NewEventProcessor(event.WithBatchSize(batchSize),
+			event.WithQueueSize(queueSize), event.WithFlushInterval(flushInterval))
 	}
 }
 

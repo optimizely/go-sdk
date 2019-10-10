@@ -20,12 +20,13 @@ package event
 import (
 	"errors"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/registry"
 	"github.com/optimizely/go-sdk/pkg/utils"
-	"sync"
-	"time"
 )
 
 // Processor processes events
@@ -33,9 +34,9 @@ type Processor interface {
 	ProcessEvent(event UserEvent)
 }
 
-// QueueingEventProcessor is used out of the box by the SDK
-type QueueingEventProcessor struct {
-	sdkKey 			string
+// BatchEventProcessor is used out of the box by the SDK
+type BatchEventProcessor struct {
+	sdkKey          string
 	MaxQueueSize    int           // max size of the queue before flush
 	FlushInterval   time.Duration // in milliseconds
 	BatchSize       int
@@ -57,54 +58,54 @@ const DefaultEventFlushInterval = 30 * time.Second
 var pLogger = logging.GetLogger("EventProcessor")
 
 // QPConfigOption is the QueuingProcessor options that give you the ability to add one more more options before the processor is initialized.
-type QPConfigOption func(qp *QueueingEventProcessor)
+type QPConfigOption func(qp *BatchEventProcessor)
 
-// BatchSize sets the batch size as a config option to be passed into the NewProcessor method
-func BatchSize(bsize int) QPConfigOption {
-	return func(qp *QueueingEventProcessor) {
+// WithBatchSize sets the batch size as a config option to be passed into the NewProcessor method
+func WithBatchSize(bsize int) QPConfigOption {
+	return func(qp *BatchEventProcessor) {
 		qp.BatchSize = bsize
 	}
 }
 
-// QueueSize sets the queue size as a config option to be passed into the NewProcessor method
-func QueueSize(qsize int) QPConfigOption {
-	return func(qp *QueueingEventProcessor) {
+// WithQueueSize sets the queue size as a config option to be passed into the NewProcessor method
+func WithQueueSize(qsize int) QPConfigOption {
+	return func(qp *BatchEventProcessor) {
 		qp.MaxQueueSize = qsize
 	}
 }
 
-// FlushInterval sets the flush interval as a config option to be passed into the NewProcessor method
-func FlushInterval(flushInterval time.Duration) QPConfigOption {
-	return func(qp *QueueingEventProcessor) {
+// WithFlushInterval sets the flush interval as a config option to be passed into the NewProcessor method
+func WithFlushInterval(flushInterval time.Duration) QPConfigOption {
+	return func(qp *BatchEventProcessor) {
 		qp.FlushInterval = flushInterval
 	}
 }
 
-// PQ sets the Processor Queue as a config option to be passed into the NewProcessor method
-func PQ(q Queue) QPConfigOption {
-	return func(qp *QueueingEventProcessor) {
+// WithQueue sets the Processor Queue as a config option to be passed into the NewProcessor method
+func WithQueue(q Queue) QPConfigOption {
+	return func(qp *BatchEventProcessor) {
 		qp.Q = q
 	}
 }
 
-// PDispatcher sets the Processor Dispatcher as a config option to be passed into the NewProcessor method
-func PDispatcher(d Dispatcher) QPConfigOption {
-	return func(qp *QueueingEventProcessor) {
+// WithEventDispatcher sets the Processor Dispatcher as a config option to be passed into the NewProcessor method
+func WithEventDispatcher(d Dispatcher) QPConfigOption {
+	return func(qp *BatchEventProcessor) {
 		qp.EventDispatcher = d
 	}
 }
 
-// SDKKey sets the SDKKey used to register for notifications.  This should be removed when the project
+// WithSDKKey sets the SDKKey used to register for notifications.  This should be removed when the project
 // config supports sdk key.
-func SDKKey(sdkKey string) QPConfigOption {
-	return func(qp *QueueingEventProcessor) {
+func WithSDKKey(sdkKey string) QPConfigOption {
+	return func(qp *BatchEventProcessor) {
 		qp.sdkKey = sdkKey
 	}
 }
 
-// NewEventProcessor returns a new instance of QueueingEventProcessor with queueSize and flushInterval
-func NewEventProcessor(options ...QPConfigOption) *QueueingEventProcessor {
-	p := &QueueingEventProcessor{}
+// NewEventProcessor returns a new instance of BatchEventProcessor with queueSize and flushInterval
+func NewEventProcessor(options ...QPConfigOption) *BatchEventProcessor {
+	p := &BatchEventProcessor{}
 
 	for _, opt := range options {
 		opt(p)
@@ -130,7 +131,7 @@ func NewEventProcessor(options ...QPConfigOption) *QueueingEventProcessor {
 }
 
 // Start initializes the event processor
-func (p *QueueingEventProcessor) Start(exeCtx utils.ExecutionCtx) {
+func (p *BatchEventProcessor) Start(exeCtx utils.ExecutionCtx) {
 	if p.EventDispatcher == nil {
 		p.EventDispatcher = NewQueueEventDispatcher(exeCtx.GetContext())
 	}
@@ -140,7 +141,7 @@ func (p *QueueingEventProcessor) Start(exeCtx utils.ExecutionCtx) {
 }
 
 // ProcessEvent processes the given impression event
-func (p *QueueingEventProcessor) ProcessEvent(event UserEvent) {
+func (p *BatchEventProcessor) ProcessEvent(event UserEvent) {
 	p.Q.Add(event)
 
 	if p.Q.Size() >= p.MaxQueueSize {
@@ -151,22 +152,22 @@ func (p *QueueingEventProcessor) ProcessEvent(event UserEvent) {
 }
 
 // EventsCount returns size of an event queue
-func (p *QueueingEventProcessor) EventsCount() int {
+func (p *BatchEventProcessor) EventsCount() int {
 	return p.Q.Size()
 }
 
 // GetEvents returns events from event queue for count
-func (p *QueueingEventProcessor) GetEvents(count int) []interface{} {
+func (p *BatchEventProcessor) GetEvents(count int) []interface{} {
 	return p.Q.Get(count)
 }
 
 // Remove removes events from queue for count
-func (p *QueueingEventProcessor) Remove(count int) []interface{} {
+func (p *BatchEventProcessor) Remove(count int) []interface{} {
 	return p.Q.Remove(count)
 }
 
 // StartTicker starts new ticker for flushing events
-func (p *QueueingEventProcessor) startTicker(exeCtx utils.ExecutionCtx) {
+func (p *BatchEventProcessor) startTicker(exeCtx utils.ExecutionCtx) {
 	if p.Ticker != nil {
 		return
 	}
@@ -194,7 +195,7 @@ func (p *QueueingEventProcessor) startTicker(exeCtx utils.ExecutionCtx) {
 }
 
 // check if user event can be batched in the current batch
-func (p *QueueingEventProcessor) canBatch(current *Batch, user UserEvent) bool {
+func (p *BatchEventProcessor) canBatch(current *Batch, user UserEvent) bool {
 	if current.ProjectID == user.EventContext.ProjectID &&
 		current.Revision == user.EventContext.Revision {
 		return true
@@ -204,13 +205,13 @@ func (p *QueueingEventProcessor) canBatch(current *Batch, user UserEvent) bool {
 }
 
 // add the visitor to the current batch
-func (p *QueueingEventProcessor) addToBatch(current *Batch, visitor Visitor) {
+func (p *BatchEventProcessor) addToBatch(current *Batch, visitor Visitor) {
 	visitors := append(current.Visitors, visitor)
 	current.Visitors = visitors
 }
 
 // FlushEvents flushes events in queue
-func (p *QueueingEventProcessor) FlushEvents() {
+func (p *BatchEventProcessor) FlushEvents() {
 	// we flush when queue size is reached.
 	// however, if there is a ticker cycle already processing, we should wait
 	p.Mux.Lock()
@@ -275,7 +276,7 @@ func (p *QueueingEventProcessor) FlushEvents() {
 }
 
 // OnEventDispatch registers a handler for LogEvent notifications
-func (p *QueueingEventProcessor) OnEventDispatch(callback func(logEvent LogEvent)) (int, error) {
+func (p *BatchEventProcessor) OnEventDispatch(callback func(logEvent LogEvent)) (int, error) {
 	notificationCenter := registry.GetNotificationCenter(p.sdkKey)
 
 	handler := func(payload interface{}) {
@@ -294,7 +295,7 @@ func (p *QueueingEventProcessor) OnEventDispatch(callback func(logEvent LogEvent
 }
 
 // RemoveOnEventDispatch removes handler for LogEvent notification with given id
-func (p *QueueingEventProcessor) RemoveOnEventDispatch(id int) error {
+func (p *BatchEventProcessor) RemoveOnEventDispatch(id int) error {
 	notificationCenter := registry.GetNotificationCenter(p.sdkKey)
 
 	if err := notificationCenter.RemoveHandler(id, notification.LogEvent); err != nil {
