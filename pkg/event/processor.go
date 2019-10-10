@@ -57,39 +57,39 @@ const DefaultEventFlushInterval = 30 * time.Second
 
 var pLogger = logging.GetLogger("EventProcessor")
 
-// QPConfigOption is the QueuingProcessor options that give you the ability to add one more more options before the processor is initialized.
-type QPConfigOption func(qp *BatchEventProcessor)
+// BPOptionConfig is the BatchProcessor options that give you the ability to add one more more options before the processor is initialized.
+type BPOptionConfig func(qp *BatchEventProcessor)
 
 // WithBatchSize sets the batch size as a config option to be passed into the NewProcessor method
-func WithBatchSize(bsize int) QPConfigOption {
+func WithBatchSize(bsize int) BPOptionConfig {
 	return func(qp *BatchEventProcessor) {
 		qp.BatchSize = bsize
 	}
 }
 
 // WithQueueSize sets the queue size as a config option to be passed into the NewProcessor method
-func WithQueueSize(qsize int) QPConfigOption {
+func WithQueueSize(qsize int) BPOptionConfig {
 	return func(qp *BatchEventProcessor) {
 		qp.MaxQueueSize = qsize
 	}
 }
 
 // WithFlushInterval sets the flush interval as a config option to be passed into the NewProcessor method
-func WithFlushInterval(flushInterval time.Duration) QPConfigOption {
+func WithFlushInterval(flushInterval time.Duration) BPOptionConfig {
 	return func(qp *BatchEventProcessor) {
 		qp.FlushInterval = flushInterval
 	}
 }
 
 // WithQueue sets the Processor Queue as a config option to be passed into the NewProcessor method
-func WithQueue(q Queue) QPConfigOption {
+func WithQueue(q Queue) BPOptionConfig {
 	return func(qp *BatchEventProcessor) {
 		qp.Q = q
 	}
 }
 
 // WithEventDispatcher sets the Processor Dispatcher as a config option to be passed into the NewProcessor method
-func WithEventDispatcher(d Dispatcher) QPConfigOption {
+func WithEventDispatcher(d Dispatcher) BPOptionConfig {
 	return func(qp *BatchEventProcessor) {
 		qp.EventDispatcher = d
 	}
@@ -97,14 +97,14 @@ func WithEventDispatcher(d Dispatcher) QPConfigOption {
 
 // WithSDKKey sets the SDKKey used to register for notifications.  This should be removed when the project
 // config supports sdk key.
-func WithSDKKey(sdkKey string) QPConfigOption {
+func WithSDKKey(sdkKey string) BPOptionConfig {
 	return func(qp *BatchEventProcessor) {
 		qp.sdkKey = sdkKey
 	}
 }
 
 // NewEventProcessor returns a new instance of BatchEventProcessor with queueSize and flushInterval
-func NewEventProcessor(options ...QPConfigOption) *BatchEventProcessor {
+func NewEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 	p := &BatchEventProcessor{}
 
 	for _, opt := range options {
