@@ -121,7 +121,7 @@ func TestCreateAndSendImpressionEvent(t *testing.T) {
 
 	impressionUserEvent := BuildTestImpressionEvent()
 
-	processor := NewEventProcessor(WithBatchSize(10), WithQueueSize(100), WithFlushInterval(100))
+	processor := NewBatchEventProcessor(WithBatchSize(10), WithQueueSize(100), WithFlushInterval(100))
 
 	processor.Start(utils.NewCancelableExecutionCtx())
 
@@ -138,7 +138,7 @@ func TestCreateAndSendConversionEvent(t *testing.T) {
 
 	conversionUserEvent := BuildTestConversionEvent()
 
-	processor := NewEventProcessor(WithFlushInterval(100))
+	processor := NewBatchEventProcessor(WithFlushInterval(100))
 
 	processor.Start(utils.NewCancelableExecutionCtx())
 

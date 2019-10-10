@@ -38,7 +38,7 @@ func NewClientWrapper(datafileName string) ClientWrapper {
 		log.Fatal(err)
 	}
 
-	eventProcessor := event.NewEventProcessor(
+	eventProcessor := event.NewBatchEventProcessor(
 		event.WithBatchSize(models.EventProcessorDefaultBatchSize),
 		event.WithQueueSize(models.EventProcessorDefaultQueueSize),
 		event.WithFlushInterval(models.EventProcessorDefaultFlushInterval),

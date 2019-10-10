@@ -103,8 +103,8 @@ func WithSDKKey(sdkKey string) BPOptionConfig {
 	}
 }
 
-// NewEventProcessor returns a new instance of BatchEventProcessor with queueSize and flushInterval
-func NewEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
+// NewBatchEventProcessor returns a new instance of BatchEventProcessor with queueSize and flushInterval
+func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 	p := &BatchEventProcessor{}
 
 	for _, opt := range options {
