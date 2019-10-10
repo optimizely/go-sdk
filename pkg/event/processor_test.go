@@ -27,9 +27,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type MockDispatcher struct {
+	ShouldFail bool
+	Events     Queue
+}
+
+func (f *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
+	if f.ShouldFail {
+		return false, errors.New("Failed to dispatch")
+	}
+
+	f.Events.Add(event)
+	return true, nil
+}
+
 func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewEventProcessor(WithFlushInterval(100))
+	processor := NewEventProcessor(WithEventDispatcher(&MockDispatcher{Events: NewInMemoryQueue(100)}), WithFlushInterval(100))
 	processor.Start(exeCtx)
 
 	impression := BuildTestImpressionEvent()
@@ -47,7 +61,7 @@ func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 
 func TestCustomEventProcessor_Create(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewEventProcessor(WithQueueSize(10), WithFlushInterval(100))
+	processor := NewEventProcessor(WithEventDispatcher(&MockDispatcher{Events: NewInMemoryQueue(100)}), WithQueueSize(10), WithFlushInterval(100))
 	processor.Start(exeCtx)
 
 	impression := BuildTestImpressionEvent()
@@ -61,20 +75,6 @@ func TestCustomEventProcessor_Create(t *testing.T) {
 	assert.NotNil(t, processor.Ticker)
 
 	assert.Equal(t, 0, processor.EventsCount())
-}
-
-type MockDispatcher struct {
-	ShouldFail bool
-	Events     Queue
-}
-
-func (f *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
-	if f.ShouldFail {
-		return false, errors.New("Failed to dispatch")
-	}
-
-	f.Events.Add(event)
-	return true, nil
 }
 
 func TestDefaultEventProcessor_LogEventNotification(t *testing.T) {
