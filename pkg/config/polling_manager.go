@@ -100,12 +100,13 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(datafile)
 
 	cm.configLock.Lock()
-	defer func() {
+	closeMutex := func() {
 		cm.err = err
 		cm.configLock.Unlock()
-	}()
+	}
 	if err != nil {
 		cmLogger.Error("failed to create project config", err)
+		closeMutex()
 		return
 	}
 
@@ -115,10 +116,12 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	}
 	if projectConfig.GetRevision() == previousRevision {
 		cmLogger.Debug(fmt.Sprintf("No datafile updates. Current revision number: %s", cm.projectConfig.GetRevision()))
+		closeMutex()
 		return
 	}
 	cmLogger.Debug(fmt.Sprintf("New datafile set with revision: %s. Old revision: %s", projectConfig.GetRevision(), previousRevision))
 	cm.projectConfig = projectConfig
+	closeMutex()
 
 	if cm.notificationCenter != nil {
 		projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
