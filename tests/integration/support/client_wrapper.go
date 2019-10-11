@@ -38,7 +38,11 @@ func NewClientWrapper(datafileName string) ClientWrapper {
 		log.Fatal(err)
 	}
 
-	eventProcessor := event.NewEventProcessor(event.BatchSize(models.EventProcessorDefaultBatchSize), event.QueueSize(models.EventProcessorDefaultQueueSize), event.FlushInterval(models.EventProcessorDefaultFlushInterval))
+	eventProcessor := event.NewBatchEventProcessor(
+		event.WithBatchSize(models.EventProcessorDefaultBatchSize),
+		event.WithQueueSize(models.EventProcessorDefaultQueueSize),
+		event.WithFlushInterval(models.EventProcessorDefaultFlushInterval),
+	)
 
 	optimizelyFactory := &client.OptimizelyFactory{
 		Datafile: datafile,
