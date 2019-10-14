@@ -29,7 +29,7 @@ import (
 
 const maxRetries = 3
 const defaultQueueSize = 1000
-const sleepTime = 5 * time.Second
+const sleepTime = 1 * time.Second
 
 var dispatcherLogger = logging.GetLogger("EventDispatcher")
 

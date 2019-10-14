@@ -111,7 +111,7 @@ func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 		MaxQueueSize:    100,
 		FlushInterval:   100,
 		Q:               event.NewInMemoryQueue(100),
-		EventDispatcher: &MockDispatcher{},
+		EventDispatcher: NewMockDispatcher(100, false),
 	}
 
 	optimizelyClient, err := factory.Client(WithConfigManager(configManager), WithDecisionService(decisionService), WithEventProcessor(processor))
