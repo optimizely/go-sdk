@@ -107,7 +107,7 @@ func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 	projectConfig := datafileprojectconfig.DatafileProjectConfig{}
 	configManager := config.NewStaticProjectConfigManager(projectConfig)
 	decisionService := new(MockDecisionService)
-	processor := &event.QueueingEventProcessor{
+	processor := &event.BatchEventProcessor{
 		MaxQueueSize:    100,
 		FlushInterval:   100,
 		Q:               event.NewInMemoryQueue(100),
