@@ -1,6 +1,7 @@
 package support
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -190,12 +191,21 @@ func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) 
 	if err != nil {
 		return fmt.Errorf("Invalid Project Config")
 	}
-	requestedBatchEvents, err := getDispatchedEventsFromYaml(value.Content, config)
+	expectedBatchEvents, err := getDispatchedEventsMapFromYaml(value.Content, config)
 	if err != nil {
 		return fmt.Errorf("Invalid request for dispatched Events")
 	}
-	dispatchedEvents := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
-	if subset.Check(requestedBatchEvents, dispatchedEvents) {
+
+	eventsReceived := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
+	eventsReceivedJSON, err := json.Marshal(eventsReceived)
+	if err != nil {
+		return fmt.Errorf("Invalid response for dispatched Events")
+	}
+	var actualBatchEvents []map[string]interface{}
+	if err := json.Unmarshal(eventsReceivedJSON, &actualBatchEvents); err != nil {
+		return fmt.Errorf("Invalid response for dispatched Events")
+	}
+	if subset.Check(expectedBatchEvents, actualBatchEvents) {
 		return nil
 	}
 	return fmt.Errorf("DispatchedEvents not equal")
