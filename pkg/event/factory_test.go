@@ -121,7 +121,9 @@ func TestCreateAndSendImpressionEvent(t *testing.T) {
 
 	impressionUserEvent := BuildTestImpressionEvent()
 
-	processor := NewBatchEventProcessor(WithBatchSize(10), WithQueueSize(100), WithFlushInterval(100))
+	processor := NewBatchEventProcessor(WithBatchSize(10), WithQueueSize(100),
+		WithFlushInterval(10),
+		WithEventDispatcher(&MockDispatcher{Events:NewInMemoryQueue(100)}))
 
 	processor.Start(utils.NewCancelableExecutionCtx())
 
@@ -129,7 +131,7 @@ func TestCreateAndSendImpressionEvent(t *testing.T) {
 
 	assert.Equal(t, 1, processor.EventsCount())
 
-	time.Sleep(2000 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	assert.Equal(t, 0, processor.EventsCount())
 }
@@ -138,7 +140,8 @@ func TestCreateAndSendConversionEvent(t *testing.T) {
 
 	conversionUserEvent := BuildTestConversionEvent()
 
-	processor := NewBatchEventProcessor(WithFlushInterval(100))
+	processor := NewBatchEventProcessor(WithFlushInterval(10),
+		WithEventDispatcher(&MockDispatcher{Events:NewInMemoryQueue(100)}))
 
 	processor.Start(utils.NewCancelableExecutionCtx())
 
@@ -146,7 +149,7 @@ func TestCreateAndSendConversionEvent(t *testing.T) {
 
 	assert.Equal(t, 1, processor.EventsCount())
 
-	time.Sleep(2000 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	assert.Equal(t, 0, processor.EventsCount())
 }
