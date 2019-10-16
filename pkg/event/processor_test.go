@@ -150,7 +150,7 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 
 func TestDefaultEventProcessor_QSizeMet(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewBatchEventProcessor(WithQueueSize(2), WithFlushInterval(100),
+	processor := NewBatchEventProcessor(WithQueueSize(2), WithFlushInterval(1000),
 		WithQueue(NewInMemoryQueue(2)), WithEventDispatcher(NewMockDispatcher(100, false)))
 	processor.Start(exeCtx)
 
