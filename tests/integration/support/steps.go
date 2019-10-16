@@ -9,7 +9,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 	"github.com/optimizely/go-sdk/tests/integration/optlyplugins"
-	"github.com/yasirfolio3/subset"
+	"github.com/optimizely/subset"
 	"gopkg.in/yaml.v3"
 )
 
