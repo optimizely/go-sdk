@@ -17,31 +17,21 @@
 package support
 
 import (
-	"encoding/json"
 	"regexp"
 	"strings"
 
 	"github.com/optimizely/go-sdk/pkg"
 
-	"github.com/optimizely/go-sdk/pkg/event"
 	"gopkg.in/yaml.v3"
 )
 
-func getDispatchedEventsFromYaml(s string, config pkg.ProjectConfig) ([]event.Batch, error) {
+func getDispatchedEventsMapFromYaml(s string, config pkg.ProjectConfig) ([]map[string]interface{}, error) {
 	var eventsArray []map[string]interface{}
 	parsedString := parseTemplate(s, config)
 	if err := yaml.Unmarshal([]byte(parsedString), &eventsArray); err != nil {
 		return nil, err
 	}
-	jsonString, err := json.Marshal(eventsArray)
-	if err != nil {
-		return nil, err
-	}
-	requestedBatchEvents := []event.Batch{}
-	if err := json.Unmarshal([]byte(jsonString), &requestedBatchEvents); err != nil {
-		return nil, err
-	}
-	return requestedBatchEvents, nil
+	return eventsArray, nil
 }
 
 func parseTemplate(s string, config pkg.ProjectConfig) string {
