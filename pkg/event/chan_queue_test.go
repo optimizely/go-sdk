@@ -33,7 +33,7 @@ func TestChanQueue_Add_Size_Remove(t *testing.T) {
 	q.Add(impression)
 	q.Add(conversion)
 
-	time.Sleep(2000 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	items1 := q.Get(2)
 
