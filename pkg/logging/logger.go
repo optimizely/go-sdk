@@ -17,7 +17,10 @@
 // Package logging //
 package logging
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 // LogLevel represents the level of the log (i.e. Debug, Info, Warning, Error)
 type LogLevel int
@@ -43,7 +46,7 @@ const (
 )
 
 func init() {
-	defaultLogConsumer = NewStdoutFilteredLevelLogConsumer(LogLevelInfo)
+	defaultLogConsumer = NewFilteredLevelLogConsumer(LogLevelInfo, os.Stdout)
 }
 
 // SetLogger replaces the default logger with the given logger
@@ -59,13 +62,13 @@ func SetLogLevel(logLevel LogLevel) {
 // GetLogger returns a log producer with the given name
 func GetLogger(name string) OptimizelyLogProducer {
 	return NamedLogProducer{
-		name: name,
+		fields: map[string]string{"name": name},
 	}
 }
 
 // NamedLogProducer produces logs prefixed with its name
 type NamedLogProducer struct {
-	name string
+	fields map[string]string
 }
 
 // Debug logs the given message with a DEBUG level
@@ -86,14 +89,11 @@ func (p NamedLogProducer) Warning(message string) {
 // Error logs the given message with a ERROR level
 func (p NamedLogProducer) Error(message string, err interface{}) {
 	if err != nil {
-		message = fmt.Sprintf("%s %v", message, err)
+		message = fmt.Sprintf("%s: %v", message, err)
 	}
 	p.log(LogLevelError, message)
 }
 
 func (p NamedLogProducer) log(logLevel LogLevel, message string) {
-
-	// prepends the name and log level to the message
-	message = fmt.Sprintf("[%s][%s] %s", p.name, logLevel, message)
-	defaultLogConsumer.Log(logLevel, message)
+	defaultLogConsumer.Log(logLevel, message, p.fields)
 }

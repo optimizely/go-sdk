@@ -19,7 +19,7 @@ package logging
 
 // OptimizelyLogConsumer consumes log messages produced by the log producers
 type OptimizelyLogConsumer interface {
-	Log(level LogLevel, message string)
+	Log(level LogLevel, message string, fields map[string]string)
 	SetLogLevel(logLevel LogLevel)
 }
 
