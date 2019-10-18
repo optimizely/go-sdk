@@ -29,8 +29,8 @@ type MockOptimizelyLogger struct {
 	loggedMessages []string
 }
 
-func (m *MockOptimizelyLogger) Log(level LogLevel, message string) {
-	m.Called(level, message)
+func (m *MockOptimizelyLogger) Log(level LogLevel, message string, fields map[string]interface{}) {
+	m.Called(level, message, fields["name"])
 	m.loggedMessages = append(m.loggedMessages, message)
 }
 
@@ -40,56 +40,67 @@ func (m *MockOptimizelyLogger) SetLogLevel(level LogLevel) {
 
 func TestNamedLoggerDebug(t *testing.T) {
 	testLogMessage := "Test debug message"
-	expectedLogMessage := "[test-debug][Debug] Test debug message"
+	testLogName := "test-debug"
 	testLogger := new(MockOptimizelyLogger)
-	testLogger.On("Log", LogLevelDebug, expectedLogMessage)
+	testLogger.On("Log", LogLevelDebug, testLogMessage, testLogName)
 
 	SetLogger(testLogger)
 
-	logProducer := GetLogger("test-debug")
+	logProducer := GetLogger(testLogName)
 	logProducer.Debug(testLogMessage)
 	testLogger.AssertExpectations(t)
-	assert.Equal(t, []string{expectedLogMessage}, testLogger.loggedMessages)
+	assert.Equal(t, []string{testLogMessage}, testLogger.loggedMessages)
 }
 
 func TestNamedLoggerInfo(t *testing.T) {
 	testLogMessage := "Test info message"
-	expectedLogMessage := "[test-info][Info] Test info message"
+	testLogName := "test-info"
 	testLogger := new(MockOptimizelyLogger)
-	testLogger.On("Log", LogLevelInfo, expectedLogMessage)
+	testLogger.On("Log", LogLevelInfo, testLogMessage, testLogName)
 
 	SetLogger(testLogger)
 
-	logProducer := GetLogger("test-info")
+	logProducer := GetLogger(testLogName)
 	logProducer.Info(testLogMessage)
 	testLogger.AssertExpectations(t)
-	assert.Equal(t, []string{expectedLogMessage}, testLogger.loggedMessages)
+	assert.Equal(t, []string{testLogMessage}, testLogger.loggedMessages)
 }
 
 func TestNamedLoggerWarning(t *testing.T) {
 	testLogMessage := "Test warn message"
-	expectedLogMessage := "[test-warn][Warning] Test warn message"
+	testLogName := "test-warn"
 	testLogger := new(MockOptimizelyLogger)
-	testLogger.On("Log", LogLevelWarning, expectedLogMessage)
+	testLogger.On("Log", LogLevelWarning, testLogMessage, testLogName)
 
 	SetLogger(testLogger)
 
-	logProducer := GetLogger("test-warn")
+	logProducer := GetLogger(testLogName)
 	logProducer.Warning(testLogMessage)
 	testLogger.AssertExpectations(t)
-	assert.Equal(t, []string{expectedLogMessage}, testLogger.loggedMessages)
+	assert.Equal(t, []string{testLogMessage}, testLogger.loggedMessages)
 }
 
 func TestNamedLoggerError(t *testing.T) {
 	testLogMessage := "Test error message"
-	expectedLogMessage := "[test-error][Error] Test error message I am an error object"
+	testLogName := "test-error"
+	expectedLogMessage := "Test error message: I am an error object"
 	testLogger := new(MockOptimizelyLogger)
-	testLogger.On("Log", LogLevelError, expectedLogMessage)
+	testLogger.On("Log", LogLevelError, expectedLogMessage, testLogName)
 	SetLogger(testLogger)
 
 	err := errors.New("I am an error object")
-	logProducer := GetLogger("test-error")
+	logProducer := GetLogger(testLogName)
 	logProducer.Error(testLogMessage, err)
 	testLogger.AssertExpectations(t)
 	assert.Equal(t, []string{expectedLogMessage}, testLogger.loggedMessages)
+}
+
+func TestSetLogLevel(t *testing.T) {
+	testLogger := new(MockOptimizelyLogger)
+	testLogger.On("SetLogLevel", LogLevelError)
+
+	SetLogger(testLogger)
+	SetLogLevel(LogLevelError)
+
+	testLogger.AssertExpectations(t)
 }

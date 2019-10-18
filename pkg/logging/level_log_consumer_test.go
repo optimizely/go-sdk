@@ -17,13 +17,15 @@
 package logging
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewStdoutFilteredLevelLogConsumer(t *testing.T) {
-	newLogger := NewStdoutFilteredLevelLogConsumer(LogLevelInfo)
+func TestFilteredLogging(t *testing.T) {
+	out := &bytes.Buffer{}
+	newLogger := NewFilteredLevelLogConsumer(LogLevelInfo, out)
 
 	assert.Equal(t, newLogger.level, LogLevel(2))
 	assert.NotNil(t, newLogger.logger)
@@ -31,6 +33,22 @@ func TestNewStdoutFilteredLevelLogConsumer(t *testing.T) {
 	newLogger.SetLogLevel(3)
 	assert.Equal(t, newLogger.level, LogLevel(3))
 
-	newLogger.Log(1, "this is hidden")
-	newLogger.Log(4, "this is visible")
+	newLogger.Log(1, "this is hidden", map[string]interface{}{})
+	assert.Equal(t, "", out.String())
+	out.Reset()
+
+	newLogger.Log(4, "this is visible", map[string]interface{}{})
+	assert.Contains(t, out.String(), "this is visible")
+	out.Reset()
+}
+
+func TestLogFormatting(t *testing.T) {
+	out := &bytes.Buffer{}
+	newLogger := NewFilteredLevelLogConsumer(LogLevelInfo, out)
+
+	newLogger.Log(LogLevelInfo, "test message", map[string]interface{}{"name": "test-name"})
+	assert.Contains(t, out.String(), "test message")
+	assert.Contains(t, out.String(), "[Info]")
+	assert.Contains(t, out.String(), "[test-name]")
+	assert.Contains(t, out.String(), "[Optimizely]")
 }
