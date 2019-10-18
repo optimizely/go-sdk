@@ -94,3 +94,13 @@ func TestNamedLoggerError(t *testing.T) {
 	testLogger.AssertExpectations(t)
 	assert.Equal(t, []string{expectedLogMessage}, testLogger.loggedMessages)
 }
+
+func TestSetLogLevel(t *testing.T) {
+	testLogger := new(MockOptimizelyLogger)
+	testLogger.On("SetLogLevel", LogLevelError)
+
+	SetLogger(testLogger)
+	SetLogLevel(LogLevelError)
+
+	testLogger.AssertExpectations(t)
+}
