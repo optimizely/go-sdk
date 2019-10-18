@@ -62,13 +62,13 @@ func SetLogLevel(logLevel LogLevel) {
 // GetLogger returns a log producer with the given name
 func GetLogger(name string) OptimizelyLogProducer {
 	return NamedLogProducer{
-		fields: map[string]string{"name": name},
+		fields: map[string]interface{}{"name": name},
 	}
 }
 
 // NamedLogProducer produces logs prefixed with its name
 type NamedLogProducer struct {
-	fields map[string]string
+	fields map[string]interface{}
 }
 
 // Debug logs the given message with a DEBUG level

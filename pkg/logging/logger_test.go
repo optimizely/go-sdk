@@ -29,7 +29,7 @@ type MockOptimizelyLogger struct {
 	loggedMessages []string
 }
 
-func (m *MockOptimizelyLogger) Log(level LogLevel, message string, fields map[string]string) {
+func (m *MockOptimizelyLogger) Log(level LogLevel, message string, fields map[string]interface{}) {
 	m.Called(level, message, fields["name"])
 	m.loggedMessages = append(m.loggedMessages, message)
 }

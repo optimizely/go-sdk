@@ -30,7 +30,7 @@ type FilteredLevelLogConsumer struct {
 }
 
 // Log logs the message if it's log level is higher than or equal to the logger's set level
-func (l *FilteredLevelLogConsumer) Log(level LogLevel, message string, fields map[string]string) {
+func (l *FilteredLevelLogConsumer) Log(level LogLevel, message string, fields map[string]interface{}) {
 	if l.level <= level {
 		// prepends the name and log level to the message
 		message = fmt.Sprintf("[%s][%s] %s", level, fields["name"], message)

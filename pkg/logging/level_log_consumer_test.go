@@ -33,11 +33,11 @@ func TestFilteredLogging(t *testing.T) {
 	newLogger.SetLogLevel(3)
 	assert.Equal(t, newLogger.level, LogLevel(3))
 
-	newLogger.Log(1, "this is hidden", map[string]string{})
+	newLogger.Log(1, "this is hidden", map[string]interface{}{})
 	assert.Equal(t, "", out.String())
 	out.Reset()
 
-	newLogger.Log(4, "this is visible", map[string]string{})
+	newLogger.Log(4, "this is visible", map[string]interface{}{})
 	assert.Contains(t, out.String(), "this is visible")
 	out.Reset()
 }
@@ -46,7 +46,7 @@ func TestLogFormatting(t *testing.T) {
 	out := &bytes.Buffer{}
 	newLogger := NewFilteredLevelLogConsumer(LogLevelInfo, out)
 
-	newLogger.Log(LogLevelInfo, "test message", map[string]string{"name": "test-name"})
+	newLogger.Log(LogLevelInfo, "test message", map[string]interface{}{"name": "test-name"})
 	assert.Contains(t, out.String(), "test message")
 	assert.Contains(t, out.String(), "[Info]")
 	assert.Contains(t, out.String(), "[test-name]")
