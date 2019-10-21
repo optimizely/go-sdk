@@ -64,7 +64,9 @@ func FeatureContext(s *godog.Suite) {
 	s.Step(`^the result should match list "([^"]*)"$`, context.TheResultShouldMatchList)
 	s.Step(`^in the response, "([^"]*)" should be "([^"]*)"$`, context.InTheResponseKeyShouldBeObject)
 	s.Step(`^in the response, "([^"]*)" should match$`, context.InTheResponseShouldMatch)
+	s.Step(`^in the response, "([^"]*)" should have this exactly (\d+) times$`, context.InTheResponseShouldHaveThisExactlyTimes)
 	s.Step(`^in the response, "([^"]*)" should have each one of these$`, context.InTheResponseShouldHaveEachOneOfThese)
+	s.Step(`^the number of dispatched events is (\d+)$`, context.TheNumberOfDispatchedEventsIs)
 	s.Step(`^there are no dispatched events$`, context.ThereAreNoDispatchedEvents)
 	s.Step(`^dispatched events payloads include$`, context.DispatchedEventsPayloadsInclude)
 }

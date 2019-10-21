@@ -170,6 +170,30 @@ func (c *ScenarioCtx) InTheResponseShouldMatch(argumentType string, value *gherk
 	default:
 		break
 	}
+
+	return fmt.Errorf("response for %s not equal", argumentType)
+}
+
+// InTheResponseShouldHaveThisExactlyTimes represents a step in the feature file
+func (c *ScenarioCtx) InTheResponseShouldHaveThisExactlyTimes(argumentType string, count int, value *gherkin.DocString) error {
+	switch argumentType {
+	case "listener_called":
+		var requestListenersCalled []models.DecisionListener
+		if err := yaml.Unmarshal([]byte(value.Content), &requestListenersCalled); err != nil {
+			break
+		}
+		listener := requestListenersCalled[0]
+		expectedListenersArray := []models.DecisionListener{}
+		for i := 0; i < count; i++ {
+			expectedListenersArray = append(expectedListenersArray, listener)
+		}
+		if subset.Check(expectedListenersArray, c.apiResponse.ListenerCalled) {
+			return nil
+		}
+		break
+	default:
+		break
+	}
 	return fmt.Errorf("response for %s not equal", argumentType)
 }
 
@@ -192,12 +216,22 @@ func (c *ScenarioCtx) InTheResponseShouldHaveEachOneOfThese(argumentType string,
 	return fmt.Errorf("response for %s not equal", argumentType)
 }
 
-// ThereAreNoDispatchedEvents represents a step in the feature file
-func (c *ScenarioCtx) ThereAreNoDispatchedEvents() error {
-	if len(c.apiResponse.ListenerCalled) == 0 {
+// TheNumberOfDispatchedEventsIs represents a step in the feature file
+func (c *ScenarioCtx) TheNumberOfDispatchedEventsIs(count int) error {
+	dispatchedEvents := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
+	if len(dispatchedEvents) == count {
 		return nil
 	}
-	return fmt.Errorf("listenersCalled should be empty")
+	return fmt.Errorf("dispatchedEvents count not equal")
+}
+
+// ThereAreNoDispatchedEvents represents a step in the feature file
+func (c *ScenarioCtx) ThereAreNoDispatchedEvents() error {
+	dispatchedEvents := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
+	if len(dispatchedEvents) == 0 {
+		return nil
+	}
+	return fmt.Errorf("dispatchedEvents should be empty")
 }
 
 // DispatchedEventsPayloadsInclude represents a step in the feature file

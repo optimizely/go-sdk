@@ -71,6 +71,10 @@ func (c *TestCompositeService) decisionNotificationCallback(notification notific
 func getDecisionInfoForNotification(notification notification.DecisionNotification) map[string]interface{} {
 	decisionInfoDict := make(map[string]interface{})
 	switch notificationType := notification.Type; notificationType {
+	case "ab-test", "feature-test":
+		decisionInfoDict["experiment_key"] = notification.DecisionInfo["experimentKey"]
+		decisionInfoDict["variation_key"] = notification.DecisionInfo["variationKey"]
+		break
 	case "feature":
 		decisionInfoDict = notification.DecisionInfo["feature"].(map[string]interface{})
 		source := ""
@@ -80,6 +84,7 @@ func getDecisionInfoForNotification(notification notification.DecisionNotificati
 			source = decisionInfoDict["source"].(string)
 		}
 		decisionInfoDict["source"] = source
+		decisionInfoDict["source_info"] = make(map[string]interface{})
 
 		if source == "feature-test" {
 			if sourceInfo, ok := notification.DecisionInfo["source_info"].(map[string]interface{}); ok {
