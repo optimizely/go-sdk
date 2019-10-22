@@ -44,7 +44,7 @@ func NewCompositeFeatureService(compositeExperimentService ExperimentService) *C
 
 // GetDecision returns a decision for the given feature and user context
 func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
-	for _, featureDecisionService := range f.featureServices {
+	for index, featureDecisionService := range f.featureServices {
 		featureDecision, err := featureDecisionService.GetDecision(decisionContext, userContext)
 		if err != nil {
 			cfLogger.Debug(fmt.Sprintf("%v", err))
@@ -52,8 +52,10 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 		if featureDecision.Variation != nil && err == nil {
 			return featureDecision, err
 		}
+		if index == len(f.featureServices)-1 {
+			return featureDecision, err
+		}
 	}
 
-	featureDecision, _ := f.featureServices[len(f.featureServices)-1].GetDecision(decisionContext, userContext)
-	return featureDecision, errors.New("no decision was made")
+	return FeatureDecision{}, errors.New("no decision was made")
 }

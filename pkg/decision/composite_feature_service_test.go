@@ -129,7 +129,7 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsError() {
 }
 
 func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsLastDecisionWithError() {
-	// test that GetDecision returns the last decision with error "no decision was made" if all decision services return error
+	// test that GetDecision returns the last decision with error if all decision services return error
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
 	}
@@ -139,7 +139,7 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsLastDecisionWit
 	}
 	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext).Return(expectedDecision, errors.New("Error making decision"))
 
-	s.mockFeatureService2.On("GetDecision", s.testFeatureDecisionContext, testUserContext).Return(expectedDecision, errors.New("Error making decision"))
+	s.mockFeatureService2.On("GetDecision", s.testFeatureDecisionContext, testUserContext).Return(expectedDecision, errors.New("test error"))
 
 	compositeFeatureService := &CompositeFeatureService{
 		featureServices: []FeatureService{
@@ -150,7 +150,7 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsLastDecisionWit
 	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext)
 	s.Equal(expectedDecision, decision)
 	s.Error(err)
-	s.Equal(err.Error(), "no decision was made")
+	s.Equal(err.Error(), "test error")
 	s.mockFeatureService.AssertExpectations(s.T())
 	s.mockFeatureService2.AssertExpectations(s.T())
 }
