@@ -54,5 +54,6 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 		}
 	}
 
-	return FeatureDecision{}, errors.New("no decision was made")
+	featureDecision, _ := f.featureServices[len(f.featureServices)-1].GetDecision(decisionContext, userContext)
+	return featureDecision, errors.New("no decision was made")
 }

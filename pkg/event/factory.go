@@ -240,7 +240,7 @@ func getEventAttributes(projectConfig pkg.ProjectConfig, attributes map[string]i
 			efLogger.Debug(fmt.Sprintf("Unrecognized attribute %s provided. Pruning before sending event to Optimizely.", key))
 			continue
 		}
-		visitorAttribute.Key = attribute.Key
+		visitorAttribute.Key = key
 		visitorAttribute.Value = value
 		visitorAttribute.AttributeType = attributeType
 
