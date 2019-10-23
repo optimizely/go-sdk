@@ -22,7 +22,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/optimizely/go-sdk/pkg/client"
 	"github.com/optimizely/go-sdk/pkg/config"
@@ -236,13 +235,13 @@ func (c *ClientWrapper) getEnabledFeatures(request models.APIOptions) (models.AP
 	var response models.APIResponse
 	err := yaml.Unmarshal([]byte(request.Arguments), &params)
 	if err == nil {
-		enabledFeatures := ""
+		var enabledFeatures []string
 		user := entities.UserContext{
 			ID:         params.UserID,
 			Attributes: params.Attributes,
 		}
 		if values, err := c.Client.GetEnabledFeatures(user); err == nil {
-			enabledFeatures = strings.Join(values, ",")
+			enabledFeatures = values
 		}
 		response.Result = enabledFeatures
 	}

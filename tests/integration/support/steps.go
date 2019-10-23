@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/DATA-DOG/godog/gherkin"
 	"github.com/optimizely/go-sdk/pkg/entities"
@@ -134,7 +135,8 @@ func (c *ScenarioCtx) TheResultShouldBeBoolean() error {
 
 // TheResultShouldMatchList represents a step in the feature file
 func (c *ScenarioCtx) TheResultShouldMatchList(list string) error {
-	if c.apiResponse.Result == list {
+	expectedList := strings.Split(list, ",")
+	if actualList := c.apiResponse.Result.([]string); compareStringSlice(expectedList, actualList) {
 		return nil
 	}
 	return fmt.Errorf("incorrect result")
