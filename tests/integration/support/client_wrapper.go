@@ -113,6 +113,10 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (models.APIResponse
 		break
 	case models.GetVariation:
 		response, err = c.getVariation(request)
+		break
+	case models.Activate:
+		response, err = c.activate(request)
+		break
 	default:
 		break
 	}
@@ -255,6 +259,23 @@ func (c *ClientWrapper) getVariation(request models.APIOptions) (models.APIRespo
 			Attributes: params.Attributes,
 		}
 		response.Result, _ = c.Client.GetVariation(params.ExperimentKey, user)
+		if response.Result == "" {
+			response.Result = "NULL"
+		}
+	}
+	return response, err
+}
+
+func (c *ClientWrapper) activate(request models.APIOptions) (models.APIResponse, error) {
+	var params models.GetVariationRequestParams
+	var response models.APIResponse
+	err := yaml.Unmarshal([]byte(request.Arguments), &params)
+	if err == nil {
+		user := entities.UserContext{
+			ID:         params.UserID,
+			Attributes: params.Attributes,
+		}
+		response.Result, _ = c.Client.Activate(params.ExperimentKey, user)
 		if response.Result == "" {
 			response.Result = "NULL"
 		}
