@@ -374,7 +374,7 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext ent
 		return decisionContext, featureDecision, nil
 	}
 
-	return decisionContext, featureDecision, err
+	return decisionContext, featureDecision, nil
 }
 
 func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userContext entities.UserContext) (decisionContext decision.ExperimentDecisionContext, experimentDecision decision.ExperimentDecision, err error) {

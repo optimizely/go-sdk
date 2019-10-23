@@ -26,6 +26,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
+	"github.com/optimizely/go-sdk/pkg/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -1718,16 +1719,19 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledWithDecisionError() {
 	}
 
 	s.mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, errors.New(""))
+	s.mockEventProcessor.On("ProcessEvent", mock.AnythingOfType("event.UserEvent"))
 
 	client := OptimizelyClient{
 		ConfigManager:   s.mockConfigManager,
 		DecisionService: s.mockDecisionService,
+		EventProcessor:  s.mockEventProcessor,
 	}
 
+	logging.SetLogLevel(logging.LogLevelDebug)
 	// should still return the decision because the error is non-fatal
 	result, err := client.IsFeatureEnabled(testFeature.Key, testUserContext)
 	s.True(result)
-	s.NotNil(err)
+	s.NoError(err)
 	s.mockConfig.AssertExpectations(s.T())
 	s.mockConfigManager.AssertExpectations(s.T())
 	s.mockDecisionService.AssertExpectations(s.T())
