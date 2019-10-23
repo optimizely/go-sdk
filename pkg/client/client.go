@@ -320,9 +320,9 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 	configEvent, e := projectConfig.GetEventByKey(eventKey)
 
 	if e != nil {
-		errorMessage := fmt.Sprintf(`optimizely SDK track: error getting event with key "%s"`, eventKey)
-		logger.Error(errorMessage, e)
-		return e
+		errorMessage := fmt.Sprintf(`Unable to get event for key "%s": %s`, eventKey, e)
+		logger.Warning(errorMessage)
+		return nil
 	}
 
 	userEvent := event.CreateConversionUserEvent(projectConfig, configEvent, userContext, eventTags)
@@ -359,8 +359,8 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext ent
 
 	feature, e := projectConfig.GetFeatureByKey(featureKey)
 	if e != nil {
-		logger.Error("Error calling getFeatureDecision", e)
-		return decisionContext, featureDecision, e
+		logger.Warning(fmt.Sprintf(`Could not get feature for key "%s": %s`, featureKey, e))
+		return decisionContext, featureDecision, nil
 	}
 
 	decisionContext = decision.FeatureDecisionContext{
@@ -370,8 +370,8 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext ent
 
 	featureDecision, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext)
 	if err != nil {
-		logger.Warning("error making a decision")
-		return decisionContext, featureDecision, err
+		logger.Warning(fmt.Sprintf(`Received error while making a decision for feature "%s": %s`, featureKey, err))
+		return decisionContext, featureDecision, nil
 	}
 
 	return decisionContext, featureDecision, err
@@ -390,8 +390,8 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 
 	experiment, e := projectConfig.GetExperimentByKey(experimentKey)
 	if e != nil {
-		logger.Error("Error calling getExperimentDecision", e)
-		return decisionContext, experimentDecision, e
+		logger.Warning(fmt.Sprintf(`Could not get experiment for key "%s": %s`, experimentKey, e))
+		return decisionContext, experimentDecision, nil
 	}
 
 	decisionContext = decision.ExperimentDecisionContext{
@@ -401,8 +401,8 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 
 	experimentDecision, err = o.DecisionService.GetExperimentDecision(decisionContext, userContext)
 	if err != nil {
-		logger.Warning(fmt.Sprintf(`error making a decision for experiment "%s"`, experimentKey))
-		return decisionContext, experimentDecision, err
+		logger.Warning(fmt.Sprintf(`Received error while making a decision for experiment "%s": %s`, experimentKey, err))
+		return decisionContext, experimentDecision, nil
 	}
 
 	if experimentDecision.Variation != nil {

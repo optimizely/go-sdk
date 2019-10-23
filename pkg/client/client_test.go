@@ -125,7 +125,7 @@ func TestTrack(t *testing.T) {
 
 }
 
-func TestTrackFail(t *testing.T) {
+func TestTrackFailEventNotFound(t *testing.T) {
 	mockProcessor := &MockProcessor{}
 	mockDecisionService := new(MockDecisionService)
 
@@ -137,7 +137,7 @@ func TestTrackFail(t *testing.T) {
 
 	err := client.Track("bob", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
 
-	assert.Error(t, err)
+	assert.NoError(t, err)
 	assert.True(t, len(mockProcessor.Events) == 0)
 
 }
@@ -1367,15 +1367,16 @@ func TestGetFeatureDecisionErrFeatureDecision(t *testing.T) {
 
 	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, errors.New("error feaure"))
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, errors.New("error feature"))
 
 	client := OptimizelyClient{
 		ConfigManager:   mockConfigManager,
 		DecisionService: mockDecisionService,
 	}
 
-	_, _, err := client.getFeatureDecision(testFeatureKey, testUserContext)
-	assert.Error(t, err)
+	_, decision, err := client.getFeatureDecision(testFeatureKey, testUserContext)
+	assert.Equal(t, expectedFeatureDecision, decision)
+	assert.NoError(t, err)
 }
 
 func TestGetAllFeatureVariables(t *testing.T) {
@@ -1466,9 +1467,11 @@ func TestGetAllFeatureVariablesWithError(t *testing.T) {
 	}
 
 	enabled, variationMap, err := client.GetAllFeatureVariables(testFeatureKey, testUserContext)
-	assert.False(t, enabled)
-	assert.Equal(t, "", variationMap[testVariableKey])
-	assert.NotNil(t, err)
+
+	// if we have a decision, but also a non-fatal error, we should return the decision
+	assert.True(t, enabled)
+	assert.Equal(t, testVariableValue, variationMap[testVariableKey])
+	assert.NoError(t, err)
 }
 
 // Helper Methods
@@ -1523,7 +1526,7 @@ func (s *ClientTestSuiteAB) TestActivate() {
 	testUserContext := entities.UserContext{ID: "test_user_1"}
 	testExperiment := makeTestExperiment("test_exp_1")
 	s.mockConfig.On("GetExperimentByKey", "test_exp_1").Return(testExperiment, nil)
-	s.mockConfig.On("GetExperimentByKey", "test_exp_2").Return(testExperiment, errors.New(""))
+	s.mockConfig.On("GetExperimentByKey", "test_exp_2").Return(testExperiment, errors.New("Experiment not found"))
 
 	testDecisionContext := decision.ExperimentDecisionContext{
 		Experiment:    &testExperiment,
@@ -1547,8 +1550,9 @@ func (s *ClientTestSuiteAB) TestActivate() {
 	s.NoError(err1)
 	s.Equal(expectedVariation.Key, variationKey1)
 
+	// should not return error for experiment not found.
 	variationKey2, err2 := testClient.Activate("test_exp_2", testUserContext)
-	s.Error(err2)
+	s.NoError(err2)
 	s.Equal("", variationKey2)
 
 	s.mockConfig.AssertExpectations(s.T())
@@ -1598,7 +1602,7 @@ func (s *ClientTestSuiteAB) TestGetVariation() {
 	s.mockEventProcessor.AssertNotCalled(s.T(), "ProcessEvent", mock.AnythingOfType("event.UserEvent"))
 }
 
-func (s *ClientTestSuiteAB) TestGetVariationWithError() {
+func (s *ClientTestSuiteAB) TestGetVariationWithDecisionError() {
 	testUserContext := entities.UserContext{ID: "test_user_1"}
 	testExperiment := makeTestExperiment("test_exp_1")
 	s.mockConfig.On("GetExperimentByKey", "test_exp_1").Return(testExperiment, nil)
@@ -1620,7 +1624,7 @@ func (s *ClientTestSuiteAB) TestGetVariationWithError() {
 	}
 
 	variationKey, err := testClient.GetVariation("test_exp_1", testUserContext)
-	s.Error(err)
+	s.NoError(err)
 	s.Equal(expectedVariation.Key, variationKey)
 	s.mockConfig.AssertExpectations(s.T())
 	s.mockDecisionService.AssertExpectations(s.T())
@@ -1719,8 +1723,10 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledWithDecisionError() {
 		ConfigManager:   s.mockConfigManager,
 		DecisionService: s.mockDecisionService,
 	}
+
+	// should still return the decision because the error is non-fatal
 	result, err := client.IsFeatureEnabled(testFeature.Key, testUserContext)
-	s.False(result)
+	s.True(result)
 	s.NotNil(err)
 	s.mockConfig.AssertExpectations(s.T())
 	s.mockConfigManager.AssertExpectations(s.T())
@@ -1752,9 +1758,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledErrorCases() {
 		DecisionService: s.mockDecisionService,
 	}
 	result, err := client.IsFeatureEnabled(testFeatureKey, testUserContext)
-	if s.Error(err) {
-		s.Equal(expectedError, err)
-	}
+	s.NoError(err)
 	s.False(result)
 	s.mockConfigManager.AssertExpectations(s.T())
 	s.mockDecisionService.AssertNotCalled(s.T(), "GetDecision")
