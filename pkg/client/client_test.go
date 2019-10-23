@@ -26,7 +26,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
-	"github.com/optimizely/go-sdk/pkg/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -158,24 +157,6 @@ func TestTrackPanics(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, len(mockProcessor.Events) == 0)
 
-}
-func TestGetEnabledFeaturesErrorCases(t *testing.T) {
-	testUserContext := entities.UserContext{ID: "test_user_1"}
-
-	// Test instance invalid
-	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(nil, errors.New("no project config available"))
-	mockDecisionService := new(MockDecisionService)
-
-	client := OptimizelyClient{
-		ConfigManager:   mockConfigManager,
-		DecisionService: mockDecisionService,
-	}
-	result, err := client.GetEnabledFeatures(testUserContext)
-	assert.Error(t, err)
-	assert.Empty(t, result)
-	mockConfigManager.AssertNotCalled(t, "GetFeatureByKey")
-	mockDecisionService.AssertNotCalled(t, "GetFeatureDecision")
 }
 
 func TestGetEnabledFeaturesPanic(t *testing.T) {
@@ -1727,7 +1708,6 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledWithDecisionError() {
 		EventProcessor:  s.mockEventProcessor,
 	}
 
-	logging.SetLogLevel(logging.LogLevelDebug)
 	// should still return the decision because the error is non-fatal
 	result, err := client.IsFeatureEnabled(testFeature.Key, testUserContext)
 	s.True(result)
@@ -1828,6 +1808,26 @@ func (s *ClientTestSuiteFM) TestGetEnabledFeatures() {
 	s.mockConfig.AssertExpectations(s.T())
 	s.mockConfigManager.AssertExpectations(s.T())
 	s.mockDecisionService.AssertExpectations(s.T())
+}
+
+func (s *ClientTestSuiteFM) TestGetEnabledFeaturesErrorCases() {
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+
+	// Test instance invalid
+	expectedError := errors.New("no project config available")
+	mockConfigManager := new(MockProjectConfigManager)
+	mockConfigManager.On("GetConfig").Return(s.mockConfig, expectedError)
+
+	client := OptimizelyClient{
+		ConfigManager:   mockConfigManager,
+		DecisionService: s.mockDecisionService,
+	}
+	result, err := client.GetEnabledFeatures(testUserContext)
+	s.Error(err)
+	s.Equal(expectedError, err)
+	s.Empty(result)
+	mockConfigManager.AssertNotCalled(s.T(), "GetFeatureByKey")
+	s.mockDecisionService.AssertNotCalled(s.T(), "GetFeatureDecision")
 }
 
 func TestClose(t *testing.T) {
