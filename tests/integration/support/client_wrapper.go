@@ -111,6 +111,8 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (models.APIResponse
 	case models.GetEnabledFeatures:
 		response, err = c.getEnabledFeatures(request)
 		break
+	case models.GetVariation:
+		response, err = c.getVariation(request)
 	default:
 		break
 	}
@@ -239,6 +241,23 @@ func (c *ClientWrapper) getEnabledFeatures(request models.APIOptions) (models.AP
 			enabledFeatures = strings.Join(values, ",")
 		}
 		response.Result = enabledFeatures
+	}
+	return response, err
+}
+
+func (c *ClientWrapper) getVariation(request models.APIOptions) (models.APIResponse, error) {
+	var params models.GetVariationRequestParams
+	var response models.APIResponse
+	err := yaml.Unmarshal([]byte(request.Arguments), &params)
+	if err == nil {
+		user := entities.UserContext{
+			ID:         params.UserID,
+			Attributes: params.Attributes,
+		}
+		response.Result, _ = c.Client.GetVariation(params.ExperimentKey, user)
+		if response.Result == "" {
+			response.Result = "NULL"
+		}
 	}
 	return response, err
 }

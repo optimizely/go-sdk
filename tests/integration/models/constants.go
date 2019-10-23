@@ -55,6 +55,8 @@ const (
 	GetFeatureVariableString APIType = "get_feature_variable_string"
 	// GetEnabledFeatures - the api type is GetEnabledFeatures
 	GetEnabledFeatures APIType = "get_enabled_features"
+	// GetVariation - the api type is GetVariation
+	GetVariation APIType = "get_variation"
 )
 
 // KeyListenerCalled - Key for listener called
