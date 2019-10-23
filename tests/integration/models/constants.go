@@ -36,3 +36,26 @@ const EventProcessorDefaultQueueSize = 1
 
 // EventProcessorDefaultFlushInterval - The default value for event processor flush interval
 const EventProcessorDefaultFlushInterval = 250 * time.Millisecond
+
+// APIType - represents api type
+type APIType string
+
+const (
+	// IsFeatureEnabled - the api type is IsFeatureEnabled
+	IsFeatureEnabled APIType = "is_feature_enabled"
+	// GetFeatureVariable - the api type is GetFeatureVariable
+	GetFeatureVariable APIType = "get_feature_variable"
+	// GetFeatureVariableInteger - the api type is GetFeatureVariableInteger
+	GetFeatureVariableInteger APIType = "get_feature_variable_integer"
+	// GetFeatureVariableDouble - the api type is GetFeatureVariableDouble
+	GetFeatureVariableDouble APIType = "get_feature_variable_double"
+	// GetFeatureVariableBoolean - the api type is GetFeatureVariableBoolean
+	GetFeatureVariableBoolean APIType = "get_feature_variable_boolean"
+	// GetFeatureVariableString - the api type is GetFeatureVariableString
+	GetFeatureVariableString APIType = "get_feature_variable_string"
+	// GetEnabledFeatures - the api type is GetEnabledFeatures
+	GetEnabledFeatures APIType = "get_enabled_features"
+)
+
+// KeyListenerCalled - Key for listener called
+const KeyListenerCalled = "listener_called"

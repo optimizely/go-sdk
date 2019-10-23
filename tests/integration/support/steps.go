@@ -143,7 +143,7 @@ func (c *ScenarioCtx) TheResultShouldMatchList(list string) error {
 // InTheResponseKeyShouldBeObject represents a step in the feature file
 func (c *ScenarioCtx) InTheResponseKeyShouldBeObject(argumentType, value string) error {
 	switch argumentType {
-	case "listener_called":
+	case models.KeyListenerCalled:
 		if value == "NULL" && c.apiResponse.ListenerCalled == nil {
 			return nil
 		}
@@ -157,7 +157,7 @@ func (c *ScenarioCtx) InTheResponseKeyShouldBeObject(argumentType, value string)
 // InTheResponseShouldMatch represents a step in the feature file
 func (c *ScenarioCtx) InTheResponseShouldMatch(argumentType string, value *gherkin.DocString) error {
 	switch argumentType {
-	case "listener_called":
+	case models.KeyListenerCalled:
 		var requestListenersCalled []models.DecisionListener
 
 		if err := yaml.Unmarshal([]byte(value.Content), &requestListenersCalled); err != nil {
@@ -174,10 +174,10 @@ func (c *ScenarioCtx) InTheResponseShouldMatch(argumentType string, value *gherk
 	return fmt.Errorf("response for %s not equal", argumentType)
 }
 
-// InTheResponseShouldHaveThisExactlyTimes represents a step in the feature file
-func (c *ScenarioCtx) InTheResponseShouldHaveThisExactlyTimes(argumentType string, count int, value *gherkin.DocString) error {
+// ResponseShouldHaveThisExactlyNTimes represents a step in the feature file
+func (c *ScenarioCtx) ResponseShouldHaveThisExactlyNTimes(argumentType string, count int, value *gherkin.DocString) error {
 	switch argumentType {
-	case "listener_called":
+	case models.KeyListenerCalled:
 		var requestListenersCalled []models.DecisionListener
 		if err := yaml.Unmarshal([]byte(value.Content), &requestListenersCalled); err != nil {
 			break
@@ -200,7 +200,7 @@ func (c *ScenarioCtx) InTheResponseShouldHaveThisExactlyTimes(argumentType strin
 // InTheResponseShouldHaveEachOneOfThese represents a step in the feature file
 func (c *ScenarioCtx) InTheResponseShouldHaveEachOneOfThese(argumentType string, value *gherkin.DocString) error {
 	switch argumentType {
-	case "listener_called":
+	case models.KeyListenerCalled:
 		var requestListenersCalled []models.DecisionListener
 
 		if err := yaml.Unmarshal([]byte(value.Content), &requestListenersCalled); err != nil {

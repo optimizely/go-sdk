@@ -89,26 +89,26 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (models.APIResponse
 	var response models.APIResponse
 	var err error
 
-	switch request.APIName {
-	case "is_feature_enabled":
+	switch models.APIType(request.APIName) {
+	case models.IsFeatureEnabled:
 		response, err = c.isFeatureEnabled(request)
 		break
-	case "get_feature_variable":
+	case models.GetFeatureVariable:
 		response, err = c.getFeatureVariable(request)
 		break
-	case "get_feature_variable_integer":
+	case models.GetFeatureVariableInteger:
 		response, err = c.getFeatureVariableInteger(request)
 		break
-	case "get_feature_variable_double":
+	case models.GetFeatureVariableDouble:
 		response, err = c.getFeatureVariableDouble(request)
 		break
-	case "get_feature_variable_boolean":
+	case models.GetFeatureVariableBoolean:
 		response, err = c.getFeatureVariableBoolean(request)
 		break
-	case "get_feature_variable_string":
+	case models.GetFeatureVariableString:
 		response, err = c.getFeatureVariableString(request)
 		break
-	case "get_enabled_features":
+	case models.GetEnabledFeatures:
 		response, err = c.getEnabledFeatures(request)
 		break
 	default:
