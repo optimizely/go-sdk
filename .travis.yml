@@ -6,7 +6,7 @@ install:
   - eval "$(gimme)"
 stages:
   - 'Lint'
-  - 'Integration tests'
+  # - 'Integration tests'
   - 'Unit test'
 jobs:
   include:
@@ -16,19 +16,19 @@ jobs:
         - curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.19.0
       script:
         - $GOPATH/bin/golangci-lint run --out-format=tab --tests=false pkg/...
-    - stage: 'Integration Tests'
-      merge_mode: replace
-      env: SDK=go SDK_BRANCH=$TRAVIS_PULL_REQUEST_BRANCH
-      cache: false
-      language: minimal
-      install: skip
-      before_script:
-        - mkdir $HOME/travisci-tools && pushd $HOME/travisci-tools && git init && git pull https://$CI_USER_TOKEN@github.com/optimizely/travisci-tools.git && popd
-      script:
-        # TODO: Remove sohail/gosdkonly branch specification here, after
-        # we can run FSC tests on master: https://optimizely.atlassian.net/browse/OASIS-5425
-        - $HOME/travisci-tools/trigger-script-with-status-update.sh sohail/gosdkonly
-      after_success: travis_terminate 0
+    # - stage: 'Integration Tests'
+    #   merge_mode: replace
+    #   env: SDK=go SDK_BRANCH=$TRAVIS_PULL_REQUEST_BRANCH
+    #   cache: false
+    #   language: minimal
+    #   install: skip
+    #   before_script:
+    #     - mkdir $HOME/travisci-tools && pushd $HOME/travisci-tools && git init && git pull https://$CI_USER_TOKEN@github.com/optimizely/travisci-tools.git && popd
+    #   script:
+    #     # TODO: Remove sohail/gosdkonly branch specification here, after
+    #     # we can run FSC tests on master: https://optimizely.atlassian.net/browse/OASIS-5425
+    #     - $HOME/travisci-tools/trigger-script-with-status-update.sh sohail/gosdkonly
+    #   after_success: travis_terminate 0
     - &test
       stage: 'Unit test'
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
