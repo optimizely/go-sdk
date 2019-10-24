@@ -78,6 +78,8 @@ func parseTemplate(s string, config pkg.ProjectConfig) string {
 	return parsedString
 }
 
+// https://stackoverflow.com/a/36000696/4849178
+// Unordered string slice comparison
 func compareStringSlice(x, y []string) bool {
 	if len(x) != len(y) {
 		return false
