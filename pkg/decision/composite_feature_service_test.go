@@ -128,6 +128,33 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsError() {
 	s.mockFeatureService2.AssertExpectations(s.T())
 }
 
+func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsLastDecisionWithError() {
+	// test that GetDecision returns the last decision with error if all decision services return error
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	expectedDecision := FeatureDecision{
+		Variation: &testExp1113Var2223,
+	}
+	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext).Return(expectedDecision, errors.New("Error making decision"))
+
+	s.mockFeatureService2.On("GetDecision", s.testFeatureDecisionContext, testUserContext).Return(expectedDecision, errors.New("test error"))
+
+	compositeFeatureService := &CompositeFeatureService{
+		featureServices: []FeatureService{
+			s.mockFeatureService,
+			s.mockFeatureService2,
+		},
+	}
+	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext)
+	s.Equal(expectedDecision, decision)
+	s.Error(err)
+	s.Equal(err.Error(), "test error")
+	s.mockFeatureService.AssertExpectations(s.T())
+	s.mockFeatureService2.AssertExpectations(s.T())
+}
+
 func (s *CompositeFeatureServiceTestSuite) TestNewCompositeFeatureService() {
 	// Assert that the service is instantiated with the correct child services in the right order
 	compositeExperimentService := NewCompositeExperimentService()

@@ -18,7 +18,6 @@
 package decision
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
@@ -44,8 +43,10 @@ func NewCompositeFeatureService(compositeExperimentService ExperimentService) *C
 
 // GetDecision returns a decision for the given feature and user context
 func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
+	var featureDecision = FeatureDecision{}
+	var err error
 	for _, featureDecisionService := range f.featureServices {
-		featureDecision, err := featureDecisionService.GetDecision(decisionContext, userContext)
+		featureDecision, err = featureDecisionService.GetDecision(decisionContext, userContext)
 		if err != nil {
 			cfLogger.Debug(fmt.Sprintf("%v", err))
 		}
@@ -53,6 +54,5 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 			return featureDecision, err
 		}
 	}
-
-	return FeatureDecision{}, errors.New("no decision was made")
+	return featureDecision, err
 }
