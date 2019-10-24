@@ -1555,6 +1555,22 @@ func (s *ClientTestSuiteAB) TestActivatePanics() {
 	s.EqualError(err, "I'm panicking")
 }
 
+func (s *ClientTestSuiteAB) TestActivateInvalidConfig() {
+	testUserContext := entities.UserContext{}
+
+	mockConfigManager := new(MockProjectConfigManager)
+	expectedError := errors.New("no project config available")
+	mockConfigManager.On("GetConfig").Return(s.mockConfig, expectedError)
+	testClient := OptimizelyClient{
+		ConfigManager: mockConfigManager,
+	}
+
+	variationKey, err := testClient.Activate("test_exp_1", testUserContext)
+	s.Equal("", variationKey)
+	s.Error(err)
+	s.Equal(expectedError, err)
+}
+
 func (s *ClientTestSuiteAB) TestGetVariation() {
 	testUserContext := entities.UserContext{ID: "test_user_1"}
 	testExperiment := makeTestExperiment("test_exp_1")
