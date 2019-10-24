@@ -70,17 +70,9 @@ func (c *TestCompositeService) decisionNotificationCallback(notification notific
 
 func getDecisionInfoForNotification(notification notification.DecisionNotification) map[string]interface{} {
 	decisionInfoDict := make(map[string]interface{})
-	switch notificationType := notification.Type; notificationType {
-	case "feature":
-		decisionInfoDict = notification.DecisionInfo["feature"].(map[string]interface{})
-		source := ""
-		if decisionSource, ok := decisionInfoDict["source"].(decision.Source); ok {
-			source = string(decisionSource)
-		} else {
-			source = decisionInfoDict["source"].(string)
-		}
-		decisionInfoDict["source"] = source
 
+	updateSourceInfo := func(source string) {
+		decisionInfoDict["source_info"] = make(map[string]interface{})
 		if source == "feature-test" {
 			if sourceInfo, ok := notification.DecisionInfo["source_info"].(map[string]interface{}); ok {
 				if experimentKey, ok := sourceInfo["experiment_key"].(string); ok {
@@ -93,7 +85,36 @@ func getDecisionInfoForNotification(notification notification.DecisionNotificati
 				}
 			}
 		}
+	}
 
+	switch notificationType := notification.Type; notificationType {
+	case "ab-test", "feature-test":
+		decisionInfoDict["experiment_key"] = notification.DecisionInfo["experimentKey"]
+		decisionInfoDict["variation_key"] = notification.DecisionInfo["variationKey"]
+		break
+	case "feature":
+		decisionInfoDict = notification.DecisionInfo["feature"].(map[string]interface{})
+		source := ""
+		if decisionSource, ok := decisionInfoDict["source"].(decision.Source); ok {
+			source = string(decisionSource)
+		} else {
+			source = decisionInfoDict["source"].(string)
+		}
+		decisionInfoDict["source"] = source
+		updateSourceInfo(source)
+	case "feature-variable":
+		decisionInfoDict = notification.DecisionInfo["feature"].(map[string]interface{})
+		source := ""
+		if decisionSource, ok := decisionInfoDict["source"].(decision.Source); ok {
+			source = string(decisionSource)
+		} else {
+			source = decisionInfoDict["source"].(string)
+		}
+		decisionInfoDict["source"] = source
+		decisionInfoDict["variable_key"] = notification.DecisionInfo["variable_key"]
+		decisionInfoDict["variable_type"] = notification.DecisionInfo["variable_type"]
+		decisionInfoDict["variable_value"] = notification.DecisionInfo["variable_value"]
+		updateSourceInfo(source)
 	default:
 	}
 	return decisionInfoDict

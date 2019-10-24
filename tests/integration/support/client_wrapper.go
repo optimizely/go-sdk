@@ -22,7 +22,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/optimizely/go-sdk/pkg/client"
 	"github.com/optimizely/go-sdk/pkg/config"
@@ -89,27 +88,33 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (models.APIResponse
 	var response models.APIResponse
 	var err error
 
-	switch request.APIName {
-	case "is_feature_enabled":
+	switch models.SDKAPI(request.APIName) {
+	case models.IsFeatureEnabled:
 		response, err = c.isFeatureEnabled(request)
 		break
-	case "get_feature_variable":
+	case models.GetFeatureVariable:
 		response, err = c.getFeatureVariable(request)
 		break
-	case "get_feature_variable_integer":
+	case models.GetFeatureVariableInteger:
 		response, err = c.getFeatureVariableInteger(request)
 		break
-	case "get_feature_variable_double":
+	case models.GetFeatureVariableDouble:
 		response, err = c.getFeatureVariableDouble(request)
 		break
-	case "get_feature_variable_boolean":
+	case models.GetFeatureVariableBoolean:
 		response, err = c.getFeatureVariableBoolean(request)
 		break
-	case "get_feature_variable_string":
+	case models.GetFeatureVariableString:
 		response, err = c.getFeatureVariableString(request)
 		break
-	case "get_enabled_features":
+	case models.GetEnabledFeatures:
 		response, err = c.getEnabledFeatures(request)
+		break
+	case models.GetVariation:
+		response, err = c.getVariation(request)
+		break
+	case models.Activate:
+		response, err = c.activate(request)
 		break
 	default:
 		break
@@ -230,15 +235,49 @@ func (c *ClientWrapper) getEnabledFeatures(request models.APIOptions) (models.AP
 	var response models.APIResponse
 	err := yaml.Unmarshal([]byte(request.Arguments), &params)
 	if err == nil {
-		enabledFeatures := ""
+		var enabledFeatures []string
 		user := entities.UserContext{
 			ID:         params.UserID,
 			Attributes: params.Attributes,
 		}
 		if values, err := c.Client.GetEnabledFeatures(user); err == nil {
-			enabledFeatures = strings.Join(values, ",")
+			enabledFeatures = values
 		}
 		response.Result = enabledFeatures
+	}
+	return response, err
+}
+
+func (c *ClientWrapper) getVariation(request models.APIOptions) (models.APIResponse, error) {
+	var params models.GetVariationRequestParams
+	var response models.APIResponse
+	err := yaml.Unmarshal([]byte(request.Arguments), &params)
+	if err == nil {
+		user := entities.UserContext{
+			ID:         params.UserID,
+			Attributes: params.Attributes,
+		}
+		response.Result, _ = c.Client.GetVariation(params.ExperimentKey, user)
+		if response.Result == "" {
+			response.Result = "NULL"
+		}
+	}
+	return response, err
+}
+
+func (c *ClientWrapper) activate(request models.APIOptions) (models.APIResponse, error) {
+	var params models.GetVariationRequestParams
+	var response models.APIResponse
+	err := yaml.Unmarshal([]byte(request.Arguments), &params)
+	if err == nil {
+		user := entities.UserContext{
+			ID:         params.UserID,
+			Attributes: params.Attributes,
+		}
+		response.Result, _ = c.Client.Activate(params.ExperimentKey, user)
+		if response.Result == "" {
+			response.Result = "NULL"
+		}
 	}
 	return response, err
 }
