@@ -88,7 +88,7 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (models.APIResponse
 	var response models.APIResponse
 	var err error
 
-	switch models.APIType(request.APIName) {
+	switch models.SDKAPI(request.APIName) {
 	case models.IsFeatureEnabled:
 		response, err = c.isFeatureEnabled(request)
 		break

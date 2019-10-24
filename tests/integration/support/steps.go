@@ -30,20 +30,20 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ScenarioCtx holds both apiOptions and apiResponse for a scenario
+// ScenarioCtx holds both apiOptions and apiResponse for a scenario.
 type ScenarioCtx struct {
 	apiOptions    models.APIOptions
 	apiResponse   models.APIResponse
 	clientWrapper ClientWrapper
 }
 
-// TheDatafileIs represents a step in the feature file
+// TheDatafileIs defines a datafileName to initialize the client with.
 func (c *ScenarioCtx) TheDatafileIs(datafileName string) error {
 	c.clientWrapper = NewClientWrapper(datafileName)
 	return nil
 }
 
-// ListenerIsAdded represents a step in the feature file
+// ListenerIsAdded defines the listeners to be added to the client.
 func (c *ScenarioCtx) ListenerIsAdded(numberOfListeners int, ListenerName string) error {
 	if c.apiOptions.Listeners == nil {
 		c.apiOptions.Listeners = make(map[string]int)
@@ -52,7 +52,7 @@ func (c *ScenarioCtx) ListenerIsAdded(numberOfListeners int, ListenerName string
 	return nil
 }
 
-// IsCalledWithArguments represents a step in the feature file
+// IsCalledWithArguments calls an SDK API with arguments.
 func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.DocString) error {
 	c.apiOptions.APIName = apiName
 	c.apiOptions.Arguments = arguments.Content
@@ -66,7 +66,7 @@ func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.D
 	return fmt.Errorf("invalid api or arguments")
 }
 
-// TheResultShouldBeString represents a step in the feature file
+// TheResultShouldBeString checks that the result is of type string with the given value.
 func (c *ScenarioCtx) TheResultShouldBeString(result string) error {
 	if c.apiResponse.Type != "" && c.apiResponse.Type != entities.String {
 		return fmt.Errorf("incorrect type")
@@ -77,7 +77,7 @@ func (c *ScenarioCtx) TheResultShouldBeString(result string) error {
 	return fmt.Errorf("incorrect result")
 }
 
-// TheResultShouldBeInteger represents a step in the feature file
+// TheResultShouldBeInteger checks that the result is of type integer with the given value.
 func (c *ScenarioCtx) TheResultShouldBeInteger(result int) error {
 	if c.apiResponse.Type != "" && c.apiResponse.Type != entities.Integer {
 		return fmt.Errorf("incorrect type")
@@ -92,7 +92,7 @@ func (c *ScenarioCtx) TheResultShouldBeInteger(result int) error {
 	return fmt.Errorf("incorrect result")
 }
 
-// TheResultShouldBeFloat represents a step in the feature file
+// TheResultShouldBeFloat checks that the result is of type double with the given value.
 func (c *ScenarioCtx) TheResultShouldBeFloat(lv, rv int) error {
 	floatvalue, _ := strconv.ParseFloat(fmt.Sprintf("%v.%v", lv, rv), 64)
 	if c.apiResponse.Type != "" && c.apiResponse.Type != entities.Double {
@@ -108,7 +108,7 @@ func (c *ScenarioCtx) TheResultShouldBeFloat(lv, rv int) error {
 	return fmt.Errorf("incorrect result")
 }
 
-// TheResultShouldBeTypedBoolean represents a step in the feature file
+// TheResultShouldBeTypedBoolean checks that the result is of type boolean with the given value.
 func (c *ScenarioCtx) TheResultShouldBeTypedBoolean(result string) error {
 	boolValue, _ := strconv.ParseBool(result)
 	if c.apiResponse.Type != "" && c.apiResponse.Type != entities.Boolean {
@@ -124,7 +124,7 @@ func (c *ScenarioCtx) TheResultShouldBeTypedBoolean(result string) error {
 	return fmt.Errorf("incorrect result")
 }
 
-// TheResultShouldBeBoolean represents a step in the feature file
+// TheResultShouldBeBoolean checks that the result is equal to the given boolean value.
 func (c *ScenarioCtx) TheResultShouldBeBoolean() error {
 	boolValue, _ := strconv.ParseBool(c.apiResponse.Result.(string))
 	if boolValue == false {
@@ -133,16 +133,16 @@ func (c *ScenarioCtx) TheResultShouldBeBoolean() error {
 	return fmt.Errorf("incorrect result")
 }
 
-// TheResultShouldMatchList represents a step in the feature file
+// TheResultShouldMatchList checks that the result equals to the provided list.
 func (c *ScenarioCtx) TheResultShouldMatchList(list string) error {
 	expectedList := strings.Split(list, ",")
-	if actualList := c.apiResponse.Result.([]string); compareStringSlice(expectedList, actualList) {
+	if actualList, ok := c.apiResponse.Result.([]string); ok && compareStringSlice(expectedList, actualList) {
 		return nil
 	}
 	return fmt.Errorf("incorrect result")
 }
 
-// InTheResponseKeyShouldBeObject represents a step in the feature file
+// InTheResponseKeyShouldBeObject checks that the response object contains a property with given value.
 func (c *ScenarioCtx) InTheResponseKeyShouldBeObject(argumentType, value string) error {
 	switch argumentType {
 	case models.KeyListenerCalled:
@@ -156,7 +156,7 @@ func (c *ScenarioCtx) InTheResponseKeyShouldBeObject(argumentType, value string)
 	return fmt.Errorf("incorrect listeners called")
 }
 
-// InTheResponseShouldMatch represents a step in the feature file
+// InTheResponseShouldMatch checks that the response object contains a property with matching value.
 func (c *ScenarioCtx) InTheResponseShouldMatch(argumentType string, value *gherkin.DocString) error {
 	switch argumentType {
 	case models.KeyListenerCalled:
@@ -176,7 +176,7 @@ func (c *ScenarioCtx) InTheResponseShouldMatch(argumentType string, value *gherk
 	return fmt.Errorf("response for %s not equal", argumentType)
 }
 
-// ResponseShouldHaveThisExactlyNTimes represents a step in the feature file
+// ResponseShouldHaveThisExactlyNTimes checks that the response object has the given property exactly N times.
 func (c *ScenarioCtx) ResponseShouldHaveThisExactlyNTimes(argumentType string, count int, value *gherkin.DocString) error {
 	switch argumentType {
 	case models.KeyListenerCalled:
@@ -199,7 +199,7 @@ func (c *ScenarioCtx) ResponseShouldHaveThisExactlyNTimes(argumentType string, c
 	return fmt.Errorf("response for %s not equal", argumentType)
 }
 
-// InTheResponseShouldHaveEachOneOfThese represents a step in the feature file
+// InTheResponseShouldHaveEachOneOfThese checks that the response object contains each of the provided properties.
 func (c *ScenarioCtx) InTheResponseShouldHaveEachOneOfThese(argumentType string, value *gherkin.DocString) error {
 	switch argumentType {
 	case models.KeyListenerCalled:
@@ -218,7 +218,7 @@ func (c *ScenarioCtx) InTheResponseShouldHaveEachOneOfThese(argumentType string,
 	return fmt.Errorf("response for %s not equal", argumentType)
 }
 
-// TheNumberOfDispatchedEventsIs represents a step in the feature file
+// TheNumberOfDispatchedEventsIs checks the count of the dispatched events to be equal to the given value.
 func (c *ScenarioCtx) TheNumberOfDispatchedEventsIs(count int) error {
 	dispatchedEvents := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
 	if len(dispatchedEvents) == count {
@@ -227,16 +227,16 @@ func (c *ScenarioCtx) TheNumberOfDispatchedEventsIs(count int) error {
 	return fmt.Errorf("dispatchedEvents count not equal")
 }
 
-// ThereAreNoDispatchedEvents represents a step in the feature file
+// ThereAreNoDispatchedEvents checks the dispatched events count to be empty.
 func (c *ScenarioCtx) ThereAreNoDispatchedEvents() error {
 	dispatchedEvents := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
 	if len(dispatchedEvents) == 0 {
 		return nil
 	}
-	return fmt.Errorf("dispatchedEvents should be empty")
+	return fmt.Errorf("dispatchedEvents should be empty but received %d events", len(dispatchedEvents))
 }
 
-// DispatchedEventsPayloadsInclude represents a step in the feature file
+// DispatchedEventsPayloadsInclude checks dispatched events to contain the given events.
 func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) error {
 
 	config, err := c.clientWrapper.Client.GetProjectConfig()
