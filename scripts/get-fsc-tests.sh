@@ -11,5 +11,5 @@ mkdir -p ./tests/integration/features
 cp -r ./$FSC_PATH/features/* ./tests/integration/features
 mkdir -p ./fsc-datafiles
 cp -r ./$FSC_PATH/features/support/datafiles/*.json ./fsc-datafiles
-export DATAFILES_DIR=$TRAVIS_BUILD_DIR/fsc-datafiles
+source export DATAFILES_DIR=$TRAVIS_BUILD_DIR/fsc-datafiles
 echo "Ready for testing."
