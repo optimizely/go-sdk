@@ -56,15 +56,10 @@ jobs:
       after_success:
         - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
     - stage: 'Integration as unit tests'
-      env: GIMME_GO_VERSION=1.8.x
+      env: GIMME_GO_VERSION=1.12.x
       install:
         - eval "$(gimme)"
-      before_script:
-        # GO module was not introduced earlier. need symlink to search in GOPATH
-        - mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely optimizely && popd
       script:
-        # Need to download packages explicitly
-        - go get -v -d ./...
         - scripts/get-fsc-tests.sh
         - go test ./tests/integration
         
