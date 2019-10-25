@@ -60,6 +60,6 @@ jobs:
       install:
         - eval "$(gimme)"
       script:
-        - scripts/get-fsc-tests.sh
+        - source scripts/get-fsc-tests.sh
         - go test ./tests/integration
         
