@@ -1,6 +1,6 @@
 #!/bin/bash
-# This script fetches Full stack compatibility suite and copy feature files in to root/features directory
-# and copy datafiles from Full stack compatibility suite in to fsc-datafiles folder
+# This script fetches Full stack compatibility suite and copies all the feature files into root/tests/integration/features directory
+# and copies all the datafiles into fsc-datafiles folder.
 set -e
 FSC_PATH=tmp/fsc-repo
 rm -rf $FSC_PATH
