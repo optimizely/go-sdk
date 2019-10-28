@@ -31,6 +31,8 @@ jobs:
     #   after_success: travis_terminate 0
     - &test
       stage: 'Unit test'
+      addons:
+        srcclr: true
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
       script:
         - go test -v -race ./... -coverprofile=profile.cov
