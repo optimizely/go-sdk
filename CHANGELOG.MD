@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.0.0-beta4] - October 28th, 2019
+
+### New Features
+- feat(logger): Expand LogConsumer interface to have explicit field mapping. [#147](https://github.com/optimizely/go-sdk/pull/147)
+
+### Bug Fixes
+- refac(client): Revise how the client handles and returns errors. [#151](https://github.com/optimizely/go-sdk/pull/151)
+
 ## [1.0.0-beta3] - October 15th, 2019
 
 ### Breaking Changes
