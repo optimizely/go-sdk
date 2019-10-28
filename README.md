@@ -251,3 +251,7 @@ License (MIT): https://github.com/stretchr/testify/blob/master/LICENSE
 json-iterator
 Copyright (c) 2016 json-iterator
 License (MIT): https://github.com/json-iterator/go/blob/master/LICENSE
+
+subset
+Copyright (c) 2015, Facebook, Inc. All rights reserved.
+License (BSD): https://github.com/facebookarchive/subset/blob/master/license
