@@ -44,9 +44,9 @@ const (
 	// WhitelistVariationAssignmentFound - a valid variation assignment was found for the given user and experiment
 	WhitelistVariationAssignmentFound Reason = "Whitelist variation assignment found"
 	// NoOverrideVariationForUser - No override variation was found for the given user and experiment
-	NoOverrideVariationForUser Reason = "No override variation for user"
+	NoOverrideVariationForUser Reason = "No override variation assignment"
 	// InvalidOverrideVariationForUser - An override variation was found for the given user and experiment, but no variation with that key exists in the given experiment
-	InvalidOverrideVariationForUser Reason = "No override variation for user"
+	InvalidOverrideVariationForUser Reason = "Invalid override variation assignment"
 	// OverrideVariationFound - A valid override variation was found for the given user and experiment
-	OverrideVariationFound Reason = "Override variation found"
+	OverrideVariationFound Reason = "Override variation assignment found"
 )

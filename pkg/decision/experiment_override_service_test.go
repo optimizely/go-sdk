@@ -47,7 +47,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestOverridesIncludeVariation() {
 		ID: "test_user_1",
 	}
 
-	s.overrides[OverrideKey{experiment: testExp1111.Key, user: testUserContext.ID}] = testExp1111Var2222.Key
+	s.overrides[OverrideKey{Experiment: testExp1111.Key, User: testUserContext.ID}] = testExp1111Var2222.Key
 
 	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
 

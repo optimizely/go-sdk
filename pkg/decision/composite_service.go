@@ -35,16 +35,32 @@ type CompositeService struct {
 	notificationCenter         notification.Center
 }
 
+// CSOptionFunc allows customization of the CompositeService returned from NewCompositeService
+type CSOptionFunc func(*CompositeService)
+
+// WithCompositeExperimentService sets a custom compositeExperimentService
+func WithCompositeExperimentService(compositeExperimentService *CompositeExperimentService) CSOptionFunc {
+	return func(service *CompositeService) {
+		service.compositeExperimentService = compositeExperimentService
+	}
+}
+
 // NewCompositeService returns a new instance of the CompositeService with the defaults
-func NewCompositeService(sdkKey string) *CompositeService {
+func NewCompositeService(sdkKey string, options ...CSOptionFunc) *CompositeService {
 	// @TODO: add factory method with option funcs to accept custom feature and experiment services
 	compositeExperimentService := NewCompositeExperimentService()
 	compositeFeatureDecisionService := NewCompositeFeatureService(compositeExperimentService)
-	return &CompositeService{
+	compositeService := &CompositeService{
 		compositeExperimentService: compositeExperimentService,
 		compositeFeatureService:    compositeFeatureDecisionService,
 		notificationCenter:         registry.GetNotificationCenter(sdkKey),
 	}
+
+	for _, option := range options {
+		option(compositeService)
+	}
+
+	return compositeService
 }
 
 // GetFeatureDecision returns a decision for the given feature key

@@ -19,14 +19,18 @@ package decision
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
+
+var eosLogger = logging.GetLogger("ExperimentOverrideService")
 
 // OverrideKey is the type of keys in the Overrides map of ExperimentOverrideService
 type OverrideKey struct {
-	experiment, user string
+	Experiment, User string
 }
 
 // ExperimentOverrideService makes a decision using a given map of (experiment key, user id) to variation keys
@@ -50,19 +54,21 @@ func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisio
 		return decision, errors.New("decisionContext Experiment is nil")
 	}
 
-	variationKey, ok := s.Overrides[OverrideKey{experiment: decisionContext.Experiment.Key, user: userContext.ID}]
+	variationKey, ok := s.Overrides[OverrideKey{Experiment: decisionContext.Experiment.Key, User: userContext.ID}]
 	if !ok {
 		decision.Reason = reasons.NoOverrideVariationForUser
 		return decision, nil
 	}
 
-	variation, ok := decisionContext.Experiment.Variations[variationKey]
-	if !ok {
-		decision.Reason = reasons.InvalidOverrideVariationForUser
-		return decision, nil
+	for _, variation := range decisionContext.Experiment.Variations {
+		if variation.Key == variationKey {
+			decision.Variation = &variation
+			decision.Reason = reasons.OverrideVariationFound
+			eosLogger.Info(fmt.Sprintf("Override variation %v found for user %v", variationKey, userContext.ID))
+			return decision, nil
+		}
 	}
 
-	decision.Variation = &variation
-	decision.Reason = reasons.OverrideVariationFound
+	decision.Reason = reasons.InvalidOverrideVariationForUser
 	return decision, nil
 }
