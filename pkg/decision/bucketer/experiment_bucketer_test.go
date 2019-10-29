@@ -10,25 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGenerateBucketValue(t *testing.T) {
-	bucketer := NewMurmurhashBucketer(DefaultHashSeed)
-
-	// copied from unit tests in the other SDKs
-	experimentID := "1886780721"
-	experimentID2 := "1886780722"
-	bucketingKey1 := fmt.Sprintf("%s%s", "ppid1", experimentID)
-	bucketingKey2 := fmt.Sprintf("%s%s", "ppid2", experimentID)
-	bucketingKey3 := fmt.Sprintf("%s%s", "ppid2", experimentID2)
-	bucketingKey4 := fmt.Sprintf("%s%s", "ppid3", experimentID)
-
-	assert.Equal(t, 5254, bucketer.generateBucketValue(bucketingKey1))
-	assert.Equal(t, 4299, bucketer.generateBucketValue(bucketingKey2))
-	assert.Equal(t, 2434, bucketer.generateBucketValue(bucketingKey3))
-	assert.Equal(t, 5439, bucketer.generateBucketValue(bucketingKey4))
-}
-
 func TestBucketToEntity(t *testing.T) {
-	bucketer := NewMurmurhashBucketer(DefaultHashSeed)
+	bucketer := NewMurmurhashExperimentBucketer(DefaultHashSeed)
 
 	experimentID := "1886780721"
 	experimentID2 := "1886780722"
@@ -106,7 +89,7 @@ func TestBucketExclusionGroups(t *testing.T) {
 		},
 	}
 
-	bucketer := NewMurmurhashBucketer(DefaultHashSeed)
+	bucketer := NewMurmurhashExperimentBucketer(DefaultHashSeed)
 	// ppid2 + 1886780722 (groupId) will generate bucket value of 2434 which maps to experiment 1
 	bucketedVariation, reason, _ := bucketer.Bucket("ppid2", experiment1, exclusionGroup)
 	assert.Equal(t, experiment1.Variations["22222"], *bucketedVariation)
