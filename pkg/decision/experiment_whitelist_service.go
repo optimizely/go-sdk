@@ -50,6 +50,7 @@ func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisi
 	// TODO(Matt): Add a VariationsByKey map to the Experiment struct, and use it to look up Variation by key
 	for _, variation := range decisionContext.Experiment.Variations {
 		if variation.Key == variationKey {
+			variation := variation
 			decision.Reason = reasons.WhitelistVariationAssignmentFound
 			decision.Variation = &variation
 			return decision, nil
