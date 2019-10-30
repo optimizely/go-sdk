@@ -5,10 +5,9 @@ git:
 install:
   - eval "$(gimme)"
 stages:
-  - 'Lint'
-  # - 'Integration tests'
-  - 'Unit test'
-  - 'Integration as unit tests'
+  # - 'Lint'
+  # - 'Unit test'
+  - 'Integration tests'
 jobs:
   include:
     - stage: 'Lint'
@@ -55,11 +54,12 @@ jobs:
         - go get github.com/mattn/goveralls
       after_success:
         - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
-    - stage: 'Integration as unit tests'
+    - stage: 'Integration tests'
       env: GIMME_GO_VERSION=1.12.x
       install:
         - eval "$(gimme)"
       script:
-        - source scripts/get-fsc-tests.sh
+        - ./scripts/get-fsc-tests.sh -f tests/integration/features -d fsc-datafiles
+        - export DATAFILES_DIR=$TRAVIS_BUILD_DIR/fsc-datafiles
         - go test ./tests/integration
         
