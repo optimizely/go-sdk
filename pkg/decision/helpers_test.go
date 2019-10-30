@@ -226,7 +226,7 @@ var testTargetedExp1116 = entities.Experiment{
 // Experiment with a whitelist
 const testExpWhitelistKey = "test_experiment_whitelist"
 
-var testExpWhitelistVar2229 = entities.Variation{ID: "2229", Key: "2229"}
+var testExpWhitelistVar2229 = entities.Variation{ID: "2229", Key: "var_2229"}
 var testExpWhitelist = entities.Experiment{
 	ID:  "1117",
 	Key: testExpWhitelistKey,
@@ -237,26 +237,8 @@ var testExpWhitelist = entities.Experiment{
 		entities.Range{EntityID: "2229", EndOfRange: 10000},
 	},
 	Whitelist: map[string]string{
-		"test_user_1": "2229",
-		// Note: this is an invalid entry, there is no variation 2230 in this experiment
-		"test_user_2": "2230",
-	},
-}
-
-// Experiment with a whitelist, and variation ids are not the same as keys
-const testExpWhitelistKey2 = "test_experiment_whitelist_2"
-
-var testExpWhitelistVar2230 = entities.Variation{ID: "2230", Key: "var_2230"}
-var testExpWhitelist2 = entities.Experiment{
-	ID:  "1117",
-	Key: testExpWhitelistKey2,
-	Variations: map[string]entities.Variation{
-		"2230": testExpWhitelistVar2230,
-	},
-	TrafficAllocation: []entities.Range{
-		entities.Range{EntityID: "2230", EndOfRange: 10000},
-	},
-	Whitelist: map[string]string{
-		"test_user_1": "var_2230",
+		"test_user_1": "var_2229",
+		// Note: this is an invalid entry, there is no variation with key "var_2230" in this experiment
+		"test_user_2": "var_2230",
 	},
 }
