@@ -54,7 +54,7 @@ func (c *TestCompositeService) GetListenersCalled() []models.DecisionListener {
 
 // ClearListenersCalled - Deletes listeners called
 func (c *TestCompositeService) ClearListenersCalled() {
-	c.listenersCalled = []models.DecisionListener{}
+	c.listenersCalled = nil
 }
 
 func (c *TestCompositeService) decisionNotificationCallback(notification notification.DecisionNotification) {
