@@ -5,8 +5,8 @@ git:
 install:
   - eval "$(gimme)"
 stages:
-  # - 'Lint'
-  # - 'Unit test'
+  - 'Lint'
+  - 'Unit test'
   - 'Integration tests'
 jobs:
   include:
