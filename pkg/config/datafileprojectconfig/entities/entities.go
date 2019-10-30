@@ -45,6 +45,14 @@ type Experiment struct {
 	AudienceConditions interface{}         `json:"audienceConditions"`
 }
 
+// Group represents an Group object from the Optimizely datafile
+type Group struct {
+	ID                string              `json:"id"`
+	Policy            string              `json:"policy"`
+	TrafficAllocation []trafficAllocation `json:"trafficAllocation"`
+	Experiments       []Experiment        `json:"experiments"`
+}
+
 // FeatureFlag represents a FeatureFlag object from the Optimizely datafile
 type FeatureFlag struct {
 	ID            string     `json:"id"`
@@ -100,6 +108,7 @@ type Datafile struct {
 	Attributes     []Attribute   `json:"attributes"`
 	Audiences      []Audience    `json:"audiences"`
 	Experiments    []Experiment  `json:"experiments"`
+	Groups         []Group       `json:"groups"`
 	FeatureFlags   []FeatureFlag `json:"featureFlags"`
 	Events         []Event       `json:"events"`
 	Rollouts       []Rollout     `json:"rollouts"`

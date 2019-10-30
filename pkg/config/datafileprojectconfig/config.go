@@ -170,7 +170,21 @@ func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, erro
 	}
 
 	attributeMap, attributeKeyToIDMap := mappers.MapAttributes(datafile.Attributes)
-	experimentMap, experimentKeyMap := mappers.MapExperiments(datafile.Experiments)
+	allExperiments := datafile.Experiments
+	experimentGroupMap := map[string]string{}
+	for _, group := range datafile.Groups {
+		for _, experiment := range group.Experiments {
+			allExperiments = append(allExperiments, experiment)
+			experimentGroupMap[experiment.ID] = group.ID
+		}
+	}
+	experimentMap, experimentKeyMap := mappers.MapExperiments(allExperiments)
+	for experimentID, groupID := range experimentGroupMap {
+		experiment := experimentMap[experimentID]
+		experiment.GroupID = groupID
+		experimentMap[experimentID] = experiment
+	}
+	groupMap := mappers.MapGroups(datafile.Groups)
 	rolloutMap := mappers.MapRollouts(datafile.Rollouts)
 	eventMap := mappers.MapEvents(datafile.Events)
 	mergedAudiences := append(datafile.TypedAudiences, datafile.Audiences...)
@@ -183,6 +197,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, erro
 		botFiltering:         datafile.BotFiltering,
 		experimentKeyToIDMap: experimentKeyMap,
 		experimentMap:        experimentMap,
+		groupMap:             groupMap,
 		eventMap:             eventMap,
 		featureMap:           mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentMap),
 		projectID:            datafile.ProjectID,
