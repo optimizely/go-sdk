@@ -43,3 +43,8 @@ func (d *ProxyEventDispatcher) GetEvents() []event.Batch {
 	}
 	return d.events
 }
+
+// ClearEvents deletes dispatched events
+func (d *ProxyEventDispatcher) ClearEvents() {
+	d.events = nil
+}

@@ -56,6 +56,13 @@ func (c *ScenarioCtx) ListenerIsAdded(numberOfListeners int, ListenerName string
 func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.DocString) error {
 	c.apiOptions.APIName = apiName
 	c.apiOptions.Arguments = arguments.Content
+
+	// Clearing old state of response, eventdispatcher and decision service
+	c.apiResponse = models.APIResponse{}
+	// Only required for unsessioned tests
+	c.clientWrapper.DecisionService.(*optlyplugins.TestCompositeService).ClearListenersCalled()
+	c.clientWrapper.EventDispatcher.(*optlyplugins.ProxyEventDispatcher).ClearEvents()
+
 	response, err := c.clientWrapper.InvokeAPI(c.apiOptions)
 	c.apiResponse = response
 	//Reset listeners so that same listener is not added twice for a scenario
@@ -261,6 +268,22 @@ func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) 
 		return nil
 	}
 	return fmt.Errorf("DispatchedEvents not equal")
+}
+
+// PayloadsOfDispatchedEventsDontIncludeDecisions checks dispatched events to contain no decisions.
+func (c *ScenarioCtx) PayloadsOfDispatchedEventsDontIncludeDecisions() error {
+	dispatchedEvents := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
+
+	for _, event := range dispatchedEvents {
+		for _, visitor := range event.Visitors {
+			for _, snapshot := range visitor.Snapshots {
+				if len(snapshot.Decisions) > 0 {
+					return fmt.Errorf("dispatched events should not include decisions")
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // Reset clears all data before each scenario

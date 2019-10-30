@@ -16,8 +16,10 @@
 
 package models
 
-// GetEnabledFeaturesRequestParams represents params required for GetEnabledFeatures API
-type GetEnabledFeaturesRequestParams struct {
+// TrackRequestParams represents params required for Track API
+type TrackRequestParams struct {
+	EventKey   string                 `yaml:"event_key"`
 	UserID     string                 `yaml:"user_id"`
 	Attributes map[string]interface{} `yaml:"attributes"`
+	EventTags  map[string]interface{} `yaml:"event_tags,omitempty"`
 }
