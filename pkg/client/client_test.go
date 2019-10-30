@@ -26,6 +26,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
+	"github.com/optimizely/go-sdk/pkg/test"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -1506,7 +1507,7 @@ func (s *ClientTestSuiteAB) SetupTest() {
 
 func (s *ClientTestSuiteAB) TestActivate() {
 	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testExperiment := makeTestExperiment("test_exp_1")
+	testExperiment := test.MakeTestExperiment("test_exp_1")
 	s.mockConfig.On("GetExperimentByKey", "test_exp_1").Return(testExperiment, nil)
 	s.mockConfig.On("GetExperimentByKey", "test_exp_2").Return(testExperiment, errors.New("Experiment not found"))
 
@@ -1573,7 +1574,7 @@ func (s *ClientTestSuiteAB) TestActivateInvalidConfig() {
 
 func (s *ClientTestSuiteAB) TestGetVariation() {
 	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testExperiment := makeTestExperiment("test_exp_1")
+	testExperiment := test.MakeTestExperiment("test_exp_1")
 	s.mockConfig.On("GetExperimentByKey", "test_exp_1").Return(testExperiment, nil)
 
 	testDecisionContext := decision.ExperimentDecisionContext{
@@ -1602,7 +1603,7 @@ func (s *ClientTestSuiteAB) TestGetVariation() {
 
 func (s *ClientTestSuiteAB) TestGetVariationWithDecisionError() {
 	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testExperiment := makeTestExperiment("test_exp_1")
+	testExperiment := test.MakeTestExperiment("test_exp_1")
 	s.mockConfig.On("GetExperimentByKey", "test_exp_1").Return(testExperiment, nil)
 
 	testDecisionContext := decision.ExperimentDecisionContext{
@@ -1662,9 +1663,9 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabled() {
 	testUserContext := entities.UserContext{ID: "test_user_1"}
 
 	// Test happy path
-	testVariation := makeTestVariation("green", true)
-	testExperiment := makeTestExperimentWithVariations("number_1", []entities.Variation{testVariation})
-	testFeature := makeTestFeatureWithExperiment("feature_1", testExperiment)
+	testVariation := test.MakeTestVariation("green", true)
+	testExperiment := test.MakeTestExperimentWithVariations("number_1", []entities.Variation{testVariation})
+	testFeature := test.MakeTestFeatureWithExperiment("feature_1", testExperiment)
 	s.mockConfig.On("GetFeatureByKey", testFeature.Key).Return(testFeature, nil)
 	s.mockConfigManager.On("GetConfig").Return(s.mockConfig, nil)
 
@@ -1697,9 +1698,9 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledWithDecisionError() {
 	testUserContext := entities.UserContext{ID: "test_user_1"}
 
 	// Test happy path
-	testVariation := makeTestVariation("green", true)
-	testExperiment := makeTestExperimentWithVariations("number_1", []entities.Variation{testVariation})
-	testFeature := makeTestFeatureWithExperiment("feature_1", testExperiment)
+	testVariation := test.MakeTestVariation("green", true)
+	testExperiment := test.MakeTestExperimentWithVariations("number_1", []entities.Variation{testVariation})
+	testFeature := test.MakeTestFeatureWithExperiment("feature_1", testExperiment)
 	s.mockConfig.On("GetFeatureByKey", testFeature.Key).Return(testFeature, nil)
 	s.mockConfigManager.On("GetConfig").Return(s.mockConfig, nil)
 
@@ -1780,12 +1781,12 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledPanic() {
 
 func (s *ClientTestSuiteFM) TestGetEnabledFeatures() {
 	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testVariationEnabled := makeTestVariation("a", true)
-	testVariationDisabled := makeTestVariation("b", false)
-	testExperimentEnabled := makeTestExperimentWithVariations("enabled_exp", []entities.Variation{testVariationEnabled})
-	testExperimentDisabled := makeTestExperimentWithVariations("disabled_exp", []entities.Variation{testVariationDisabled})
-	testFeatureEnabled := makeTestFeatureWithExperiment("enabled_feat", testExperimentEnabled)
-	testFeatureDisabled := makeTestFeatureWithExperiment("disabled_feat", testExperimentDisabled)
+	testVariationEnabled := test.MakeTestVariation("a", true)
+	testVariationDisabled := test.MakeTestVariation("b", false)
+	testExperimentEnabled := test.MakeTestExperimentWithVariations("enabled_exp", []entities.Variation{testVariationEnabled})
+	testExperimentDisabled := test.MakeTestExperimentWithVariations("disabled_exp", []entities.Variation{testVariationDisabled})
+	testFeatureEnabled := test.MakeTestFeatureWithExperiment("enabled_feat", testExperimentEnabled)
+	testFeatureDisabled := test.MakeTestFeatureWithExperiment("disabled_feat", testExperimentDisabled)
 
 	featureList := []entities.Feature{testFeatureEnabled, testFeatureDisabled}
 	s.mockConfig.On("GetFeatureByKey", testFeatureEnabled.Key).Return(testFeatureEnabled, nil)

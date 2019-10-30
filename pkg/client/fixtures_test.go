@@ -18,8 +18,6 @@
 package client
 
 import (
-	"fmt"
-
 	"github.com/optimizely/go-sdk/pkg"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
@@ -149,45 +147,4 @@ func (m *PanickingDecisionService) OnDecision(callback func(notification.Decisio
 
 func (m *PanickingDecisionService) RemoveOnDecision(id int) error {
 	panic("I'm panicking")
-}
-
-// Helper methods for creating test entities
-func makeTestExperiment(experimentKey string) entities.Experiment {
-	return entities.Experiment{
-		Key: experimentKey,
-		Variations: map[string]entities.Variation{
-			"v1": entities.Variation{Key: "v1"},
-			"v2": entities.Variation{Key: "v2"},
-		},
-	}
-}
-
-func makeTestVariation(variationKey string, featureEnabled bool) entities.Variation {
-	return entities.Variation{
-		ID:             fmt.Sprintf("test_variation_%s", variationKey),
-		Key:            variationKey,
-		FeatureEnabled: featureEnabled,
-	}
-}
-
-func makeTestExperimentWithVariations(experimentKey string, variations []entities.Variation) entities.Experiment {
-	variationsMap := make(map[string]entities.Variation)
-	for _, variation := range variations {
-		variationsMap[variation.ID] = variation
-	}
-	return entities.Experiment{
-		Key:        experimentKey,
-		ID:         fmt.Sprintf("test_experiment_%s", experimentKey),
-		Variations: variationsMap,
-	}
-}
-
-func makeTestFeatureWithExperiment(featureKey string, experiment entities.Experiment) entities.Feature {
-	testFeature := entities.Feature{
-		ID:                 fmt.Sprintf("test_feature_%s", featureKey),
-		Key:                featureKey,
-		FeatureExperiments: []entities.Experiment{experiment},
-	}
-
-	return testFeature
 }

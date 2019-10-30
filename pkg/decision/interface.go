@@ -39,3 +39,9 @@ type ExperimentService interface {
 type FeatureService interface {
 	GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error)
 }
+
+// UserProfileService is used to persist and lookup past decisions we've made for the given user
+type UserProfileService interface {
+	Lookup(string) (UserProfile, error)
+	Save(UserProfile) error
+}

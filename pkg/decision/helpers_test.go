@@ -80,6 +80,21 @@ func (m *MockAudienceTreeEvaluator) Evaluate(node *entities.TreeNode, condTreePa
 	return args.Bool(0)
 }
 
+type MockUserProfileService struct {
+	UserProfileService
+	mock.Mock
+}
+
+func (m *MockUserProfileService) Lookup(userID string) (UserProfile, error) {
+	args := m.Called(userID)
+	return args.Get(0).(UserProfile), args.Error(1)
+}
+
+func (m *MockUserProfileService) Save(userProfile UserProfile) error {
+	args := m.Called(userProfile)
+	return args.Error(0)
+}
+
 // Single variation experiment
 const testExp1111Key = "test_experiment_1111"
 

@@ -63,3 +63,9 @@ type ExperimentDecision struct {
 	Decision
 	Variation *entities.Variation
 }
+
+// UserProfile contains past bucketing decisions made about a user
+type UserProfile struct {
+	ID                  string
+	ExperimentBucketMap map[string]map[string]string
+}

@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
+	"github.com/optimizely/go-sdk/pkg/test"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/stretchr/testify/mock"
@@ -130,6 +131,136 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingFails() {
 	s.mockBucketer.AssertNotCalled(s.T(), "Bucket")
 }
 
+// func (s *ExperimentBucketerTestSuite) TestWithUserProfileService() {
+// 	mockUserProfileService := new(MockUserProfileService)
+
+// 	testUserContext := entities.UserContext{
+// 		ID: "test_user_1",
+// 	}
+
+// 	expectedDecision := ExperimentDecision{
+// 		Decision: Decision{
+// 			Reason: reasons.FailedAudienceTargeting,
+// 		},
+// 	}
+// 	mockAudienceTreeEvaluator := new(MockAudienceTreeEvaluator)
+// 	mockAudienceTreeEvaluator.On("Evaluate", mock.Anything, mock.Anything).Return(false)
+// 	experimentBucketerService := ExperimentBucketerService{
+// 		audienceTreeEvaluator: mockAudienceTreeEvaluator,
+// 		bucketer:              s.mockBucketer,
+// 	}
+// 	s.mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
+
+// 	testDecisionContext := ExperimentDecisionContext{
+// 		Experiment:    &testTargetedExp1116,
+// 		ProjectConfig: s.mockConfig,
+// 	}
+// 	experimentBucketerService := ExperimentBucketerService{
+// 		userProfileService: mockUserProfileService,
+// 	}
+
+// 	decision, err := experimentBucketerService.GetDecision(testDecisionContext, testUserContext)
+// }
+
+// Test with User Profile Service
+type ExperimentBucketerWithUPSTestSuite struct {
+	suite.Suite
+	mockBucketer           *MockBucketer
+	mockConfig             *mockProjectConfig
+	mockUserProfileService *MockUserProfileService
+	testExperiment1        entities.Experiment
+	testExperiment2        entities.Experiment
+}
+
+func (s *ExperimentBucketerWithUPSTestSuite) SetupTest() {
+	s.mockBucketer = new(MockBucketer)
+	s.mockConfig = new(mockProjectConfig)
+	s.mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
+	s.mockUserProfileService = new(MockUserProfileService)
+	s.testExperiment1 = test.MakeTestExperiment("test_experiment_1")
+	s.testExperiment2 = test.MakeTestExperiment("test_experiment_1")
+}
+
+func (s *ExperimentBucketerWithUPSTestSuite) TestSavedDecision() {
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	savedVariation := s.testExperiment1.Variations["v2"]
+	expectedSavedDecision := ExperimentDecision{Variation: &savedVariation}
+	savedUserProfile := UserProfile{
+		ID: testUserContext.ID,
+		ExperimentBucketMap: map[string]map[string]string{
+			"test_experiment_1_id": map[string]string{
+				"variation_id": savedVariation.ID,
+			},
+		},
+	}
+	s.mockUserProfileService.On("Lookup", testUserContext.ID).Return(savedUserProfile, nil)
+
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &s.testExperiment1,
+		ProjectConfig: s.mockConfig,
+	}
+	testExperimentBucketerService := ExperimentBucketerService{
+		bucketer:           s.mockBucketer,
+		userProfileService: s.mockUserProfileService,
+	}
+	experimentDecision, err := testExperimentBucketerService.GetDecision(testDecisionContext, testUserContext)
+	s.Equal(expectedSavedDecision, experimentDecision)
+	s.mockBucketer.AssertNotCalled(s.T(), "Bucket", testUserContext.ID, s.testExperiment1, mock.Anything)
+	s.NoError(err)
+}
+
+func (s *ExperimentBucketerWithUPSTestSuite) TestNoSavedDecision() {
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	// return empty bucket map for user
+	savedUserProfile := UserProfile{
+		ID:                  testUserContext.ID,
+		ExperimentBucketMap: map[string]map[string]string{},
+	}
+	s.mockUserProfileService.On("Lookup", testUserContext.ID).Return(savedUserProfile, nil)
+
+	expectedVariation := s.testExperiment1.Variations["v1"]
+	s.mockBucketer.On("Bucket", testUserContext.ID, s.testExperiment1, mock.Anything).Return(&expectedVariation, reasons.BucketedIntoVariation, nil)
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &s.testExperiment1,
+		ProjectConfig: s.mockConfig,
+	}
+	testExperimentBucketerService := ExperimentBucketerService{
+		bucketer:           s.mockBucketer,
+		userProfileService: s.mockUserProfileService,
+	}
+
+	// expect decision to be saved to UPS
+	updatedUserProfile := UserProfile{
+		ID: testUserContext.ID,
+		ExperimentBucketMap: map[string]map[string]string{
+			"test_experiment_1_id": map[string]string{
+				"variation_id": expectedVariation.ID,
+			},
+		},
+	}
+	s.mockUserProfileService.On("Save", updatedUserProfile).Return(nil)
+
+	expectedDecision := ExperimentDecision{
+		Variation: &expectedVariation,
+		Decision: Decision{
+			Reason: reasons.BucketedIntoVariation,
+		},
+	}
+	experimentDecision, err := testExperimentBucketerService.GetDecision(testDecisionContext, testUserContext)
+
+	s.Equal(expectedDecision, experimentDecision)
+	s.mockBucketer.AssertExpectations(s.T())
+	s.mockUserProfileService.AssertExpectations(s.T())
+	s.NoError(err)
+}
+
 func TestExperimentBucketerTestSuite(t *testing.T) {
 	suite.Run(t, new(ExperimentBucketerTestSuite))
+	suite.Run(t, new(ExperimentBucketerWithUPSTestSuite))
 }

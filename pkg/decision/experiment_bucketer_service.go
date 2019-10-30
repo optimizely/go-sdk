@@ -34,6 +34,7 @@ var bLogger = logging.GetLogger("ExperimentBucketerService")
 type ExperimentBucketerService struct {
 	audienceTreeEvaluator evaluator.TreeEvaluator
 	bucketer              bucketer.ExperimentBucketer
+	userProfileService    UserProfileService
 }
 
 // NewExperimentBucketerService returns a new instance of the ExperimentBucketerService
@@ -45,10 +46,26 @@ func NewExperimentBucketerService() *ExperimentBucketerService {
 	}
 }
 
+// ExpBucketerOptionFunc is used to extend the ExperimentBucketerService with additional config options
+type ExpBucketerOptionFunc func(*ExperimentBucketerService)
+
+// WithUserProfileService sets a user profile service on the experiment bucketer service
+func WithUserProfileService(userProfileService UserProfileService) ExpBucketerOptionFunc {
+	return func(s *ExperimentBucketerService) {
+		s.userProfileService = userProfileService
+	}
+}
+
 // GetDecision returns the decision with the variation the user is bucketed into
 func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
 	experimentDecision := ExperimentDecision{}
 	experiment := decisionContext.Experiment
+
+	// Check for previous bucketing assignments
+	savedDecision, userProfile := s.getSavedDecision(decisionContext, userContext)
+	if savedDecision.Variation != nil {
+		return savedDecision, nil
+	}
 
 	// Determine if user can be part of the experiment
 	if experiment.AudienceConditionTree != nil {
@@ -76,5 +93,53 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	variation, reason, _ := s.bucketer.Bucket(bucketingID, *experiment, group)
 	experimentDecision.Reason = reason
 	experimentDecision.Variation = variation
+
+	// save bucketing assignment, if applicable
+	s.saveDecision(userProfile, *experiment, experimentDecision)
 	return experimentDecision, nil
+}
+
+func (s ExperimentBucketerService) getSavedDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, UserProfile) {
+	experimentDecision := ExperimentDecision{}
+
+	if s.userProfileService == nil {
+		return experimentDecision, UserProfile{}
+	}
+
+	userProfile, err := s.userProfileService.Lookup(userContext.ID)
+	if err != nil {
+		errMessage := fmt.Sprintf(`Error looking up user from user profile service: %s`, err)
+		bLogger.Warning(errMessage)
+		return experimentDecision, UserProfile{}
+	}
+
+	// look up experiment decision from user profile
+	if savedExperimentDecision, ok := userProfile.ExperimentBucketMap[decisionContext.Experiment.ID]; ok {
+		variationID := savedExperimentDecision["variation_id"]
+		if variation, ok := decisionContext.Experiment.Variations[variationID]; ok {
+			experimentDecision.Variation = &variation
+			bLogger.Debug(fmt.Sprintf(`User "%s" was previously bucketed into variation "%s" of experiment "%s".`, userContext.ID, variation.Key, decisionContext.Experiment.Key))
+		} else {
+			bLogger.Warning(fmt.Sprintf(`User "%s" was previously bucketed into variation with ID "%s" for experiment "%s", but no matching variation was found.`, userContext.ID, variationID, decisionContext.Experiment.Key))
+		}
+	}
+
+	return experimentDecision, userProfile
+}
+
+func (s ExperimentBucketerService) saveDecision(userProfile UserProfile, experiment entities.Experiment, decision ExperimentDecision) {
+	if s.userProfileService != nil {
+		if savedDecision, ok := userProfile.ExperimentBucketMap[experiment.ID]; ok {
+			savedDecision["variation_id"] = decision.Variation.ID
+		} else {
+			userProfile.ExperimentBucketMap[experiment.ID] = map[string]string{
+				"variation_id": decision.Variation.ID,
+			}
+		}
+
+		err := s.userProfileService.Save(userProfile)
+		if err != nil {
+			bLogger.Error(`Unable to save decision to user profile service`, err)
+		}
+	}
 }
