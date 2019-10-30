@@ -226,7 +226,7 @@ var testTargetedExp1116 = entities.Experiment{
 // Experiment with a whitelist
 const testExpWhitelistKey = "test_experiment_whitelist"
 
-var testExpWhitelistVar2229 = entities.Variation{ID: "2229", Key: "2229"}
+var testExpWhitelistVar2229 = entities.Variation{ID: "2229", Key: "var_2229"}
 var testExpWhitelist = entities.Experiment{
 	ID:  "1117",
 	Key: testExpWhitelistKey,
@@ -237,8 +237,8 @@ var testExpWhitelist = entities.Experiment{
 		entities.Range{EntityID: "2229", EndOfRange: 10000},
 	},
 	Whitelist: map[string]string{
-		"test_user_1": "2229",
-		// Note: this is an invalid entry, there is no variation 2230 in this experiment
-		"test_user_2": "2230",
+		"test_user_1": "var_2229",
+		// Note: this is an invalid entry, there is no variation with key "var_2230" in this experiment
+		"test_user_2": "var_2230",
 	},
 }
