@@ -38,10 +38,12 @@ type CompositeService struct {
 // CSOptionFunc allows customization of the CompositeService returned from NewCompositeService
 type CSOptionFunc func(*CompositeService)
 
-// WithCompositeExperimentService sets a custom compositeExperimentService
-func WithCompositeExperimentService(compositeExperimentService *CompositeExperimentService) CSOptionFunc {
+// WithExperimentOverrides applies the argument experiment overrides to a composite service
+func WithExperimentOverrides(experimentOverrides map[OverrideKey]string) CSOptionFunc {
 	return func(service *CompositeService) {
-		service.compositeExperimentService = compositeExperimentService
+		service.compositeExperimentService = NewCompositeExperimentService(
+			WithOverrides(experimentOverrides),
+		)
 	}
 }
 
