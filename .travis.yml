@@ -55,11 +55,11 @@ jobs:
       after_success:
         - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
     - stage: 'Integration tests'
-      env: GIMME_GO_VERSION=1.12.x
+      env: GIMME_GO_VERSION=1.12.x FSC_PATH="/tmp/fsc-repo" TAGS=@FEATURE_ROLLOUT && ~@INPUT_FILTER"
+      before_script:
+        - pushd $FSC_PATH && git init && git fetch --depth=1 https://$CI_USER_TOKEN@github.com/optimizely/fullstack-sdk-compatibility-suite ${FSC_BRANCH:-master} && git checkout FETCH_HEAD && popd        
       install:
         - eval "$(gimme)"
       script:
-        - ./scripts/get-fsc-tests.sh -f tests/integration/features -d fsc-datafiles
-        - export DATAFILES_DIR=$TRAVIS_BUILD_DIR/fsc-datafiles
-        - go test ./tests/integration
+        - ./scripts/run-fsc-tests.sh -f $FSC_PATH/features -d $FSC_PATH/features/support/datafiles/ -t "$TAGS"        
         
