@@ -122,6 +122,23 @@ func (s *ExperimentWhitelistServiceTestSuite) TestNoExperimentInDecisionContext(
 	s.Nil(decision.Variation)
 }
 
+// Test an experiment whose key differs from its id
+func (s *ExperimentWhitelistServiceTestSuite) TestWhitelistIncludesDecisionForExpWithKey() {
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExpWhitelist2,
+		ProjectConfig: s.mockConfig,
+	}
+
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	decision, err := s.whitelistService.GetDecision(testDecisionContext, testUserContext)
+
+	s.NoError(err)
+	s.NotNil(decision.Variation)
+}
+
 func TestExperimentWhitelistTestSuite(t *testing.T) {
 	suite.Run(t, new(ExperimentWhitelistServiceTestSuite))
 }

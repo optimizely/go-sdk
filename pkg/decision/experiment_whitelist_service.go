@@ -47,13 +47,14 @@ func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisi
 		return decision, nil
 	}
 
-	variation, ok := decisionContext.Experiment.Variations[variationKey]
-	if !ok {
-		decision.Reason = reasons.InvalidWhitelistVariationAssignment
-		return decision, nil
+	for _, variation := range decisionContext.Experiment.Variations {
+		if variation.Key == variationKey {
+			decision.Reason = reasons.WhitelistVariationAssignmentFound
+			decision.Variation = &variation
+			return decision, nil
+		}
 	}
 
-	decision.Reason = reasons.WhitelistVariationAssignmentFound
-	decision.Variation = &variation
+	decision.Reason = reasons.InvalidWhitelistVariationAssignment
 	return decision, nil
 }

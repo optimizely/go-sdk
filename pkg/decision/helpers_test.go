@@ -242,3 +242,21 @@ var testExpWhitelist = entities.Experiment{
 		"test_user_2": "2230",
 	},
 }
+
+// Experiment with a whitelist, and variation ids are not the same as keys
+const testExpWhitelistKey2 = "test_experiment_whitelist_2"
+
+var testExpWhitelistVar2230 = entities.Variation{ID: "2230", Key: "var_2230"}
+var testExpWhitelist2 = entities.Experiment{
+	ID:  "1117",
+	Key: testExpWhitelistKey2,
+	Variations: map[string]entities.Variation{
+		"2230": testExpWhitelistVar2230,
+	},
+	TrafficAllocation: []entities.Range{
+		entities.Range{EntityID: "2230", EndOfRange: 10000},
+	},
+	Whitelist: map[string]string{
+		"test_user_1": "var_2230",
+	},
+}
