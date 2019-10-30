@@ -37,22 +37,6 @@ func MapExperiments(rawExperiments []datafileEntities.Experiment) (experimentMap
 	return experimentMap, experimentKeyMap
 }
 
-// MapGroups maps the raw group entity from the datafile to an SDK Group entity
-func MapGroups(rawGroups []datafileEntities.Group) (groupMap map[string]entities.Group) {
-	groupMap = make(map[string]entities.Group)
-	for _, group := range rawGroups {
-		groupEntity := entities.Group{
-			ID:     group.ID,
-			Policy: group.Policy,
-		}
-		for _, allocation := range group.TrafficAllocation {
-			groupEntity.TrafficAllocation = append(groupEntity.TrafficAllocation, entities.Range(allocation))
-		}
-		groupMap[group.ID] = groupEntity
-	}
-	return groupMap
-}
-
 // Maps the raw variation entity from the datafile to an SDK Variation entity
 func mapVariation(rawVariation datafileEntities.Variation) entities.Variation {
 
