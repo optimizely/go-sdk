@@ -23,8 +23,9 @@ import (
 )
 
 // MapGroups maps the raw group entity from the datafile to an SDK Group entity
-func MapGroups(rawGroups []datafileEntities.Group) (groupMap map[string]entities.Group) {
+func MapGroups(rawGroups []datafileEntities.Group) (groupMap map[string]entities.Group, experimentGroupMap map[string]string) {
 	groupMap = make(map[string]entities.Group)
+	experimentGroupMap = make(map[string]string)
 	for _, group := range rawGroups {
 		groupEntity := entities.Group{
 			ID:     group.ID,
@@ -34,6 +35,9 @@ func MapGroups(rawGroups []datafileEntities.Group) (groupMap map[string]entities
 			groupEntity.TrafficAllocation = append(groupEntity.TrafficAllocation, entities.Range(allocation))
 		}
 		groupMap[group.ID] = groupEntity
+		for _, experiment := range group.Experiments {
+			experimentGroupMap[experiment.ID] = group.ID
+		}
 	}
-	return groupMap
+	return groupMap, experimentGroupMap
 }

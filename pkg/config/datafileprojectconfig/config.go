@@ -170,21 +170,10 @@ func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, erro
 	}
 
 	attributeMap, attributeKeyToIDMap := mappers.MapAttributes(datafile.Attributes)
-	allExperiments := datafile.Experiments
-	experimentGroupMap := map[string]string{}
-	for _, group := range datafile.Groups {
-		for _, experiment := range group.Experiments {
-			allExperiments = append(allExperiments, experiment)
-			experimentGroupMap[experiment.ID] = group.ID
-		}
-	}
-	experimentMap, experimentKeyMap := mappers.MapExperiments(allExperiments)
-	for experimentID, groupID := range experimentGroupMap {
-		experiment := experimentMap[experimentID]
-		experiment.GroupID = groupID
-		experimentMap[experimentID] = experiment
-	}
-	groupMap := mappers.MapGroups(datafile.Groups)
+	allExperiments := mappers.MergeExperiments(datafile.Experiments, datafile.Groups)
+	groupMap, experimentGroupMap := mappers.MapGroups(datafile.Groups)
+	experimentMap, experimentKeyMap := mappers.MapExperiments(allExperiments, experimentGroupMap)
+
 	rolloutMap := mappers.MapRollouts(datafile.Rollouts)
 	eventMap := mappers.MapEvents(datafile.Events)
 	mergedAudiences := append(datafile.TypedAudiences, datafile.Audiences...)

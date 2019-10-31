@@ -23,13 +23,14 @@ import (
 )
 
 // MapExperiments maps the raw experiments entities from the datafile to SDK Experiment entities and also returns a map of experiment key to experiment ID
-func MapExperiments(rawExperiments []datafileEntities.Experiment) (experimentMap map[string]entities.Experiment, experimentKeyMap map[string]string) {
+func MapExperiments(rawExperiments []datafileEntities.Experiment, experimentGroupMap map[string]string) (experimentMap map[string]entities.Experiment, experimentKeyMap map[string]string) {
 
 	experimentMap = make(map[string]entities.Experiment)
 	experimentKeyMap = make(map[string]string)
 	for _, rawExperiment := range rawExperiments {
 
 		experiment := mapExperiment(rawExperiment)
+		experiment.GroupID = experimentGroupMap[experiment.ID]
 		experimentMap[experiment.ID] = experiment
 		experimentKeyMap[experiment.Key] = experiment.ID
 	}
@@ -82,4 +83,15 @@ func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experimen
 	}
 
 	return experiment
+}
+
+// MergeExperiments combines raw experiments and experiments inside groups and returns the array
+func MergeExperiments(rawExperiments []datafileEntities.Experiment, rawGroups []datafileEntities.Group) (mergedExperiments []datafileEntities.Experiment) {
+	mergedExperiments = rawExperiments
+	for _, group := range rawGroups {
+		for _, experiment := range group.Experiments {
+			mergedExperiments = append(mergedExperiments, experiment)
+		}
+	}
+	return mergedExperiments
 }

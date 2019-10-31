@@ -42,7 +42,7 @@ func TestMapGroups(t *testing.T) {
 	json.Unmarshal([]byte(testGroupString), &rawGroup)
 
 	rawGroups := []datafileEntities.Group{rawGroup}
-	groupMap := MapGroups(rawGroups)
+	groupMap, _ := MapGroups(rawGroups)
 
 	expectedGroupsMap := map[string]entities.Group{
 		"14": entities.Group{

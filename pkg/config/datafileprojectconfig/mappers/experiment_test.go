@@ -19,7 +19,7 @@ package mappers
 import (
 	"testing"
 
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 	datafileEntities "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/stretchr/testify/assert"
@@ -65,11 +65,14 @@ func TestMapExperiments(t *testing.T) {
 	json.Unmarshal([]byte(testExperimentString), &rawExperiment)
 
 	rawExperiments := []datafileEntities.Experiment{rawExperiment}
-	experiments, experimentKeyMap := MapExperiments(rawExperiments)
+	experimentGroupMap := map[string]string{"11111": "15"}
+
+	experiments, experimentKeyMap := MapExperiments(rawExperiments, experimentGroupMap)
 	expectedExperiments := map[string]entities.Experiment{
 		"11111": {
 			AudienceIds: []string{"31111"},
 			ID:          "11111",
+			GroupID:     "15",
 			Key:         "test_experiment_11111",
 			Variations: map[string]entities.Variation{
 				"21111": {
@@ -112,4 +115,51 @@ func TestMapExperiments(t *testing.T) {
 
 	assert.Equal(t, expectedExperiments, experiments)
 	assert.Equal(t, expectedExperimentKeyMap, experimentKeyMap)
+}
+
+func TestMergeExperiments(t *testing.T) {
+	const testExperimentString = `{
+		"id": "11111",
+	}`
+
+	const testGroupString = `{
+		"policy": "random",
+      "trafficAllocation": [
+        {
+          "entityId": "21113",
+          "endOfRange": 7000
+        },
+        {
+          "entityId": "21114",
+          "endOfRange": 10000
+        }
+	  ],
+	  "experiments": [
+		  {
+			"id": "11112"
+		  }
+	  ],
+	  "id":"11112"
+	}`
+
+	var rawExperiment datafileEntities.Experiment
+	var rawGroup datafileEntities.Group
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
+	json.Unmarshal([]byte(testExperimentString), &rawExperiment)
+	json.Unmarshal([]byte(testGroupString), &rawGroup)
+
+	rawExperiments := []datafileEntities.Experiment{rawExperiment}
+	rawGroups := []datafileEntities.Group{rawGroup}
+	mergedExperiments := MergeExperiments(rawExperiments, rawGroups)
+
+	expectedExperiments := []datafileEntities.Experiment{
+		{
+			ID: "11111",
+		},
+		{
+			ID: "11112",
+		},
+	}
+
+	assert.Equal(t, expectedExperiments, mergedExperiments)
 }
