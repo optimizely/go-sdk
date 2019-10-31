@@ -1456,6 +1456,29 @@ func TestGetAllFeatureVariablesWithError(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestGetAllFeatureVariablesWithoutFeature(t *testing.T) {
+	invalidFeatureKey := "non-existent-feature"
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+
+	mockConfig := new(MockProjectConfig)
+	mockConfig.On("GetFeatureByKey", invalidFeatureKey).Return(entities.Feature{}, errors.New(""))
+	mockConfigManager := new(MockProjectConfigManager)
+	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
+	mockDecisionService := new(MockDecisionService)
+
+	client := OptimizelyClient{
+		ConfigManager:   mockConfigManager,
+		DecisionService: mockDecisionService,
+	}
+
+	enabled, variationMap, err := client.GetAllFeatureVariables(invalidFeatureKey, testUserContext)
+
+	// if we have a decision, but also a non-fatal error, we should return the decision
+	assert.False(t, enabled)
+	assert.Equal(t, 0, len(variationMap))
+	assert.NoError(t, err)
+}
+
 // Helper Methods
 func getTestFeatureDecision(experiment entities.Experiment, variation entities.Variation, decisionMade bool) decision.FeatureDecision {
 	return decision.FeatureDecision{
