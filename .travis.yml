@@ -56,10 +56,9 @@ jobs:
     #   after_success:
     #     - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
     - stage: 'Source clear'
-      env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
       language: go
       addons:
         srcclr: true
-      script: skip
+      script: - go get -v -d ./...
 
 
