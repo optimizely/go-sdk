@@ -19,7 +19,7 @@ package mappers
 import (
 	"testing"
 
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 	datafileEntities "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/stretchr/testify/assert"
@@ -112,4 +112,32 @@ func TestMapExperiments(t *testing.T) {
 
 	assert.Equal(t, expectedExperiments, experiments)
 	assert.Equal(t, expectedExperimentKeyMap, experimentKeyMap)
+}
+
+func TestMapExperimentsAudienceIdsOnly(t *testing.T) {
+	var rawExperiment datafileEntities.Experiment
+	rawExperiment.AudienceIds = []string{"11111", "11112"}
+	rawExperiment.Key = "test_experiment_1"
+	rawExperiment.ID = "22222"
+
+	expectedExperiment := entities.Experiment{
+		AudienceIds: rawExperiment.AudienceIds,
+		ID:          rawExperiment.ID,
+		Key:         rawExperiment.Key,
+		AudienceConditionTree: &entities.TreeNode{
+			Operator: "or",
+			Nodes: []*entities.TreeNode{
+				{
+					Operator: "",
+					Item:     "11111",
+				},
+				{
+					Operator: "",
+					Item:     "11112",
+				},
+			},
+		},
+	}
+	experiments, _ := MapExperiments([]datafileEntities.Experiment{rawExperiment})
+	assert.Equal(t, expectedExperiment.AudienceConditionTree, experiments[rawExperiment.ID].AudienceConditionTree)
 }
