@@ -54,7 +54,7 @@ func TestExactMatcherString(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, result)
 
-	// Test error case
+	// Test attribute not found
 	user = entities.UserContext{
 		Attributes: map[string]interface{}{
 			"string_not_foo": "foo",
@@ -62,7 +62,7 @@ func TestExactMatcherString(t *testing.T) {
 	}
 
 	_, err = matcher.Match(user)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }
 
 func TestExactMatcherBool(t *testing.T) {
@@ -95,7 +95,7 @@ func TestExactMatcherBool(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, result)
 
-	// Test error case
+	// Test attribute not found
 	user = entities.UserContext{
 		Attributes: map[string]interface{}{
 			"not_bool_true": true,
@@ -103,7 +103,7 @@ func TestExactMatcherBool(t *testing.T) {
 	}
 
 	_, err = matcher.Match(user)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }
 
 func TestExactMatcherInt(t *testing.T) {
@@ -147,7 +147,7 @@ func TestExactMatcherInt(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, result)
 
-	// Test error case
+	// Test attribute not found
 	user = entities.UserContext{
 		Attributes: map[string]interface{}{
 			"int_43": 42,
@@ -155,7 +155,7 @@ func TestExactMatcherInt(t *testing.T) {
 	}
 
 	_, err = matcher.Match(user)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }
 
 func TestExactMatcherFloat(t *testing.T) {
@@ -188,7 +188,7 @@ func TestExactMatcherFloat(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, result)
 
-	// Test error case
+	// Test attribute not found
 	user = entities.UserContext{
 		Attributes: map[string]interface{}{
 			"float_4_3": 4.2,
@@ -196,5 +196,5 @@ func TestExactMatcherFloat(t *testing.T) {
 	}
 
 	_, err = matcher.Match(user)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }
