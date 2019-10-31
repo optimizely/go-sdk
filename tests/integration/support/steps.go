@@ -215,7 +215,22 @@ func (c *ScenarioCtx) InTheResponseShouldHaveEachOneOfThese(argumentType string,
 		if err := yaml.Unmarshal([]byte(value.Content), &requestListenersCalled); err != nil {
 			break
 		}
-		if subset.Check(requestListenersCalled, c.apiResponse.ListenerCalled) {
+
+		found := false
+		for _, expectedListener := range requestListenersCalled {
+			found = false
+			for _, actualListener := range c.apiResponse.ListenerCalled {
+				if subset.Check(expectedListener, actualListener) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				fmt.Printf("%v", expectedListener)
+				break
+			}
+		}
+		if found {
 			return nil
 		}
 		break
