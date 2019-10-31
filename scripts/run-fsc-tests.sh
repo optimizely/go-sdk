@@ -5,7 +5,7 @@
 # inputs:
 # FEATURES_PATH - destination path to copy feature files (required)
 # DATAFILES_PATH - destination path to use for datafiles (required)
-# TAG_FILTER_EXPRESSION - Gherkin filter tags
+# TAG_FILTER_EXPRESSION - Gherkin filter
 FEATURE_FILES_PATH="${FEATURES_PATH:-}"
 DATAFILES_PATH="${DATAFILES_PATH:-}"
 TAG_FILTER_EXPRESSION=""
@@ -16,7 +16,7 @@ Example: $0 -f /usr/tests/integration/features -d /usr/support/fsc-datafiles -t 
 EOF
 }
 
-while getopts ":b:f:d:h" o; do
+while getopts ":t:f:d:h" o; do
   case "${o}" in    
     f)
       FEATURE_FILES_PATH=${OPTARG}
