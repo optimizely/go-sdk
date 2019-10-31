@@ -55,7 +55,7 @@ jobs:
     #     - go get github.com/mattn/goveralls
     #   after_success:
     #     - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
-    - stage: 'Source clear'
+    - stage: 'Source clear' 
       language: go
       addons:
         srcclr: true
