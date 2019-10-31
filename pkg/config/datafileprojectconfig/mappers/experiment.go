@@ -57,7 +57,13 @@ func mapVariation(rawVariation datafileEntities.Variation) entities.Variation {
 
 // Maps the raw experiment entity from the datafile into an SDK Experiment entity
 func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experiment {
-	audienceConditionTree, err := buildAudienceConditionTree(rawExperiment.AudienceConditions)
+	var audienceConditionTree *entities.TreeNode
+	var err error
+	if rawExperiment.AudienceConditions == nil && len(rawExperiment.AudienceIds) > 0 {
+		audienceConditionTree, err = buildAudienceConditionTree(rawExperiment.AudienceIds)
+	} else if len(rawExperiment.AudienceConditions) > 0 {
+		audienceConditionTree, err = buildAudienceConditionTree(rawExperiment.AudienceConditions)
+	}
 	if err != nil {
 		// @TODO: handle error
 		func() {}() // cheat the linters

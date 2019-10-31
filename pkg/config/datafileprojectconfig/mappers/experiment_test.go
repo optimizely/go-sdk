@@ -163,3 +163,32 @@ func TestMergeExperiments(t *testing.T) {
 
 	assert.Equal(t, expectedExperiments, mergedExperiments)
 }
+
+func TestMapExperimentsAudienceIdsOnly(t *testing.T) {
+	var rawExperiment datafileEntities.Experiment
+	rawExperiment.AudienceIds = []string{"11111", "11112"}
+	rawExperiment.Key = "test_experiment_1"
+	rawExperiment.ID = "22222"
+
+	expectedExperiment := entities.Experiment{
+		AudienceIds: rawExperiment.AudienceIds,
+		ID:          rawExperiment.ID,
+		Key:         rawExperiment.Key,
+		AudienceConditionTree: &entities.TreeNode{
+			Operator: "or",
+			Nodes: []*entities.TreeNode{
+				{
+					Operator: "",
+					Item:     "11111",
+				},
+				{
+					Operator: "",
+					Item:     "11112",
+				},
+			},
+		},
+	}
+
+	experiments, _ := MapExperiments([]datafileEntities.Experiment{rawExperiment}, map[string]string{})
+	assert.Equal(t, expectedExperiment.AudienceConditionTree, experiments[rawExperiment.ID].AudienceConditionTree)
+}

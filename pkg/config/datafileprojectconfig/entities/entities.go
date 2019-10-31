@@ -42,7 +42,7 @@ type Experiment struct {
 	TrafficAllocation  []trafficAllocation `json:"trafficAllocation"`
 	AudienceIds        []string            `json:"audienceIds"`
 	ForcedVariations   map[string]string   `json:"forcedVariations"`
-	AudienceConditions interface{}         `json:"audienceConditions"`
+	AudienceConditions []interface{}       `json:"audienceConditions"`
 }
 
 // Group represents an Group object from the Optimizely datafile
