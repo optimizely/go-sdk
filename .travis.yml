@@ -6,8 +6,8 @@ install:
   - eval "$(gimme)"
 stages:
   - 'Lint'
-  # - 'Integration tests'
   - 'Unit test'
+  - 'Integration tests'
   - 'Source clear'
 jobs:
   include:
@@ -17,19 +17,6 @@ jobs:
         - curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.19.0
       script:
         - $GOPATH/bin/golangci-lint run --out-format=tab --tests=false pkg/...
-    # - stage: 'Integration Tests'
-    #   merge_mode: replace
-    #   env: SDK=go SDK_BRANCH=$TRAVIS_PULL_REQUEST_BRANCH
-    #   cache: false
-    #   language: minimal
-    #   install: skip
-    #   before_script:
-    #     - mkdir $HOME/travisci-tools && pushd $HOME/travisci-tools && git init && git pull https://$CI_USER_TOKEN@github.com/optimizely/travisci-tools.git && popd
-    #   script:
-    #     # TODO: Remove sohail/gosdkonly branch specification here, after
-    #     # we can run FSC tests on master: https://optimizely.atlassian.net/browse/OASIS-5425
-    #     - $HOME/travisci-tools/trigger-script-with-status-update.sh sohail/gosdkonly
-    #   after_success: travis_terminate 0
     - &test
       stage: 'Unit test'
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
@@ -55,6 +42,15 @@ jobs:
         - go get github.com/mattn/goveralls
       after_success:
         - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
+    - stage: 'Integration tests'
+      env: GIMME_GO_VERSION=1.12.x FSC_PATH="/tmp/fsc-repo"
+      before_script:
+        - mkdir -p $FSC_PATH
+        - pushd $FSC_PATH && git init && git fetch --depth=1 https://$CI_USER_TOKEN@github.com/optimizely/fullstack-sdk-compatibility-suite ${FSC_BRANCH:-master} && git checkout FETCH_HEAD && popd
+      install:
+        - eval "$(gimme)"
+      script:
+        - ./scripts/run-fsc-tests.sh -f "$FSC_PATH/features/" -d "$FSC_PATH/features/support/datafiles/" -t "$TAGS"
     - stage: 'Source clear'
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
       language: go
