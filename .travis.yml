@@ -11,12 +11,12 @@ stages:
   - 'Source clear'
 jobs:
   include:
-    # - stage: 'Lint'
-    #   env: GIMME_GO_VERSION=1.12.x GIMME_OS=linux GIMME_ARCH=amd64
-    #   before_script:
-    #     - curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.19.0
-    #   script:
-    #     - $GOPATH/bin/golangci-lint run --out-format=tab --tests=false pkg/...
+    - stage: 'Lint'
+      env: GIMME_GO_VERSION=1.12.x GIMME_OS=linux GIMME_ARCH=amd64
+      before_script:
+        - curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.19.0
+      script:
+        - $GOPATH/bin/golangci-lint run --out-format=tab --tests=false pkg/...
     # - stage: 'Integration Tests'
     #   merge_mode: replace
     #   env: SDK=go SDK_BRANCH=$TRAVIS_PULL_REQUEST_BRANCH
@@ -59,6 +59,4 @@ jobs:
       language: go
       addons:
         srcclr: true
-      script: - go get -v -d ./...
-
-
+      script: go get -v -d ./...
