@@ -63,3 +63,14 @@ type ExperimentDecision struct {
 	Decision
 	Variation *entities.Variation
 }
+
+// UserDecisionKey is used to access the saved decisions in a user profile
+type UserDecisionKey struct {
+	ExperimentID string
+}
+
+// UserProfile represents a saved user profile
+type UserProfile struct {
+	ID                  string
+	ExperimentBucketMap map[UserDecisionKey]string
+}

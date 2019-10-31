@@ -34,14 +34,16 @@ type CompositeExperimentService struct {
 
 // NewCompositeExperimentService creates a new instance of the CompositeExperimentService
 func NewCompositeExperimentService() *CompositeExperimentService {
+	persistingExperimentService := NewPersistingExperimentService(NewExperimentBucketerService())
+
 	// These decision services are applied in order:
 	// 1. Whitelist
-	// 2. Bucketing
+	// 2. Bucketing (wrapped with user profile service)
 	// @TODO(mng): Prepend forced variation
 	return &CompositeExperimentService{
 		experimentServices: []ExperimentService{
 			NewExperimentWhitelistService(),
-			NewExperimentBucketerService(),
+			persistingExperimentService,
 		},
 	}
 }
