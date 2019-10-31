@@ -89,9 +89,7 @@ func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experimen
 func MergeExperiments(rawExperiments []datafileEntities.Experiment, rawGroups []datafileEntities.Group) (mergedExperiments []datafileEntities.Experiment) {
 	mergedExperiments = rawExperiments
 	for _, group := range rawGroups {
-		for _, experiment := range group.Experiments {
-			mergedExperiments = append(mergedExperiments, experiment)
-		}
+		mergedExperiments = append(mergedExperiments, group.Experiments...)
 	}
 	return mergedExperiments
 }
