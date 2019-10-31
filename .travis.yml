@@ -31,13 +31,14 @@ jobs:
     #   after_success: travis_terminate 0
     - &test
       stage: 'Unit test'
-      addons:
-        srcclr: true
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
       script:
         - go test -v -race ./... -coverprofile=profile.cov
     - <<: *test
       stage: 'Unit test'
+      addons:
+        srcclr: true
+      language: go
       env: GIMME_GO_VERSION=1.8.x
       before_script:
         # GO module was not introduced earlier. need symlink to search in GOPATH
