@@ -60,7 +60,7 @@ func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experimen
 	var err error
 	if rawExperiment.AudienceConditions == nil && len(rawExperiment.AudienceIds) > 0 {
 		audienceConditionTree, err = buildAudienceConditionTree(rawExperiment.AudienceIds)
-	} else {
+	} else if len(rawExperiment.AudienceConditions) > 0 {
 		audienceConditionTree, err = buildAudienceConditionTree(rawExperiment.AudienceConditions)
 	}
 	if err != nil {

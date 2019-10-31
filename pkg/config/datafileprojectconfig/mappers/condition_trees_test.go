@@ -30,8 +30,9 @@ func TestBuildAudienceConditionTreeEmpty(t *testing.T) {
 	json.Unmarshal([]byte(conditionString), &conditions)
 	conditionTree, err := buildAudienceConditionTree(conditions)
 
-	assert.NotNil(t, err)
-	assert.Equal(t, (*entities.TreeNode)(nil), conditionTree)
+	expectedTree := &entities.TreeNode{Operator: "or"}
+	assert.NoError(t, err)
+	assert.Equal(t, expectedTree, conditionTree)
 }
 
 func TestBuildAudienceConditionTreeSimpleAudienceCondition(t *testing.T) {
