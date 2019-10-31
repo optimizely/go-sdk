@@ -226,7 +226,6 @@ func (c *ScenarioCtx) InTheResponseShouldHaveEachOneOfThese(argumentType string,
 				}
 			}
 			if !found {
-				fmt.Printf("%v", expectedListener)
 				break
 			}
 		}
