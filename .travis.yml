@@ -61,5 +61,5 @@ jobs:
       install:
         - eval "$(gimme)"
       script:
-        - ./scripts/run-fsc-tests.sh -f $FSC_PATH/features -d $FSC_PATH/features/support/datafiles/ -t "$TAGS"        
+        - ./scripts/run-fsc-tests.sh -f "$FSC_PATH/features/" -d "$FSC_PATH/features/support/datafiles/" -t "$TAGS"        
         

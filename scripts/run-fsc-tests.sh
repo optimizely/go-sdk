@@ -5,7 +5,7 @@
 # inputs:
 # FEATURES_PATH - destination path to copy feature files (required)
 # DATAFILES_PATH - destination path to use for datafiles (required)
-
+# TAG_FILTER_EXPRESSION - Gherkin filter tags
 FEATURE_FILES_PATH="${FEATURES_PATH:-}"
 DATAFILES_PATH="${DATAFILES_PATH:-}"
 TAG_FILTER_EXPRESSION=""
@@ -59,7 +59,7 @@ if [ -z "$DATAFILES_PATH" ]; then
   exit 1
 fi
 
-set -e
+set -ex
 GO_FEATUREFILES_PATH="$(pwd)/tests/integration/features"
 rm -rf $GO_FEATUREFILES_PATH
 mkdir -p $GO_FEATUREFILES_PATH
