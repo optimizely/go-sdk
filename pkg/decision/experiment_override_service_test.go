@@ -33,8 +33,12 @@ type ExperimentOverrideServiceTestSuite struct {
 
 func (s *ExperimentOverrideServiceTestSuite) SetupTest() {
 	s.mockConfig = new(mockProjectConfig)
-	s.overrides = make(map[OverrideKey]string)
-	s.overrideService = NewExperimentOverrideService(s.overrides)
+	mapOverrides := &MapOverrides{
+		overrides: map[OverrideKey]string{
+			OverrideKey{Experiment: testExp1111.Key, User: "test_user_1"}: testExp1111Var2222.Key,
+		},
+	}
+	s.overrideService = NewExperimentOverrideService(mapOverrides)
 }
 
 func (s *ExperimentOverrideServiceTestSuite) TestOverridesIncludeVariation() {
@@ -46,8 +50,6 @@ func (s *ExperimentOverrideServiceTestSuite) TestOverridesIncludeVariation() {
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
 	}
-
-	s.overrides[OverrideKey{Experiment: testExp1111.Key, User: testUserContext.ID}] = testExp1111Var2222.Key
 
 	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
 

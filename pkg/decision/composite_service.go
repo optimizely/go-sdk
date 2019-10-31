@@ -39,7 +39,7 @@ type CompositeService struct {
 type CSOptionFunc func(*CompositeService)
 
 // WithExperimentOverrides applies the argument experiment overrides to a composite service
-func WithExperimentOverrides(experimentOverrides map[OverrideKey]string) CSOptionFunc {
+func WithExperimentOverrides(experimentOverrides OverrideStore) CSOptionFunc {
 	return func(service *CompositeService) {
 		service.compositeExperimentService = NewCompositeExperimentService(
 			WithOverrides(experimentOverrides),
