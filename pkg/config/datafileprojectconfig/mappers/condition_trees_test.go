@@ -70,6 +70,22 @@ func TestBuildAudienceConditionTreeSimpleAudienceCondition(t *testing.T) {
 	assert.Equal(t, expectedConditionTree, conditionTree)
 }
 
+func TestBuildAudienceConditionTreeNoOperators(t *testing.T) {
+	conditions := []string{"123"}
+	expectedConditionTree := &entities.TreeNode{
+		Operator: "or",
+		Nodes: []*entities.TreeNode{
+			{
+				Item: "123",
+			},
+		},
+	}
+
+	conditionTree, err := buildAudienceConditionTree(conditions)
+	assert.Equal(t, expectedConditionTree, conditionTree)
+	assert.NoError(t, err)
+}
+
 func TestBuildConditionTreeUsingDatafileAudienceConditions(t *testing.T) {
 
 	audience := datafileConfig.Audience{

@@ -108,7 +108,9 @@ func buildAudienceConditionTree(conditions interface{}) (conditionTree *entities
 	value := reflect.ValueOf(conditions)
 	visited := make(map[interface{}]bool)
 
-	conditionTree = &entities.TreeNode{}
+	conditionTree = &entities.TreeNode{
+		Operator: "or",
+	}
 	var populateConditions func(v reflect.Value, root *entities.TreeNode)
 	populateConditions = func(v reflect.Value, root *entities.TreeNode) {
 

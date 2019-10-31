@@ -34,7 +34,7 @@ func (m ExactMatcher) Match(user entities.UserContext) (bool, error) {
 	if stringValue, ok := m.Condition.Value.(string); ok {
 		attributeValue, err := user.GetStringAttribute(m.Condition.Name)
 		if err != nil {
-			return false, err
+			return false, nil
 		}
 		return stringValue == attributeValue, nil
 	}
@@ -42,7 +42,7 @@ func (m ExactMatcher) Match(user entities.UserContext) (bool, error) {
 	if boolValue, ok := m.Condition.Value.(bool); ok {
 		attributeValue, err := user.GetBoolAttribute(m.Condition.Name)
 		if err != nil {
-			return false, err
+			return false, nil
 		}
 		return boolValue == attributeValue, nil
 	}
@@ -50,7 +50,7 @@ func (m ExactMatcher) Match(user entities.UserContext) (bool, error) {
 	if floatValue, ok := utils.ToFloat(m.Condition.Value); ok {
 		attributeValue, err := user.GetFloatAttribute(m.Condition.Name)
 		if err != nil {
-			return false, err
+			return false, nil
 		}
 		return floatValue == attributeValue, nil
 	}
