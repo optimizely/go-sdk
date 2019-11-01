@@ -39,7 +39,7 @@ type Experiment struct {
 	LayerID            string              `json:"layerId"`
 	Status             string              `json:"status"`
 	Variations         []Variation         `json:"variations"`
-	TrafficAllocation  []trafficAllocation `json:"trafficAllocation"`
+	TrafficAllocation  []TrafficAllocation `json:"trafficAllocation"`
 	AudienceIds        []string            `json:"audienceIds"`
 	ForcedVariations   map[string]string   `json:"forcedVariations"`
 	AudienceConditions []interface{}       `json:"audienceConditions"`
@@ -49,7 +49,7 @@ type Experiment struct {
 type Group struct {
 	ID                string              `json:"id"`
 	Policy            string              `json:"policy"`
-	TrafficAllocation []trafficAllocation `json:"trafficAllocation"`
+	TrafficAllocation []TrafficAllocation `json:"trafficAllocation"`
 	Experiments       []Experiment        `json:"experiments"`
 }
 
@@ -70,8 +70,8 @@ type Variable struct {
 	Type         entities.VariableType `json:"type"`
 }
 
-// trafficAllocation represents a traffic allocation range from the Optimizely datafile
-type trafficAllocation struct {
+// TrafficAllocation represents a traffic allocation range from the Optimizely datafile
+type TrafficAllocation struct {
 	EntityID   string `json:"entityId"`
 	EndOfRange int    `json:"endOfRange"`
 }

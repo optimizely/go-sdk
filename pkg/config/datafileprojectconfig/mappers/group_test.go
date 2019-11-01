@@ -19,27 +19,23 @@ package mappers
 import (
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
 	datafileEntities "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMapGroups(t *testing.T) {
-	const testGroupString = `{
-		"policy": "random",
-		"trafficAllocation": [
-		  {
-			"entityId": "13",
-			"endOfRange": 4000
-		  }
-		],
-		"id": "14"
-	  }`
 
-	var rawGroup datafileEntities.Group
-	var json = jsoniter.ConfigCompatibleWithStandardLibrary
-	json.Unmarshal([]byte(testGroupString), &rawGroup)
+	rawGroup := datafileEntities.Group{
+		Policy: "random",
+		ID:     "14",
+		TrafficAllocation: []datafileEntities.TrafficAllocation{
+			datafileEntities.TrafficAllocation{
+				EntityID:   "13",
+				EndOfRange: 4000,
+			},
+		},
+	}
 
 	rawGroups := []datafileEntities.Group{rawGroup}
 	groupMap, _ := MapGroups(rawGroups)

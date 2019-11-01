@@ -118,35 +118,29 @@ func TestMapExperiments(t *testing.T) {
 }
 
 func TestMergeExperiments(t *testing.T) {
-	const testExperimentString = `{
-		"id": "11111",
-	}`
 
-	const testGroupString = `{
-		"policy": "random",
-      "trafficAllocation": [
-        {
-          "entityId": "21113",
-          "endOfRange": 7000
-        },
-        {
-          "entityId": "21114",
-          "endOfRange": 10000
-        }
-	  ],
-	  "experiments": [
-		  {
-			"id": "11112"
-		  }
-	  ],
-	  "id":"11112"
-	}`
-
-	var rawExperiment datafileEntities.Experiment
-	var rawGroup datafileEntities.Group
-	var json = jsoniter.ConfigCompatibleWithStandardLibrary
-	json.Unmarshal([]byte(testExperimentString), &rawExperiment)
-	json.Unmarshal([]byte(testGroupString), &rawGroup)
+	rawExperiment := datafileEntities.Experiment{
+		ID: "11111",
+	}
+	rawGroup := datafileEntities.Group{
+		Policy: "random",
+		ID:     "11112",
+		TrafficAllocation: []datafileEntities.TrafficAllocation{
+			datafileEntities.TrafficAllocation{
+				EntityID:   "21113",
+				EndOfRange: 7000,
+			},
+			datafileEntities.TrafficAllocation{
+				EntityID:   "21114",
+				EndOfRange: 10000,
+			},
+		},
+		Experiments: []datafileEntities.Experiment{
+			datafileEntities.Experiment{
+				ID: "11112",
+			},
+		},
+	}
 
 	rawExperiments := []datafileEntities.Experiment{rawExperiment}
 	rawGroups := []datafileEntities.Group{rawGroup}
