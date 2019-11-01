@@ -39,7 +39,7 @@ type CESOptionFunc func(*CompositeExperimentService)
 func WithOverrides(overrides OverrideStore) CESOptionFunc {
 	return func(service *CompositeExperimentService) {
 		service.experimentServices = append(
-			[]ExperimentService{NewExperimentOverrideService(overrides)},
+			[]ExperimentService{newExperimentOverrideService(overrides)},
 			service.experimentServices...,
 		)
 	}
@@ -47,10 +47,9 @@ func WithOverrides(overrides OverrideStore) CESOptionFunc {
 
 // NewCompositeExperimentService creates a new instance of the CompositeExperimentService
 func NewCompositeExperimentService(options ...CESOptionFunc) *CompositeExperimentService {
-	// These decision services are applied in order:
-	// 1. Overrides (only when the WithOverrides option is used)
-	// 2. Whitelist
-	// 3. Bucketing
+	// By default, these decision services are applied in order:
+	// 1. Whitelist
+	// 2. Bucketing
 	compositeExperimentService := &CompositeExperimentService{
 		experimentServices: []ExperimentService{
 			NewExperimentWhitelistService(),

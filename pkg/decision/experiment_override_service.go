@@ -30,7 +30,7 @@ var eosLogger = logging.GetLogger("ExperimentOverrideService")
 
 // ExperimentOverrideKey represents the user ID and experiment associated with an override variation
 type ExperimentOverrideKey struct {
-	Experiment, UserID string
+	ExperimentKey, UserID string
 }
 
 // OverrideStore provides read access to overrides
@@ -52,26 +52,26 @@ func (m *mapOverridesStore) GetVariation(overrideKey ExperimentOverrideKey) (str
 
 // ExperimentOverrideService makes a decision using an OverridesStore
 // Implements the ExperimentService interface
-type ExperimentOverrideService struct {
+type experimentOverrideService struct {
 	Overrides OverrideStore
 }
 
 // NewExperimentOverrideService returns a pointer to an initialized ExperimentOverrideService
-func NewExperimentOverrideService(overrides OverrideStore) *ExperimentOverrideService {
-	return &ExperimentOverrideService{
+func newExperimentOverrideService(overrides OverrideStore) *experimentOverrideService {
+	return &experimentOverrideService{
 		Overrides: overrides,
 	}
 }
 
 // GetDecision returns a decision with a variation when a variation assignment is found in the configured overrides for the given user and experiment
-func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
+func (s experimentOverrideService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
 	decision := ExperimentDecision{}
 
 	if decisionContext.Experiment == nil {
 		return decision, errors.New("decisionContext Experiment is nil")
 	}
 
-	variationKey, ok := s.Overrides.GetVariation(ExperimentOverrideKey{Experiment: decisionContext.Experiment.Key, UserID: userContext.ID})
+	variationKey, ok := s.Overrides.GetVariation(ExperimentOverrideKey{ExperimentKey: decisionContext.Experiment.Key, UserID: userContext.ID})
 	if !ok {
 		decision.Reason = reasons.NoOverrideVariationForUser
 		return decision, nil
