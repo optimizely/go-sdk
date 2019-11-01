@@ -143,8 +143,13 @@ func (c *ScenarioCtx) TheResultShouldBeBoolean() error {
 // TheResultShouldMatchList checks that the result equals to the provided list.
 func (c *ScenarioCtx) TheResultShouldMatchList(list string) error {
 	expectedList := strings.Split(list, ",")
-	if actualList, ok := c.apiResponse.Result.([]string); ok && compareStringSlice(expectedList, actualList) {
-		return nil
+	if len(expectedList) == 1 && expectedList[0] == "[]" {
+		expectedList = []string{}
+	}
+	if actualList, ok := c.apiResponse.Result.([]string); ok {
+		if compareStringSlice(expectedList, actualList) {
+			return nil
+		}
 	}
 	return fmt.Errorf("incorrect result")
 }
