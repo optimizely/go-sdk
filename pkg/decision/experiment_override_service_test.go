@@ -20,6 +20,7 @@ package decision
 import (
 	"testing"
 
+	"github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/stretchr/testify/suite"
 )
@@ -33,12 +34,10 @@ type ExperimentOverrideServiceTestSuite struct {
 
 func (s *ExperimentOverrideServiceTestSuite) SetupTest() {
 	s.mockConfig = new(mockProjectConfig)
-	mapOverrides := &mapOverridesStore{
-		overridesMap: map[ExperimentOverrideKey]string{
-			ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}: testExp1111Var2222.Key,
-		},
-	}
-	s.overrideService = newExperimentOverrideService(mapOverrides)
+	s.overrides = make(map[ExperimentOverrideKey]string)
+	s.overrideService = newExperimentOverrideService(&mapOverridesStore{
+		overridesMap: s.overrides,
+	})
 }
 
 func (s *ExperimentOverrideServiceTestSuite) TestOverridesIncludeVariation() {
@@ -46,15 +45,91 @@ func (s *ExperimentOverrideServiceTestSuite) TestOverridesIncludeVariation() {
 		Experiment:    &testExp1111,
 		ProjectConfig: s.mockConfig,
 	}
-
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
 	}
-
+	s.overrides[ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}] = testExp1111Var2222.Key
 	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
-
 	s.NoError(err)
 	s.NotNil(decision.Variation)
+	s.Exactly(decision.Variation.Key, testExp1111Var2222.Key)
+	s.Exactly(decision.Reason, reasons.OverrideVariationAssignmentFound)
+}
+
+func (s *ExperimentOverrideServiceTestSuite) TestNilDecisionContextExperiment() {
+	testDecisionContext := ExperimentDecisionContext{
+		ProjectConfig: s.mockConfig,
+	}
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
+	s.Error(err)
+	s.Nil(decision.Variation)
+}
+
+func (s *ExperimentOverrideServiceTestSuite) TestNoOverrideForExperiment() {
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1111,
+		ProjectConfig: s.mockConfig,
+	}
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+	// The decision context refers to testExp1111, but this override is for another experiment
+	s.overrides[ExperimentOverrideKey{ExperimentKey: testExp1113.Key, UserID: "test_user_1"}] = testExp1113Var2224.Key
+	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
+	s.NoError(err)
+	s.Nil(decision.Variation)
+	s.Exactly(decision.Reason, reasons.NoOverrideVariationAssignment)
+}
+
+func (s *ExperimentOverrideServiceTestSuite) TestNoOverrideForUser() {
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1111,
+		ProjectConfig: s.mockConfig,
+	}
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+	// The user context refers to "test_user_1", but this override is for another user
+	s.overrides[ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_2"}] = testExp1111Var2222.Key
+	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
+	s.NoError(err)
+	s.Nil(decision.Variation)
+	s.Exactly(decision.Reason, reasons.NoOverrideVariationAssignment)
+}
+
+func (s *ExperimentOverrideServiceTestSuite) TestNoOverrideForUserOrExperiment() {
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1111,
+		ProjectConfig: s.mockConfig,
+	}
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+	// This override is for both a different user and a different experiment than the ones in the contexts above
+	s.overrides[ExperimentOverrideKey{ExperimentKey: testExp1113.Key, UserID: "test_user_3"}] = testExp1111Var2222.Key
+	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
+	s.NoError(err)
+	s.Nil(decision.Variation)
+	s.Exactly(decision.Reason, reasons.NoOverrideVariationAssignment)
+}
+
+func (s *ExperimentOverrideServiceTestSuite) TestInvalidVariationInOverride() {
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1111,
+		ProjectConfig: s.mockConfig,
+	}
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+	// This override variation key does not exist in the experiment
+	s.overrides[ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}] = "invalid_variation_key"
+	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
+	s.NoError(err)
+	s.Nil(decision.Variation)
+	s.Exactly(decision.Reason, reasons.InvalidOverrideVariationAssignment)
 }
 
 func TestExperimentOverridesTestSuite(t *testing.T) {

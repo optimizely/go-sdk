@@ -63,7 +63,7 @@ func newExperimentOverrideService(overrides OverrideStore) *experimentOverrideSe
 	}
 }
 
-// GetDecision returns a decision with a variation when a variation assignment is found in the configured overrides for the given user and experiment
+// GetDecision returns a decision with a variation when the store returns a variation assignment for the given user and experiment
 func (s experimentOverrideService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
 	decision := ExperimentDecision{}
 
@@ -73,19 +73,20 @@ func (s experimentOverrideService) GetDecision(decisionContext ExperimentDecisio
 
 	variationKey, ok := s.Overrides.GetVariation(ExperimentOverrideKey{ExperimentKey: decisionContext.Experiment.Key, UserID: userContext.ID})
 	if !ok {
-		decision.Reason = reasons.NoOverrideVariationForUser
+		decision.Reason = reasons.NoOverrideVariationAssignment
 		return decision, nil
 	}
 
+	// TODO(Matt): Add a VariationsByKey map to the Experiment struct, and use it to look up Variation by key
 	for _, variation := range decisionContext.Experiment.Variations {
 		if variation.Key == variationKey {
 			decision.Variation = &variation
-			decision.Reason = reasons.OverrideVariationFound
+			decision.Reason = reasons.OverrideVariationAssignmentFound
 			eosLogger.Info(fmt.Sprintf("Override variation %v found for user %v", variationKey, userContext.ID))
 			return decision, nil
 		}
 	}
 
-	decision.Reason = reasons.InvalidOverrideVariationForUser
+	decision.Reason = reasons.InvalidOverrideVariationAssignment
 	return decision, nil
 }
