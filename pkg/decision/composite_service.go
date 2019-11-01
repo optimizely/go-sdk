@@ -35,46 +35,16 @@ type CompositeService struct {
 	notificationCenter         notification.Center
 }
 
-// CSOptionFunc allows customization of the CompositeService returned from NewCompositeService
-type CSOptionFunc func(*CompositeService)
-
-// WithExperimentOverrides applies the argument experiment overrides to a composite service
-// Note: This overwrites both compositeExperimentService and compositeFeatureService. The
-// overrides will be applied to both.
-func WithExperimentOverrides(experimentOverrides ExperimentOverrideStore) CSOptionFunc {
-	return func(service *CompositeService) {
-		expService := NewCompositeExperimentService(
-			WithOverrides(experimentOverrides),
-		)
-		service.compositeExperimentService = expService
-		service.compositeFeatureService = NewCompositeFeatureService(expService)
-	}
-}
-
-// WithExperimentOverridesMap applies the overrides in the argument map to a composite service
-func WithExperimentOverridesMap(overridesMap map[ExperimentOverrideKey]string) CSOptionFunc {
-	overridesStore := &MapOverridesStore{
-		overridesMap: overridesMap,
-	}
-	return WithExperimentOverrides(overridesStore)
-}
-
 // NewCompositeService returns a new instance of the CompositeService with the defaults
-func NewCompositeService(sdkKey string, options ...CSOptionFunc) *CompositeService {
+func NewCompositeService(sdkKey string) *CompositeService {
 	// @TODO: add factory method with option funcs to accept custom feature and experiment services
 	compositeExperimentService := NewCompositeExperimentService()
 	compositeFeatureDecisionService := NewCompositeFeatureService(compositeExperimentService)
-	compositeService := &CompositeService{
+	return &CompositeService{
 		compositeExperimentService: compositeExperimentService,
 		compositeFeatureService:    compositeFeatureDecisionService,
 		notificationCenter:         registry.GetNotificationCenter(sdkKey),
 	}
-
-	for _, option := range options {
-		option(compositeService)
-	}
-
-	return compositeService
 }
 
 // GetFeatureDecision returns a decision for the given feature key

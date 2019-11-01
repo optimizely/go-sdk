@@ -158,29 +158,6 @@ func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentService() {
 	s.IsType(&ExperimentBucketerService{}, compositeExperimentService.experimentServices[1])
 }
 
-// testExperimentOverrides implements ExperimentOverridesStore for tests
-type testExperimentOverrides struct{}
-
-func (o *testExperimentOverrides) GetVariation(overrideKey ExperimentOverrideKey) (string, bool) {
-	return testExp1111Var2222.Key, true
-}
-
-func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithOverrides() {
-	compositeExperimentService := NewCompositeExperimentService(
-		WithOverrides(&testExperimentOverrides{}),
-	)
-	s.NotEmpty(compositeExperimentService.experimentServices)
-	overrideService := compositeExperimentService.experimentServices[0]
-	s.IsType(&ExperimentOverrideService{}, overrideService)
-	testUserContext := entities.UserContext{
-		ID: "test_user_1",
-	}
-	decision, err := overrideService.GetDecision(s.testDecisionContext, testUserContext)
-	s.NoError(err)
-	s.NotNil(decision.Variation)
-	s.Equal(decision.Variation.Key, testExp1111Var2222.Key)
-}
-
 func TestCompositeExperimentTestSuite(t *testing.T) {
 	suite.Run(t, new(CompositeExperimentTestSuite))
 }

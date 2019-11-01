@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/client"
-	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
@@ -68,22 +67,4 @@ func main() {
 		client.WithBatchEventProcessor(event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
 	)
 	optimizelyClient.Close()
-
-	/************* Setting experiment overrides (a.k.a. "forced variations") ********************/
-	overrideKey := decision.ExperimentOverrideKey{
-		Experiment: "aaaa",
-		UserID:     "Matt",
-	}
-	overrides := map[decision.ExperimentOverrideKey]string{
-		overrideKey: "variation_1",
-	}
-	compositeService := decision.NewCompositeService(
-		sdkKey,
-		decision.WithExperimentOverridesMap(overrides),
-	)
-	optimizelyClient, _ = optimizelyFactory.Client(
-		client.WithDecisionService(compositeService),
-	)
-	// Optimizely client now has "variation_1" forced for user "Matt" in experiment "aaaa"
-	// The forced variation will work regardless of whether "aaaa" is an A/B test or a Feature Test.
 }

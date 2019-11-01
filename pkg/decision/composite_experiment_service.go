@@ -32,36 +32,18 @@ type CompositeExperimentService struct {
 	experimentServices []ExperimentService
 }
 
-// CESOptionFunc allows optional customization of the CompositeExperimentService returned from NewCompositeExperimentService
-type CESOptionFunc func(*CompositeExperimentService)
-
-// WithOverrides prepends an ExperimentOverrideService to service.experimentServices
-func WithOverrides(overrides ExperimentOverrideStore) CESOptionFunc {
-	return func(service *CompositeExperimentService) {
-		service.experimentServices = append(
-			[]ExperimentService{NewExperimentOverrideService(overrides)},
-			service.experimentServices...,
-		)
-	}
-}
-
 // NewCompositeExperimentService creates a new instance of the CompositeExperimentService
-func NewCompositeExperimentService(options ...CESOptionFunc) *CompositeExperimentService {
-	// By default, these decision services are applied in order:
+func NewCompositeExperimentService() *CompositeExperimentService {
+	// These decision services are applied in order:
 	// 1. Whitelist
 	// 2. Bucketing
-	compositeExperimentService := &CompositeExperimentService{
+	// @TODO(mng): Prepend forced variation
+	return &CompositeExperimentService{
 		experimentServices: []ExperimentService{
 			NewExperimentWhitelistService(),
 			NewExperimentBucketerService(),
 		},
 	}
-
-	for _, option := range options {
-		option(compositeExperimentService)
-	}
-
-	return compositeExperimentService
 }
 
 // GetDecision returns a decision for the given experiment and user context
