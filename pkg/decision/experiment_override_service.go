@@ -33,8 +33,8 @@ type ExperimentOverrideKey struct {
 	ExperimentKey, UserID string
 }
 
-// OverrideStore provides read access to overrides
-type OverrideStore interface {
+// ExperimentOverrideStore provides read access to overrides
+type ExperimentOverrideStore interface {
 	// Returns a variation associated with overrideKey
 	GetVariation(overrideKey ExperimentOverrideKey) (string, bool)
 }
@@ -50,14 +50,14 @@ func (m *MapOverridesStore) GetVariation(overrideKey ExperimentOverrideKey) (str
 	return variationKey, ok
 }
 
-// ExperimentOverrideService makes a decision using an OverridesStore
+// ExperimentOverrideService makes a decision using an ExperimentOverridesStore
 // Implements the ExperimentService interface
 type ExperimentOverrideService struct {
-	Overrides OverrideStore
+	Overrides ExperimentOverrideStore
 }
 
 // NewExperimentOverrideService returns a pointer to an initialized ExperimentOverrideService
-func NewExperimentOverrideService(overrides OverrideStore) *ExperimentOverrideService {
+func NewExperimentOverrideService(overrides ExperimentOverrideStore) *ExperimentOverrideService {
 	return &ExperimentOverrideService{
 		Overrides: overrides,
 	}

@@ -41,7 +41,7 @@ type CSOptionFunc func(*CompositeService)
 // WithExperimentOverrides applies the argument experiment overrides to a composite service
 // Note: This overwrites both compositeExperimentService and compositeFeatureService. The
 // overrides will be applied to both.
-func WithExperimentOverrides(experimentOverrides OverrideStore) CSOptionFunc {
+func WithExperimentOverrides(experimentOverrides ExperimentOverrideStore) CSOptionFunc {
 	return func(service *CompositeService) {
 		expService := NewCompositeExperimentService(
 			WithOverrides(experimentOverrides),

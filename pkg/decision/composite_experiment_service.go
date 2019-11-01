@@ -36,7 +36,7 @@ type CompositeExperimentService struct {
 type CESOptionFunc func(*CompositeExperimentService)
 
 // WithOverrides prepends an ExperimentOverrideService to service.experimentServices
-func WithOverrides(overrides OverrideStore) CESOptionFunc {
+func WithOverrides(overrides ExperimentOverrideStore) CESOptionFunc {
 	return func(service *CompositeExperimentService) {
 		service.experimentServices = append(
 			[]ExperimentService{NewExperimentOverrideService(overrides)},
