@@ -39,10 +39,18 @@ type Experiment struct {
 	LayerID            string              `json:"layerId"`
 	Status             string              `json:"status"`
 	Variations         []Variation         `json:"variations"`
-	TrafficAllocation  []trafficAllocation `json:"trafficAllocation"`
+	TrafficAllocation  []TrafficAllocation `json:"trafficAllocation"`
 	AudienceIds        []string            `json:"audienceIds"`
 	ForcedVariations   map[string]string   `json:"forcedVariations"`
-	AudienceConditions interface{}         `json:"audienceConditions"`
+	AudienceConditions []interface{}       `json:"audienceConditions"`
+}
+
+// Group represents an Group object from the Optimizely datafile
+type Group struct {
+	ID                string              `json:"id"`
+	Policy            string              `json:"policy"`
+	TrafficAllocation []TrafficAllocation `json:"trafficAllocation"`
+	Experiments       []Experiment        `json:"experiments"`
 }
 
 // FeatureFlag represents a FeatureFlag object from the Optimizely datafile
@@ -62,8 +70,8 @@ type Variable struct {
 	Type         entities.VariableType `json:"type"`
 }
 
-// trafficAllocation represents a traffic allocation range from the Optimizely datafile
-type trafficAllocation struct {
+// TrafficAllocation represents a traffic allocation range from the Optimizely datafile
+type TrafficAllocation struct {
 	EntityID   string `json:"entityId"`
 	EndOfRange int    `json:"endOfRange"`
 }
@@ -100,6 +108,7 @@ type Datafile struct {
 	Attributes     []Attribute   `json:"attributes"`
 	Audiences      []Audience    `json:"audiences"`
 	Experiments    []Experiment  `json:"experiments"`
+	Groups         []Group       `json:"groups"`
 	FeatureFlags   []FeatureFlag `json:"featureFlags"`
 	Events         []Event       `json:"events"`
 	Rollouts       []Rollout     `json:"rollouts"`

@@ -14,31 +14,44 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package matchers //
-package matchers
+package mappers
 
 import (
-	"fmt"
+	"testing"
 
-	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers/utils"
+	datafileEntities "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/stretchr/testify/assert"
 )
 
-// GtMatcher matches against the "gt" match type
-type GtMatcher struct {
-	Condition entities.Condition
-}
+func TestMapGroups(t *testing.T) {
 
-// Match returns true if the user's attribute is greater than the condition's string value
-func (m GtMatcher) Match(user entities.UserContext) (bool, error) {
-
-	if floatValue, ok := utils.ToFloat(m.Condition.Value); ok {
-		attributeValue, err := user.GetFloatAttribute(m.Condition.Name)
-		if err != nil {
-			return false, nil
-		}
-		return floatValue < attributeValue, nil
+	rawGroup := datafileEntities.Group{
+		Policy: "random",
+		ID:     "14",
+		TrafficAllocation: []datafileEntities.TrafficAllocation{
+			datafileEntities.TrafficAllocation{
+				EntityID:   "13",
+				EndOfRange: 4000,
+			},
+		},
 	}
 
-	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
+	rawGroups := []datafileEntities.Group{rawGroup}
+	groupMap, _ := MapGroups(rawGroups)
+
+	expectedGroupsMap := map[string]entities.Group{
+		"14": entities.Group{
+			ID:     "14",
+			Policy: "random",
+			TrafficAllocation: []entities.Range{
+				entities.Range{
+					EntityID:   "13",
+					EndOfRange: 4000,
+				},
+			},
+		},
+	}
+
+	assert.Equal(t, expectedGroupsMap, groupMap)
 }
