@@ -47,6 +47,14 @@ func WithExperimentOverrides(experimentOverrides OverrideStore) CSOptionFunc {
 	}
 }
 
+// WithExperimentOverridesMap applies the overrides in the argument map to a composite service
+func WithExperimentOverridesMap(overridesMap map[OverrideKey]string) CSOptionFunc {
+	overridesStore := &mapOverridesStore{
+		overridesMap: overridesMap,
+	}
+	return WithExperimentOverrides(overridesStore)
+}
+
 // NewCompositeService returns a new instance of the CompositeService with the defaults
 func NewCompositeService(sdkKey string, options ...CSOptionFunc) *CompositeService {
 	// @TODO: add factory method with option funcs to accept custom feature and experiment services

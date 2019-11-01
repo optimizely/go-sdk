@@ -35,7 +35,7 @@ type CompositeExperimentService struct {
 // CESOptionFunc allows optional customization of the CompositeExperimentService returned from NewCompositeExperimentService
 type CESOptionFunc func(*CompositeExperimentService)
 
-// WithOverrides prepends an ExperimentOverrideService of the argument map to service.experimentServices
+// WithOverrides prepends an ExperimentOverrideService to service.experimentServices
 func WithOverrides(overrides OverrideStore) CESOptionFunc {
 	return func(service *CompositeExperimentService) {
 		service.experimentServices = append(

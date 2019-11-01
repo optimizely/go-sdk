@@ -72,20 +72,18 @@ func main() {
 	/************* Setting experiment overrides (a.k.a. "forced variations") ********************/
 	overrideKey := decision.OverrideKey{
 		Experiment: "aaaa",
-		User:       "Matt",
+		UserID:     "Matt",
 	}
 	overrides := map[decision.OverrideKey]string{
 		overrideKey: "variation_1",
 	}
 	compositeService := decision.NewCompositeService(
 		sdkKey,
-		decision.WithExperimentOverrides(overrides),
+		decision.WithExperimentOverridesMap(overrides),
 	)
 	optimizelyClient, _ = optimizelyFactory.Client(
 		client.WithDecisionService(compositeService),
 	)
 	// Optimizely client now has "variation_1" forced for user "Matt" in experiment "aaaa"
 	// The forced variation will work regardless of whether "aaaa" is an A/B test or a Feature Test.
-	fmt.Printf("Is feature enabled? %v\n", enabled)
-
 }

@@ -33,9 +33,9 @@ type ExperimentOverrideServiceTestSuite struct {
 
 func (s *ExperimentOverrideServiceTestSuite) SetupTest() {
 	s.mockConfig = new(mockProjectConfig)
-	mapOverrides := &MapOverrides{
-		overrides: map[OverrideKey]string{
-			OverrideKey{Experiment: testExp1111.Key, User: "test_user_1"}: testExp1111Var2222.Key,
+	mapOverrides := &mapOverridesStore{
+		overridesMap: map[OverrideKey]string{
+			OverrideKey{Experiment: testExp1111.Key, UserID: "test_user_1"}: testExp1111Var2222.Key,
 		},
 	}
 	s.overrideService = NewExperimentOverrideService(mapOverrides)
