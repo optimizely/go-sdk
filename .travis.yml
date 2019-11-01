@@ -6,8 +6,8 @@ install:
   - eval "$(gimme)"
 stages:
   - 'Lint'
-  # - 'Integration tests'
   - 'Unit test'
+  - 'Integration tests'
 jobs:
   include:
     - stage: 'Lint'
@@ -54,3 +54,13 @@ jobs:
         - go get github.com/mattn/goveralls
       after_success:
         - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
+    - stage: 'Integration tests'
+      env: GIMME_GO_VERSION=1.12.x FSC_PATH="/tmp/fsc-repo"
+      before_script:
+        - mkdir -p $FSC_PATH
+        - pushd $FSC_PATH && git init && git fetch --depth=1 https://$CI_USER_TOKEN@github.com/optimizely/fullstack-sdk-compatibility-suite ${FSC_BRANCH:-master} && git checkout FETCH_HEAD && popd        
+      install:
+        - eval "$(gimme)"
+      script:
+        - ./scripts/run-fsc-tests.sh -f "$FSC_PATH/features/" -d "$FSC_PATH/features/support/datafiles/" -t "$TAGS"        
+        
