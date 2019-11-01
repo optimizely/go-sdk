@@ -70,11 +70,11 @@ func main() {
 	optimizelyClient.Close()
 
 	/************* Setting experiment overrides (a.k.a. "forced variations") ********************/
-	overrideKey := decision.OverrideKey{
+	overrideKey := decision.ExperimentOverrideKey{
 		Experiment: "aaaa",
 		UserID:     "Matt",
 	}
-	overrides := map[decision.OverrideKey]string{
+	overrides := map[decision.ExperimentOverrideKey]string{
 		overrideKey: "variation_1",
 	}
 	compositeService := decision.NewCompositeService(

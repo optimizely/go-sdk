@@ -28,24 +28,24 @@ import (
 
 var eosLogger = logging.GetLogger("ExperimentOverrideService")
 
-// OverrideKey represents the user ID and experiment associated with an override variation
-type OverrideKey struct {
+// ExperimentOverrideKey represents the user ID and experiment associated with an override variation
+type ExperimentOverrideKey struct {
 	Experiment, UserID string
 }
 
 // OverrideStore provides read access to overrides
 type OverrideStore interface {
 	// Returns a variation associated with overrideKey
-	GetVariation(overrideKey OverrideKey) (string, bool)
+	GetVariation(overrideKey ExperimentOverrideKey) (string, bool)
 }
 
 // MapOverridesStore is a map-based implementation of OverrideStore
 type mapOverridesStore struct {
-	overridesMap map[OverrideKey]string
+	overridesMap map[ExperimentOverrideKey]string
 }
 
 // GetVariation returns the override associated with the given key in the map
-func (m *mapOverridesStore) GetVariation(overrideKey OverrideKey) (string, bool) {
+func (m *mapOverridesStore) GetVariation(overrideKey ExperimentOverrideKey) (string, bool) {
 	variationKey, ok := m.overridesMap[overrideKey]
 	return variationKey, ok
 }
@@ -71,7 +71,7 @@ func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisio
 		return decision, errors.New("decisionContext Experiment is nil")
 	}
 
-	variationKey, ok := s.Overrides.GetVariation(OverrideKey{Experiment: decisionContext.Experiment.Key, UserID: userContext.ID})
+	variationKey, ok := s.Overrides.GetVariation(ExperimentOverrideKey{Experiment: decisionContext.Experiment.Key, UserID: userContext.ID})
 	if !ok {
 		decision.Reason = reasons.NoOverrideVariationForUser
 		return decision, nil
