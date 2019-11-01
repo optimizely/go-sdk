@@ -79,6 +79,7 @@ func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisio
 
 	// TODO(Matt): Add a VariationsByKey map to the Experiment struct, and use it to look up Variation by key
 	for _, variation := range decisionContext.Experiment.Variations {
+		variation := variation
 		if variation.Key == variationKey {
 			decision.Variation = &variation
 			decision.Reason = reasons.OverrideVariationAssignmentFound
