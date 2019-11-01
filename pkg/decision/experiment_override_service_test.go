@@ -52,8 +52,8 @@ func (s *ExperimentOverrideServiceTestSuite) TestOverridesIncludeVariation() {
 	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
 	s.NoError(err)
 	s.NotNil(decision.Variation)
-	s.Exactly(decision.Variation.Key, testExp1111Var2222.Key)
-	s.Exactly(decision.Reason, reasons.OverrideVariationAssignmentFound)
+	s.Exactly(testExp1111Var2222.Key, decision.Variation.Key)
+	s.Exactly(reasons.OverrideVariationAssignmentFound, decision.Reason)
 }
 
 func (s *ExperimentOverrideServiceTestSuite) TestNilDecisionContextExperiment() {
@@ -81,7 +81,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestNoOverrideForExperiment() {
 	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
 	s.NoError(err)
 	s.Nil(decision.Variation)
-	s.Exactly(decision.Reason, reasons.NoOverrideVariationAssignment)
+	s.Exactly(reasons.NoOverrideVariationAssignment, decision.Reason)
 }
 
 func (s *ExperimentOverrideServiceTestSuite) TestNoOverrideForUser() {
@@ -97,7 +97,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestNoOverrideForUser() {
 	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
 	s.NoError(err)
 	s.Nil(decision.Variation)
-	s.Exactly(decision.Reason, reasons.NoOverrideVariationAssignment)
+	s.Exactly(reasons.NoOverrideVariationAssignment, decision.Reason)
 }
 
 func (s *ExperimentOverrideServiceTestSuite) TestNoOverrideForUserOrExperiment() {
@@ -113,7 +113,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestNoOverrideForUserOrExperiment()
 	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
 	s.NoError(err)
 	s.Nil(decision.Variation)
-	s.Exactly(decision.Reason, reasons.NoOverrideVariationAssignment)
+	s.Exactly(reasons.NoOverrideVariationAssignment, decision.Reason)
 }
 
 func (s *ExperimentOverrideServiceTestSuite) TestInvalidVariationInOverride() {
@@ -129,7 +129,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestInvalidVariationInOverride() {
 	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
 	s.NoError(err)
 	s.Nil(decision.Variation)
-	s.Exactly(decision.Reason, reasons.InvalidOverrideVariationAssignment)
+	s.Exactly(reasons.InvalidOverrideVariationAssignment, decision.Reason)
 }
 
 func TestExperimentOverridesTestSuite(t *testing.T) {
