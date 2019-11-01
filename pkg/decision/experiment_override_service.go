@@ -40,31 +40,31 @@ type OverrideStore interface {
 }
 
 // MapOverridesStore is a map-based implementation of OverrideStore
-type mapOverridesStore struct {
+type MapOverridesStore struct {
 	overridesMap map[ExperimentOverrideKey]string
 }
 
 // GetVariation returns the override associated with the given key in the map
-func (m *mapOverridesStore) GetVariation(overrideKey ExperimentOverrideKey) (string, bool) {
+func (m *MapOverridesStore) GetVariation(overrideKey ExperimentOverrideKey) (string, bool) {
 	variationKey, ok := m.overridesMap[overrideKey]
 	return variationKey, ok
 }
 
 // ExperimentOverrideService makes a decision using an OverridesStore
 // Implements the ExperimentService interface
-type experimentOverrideService struct {
+type ExperimentOverrideService struct {
 	Overrides OverrideStore
 }
 
 // NewExperimentOverrideService returns a pointer to an initialized ExperimentOverrideService
-func newExperimentOverrideService(overrides OverrideStore) *experimentOverrideService {
-	return &experimentOverrideService{
+func NewExperimentOverrideService(overrides OverrideStore) *ExperimentOverrideService {
+	return &ExperimentOverrideService{
 		Overrides: overrides,
 	}
 }
 
 // GetDecision returns a decision with a variation when the store returns a variation assignment for the given user and experiment
-func (s experimentOverrideService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
+func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
 	decision := ExperimentDecision{}
 
 	if decisionContext.Experiment == nil {

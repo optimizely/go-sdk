@@ -53,7 +53,7 @@ func WithExperimentOverrides(experimentOverrides OverrideStore) CSOptionFunc {
 
 // WithExperimentOverridesMap applies the overrides in the argument map to a composite service
 func WithExperimentOverridesMap(overridesMap map[ExperimentOverrideKey]string) CSOptionFunc {
-	overridesStore := &mapOverridesStore{
+	overridesStore := &MapOverridesStore{
 		overridesMap: overridesMap,
 	}
 	return WithExperimentOverrides(overridesStore)

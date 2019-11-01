@@ -39,7 +39,7 @@ type CESOptionFunc func(*CompositeExperimentService)
 func WithOverrides(overrides OverrideStore) CESOptionFunc {
 	return func(service *CompositeExperimentService) {
 		service.experimentServices = append(
-			[]ExperimentService{newExperimentOverrideService(overrides)},
+			[]ExperimentService{NewExperimentOverrideService(overrides)},
 			service.experimentServices...,
 		)
 	}
