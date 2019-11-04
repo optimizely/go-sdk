@@ -67,7 +67,6 @@ func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experimen
 			if len(audienceConditions) > 0 {
 				audienceConditionTree, err = buildAudienceConditionTree(audienceConditions)
 			}
-			break
 		case string:
 			if audienceConditions != "" {
 				audienceConditionTree, err = buildAudienceConditionTree([]interface{}{audienceConditions})
