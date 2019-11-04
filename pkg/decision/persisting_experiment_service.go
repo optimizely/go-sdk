@@ -34,44 +34,31 @@ type PersistingExperimentService struct {
 	userProfileService        UserProfileService
 }
 
-// PESOptionFunc is used to extend the PersistingExperimentService with additional options
-type PESOptionFunc func(*PersistingExperimentService)
-
-// WithUserProfileService sets the user profile service on the persistingExperimentService instance
-func WithUserProfileService(userProfileService UserProfileService) PESOptionFunc {
-	return func(f *PersistingExperimentService) {
-		f.userProfileService = userProfileService
-	}
-}
-
 // NewPersistingExperimentService returns a new instance of the PersistingExperimentService
-func NewPersistingExperimentService(experimentBucketerService ExperimentService, options ...PESOptionFunc) *PersistingExperimentService {
+func NewPersistingExperimentService(experimentBucketerService ExperimentService, userProfileService UserProfileService) *PersistingExperimentService {
 	persistingExperimentService := &PersistingExperimentService{
 		experimentBucketedService: experimentBucketerService,
-	}
-
-	for _, opt := range options {
-		opt(persistingExperimentService)
+		userProfileService:        userProfileService,
 	}
 
 	return persistingExperimentService
 }
 
 // GetDecision returns the decision with the variation the user is bucketed into
-func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
-	var experimentDecision ExperimentDecision
-	var err error
+func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (experimentDecision ExperimentDecision, err error) {
+	if p.userProfileService == nil {
+		return p.experimentBucketedService.GetDecision(decisionContext, userContext)
+	}
+
 	var userProfile UserProfile
 	// check to see if there is a saved decision for the user
-	if p.userProfileService != nil {
-		experimentDecision, userProfile = p.getSavedDecision(decisionContext, userContext)
-		if experimentDecision.Variation != nil {
-			return experimentDecision, nil
-		}
+	experimentDecision, userProfile = p.getSavedDecision(decisionContext, userContext)
+	if experimentDecision.Variation != nil {
+		return experimentDecision, nil
 	}
 
 	experimentDecision, err = p.experimentBucketedService.GetDecision(decisionContext, userContext)
-	if experimentDecision.Variation != nil && p.userProfileService != nil {
+	if experimentDecision.Variation != nil {
 		// save decision if a user profile service is provided
 		p.saveDecision(userProfile, decisionContext.Experiment, experimentDecision)
 	}
@@ -81,16 +68,11 @@ func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecis
 
 func (p PersistingExperimentService) getSavedDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, UserProfile) {
 	experimentDecision := ExperimentDecision{}
-
-	if p.userProfileService == nil {
-		return experimentDecision, UserProfile{}
-	}
-
 	userProfile, err := p.userProfileService.Lookup(userContext.ID)
 	if err != nil {
 		errMessage := fmt.Sprintf(`Error looking up user from user profile service: %s`, err)
 		bLogger.Warning(errMessage)
-		return experimentDecision, UserProfile{}
+		return experimentDecision, UserProfile{ID: userContext.ID}
 	}
 
 	// look up experiment decision from user profile
@@ -110,6 +92,9 @@ func (p PersistingExperimentService) getSavedDecision(decisionContext Experiment
 func (p PersistingExperimentService) saveDecision(userProfile UserProfile, experiment *entities.Experiment, decision ExperimentDecision) {
 	if p.userProfileService != nil {
 		decisionKey := UserDecisionKey{ExperimentID: experiment.ID}
+		if userProfile.ExperimentBucketMap == nil {
+			userProfile.ExperimentBucketMap = map[UserDecisionKey]string{}
+		}
 		userProfile.ExperimentBucketMap[decisionKey] = decision.Variation.ID
 		err := p.userProfileService.Save(userProfile)
 		if err != nil {
