@@ -69,7 +69,7 @@ func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experimen
 			}
 		case string:
 			if audienceConditions != "" {
-				audienceConditionTree, err = buildAudienceConditionTree([]interface{}{audienceConditions})
+				audienceConditionTree, err = buildAudienceConditionTree([]string{audienceConditions})
 			}
 		default:
 		}
