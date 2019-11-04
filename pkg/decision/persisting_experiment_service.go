@@ -71,7 +71,7 @@ func (p PersistingExperimentService) getSavedDecision(decisionContext Experiment
 	userProfile, err := p.userProfileService.Lookup(userContext.ID)
 	if err != nil {
 		errMessage := fmt.Sprintf(`Error looking up user from user profile service: %s`, err)
-		bLogger.Warning(errMessage)
+		pesLogger.Warning(errMessage)
 		return experimentDecision, UserProfile{ID: userContext.ID}
 	}
 
@@ -80,9 +80,9 @@ func (p PersistingExperimentService) getSavedDecision(decisionContext Experiment
 	if savedVariationID, ok := userProfile.ExperimentBucketMap[decisionKey]; ok {
 		if variation, ok := decisionContext.Experiment.Variations[savedVariationID]; ok {
 			experimentDecision.Variation = &variation
-			bLogger.Debug(fmt.Sprintf(`User "%s" was previously bucketed into variation "%s" of experiment "%s".`, userContext.ID, variation.Key, decisionContext.Experiment.Key))
+			pesLogger.Debug(fmt.Sprintf(`User "%s" was previously bucketed into variation "%s" of experiment "%s".`, userContext.ID, variation.Key, decisionContext.Experiment.Key))
 		} else {
-			bLogger.Warning(fmt.Sprintf(`User "%s" was previously bucketed into variation with ID "%s" for experiment "%s", but no matching variation was found.`, userContext.ID, savedVariationID, decisionContext.Experiment.Key))
+			pesLogger.Warning(fmt.Sprintf(`User "%s" was previously bucketed into variation with ID "%s" for experiment "%s", but no matching variation was found.`, userContext.ID, savedVariationID, decisionContext.Experiment.Key))
 		}
 	}
 
@@ -98,7 +98,7 @@ func (p PersistingExperimentService) saveDecision(userProfile UserProfile, exper
 		userProfile.ExperimentBucketMap[decisionKey] = decision.Variation.ID
 		err := p.userProfileService.Save(userProfile)
 		if err != nil {
-			bLogger.Error(`Unable to save decision to user profile service`, err)
+			pesLogger.Error(`Unable to save decision to user profile service`, err)
 		}
 	}
 }
