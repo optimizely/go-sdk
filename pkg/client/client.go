@@ -96,7 +96,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 		}
 	}()
 
-	context, featureDecision, err := o.getFeatureDecision(featureKey, userContext)
+	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, userContext)
 	if err != nil {
 		logger.Error("received an error while computing feature decision", err)
 		return result, err
@@ -116,7 +116,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 
 	if featureDecision.Source == decision.FeatureTest {
 		// send impression event for feature tests
-		impressionEvent := event.CreateImpressionUserEvent(context.ProjectConfig, featureDecision.Experiment, *featureDecision.Variation, userContext)
+		impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment, *featureDecision.Variation, userContext)
 		o.EventProcessor.ProcessEvent(impressionEvent)
 	}
 	return result, err
@@ -214,12 +214,12 @@ func (o *OptimizelyClient) GetFeatureVariableString(featureKey, variableKey stri
 // GetFeatureVariable returns feature as a string along with it's associated type
 func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, userContext entities.UserContext) (value string, valueType entities.VariableType, err error) {
 
-	context, featureDecision, err := o.getFeatureDecision(featureKey, userContext)
+	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, userContext)
 	if err != nil {
 		return "", "", err
 	}
 
-	variable, err := context.ProjectConfig.GetVariableByKey(featureKey, variableKey)
+	variable, err := decisionContext.ProjectConfig.GetVariableByKey(featureKey, variableKey)
 	if err != nil {
 		return "", "", err
 	}
@@ -243,9 +243,14 @@ func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext
 		return enabled, variableMap, err
 	}
 
-	feature := decisionContext.Feature
 	if featureDecision.Variation != nil {
 		enabled = featureDecision.Variation.FeatureEnabled
+	}
+
+	feature := decisionContext.Feature
+	if feature == nil {
+		logger.Warning(fmt.Sprintf(`feature "%s" does not exist`, featureKey))
+		return enabled, variableMap, nil
 	}
 
 	for _, v := range feature.VariableMap {
