@@ -65,11 +65,14 @@ func TestMapExperiments(t *testing.T) {
 	json.Unmarshal([]byte(testExperimentString), &rawExperiment)
 
 	rawExperiments := []datafileEntities.Experiment{rawExperiment}
-	experiments, experimentKeyMap := MapExperiments(rawExperiments)
+	experimentGroupMap := map[string]string{"11111": "15"}
+
+	experiments, experimentKeyMap := MapExperiments(rawExperiments, experimentGroupMap)
 	expectedExperiments := map[string]entities.Experiment{
 		"11111": {
 			AudienceIds: []string{"31111"},
 			ID:          "11111",
+			GroupID:     "15",
 			Key:         "test_experiment_11111",
 			Variations: map[string]entities.Variation{
 				"21111": {
@@ -114,6 +117,47 @@ func TestMapExperiments(t *testing.T) {
 	assert.Equal(t, expectedExperimentKeyMap, experimentKeyMap)
 }
 
+func TestMergeExperiments(t *testing.T) {
+
+	rawExperiment := datafileEntities.Experiment{
+		ID: "11111",
+	}
+	rawGroup := datafileEntities.Group{
+		Policy: "random",
+		ID:     "11112",
+		TrafficAllocation: []datafileEntities.TrafficAllocation{
+			datafileEntities.TrafficAllocation{
+				EntityID:   "21113",
+				EndOfRange: 7000,
+			},
+			datafileEntities.TrafficAllocation{
+				EntityID:   "21114",
+				EndOfRange: 10000,
+			},
+		},
+		Experiments: []datafileEntities.Experiment{
+			datafileEntities.Experiment{
+				ID: "11112",
+			},
+		},
+	}
+
+	rawExperiments := []datafileEntities.Experiment{rawExperiment}
+	rawGroups := []datafileEntities.Group{rawGroup}
+	mergedExperiments := MergeExperiments(rawExperiments, rawGroups)
+
+	expectedExperiments := []datafileEntities.Experiment{
+		{
+			ID: "11111",
+		},
+		{
+			ID: "11112",
+		},
+	}
+
+	assert.Equal(t, expectedExperiments, mergedExperiments)
+}
+
 func TestMapExperimentsAudienceIdsOnly(t *testing.T) {
 	var rawExperiment datafileEntities.Experiment
 	rawExperiment.AudienceIds = []string{"11111", "11112"}
@@ -138,6 +182,7 @@ func TestMapExperimentsAudienceIdsOnly(t *testing.T) {
 			},
 		},
 	}
-	experiments, _ := MapExperiments([]datafileEntities.Experiment{rawExperiment})
+
+	experiments, _ := MapExperiments([]datafileEntities.Experiment{rawExperiment}, map[string]string{})
 	assert.Equal(t, expectedExperiment.AudienceConditionTree, experiments[rawExperiment.ID].AudienceConditionTree)
 }
