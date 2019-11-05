@@ -117,6 +117,46 @@ func TestMapExperiments(t *testing.T) {
 	assert.Equal(t, expectedExperimentKeyMap, experimentKeyMap)
 }
 
+func TestMapExperimentsWithStringAudienceCondition(t *testing.T) {
+
+	rawExperiment := datafileEntities.Experiment{
+		ID:                 "11111",
+		AudienceIds:        []string{"31111"},
+		Key:                "test_experiment_11111",
+		AudienceConditions: "31111",
+	}
+
+	rawExperiments := []datafileEntities.Experiment{rawExperiment}
+	experimentGroupMap := map[string]string{"11111": "15"}
+
+	experiments, experimentKeyMap := MapExperiments(rawExperiments, experimentGroupMap)
+	expectedExperiments := map[string]entities.Experiment{
+		"11111": {
+			AudienceIds:       []string{"31111"},
+			ID:                "11111",
+			GroupID:           "15",
+			Key:               "test_experiment_11111",
+			Variations:        map[string]entities.Variation{},
+			TrafficAllocation: []entities.Range{},
+			AudienceConditionTree: &entities.TreeNode{
+				Operator: "or",
+				Nodes: []*entities.TreeNode{
+					{
+						Operator: "",
+						Item:     "31111",
+					},
+				},
+			},
+		},
+	}
+	expectedExperimentKeyMap := map[string]string{
+		"test_experiment_11111": "11111",
+	}
+
+	assert.Equal(t, expectedExperiments, experiments)
+	assert.Equal(t, expectedExperimentKeyMap, experimentKeyMap)
+}
+
 func TestMergeExperiments(t *testing.T) {
 
 	rawExperiment := datafileEntities.Experiment{
