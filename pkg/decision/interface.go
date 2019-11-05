@@ -42,6 +42,6 @@ type FeatureService interface {
 
 // UserProfileService is used to save and retrieve past bucketing decisions for users
 type UserProfileService interface {
-	Lookup(string) (UserProfile, error)
-	Save(UserProfile) error
+	Lookup(string) UserProfile
+	Save(UserProfile)
 }

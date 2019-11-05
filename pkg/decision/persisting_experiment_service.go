@@ -68,15 +68,14 @@ func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecis
 
 func (p PersistingExperimentService) getSavedDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, UserProfile) {
 	experimentDecision := ExperimentDecision{}
-	userProfile, err := p.userProfileService.Lookup(userContext.ID)
-	if err != nil {
-		errMessage := fmt.Sprintf(`Error looking up user from user profile service: %s`, err)
-		pesLogger.Warning(errMessage)
-		return experimentDecision, UserProfile{ID: userContext.ID}
-	}
+	userProfile := p.userProfileService.Lookup(userContext.ID)
 
 	// look up experiment decision from user profile
-	decisionKey := UserDecisionKey{ExperimentID: decisionContext.Experiment.ID}
+	decisionKey := NewUserDecisionKey(decisionContext.Experiment.ID)
+	if userProfile.ExperimentBucketMap == nil {
+		return experimentDecision, userProfile
+	}
+
 	if savedVariationID, ok := userProfile.ExperimentBucketMap[decisionKey]; ok {
 		if variation, ok := decisionContext.Experiment.Variations[savedVariationID]; ok {
 			experimentDecision.Variation = &variation
@@ -91,14 +90,11 @@ func (p PersistingExperimentService) getSavedDecision(decisionContext Experiment
 
 func (p PersistingExperimentService) saveDecision(userProfile UserProfile, experiment *entities.Experiment, decision ExperimentDecision) {
 	if p.userProfileService != nil {
-		decisionKey := UserDecisionKey{ExperimentID: experiment.ID}
+		decisionKey := NewUserDecisionKey(experiment.ID)
 		if userProfile.ExperimentBucketMap == nil {
 			userProfile.ExperimentBucketMap = map[UserDecisionKey]string{}
 		}
 		userProfile.ExperimentBucketMap[decisionKey] = decision.Variation.ID
-		err := p.userProfileService.Save(userProfile)
-		if err != nil {
-			pesLogger.Error(`Unable to save decision to user profile service`, err)
-		}
+		p.userProfileService.Save(userProfile)
 	}
 }
