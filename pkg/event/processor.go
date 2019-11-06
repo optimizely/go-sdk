@@ -144,9 +144,9 @@ func (p *BatchEventProcessor) Start(exeCtx utils.ExecutionCtx) {
 func (p *BatchEventProcessor) ProcessEvent(event UserEvent) {
 	p.Q.Add(event)
 	pLogger.Debug(fmt.Sprintf("ProcessEvent: %s", event.UUID))
-	pLogger.Debug(fmt.Sprintf("Current Size: %d, MaxQueueSize: %d", p.Q.Size(), p.MaxQueueSize))
+	pLogger.Debug(fmt.Sprintf("Current Size: %d, BatchSize: %d, MaxQueueSize: %d", p.Q.Size(), p.BatchSize, p.MaxQueueSize))
 
-	if p.Q.Size() >= p.MaxQueueSize {
+	if p.Q.Size() >= p.BatchSize {
 		go func() {
 			p.FlushEvents()
 		}()
@@ -182,6 +182,7 @@ func (p *BatchEventProcessor) startTicker(exeCtx utils.ExecutionCtx) {
 		for {
 			select {
 			case <-p.Ticker.C:
+				pLogger.Debug("Ticker stuff.")
 				p.FlushEvents()
 			case <-exeCtx.GetContext().Done():
 				pLogger.Debug("Event processor stopped, flushing events.")
