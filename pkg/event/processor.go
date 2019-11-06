@@ -143,6 +143,7 @@ func (p *BatchEventProcessor) Start(exeCtx utils.ExecutionCtx) {
 // ProcessEvent processes the given impression event
 func (p *BatchEventProcessor) ProcessEvent(event UserEvent) {
 	p.Q.Add(event)
+	pLogger.Debug(fmt.Sprintf("ProcessEvent: %s", event.UUID))
 
 	if p.Q.Size() >= p.MaxQueueSize {
 		go func() {
@@ -215,6 +216,10 @@ func (p *BatchEventProcessor) FlushEvents() {
 	// we flush when queue size is reached.
 	// however, if there is a ticker cycle already processing, we should wait
 	p.Mux.Lock()
+	defer p.Mux.Unlock()
+
+	pLogger.Debug(fmt.Sprintf("Flushing events. Size: %d", p.EventsCount()))
+
 	var batchEvent Batch
 	var batchEventCount = 0
 	var failedToSend = false
@@ -272,7 +277,6 @@ func (p *BatchEventProcessor) FlushEvents() {
 			}
 		}
 	}
-	p.Mux.Unlock()
 }
 
 // OnEventDispatch registers a handler for LogEvent notifications
