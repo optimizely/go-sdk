@@ -41,10 +41,10 @@ type BatchEventProcessor struct {
 	FlushInterval   time.Duration // in milliseconds
 	BatchSize       int
 	Q               Queue
-	Mux             sync.Mutex
+	flushLock       sync.Mutex
 	Ticker          *time.Ticker
 	EventDispatcher Dispatcher
-	processing      bool
+	processing      *utils.AtomicProperty
 }
 
 // DefaultBatchSize holds the default value for the batch size
@@ -106,7 +106,7 @@ func WithSDKKey(sdkKey string) BPOptionConfig {
 
 // NewBatchEventProcessor returns a new instance of BatchEventProcessor with queueSize and flushInterval
 func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
-	p := &BatchEventProcessor{}
+	p := &BatchEventProcessor{processing:utils.NewAtomicPropertyWrapper(false)}
 
 	for _, opt := range options {
 		opt(p)
@@ -157,13 +157,13 @@ func (p *BatchEventProcessor) ProcessEvent(event UserEvent) {
 	p.Q.Add(event)
 
 	if p.Q.Size() >= p.BatchSize {
-		if !p.processing {
+		if processing, ok := p.processing.Get().(bool); ok && !processing {
 			// it doesn't matter if the timer has kicked in here.
 			// we just want to start one go routine when the batch size is met.
-			p.processing = true
+			p.processing.Set(true)
 			go func() {
 				p.FlushEvents()
-				p.processing = false
+				p.processing.Set(false)
 			}()
 		}
 	}
@@ -233,8 +233,8 @@ func (p *BatchEventProcessor) addToBatch(current *Batch, visitor Visitor) {
 func (p *BatchEventProcessor) FlushEvents() {
 	// we flush when queue size is reached.
 	// however, if there is a ticker cycle already processing, we should wait
-	p.Mux.Lock()
-	defer p.Mux.Unlock()
+	p.flushLock.Lock()
+	defer p.flushLock.Unlock()
 	
 	var batchEvent Batch
 	var batchEventCount = 0
