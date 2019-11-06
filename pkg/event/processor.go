@@ -293,7 +293,6 @@ func (p *BatchEventProcessor) FlushEvents() {
 			}
 		}
 	}
-	p.Mux.Unlock()
 }
 
 // OnEventDispatch registers a handler for LogEvent notifications
