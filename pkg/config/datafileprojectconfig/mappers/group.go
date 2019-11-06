@@ -14,31 +14,30 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package matchers //
-package matchers
+// Package mappers  ...
+package mappers
 
 import (
-	"fmt"
-
-	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers/utils"
+	datafileEntities "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
-// GtMatcher matches against the "gt" match type
-type GtMatcher struct {
-	Condition entities.Condition
-}
-
-// Match returns true if the user's attribute is greater than the condition's string value
-func (m GtMatcher) Match(user entities.UserContext) (bool, error) {
-
-	if floatValue, ok := utils.ToFloat(m.Condition.Value); ok {
-		attributeValue, err := user.GetFloatAttribute(m.Condition.Name)
-		if err != nil {
-			return false, nil
+// MapGroups maps the raw group entity from the datafile to an SDK Group entity
+func MapGroups(rawGroups []datafileEntities.Group) (groupMap map[string]entities.Group, experimentGroupMap map[string]string) {
+	groupMap = make(map[string]entities.Group)
+	experimentGroupMap = make(map[string]string)
+	for _, group := range rawGroups {
+		groupEntity := entities.Group{
+			ID:     group.ID,
+			Policy: group.Policy,
 		}
-		return floatValue < attributeValue, nil
+		for _, allocation := range group.TrafficAllocation {
+			groupEntity.TrafficAllocation = append(groupEntity.TrafficAllocation, entities.Range(allocation))
+		}
+		groupMap[group.ID] = groupEntity
+		for _, experiment := range group.Experiments {
+			experimentGroupMap[experiment.ID] = group.ID
+		}
 	}
-
-	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
+	return groupMap, experimentGroupMap
 }

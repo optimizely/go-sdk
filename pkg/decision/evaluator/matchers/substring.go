@@ -35,7 +35,7 @@ func (m SubstringMatcher) Match(user entities.UserContext) (bool, error) {
 	if stringValue, ok := m.Condition.Value.(string); ok {
 		attributeValue, err := user.GetStringAttribute(m.Condition.Name)
 		if err != nil {
-			return false, err
+			return false, nil
 		}
 		return strings.Contains(attributeValue, stringValue), nil
 	}
