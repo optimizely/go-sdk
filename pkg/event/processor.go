@@ -126,9 +126,7 @@ func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 
 	if p.BatchSize > p.MaxQueueSize {
 		pLogger.Warning("Batch size is larger than queue size.  Swapping")
-		tmp :=  p.BatchSize
-		p.BatchSize = p.MaxQueueSize
-		p.MaxQueueSize = tmp
+		p.BatchSize, p.MaxQueueSize = p.MaxQueueSize, p.BatchSize
 	}
 
 	if p.Q == nil {
@@ -236,6 +234,8 @@ func (p *BatchEventProcessor) FlushEvents() {
 	// we flush when queue size is reached.
 	// however, if there is a ticker cycle already processing, we should wait
 	p.Mux.Lock()
+	defer p.Mux.Unlock()
+	
 	var batchEvent Batch
 	var batchEventCount = 0
 	var failedToSend = false
