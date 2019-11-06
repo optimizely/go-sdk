@@ -44,6 +44,7 @@ type BatchEventProcessor struct {
 	Mux             sync.Mutex
 	Ticker          *time.Ticker
 	EventDispatcher Dispatcher
+	processing      bool
 }
 
 // DefaultBatchSize holds the default value for the batch size
@@ -123,6 +124,13 @@ func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 		p.BatchSize = DefaultBatchSize
 	}
 
+	if p.BatchSize > p.MaxQueueSize {
+		pLogger.Warning("Batch size is larger than queue size.  Swapping")
+		tmp :=  p.BatchSize
+		p.BatchSize = p.MaxQueueSize
+		p.MaxQueueSize = tmp
+	}
+
 	if p.Q == nil {
 		p.Q = NewInMemoryQueue(p.MaxQueueSize)
 	}
@@ -142,13 +150,26 @@ func (p *BatchEventProcessor) Start(exeCtx utils.ExecutionCtx) {
 
 // ProcessEvent processes the given impression event
 func (p *BatchEventProcessor) ProcessEvent(event UserEvent) {
-	p.Q.Add(event)
 
 	if p.Q.Size() >= p.MaxQueueSize {
-		go func() {
-			p.FlushEvents()
-		}()
+		pLogger.Warning("MaxQueueSize has been met. Discarding event")
+		return
 	}
+
+	p.Q.Add(event)
+
+	if p.Q.Size() >= p.BatchSize {
+		if !p.processing {
+			// it doesn't matter if the timer has kicked in here.
+			// we just want to start one go routine when the batch size is met.
+			p.processing = true
+			go func() {
+				p.FlushEvents()
+				p.processing = false
+			}()
+		}
+	}
+
 }
 
 // EventsCount returns size of an event queue
@@ -171,7 +192,7 @@ func (p *BatchEventProcessor) startTicker(exeCtx utils.ExecutionCtx) {
 	if p.Ticker != nil {
 		return
 	}
-	p.Ticker = time.NewTicker(p.FlushInterval * time.Millisecond)
+	p.Ticker = time.NewTicker(p.FlushInterval)
 	wg := exeCtx.GetWaitSync()
 	wg.Add(1)
 	go func() {
