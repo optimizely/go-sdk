@@ -182,7 +182,7 @@ func (p *BatchEventProcessor) startTicker(exeCtx utils.ExecutionCtx) {
 		for {
 			select {
 			case <-p.Ticker.C:
-				pLogger.Debug("Ticker stuff.")
+				pLogger.Debug("Flushing events on Ticker.")
 				p.FlushEvents()
 			case <-exeCtx.GetContext().Done():
 				pLogger.Debug("Event processor stopped, flushing events.")

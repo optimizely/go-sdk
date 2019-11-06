@@ -45,8 +45,7 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 	appClient := &OptimizelyClient{
 		executionCtx:    executionCtx,
 		DecisionService: decision.NewCompositeService(f.SDKKey),
-		EventProcessor: event.NewBatchEventProcessor(event.WithBatchSize(event.DefaultBatchSize),
-			event.WithQueueSize(event.DefaultEventQueueSize), event.WithFlushInterval(event.DefaultEventFlushInterval),
+		EventProcessor: event.NewBatchEventProcessor(
 			event.WithSDKKey(f.SDKKey)),
 	}
 
