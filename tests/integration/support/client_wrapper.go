@@ -294,7 +294,7 @@ func (c *ClientWrapper) track(request models.APIOptions) (models.APIResponse, er
 			ID:         params.UserID,
 			Attributes: params.Attributes,
 		}
-		_ = c.Client.Track(params.EventKey, user, params.EventTags)
+		err = c.Client.Track(params.EventKey, user, params.EventTags)
 	}
 	response.Result = "NULL"
 	return response, err
