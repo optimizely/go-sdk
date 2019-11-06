@@ -173,7 +173,7 @@ func (p *BatchEventProcessor) startTicker(exeCtx utils.ExecutionCtx) {
 	if p.Ticker != nil {
 		return
 	}
-	p.Ticker = time.NewTicker(p.FlushInterval * time.Millisecond)
+	p.Ticker = time.NewTicker(p.FlushInterval)
 	wg := exeCtx.GetWaitSync()
 	wg.Add(1)
 	go func() {
