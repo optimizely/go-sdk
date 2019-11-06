@@ -61,8 +61,18 @@ func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experimen
 	var err error
 	if rawExperiment.AudienceConditions == nil && len(rawExperiment.AudienceIds) > 0 {
 		audienceConditionTree, err = buildAudienceConditionTree(rawExperiment.AudienceIds)
-	} else if len(rawExperiment.AudienceConditions) > 0 {
-		audienceConditionTree, err = buildAudienceConditionTree(rawExperiment.AudienceConditions)
+	} else {
+		switch audienceConditions := rawExperiment.AudienceConditions.(type) {
+		case []interface{}:
+			if len(audienceConditions) > 0 {
+				audienceConditionTree, err = buildAudienceConditionTree(audienceConditions)
+			}
+		case string:
+			if audienceConditions != "" {
+				audienceConditionTree, err = buildAudienceConditionTree([]string{audienceConditions})
+			}
+		default:
+		}
 	}
 	if err != nil {
 		// @TODO: handle error
