@@ -144,6 +144,7 @@ func (p *BatchEventProcessor) Start(exeCtx utils.ExecutionCtx) {
 func (p *BatchEventProcessor) ProcessEvent(event UserEvent) {
 	p.Q.Add(event)
 	pLogger.Debug(fmt.Sprintf("ProcessEvent: %s", event.UUID))
+	pLogger.Debug(fmt.Sprintf("Current Size: %d, MaxQueueSize: %d", p.Q.Size(), p.MaxQueueSize))
 
 	if p.Q.Size() >= p.MaxQueueSize {
 		go func() {
