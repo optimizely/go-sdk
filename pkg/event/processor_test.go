@@ -408,8 +408,10 @@ func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
 
 func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewBatchEventProcessor(WithQueueSize(100), WithFlushInterval(100),
-		WithQueue(NewInMemoryQueue(100)), WithEventDispatcher(NewMockDispatcher(100, false)))
+	processor := NewBatchEventProcessor(
+		WithQueueSize(100),
+		WithQueue(NewInMemoryQueue(100)),
+		WithEventDispatcher(NewMockDispatcher(100, false)))
 	processor.Start(exeCtx)
 
 	impression := BuildTestImpressionEvent()
