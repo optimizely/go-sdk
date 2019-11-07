@@ -25,20 +25,21 @@ type AtomicProperty struct {
 	lock sync.RWMutex
 }
 
-// Get() gets the property used at creation using a read lock
+// Get gets the property used at creation using a read lock
 func (p *AtomicProperty)Get() interface{} {
 	p.lock.RLock()
 	defer p.lock.RUnlock()
 	return p.property
 }
 
-// Sets() the property after creation using a write lock
+// Set sets the property after creation using a write lock
 func (p *AtomicProperty)Set(value interface{}) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	p.property = value
 }
 
+// NewAtomicPropertyWrapper creates a new atomic property holding the value passed in
 func NewAtomicPropertyWrapper(value interface{}) *AtomicProperty {
 	return &AtomicProperty{property:value}
 }
