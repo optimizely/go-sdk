@@ -17,12 +17,14 @@
 package decision
 
 import (
+	"github.com/rs/zerolog/log"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/notification"
+	"github.com/optimizely/go-sdk/pkg/registry"
 )
 
 type CompositeServiceFeatureTestSuite struct {
@@ -90,6 +92,35 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListeners() {
 	s.Equal(numberOfCalls, 1)
 }
 
+func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationContent() {
+	//expectedFeatureDecision := FeatureDecision{
+	//	Experiment: testExp1111,
+	//	Variation:  &testExp1111Var2222,
+	//}
+
+	compositeExperimentService := NewCompositeExperimentService()
+	compositeFeatureDecisionService := NewCompositeFeatureService(compositeExperimentService)
+
+	decisionService := &CompositeService{
+		compositeFeatureService: compositeFeatureDecisionService,
+		notificationCenter:      registry.GetNotificationCenter("some_key"),
+	}
+	//s.mockFeatureService.On("GetDecision", s.decisionContext, s.testUserContext).Return(expectedFeatureDecision, nil)
+	decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
+
+	var numberOfCalls = 0
+	//note := notification.DecisionNotification{}
+	callback := func(notification notification.DecisionNotification) {
+		log.Print(notification)
+		numberOfCalls++
+	}
+	id, _ := decisionService.OnDecision(callback)
+
+	s.NotEqual(id, 0)
+	decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
+	s.Equal(numberOfCalls, 1)
+
+}
 func (s *CompositeServiceFeatureTestSuite) TestNewCompositeService() {
 	notificationCenter := notification.NewNotificationCenter()
 	compositeService := NewCompositeService("sdk_key")
