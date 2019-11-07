@@ -234,8 +234,8 @@ func TestDefaultEventProcessor_BatchSizeLessThanQSize(t *testing.T) {
 		WithQueue(NewInMemoryQueue(100)),
 		WithEventDispatcher(NewMockDispatcher(100, false)))
 
-	assert.Equal(t, 2, processor.BatchSize)
-	assert.Equal(t, 10, processor.MaxQueueSize)
+	assert.Equal(t, DefaultBatchSize, processor.BatchSize)
+	assert.Equal(t, defaultQueueSize, processor.MaxQueueSize)
 
 }
 
