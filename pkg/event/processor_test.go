@@ -149,8 +149,11 @@ func TestDefaultEventProcessor_DefaultConfig(t *testing.T) {
 
 func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewBatchEventProcessor(WithFlushInterval(100), WithQueueSize(100),
-		WithQueue(NewInMemoryQueue(100)), WithEventDispatcher(NewMockDispatcher(100, false)))
+	processor := NewBatchEventProcessor(
+		WithFlushInterval(1 * time.Second),
+		WithQueueSize(100),
+		WithQueue(NewInMemoryQueue(100)),
+		WithEventDispatcher(NewMockDispatcher(100, false)))
 	processor.Start(exeCtx)
 
 	impression := BuildTestImpressionEvent()
@@ -163,7 +166,7 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 
 	assert.Equal(t, 4, processor.EventsCount())
 
-	exeCtx.TerminateAndWait()
+	time.Sleep(1500 * time.Millisecond)
 
 	assert.NotNil(t, processor.Ticker)
 
@@ -181,8 +184,11 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 
 func TestDefaultEventProcessor_BatchSizeMet(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewBatchEventProcessor(WithBatchSize(2), WithFlushInterval(1000 * time.Millisecond),
-		WithQueue(NewInMemoryQueue(2)), WithEventDispatcher(NewMockDispatcher(100, false)))
+	processor := NewBatchEventProcessor(
+		WithBatchSize(2),
+		WithFlushInterval(1000 * time.Millisecond),
+		WithQueue(NewInMemoryQueue(2)),
+		WithEventDispatcher(NewMockDispatcher(100, false)))
 	processor.Start(exeCtx)
 
 	impression := BuildTestImpressionEvent()
@@ -222,8 +228,11 @@ func TestDefaultEventProcessor_BatchSizeMet(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_BatchSizeLessThanQSize(t *testing.T) {
-	processor := NewBatchEventProcessor(WithQueueSize(2), WithFlushInterval(1000 * time.Millisecond),
-		WithQueue(NewInMemoryQueue(100)), WithEventDispatcher(NewMockDispatcher(100, false)))
+	processor := NewBatchEventProcessor(
+		WithQueueSize(2),
+		WithFlushInterval(1000 * time.Millisecond),
+		WithQueue(NewInMemoryQueue(100)),
+		WithEventDispatcher(NewMockDispatcher(100, false)))
 
 	assert.Equal(t, 2, processor.BatchSize)
 	assert.Equal(t, 10, processor.MaxQueueSize)
@@ -232,8 +241,12 @@ func TestDefaultEventProcessor_BatchSizeLessThanQSize(t *testing.T) {
 
 func TestDefaultEventProcessor_QSizeExceeded(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewBatchEventProcessor(WithQueueSize(2), WithBatchSize(2), WithFlushInterval(1000 * time.Millisecond),
-		WithQueue(NewInMemoryQueue(2)), WithEventDispatcher(NewMockDispatcher(100, true)))
+	processor := NewBatchEventProcessor(
+		WithQueueSize(2),
+		WithBatchSize(2),
+		WithFlushInterval(1000 * time.Millisecond),
+		WithQueue(NewInMemoryQueue(2)),
+		WithEventDispatcher(NewMockDispatcher(100, true)))
 	processor.Start(exeCtx)
 
 	impression := BuildTestImpressionEvent()
@@ -252,8 +265,11 @@ func TestDefaultEventProcessor_QSizeExceeded(t *testing.T) {
 
 func TestDefaultEventProcessor_FailedDispatch(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewBatchEventProcessor(WithQueueSize(100), WithFlushInterval(100),
-		WithQueue(NewInMemoryQueue(100)), WithEventDispatcher(&MockDispatcher{ShouldFail: true, Events: NewInMemoryQueue(100)}))
+	processor := NewBatchEventProcessor(
+		WithQueueSize(100),
+		WithFlushInterval(100),
+		WithQueue(NewInMemoryQueue(100)),
+		WithEventDispatcher(&MockDispatcher{ShouldFail: true, Events: NewInMemoryQueue(100)}))
 	processor.Start(exeCtx)
 
 	impression := BuildTestImpressionEvent()
@@ -281,7 +297,9 @@ func TestDefaultEventProcessor_FailedDispatch(t *testing.T) {
 
 func TestBatchEventProcessor_FlushesOnClose(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewBatchEventProcessor(WithQueueSize(100), WithQueue(NewInMemoryQueue(100)),
+	processor := NewBatchEventProcessor(
+		WithQueueSize(100),
+		WithQueue(NewInMemoryQueue(100)),
 		WithEventDispatcher(NewMockDispatcher(100, false)))
 	processor.Start(exeCtx)
 

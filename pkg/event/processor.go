@@ -23,6 +23,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/sync/semaphore"
+
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/registry"
@@ -44,7 +46,7 @@ type BatchEventProcessor struct {
 	flushLock       sync.Mutex
 	Ticker          *time.Ticker
 	EventDispatcher Dispatcher
-	processing      *utils.AtomicProperty
+	processing      *semaphore.Weighted
 }
 
 // DefaultBatchSize holds the default value for the batch size
@@ -55,6 +57,8 @@ const DefaultEventQueueSize = 100
 
 // DefaultEventFlushInterval holds the default value for the event flush interval
 const DefaultEventFlushInterval = 30 * time.Second
+
+const maxFlushWorkers = 1
 
 var pLogger = logging.GetLogger("EventProcessor")
 
@@ -106,7 +110,7 @@ func WithSDKKey(sdkKey string) BPOptionConfig {
 
 // NewBatchEventProcessor returns a new instance of BatchEventProcessor with queueSize and flushInterval
 func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
-	p := &BatchEventProcessor{processing:utils.NewAtomicPropertyWrapper(false)}
+	p := &BatchEventProcessor{processing:semaphore.NewWeighted(int64(maxFlushWorkers))}
 
 	for _, opt := range options {
 		opt(p)
@@ -156,16 +160,18 @@ func (p *BatchEventProcessor) ProcessEvent(event UserEvent) {
 
 	p.Q.Add(event)
 
-	if p.Q.Size() >= p.BatchSize {
-		if processing, ok := p.processing.Get().(bool); ok && !processing {
-			// it doesn't matter if the timer has kicked in here.
-			// we just want to start one go routine when the batch size is met.
-			p.processing.Set(true)
-			go func() {
-				p.FlushEvents()
-				p.processing.Set(false)
-			}()
-		}
+	if p.Q.Size() < p.BatchSize {
+		return
+	}
+
+	if p.processing.TryAcquire(1) {
+		// it doesn't matter if the timer has kicked in here.
+		// we just want to start one go routine when the batch size is met.
+		pLogger.Debug("batch size reached.  Flushing routine being called")
+		go func() {
+			p.FlushEvents()
+			p.processing.Release(1)
+		}()
 	}
 
 }
