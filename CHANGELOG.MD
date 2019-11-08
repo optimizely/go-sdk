@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
-## [1.0.0-beta6] - November 7th, 2019
+## [1.0.0-beta6] - November 8th, 2019
 
 ## New Features
 
