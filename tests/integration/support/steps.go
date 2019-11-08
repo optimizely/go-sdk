@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/DATA-DOG/godog/gherkin"
+	"github.com/google/uuid"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 	"github.com/optimizely/go-sdk/tests/integration/optlyplugins"
@@ -32,6 +33,8 @@ import (
 
 // ScenarioCtx holds both apiOptions and apiResponse for a scenario.
 type ScenarioCtx struct {
+	requestID     string
+	isSessioned   bool
 	apiOptions    models.APIOptions
 	apiResponse   models.APIResponse
 	clientWrapper ClientWrapper
@@ -39,7 +42,7 @@ type ScenarioCtx struct {
 
 // TheDatafileIs defines a datafileName to initialize the client with.
 func (c *ScenarioCtx) TheDatafileIs(datafileName string) error {
-	c.clientWrapper = NewClientWrapper(datafileName)
+	c.apiOptions.DatafileName = datafileName
 	return nil
 }
 
@@ -59,10 +62,7 @@ func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.D
 
 	// Clearing old state of response, eventdispatcher and decision service
 	c.apiResponse = models.APIResponse{}
-	// Only required for unsessioned tests
-	c.clientWrapper.DecisionService.(*optlyplugins.TestCompositeService).ClearListenersCalled()
-	c.clientWrapper.EventDispatcher.(*optlyplugins.ProxyEventDispatcher).ClearEvents()
-
+	c.clientWrapper = GetInstance(c.requestID, c.apiOptions.DatafileName, c.isSessioned)
 	response, err := c.clientWrapper.InvokeAPI(c.apiOptions)
 	c.apiResponse = response
 	//Reset listeners so that same listener is not added twice for a scenario
@@ -309,9 +309,12 @@ func (c *ScenarioCtx) PayloadsOfDispatchedEventsDontIncludeDecisions() error {
 	return nil
 }
 
-// Reset clears all data before each scenario
+// Reset clears all data before each scenario, assigns new requestID and sets session as false
 func (c *ScenarioCtx) Reset() {
 	c.apiOptions = models.APIOptions{}
 	c.apiResponse = models.APIResponse{}
 	c.clientWrapper = ClientWrapper{}
+	c.requestID = uuid.New().String()
+	// @TODO: Set to true for event-batching tests
+	c.isSessioned = false
 }

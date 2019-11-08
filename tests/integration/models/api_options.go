@@ -18,7 +18,8 @@ package models
 
 // APIOptions represents parameters for a scenario
 type APIOptions struct {
-	APIName   string
-	Arguments string
-	Listeners map[string]int
+	DatafileName string
+	APIName      string
+	Arguments    string
+	Listeners    map[string]int
 }
