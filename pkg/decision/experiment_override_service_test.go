@@ -148,6 +148,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestMapExperimentOverridesStoreConc
 			ID: "test_user_1",
 		})
 		s.NotNil(user1Decision.Variation)
+		s.Exactly(testExp1111Var2222.Key, user1Decision.Variation.Key)
 		wg.Done()
 	}()
 	wg.Add(1)
@@ -157,6 +158,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestMapExperimentOverridesStoreConc
 			ID: "test_user_2",
 		})
 		s.NotNil(user2Decision.Variation)
+		s.Exactly(testExp1111Var2222.Key, user2Decision.Variation.Key)
 		wg.Done()
 	}()
 	wg.Add(1)
@@ -166,6 +168,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestMapExperimentOverridesStoreConc
 			ID: "test_user_3",
 		})
 		s.NotNil(user3Decision.Variation)
+		s.Exactly(testExp1111Var2222.Key, user3Decision.Variation.Key)
 		wg.Done()
 	}()
 	wg.Wait()
@@ -179,8 +182,11 @@ func (s *ExperimentOverrideServiceTestSuite) TestMapExperimentOverridesStoreConc
 		ID: "test_user_3",
 	})
 	s.NotNil(user1Decision.Variation)
+	s.Exactly(testExp1111Var2222.Key, user1Decision.Variation.Key)
 	s.NotNil(user2Decision.Variation)
+	s.Exactly(testExp1111Var2222.Key, user2Decision.Variation.Key)
 	s.NotNil(user3Decision.Variation)
+	s.Exactly(testExp1111Var2222.Key, user3Decision.Variation.Key)
 }
 
 func TestExperimentOverridesTestSuite(t *testing.T) {
