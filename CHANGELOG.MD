@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.0.0-beta6] - November 7th, 2019
+
+## New Features
+
+- Experiment override service - implement groups
+[#164](https://github.com/optimizely/go-sdk/pull/164)
+- Add User profile service 
+[#163](https://github.com/optimizely/go-sdk/pull/163)
+
+### Bug Fixes
+- Fix config managers so that they don't try and parse on error returned from CDN. [#170](https://github.com/optimizely/go-sdk/pull/170)
+- When event batch size has been reached only start one batch event processing go routine.
+- When queue size is met, log a message and do not add to the queue.
+- Duration used was setting the time too far into the future by multiplying by second and then by milliseconds. Flush interval is now any duration, default is 30 seconds.  If you don't pass in a multiplier the duration created is in microseconds.
+[#167](https://github.com/optimizely/go-sdk/pull/167)
+- fixed parsing for audience conditions.
+[#165] (https://github.com/optimizely/go-sdk/pull/165)
+- Check nil to prevent panic. [#162] (https://github.com/optimizely/go-sdk/pull/162)
+- fix: support audience ids. [#161] (https://github.com/optimizely/go-sdk/pull/161)
+
 ## [1.0.0-beta5] - October 30th, 2019
 
 ### Bug Fixes
