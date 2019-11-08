@@ -67,7 +67,10 @@ func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 
 func TestCustomEventProcessor_Create(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewBatchEventProcessor(WithEventDispatcher(NewMockDispatcher(100, false)), WithQueueSize(10), WithFlushInterval(100))
+	processor := NewBatchEventProcessor(
+		WithEventDispatcher(NewMockDispatcher(100, false)),
+		WithQueueSize(10),
+		WithFlushInterval(100))
 	processor.Start(exeCtx)
 
 	impression := BuildTestImpressionEvent()
@@ -85,8 +88,10 @@ func TestCustomEventProcessor_Create(t *testing.T) {
 
 func TestDefaultEventProcessor_LogEventNotification(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewBatchEventProcessor(WithFlushInterval(100), WithQueueSize(100),
-		WithQueue(NewInMemoryQueue(100)), WithEventDispatcher(NewMockDispatcher(100, false)),
+	processor := NewBatchEventProcessor(
+		WithQueueSize(100),
+		WithQueue(NewInMemoryQueue(100)),
+		WithEventDispatcher(NewMockDispatcher(100, false)),
 		WithSDKKey("fakeSDKKey"))
 
 	var logEvent LogEvent
@@ -118,7 +123,8 @@ func TestDefaultEventProcessor_LogEventNotification(t *testing.T) {
 
 func TestDefaultEventProcessor_DefaultConfig(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewBatchEventProcessor(WithEventDispatcher(NewMockDispatcher(100, false)))
+	processor := NewBatchEventProcessor(
+		WithEventDispatcher(NewMockDispatcher(100, false)))
 	processor.Start(exeCtx)
 
 	impression := BuildTestImpressionEvent()
@@ -321,8 +327,10 @@ func TestBatchEventProcessor_FlushesOnClose(t *testing.T) {
 
 func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewBatchEventProcessor(WithQueueSize(100), WithFlushInterval(100),
-		WithQueue(NewInMemoryQueue(100)), WithEventDispatcher(NewMockDispatcher(100, false)))
+	processor := NewBatchEventProcessor(
+		WithQueueSize(100),
+		WithQueue(NewInMemoryQueue(100)),
+		WithEventDispatcher(NewMockDispatcher(100, false)))
 
 	processor.Start(exeCtx)
 
@@ -355,8 +363,10 @@ func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 
 func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewBatchEventProcessor(WithQueueSize(100), WithFlushInterval(100),
-		WithQueue(NewInMemoryQueue(100)), WithEventDispatcher(NewMockDispatcher(100, false)))
+	processor := NewBatchEventProcessor(
+		WithQueueSize(100),
+		WithQueue(NewInMemoryQueue(100)),
+		WithEventDispatcher(NewMockDispatcher(100, false)))
 
 	processor.Start(exeCtx)
 
@@ -389,8 +399,10 @@ func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 
 func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewBatchEventProcessor(WithQueueSize(100), WithFlushInterval(100),
-		WithQueue(NewInMemoryQueue(100)), WithEventDispatcher(&HTTPEventDispatcher{}))
+	processor := NewBatchEventProcessor(
+		WithQueueSize(100),
+		WithQueue(NewInMemoryQueue(100)),
+		WithEventDispatcher(&HTTPEventDispatcher{}))
 
 	processor.Start(exeCtx)
 
