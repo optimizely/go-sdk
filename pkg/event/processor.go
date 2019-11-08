@@ -129,8 +129,12 @@ func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 	}
 
 	if p.BatchSize > p.MaxQueueSize {
-		pLogger.Warning("Batch size is larger than queue size.  Swapping")
-		p.BatchSize, p.MaxQueueSize = p.MaxQueueSize, p.BatchSize
+		pLogger.Warning(
+			fmt.Sprintf("Batch size %d is larger than queue size %d.  Setting to defaults",
+				p.BatchSize, p.MaxQueueSize))
+
+		p.BatchSize = DefaultBatchSize
+		p.MaxQueueSize = defaultQueueSize
 	}
 
 	if p.Q == nil {

@@ -94,6 +94,8 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 
 		if e != nil {
 			cmLogger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
+			cm.err = e
+			return
 		}
 	}
 
