@@ -151,7 +151,7 @@ func TestClientWithCustomDecisionServiceOptions(t *testing.T) {
 	factory := OptimizelyFactory{SDKKey: "1212"}
 
 	mockUserProfileService := new(MockUserProfileService)
-	mockOverrideStore := new(decision.MapOverridesStore)
+	mockOverrideStore := new(decision.MapExperimentOverridesStore)
 	optimizelyClient, err := factory.Client(
 		WithUserProfileService(mockUserProfileService),
 		WithExperimentOverrides(mockOverrideStore),
