@@ -160,7 +160,7 @@ func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentService() {
 
 func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithCustomOptions() {
 	mockUserProfileService := new(MockUserProfileService)
-	mockExperimentOverrideStore := new(MapOverridesStore)
+	mockExperimentOverrideStore := new(MapExperimentOverridesStore)
 	compositeExperimentService := NewCompositeExperimentService(
 		WithUserProfileService(mockUserProfileService),
 		WithOverrideStore(mockExperimentOverrideStore),
