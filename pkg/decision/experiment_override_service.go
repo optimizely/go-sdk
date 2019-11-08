@@ -57,8 +57,8 @@ func (m *MapExperimentOverridesStore) GetVariation(overrideKey ExperimentOverrid
 // SetVariation sets the given variation key as an override for the given user+experiment key
 func (m *MapExperimentOverridesStore) SetVariation(overrideKey ExperimentOverrideKey, variationKey string) {
 	m.mutex.Lock()
-	defer m.mutex.Unlock()
 	m.overridesMap[overrideKey] = variationKey
+	m.mutex.Unlock()
 }
 
 // ExperimentOverrideService makes a decision using an ExperimentOverridesStore
