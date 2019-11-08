@@ -27,6 +27,7 @@ import (
 
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
+	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/utils"
 
@@ -111,7 +112,7 @@ func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 		MaxQueueSize:    100,
 		FlushInterval:   100,
 		Q:               event.NewInMemoryQueue(100),
-		EventDispatcher: &MockDispatcher{Events:[]event.LogEvent{}},
+		EventDispatcher: &MockDispatcher{Events: []event.LogEvent{}},
 	}
 
 	optimizelyClient, err := factory.Client(WithConfigManager(configManager), WithDecisionService(decisionService), WithEventProcessor(processor))
@@ -144,4 +145,17 @@ func TestStaticClient(t *testing.T) {
 	optlyClient, err = factory.StaticClient()
 	assert.Error(t, err)
 	assert.Nil(t, optlyClient)
+}
+
+func TestClientWithCustomDecisionServiceOptions(t *testing.T) {
+	factory := OptimizelyFactory{SDKKey: "1212"}
+
+	mockUserProfileService := new(MockUserProfileService)
+	mockOverrideStore := new(decision.MapOverridesStore)
+	optimizelyClient, err := factory.Client(
+		WithUserProfileService(mockUserProfileService),
+		WithExperimentOverrides(mockOverrideStore),
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, optimizelyClient.DecisionService)
 }

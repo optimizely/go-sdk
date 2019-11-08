@@ -25,20 +25,6 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type MockUserProfileService struct {
-	UserProfileService
-	mock.Mock
-}
-
-func (m *MockUserProfileService) Lookup(userID string) UserProfile {
-	args := m.Called(userID)
-	return args.Get(0).(UserProfile)
-}
-
-func (m *MockUserProfileService) Save(userProfile UserProfile) {
-	m.Called(userProfile)
-}
-
 var testUserContext entities.UserContext = entities.UserContext{
 	ID: "test_user_1",
 }

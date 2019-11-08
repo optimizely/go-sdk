@@ -27,23 +27,60 @@ import (
 
 var ceLogger = logging.GetLogger("CompositeExperimentService")
 
+// CESOptionFunc is used to assign optional configuration options
+type CESOptionFunc func(*CompositeExperimentService)
+
+// WithUserProfileService adds a user profile service
+func WithUserProfileService(userProfileService UserProfileService) CESOptionFunc {
+	return func(f *CompositeExperimentService) {
+		f.userProfileService = userProfileService
+	}
+}
+
+// WithOverrideStore adds an experiment override store
+func WithOverrideStore(overrideStore ExperimentOverrideStore) CESOptionFunc {
+	return func(f *CompositeExperimentService) {
+		f.overrideStore = overrideStore
+	}
+}
+
 // CompositeExperimentService bridges together the various experiment decision services that ship by default with the SDK
 type CompositeExperimentService struct {
 	experimentServices []ExperimentService
+	overrideStore      ExperimentOverrideStore
+	userProfileService UserProfileService
 }
 
 // NewCompositeExperimentService creates a new instance of the CompositeExperimentService
-func NewCompositeExperimentService() *CompositeExperimentService {
+func NewCompositeExperimentService(options ...CESOptionFunc) *CompositeExperimentService {
 	// These decision services are applied in order:
-	// 1. Whitelist
-	// 2. Bucketing
-	// @TODO(mng): Prepend forced variation
-	return &CompositeExperimentService{
-		experimentServices: []ExperimentService{
-			NewExperimentWhitelistService(),
-			NewExperimentBucketerService(),
-		},
+	// 1. Overrides (if supplied)
+	// 2. Whitelist
+	// 3. Bucketing (with User profile integration if supplied)
+	compositeExperimentService := &CompositeExperimentService{}
+	for _, opt := range options {
+		opt(compositeExperimentService)
 	}
+	experimentServices := []ExperimentService{
+		NewExperimentWhitelistService(),
+	}
+
+	// Prepend overrides if supplied
+	if compositeExperimentService.overrideStore != nil {
+		overrideService := NewExperimentOverrideService(compositeExperimentService.overrideStore)
+		experimentServices = append([]ExperimentService{overrideService}, experimentServices...)
+	}
+
+	experimentBucketerService := NewExperimentBucketerService()
+	if compositeExperimentService.userProfileService != nil {
+		persistingExperimentService := NewPersistingExperimentService(experimentBucketerService, compositeExperimentService.userProfileService)
+		experimentServices = append(experimentServices, persistingExperimentService)
+	} else {
+		experimentServices = append(experimentServices, experimentBucketerService)
+	}
+	compositeExperimentService.experimentServices = experimentServices
+
+	return compositeExperimentService
 }
 
 // GetDecision returns a decision for the given experiment and user context
