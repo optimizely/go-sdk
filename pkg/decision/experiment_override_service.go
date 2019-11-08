@@ -40,7 +40,7 @@ type ExperimentOverrideStore interface {
 	GetVariation(overrideKey ExperimentOverrideKey) (string, bool)
 }
 
-// MapExperimentOverridesStore is an map-based implementation of OverrideStore that is safe to use concurrently
+// MapExperimentOverridesStore is a map-based implementation of ExperimentOverridesStore that is safe to use concurrently
 type MapExperimentOverridesStore struct {
 	overridesMap map[ExperimentOverrideKey]string
 	mutex        sync.RWMutex
