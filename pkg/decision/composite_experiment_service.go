@@ -27,14 +27,17 @@ import (
 
 var ceLogger = logging.GetLogger("CompositeExperimentService")
 
+// CESOptionFunc is used to assign optional configuration options
 type CESOptionFunc func(*CompositeExperimentService)
 
+// WithUserProfileService adds a user profile service
 func WithUserProfileService(userProfileService UserProfileService) CESOptionFunc {
 	return func(f *CompositeExperimentService) {
 		f.userProfileService = userProfileService
 	}
 }
 
+// WithOverrideStore adds an experiment override store
 func WithOverrideStore(overrideStore ExperimentOverrideStore) CESOptionFunc {
 	return func(f *CompositeExperimentService) {
 		f.overrideStore = overrideStore

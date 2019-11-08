@@ -46,13 +46,13 @@ type OptionFunc func(*OptimizelyFactory)
 
 // Client gets client and sets some parameters
 func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClient, error) {
-	if f.SDKKey == "" && f.Datafile == nil && f.configManager == nil {
-		return nil, errors.New("unable to instantiate client: no project config manager, SDK key, or a Datafile provided")
-	}
-
 	// extract options
 	for _, opt := range clientOptions {
 		opt(&f)
+	}
+
+	if f.SDKKey == "" && f.Datafile == nil && f.configManager == nil {
+		return nil, errors.New("unable to instantiate client: no project config manager, SDK key, or a Datafile provided")
 	}
 
 	var executionCtx utils.ExecutionCtx
@@ -149,12 +149,14 @@ func WithDecisionService(decisionService decision.Service) OptionFunc {
 	}
 }
 
+// WithUserProfileService sets the user profile service on the decision service
 func WithUserProfileService(userProfileService decision.UserProfileService) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.userProfileService = userProfileService
 	}
 }
 
+// WithExperimentOverrides sets the experiment override store on the decision service
 func WithExperimentOverrides(overrideStore decision.ExperimentOverrideStore) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.overrideStore = overrideStore

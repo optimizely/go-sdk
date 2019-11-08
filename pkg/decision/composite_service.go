@@ -58,10 +58,7 @@ func NewCompositeService(sdkKey string, options ...CSOptionFunc) *CompositeServi
 	if compositeService.compositeExperimentService == nil {
 		compositeService.compositeExperimentService = NewCompositeExperimentService()
 	}
-
-	if compositeService.compositeFeatureService == nil {
-		compositeService.compositeFeatureService = NewCompositeFeatureService(compositeService.compositeExperimentService)
-	}
+	compositeService.compositeFeatureService = NewCompositeFeatureService(compositeService.compositeExperimentService)
 
 	return compositeService
 }
