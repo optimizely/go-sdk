@@ -37,7 +37,7 @@ type ScenarioCtx struct {
 	isSessioned   bool
 	apiOptions    models.APIOptions
 	apiResponse   models.APIResponse
-	clientWrapper ClientWrapper
+	clientWrapper *ClientWrapper
 }
 
 // TheDatafileIs defines a datafileName to initialize the client with.
@@ -313,7 +313,7 @@ func (c *ScenarioCtx) PayloadsOfDispatchedEventsDontIncludeDecisions() error {
 func (c *ScenarioCtx) Reset() {
 	c.apiOptions = models.APIOptions{}
 	c.apiResponse = models.APIResponse{}
-	c.clientWrapper = ClientWrapper{}
+	c.clientWrapper = nil
 	c.requestID = uuid.New().String()
 	// @TODO: Set to true for event-batching tests
 	c.isSessioned = false

@@ -34,7 +34,7 @@ import (
 )
 
 // Map to hold clientwrapper instances against requestID
-var clientWrapperMap = map[string]ClientWrapper{}
+var clientWrapperMap = map[string]*ClientWrapper{}
 
 // ClientWrapper - wrapper around the optimizely client that keeps track of various custom components used with the client
 type ClientWrapper struct {
@@ -44,7 +44,7 @@ type ClientWrapper struct {
 }
 
 // GetInstance returns a cached or new instance of the optly wrapper
-func GetInstance(requestID string, datafileName string, isSessioned bool) ClientWrapper {
+func GetInstance(requestID string, datafileName string, isSessioned bool) *ClientWrapper {
 
 	if instance, ok := clientWrapperMap[requestID]; ok {
 		if !isSessioned {
@@ -86,7 +86,7 @@ func GetInstance(requestID string, datafileName string, isSessioned bool) Client
 		log.Fatal(err)
 	}
 
-	clientWrapperMap[requestID] = ClientWrapper{
+	clientWrapperMap[requestID] = &ClientWrapper{
 		Client:          client,
 		DecisionService: decisionService,
 		EventDispatcher: eventProcessor.EventDispatcher,
