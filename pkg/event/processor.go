@@ -23,6 +23,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/sync/semaphore"
+
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/registry"
@@ -41,9 +43,10 @@ type BatchEventProcessor struct {
 	FlushInterval   time.Duration // in milliseconds
 	BatchSize       int
 	Q               Queue
-	Mux             sync.Mutex
+	flushLock       sync.Mutex
 	Ticker          *time.Ticker
 	EventDispatcher Dispatcher
+	processing      *semaphore.Weighted
 }
 
 // DefaultBatchSize holds the default value for the batch size
@@ -54,6 +57,8 @@ const DefaultEventQueueSize = 100
 
 // DefaultEventFlushInterval holds the default value for the event flush interval
 const DefaultEventFlushInterval = 30 * time.Second
+
+const maxFlushWorkers = 1
 
 var pLogger = logging.GetLogger("EventProcessor")
 
@@ -105,7 +110,7 @@ func WithSDKKey(sdkKey string) BPOptionConfig {
 
 // NewBatchEventProcessor returns a new instance of BatchEventProcessor with queueSize and flushInterval
 func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
-	p := &BatchEventProcessor{}
+	p := &BatchEventProcessor{processing:semaphore.NewWeighted(int64(maxFlushWorkers))}
 
 	for _, opt := range options {
 		opt(p)
@@ -121,6 +126,15 @@ func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 
 	if p.BatchSize == 0 {
 		p.BatchSize = DefaultBatchSize
+	}
+
+	if p.BatchSize > p.MaxQueueSize {
+		pLogger.Warning(
+			fmt.Sprintf("Batch size %d is larger than queue size %d.  Setting to defaults",
+				p.BatchSize, p.MaxQueueSize))
+
+		p.BatchSize = DefaultBatchSize
+		p.MaxQueueSize = defaultQueueSize
 	}
 
 	if p.Q == nil {
@@ -142,13 +156,28 @@ func (p *BatchEventProcessor) Start(exeCtx utils.ExecutionCtx) {
 
 // ProcessEvent processes the given impression event
 func (p *BatchEventProcessor) ProcessEvent(event UserEvent) {
-	p.Q.Add(event)
 
 	if p.Q.Size() >= p.MaxQueueSize {
+		pLogger.Warning("MaxQueueSize has been met. Discarding event")
+		return
+	}
+
+	p.Q.Add(event)
+
+	if p.Q.Size() < p.BatchSize {
+		return
+	}
+
+	if p.processing.TryAcquire(1) {
+		// it doesn't matter if the timer has kicked in here.
+		// we just want to start one go routine when the batch size is met.
+		pLogger.Debug("batch size reached.  Flushing routine being called")
 		go func() {
 			p.FlushEvents()
+			p.processing.Release(1)
 		}()
 	}
+
 }
 
 // EventsCount returns size of an event queue
@@ -171,7 +200,7 @@ func (p *BatchEventProcessor) startTicker(exeCtx utils.ExecutionCtx) {
 	if p.Ticker != nil {
 		return
 	}
-	p.Ticker = time.NewTicker(p.FlushInterval * time.Millisecond)
+	p.Ticker = time.NewTicker(p.FlushInterval)
 	wg := exeCtx.GetWaitSync()
 	wg.Add(1)
 	go func() {
@@ -214,7 +243,9 @@ func (p *BatchEventProcessor) addToBatch(current *Batch, visitor Visitor) {
 func (p *BatchEventProcessor) FlushEvents() {
 	// we flush when queue size is reached.
 	// however, if there is a ticker cycle already processing, we should wait
-	p.Mux.Lock()
+	p.flushLock.Lock()
+	defer p.flushLock.Unlock()
+	
 	var batchEvent Batch
 	var batchEventCount = 0
 	var failedToSend = false
@@ -272,7 +303,6 @@ func (p *BatchEventProcessor) FlushEvents() {
 			}
 		}
 	}
-	p.Mux.Unlock()
 }
 
 // OnEventDispatch registers a handler for LogEvent notifications
