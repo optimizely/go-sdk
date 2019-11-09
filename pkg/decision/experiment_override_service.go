@@ -46,6 +46,13 @@ type MapExperimentOverridesStore struct {
 	mutex        sync.RWMutex
 }
 
+// NewMapExperimentOverridesStore returns a new MapExperimentOverridesStore
+func NewMapExperimentOverridesStore() *MapExperimentOverridesStore {
+	return &MapExperimentOverridesStore{
+		overridesMap: make(map[ExperimentOverrideKey]string),
+	}
+}
+
 // GetVariation returns the override variation key associated with the given user+experiment key
 func (m *MapExperimentOverridesStore) GetVariation(overrideKey ExperimentOverrideKey) (string, bool) {
 	m.mutex.RLock()
