@@ -21,7 +21,7 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
@@ -60,6 +60,19 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 			v = v.Elem()
 		}
 
+		createLeafNode := func(typedV interface{}, node *entities.TreeNode) error {
+			jsonBody, err := json.Marshal(typedV)
+			if err != nil {
+				return err
+			}
+			condition := entities.Condition{}
+			if err := json.Unmarshal(jsonBody, &condition); err != nil {
+				return err
+			}
+			node.Item = condition
+			return nil
+		}
+
 		switch v.Kind() {
 
 		case reflect.Slice, reflect.Array:
@@ -73,23 +86,30 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 					continue
 
 				case map[string]interface{}:
-					jsonBody, err := json.Marshal(typedV)
-					if err != nil {
+					if err := createLeafNode(typedV, n); err != nil {
 						retErr = err
 						return
 					}
-					condition := entities.Condition{}
-					if err := json.Unmarshal(jsonBody, &condition); err != nil {
-						retErr = err
-						return
-					}
-					n.Item = condition
 				}
 
 				root.Nodes = append(root.Nodes, n)
 
 				populateConditions(v.Index(i), n)
 			}
+		case reflect.Map:
+			typedV := v.Interface()
+			switch typedV.(type) {
+			case map[string]interface{}:
+				n := &entities.TreeNode{}
+				if err := createLeafNode(typedV, n); err != nil {
+					retErr = err
+					return
+				}
+				n.Operator = "or"
+				root.Operator = n.Operator
+				root.Nodes = append(root.Nodes, n)
+			}
+			break
 		}
 	}
 
@@ -108,7 +128,7 @@ func buildAudienceConditionTree(conditions interface{}) (conditionTree *entities
 	value := reflect.ValueOf(conditions)
 	visited := make(map[interface{}]bool)
 
-	conditionTree = &entities.TreeNode{ Operator: "or" }
+	conditionTree = &entities.TreeNode{Operator: "or"}
 	var populateConditions func(v reflect.Value, root *entities.TreeNode)
 	populateConditions = func(v reflect.Value, root *entities.TreeNode) {
 
