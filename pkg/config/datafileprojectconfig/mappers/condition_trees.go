@@ -31,15 +31,9 @@ var json = jsoniter.ConfigCompatibleWithStandardLibrary
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
 func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, retErr error) {
 
-	var parsedConditions interface{}
-	switch v := conditions.(type) {
-	case string:
-		if err := json.Unmarshal([]byte(v), &parsedConditions); err != nil {
-			retErr = err
-			return
-		}
-	default:
-		parsedConditions = conditions
+	parsedConditions, retErr := validateConditions(conditions)
+	if retErr != nil {
+		return
 	}
 
 	value := reflect.ValueOf(parsedConditions)
@@ -74,17 +68,10 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 					continue
 
 				case map[string]interface{}:
-					jsonBody, err := json.Marshal(typedV)
-					if err != nil {
+					if err := createLeafCondition(value, n); err != nil {
 						retErr = err
 						return
 					}
-					condition := entities.Condition{}
-					if err := json.Unmarshal(jsonBody, &condition); err != nil {
-						retErr = err
-						return
-					}
-					n.Item = condition
 				}
 
 				root.Nodes = append(root.Nodes, n)
@@ -93,19 +80,12 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 			}
 		case reflect.Map:
 			typedV := v.Interface()
-			if _, ok := typedV.(map[string]interface{}); ok {
+			if v, ok := typedV.(map[string]interface{}); ok {
 				n := &entities.TreeNode{}
-				jsonBody, err := json.Marshal(typedV)
-				if err != nil {
+				if err := createLeafCondition(v, n); err != nil {
 					retErr = err
 					return
 				}
-				condition := entities.Condition{}
-				if err := json.Unmarshal(jsonBody, &condition); err != nil {
-					retErr = err
-					return
-				}
-				n.Item = condition
 				n.Operator = "or"
 				root.Operator = n.Operator
 				root.Nodes = append(root.Nodes, n)
@@ -119,6 +99,33 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 		conditionTree = nil
 	}
 	return conditionTree, retErr
+}
+
+// Validates conditions for audience in the datafile
+func validateConditions(conditions interface{}) (parsedConditions interface{}, retErr error) {
+	switch v := conditions.(type) {
+	case string:
+		if err := json.Unmarshal([]byte(v), &parsedConditions); err != nil {
+			return nil, err
+		}
+	default:
+		parsedConditions = conditions
+	}
+	return parsedConditions, nil
+}
+
+// Creates condition for the leaf node in the condition tree
+func createLeafCondition(typedV map[string]interface{}, node *entities.TreeNode) error {
+	jsonBody, err := json.Marshal(typedV)
+	if err != nil {
+		return err
+	}
+	condition := entities.Condition{}
+	if err := json.Unmarshal(jsonBody, &condition); err != nil {
+		return err
+	}
+	node.Item = condition
+	return nil
 }
 
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
