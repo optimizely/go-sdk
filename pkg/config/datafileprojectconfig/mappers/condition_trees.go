@@ -78,22 +78,26 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 
 				populateConditions(v.Index(i), n)
 			}
-		case reflect.Map:
-			typedV := v.Interface()
-			if v, ok := typedV.(map[string]interface{}); ok {
-				n := &entities.TreeNode{}
-				if err := createLeafCondition(v, n); err != nil {
-					retErr = err
-					return
-				}
-				n.Operator = "or"
-				root.Operator = n.Operator
-				root.Nodes = append(root.Nodes, n)
-			}
 		}
 	}
 
-	populateConditions(value, conditionTree)
+	// Check for leaf conditions
+	if value.Kind() == reflect.Map {
+		typedV := value.Interface()
+		if v, ok := typedV.(map[string]interface{}); ok {
+			n := &entities.TreeNode{}
+			if err := createLeafCondition(v, n); err != nil {
+				retErr = err
+				return
+			}
+			n.Operator = "or"
+			conditionTree.Operator = n.Operator
+			conditionTree.Nodes = append(conditionTree.Nodes, n)
+		}
+	} else {
+		populateConditions(value, conditionTree)
+	}
+
 	if conditionTree.Nodes == nil && conditionTree.Operator == "" {
 		retErr = errEmptyTree
 		conditionTree = nil
