@@ -47,19 +47,6 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 
 	conditionTree = &entities.TreeNode{}
 
-	createLeafNode := func(typedV map[string]interface{}, node *entities.TreeNode) error {
-		jsonBody, err := json.Marshal(typedV)
-		if err != nil {
-			return err
-		}
-		condition := entities.Condition{}
-		if err := json.Unmarshal(jsonBody, &condition); err != nil {
-			return err
-		}
-		node.Item = condition
-		return nil
-	}
-
 	var populateConditions func(v reflect.Value, root *entities.TreeNode)
 	populateConditions = func(v reflect.Value, root *entities.TreeNode) {
 
@@ -87,10 +74,17 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 					continue
 
 				case map[string]interface{}:
-					if err := createLeafNode(value, n); err != nil {
+					jsonBody, err := json.Marshal(typedV)
+					if err != nil {
 						retErr = err
 						return
 					}
+					condition := entities.Condition{}
+					if err := json.Unmarshal(jsonBody, &condition); err != nil {
+						retErr = err
+						return
+					}
+					n.Item = condition
 				}
 
 				root.Nodes = append(root.Nodes, n)
@@ -99,12 +93,19 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 			}
 		case reflect.Map:
 			typedV := v.Interface()
-			if value, ok := typedV.(map[string]interface{}); ok {
+			if _, ok := typedV.(map[string]interface{}); ok {
 				n := &entities.TreeNode{}
-				if err := createLeafNode(value, n); err != nil {
+				jsonBody, err := json.Marshal(typedV)
+				if err != nil {
 					retErr = err
 					return
 				}
+				condition := entities.Condition{}
+				if err := json.Unmarshal(jsonBody, &condition); err != nil {
+					retErr = err
+					return
+				}
+				n.Item = condition
 				n.Operator = "or"
 				root.Operator = n.Operator
 				root.Nodes = append(root.Nodes, n)
