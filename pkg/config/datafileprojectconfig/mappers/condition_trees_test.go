@@ -173,7 +173,6 @@ func TestBuildConditionTreeWithLeafNode(t *testing.T) {
 		Operator: "or",
 		Nodes: []*entities.TreeNode{
 			{
-				Operator: "or",
 				Item: entities.Condition{
 					Name:  "s_foo",
 					Match: "exact",

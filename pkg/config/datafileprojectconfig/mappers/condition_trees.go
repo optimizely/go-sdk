@@ -90,8 +90,7 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 				retErr = err
 				return
 			}
-			n.Operator = "or"
-			conditionTree.Operator = n.Operator
+			conditionTree.Operator = "or"
 			conditionTree.Nodes = append(conditionTree.Nodes, n)
 		}
 	} else {
