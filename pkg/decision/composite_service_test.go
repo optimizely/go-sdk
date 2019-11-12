@@ -17,7 +17,6 @@
 package decision
 
 import (
-	"github.com/rs/zerolog/log"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -67,6 +66,7 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListeners() {
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1111,
 		Variation:  &testExp1111Var2222,
+		Variable:   &testVariable,
 	}
 	notificationCenter := notification.NewNotificationCenter()
 	decisionService := &CompositeService{
@@ -93,10 +93,6 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListeners() {
 }
 
 func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationContent() {
-	//expectedFeatureDecision := FeatureDecision{
-	//	Experiment: testExp1111,
-	//	Variation:  &testExp1111Var2222,
-	//}
 
 	compositeExperimentService := NewCompositeExperimentService()
 	compositeFeatureDecisionService := NewCompositeFeatureService(compositeExperimentService)
@@ -105,20 +101,24 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationCont
 		compositeFeatureService: compositeFeatureDecisionService,
 		notificationCenter:      registry.GetNotificationCenter("some_key"),
 	}
-	//s.mockFeatureService.On("GetDecision", s.decisionContext, s.testUserContext).Return(expectedFeatureDecision, nil)
 	decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
 
 	var numberOfCalls = 0
-	//note := notification.DecisionNotification{}
+	note := notification.DecisionNotification{}
 	callback := func(notification notification.DecisionNotification) {
-		log.Print(notification)
+		note = notification
 		numberOfCalls++
 	}
 	id, _ := decisionService.OnDecision(callback)
 
 	s.NotEqual(id, 0)
+
 	decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
 	s.Equal(numberOfCalls, 1)
+
+	expectedDecisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": false, "featureKey": "my_test_feature_3333", "source": FeatureTest, "sourceInfo": map[string]string{"experimentKey": "my_test_feature_3333", "variationKey": "2222"}, "variableKey": "", "variableType": entities.VariableType(""), "variableValue": ""}}
+
+	s.Equal(expectedDecisionInfo, note.DecisionInfo)
 
 }
 func (s *CompositeServiceFeatureTestSuite) TestNewCompositeService() {

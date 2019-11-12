@@ -202,9 +202,10 @@ func TestGetFeatureVariableBooleanWithValidValue(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -247,9 +248,10 @@ func TestGetFeatureVariableBooleanWithInvalidValue(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -293,9 +295,10 @@ func TestGetFeatureVariableBooleanWithInvalidValueType(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -339,9 +342,10 @@ func TestGetFeatureVariableBooleanWithEmptyValueType(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -385,9 +389,10 @@ func TestGetFeatureVariableBooleanReturnsDefaultValueIfFeatureNotEnabled(t *test
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -449,9 +454,10 @@ func TestGetFeatureVariableDoubleWithValidValue(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -494,9 +500,10 @@ func TestGetFeatureVariableDoubleWithInvalidValue(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -540,9 +547,10 @@ func TestGetFeatureVariableDoubleWithInvalidValueType(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -586,9 +594,10 @@ func TestGetFeatureVariableDoubleWithEmptyValueType(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -632,9 +641,10 @@ func TestGetFeatureVariableDoubleReturnsDefaultValueIfFeatureNotEnabled(t *testi
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -696,9 +706,10 @@ func TestGetFeatureVariableIntegerWithValidValue(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -741,9 +752,10 @@ func TestGetFeatureVariableIntegerWithInvalidValue(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -787,9 +799,10 @@ func TestGetFeatureVariableIntegerWithInvalidValueType(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -833,9 +846,10 @@ func TestGetFeatureVariableIntegerWithEmptyValueType(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -879,9 +893,10 @@ func TestGetFeatureVariableIntegerReturnsDefaultValueIfFeatureNotEnabled(t *test
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -943,9 +958,10 @@ func TestGetFeatureVariableStringWithValidValue(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -988,9 +1004,10 @@ func TestGetFeatureVariableStringWithInvalidValueType(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -1034,9 +1051,10 @@ func TestGetFeatureVariableStringWithEmptyValueType(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -1080,9 +1098,10 @@ func TestGetFeatureVariableStringReturnsDefaultValueIfFeatureNotEnabled(t *testi
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -1181,9 +1200,10 @@ func TestGetFeatureDecisionValid(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -1192,7 +1212,7 @@ func TestGetFeatureDecisionValid(t *testing.T) {
 		DecisionService: mockDecisionService,
 	}
 
-	_, featureDecision, err := client.getFeatureDecision(testFeatureKey, testUserContext)
+	_, featureDecision, err := client.getFeatureDecision(testFeatureKey, testVariableKey, testUserContext)
 	assert.Nil(t, err)
 	assert.Equal(t, expectedFeatureDecision, featureDecision)
 }
@@ -1225,9 +1245,10 @@ func TestGetFeatureDecisionErrProjectConfig(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -1236,7 +1257,7 @@ func TestGetFeatureDecisionErrProjectConfig(t *testing.T) {
 		DecisionService: mockDecisionService,
 	}
 
-	_, _, err := client.getFeatureDecision(testFeatureKey, testUserContext)
+	_, _, err := client.getFeatureDecision(testFeatureKey, testVariableKey, testUserContext)
 	assert.Error(t, err)
 }
 
@@ -1266,9 +1287,10 @@ func TestGetFeatureDecisionPanicProjectConfig(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
@@ -1278,7 +1300,7 @@ func TestGetFeatureDecisionPanicProjectConfig(t *testing.T) {
 		DecisionService: mockDecisionService,
 	}
 
-	_, _, err := client.getFeatureDecision(testFeatureKey, testUserContext)
+	_, _, err := client.getFeatureDecision(testFeatureKey, testVariableKey, testUserContext)
 	assert.Error(t, err)
 }
 
@@ -1312,7 +1334,7 @@ func TestGetFeatureDecisionPanicDecisionService(t *testing.T) {
 		DecisionService: &PanickingDecisionService{},
 	}
 
-	_, _, err := client.getFeatureDecision(testFeatureKey, testUserContext)
+	_, _, err := client.getFeatureDecision(testFeatureKey, testVariableKey, testUserContext)
 	assert.Error(t, err)
 	assert.EqualError(t, err, "I'm panicking")
 }
@@ -1345,9 +1367,10 @@ func TestGetFeatureDecisionErrFeatureDecision(t *testing.T) {
 	testDecisionContext := decision.FeatureDecisionContext{
 		Feature:       &testFeature,
 		ProjectConfig: mockConfig,
+		Variable:      testVariable,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, errors.New("error feature"))
 
@@ -1356,7 +1379,7 @@ func TestGetFeatureDecisionErrFeatureDecision(t *testing.T) {
 		DecisionService: mockDecisionService,
 	}
 
-	_, decision, err := client.getFeatureDecision(testFeatureKey, testUserContext)
+	_, decision, err := client.getFeatureDecision(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, expectedFeatureDecision, decision)
 	assert.NoError(t, err)
 }
@@ -1393,7 +1416,7 @@ func TestGetAllFeatureVariables(t *testing.T) {
 		ProjectConfig: mockConfig,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
@@ -1439,7 +1462,7 @@ func TestGetAllFeatureVariablesWithError(t *testing.T) {
 		ProjectConfig: mockConfig,
 	}
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation, true)
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariable, testVariation, true)
 	mockDecisionService := new(MockDecisionService)
 	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, errors.New(""))
 
@@ -1480,10 +1503,11 @@ func TestGetAllFeatureVariablesWithoutFeature(t *testing.T) {
 }
 
 // Helper Methods
-func getTestFeatureDecision(experiment entities.Experiment, variation entities.Variation, decisionMade bool) decision.FeatureDecision {
+func getTestFeatureDecision(experiment entities.Experiment, variable entities.Variable, variation entities.Variation, decisionMade bool) decision.FeatureDecision {
 	return decision.FeatureDecision{
 		Experiment: experiment,
 		Variation:  &variation,
+		Variable:   &variable,
 	}
 }
 

@@ -96,7 +96,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 		}
 	}()
 
-	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, userContext)
+	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, "", userContext)
 	if err != nil {
 		logger.Error("received an error while computing feature decision", err)
 		return result, err
@@ -214,15 +214,12 @@ func (o *OptimizelyClient) GetFeatureVariableString(featureKey, variableKey stri
 // GetFeatureVariable returns feature as a string along with it's associated type
 func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, userContext entities.UserContext) (value string, valueType entities.VariableType, err error) {
 
-	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, userContext)
+	_, featureDecision, err := o.getFeatureDecision(featureKey, variableKey, userContext)
 	if err != nil {
 		return "", "", err
 	}
 
-	variable, err := decisionContext.ProjectConfig.GetVariableByKey(featureKey, variableKey)
-	if err != nil {
-		return "", "", err
-	}
+	variable := featureDecision.Variable
 
 	if featureDecision.Variation != nil {
 		if v, ok := featureDecision.Variation.Variables[variable.ID]; ok && featureDecision.Variation.FeatureEnabled {
@@ -237,7 +234,7 @@ func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, us
 func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]string, err error) {
 
 	variableMap = make(map[string]string)
-	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, userContext)
+	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, "", userContext)
 	if err != nil {
 		logger.Error("Optimizely SDK tracking error", err)
 		return enabled, variableMap, err
@@ -335,7 +332,7 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 	return nil
 }
 
-func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext entities.UserContext) (decisionContext decision.FeatureDecisionContext, featureDecision decision.FeatureDecision, err error) {
+func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, userContext entities.UserContext) (decisionContext decision.FeatureDecisionContext, featureDecision decision.FeatureDecision, err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -368,9 +365,19 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey string, userContext ent
 		return decisionContext, featureDecision, nil
 	}
 
+	variable := entities.Variable{}
+	if variableKey != "" {
+		variable, err = projectConfig.GetVariableByKey(feature.Key, variableKey)
+		if err != nil {
+			logger.Warning(fmt.Sprintf(`Could not get variable for key "%s": %s`, variableKey, err))
+			return decisionContext, featureDecision, nil
+		}
+	}
+
 	decisionContext = decision.FeatureDecisionContext{
 		Feature:       &feature,
 		ProjectConfig: projectConfig,
+		Variable:      variable,
 	}
 
 	featureDecision, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext)
