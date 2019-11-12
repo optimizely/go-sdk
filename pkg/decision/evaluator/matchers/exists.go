@@ -31,7 +31,7 @@ func (m ExistsMatcher) Match(user entities.UserContext) (bool, error) {
 
 	_, err := user.GetStringAttribute(m.Condition.Name)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 
 	return true, nil

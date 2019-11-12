@@ -50,7 +50,7 @@ func TestExistsMatcher(t *testing.T) {
 	}
 
 	result, err = matcher.Match(user)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 	assert.False(t, result)
 
 	// Test null case
@@ -58,6 +58,6 @@ func TestExistsMatcher(t *testing.T) {
 		Attributes: map[string]interface{}{},
 	}
 	result, err = matcher.Match(user)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 	assert.False(t, result)
 }

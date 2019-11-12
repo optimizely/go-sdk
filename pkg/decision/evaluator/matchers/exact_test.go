@@ -62,7 +62,7 @@ func TestExactMatcherString(t *testing.T) {
 	}
 
 	_, err = matcher.Match(user)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 }
 
 func TestExactMatcherBool(t *testing.T) {
@@ -103,7 +103,7 @@ func TestExactMatcherBool(t *testing.T) {
 	}
 
 	_, err = matcher.Match(user)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 }
 
 func TestExactMatcherInt(t *testing.T) {
@@ -155,7 +155,7 @@ func TestExactMatcherInt(t *testing.T) {
 	}
 
 	_, err = matcher.Match(user)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 }
 
 func TestExactMatcherFloat(t *testing.T) {
@@ -196,5 +196,5 @@ func TestExactMatcherFloat(t *testing.T) {
 	}
 
 	_, err = matcher.Match(user)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 }

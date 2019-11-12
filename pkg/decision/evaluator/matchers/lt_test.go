@@ -84,7 +84,7 @@ func TestLtMatcherInt(t *testing.T) {
 	}
 
 	_, err = matcher.Match(user)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 }
 
 func TestLtMatcherFloat(t *testing.T) {
@@ -135,5 +135,5 @@ func TestLtMatcherFloat(t *testing.T) {
 	}
 
 	_, err = matcher.Match(user)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 }
