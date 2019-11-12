@@ -26,7 +26,7 @@ import (
 	"github.com/optimizely/go-sdk/tests/integration/support"
 )
 
-var opt = godog.Options{Output: colors.Colored(os.Stdout), Tags: "~@DATAFILE_MANAGER&&~@FORCED_VARIATION&&~@INPUT_VALIDATION&&~@USER_PROFILE_SERVICE&&~@EVENT_BATCHING&&~@NO_EASY_EVENT_TRACKING&&~@OASIS-3654&&~@TARGETED_ROLLOUT&&~@FORCED_VARIATION&&~@EXPERIMENT_STATUS"}
+var opt = godog.Options{Output: colors.Colored(os.Stdout)}
 
 func init() {
 	godog.BindFlags("godog.", flag.CommandLine, &opt)
