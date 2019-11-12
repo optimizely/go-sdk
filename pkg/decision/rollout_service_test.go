@@ -54,7 +54,7 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 
 	testAudienceConditionTree := testExp1112.AudienceConditionTree
 	mockAudienceTreeEvaluator := new(MockAudienceTreeEvaluator)
-	mockAudienceTreeEvaluator.On("Evaluate", testAudienceConditionTree, testCondTreeParams).Return(true)
+	mockAudienceTreeEvaluator.On("Evaluate", testAudienceConditionTree, testCondTreeParams).Return(true, true)
 	mockExperimentBucketerService := new(MockExperimentDecisionService)
 	mockExperimentBucketerService.On("GetDecision", testExperimentBucketerDecisionContext, testUserContext).Return(testExperimentBucketerDecision, nil)
 	testRolloutService := RolloutService{
@@ -83,7 +83,7 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 	}
 
 	mockAudienceTreeEvaluator = new(MockAudienceTreeEvaluator)
-	mockAudienceTreeEvaluator.On("Evaluate", testAudienceConditionTree, testCondTreeParams).Return(true)
+	mockAudienceTreeEvaluator.On("Evaluate", testAudienceConditionTree, testCondTreeParams).Return(true, true)
 	mockExperimentBucketerService = new(MockExperimentDecisionService)
 	mockExperimentBucketerService.On("GetDecision", testExperimentBucketerDecisionContext, testUserContext).Return(testExperimentBucketerDecision, nil)
 	testRolloutService = RolloutService{
@@ -104,7 +104,7 @@ func TestRolloutServiceGetDecision(t *testing.T) {
 
 	// Test experiment fails targeting
 	mockAudienceTreeEvaluator = new(MockAudienceTreeEvaluator)
-	mockAudienceTreeEvaluator.On("Evaluate", testAudienceConditionTree, testCondTreeParams).Return(false)
+	mockAudienceTreeEvaluator.On("Evaluate", testAudienceConditionTree, testCondTreeParams).Return(false, true)
 	testRolloutService = RolloutService{
 		audienceTreeEvaluator:     mockAudienceTreeEvaluator,
 		experimentBucketerService: mockExperimentBucketerService,

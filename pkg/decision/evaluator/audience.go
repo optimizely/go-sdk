@@ -40,6 +40,6 @@ func NewTypedAudienceEvaluator() *TypedAudienceEvaluator {
 }
 
 // Evaluate evaluates the typed audience against the given user's attributes
-func (a TypedAudienceEvaluator) Evaluate(audience entities.Audience, condTreeParams *entities.TreeParameters) bool {
+func (a TypedAudienceEvaluator) Evaluate(audience entities.Audience, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
 	return a.conditionTreeEvaluator.Evaluate(audience.ConditionTree, condTreeParams)
 }

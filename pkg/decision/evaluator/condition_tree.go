@@ -36,7 +36,7 @@ const (
 
 // TreeEvaluator evaluates a tree
 type TreeEvaluator interface {
-	Evaluate(*entities.TreeNode, *entities.TreeParameters) bool
+	Evaluate(*entities.TreeNode, *entities.TreeParameters) (evalResult, isValid bool)
 }
 
 // MixedTreeEvaluator evaluates a tree of mixed node types (condition node or audience nodes)
@@ -49,10 +49,9 @@ func NewMixedTreeEvaluator() *MixedTreeEvaluator {
 }
 
 // Evaluate returns true if the userAttributes satisfy the given condition tree
-func (c MixedTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) bool {
+func (c MixedTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
 	// This wrapper method converts the conditionEvalResult to a boolean
-	result, _ := c.evaluate(node, condTreeParams)
-	return result
+	return c.evaluate(node, condTreeParams)
 }
 
 // Helper method to recursively evaluate a condition tree
