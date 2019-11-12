@@ -75,6 +75,20 @@ type MockAudienceTreeEvaluator struct {
 	mock.Mock
 }
 
+type MockUserProfileService struct {
+	UserProfileService
+	mock.Mock
+}
+
+func (m *MockUserProfileService) Lookup(userID string) UserProfile {
+	args := m.Called(userID)
+	return args.Get(0).(UserProfile)
+}
+
+func (m *MockUserProfileService) Save(userProfile UserProfile) {
+	m.Called(userProfile)
+}
+
 func (m *MockAudienceTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) bool {
 	args := m.Called(node, condTreeParams)
 	return args.Bool(0)

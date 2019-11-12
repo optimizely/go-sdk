@@ -158,6 +158,17 @@ func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentService() {
 	s.IsType(&ExperimentBucketerService{}, compositeExperimentService.experimentServices[1])
 }
 
+func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithCustomOptions() {
+	mockUserProfileService := new(MockUserProfileService)
+	mockExperimentOverrideStore := new(MapExperimentOverridesStore)
+	compositeExperimentService := NewCompositeExperimentService(
+		WithUserProfileService(mockUserProfileService),
+		WithOverrideStore(mockExperimentOverrideStore),
+	)
+	s.Equal(mockUserProfileService, compositeExperimentService.userProfileService)
+	s.Equal(mockExperimentOverrideStore, compositeExperimentService.overrideStore)
+}
+
 func TestCompositeExperimentTestSuite(t *testing.T) {
 	suite.Run(t, new(CompositeExperimentTestSuite))
 }

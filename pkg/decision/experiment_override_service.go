@@ -20,6 +20,7 @@ package decision
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
@@ -39,15 +40,32 @@ type ExperimentOverrideStore interface {
 	GetVariation(overrideKey ExperimentOverrideKey) (string, bool)
 }
 
-// MapOverridesStore is a map-based implementation of OverrideStore
-type MapOverridesStore struct {
+// MapExperimentOverridesStore is a map-based implementation of ExperimentOverridesStore that is safe to use concurrently
+type MapExperimentOverridesStore struct {
 	overridesMap map[ExperimentOverrideKey]string
+	mutex        sync.RWMutex
 }
 
-// GetVariation returns the override associated with the given key in the map
-func (m *MapOverridesStore) GetVariation(overrideKey ExperimentOverrideKey) (string, bool) {
+// NewMapExperimentOverridesStore returns a new MapExperimentOverridesStore
+func NewMapExperimentOverridesStore() *MapExperimentOverridesStore {
+	return &MapExperimentOverridesStore{
+		overridesMap: make(map[ExperimentOverrideKey]string),
+	}
+}
+
+// GetVariation returns the override variation key associated with the given user+experiment key
+func (m *MapExperimentOverridesStore) GetVariation(overrideKey ExperimentOverrideKey) (string, bool) {
+	m.mutex.RLock()
 	variationKey, ok := m.overridesMap[overrideKey]
+	m.mutex.RUnlock()
 	return variationKey, ok
+}
+
+// SetVariation sets the given variation key as an override for the given user+experiment key
+func (m *MapExperimentOverridesStore) SetVariation(overrideKey ExperimentOverrideKey, variationKey string) {
+	m.mutex.Lock()
+	m.overridesMap[overrideKey] = variationKey
+	m.mutex.Unlock()
 }
 
 // ExperimentOverrideService makes a decision using an ExperimentOverridesStore

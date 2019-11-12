@@ -18,6 +18,7 @@
 package decision
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
@@ -28,16 +29,14 @@ import (
 type ExperimentOverrideServiceTestSuite struct {
 	suite.Suite
 	mockConfig      *mockProjectConfig
-	overrides       map[ExperimentOverrideKey]string
+	overrides       *MapExperimentOverridesStore
 	overrideService *ExperimentOverrideService
 }
 
 func (s *ExperimentOverrideServiceTestSuite) SetupTest() {
 	s.mockConfig = new(mockProjectConfig)
-	s.overrides = make(map[ExperimentOverrideKey]string)
-	s.overrideService = NewExperimentOverrideService(&MapOverridesStore{
-		overridesMap: s.overrides,
-	})
+	s.overrides = NewMapExperimentOverridesStore()
+	s.overrideService = NewExperimentOverrideService(s.overrides)
 }
 
 func (s *ExperimentOverrideServiceTestSuite) TestOverridesIncludeVariation() {
@@ -48,7 +47,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestOverridesIncludeVariation() {
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
 	}
-	s.overrides[ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}] = testExp1111Var2222.Key
+	s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}, testExp1111Var2222.Key)
 	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
 	s.NoError(err)
 	s.NotNil(decision.Variation)
@@ -77,7 +76,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestNoOverrideForExperiment() {
 		ID: "test_user_1",
 	}
 	// The decision context refers to testExp1111, but this override is for another experiment
-	s.overrides[ExperimentOverrideKey{ExperimentKey: testExp1113.Key, UserID: "test_user_1"}] = testExp1113Var2224.Key
+	s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1113.Key, UserID: "test_user_1"}, testExp1113Var2224.Key)
 	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
 	s.NoError(err)
 	s.Nil(decision.Variation)
@@ -93,7 +92,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestNoOverrideForUser() {
 		ID: "test_user_1",
 	}
 	// The user context refers to "test_user_1", but this override is for another user
-	s.overrides[ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_2"}] = testExp1111Var2222.Key
+	s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_2"}, testExp1111Var2222.Key)
 	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
 	s.NoError(err)
 	s.Nil(decision.Variation)
@@ -109,7 +108,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestNoOverrideForUserOrExperiment()
 		ID: "test_user_1",
 	}
 	// This override is for both a different user and a different experiment than the ones in the contexts above
-	s.overrides[ExperimentOverrideKey{ExperimentKey: testExp1113.Key, UserID: "test_user_3"}] = testExp1111Var2222.Key
+	s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1113.Key, UserID: "test_user_3"}, testExp1111Var2222.Key)
 	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
 	s.NoError(err)
 	s.Nil(decision.Variation)
@@ -125,11 +124,67 @@ func (s *ExperimentOverrideServiceTestSuite) TestInvalidVariationInOverride() {
 		ID: "test_user_1",
 	}
 	// This override variation key does not exist in the experiment
-	s.overrides[ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}] = "invalid_variation_key"
+	s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}, "invalid_variation_key")
 	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
 	s.NoError(err)
 	s.Nil(decision.Variation)
 	s.Exactly(reasons.InvalidOverrideVariationAssignment, decision.Reason)
+}
+
+// Test concurrent use of the MapExperimentOverrideStore
+// Create 3 goroutines that set and get variations, and assert that all their sets take effect at the end
+func (s *ExperimentOverrideServiceTestSuite) TestMapExperimentOverridesStoreConcurrent() {
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1111,
+		ProjectConfig: s.mockConfig,
+	}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}, testExp1111Var2222.Key)
+		user1Decision, _ := s.overrideService.GetDecision(testDecisionContext, entities.UserContext{
+			ID: "test_user_1",
+		})
+		s.NotNil(user1Decision.Variation)
+		s.Exactly(testExp1111Var2222.Key, user1Decision.Variation.Key)
+		wg.Done()
+	}()
+	wg.Add(1)
+	go func() {
+		s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_2"}, testExp1111Var2222.Key)
+		user2Decision, _ := s.overrideService.GetDecision(testDecisionContext, entities.UserContext{
+			ID: "test_user_2",
+		})
+		s.NotNil(user2Decision.Variation)
+		s.Exactly(testExp1111Var2222.Key, user2Decision.Variation.Key)
+		wg.Done()
+	}()
+	wg.Add(1)
+	go func() {
+		s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_3"}, testExp1111Var2222.Key)
+		user3Decision, _ := s.overrideService.GetDecision(testDecisionContext, entities.UserContext{
+			ID: "test_user_3",
+		})
+		s.NotNil(user3Decision.Variation)
+		s.Exactly(testExp1111Var2222.Key, user3Decision.Variation.Key)
+		wg.Done()
+	}()
+	wg.Wait()
+	user1Decision, _ := s.overrideService.GetDecision(testDecisionContext, entities.UserContext{
+		ID: "test_user_1",
+	})
+	user2Decision, _ := s.overrideService.GetDecision(testDecisionContext, entities.UserContext{
+		ID: "test_user_2",
+	})
+	user3Decision, _ := s.overrideService.GetDecision(testDecisionContext, entities.UserContext{
+		ID: "test_user_3",
+	})
+	s.NotNil(user1Decision.Variation)
+	s.Exactly(testExp1111Var2222.Key, user1Decision.Variation.Key)
+	s.NotNil(user2Decision.Variation)
+	s.Exactly(testExp1111Var2222.Key, user2Decision.Variation.Key)
+	s.NotNil(user3Decision.Variation)
+	s.Exactly(testExp1111Var2222.Key, user3Decision.Variation.Key)
 }
 
 func TestExperimentOverridesTestSuite(t *testing.T) {

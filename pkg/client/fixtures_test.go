@@ -151,6 +151,11 @@ func (m *PanickingDecisionService) RemoveOnDecision(id int) error {
 	panic("I'm panicking")
 }
 
+type MockUserProfileService struct {
+	decision.UserProfileService
+	mock.Mock
+}
+
 // Helper methods for creating test entities
 func makeTestExperiment(experimentKey string) entities.Experiment {
 	return entities.Experiment{

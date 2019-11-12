@@ -129,6 +129,13 @@ func (s *CompositeServiceFeatureTestSuite) TestNewCompositeService() {
 	s.IsType(&CompositeFeatureService{}, compositeService.compositeFeatureService)
 }
 
+func (s *CompositeServiceFeatureTestSuite) TestNewCompositeServiceWithCustomOptions() {
+	compositeExperimentService := NewCompositeExperimentService()
+	compositeService := NewCompositeService("sdk_key", WithCompositeExperimentService(compositeExperimentService))
+	s.IsType(compositeExperimentService, compositeService.compositeExperimentService)
+	s.IsType(&CompositeFeatureService{}, compositeService.compositeFeatureService)
+}
+
 type CompositeServiceExperimentTestSuite struct {
 	suite.Suite
 	decisionContext       ExperimentDecisionContext
