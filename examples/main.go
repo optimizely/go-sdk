@@ -39,7 +39,6 @@ func main() {
 	enabled, _ := optimizelyClient.IsFeatureEnabled("mutext_feat", user)
 	fmt.Printf("Is feature enabled? %v\n", enabled)
 
-	optimizelyClient.GetFeatureVariable("mutext_feat", "df", user)
 	fmt.Println()
 	optimizelyClient.Close() //  user can close dispatcher
 	fmt.Println()
