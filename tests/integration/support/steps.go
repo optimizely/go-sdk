@@ -33,8 +33,7 @@ import (
 
 // ScenarioCtx holds both apiOptions and apiResponse for a scenario.
 type ScenarioCtx struct {
-	requestID     string
-	isSessioned   bool
+	scenarioID    string
 	apiOptions    models.APIOptions
 	apiResponse   models.APIResponse
 	clientWrapper *ClientWrapper
@@ -62,7 +61,7 @@ func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.D
 
 	// Clearing old state of response, eventdispatcher and decision service
 	c.apiResponse = models.APIResponse{}
-	c.clientWrapper = GetInstance(c.requestID, c.apiOptions.DatafileName, c.isSessioned)
+	c.clientWrapper = GetInstance(c.scenarioID, c.apiOptions.DatafileName)
 	response, err := c.clientWrapper.InvokeAPI(c.apiOptions)
 	c.apiResponse = response
 	//Reset listeners so that same listener is not added twice for a scenario
@@ -309,12 +308,10 @@ func (c *ScenarioCtx) PayloadsOfDispatchedEventsDontIncludeDecisions() error {
 	return nil
 }
 
-// Reset clears all data before each scenario, assigns new requestID and sets session as false
+// Reset clears all data before each scenario, assigns new scenarioID and sets session as false
 func (c *ScenarioCtx) Reset() {
 	c.apiOptions = models.APIOptions{}
 	c.apiResponse = models.APIResponse{}
 	c.clientWrapper = nil
-	c.requestID = uuid.New().String()
-	// @TODO: Set to true for event-batching tests
-	c.isSessioned = false
+	c.scenarioID = uuid.New().String()
 }

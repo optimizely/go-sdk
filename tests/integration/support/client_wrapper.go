@@ -33,7 +33,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Map to hold clientwrapper instances against requestID
+// Map to hold clientwrapper instances against scenarioID
 var clientWrapperMap = map[string]*ClientWrapper{}
 
 // ClientWrapper - wrapper around the optimizely client that keeps track of various custom components used with the client
@@ -44,17 +44,14 @@ type ClientWrapper struct {
 }
 
 // GetInstance returns a cached or new instance of the optly wrapper
-func GetInstance(requestID string, datafileName string, isSessioned bool) *ClientWrapper {
+func GetInstance(scenarioID string, datafileName string) *ClientWrapper {
 
-	if instance, ok := clientWrapperMap[requestID]; ok {
-		if !isSessioned {
-			//Clear only for un-sessioned scenarios
-			instance.DecisionService.(*optlyplugins.TestCompositeService).ClearListenersCalled()
-			instance.EventDispatcher.(*optlyplugins.ProxyEventDispatcher).ClearEvents()
-		}
+	if instance, ok := clientWrapperMap[scenarioID]; ok {
 		return instance
 	}
 
+	// Delete all previous instances before creating new one
+	clientWrapperMap = map[string]*ClientWrapper{}
 	datafileDir := os.Getenv("DATAFILES_DIR")
 	datafile, err := ioutil.ReadFile(filepath.Clean(path.Join(datafileDir, datafileName)))
 	if err != nil {
@@ -86,12 +83,12 @@ func GetInstance(requestID string, datafileName string, isSessioned bool) *Clien
 		log.Fatal(err)
 	}
 
-	clientWrapperMap[requestID] = &ClientWrapper{
+	clientWrapperMap[scenarioID] = &ClientWrapper{
 		Client:          client,
 		DecisionService: decisionService,
 		EventDispatcher: eventProcessor.EventDispatcher,
 	}
-	return clientWrapperMap[requestID]
+	return clientWrapperMap[scenarioID]
 }
 
 // InvokeAPI processes request with arguments
