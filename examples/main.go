@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	sdkKey := "4SLpaJA1r1pgE6T2CoMs9q_p"
+	sdkKey := "4SLpaJA1r1pgE6T2CoMs9q"
 	logging.SetLogLevel(logging.LogLevelDebug)
 	user := entities.UserContext{
 		ID: "mike ng",
@@ -33,14 +33,15 @@ func main() {
 
 	if err != nil {
 		fmt.Printf("Error instantiating client: %s", err)
-		//return
+		return
 	}
 
-	//enabled, _ := optimizelyClient.IsFeatureEnabled("mutext_feat", user)
-	//fmt.Printf("Is feature enabled? %v\n", enabled)
+	enabled, _ := optimizelyClient.IsFeatureEnabled("mutext_feat", user)
+	fmt.Printf("Is feature enabled? %v\n", enabled)
 
+	optimizelyClient.GetFeatureVariable("mutext_feat", "df", user)
 	fmt.Println()
-	//optimizelyClient.Close() //  user can close dispatcher
+	optimizelyClient.Close() //  user can close dispatcher
 	fmt.Println()
 	/************* Client ********************/
 
@@ -50,16 +51,13 @@ func main() {
 
 	optimizelyClient, err = optimizelyFactory.Client()
 
-	//if err != nil {
-	//	fmt.Printf("Error instantiating client: %s", err)
-	//	return
-	//}
+	if err != nil {
+		fmt.Printf("Error instantiating client: %s", err)
+		return
+	}
 
-	//enabled, _ := optimizelyClient.IsFeatureEnabled("mutext_feat", user)
-	//fmt.Printf("Is feature enabled? %v\n", enabled)
-
-	//optimizelyClient.GetFeatureVariableBoolean("mutext_feat", "dfd", user)
-	optimizelyClient.Activate("dfd", user)
+	enabled, _ = optimizelyClient.IsFeatureEnabled("mutext_feat", user)
+	fmt.Printf("Is feature enabled? %v\n", enabled)
 	optimizelyClient.Close() //  user can close dispatcher
 
 	/************* Setting Polling Interval ********************/
