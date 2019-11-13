@@ -187,6 +187,22 @@ func (s *ExperimentOverrideServiceTestSuite) TestMapExperimentOverridesStoreConc
 	s.Exactly(testExp1111Var2222.Key, user3Decision.Variation.Key)
 }
 
+func (s *ExperimentOverrideServiceTestSuite) TestRemovePreviouslySetVariation() {
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1111,
+		ProjectConfig: s.mockConfig,
+	}
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+	overrideKey := ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}
+	s.overrides.SetVariation(overrideKey, testExp1111Var2222.Key)
+	s.overrides.RemoveVariation(overrideKey)
+	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
+	s.NoError(err)
+	s.Nil(decision.Variation)
+}
+
 func TestExperimentOverridesTestSuite(t *testing.T) {
 	suite.Run(t, new(ExperimentOverrideServiceTestSuite))
 }
