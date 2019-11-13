@@ -18,11 +18,16 @@
 package decision
 
 import (
+	"fmt"
+
 	"github.com/optimizely/go-sdk/pkg/decision/evaluator"
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
+	"github.com/optimizely/go-sdk/pkg/logging"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
+
+var rsLogger = logging.GetLogger("RolloutService")
 
 // RolloutService makes a feature decision for a given feature rollout
 type RolloutService struct {
@@ -69,13 +74,22 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		evalResult := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
 		if !evalResult {
 			featureDecision.Reason = reasons.FailedRolloutTargeting
+			rsLogger.Debug(fmt.Sprintf(`User "%s" failed targeting for feature rollout with key "%s".`, userContext.ID, feature.Key))
 			return featureDecision, nil
 		}
 	}
 
 	decision, _ := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext)
-	featureDecision.Decision = decision.Decision
+	if decision.Reason == reasons.NotBucketedIntoVariation {
+		featureDecision.Decision = Decision{Reason: reasons.FailedRolloutBucketing}
+	} else if decision.Reason == reasons.BucketedIntoVariation {
+		featureDecision.Decision = Decision{Reason: reasons.BucketedIntoRollout}
+	} else {
+		featureDecision.Decision = decision.Decision
+	}
 	featureDecision.Experiment = experiment
 	featureDecision.Variation = decision.Variation
+	rsLogger.Debug(fmt.Sprintf(`Decision made for user "%s" for feature rollout with key "%s": %s.`, userContext.ID, feature.Key, featureDecision.Reason))
+
 	return featureDecision, nil
 }
