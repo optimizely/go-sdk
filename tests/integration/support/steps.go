@@ -61,7 +61,7 @@ func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.D
 
 	// Clearing old state of response, eventdispatcher and decision service
 	c.apiResponse = models.APIResponse{}
-	c.clientWrapper = GetInstance(c.scenarioID, c.apiOptions.DatafileName)
+	c.clientWrapper = GetInstance(c.apiOptions.DatafileName)
 	response, err := c.clientWrapper.InvokeAPI(c.apiOptions)
 	c.apiResponse = response
 	//Reset listeners so that same listener is not added twice for a scenario
@@ -310,6 +310,9 @@ func (c *ScenarioCtx) PayloadsOfDispatchedEventsDontIncludeDecisions() error {
 
 // Reset clears all data before each scenario, assigns new scenarioID and sets session as false
 func (c *ScenarioCtx) Reset() {
+	// Delete cached optly wrapper instance
+	DeleteInstance()
+	// Clear scenario context and generate a new scenarioID
 	c.apiOptions = models.APIOptions{}
 	c.apiResponse = models.APIResponse{}
 	c.clientWrapper = nil

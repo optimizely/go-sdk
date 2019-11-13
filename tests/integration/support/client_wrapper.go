@@ -34,7 +34,7 @@ import (
 )
 
 // Map to hold clientwrapper instances against scenarioID
-var clientWrapperMap = map[string]*ClientWrapper{}
+var clientInstance *ClientWrapper
 
 // ClientWrapper - wrapper around the optimizely client that keeps track of various custom components used with the client
 type ClientWrapper struct {
@@ -43,15 +43,18 @@ type ClientWrapper struct {
 	EventDispatcher event.Dispatcher
 }
 
-// GetInstance returns a cached or new instance of the optly wrapper
-func GetInstance(scenarioID string, datafileName string) *ClientWrapper {
+// DeleteInstance deletes cached instance of optly wrapper
+func DeleteInstance() {
+	clientInstance = nil
+}
 
-	if instance, ok := clientWrapperMap[scenarioID]; ok {
-		return instance
+// GetInstance returns a cached or new instance of the optly wrapper
+func GetInstance(datafileName string) *ClientWrapper {
+
+	if clientInstance != nil {
+		return clientInstance
 	}
 
-	// Delete all previous instances before creating new one
-	clientWrapperMap = map[string]*ClientWrapper{}
 	datafileDir := os.Getenv("DATAFILES_DIR")
 	datafile, err := ioutil.ReadFile(filepath.Clean(path.Join(datafileDir, datafileName)))
 	if err != nil {
@@ -83,12 +86,12 @@ func GetInstance(scenarioID string, datafileName string) *ClientWrapper {
 		log.Fatal(err)
 	}
 
-	clientWrapperMap[scenarioID] = &ClientWrapper{
+	clientInstance = &ClientWrapper{
 		Client:          client,
 		DecisionService: decisionService,
 		EventDispatcher: eventProcessor.EventDispatcher,
 	}
-	return clientWrapperMap[scenarioID]
+	return clientInstance
 }
 
 // InvokeAPI processes request with arguments
