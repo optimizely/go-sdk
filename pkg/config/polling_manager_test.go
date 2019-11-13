@@ -127,6 +127,39 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 	assert.Equal(t, projectConfig2, actual)
 }
 
+func TestNewPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
+	mockDatafile1 := []byte("NOT-VALID")
+	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false}`)
+
+	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
+	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
+	mockRequester := new(MockRequester)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, 200, nil)
+
+	// Test we fetch using requester
+	sdkKey := "test_sdk_key"
+
+	exeCtx := utils.NewCancelableExecutionCtx()
+	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager.Start(exeCtx)
+	mockRequester.AssertExpectations(t)
+
+	actual, err := configManager.GetConfig() // polling for bad file
+	assert.NotNil(t, err)
+	assert.Nil(t, actual)
+	assert.Nil(t, projectConfig1)
+
+	configManager.SyncConfig(mockDatafile2) // polling for good file
+	actual, err = configManager.GetConfig()
+	assert.Nil(t, err)
+	assert.Equal(t, projectConfig2, actual)
+
+	configManager.SyncConfig(mockDatafile1) // polling for bad file, error not null but good project
+	actual, err = configManager.GetConfig()
+	assert.Nil(t, err)
+	assert.Equal(t, projectConfig2, actual)
+}
+
 func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true}`)
 	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false}`)

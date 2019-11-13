@@ -94,7 +94,10 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 
 		if e != nil {
 			cmLogger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
-			cm.err = e
+			cm.err = nil
+			if cm.projectConfig == nil {
+				cm.err = e
+			}
 			return
 		}
 	}
@@ -103,7 +106,10 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 
 	cm.configLock.Lock()
 	closeMutex := func() {
-		cm.err = err
+		cm.err = nil
+		if cm.projectConfig == nil {
+			cm.err = err
+		}
 		cm.configLock.Unlock()
 	}
 	if err != nil {
