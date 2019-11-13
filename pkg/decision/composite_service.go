@@ -79,9 +79,9 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 		featureInfo := map[string]interface{}{
 			"featureKey":     featureDecisionContext.Feature.Key,
 			"featureEnabled": false,
-			"variableKey":    featureDecision.Variable.Key,
-			"variableValue":  featureDecision.Variable.DefaultValue,
-			"variableType":   featureDecision.Variable.Type,
+			"variableKey":    featureDecisionContext.Variable.Key,
+			"variableValue":  featureDecisionContext.Variable.DefaultValue,
+			"variableType":   featureDecisionContext.Variable.Type,
 			"source":         featureDecision.Source,
 			"sourceInfo":     sourceInfo,
 		}

@@ -57,7 +57,6 @@ type FeatureDecision struct {
 	Source     Source
 	Experiment entities.Experiment
 	Variation  *entities.Variation
-	Variable   *entities.Variable
 }
 
 // ExperimentDecision contains the decision information about an experiment

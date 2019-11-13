@@ -1507,7 +1507,6 @@ func getTestFeatureDecision(experiment entities.Experiment, variable entities.Va
 	return decision.FeatureDecision{
 		Experiment: experiment,
 		Variation:  &variation,
-		Variable:   &variable,
 	}
 }
 

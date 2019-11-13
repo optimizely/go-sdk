@@ -214,12 +214,12 @@ func (o *OptimizelyClient) GetFeatureVariableString(featureKey, variableKey stri
 // GetFeatureVariable returns feature as a string along with it's associated type
 func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, userContext entities.UserContext) (value string, valueType entities.VariableType, err error) {
 
-	_, featureDecision, err := o.getFeatureDecision(featureKey, variableKey, userContext)
+	featureDecisionContext, featureDecision, err := o.getFeatureDecision(featureKey, variableKey, userContext)
 	if err != nil {
 		return "", "", err
 	}
 
-	variable := featureDecision.Variable
+	variable := featureDecisionContext.Variable
 
 	if featureDecision.Variation != nil {
 		if v, ok := featureDecision.Variation.Variables[variable.ID]; ok && featureDecision.Variation.FeatureEnabled {

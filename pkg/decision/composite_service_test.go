@@ -66,7 +66,6 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListeners() {
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1111,
 		Variation:  &testExp1111Var2222,
-		Variable:   &testVariable,
 	}
 	notificationCenter := notification.NewNotificationCenter()
 	decisionService := &CompositeService{

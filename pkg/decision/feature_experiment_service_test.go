@@ -63,7 +63,6 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecision() {
 		Experiment: *testExperimentDecisionContext.Experiment,
 		Variation:  &expectedVariation,
 		Source:     FeatureTest,
-		Variable:   &testVariable,
 	}
 	decision, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext)
 	s.Equal(expectedFeatureDecision, decision)
@@ -99,7 +98,6 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionMutex() {
 		Experiment: *testExperimentDecisionContext2.Experiment,
 		Variation:  &expectedVariation,
 		Source:     FeatureTest,
-		Variable:   &testVariable,
 	}
 	featureExperimentService := &FeatureExperimentService{
 		compositeExperimentService: s.mockExperimentService,
