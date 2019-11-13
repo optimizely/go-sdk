@@ -68,6 +68,14 @@ func (m *MapExperimentOverridesStore) SetVariation(overrideKey ExperimentOverrid
 	m.mutex.Unlock()
 }
 
+// RemoveVariation removes the override variation key associated with the argument user+experiment key.
+// If there is no override variation key set, this method has no effect.
+func (m *MapExperimentOverridesStore) RemoveVariation(overrideKey ExperimentOverrideKey) {
+	m.mutex.Lock()
+	delete(m.overridesMap, overrideKey)
+	m.mutex.Unlock()
+}
+
 // ExperimentOverrideService makes a decision using an ExperimentOverridesStore
 // Implements the ExperimentService interface
 type ExperimentOverrideService struct {
