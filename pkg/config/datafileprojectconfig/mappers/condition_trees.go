@@ -31,7 +31,7 @@ var json = jsoniter.ConfigCompatibleWithStandardLibrary
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
 func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, retErr error) {
 
-	parsedConditions, retErr := validateConditions(conditions)
+	parsedConditions, retErr := parseConditions(conditions)
 	if retErr != nil {
 		return
 	}
@@ -104,8 +104,8 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 	return conditionTree, retErr
 }
 
-// Validates conditions for audience in the datafile
-func validateConditions(conditions interface{}) (parsedConditions interface{}, retErr error) {
+// Parses conditions for audience in the datafile
+func parseConditions(conditions interface{}) (parsedConditions interface{}, retErr error) {
 	switch v := conditions.(type) {
 	case string:
 		if err := json.Unmarshal([]byte(v), &parsedConditions); err != nil {

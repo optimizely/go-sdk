@@ -165,9 +165,7 @@ func TestBuildConditionTreeWithLeafNode(t *testing.T) {
 	var conditions interface{}
 	json.Unmarshal([]byte(conditionString), &conditions)
 	conditionTree, err := buildConditionTree(conditions)
-	if err != nil {
-		assert.Fail(t, err.Error())
-	}
+	assert.NoError(t, err)
 
 	expectedConditionTree := &entities.TreeNode{
 		Operator: "or",
