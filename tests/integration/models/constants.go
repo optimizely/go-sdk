@@ -59,6 +59,8 @@ const (
 	GetVariation SDKAPI = "get_variation"
 	// Activate - the api type is Activate
 	Activate SDKAPI = "activate"
+	// Track - the api type is Track
+	Track SDKAPI = "track"
 )
 
 // KeyListenerCalled - Key for listener called
