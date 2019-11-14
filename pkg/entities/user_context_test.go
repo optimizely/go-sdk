@@ -23,6 +23,28 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestUserAttributesCheckAttributeExists(t *testing.T) {
+	userContext := UserContext{
+		Attributes: map[string]interface{}{
+			"string_foo": "foo",
+			"bool_true":  true,
+			"bool_false": false,
+			"null_value": nil,
+		},
+	}
+
+	// Test happy path
+	assert.Equal(t, true, userContext.CheckAttributeExists("string_foo"))
+	assert.Equal(t, true, userContext.CheckAttributeExists("bool_true"))
+	assert.Equal(t, true, userContext.CheckAttributeExists("bool_false"))
+
+	// Test non-existent attr name
+	assert.Equal(t, false, userContext.CheckAttributeExists("invalid"))
+
+	// Test null value
+	assert.Equal(t, false, userContext.CheckAttributeExists("null_value"))
+}
+
 func TestUserAttributesGetStringAttribute(t *testing.T) {
 	userContext := UserContext{
 		Attributes: map[string]interface{}{
