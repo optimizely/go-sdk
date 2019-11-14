@@ -50,6 +50,7 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 		if err != nil {
 			cfLogger.Debug(fmt.Sprintf("%v", err))
 		}
+
 		if featureDecision.Variation != nil && err == nil {
 			return featureDecision, err
 		}
