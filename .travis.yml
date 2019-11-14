@@ -20,7 +20,7 @@ jobs:
       stage: 'Unit test'
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
       script:
-        - make -e test-ci
+        - make cover
 
     - <<: *test
       stage: 'Unit test'
@@ -34,7 +34,7 @@ jobs:
         # This pkg not in go 1.8
         - go get github.com/stretchr/testify
         # -coverprofile was not introduced in 1.8
-        - make -e test
+        - make test
 
     - <<: *test
       stage: 'Unit test'
