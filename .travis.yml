@@ -14,7 +14,7 @@ jobs:
     - stage: 'Lint'
       env: GIMME_GO_VERSION=1.12.x GIMME_OS=linux GIMME_ARCH=amd64
       script:
-        - make -e install lint
+        - make install lint
 
     - &test
       stage: 'Unit test'
@@ -53,6 +53,7 @@ jobs:
         - eval "$(gimme)"
       script:
         - ./scripts/run-fsc-tests.sh -f "$FSC_PATH/features/" -d "$FSC_PATH/features/support/datafiles/" -t "$TAGS"
+
     - stage: 'Source clear'
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
       language: go
