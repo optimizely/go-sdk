@@ -135,7 +135,8 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (models.APIResponse
 	default:
 		break
 	}
-
+	// TODO: For event batching, it should be conditional.
+	c.Client.Close()
 	response.ListenerCalled = c.DecisionService.(*optlyplugins.TestCompositeService).GetListenersCalled()
 	return response, err
 }
