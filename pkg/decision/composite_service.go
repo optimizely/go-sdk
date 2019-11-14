@@ -92,8 +92,11 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 			featureInfo["variableType"] = variable.Type
 
 			variableValue := variable.DefaultValue
-			if v, ok := featureDecision.Variation.Variables[variable.ID]; ok && featureDecision.Variation.FeatureEnabled {
-				variableValue = v.Value
+
+			if featureDecision.Variation != nil {
+				if v, ok := featureDecision.Variation.Variables[variable.ID]; ok && featureDecision.Variation.FeatureEnabled {
+					variableValue = v.Value
+				}
 			}
 			var convertedValue interface{}
 			var e error
