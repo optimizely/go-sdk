@@ -33,6 +33,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Map to hold clientwrapper instances against scenarioID
+var clientInstance *ClientWrapper
+
 // ClientWrapper - wrapper around the optimizely client that keeps track of various custom components used with the client
 type ClientWrapper struct {
 	Client          *client.OptimizelyClient
@@ -40,8 +43,17 @@ type ClientWrapper struct {
 	EventDispatcher event.Dispatcher
 }
 
-// NewClientWrapper returns a new instance of the optly wrapper
-func NewClientWrapper(datafileName string) ClientWrapper {
+// DeleteInstance deletes cached instance of optly wrapper
+func DeleteInstance() {
+	clientInstance = nil
+}
+
+// GetInstance returns a cached or new instance of the optly wrapper
+func GetInstance(datafileName string) *ClientWrapper {
+
+	if clientInstance != nil {
+		return clientInstance
+	}
 
 	datafileDir := os.Getenv("DATAFILES_DIR")
 	datafile, err := ioutil.ReadFile(filepath.Clean(path.Join(datafileDir, datafileName)))
@@ -74,11 +86,12 @@ func NewClientWrapper(datafileName string) ClientWrapper {
 		log.Fatal(err)
 	}
 
-	return ClientWrapper{
+	clientInstance = &ClientWrapper{
 		Client:          client,
 		DecisionService: decisionService,
 		EventDispatcher: eventProcessor.EventDispatcher,
 	}
+	return clientInstance
 }
 
 // InvokeAPI processes request with arguments
@@ -116,10 +129,14 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (models.APIResponse
 	case models.Activate:
 		response, err = c.activate(request)
 		break
+	case models.Track:
+		response, err = c.track(request)
+		break
 	default:
 		break
 	}
-
+	// TODO: For event batching, it should be conditional.
+	c.Client.Close()
 	response.ListenerCalled = c.DecisionService.(*optlyplugins.TestCompositeService).GetListenersCalled()
 	return response, err
 }
@@ -145,7 +162,7 @@ func (c *ClientWrapper) isFeatureEnabled(request models.APIOptions) (models.APIR
 }
 
 func (c *ClientWrapper) getFeatureVariable(request models.APIOptions) (models.APIResponse, error) {
-	var params models.GetFeatureVariableParams
+	var params models.GetFeatureVariableRequestParams
 	var response models.APIResponse
 	err := yaml.Unmarshal([]byte(request.Arguments), &params)
 	if err == nil {
@@ -163,7 +180,7 @@ func (c *ClientWrapper) getFeatureVariable(request models.APIOptions) (models.AP
 }
 
 func (c *ClientWrapper) getFeatureVariableInteger(request models.APIOptions) (models.APIResponse, error) {
-	var params models.GetFeatureVariableParams
+	var params models.GetFeatureVariableRequestParams
 	var response models.APIResponse
 	err := yaml.Unmarshal([]byte(request.Arguments), &params)
 	if err == nil {
@@ -180,7 +197,7 @@ func (c *ClientWrapper) getFeatureVariableInteger(request models.APIOptions) (mo
 }
 
 func (c *ClientWrapper) getFeatureVariableDouble(request models.APIOptions) (models.APIResponse, error) {
-	var params models.GetFeatureVariableParams
+	var params models.GetFeatureVariableRequestParams
 	var response models.APIResponse
 	err := yaml.Unmarshal([]byte(request.Arguments), &params)
 	if err == nil {
@@ -197,7 +214,7 @@ func (c *ClientWrapper) getFeatureVariableDouble(request models.APIOptions) (mod
 }
 
 func (c *ClientWrapper) getFeatureVariableBoolean(request models.APIOptions) (models.APIResponse, error) {
-	var params models.GetFeatureVariableParams
+	var params models.GetFeatureVariableRequestParams
 	var response models.APIResponse
 	err := yaml.Unmarshal([]byte(request.Arguments), &params)
 	if err == nil {
@@ -214,7 +231,7 @@ func (c *ClientWrapper) getFeatureVariableBoolean(request models.APIOptions) (mo
 }
 
 func (c *ClientWrapper) getFeatureVariableString(request models.APIOptions) (models.APIResponse, error) {
-	var params models.GetFeatureVariableParams
+	var params models.GetFeatureVariableRequestParams
 	var response models.APIResponse
 	err := yaml.Unmarshal([]byte(request.Arguments), &params)
 	if err == nil {
@@ -231,7 +248,7 @@ func (c *ClientWrapper) getFeatureVariableString(request models.APIOptions) (mod
 }
 
 func (c *ClientWrapper) getEnabledFeatures(request models.APIOptions) (models.APIResponse, error) {
-	var params models.GetEnabledFeaturesParams
+	var params models.GetEnabledFeaturesRequestParams
 	var response models.APIResponse
 	err := yaml.Unmarshal([]byte(request.Arguments), &params)
 	if err == nil {
@@ -279,5 +296,20 @@ func (c *ClientWrapper) activate(request models.APIOptions) (models.APIResponse,
 			response.Result = "NULL"
 		}
 	}
+	return response, err
+}
+
+func (c *ClientWrapper) track(request models.APIOptions) (models.APIResponse, error) {
+	var params models.TrackRequestParams
+	var response models.APIResponse
+	err := yaml.Unmarshal([]byte(request.Arguments), &params)
+	if err == nil {
+		user := entities.UserContext{
+			ID:         params.UserID,
+			Attributes: params.Attributes,
+		}
+		err = c.Client.Track(params.EventKey, user, params.EventTags)
+	}
+	response.Result = "NULL"
 	return response, err
 }

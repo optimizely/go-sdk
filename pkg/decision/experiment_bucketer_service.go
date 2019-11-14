@@ -71,7 +71,9 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 		bLogger.Debug(fmt.Sprintf(`Error computing bucketing ID for experiment "%s": "%s"`, experiment.Key, err.Error()))
 	}
 
-	bLogger.Debug(fmt.Sprintf(`Using bucketing ID: "%s"`, bucketingID))
+	if bucketingID != userContext.ID {
+		bLogger.Debug(fmt.Sprintf(`Using bucketing ID: "%s" for user "%s"`, bucketingID, userContext.ID))
+	}
 	// @TODO: handle error from bucketer
 	variation, reason, _ := s.bucketer.Bucket(bucketingID, *experiment, group)
 	experimentDecision.Reason = reason

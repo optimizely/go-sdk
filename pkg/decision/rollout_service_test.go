@@ -24,104 +24,121 @@ import (
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
-func TestRolloutServiceGetDecision(t *testing.T) {
-	testUserContext := entities.UserContext{
-		ID: "test_user",
+type RolloutServiceTestSuite struct {
+	suite.Suite
+	mockConfig *mockProjectConfig
+	mockAudienceTreeEvaluator *MockAudienceTreeEvaluator
+	mockExperimentService *MockExperimentDecisionService
+	testExperimentDecisionContext ExperimentDecisionContext
+	testFeatureDecisionContext FeatureDecisionContext
+	testConditionTreeParams *entities.TreeParameters
+	testUserContext entities.UserContext
+}
+
+func (s *RolloutServiceTestSuite) SetupTest() {
+	s.mockConfig = new(mockProjectConfig)
+	s.mockAudienceTreeEvaluator = new(MockAudienceTreeEvaluator)
+	s.mockExperimentService = new(MockExperimentDecisionService)
+	s.testExperimentDecisionContext = ExperimentDecisionContext{
+		Experiment:    &testExp1112,
+		ProjectConfig: s.mockConfig,
 	}
-	mockProjectConfig := new(mockProjectConfig)
-	testFeatureDecisionContext := FeatureDecisionContext{
+	s.testFeatureDecisionContext = FeatureDecisionContext{
 		Feature:       &testFeatRollout3334,
-		ProjectConfig: mockProjectConfig,
+		ProjectConfig: s.mockConfig,
 	}
+
 	testAudienceMap := map[string]entities.Audience{
 		"5555": testAudience5555,
 	}
-	mockProjectConfig.On("GetAudienceMap").Return(testAudienceMap)
-	testCondTreeParams := entities.NewTreeParameters(&testUserContext, testAudienceMap)
+	s.testUserContext = entities.UserContext{
+		ID: "test_user",
+	}
+	s.testConditionTreeParams = entities.NewTreeParameters(&s.testUserContext, testAudienceMap)
+	s.mockConfig.On("GetAudienceMap").Return(testAudienceMap)
+}
 
+func (s *RolloutServiceTestSuite) TestGetDecisionHappyPath() {
 	// Test experiment passes targeting and bucketing
 	testExperimentBucketerDecision := ExperimentDecision{
 		Variation: &testExp1112Var2222,
+		Decision: Decision{Reason: reasons.BucketedIntoVariation},
 	}
-	testExperimentBucketerDecisionContext := ExperimentDecisionContext{
-		Experiment:    &testExp1112,
-		ProjectConfig: mockProjectConfig,
-	}
+	s.mockAudienceTreeEvaluator.On("Evaluate", testExp1112.AudienceConditionTree, s.testConditionTreeParams).Return(true)
+	s.mockExperimentService.On("GetDecision", s.testExperimentDecisionContext, s.testUserContext).Return(testExperimentBucketerDecision, nil)
 
-	testAudienceConditionTree := testExp1112.AudienceConditionTree
-	mockAudienceTreeEvaluator := new(MockAudienceTreeEvaluator)
-	mockAudienceTreeEvaluator.On("Evaluate", testAudienceConditionTree, testCondTreeParams).Return(true)
-	mockExperimentBucketerService := new(MockExperimentDecisionService)
-	mockExperimentBucketerService.On("GetDecision", testExperimentBucketerDecisionContext, testUserContext).Return(testExperimentBucketerDecision, nil)
 	testRolloutService := RolloutService{
-		audienceTreeEvaluator:     mockAudienceTreeEvaluator,
-		experimentBucketerService: mockExperimentBucketerService,
+		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
+		experimentBucketerService: s.mockExperimentService,
 	}
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1112,
 		Variation:  &testExp1112Var2222,
 		Source:     Rollout,
+		Decision:   Decision{Reason: reasons.BucketedIntoRollout},
 	}
-	decision, _ := testRolloutService.GetDecision(testFeatureDecisionContext, testUserContext)
-	assert.Equal(t, expectedFeatureDecision, decision)
-	mockAudienceTreeEvaluator.AssertExpectations(t)
-	mockExperimentBucketerService.AssertExpectations(t)
+	decision, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext)
+	s.Equal(expectedFeatureDecision, decision)
+	s.mockAudienceTreeEvaluator.AssertExpectations(s.T())
+	s.mockExperimentService.AssertExpectations(s.T())
+}
 
+func (s *RolloutServiceTestSuite) TestGetDecisionFailsBucketing() {
 	// Test experiment passes targeting but not bucketing
-	testExperimentBucketerDecision = ExperimentDecision{
+	testExperimentBucketerDecision := ExperimentDecision{
 		Decision: Decision{
 			Reason: reasons.NotBucketedIntoVariation,
 		},
 	}
-	testExperimentBucketerDecisionContext = ExperimentDecisionContext{
-		Experiment:    &testExp1112,
-		ProjectConfig: mockProjectConfig,
-	}
 
-	mockAudienceTreeEvaluator = new(MockAudienceTreeEvaluator)
-	mockAudienceTreeEvaluator.On("Evaluate", testAudienceConditionTree, testCondTreeParams).Return(true)
-	mockExperimentBucketerService = new(MockExperimentDecisionService)
-	mockExperimentBucketerService.On("GetDecision", testExperimentBucketerDecisionContext, testUserContext).Return(testExperimentBucketerDecision, nil)
-	testRolloutService = RolloutService{
-		audienceTreeEvaluator:     mockAudienceTreeEvaluator,
-		experimentBucketerService: mockExperimentBucketerService,
+	s.mockAudienceTreeEvaluator.On("Evaluate", testExp1112.AudienceConditionTree, s.testConditionTreeParams).Return(true)
+	s.mockExperimentService.On("GetDecision", s.testExperimentDecisionContext, s.testUserContext).Return(testExperimentBucketerDecision, nil)
+	testRolloutService := RolloutService{
+		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
+		experimentBucketerService: s.mockExperimentService,
 	}
-	expectedFeatureDecision = FeatureDecision{
+	expectedFeatureDecision := FeatureDecision{
 		Decision: Decision{
-			Reason: reasons.NotBucketedIntoVariation,
+			Reason: reasons.FailedRolloutBucketing,
 		},
 		Experiment: testExp1112,
 		Source:     Rollout,
 	}
-	decision, _ = testRolloutService.GetDecision(testFeatureDecisionContext, testUserContext)
-	assert.Equal(t, expectedFeatureDecision, decision)
-	mockAudienceTreeEvaluator.AssertExpectations(t)
-	mockExperimentBucketerService.AssertExpectations(t)
+	decision, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext)
+	s.Equal(expectedFeatureDecision, decision)
+	s.mockAudienceTreeEvaluator.AssertExpectations(s.T())
+	s.mockExperimentService.AssertExpectations(s.T())
+}
 
-	// Test experiment fails targeting
-	mockAudienceTreeEvaluator = new(MockAudienceTreeEvaluator)
-	mockAudienceTreeEvaluator.On("Evaluate", testAudienceConditionTree, testCondTreeParams).Return(false)
-	testRolloutService = RolloutService{
-		audienceTreeEvaluator:     mockAudienceTreeEvaluator,
-		experimentBucketerService: mockExperimentBucketerService,
+func (s *RolloutServiceTestSuite) TestGetDecisionFailsTargeting() {
+	s.mockAudienceTreeEvaluator.On("Evaluate", testExp1112.AudienceConditionTree, s.testConditionTreeParams).Return(false)
+	testRolloutService := RolloutService{
+		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
+		experimentBucketerService: s.mockExperimentService,
 	}
-	expectedFeatureDecision = FeatureDecision{
+	expectedFeatureDecision := FeatureDecision{
 		Decision: Decision{
 			Reason: reasons.FailedRolloutTargeting,
 		},
+		Source: Rollout,
 	}
-	decision, _ = testRolloutService.GetDecision(testFeatureDecisionContext, testUserContext)
-	assert.Nil(t, decision.Variation)
-	mockAudienceTreeEvaluator.AssertExpectations(t)
-	mockExperimentBucketerService.AssertNotCalled(t, "GetDecision")
+	decision, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext)
+	s.Equal(expectedFeatureDecision, decision)
+	s.mockAudienceTreeEvaluator.AssertExpectations(s.T())
+	s.mockExperimentService.AssertExpectations(s.T())
 }
 
 func TestNewRolloutService(t *testing.T) {
 	rolloutService := NewRolloutService()
 	assert.IsType(t, &evaluator.MixedTreeEvaluator{}, rolloutService.audienceTreeEvaluator)
 	assert.IsType(t, &ExperimentBucketerService{}, rolloutService.experimentBucketerService)
+}
+
+func TestRolloutServiceTestSuite(t *testing.T) {
+	suite.Run(t, new(RolloutServiceTestSuite))
 }

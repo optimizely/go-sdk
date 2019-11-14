@@ -16,10 +16,10 @@
 
 package models
 
-// APIOptions represents parameters for a scenario
-type APIOptions struct {
-	DatafileName string
-	APIName      string
-	Arguments    string
-	Listeners    map[string]int
+// TrackRequestParams represents params required for Track API
+type TrackRequestParams struct {
+	EventKey   string                 `yaml:"event_key"`
+	UserID     string                 `yaml:"user_id"`
+	Attributes map[string]interface{} `yaml:"attributes"`
+	EventTags  map[string]interface{} `yaml:"event_tags,omitempty"`
 }

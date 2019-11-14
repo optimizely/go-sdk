@@ -421,7 +421,7 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 		result := experimentDecision.Variation.Key
 		logger.Info(fmt.Sprintf(`User "%s" is bucketed into variation "%s" of experiment "%s".`, userContext.ID, result, experimentKey))
 	} else {
-		logger.Info(fmt.Sprintf(`User "%s" is not bucketed into any variation for experiment "%s".`, userContext.ID, experimentKey))
+		logger.Info(fmt.Sprintf(`User "%s" is not bucketed into any variation for experiment "%s": %s.`, userContext.ID, experimentKey, experimentDecision.Reason))
 	}
 
 	return decisionContext, experimentDecision, err

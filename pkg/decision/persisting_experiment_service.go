@@ -24,7 +24,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
-var pesLogger = logging.GetLogger("pkg/decision/persisting_experiment_service")
+var pesLogger = logging.GetLogger("PersistingExperimentService")
 
 // PersistingExperimentService attempts to retrieve a saved decision from the user profile service
 // for the user before having the ExperimentBucketerService compute it.

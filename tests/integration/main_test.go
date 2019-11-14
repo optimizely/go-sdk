@@ -69,4 +69,5 @@ func FeatureContext(s *godog.Suite) {
 	s.Step(`^the number of dispatched events is (\d+)$`, context.TheNumberOfDispatchedEventsIs)
 	s.Step(`^there are no dispatched events$`, context.ThereAreNoDispatchedEvents)
 	s.Step(`^dispatched events payloads include$`, context.DispatchedEventsPayloadsInclude)
+	s.Step(`^payloads of dispatched events don\'t include decisions$`, context.PayloadsOfDispatchedEventsDontIncludeDecisions)
 }
