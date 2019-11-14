@@ -80,13 +80,16 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	}
 
 	decision, _ := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext)
-	if decision.Reason == reasons.NotBucketedIntoVariation {
+	// translate the experiment reason into a more rollouts-appropriate reason
+	switch decision.Reason {
+	case reasons.NotBucketedIntoVariation:
 		featureDecision.Decision = Decision{Reason: reasons.FailedRolloutBucketing}
-	} else if decision.Reason == reasons.BucketedIntoVariation {
+	case reasons.BucketedIntoVariation:
 		featureDecision.Decision = Decision{Reason: reasons.BucketedIntoRollout}
-	} else {
+	default:
 		featureDecision.Decision = decision.Decision
 	}
+
 	featureDecision.Experiment = experiment
 	featureDecision.Variation = decision.Variation
 	rsLogger.Debug(fmt.Sprintf(`Decision made for user "%s" for feature rollout with key "%s": %s.`, userContext.ID, feature.Key, featureDecision.Reason))
