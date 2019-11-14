@@ -96,22 +96,22 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 				variableValue = v.Value
 			}
 			var convertedValue interface{}
-			var err error
+			var e error
 
 			switch featureDecisionContext.Variable.Type {
 			case entities.String:
-				convertedValue, err = variableValue, nil
+				convertedValue, e = variableValue, nil
 			case entities.Integer:
-				convertedValue, err = strconv.Atoi(variableValue)
+				convertedValue, e = strconv.Atoi(variableValue)
 
 			case entities.Double:
-				convertedValue, err = strconv.ParseFloat(variableValue, 64)
+				convertedValue, e = strconv.ParseFloat(variableValue, 64)
 
 			case entities.Boolean:
-				convertedValue, err = strconv.ParseBool(variableValue)
+				convertedValue, e = strconv.ParseBool(variableValue)
 
 			}
-			if err != nil {
+			if e != nil {
 				featureInfo["variableValue"] = variableValue
 			} else {
 				featureInfo["variableValue"] = convertedValue
