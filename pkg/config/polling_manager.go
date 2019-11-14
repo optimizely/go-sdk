@@ -89,12 +89,19 @@ func InitialDatafile(datafile []byte) OptionFunc {
 func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	var e error
 	var code int
+
+	closeMutex := func(e error) {
+		cm.err = e
+		cm.configLock.Unlock()
+	}
+
 	if len(datafile) == 0 {
 		datafile, code, e = cm.requester.Get()
 
 		if e != nil {
 			cmLogger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
-			cm.err = e
+			cm.configLock.Lock()
+			closeMutex(e)
 			return
 		}
 	}
@@ -102,13 +109,10 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(datafile)
 
 	cm.configLock.Lock()
-	closeMutex := func() {
-		cm.err = err
-		cm.configLock.Unlock()
-	}
+
 	if err != nil {
 		cmLogger.Error("failed to create project config", err)
-		closeMutex()
+		closeMutex(err)
 		return
 	}
 
@@ -118,12 +122,12 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	}
 	if projectConfig.GetRevision() == previousRevision {
 		cmLogger.Debug(fmt.Sprintf("No datafile updates. Current revision number: %s", cm.projectConfig.GetRevision()))
-		closeMutex()
+		closeMutex(nil)
 		return
 	}
 	cmLogger.Debug(fmt.Sprintf("New datafile set with revision: %s. Old revision: %s", projectConfig.GetRevision(), previousRevision))
 	cm.projectConfig = projectConfig
-	closeMutex()
+	closeMutex(nil)
 
 	if cm.notificationCenter != nil {
 		projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
@@ -176,7 +180,10 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 func (cm *PollingProjectConfigManager) GetConfig() (pkg.ProjectConfig, error) {
 	cm.configLock.RLock()
 	defer cm.configLock.RUnlock()
-	return cm.projectConfig, cm.err
+	if cm.projectConfig == nil {
+		return cm.projectConfig, cm.err
+	}
+	return cm.projectConfig, nil
 }
 
 // OnProjectConfigUpdate registers a handler for ProjectConfigUpdate notifications

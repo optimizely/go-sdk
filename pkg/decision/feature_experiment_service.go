@@ -21,7 +21,10 @@ import (
 	"fmt"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
+
+var fesLogger = logging.GetLogger("FeatureExperimentService")
 
 // FeatureExperimentService helps evaluate feature test associated with the feature
 type FeatureExperimentService struct {
@@ -47,6 +50,13 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 		}
 
 		experimentDecision, err := f.compositeExperimentService.GetDecision(experimentDecisionContext, userContext)
+		fesLogger.Debug(fmt.Sprintf(
+			`Decision made for feature test with key "%s" for user "%s" with the following reason: "%s".`,
+			feature.Key,
+			userContext.ID,
+			experimentDecision.Reason,
+		))
+
 		// Variation not nil means we got a decision and should return it
 		if experimentDecision.Variation != nil {
 			featureDecision := FeatureDecision{
@@ -56,12 +66,6 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 				Source:     FeatureTest,
 			}
 
-			cfLogger.Debug(fmt.Sprintf(
-				`Decision made for feature test with key "%s" for user "%s" with the following reason: "%s".`,
-				feature.Key,
-				userContext.ID,
-				featureDecision.Reason,
-			))
 			return featureDecision, err
 		}
 	}

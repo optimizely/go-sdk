@@ -18,7 +18,6 @@
 package decision
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
@@ -84,13 +83,11 @@ func NewCompositeExperimentService(options ...CESOptionFunc) *CompositeExperimen
 }
 
 // GetDecision returns a decision for the given experiment and user context
-func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
-
-	experimentDecision := ExperimentDecision{}
+func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (decision ExperimentDecision, err error) {
 
 	// Run through the various decision services until we get a decision
 	for _, experimentService := range s.experimentServices {
-		decision, err := experimentService.GetDecision(decisionContext, userContext)
+		decision, err = experimentService.GetDecision(decisionContext, userContext)
 		if err != nil {
 			ceLogger.Debug(fmt.Sprintf("%v", err))
 		}
@@ -99,5 +96,5 @@ func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisi
 		}
 	}
 
-	return experimentDecision, errors.New("no decision was made")
+	return decision, err
 }

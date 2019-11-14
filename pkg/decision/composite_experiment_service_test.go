@@ -110,7 +110,7 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionNoDecisionsMade() {
 	}
 	decision, err := compositeExperimentService.GetDecision(s.testDecisionContext, testUserContext)
 
-	s.Error(err)
+	s.NoError(err)
 	s.Equal(expectedExperimentDecision2, decision)
 	s.mockExperimentService.AssertExpectations(s.T())
 	s.mockExperimentService2.AssertExpectations(s.T())
