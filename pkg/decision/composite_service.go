@@ -88,17 +88,17 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 		}
 		variable := featureDecisionContext.Variable
 		if variable.ID != "" && variable.Key != "" {
-			featureInfo["variableKey"] = featureDecisionContext.Variable.Key
-			featureInfo["variableType"] = featureDecisionContext.Variable.Type
+			featureInfo["variableKey"] = variable.Key
+			featureInfo["variableType"] = variable.Type
 
-			variableValue := featureDecisionContext.Variable.DefaultValue
+			variableValue := variable.DefaultValue
 			if v, ok := featureDecision.Variation.Variables[variable.ID]; ok && featureDecision.Variation.FeatureEnabled {
 				variableValue = v.Value
 			}
 			var convertedValue interface{}
 			var e error
 
-			switch featureDecisionContext.Variable.Type {
+			switch variable.Type {
 			case entities.String:
 				convertedValue, e = variableValue, nil
 			case entities.Integer:
