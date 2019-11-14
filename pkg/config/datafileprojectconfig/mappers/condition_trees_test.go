@@ -159,3 +159,26 @@ func TestBuildConditionTreeSimpleAudienceCondition(t *testing.T) {
 	}
 	assert.Equal(t, expectedConditionTree, conditionTree)
 }
+
+func TestBuildConditionTreeWithLeafNode(t *testing.T) {
+	conditionString := "{ \"type\": \"custom_attribute\", \"name\": \"s_foo\", \"match\": \"exact\", \"value\": \"foo\" }"
+	var conditions interface{}
+	json.Unmarshal([]byte(conditionString), &conditions)
+	conditionTree, err := buildConditionTree(conditions)
+	assert.NoError(t, err)
+
+	expectedConditionTree := &entities.TreeNode{
+		Operator: "or",
+		Nodes: []*entities.TreeNode{
+			{
+				Item: entities.Condition{
+					Name:  "s_foo",
+					Match: "exact",
+					Type:  "custom_attribute",
+					Value: "foo",
+				},
+			},
+		},
+	}
+	assert.Equal(t, expectedConditionTree, conditionTree)
+}
