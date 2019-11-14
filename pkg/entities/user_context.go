@@ -31,7 +31,7 @@ type UserContext struct {
 	Attributes map[string]interface{}
 }
 
-// CheckAttributeExists returns whethe the specified attribute name exists in the attributes map.
+// CheckAttributeExists returns whether the specified attribute name exists in the attributes map.
 func (u UserContext) CheckAttributeExists(attrName string) bool {
 	if value, ok := u.Attributes[attrName]; ok && value != nil {
 		return true

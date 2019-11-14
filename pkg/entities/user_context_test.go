@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUserAttributesCheckAttributeExists(t *testing.T) {
+func TestUserAttributeExists(t *testing.T) {
 	userContext := UserContext{
 		Attributes: map[string]interface{}{
 			"string_foo": "foo",
