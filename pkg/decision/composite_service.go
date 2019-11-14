@@ -103,14 +103,12 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 				convertedValue, e = variableValue, nil
 			case entities.Integer:
 				convertedValue, e = strconv.Atoi(variableValue)
-
 			case entities.Double:
 				convertedValue, e = strconv.ParseFloat(variableValue, 64)
-
 			case entities.Boolean:
 				convertedValue, e = strconv.ParseBool(variableValue)
-
 			}
+
 			if e != nil {
 				featureInfo["variableValue"] = variableValue
 			} else {
