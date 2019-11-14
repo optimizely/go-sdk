@@ -48,15 +48,8 @@ func NewMixedTreeEvaluator() *MixedTreeEvaluator {
 	return &MixedTreeEvaluator{}
 }
 
-// Evaluate returns true if the userAttributes satisfy the given condition tree
+// Evaluate returns whether the userAttributes satisfy the given condition tree and the evaluation of the condition is valid or not (to handle null bubbling)
 func (c MixedTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
-	// This wrapper method converts the conditionEvalResult to a boolean
-	return c.evaluate(node, condTreeParams)
-}
-
-// Helper method to recursively evaluate a condition tree
-// Returns the result of the evaluation and whether the evaluation of the condition is valid or not (to handle null bubbling)
-func (c MixedTreeEvaluator) evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
 	operator := node.Operator
 	if operator != "" {
 		switch operator {
@@ -93,7 +86,7 @@ func (c MixedTreeEvaluator) evaluate(node *entities.TreeNode, condTreeParams *en
 func (c MixedTreeEvaluator) evaluateAnd(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
 	sawInvalid := false
 	for _, node := range nodes {
-		result, isValid := c.evaluate(node, condTreeParams)
+		result, isValid := c.Evaluate(node, condTreeParams)
 		if !isValid {
 			return false, isValid
 		} else if !result {
@@ -111,7 +104,7 @@ func (c MixedTreeEvaluator) evaluateAnd(nodes []*entities.TreeNode, condTreePara
 
 func (c MixedTreeEvaluator) evaluateNot(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
 	if len(nodes) > 0 {
-		result, isValid := c.evaluate(nodes[0], condTreeParams)
+		result, isValid := c.Evaluate(nodes[0], condTreeParams)
 		if !isValid {
 			return false, false
 		}
@@ -123,7 +116,7 @@ func (c MixedTreeEvaluator) evaluateNot(nodes []*entities.TreeNode, condTreePara
 func (c MixedTreeEvaluator) evaluateOr(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
 	sawInvalid := false
 	for _, node := range nodes {
-		result, isValid := c.evaluate(node, condTreeParams)
+		result, isValid := c.Evaluate(node, condTreeParams)
 		if !isValid {
 			sawInvalid = true
 		} else if result {
