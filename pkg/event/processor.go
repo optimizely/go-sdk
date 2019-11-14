@@ -53,7 +53,7 @@ type BatchEventProcessor struct {
 const DefaultBatchSize = 10
 
 // DefaultEventQueueSize holds the default value for the event queue size
-const DefaultEventQueueSize = 100
+const DefaultEventQueueSize = 2000
 
 // DefaultEventFlushInterval holds the default value for the event flush interval
 const DefaultEventFlushInterval = 30 * time.Second
