@@ -98,9 +98,9 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 			var convertedValue interface{}
 			var e error
 
+			convertedValue = variableValue // default for String
+
 			switch variable.Type {
-			case entities.String:
-				convertedValue, e = variableValue, nil
 			case entities.Integer:
 				convertedValue, e = strconv.Atoi(variableValue)
 			case entities.Double:

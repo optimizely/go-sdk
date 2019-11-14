@@ -97,7 +97,7 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListeners() {
 	s.Equal(numberOfCalls, 1)
 }
 
-func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationContent() {
+func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWithVariable() {
 
 	compositeExperimentService := NewCompositeExperimentService()
 	compositeFeatureDecisionService := NewCompositeFeatureService(compositeExperimentService)
@@ -128,6 +128,38 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationCont
 	s.Equal(expectedDecisionInfo, note.DecisionInfo)
 
 }
+
+func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWithNoVariable() {
+
+	compositeExperimentService := NewCompositeExperimentService()
+	compositeFeatureDecisionService := NewCompositeFeatureService(compositeExperimentService)
+	s.decisionContext.Variable = entities.Variable{} //no variable
+
+	decisionService := &CompositeService{
+		compositeFeatureService: compositeFeatureDecisionService,
+		notificationCenter:      registry.GetNotificationCenter("some_key"),
+	}
+	decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
+
+	var numberOfCalls = 0
+	note := notification.DecisionNotification{}
+	callback := func(notification notification.DecisionNotification) {
+		note = notification
+		numberOfCalls++
+	}
+	id, _ := decisionService.OnDecision(callback)
+
+	s.NotEqual(id, 0)
+
+	decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
+	s.Equal(numberOfCalls, 1)
+
+	expectedDecisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": false, "featureKey": "my_test_feature_3333", "source": FeatureTest,
+		"sourceInfo": map[string]string{"experimentKey": "my_test_feature_3333", "variationKey": "2222"}}}
+
+	s.Equal(expectedDecisionInfo, note.DecisionInfo)
+}
+
 func (s *CompositeServiceFeatureTestSuite) TestNewCompositeService() {
 	notificationCenter := notification.NewNotificationCenter()
 	compositeService := NewCompositeService("sdk_key")
