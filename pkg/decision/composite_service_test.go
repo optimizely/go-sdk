@@ -38,6 +38,12 @@ func (s *CompositeServiceFeatureTestSuite) SetupTest() {
 	s.decisionContext = FeatureDecisionContext{
 		Feature:       &testFeat3333,
 		ProjectConfig: mockConfig,
+		Variable: entities.Variable{
+			DefaultValue: "23.34",
+			ID:           "1",
+			Key:          "Key",
+			Type:         entities.Double,
+		},
 	}
 	s.mockFeatureService = new(MockFeatureDecisionService)
 	s.testUserContext = entities.UserContext{
@@ -115,7 +121,9 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationCont
 	decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
 	s.Equal(numberOfCalls, 1)
 
-	expectedDecisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": false, "featureKey": "my_test_feature_3333", "source": FeatureTest, "sourceInfo": map[string]string{"experimentKey": "my_test_feature_3333", "variationKey": "2222"}, "variableKey": "", "variableType": entities.VariableType(""), "variableValue": ""}}
+	expectedDecisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": false, "featureKey": "my_test_feature_3333", "source": FeatureTest,
+		"sourceInfo":  map[string]string{"experimentKey": "my_test_feature_3333", "variationKey": "2222"},
+		"variableKey": "Key", "variableType": entities.Double, "variableValue": 23.34}}
 
 	s.Equal(expectedDecisionInfo, note.DecisionInfo)
 

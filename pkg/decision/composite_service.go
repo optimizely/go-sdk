@@ -19,6 +19,7 @@ package decision
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
@@ -79,14 +80,42 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 		featureInfo := map[string]interface{}{
 			"featureKey":     featureDecisionContext.Feature.Key,
 			"featureEnabled": false,
-			"variableKey":    featureDecisionContext.Variable.Key,
-			"variableValue":  featureDecisionContext.Variable.DefaultValue,
-			"variableType":   featureDecisionContext.Variable.Type,
 			"source":         featureDecision.Source,
 			"sourceInfo":     sourceInfo,
 		}
 		if featureDecision.Variation != nil {
 			featureInfo["featureEnabled"] = featureDecision.Variation.FeatureEnabled
+		}
+		variable := featureDecisionContext.Variable
+		if variable.ID != "" && variable.Key != "" {
+			featureInfo["variableKey"] = featureDecisionContext.Variable.Key
+			featureInfo["variableType"] = featureDecisionContext.Variable.Type
+
+			variableValue := featureDecisionContext.Variable.DefaultValue
+			if v, ok := featureDecision.Variation.Variables[variable.ID]; ok && featureDecision.Variation.FeatureEnabled {
+				variableValue = v.Value
+			}
+			var convertedValue interface{}
+			var err error
+
+			switch featureDecisionContext.Variable.Type {
+			case entities.String:
+				convertedValue, err = variableValue, nil
+			case entities.Integer:
+				convertedValue, err = strconv.Atoi(variableValue)
+
+			case entities.Double:
+				convertedValue, err = strconv.ParseFloat(variableValue, 64)
+
+			case entities.Boolean:
+				convertedValue, err = strconv.ParseBool(variableValue)
+
+			}
+			if err != nil {
+				featureInfo["variableValue"] = variableValue
+			} else {
+				featureInfo["variableValue"] = convertedValue
+			}
 		}
 
 		decisionInfo := map[string]interface{}{
