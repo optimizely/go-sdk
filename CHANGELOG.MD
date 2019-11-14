@@ -7,13 +7,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.0.0-beta7] - November 14th, 2019
+
+## New Features
+- feat: Method for removing forced variations [#176](https://github.com/optimizely/go-sdk/pull/176)
+
+### Bug Fixes
+- fix: Update built-in map-based ExperimentOverrideStore implementation to be concurrently usable [#171](https://github.com/optimizely/go-sdk/pull/171)
+- fix: Add a public constructor for MapExperimentOverridesStore [#174](https://github.com/optimizely/go-sdk/pull/174)
+- fix: don't return error when there is a good projectConfig in polling manager [#179](https://github.com/optimizely/go-sdk/pull/179)
+- fix(decision): Logs produced by the various decision services. [#180](https://github.com/optimizely/go-sdk/pull/180)
+- fix(exists-condition) Fixed exists comparison for leaf condition. [#185](https://github.com/optimizely/go-sdk/pull/185)
+
 ## [1.0.0-beta6] - November 8th, 2019
 
 ## New Features
-
 - Experiment override service - implement groups
 [#164](https://github.com/optimizely/go-sdk/pull/164)
-- Add User profile service 
+- Add User profile service
 [#163](https://github.com/optimizely/go-sdk/pull/163)
 
 ### Bug Fixes
