@@ -161,7 +161,7 @@ func (c *ScenarioCtx) InTheResponseKeyShouldBeObject(argumentType, value string)
 			return nil
 		}
 		// @TODO: Revert this to test listener called
-		//return nil
+		return nil
 	default:
 		break
 	}
@@ -181,7 +181,7 @@ func (c *ScenarioCtx) InTheResponseShouldMatch(argumentType string, value *gherk
 			return nil
 		}
 		// @TODO: Revert this to test listener called
-		//return nil
+		return nil
 	default:
 		break
 	}
@@ -206,7 +206,7 @@ func (c *ScenarioCtx) ResponseShouldHaveThisExactlyNTimes(argumentType string, c
 			return nil
 		}
 		// @TODO: Revert this to test listener called
-		//return nil
+		return nil
 	default:
 		break
 	}
