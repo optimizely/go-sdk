@@ -468,3 +468,20 @@ func BenchmarkProcessor(b *testing.B) {
 		time.Sleep(1 * time.Millisecond)
 	}
 }
+
+func BenchmarkProcessorDefault(b *testing.B) {
+	exeCtx := utils.NewCancelableExecutionCtx()
+	processor := NewBatchEventProcessor(
+		WithFlushInterval(10 * time.Millisecond),
+		WithEventDispatcher(NewMockDispatcher(100, false)))
+	processor.Start(exeCtx)
+
+	impression := BuildTestImpressionEvent()
+	conversion := BuildTestConversionEvent()
+
+	for i := 0; i < b.N; i++ {
+		processor.ProcessEvent(impression)
+		processor.ProcessEvent(conversion)
+		time.Sleep(500)
+	}
+}
