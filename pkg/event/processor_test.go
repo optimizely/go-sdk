@@ -536,14 +536,15 @@ func benchmarkProcessor(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		processor.ProcessEvent(impression)
 		processor.ProcessEvent(conversion)
-		time.Sleep(500)
+		time.Sleep(300)
 	}
+
 }
 
 func benchmarkProcessorDefault(b *testing.B) {
 	exeCtx := utils.NewCancelableExecutionCtx()
 	processor := NewBatchEventProcessor(
-		WithFlushInterval(10 * time.Millisecond),
+		//WithFlushInterval(10 * time.Millisecond),
 		WithEventDispatcher(NewMockDispatcher(100, false)))
 	processor.Start(exeCtx)
 
@@ -553,6 +554,6 @@ func benchmarkProcessorDefault(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		processor.ProcessEvent(impression)
 		processor.ProcessEvent(conversion)
-		time.Sleep(500)
+		time.Sleep(300)
 	}
 }
