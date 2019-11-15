@@ -27,7 +27,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 	"github.com/optimizely/go-sdk/tests/integration/optlyplugins"
-	"github.com/optimizely/go-sdk/tests/integration/support"
 	"github.com/optimizely/subset"
 	"gopkg.in/yaml.v3"
 )
@@ -285,22 +284,43 @@ func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) 
 	}
 	var actualBatchEvents []map[string]interface{}
 
-	sortArrayFunc := func(array []map[string]interface{}) {
-		for _, event := range array {
-			// This should be nested under visitors...
-			if _, ok := event["attributes"]; ok {
-				//Sort using Slice
-				attributes := event["attributes"].([]interface{})
-				support.SortArrayofMaps(attributes, "key")
-			}
-		}
-	}
-
 	if err := json.Unmarshal(eventsReceivedJSON, &actualBatchEvents); err != nil {
 		return fmt.Errorf("Invalid response for dispatched Events")
 	}
-	sortArrayFunc(expectedBatchEvents)
-	sortArrayFunc(actualBatchEvents)
+
+	// Sort's attributes under visitors which is required for subset comparison of attributes array
+	sortAttributesForEvents := func(array []map[string]interface{}) []map[string]interface{} {
+		sortedArray := array
+		for mainIndex, event := range array {
+			if visitorsArray, ok := event["visitors"].([]interface{}); ok {
+				for vIndex, v := range visitorsArray {
+					if visitor, ok := v.(map[string]interface{}); ok {
+						// Only sort if all attributes were parsed successfuly
+						parsedSuccessfully := false
+						parsedAttributes := []map[string]interface{}{}
+						if attributesArray, ok := visitor["attributes"].([]interface{}); ok {
+							for _, tmpAttribute := range attributesArray {
+								if attribute, ok := tmpAttribute.(map[string]interface{}); ok {
+									parsedAttributes = append(parsedAttributes, attribute)
+								}
+							}
+							parsedSuccessfully = len(attributesArray) == len(parsedAttributes)
+						}
+						if parsedSuccessfully {
+							// Sort parsed attributes array and assign them to the original events array
+							sortedAttributes := sortArrayofMaps(parsedAttributes, "key")
+							sortedArray[mainIndex]["visitors"].([]interface{})[vIndex].(map[string]interface{})["attributes"] = sortedAttributes
+						}
+					}
+				}
+			}
+		}
+		return sortedArray
+	}
+
+	expectedBatchEvents = sortAttributesForEvents(expectedBatchEvents)
+	actualBatchEvents = sortAttributesForEvents(actualBatchEvents)
+
 	if subset.Check(expectedBatchEvents, actualBatchEvents) {
 		return nil
 	}
