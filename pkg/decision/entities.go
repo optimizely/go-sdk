@@ -33,6 +33,7 @@ type ExperimentDecisionContext struct {
 type FeatureDecisionContext struct {
 	Feature       *entities.Feature
 	ProjectConfig pkg.ProjectConfig
+	Variable      entities.Variable
 }
 
 // Source is where the decision came from

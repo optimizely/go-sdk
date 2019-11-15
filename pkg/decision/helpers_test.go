@@ -118,6 +118,13 @@ var testFeat3333 = entities.Feature{
 	FeatureExperiments: []entities.Experiment{testExp1111},
 }
 
+var testVariable = entities.Variable{
+	DefaultValue: "defaultString",
+	ID:           "1",
+	Key:          "test_feature_flag_key",
+	Type:         entities.String,
+}
+
 // Feature rollout
 var testExp1112Var2222 = entities.Variation{ID: "2222", Key: "2222"}
 var testAudience5555 = entities.Audience{ID: "5555"}
