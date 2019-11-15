@@ -28,7 +28,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 	"github.com/optimizely/go-sdk/tests/integration/optlyplugins"
 	"gopkg.in/yaml.v3"
@@ -56,7 +55,6 @@ func GetInstance(datafileName string) *ClientWrapper {
 		return clientInstance
 	}
 
-	logging.SetLogLevel(logging.LogLevelDebug)
 	datafileDir := os.Getenv("DATAFILES_DIR")
 	datafile, err := ioutil.ReadFile(filepath.Clean(path.Join(datafileDir, datafileName)))
 	if err != nil {
