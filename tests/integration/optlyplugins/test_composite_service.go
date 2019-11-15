@@ -52,31 +52,31 @@ func (c *TestCompositeService) GetListenersCalled() []models.DecisionListener {
 	return c.listenersCalled
 }
 
-func (c *TestCompositeService) decisionNotificationCallback(notification notification.DecisionNotification) {
+func (c *TestCompositeService) decisionNotificationCallback(notify notification.DecisionNotification) {
 
 	model := models.DecisionListener{}
-	model.Type = notification.Type
-	model.UserID = notification.UserContext.ID
-	if notification.UserContext.Attributes == nil {
+	model.Type = notify.Type
+	model.UserID = notify.UserContext.ID
+	if notify.UserContext.Attributes == nil {
 		model.Attributes = make(map[string]interface{})
 	} else {
-		model.Attributes = notification.UserContext.Attributes
+		model.Attributes = notify.UserContext.Attributes
 	}
 
-	decisionInfoDict := getDecisionInfoForNotification(notification)
+	decisionInfoDict := getDecisionInfoForNotification(notify)
 	model.DecisionInfo = decisionInfoDict
 	c.listenersCalled = append(c.listenersCalled, model)
 }
 
-func getDecisionInfoForNotification(notification notification.DecisionNotification) map[string]interface{} {
+func getDecisionInfoForNotification(notify notification.DecisionNotification) map[string]interface{} {
 	decisionInfoDict := make(map[string]interface{})
 
 	updateSourceInfo := func(source string) {
 		decisionInfoDict["source_info"] = make(map[string]interface{})
-		if source == "feature-test" {
-			if sourceInfo, ok := notification.DecisionInfo["sourceInfo"].(map[string]interface{}); ok {
-				if experimentKey, ok := sourceInfo["experimentKey"].(string); ok {
-					if variationKey, ok := sourceInfo["variationKey"].(string); ok {
+		if source == string(decision.FeatureTest) {
+			if sourceInfo, ok := notify.DecisionInfo["sourceInfo"].(map[string]string); ok {
+				if experimentKey, ok := sourceInfo["experimentKey"]; ok {
+					if variationKey, ok := sourceInfo["variationKey"]; ok {
 						dict := make(map[string]interface{})
 						dict["experiment_key"] = experimentKey
 						dict["variation_key"] = variationKey
@@ -87,33 +87,31 @@ func getDecisionInfoForNotification(notification notification.DecisionNotificati
 		}
 	}
 
-	switch notificationType := notification.Type; notificationType {
-	case "ab-test", "feature-test":
-		decisionInfoDict["experiment_key"] = notification.DecisionInfo["experimentKey"]
-		decisionInfoDict["variation_key"] = notification.DecisionInfo["variationKey"]
+	switch notificationType := notify.Type; notificationType {
+	case notification.ABTest, notification.FeatureTest:
+		decisionInfoDict["experiment_key"] = notify.DecisionInfo["experimentKey"]
+		decisionInfoDict["variation_key"] = notify.DecisionInfo["variationKey"]
 		break
-	case "feature":
-		decisionInfoDict = notification.DecisionInfo["feature"].(map[string]interface{})
+	case notification.Feature:
 		source := ""
-		if decisionSource, ok := decisionInfoDict["source"].(decision.Source); ok {
+		if decisionSource, ok := notify.DecisionInfo["source"].(decision.Source); ok {
 			source = string(decisionSource)
 		} else {
 			source = decisionInfoDict["source"].(string)
 		}
 		decisionInfoDict["source"] = source
 		updateSourceInfo(source)
-	case "feature-variable":
-		decisionInfoDict = notification.DecisionInfo["feature"].(map[string]interface{})
+	case notification.FeatureVariable:
 		source := ""
-		if decisionSource, ok := decisionInfoDict["source"].(decision.Source); ok {
+		if decisionSource, ok := notify.DecisionInfo["source"].(decision.Source); ok {
 			source = string(decisionSource)
 		} else {
 			source = decisionInfoDict["source"].(string)
 		}
 		decisionInfoDict["source"] = source
-		decisionInfoDict["variable_key"] = notification.DecisionInfo["variableKey"]
-		decisionInfoDict["variable_type"] = notification.DecisionInfo["variableType"]
-		decisionInfoDict["variable_value"] = notification.DecisionInfo["variableValue"]
+		decisionInfoDict["variable_key"] = notify.DecisionInfo["variableKey"]
+		decisionInfoDict["variable_type"] = notify.DecisionInfo["variableType"]
+		decisionInfoDict["variable_value"] = notify.DecisionInfo["variableValue"]
 		updateSourceInfo(source)
 	default:
 	}

@@ -86,11 +86,14 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 		if featureDecision.Variation != nil {
 			featureInfo["featureEnabled"] = featureDecision.Variation.FeatureEnabled
 		}
+
+		notificationType := notification.Feature
 		variable := featureDecisionContext.Variable
 		if variable.ID != "" && variable.Key != "" {
 			featureInfo["variableKey"] = variable.Key
 			featureInfo["variableType"] = variable.Type
 
+			notificationType = notification.FeatureVariable
 			variableValue := variable.DefaultValue
 
 			if featureDecision.Variation != nil {
@@ -119,13 +122,9 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 			}
 		}
 
-		decisionInfo := map[string]interface{}{
-			"feature": featureInfo,
-		}
-
 		decisionNotification := notification.DecisionNotification{
-			DecisionInfo: decisionInfo,
-			Type:         notification.Feature,
+			DecisionInfo: featureInfo,
+			Type:         notificationType,
 			UserContext:  userContext,
 		}
 		if err = s.notificationCenter.Send(notification.Decision, decisionNotification); err != nil {
@@ -141,12 +140,12 @@ func (s CompositeService) GetExperimentDecision(experimentDecisionContext Experi
 		return experimentDecision, err
 	}
 
+	// if
 	if s.notificationCenter != nil && experimentDecision.Variation != nil {
 		decisionInfo := map[string]interface{}{
 			"experimentKey": experimentDecisionContext.Experiment.Key,
 			"variationKey":  experimentDecision.Variation.Key,
 		}
-
 		decisionNotification := notification.DecisionNotification{
 			DecisionInfo: decisionInfo,
 			Type:         notification.ABTest,
