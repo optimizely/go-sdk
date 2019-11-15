@@ -19,12 +19,13 @@ package event
 
 import (
 	"errors"
+	"fmt"
+	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/pkg/utils"
+	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 	"time"
-
-	"github.com/optimizely/go-sdk/pkg/utils"
-
-	"github.com/stretchr/testify/assert"
 )
 
 type MockDispatcher struct {
@@ -450,12 +451,80 @@ func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
 	}
 }
 
-func BenchmarkProcessor(b *testing.B) {
+type CustomLogger struct {
+	Mess []string
+}
+
+
+func (l *CustomLogger) Log(level logging.LogLevel, message string, fields map[string]interface{}) {
+	l.Mess = append(l.Mess, message)
+}
+
+
+func (l *CustomLogger) SetLogLevel(level logging.LogLevel) {
+
+}
+
+func TestBenchmarkProcessor(t *testing.T) {
+	customLogger := CustomLogger{Mess:[]string{}}
+
+	logging.SetLogger(&customLogger)
+
+
+	result := testing.Benchmark(benchmarkProcessor)
+
+	fmt.Print(result)
+
+	logging.SetLogger(logging.NewFilteredLevelLogConsumer(logging.LogLevelInfo, os.Stdout))
+
+	l := len(customLogger.Mess)
+
+	if l > 0 {
+		found := false
+		for _,m := range customLogger.Mess {
+			if m == "MaxQueueSize has been met. Discarding event" {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found)
+	} else {
+		assert.True(t, false)
+	}
+}
+
+func TestBenchmarkProcessorDefault(t *testing.T) {
+	customLogger := CustomLogger{Mess:[]string{}}
+
+	logging.SetLogger(&customLogger)
+
+
+	result := testing.Benchmark(benchmarkProcessorDefault)
+
+	fmt.Print(result)
+
+	logging.SetLogger(logging.NewFilteredLevelLogConsumer(logging.LogLevelInfo, os.Stdout))
+
+	l := len(customLogger.Mess)
+
+	if l > 0 {
+		found := false
+		for _,m := range customLogger.Mess {
+			if m == "MaxQueueSize has been met. Discarding event" {
+				found = true
+				break
+			}
+		}
+		assert.False(t, found)
+	} else {
+		assert.True(t, false)
+	}
+}
+
+func benchmarkProcessor(b *testing.B) {
 	exeCtx := utils.NewCancelableExecutionCtx()
 	processor := NewBatchEventProcessor(
-		WithQueueSize(1000),
-		WithQueue(NewInMemoryQueue(1000)),
-		WithFlushInterval(10 * time.Millisecond),
+		WithQueueSize(100),
 		WithEventDispatcher(NewMockDispatcher(100, false)))
 	processor.Start(exeCtx)
 
@@ -465,11 +534,11 @@ func BenchmarkProcessor(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		processor.ProcessEvent(impression)
 		processor.ProcessEvent(conversion)
-		time.Sleep(1 * time.Millisecond)
+		time.Sleep(500)
 	}
 }
 
-func BenchmarkProcessorDefault(b *testing.B) {
+func benchmarkProcessorDefault(b *testing.B) {
 	exeCtx := utils.NewCancelableExecutionCtx()
 	processor := NewBatchEventProcessor(
 		WithFlushInterval(10 * time.Millisecond),
