@@ -452,12 +452,12 @@ func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
 }
 
 type CustomLogger struct {
-	Mess []string
+	Mess Queue
 }
 
 
 func (l *CustomLogger) Log(level logging.LogLevel, message string, fields map[string]interface{}) {
-	l.Mess = append(l.Mess, message)
+	l.Mess.Add(message)
 }
 
 
@@ -466,7 +466,7 @@ func (l *CustomLogger) SetLogLevel(level logging.LogLevel) {
 }
 
 func TestBenchmarkProcessor(t *testing.T) {
-	customLogger := CustomLogger{Mess:[]string{}}
+	customLogger := CustomLogger{Mess:NewInMemoryQueue(100)}
 
 	logging.SetLogger(&customLogger)
 
@@ -475,14 +475,12 @@ func TestBenchmarkProcessor(t *testing.T) {
 
 	fmt.Print(result)
 
-	logging.SetLogger(logging.NewFilteredLevelLogConsumer(logging.LogLevelInfo, os.Stdout))
-
-	l := len(customLogger.Mess)
-
-	if l > 0 {
+	if customLogger.Mess.Size() > 0 {
 		found := false
-		for _,m := range customLogger.Mess {
-			if m == "MaxQueueSize has been met. Discarding event" {
+		size := customLogger.Mess.Size()
+		for i := 0; i < size; i++ {
+			item := customLogger.Mess.Remove(1)
+			if m, ok := item[0].(string); ok && m == "MaxQueueSize has been met. Discarding event" {
 				found = true
 				break
 			}
@@ -491,10 +489,13 @@ func TestBenchmarkProcessor(t *testing.T) {
 	} else {
 		assert.True(t, false)
 	}
+
+	logging.SetLogger(logging.NewFilteredLevelLogConsumer(logging.LogLevelInfo, os.Stdout))
+	customLogger.Mess.Remove(customLogger.Mess.Size())
 }
 
 func TestBenchmarkProcessorDefault(t *testing.T) {
-	customLogger := CustomLogger{Mess:[]string{}}
+	customLogger := CustomLogger{Mess:NewInMemoryQueue(100)}
 
 	logging.SetLogger(&customLogger)
 
@@ -503,14 +504,12 @@ func TestBenchmarkProcessorDefault(t *testing.T) {
 
 	fmt.Print(result)
 
-	logging.SetLogger(logging.NewFilteredLevelLogConsumer(logging.LogLevelInfo, os.Stdout))
-
-	l := len(customLogger.Mess)
-
-	if l > 0 {
+	if customLogger.Mess.Size() > 0 {
 		found := false
-		for _,m := range customLogger.Mess {
-			if m == "MaxQueueSize has been met. Discarding event" {
+		size := customLogger.Mess.Size()
+		for i := 0; i < size; i++ {
+			item := customLogger.Mess.Remove(1)
+			if m, ok := item[0].(string); ok && m == "MaxQueueSize has been met. Discarding event" {
 				found = true
 				break
 			}
@@ -519,6 +518,9 @@ func TestBenchmarkProcessorDefault(t *testing.T) {
 	} else {
 		assert.True(t, false)
 	}
+
+	logging.SetLogger(logging.NewFilteredLevelLogConsumer(logging.LogLevelInfo, os.Stdout))
+	customLogger.Mess.Remove(customLogger.Mess.Size())
 }
 
 func benchmarkProcessor(b *testing.B) {
