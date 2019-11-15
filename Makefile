@@ -5,7 +5,6 @@ TARGET := $(shell basename "$(PWD)")
 # Go parameters
 GO111MODULE:=on
 GOCMD=go
-GOBIN=bin
 GOPATH=$(shell $(GOCMD) env GOPATH)
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
