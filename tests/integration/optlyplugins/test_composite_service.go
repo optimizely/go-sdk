@@ -74,9 +74,9 @@ func getDecisionInfoForNotification(notification notification.DecisionNotificati
 	updateSourceInfo := func(source string) {
 		decisionInfoDict["source_info"] = make(map[string]interface{})
 		if source == "feature-test" {
-			if sourceInfo, ok := notification.DecisionInfo["source_info"].(map[string]interface{}); ok {
-				if experimentKey, ok := sourceInfo["experiment_key"].(string); ok {
-					if variationKey, ok := sourceInfo["variation_key"].(string); ok {
+			if sourceInfo, ok := notification.DecisionInfo["sourceInfo"].(map[string]interface{}); ok {
+				if experimentKey, ok := sourceInfo["experimentKey"].(string); ok {
+					if variationKey, ok := sourceInfo["variationKey"].(string); ok {
 						dict := make(map[string]interface{})
 						dict["experiment_key"] = experimentKey
 						dict["variation_key"] = variationKey
@@ -111,9 +111,9 @@ func getDecisionInfoForNotification(notification notification.DecisionNotificati
 			source = decisionInfoDict["source"].(string)
 		}
 		decisionInfoDict["source"] = source
-		decisionInfoDict["variable_key"] = notification.DecisionInfo["variable_key"]
-		decisionInfoDict["variable_type"] = notification.DecisionInfo["variable_type"]
-		decisionInfoDict["variable_value"] = notification.DecisionInfo["variable_value"]
+		decisionInfoDict["variable_key"] = notification.DecisionInfo["variableKey"]
+		decisionInfoDict["variable_type"] = notification.DecisionInfo["variableType"]
+		decisionInfoDict["variable_value"] = notification.DecisionInfo["variableValue"]
 		updateSourceInfo(source)
 	default:
 	}
