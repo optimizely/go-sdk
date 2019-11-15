@@ -27,6 +27,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 	"github.com/optimizely/go-sdk/tests/integration/optlyplugins"
+	"github.com/optimizely/go-sdk/tests/integration/support"
 	"github.com/optimizely/subset"
 	"gopkg.in/yaml.v3"
 )
@@ -283,9 +284,23 @@ func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) 
 		return fmt.Errorf("Invalid response for dispatched Events")
 	}
 	var actualBatchEvents []map[string]interface{}
+
+	sortArrayFunc := func(array []map[string]interface{}) {
+		for _, event := range array {
+			// This should be nested under visitors...
+			if _, ok := event["attributes"]; ok {
+				//Sort using Slice
+				attributes := event["attributes"].([]interface{})
+				support.SortArrayofMaps(attributes, "key")
+			}
+		}
+	}
+
 	if err := json.Unmarshal(eventsReceivedJSON, &actualBatchEvents); err != nil {
 		return fmt.Errorf("Invalid response for dispatched Events")
 	}
+	sortArrayFunc(expectedBatchEvents)
+	sortArrayFunc(actualBatchEvents)
 	if subset.Check(expectedBatchEvents, actualBatchEvents) {
 		return nil
 	}
