@@ -89,9 +89,9 @@ func (m *MockUserProfileService) Save(userProfile UserProfile) {
 	m.Called(userProfile)
 }
 
-func (m *MockAudienceTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) bool {
+func (m *MockAudienceTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
 	args := m.Called(node, condTreeParams)
-	return args.Bool(0)
+	return args.Bool(0), args.Bool(1)
 }
 
 // Single variation experiment
@@ -116,6 +116,13 @@ var testFeat3333 = entities.Feature{
 	ID:                 "3333",
 	Key:                testFeat3333Key,
 	FeatureExperiments: []entities.Experiment{testExp1111},
+}
+
+var testVariable = entities.Variable{
+	DefaultValue: "defaultString",
+	ID:           "1",
+	Key:          "test_feature_flag_key",
+	Type:         entities.String,
 }
 
 // Feature rollout

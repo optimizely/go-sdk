@@ -35,6 +35,7 @@ func (s *FeatureExperimentServiceTestSuite) SetupTest() {
 	s.testFeatureDecisionContext = FeatureDecisionContext{
 		Feature:       &testFeat3335,
 		ProjectConfig: s.mockConfig,
+		Variable:      testVariable,
 	}
 	s.mockExperimentService = new(MockExperimentDecisionService)
 }
