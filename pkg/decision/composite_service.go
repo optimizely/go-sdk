@@ -19,6 +19,7 @@ package decision
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
@@ -69,13 +70,53 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 
 	// @TODO: add errors
 	if s.notificationCenter != nil {
+		sourceInfo := map[string]string{}
+
+		if featureDecision.Source == FeatureTest {
+			sourceInfo["experimentKey"] = featureDecisionContext.Feature.Key
+			sourceInfo["variationKey"] = featureDecision.Variation.Key
+		}
+
 		featureInfo := map[string]interface{}{
-			"feature_key":     featureDecisionContext.Feature.Key,
-			"feature_enabled": false,
-			"source":          featureDecision.Source,
+			"featureKey":     featureDecisionContext.Feature.Key,
+			"featureEnabled": false,
+			"source":         featureDecision.Source,
+			"sourceInfo":     sourceInfo,
 		}
 		if featureDecision.Variation != nil {
-			featureInfo["feature_enabled"] = featureDecision.Variation.FeatureEnabled
+			featureInfo["featureEnabled"] = featureDecision.Variation.FeatureEnabled
+		}
+		variable := featureDecisionContext.Variable
+		if variable.ID != "" && variable.Key != "" {
+			featureInfo["variableKey"] = variable.Key
+			featureInfo["variableType"] = variable.Type
+
+			variableValue := variable.DefaultValue
+
+			if featureDecision.Variation != nil {
+				if v, ok := featureDecision.Variation.Variables[variable.ID]; ok && featureDecision.Variation.FeatureEnabled {
+					variableValue = v.Value
+				}
+			}
+			var convertedValue interface{}
+			var e error
+
+			convertedValue = variableValue // default for String
+
+			switch variable.Type {
+			case entities.Integer:
+				convertedValue, e = strconv.Atoi(variableValue)
+			case entities.Double:
+				convertedValue, e = strconv.ParseFloat(variableValue, 64)
+			case entities.Boolean:
+				convertedValue, e = strconv.ParseBool(variableValue)
+			}
+
+			if e != nil {
+				featureInfo["variableValue"] = variableValue
+			} else {
+				featureInfo["variableValue"] = convertedValue
+			}
 		}
 
 		decisionInfo := map[string]interface{}{
