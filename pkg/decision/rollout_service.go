@@ -71,7 +71,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	// if user fails rollout targeting rule we return out of it
 	if experiment.AudienceConditionTree != nil {
 		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
-		evalResult := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
+		evalResult, _ := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
 		if !evalResult {
 			featureDecision.Reason = reasons.FailedRolloutTargeting
 			rsLogger.Debug(fmt.Sprintf(`User "%s" failed targeting for feature rollout with key "%s".`, userContext.ID, feature.Key))

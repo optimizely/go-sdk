@@ -18,12 +18,30 @@ package support
 
 import (
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/optimizely/go-sdk/pkg"
 
 	"gopkg.in/yaml.v3"
 )
+
+func sortArrayofMaps(array []map[string]interface{}, sortKey string) []map[string]interface{} {
+	sort.Slice(array, func(i, j int) bool {
+		// TODO: make it more generic but for now only expecting string comparison
+		if val1, ok := array[i][sortKey].(string); ok {
+			if val2, ok1 := array[j][sortKey].(string); ok1 {
+				if strings.HasPrefix(val1, "$") {
+					return false
+				}
+				return val1 < val2
+			}
+		}
+		// if both are not string let it go.
+		return false
+	})
+	return array
+}
 
 func getDispatchedEventsMapFromYaml(s string, config pkg.ProjectConfig) ([]map[string]interface{}, error) {
 	var eventsArray []map[string]interface{}

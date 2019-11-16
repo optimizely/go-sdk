@@ -92,7 +92,10 @@ func (c AudienceConditionEvaluator) Evaluate(audienceID string, condTreeParams *
 	if audience, ok := condTreeParams.AudienceMap[audienceID]; ok {
 		condTree := audience.ConditionTree
 		conditionTreeEvaluator := NewMixedTreeEvaluator()
-		retValue := conditionTreeEvaluator.Evaluate(condTree, condTreeParams)
+		retValue, isValid := conditionTreeEvaluator.Evaluate(condTree, condTreeParams)
+		if !isValid {
+			return false, fmt.Errorf(`an error occurred while evaluating nested tree for audience ID "%s"`, audienceID)
+		}
 		return retValue, nil
 
 	}
