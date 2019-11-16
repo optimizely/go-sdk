@@ -18,6 +18,7 @@ package optlyplugins
 
 import (
 	"github.com/optimizely/go-sdk/pkg/decision"
+	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 )
@@ -49,7 +50,9 @@ func (c *TestCompositeService) AddListeners(listeners map[string]int) {
 
 // GetListenersCalled - Returns listeners called
 func (c *TestCompositeService) GetListenersCalled() []models.DecisionListener {
-	return c.listenersCalled
+	listenerCalled := c.listenersCalled
+	c.listenersCalled = nil
+	return listenerCalled
 }
 
 func (c *TestCompositeService) decisionNotificationCallback(notify notification.DecisionNotification) {
@@ -72,7 +75,7 @@ func getDecisionInfoForNotification(notify notification.DecisionNotification) ma
 	decisionInfoDict := make(map[string]interface{})
 
 	updateSourceInfo := func(source string) {
-		decisionInfoDict["source_info"] = make(map[string]interface{})
+		decisionInfoDict["source_info"] = map[string]string{}
 		if source == string(decision.FeatureTest) {
 			if sourceInfo, ok := notify.DecisionInfo["sourceInfo"].(map[string]string); ok {
 				if experimentKey, ok := sourceInfo["experimentKey"]; ok {
@@ -113,7 +116,7 @@ func getDecisionInfoForNotification(notify notification.DecisionNotification) ma
 		}
 		decisionInfoDict["source"] = source
 		decisionInfoDict["variable_key"] = notify.DecisionInfo["variableKey"]
-		decisionInfoDict["variable_type"] = notify.DecisionInfo["variableType"]
+		decisionInfoDict["variable_type"] = string(notify.DecisionInfo["variableType"].(entities.VariableType))
 		decisionInfoDict["variable_value"] = notify.DecisionInfo["variableValue"]
 		decisionInfoDict["feature_enabled"] = notify.DecisionInfo["featureEnabled"].(bool)
 		decisionInfoDict["feature_key"] = notify.DecisionInfo["featureKey"].(string)
