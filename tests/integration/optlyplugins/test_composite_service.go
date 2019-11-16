@@ -100,6 +100,9 @@ func getDecisionInfoForNotification(notify notification.DecisionNotification) ma
 			source = decisionInfoDict["source"].(string)
 		}
 		decisionInfoDict["source"] = source
+		decisionInfoDict["feature_enabled"] = notify.DecisionInfo["featureEnabled"].(bool)
+		decisionInfoDict["feature_key"] = notify.DecisionInfo["featureKey"].(string)
+
 		updateSourceInfo(source)
 	case notification.FeatureVariable:
 		source := ""
@@ -112,6 +115,8 @@ func getDecisionInfoForNotification(notify notification.DecisionNotification) ma
 		decisionInfoDict["variable_key"] = notify.DecisionInfo["variableKey"]
 		decisionInfoDict["variable_type"] = notify.DecisionInfo["variableType"]
 		decisionInfoDict["variable_value"] = notify.DecisionInfo["variableValue"]
+		decisionInfoDict["feature_enabled"] = notify.DecisionInfo["featureEnabled"].(bool)
+		decisionInfoDict["feature_key"] = notify.DecisionInfo["featureKey"].(string)
 		updateSourceInfo(source)
 	default:
 	}
