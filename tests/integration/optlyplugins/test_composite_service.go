@@ -75,7 +75,7 @@ func getDecisionInfoForNotification(notify notification.DecisionNotification) ma
 	decisionInfoDict := make(map[string]interface{})
 
 	updateSourceInfo := func(source string) {
-		decisionInfoDict["source_info"] = map[string]string{}
+		decisionInfoDict["source_info"] = map[string]interface{}{}
 		if source == string(decision.FeatureTest) {
 			if sourceInfo, ok := notify.DecisionInfo["sourceInfo"].(map[string]string); ok {
 				if experimentKey, ok := sourceInfo["experimentKey"]; ok {
