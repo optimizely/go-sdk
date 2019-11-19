@@ -56,21 +56,22 @@ func TestGet(t *testing.T) {
 			fmt.Fprintln(w, "Hello, client")
 		}
 		if r.URL.String() == "/bad" {
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 		}
 	}))
 	defer ts.Close()
 
 	var httpreq Requester
 	httpreq = NewHTTPRequester(ts.URL + "/good")
-	resp, code, err := httpreq.Get()
+	resp, headers, code, err := httpreq.Get()
+	assert.NotEqual(t, headers.Get("Content-Type"), "")
 	assert.Nil(t, err)
 	assert.Equal(t, "Hello, client\n", string(resp))
 
 	httpreq = NewHTTPRequester(ts.URL + "/bad")
-	_, code, err = httpreq.Get()
+	_, headers, code, err = httpreq.Get()
 	assert.Equal(t, errors.New("400 Bad Request"), err)
-	assert.Equal(t, code, 400)
+	assert.Equal(t, code, http.StatusBadRequest)
 }
 
 func TestGetObj(t *testing.T) {
@@ -86,7 +87,7 @@ func TestGetObj(t *testing.T) {
 			fmt.Fprintln(w, `{"fld1":"Hello, client", "fld2": 123}`)
 		}
 		if r.URL.String() == "/bad" {
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprintln(w, `bad bad response`)
 		}
 	}))
@@ -117,23 +118,24 @@ func TestPost(t *testing.T) {
 			fmt.Fprintln(w, "Hello, client")
 		}
 		if r.URL.String() == "/bad" {
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 		}
 	}))
 	defer ts.Close()
 	b := body{"one", 1}
 	var httpreq Requester
 	httpreq = NewHTTPRequester(ts.URL + "/good")
-	resp, code, err := httpreq.Post(b)
+	resp, headers, code, err := httpreq.Post(b)
 
 	assert.Nil(t, err)
+	assert.NotEqual(t, headers.Get("Content-Type"), "")
 	assert.Equal(t, "Hello, client\n", string(resp))
-	assert.Equal(t, code, 200)
+	assert.Equal(t, code, http.StatusOK)
 
 	httpreq = NewHTTPRequester(ts.URL + "/bad")
-	_, code, err = httpreq.Post(nil)
+	_, _, code, err = httpreq.Post(nil)
 	assert.Equal(t, errors.New("400 Bad Request"), err)
-	assert.Equal(t, code, 400)
+	assert.Equal(t, code, http.StatusBadRequest)
 }
 
 func TestPostObj(t *testing.T) {
@@ -149,7 +151,7 @@ func TestPostObj(t *testing.T) {
 			fmt.Fprintln(w, `{"fld1":"Hello, client", "fld2": 123}`)
 		}
 		if r.URL.String() == "/bad" {
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprintln(w, `bad bad response`)
 		}
 	}))
@@ -170,7 +172,7 @@ func TestPostObj(t *testing.T) {
 
 func TestGetBad(t *testing.T) {
 	httpreq := NewHTTPRequester("blah12345/good")
-	_, _, err := httpreq.Get()
+	_, _, _, err := httpreq.Get()
 	_, ok := err.(*url.Error)
 	assert.True(t, ok, "url error")
 }
@@ -183,14 +185,14 @@ func TestGetBadWithResponse(t *testing.T) {
 			fmt.Fprintln(w, `{"fld1":"Hello, client", "fld2": 123}`)
 		}
 		if r.URL.String() == "/bad" {
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprintln(w, `bad bad response`)
 		}
 	}))
 	defer ts.Close()
 
 	httpreq := NewHTTPRequester(ts.URL+"/bad", Retries(1))
-	data, _, err := httpreq.Get()
+	data, _, _, err := httpreq.Get()
 	assert.Equal(t, "400 Bad Request", err.Error())
 	assert.Equal(t, "bad bad response\n", string(data))
 }
@@ -206,14 +208,14 @@ func TestGetRetry(t *testing.T) {
 				fmt.Fprintln(w, "Hello, client")
 				return
 			}
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 		}
 
 		if r.URL.String() == "/bad" {
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 		}
 		if r.URL.String() == "/good" {
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 		}
 	}))
 	defer ts.Close()
@@ -221,7 +223,7 @@ func TestGetRetry(t *testing.T) {
 	httpreq := NewHTTPRequester(ts.URL+"/test", Retries(10))
 
 	st := time.Now()
-	resp, _, err := httpreq.Get()
+	resp, _, _, err := httpreq.Get()
 	assert.Nil(t, err)
 	assert.Equal(t, "Hello, client\n", string(resp))
 	assert.Equal(t, 5, called, "called 5 retries")
@@ -231,19 +233,19 @@ func TestGetRetry(t *testing.T) {
 
 	httpreq = NewHTTPRequester(ts.URL+"/test", Retries(3))
 	called = 0
-	_, _, err = httpreq.Get()
+	_, _, _, err = httpreq.Get()
 	assert.Equal(t, errors.New("400 Bad Request"), err)
 	assert.Equal(t, 3, called, "called 3 retries")
 
 	httpreq = NewHTTPRequester(ts.URL+"/test", Retries(1))
 	called = 0
-	_, _, err = httpreq.Get()
+	_, _, _, err = httpreq.Get()
 	assert.Equal(t, errors.New("400 Bad Request"), err)
 	assert.Equal(t, 1, called, "called 1 retries")
 
 	httpreq = NewHTTPRequester(ts.URL + "/test")
 	called = 0
-	_, _, err = httpreq.Get()
+	_, _, _, err = httpreq.Get()
 	assert.Equal(t, errors.New("400 Bad Request"), err)
 	assert.Equal(t, 1, called, "called 1 retries")
 }
