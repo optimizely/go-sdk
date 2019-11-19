@@ -119,7 +119,7 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 			return
 		}
 
-		if code == 304 {
+		if code == http.StatusNotModified {
 			cmLogger.Debug("The datafile was not modified and won't be downloaded again")
 			return
 		}

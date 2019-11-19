@@ -44,7 +44,7 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 	mockDatafile := []byte(`{"revision":"42"}`)
 	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, 200, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
@@ -65,7 +65,7 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
 	mockDatafile := []byte("NOT-VALID")
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, 200, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
@@ -84,7 +84,7 @@ func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T
 	mockDatafile2 := []byte(`{"revision":"42","botFiltering":false}`)
 	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, 200, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil)
 
 	sdkKey := "test_sdk_key"
 
@@ -111,8 +111,8 @@ func TestNewPollingProjectConfigManagerWithLastModifiedDates(t *testing.T) {
 	responseHeaders := http.Header{}
 	responseHeaders.Set(LastModified, modifiedDate)
 
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, responseHeaders, 200, nil)
-	mockRequester.On("Get", []utils.Header{utils.Header{Name: ModifiedSince, Value: modifiedDate}}).Return([]byte{}, responseHeaders, 304, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, responseHeaders, http.StatusOK, nil)
+	mockRequester.On("Get", []utils.Header{utils.Header{Name: ModifiedSince, Value: modifiedDate}}).Return([]byte{}, responseHeaders, http.StatusNotModified, nil)
 
 	sdkKey := "test_sdk_key"
 
@@ -141,7 +141,7 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
 	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, 200, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil)
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
@@ -168,7 +168,7 @@ func TestNewPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
 	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, 200, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil)
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
@@ -199,7 +199,7 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false}`)
 
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, 200, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil)
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"

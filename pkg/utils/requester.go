@@ -118,7 +118,7 @@ func (r HTTPRequester) GetObj(result interface{}, headers ...Header) error {
 func (r HTTPRequester) Post(body interface{}, headers ...Header) (response []byte, responseHeaders http.Header, code int, err error) {
 	b, err := json.Marshal(body)
 	if err != nil {
-		return nil, nil, 400, err
+		return nil, nil, http.StatusBadRequest, err
 	}
 	return r.Do("POST", bytes.NewBuffer(b), headers)
 }
@@ -152,7 +152,7 @@ func (r HTTPRequester) Do(method string, body io.Reader, headers []Header) (resp
 			return nil, resp.Header, resp.StatusCode, err
 		}
 
-		if resp.StatusCode >= 400 {
+		if resp.StatusCode >= http.StatusBadRequest {
 			requesterLogger.Warning(fmt.Sprintf("error status code=%d", resp.StatusCode))
 			return response, resp.Header, resp.StatusCode, errors.New(resp.Status)
 		}

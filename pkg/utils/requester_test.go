@@ -56,7 +56,7 @@ func TestGet(t *testing.T) {
 			fmt.Fprintln(w, "Hello, client")
 		}
 		if r.URL.String() == "/bad" {
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 		}
 	}))
 	defer ts.Close()
@@ -71,7 +71,7 @@ func TestGet(t *testing.T) {
 	httpreq = NewHTTPRequester(ts.URL + "/bad")
 	_, headers, code, err = httpreq.Get()
 	assert.Equal(t, errors.New("400 Bad Request"), err)
-	assert.Equal(t, code, 400)
+	assert.Equal(t, code, http.StatusBadRequest)
 }
 
 func TestGetObj(t *testing.T) {
@@ -87,7 +87,7 @@ func TestGetObj(t *testing.T) {
 			fmt.Fprintln(w, `{"fld1":"Hello, client", "fld2": 123}`)
 		}
 		if r.URL.String() == "/bad" {
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprintln(w, `bad bad response`)
 		}
 	}))
@@ -118,7 +118,7 @@ func TestPost(t *testing.T) {
 			fmt.Fprintln(w, "Hello, client")
 		}
 		if r.URL.String() == "/bad" {
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 		}
 	}))
 	defer ts.Close()
@@ -130,12 +130,12 @@ func TestPost(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotEqual(t, headers.Get("Content-Type"), "")
 	assert.Equal(t, "Hello, client\n", string(resp))
-	assert.Equal(t, code, 200)
+	assert.Equal(t, code, http.StatusOK)
 
 	httpreq = NewHTTPRequester(ts.URL + "/bad")
 	_, _, code, err = httpreq.Post(nil)
 	assert.Equal(t, errors.New("400 Bad Request"), err)
-	assert.Equal(t, code, 400)
+	assert.Equal(t, code, http.StatusBadRequest)
 }
 
 func TestPostObj(t *testing.T) {
@@ -151,7 +151,7 @@ func TestPostObj(t *testing.T) {
 			fmt.Fprintln(w, `{"fld1":"Hello, client", "fld2": 123}`)
 		}
 		if r.URL.String() == "/bad" {
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprintln(w, `bad bad response`)
 		}
 	}))
@@ -185,7 +185,7 @@ func TestGetBadWithResponse(t *testing.T) {
 			fmt.Fprintln(w, `{"fld1":"Hello, client", "fld2": 123}`)
 		}
 		if r.URL.String() == "/bad" {
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprintln(w, `bad bad response`)
 		}
 	}))
@@ -208,14 +208,14 @@ func TestGetRetry(t *testing.T) {
 				fmt.Fprintln(w, "Hello, client")
 				return
 			}
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 		}
 
 		if r.URL.String() == "/bad" {
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 		}
 		if r.URL.String() == "/good" {
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 		}
 	}))
 	defer ts.Close()

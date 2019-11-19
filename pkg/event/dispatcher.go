@@ -20,6 +20,7 @@ package event
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
@@ -55,7 +56,7 @@ func (*HTTPEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 		dispatcherLogger.Error("http.Post failed:", err)
 		success = false
 	} else {
-		if code == 204 {
+		if code == http.StatusNoContent {
 			success = true
 		} else {
 			dispatcherLogger.Error(fmt.Sprintf("http.Post invalid response %d", code), nil)
