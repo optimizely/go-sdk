@@ -49,13 +49,13 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 	assert.True(t, success)
 
 	// its been queued
-	assert.Equal(t, 1, qd.eventQueue.Size())
+	assert.Equal(t, 1, qd.EventQueue.Size())
 
 	// give the queue a chance to run
 	time.Sleep(1 * time.Second)
 
 	// check the queue
-	assert.Equal(t, 0, qd.eventQueue.Size())
+	assert.Equal(t, 0, qd.EventQueue.Size())
 
 }
 
@@ -68,18 +68,18 @@ func TestQueueEventDispatcher_InvalidEvent(t *testing.T) {
 
 	if qed, ok := q.(*QueueEventDispatcher); ok {
 		qed.Dispatcher = &MockDispatcher{Events: NewInMemoryQueue(100)}
-		qed.eventQueue.Add(config)
+		qed.EventQueue.Add(config)
 	}
 
 	qd, _ := q.(*QueueEventDispatcher)
 
-	assert.Equal(t, 1, qd.eventQueue.Size())
+	assert.Equal(t, 1, qd.EventQueue.Size())
 
 	// give the queue a chance to run
 	qd.flushEvents()
 
 	// check the queue. bad event type should be removed.  but, not sent.
-	assert.Equal(t, 0, qd.eventQueue.Size())
+	assert.Equal(t, 0, qd.EventQueue.Size())
 
 }
 
@@ -104,13 +104,13 @@ func TestQueueEventDispatcher_FailDispath(t *testing.T) {
 
 	qd, _ := q.(*QueueEventDispatcher)
 
-	assert.Equal(t, 1, qd.eventQueue.Size())
+	assert.Equal(t, 1, qd.EventQueue.Size())
 
 	// give the queue a chance to run
 	qd.flushEvents()
 
 	// check the queue. bad event type should be removed.  but, not sent.
-	assert.Equal(t, 1, qd.eventQueue.Size())
+	assert.Equal(t, 1, qd.EventQueue.Size())
 
 }
 

@@ -67,14 +67,14 @@ func (*HTTPEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 
 // QueueEventDispatcher is a queued version of the event Dispatcher that queues, returns success, and dispatches events in the background
 type QueueEventDispatcher struct {
-	eventQueue     Queue
+	EventQueue     Queue
 	eventFlushLock sync.Mutex
 	Dispatcher     Dispatcher
 }
 
 // DispatchEvent queues event with callback and calls flush in a go routine.
 func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
-	ed.eventQueue.Add(event)
+	ed.EventQueue.Add(event)
 	go func() {
 		ed.flushEvents()
 	}()
@@ -92,13 +92,13 @@ func (ed *QueueEventDispatcher) flushEvents() {
 
 	retryCount := 0
 
-	for ed.eventQueue.Size() > 0 {
+	for ed.EventQueue.Size() > 0 {
 		if retryCount > maxRetries {
 			dispatcherLogger.Error(fmt.Sprintf("event failed to send %d times. It will retry on next event sent", maxRetries), nil)
 			break
 		}
 
-		items := ed.eventQueue.Get(1)
+		items := ed.EventQueue.Get(1)
 		if len(items) == 0 {
 			// something happened.  Just continue and you should expect size to be zero.
 			continue
@@ -107,7 +107,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 		if !ok {
 			// remove it
 			dispatcherLogger.Error("invalid type passed to event Dispatcher", nil)
-			ed.eventQueue.Remove(1)
+			ed.EventQueue.Remove(1)
 			continue
 		}
 
@@ -116,7 +116,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 		if err == nil {
 			if success {
 				dispatcherLogger.Debug(fmt.Sprintf("Dispatched log event %+v", event))
-				ed.eventQueue.Remove(1)
+				ed.EventQueue.Remove(1)
 				retryCount = 0
 			} else {
 				dispatcherLogger.Warning("dispatch event failed")
@@ -139,7 +139,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 
 // NewQueueEventDispatcher creates a Dispatcher that queues in memory and then sends via go routine.
 func NewQueueEventDispatcher(ctx context.Context) Dispatcher {
-	dispatcher := &QueueEventDispatcher{eventQueue: NewInMemoryQueue(defaultQueueSize), Dispatcher: &HTTPEventDispatcher{}}
+	dispatcher := &QueueEventDispatcher{EventQueue: NewInMemoryQueue(defaultQueueSize), Dispatcher: &HTTPEventDispatcher{}}
 
 	go func() {
 		<-ctx.Done()
