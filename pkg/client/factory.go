@@ -91,6 +91,9 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		experimentServiceOptions := []decision.CESOptionFunc{}
 		if f.userProfileService != nil {
 			experimentServiceOptions = append(experimentServiceOptions, decision.WithUserProfileService(f.userProfileService))
+		} else {
+			defaultUserProfileService := new(decision.DefaultUserProfileService)
+			experimentServiceOptions = append(experimentServiceOptions, decision.WithUserProfileService(defaultUserProfileService))
 		}
 		if f.overrideStore != nil {
 			experimentServiceOptions = append(experimentServiceOptions, decision.WithOverrideStore(f.overrideStore))
