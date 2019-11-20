@@ -63,5 +63,5 @@ func TestSubstringMatcher(t *testing.T) {
 	}
 
 	_, err = matcher.Match(user)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 }

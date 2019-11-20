@@ -283,9 +283,44 @@ func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) 
 		return fmt.Errorf("Invalid response for dispatched Events")
 	}
 	var actualBatchEvents []map[string]interface{}
+
 	if err := json.Unmarshal(eventsReceivedJSON, &actualBatchEvents); err != nil {
 		return fmt.Errorf("Invalid response for dispatched Events")
 	}
+
+	// Sort's attributes under visitors which is required for subset comparison of attributes array
+	sortAttributesForEvents := func(array []map[string]interface{}) []map[string]interface{} {
+		sortedArray := array
+		for mainIndex, event := range array {
+			if visitorsArray, ok := event["visitors"].([]interface{}); ok {
+				for vIndex, v := range visitorsArray {
+					if visitor, ok := v.(map[string]interface{}); ok {
+						// Only sort if all attributes were parsed successfuly
+						parsedSuccessfully := false
+						parsedAttributes := []map[string]interface{}{}
+						if attributesArray, ok := visitor["attributes"].([]interface{}); ok {
+							for _, tmpAttribute := range attributesArray {
+								if attribute, ok := tmpAttribute.(map[string]interface{}); ok {
+									parsedAttributes = append(parsedAttributes, attribute)
+								}
+							}
+							parsedSuccessfully = len(attributesArray) == len(parsedAttributes)
+						}
+						if parsedSuccessfully {
+							// Sort parsed attributes array and assign them to the original events array
+							sortedAttributes := sortArrayofMaps(parsedAttributes, "key")
+							sortedArray[mainIndex]["visitors"].([]interface{})[vIndex].(map[string]interface{})["attributes"] = sortedAttributes
+						}
+					}
+				}
+			}
+		}
+		return sortedArray
+	}
+
+	expectedBatchEvents = sortAttributesForEvents(expectedBatchEvents)
+	actualBatchEvents = sortAttributesForEvents(actualBatchEvents)
+
 	if subset.Check(expectedBatchEvents, actualBatchEvents) {
 		return nil
 	}

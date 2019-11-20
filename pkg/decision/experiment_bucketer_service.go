@@ -53,7 +53,7 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	// Determine if user can be part of the experiment
 	if experiment.AudienceConditionTree != nil {
 		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
-		evalResult := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
+		evalResult, _ := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
 		if !evalResult {
 			experimentDecision.Reason = reasons.FailedAudienceTargeting
 			return experimentDecision, nil
