@@ -552,7 +552,7 @@ func TestBenchmarkProcessorLarge(t *testing.T) {
 		outC <- buf.String()
 	}()
 
-	result := testing.Benchmark(benchmarkProcessor4000)
+	result := testing.Benchmark(benchmarkProcessor5000)
 
 	// back to normal state
 	w.Close()
@@ -577,8 +577,8 @@ func benchmarkProcessor100(b *testing.B) {
 func benchmarkProcessor2000(b *testing.B) {
 	benchmarkProcessor(2000, b)
 }
-func benchmarkProcessor4000(b *testing.B) {
-	benchmarkProcessor(4000, b)
+func benchmarkProcessor5000(b *testing.B) {
+	benchmarkProcessor(5000, b)
 }
 
 func benchmarkProcessor(qSize int, b *testing.B) {
