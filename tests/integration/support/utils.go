@@ -56,84 +56,64 @@ func parseTemplate(s string, config pkg.ProjectConfig) string {
 
 	parsedString := strings.Replace(s, "{{datafile.projectId}}", config.GetProjectID(), -1)
 
-	var replaceExperimentID func(matches []string, start bool)
-	replaceExperimentID = func(matches []string, start bool) {
+	var replaceExperimentID func()
+	replaceExperimentID = func() {
 		re := regexp.MustCompile(`{{#expId}}(\S+)*{{/expId}}`)
-		if start {
-			matches = re.FindStringSubmatch(parsedString)
-		}
+		matches := re.FindStringSubmatch(parsedString)
 		if len(matches) > 1 {
 			if exp, err := config.GetExperimentByKey(matches[1]); err == nil {
 				parsedString = strings.Replace(parsedString, matches[0], exp.ID, -1)
+				replaceExperimentID()
 			}
-		}
-		matches = re.FindStringSubmatch(parsedString)
-		if len(matches) > 1 {
-			replaceExperimentID(matches, false)
 		}
 	}
 
-	var replaceEventID func(matches []string, start bool)
-	replaceEventID = func(matches []string, start bool) {
+	var replaceEventID func()
+	replaceEventID = func() {
 		re := regexp.MustCompile(`{{#eventId}}(\S+)*{{/eventId}}`)
-		if start {
-			matches = re.FindStringSubmatch(parsedString)
-		}
+		matches := re.FindStringSubmatch(parsedString)
 		if len(matches) > 1 {
 			if event, err := config.GetEventByKey(matches[1]); err == nil {
 				parsedString = strings.Replace(parsedString, matches[0], event.ID, -1)
+				replaceEventID()
 			}
-		}
-		matches = re.FindStringSubmatch(parsedString)
-		if len(matches) > 1 {
-			replaceEventID(matches, false)
 		}
 	}
 
-	var replaceCampaignID func(matches []string, start bool)
-	replaceCampaignID = func(matches []string, start bool) {
+	var replaceCampaignID func()
+	replaceCampaignID = func() {
 		re := regexp.MustCompile(`{{#expCampaignId}}(\S+)*{{/expCampaignId}}`)
-		if start {
-			matches = re.FindStringSubmatch(parsedString)
-		}
+		matches := re.FindStringSubmatch(parsedString)
 		if len(matches) > 1 {
 			if exp, err := config.GetExperimentByKey(matches[1]); err == nil {
 				parsedString = strings.Replace(parsedString, matches[0], exp.LayerID, -1)
+				replaceCampaignID()
 			}
-		}
-		matches = re.FindStringSubmatch(parsedString)
-		if len(matches) > 1 {
-			replaceCampaignID(matches, false)
 		}
 	}
 
-	var replaceVariableID func(matches []string, start bool)
-	replaceVariableID = func(matches []string, start bool) {
+	var replaceVariableID func()
+	replaceVariableID = func() {
 		re := regexp.MustCompile(`{{#varId}}(\S+)*{{/varId}}`)
-		if start {
-			matches = re.FindStringSubmatch(parsedString)
-		}
+		matches := re.FindStringSubmatch(parsedString)
 		if len(matches) > 1 {
 			expVarKey := strings.Split(matches[1], ".")
 			if exp, err := config.GetExperimentByKey(expVarKey[0]); err == nil {
 				for _, variation := range exp.Variations {
 					if variation.Key == expVarKey[1] {
 						parsedString = strings.Replace(parsedString, matches[0], variation.ID, -1)
+						replaceVariableID()
 						break
 					}
 				}
 			}
 		}
-		matches = re.FindStringSubmatch(parsedString)
-		if len(matches) > 1 {
-			replaceVariableID(matches, false)
-		}
 	}
 
-	replaceExperimentID([]string{}, true)
-	replaceEventID([]string{}, true)
-	replaceCampaignID([]string{}, true)
-	replaceVariableID([]string{}, true)
+	replaceExperimentID()
+	replaceEventID()
+	replaceCampaignID()
+	replaceVariableID()
 	return parsedString
 }
 
