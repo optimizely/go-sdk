@@ -519,7 +519,7 @@ func TestBenchmarkProcessorDefault(t *testing.T) {
 		assert.True(t, false)
 	}
 
-	logging.SetLogger(logging.NewFilteredLevelLogConsumer(logging.LogLevelInfo, os.Stdout))
+	//logging.SetLogger(logging.NewFilteredLevelLogConsumer(logging.LogLevelInfo, os.Stdout))
 	customLogger.Mess.Remove(customLogger.Mess.Size())
 }
 
