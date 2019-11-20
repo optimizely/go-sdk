@@ -468,7 +468,7 @@ func (l *CustomLogger) SetLogLevel(level logging.LogLevel) {
 
 }
 
-func TestBenchmarkProcessor(t *testing.T) {
+func TestBenchmarkProcessor100(t *testing.T) {
 	old := os.Stdout // keep backup of the real stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
@@ -483,7 +483,7 @@ func TestBenchmarkProcessor(t *testing.T) {
 		outC <- buf.String()
 	}()
 
-	result := testing.Benchmark(benchmarkProcessor)
+	result := testing.Benchmark(benchmarkProcessor100)
 
 	// back to normal state
 	w.Close()
@@ -518,7 +518,7 @@ func TestBenchmarkProcessorDefault(t *testing.T) {
 		outC <- buf.String()
 	}()
 
-	result := testing.Benchmark(benchmarkProcessorDefault)
+	result := testing.Benchmark(benchmarkProcessor2000)
 
 	// back to normal state
 	w.Close()
@@ -531,35 +531,60 @@ func TestBenchmarkProcessorDefault(t *testing.T) {
 
 	println("count number ", count)
 
- 	assert.False(t, count > 5)
+ 	assert.True(t, count > 5)
 
 	//print(out)
 
 }
 
-func benchmarkProcessor(b *testing.B) {
-	exeCtx := utils.NewCancelableExecutionCtx()
-	processor := NewBatchEventProcessor(
-		WithQueueSize(100),
-		WithEventDispatcher(NewMockDispatcher(100, false)))
-	processor.Start(exeCtx)
+func TestBenchmarkProcessorLarge(t *testing.T) {
+	old := os.Stdout // keep backup of the real stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
 
-	impression := BuildTestImpressionEvent()
-	conversion := BuildTestConversionEvent()
+	logging.SetLogger(logging.NewFilteredLevelLogConsumer(logging.LogLevelInfo, os.Stdout))
 
-	for i := 0; i < b.N; i++ {
-		processor.ProcessEvent(impression)
-		processor.ProcessEvent(conversion)
-	}
+	outC := make(chan string)
+	// copy the output in a separate goroutine so printing can't block indefinitely
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		outC <- buf.String()
+	}()
 
-	exeCtx.TerminateAndWait()
+	result := testing.Benchmark(benchmarkProcessor4000)
+
+	// back to normal state
+	w.Close()
+	os.Stdout = old // restoring the real stdout
+	out := <-outC
+
+	count := strings.Count(out, "MaxQueueSize has been met. Discarding event")
+
+	fmt.Println(result)
+
+	println("count number ", count)
+
+	assert.False(t, count > 5)
+
+	//print(out)
+
 }
 
-func benchmarkProcessorDefault(b *testing.B) {
+func benchmarkProcessor100(b *testing.B) {
+	benchmarkProcessor(100, b)
+}
+func benchmarkProcessor2000(b *testing.B) {
+	benchmarkProcessor(100, b)
+}
+func benchmarkProcessor4000(b *testing.B) {
+	benchmarkProcessor(100, b)
+}
+
+func benchmarkProcessor(qSize int, b *testing.B) {
 	exeCtx := utils.NewCancelableExecutionCtx()
 	processor := NewBatchEventProcessor(
-		WithFlushInterval(10 * time.Millisecond),
-		WithQueueSize(4000),
+		WithQueueSize(qSize),
 		WithEventDispatcher(NewMockDispatcher(100, false)))
 	processor.Start(exeCtx)
 
@@ -572,5 +597,4 @@ func benchmarkProcessorDefault(b *testing.B) {
 	}
 
 	exeCtx.TerminateAndWait()
-
 }
