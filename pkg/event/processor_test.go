@@ -18,12 +18,15 @@
 package event
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/utils"
 	"github.com/stretchr/testify/assert"
+	"io"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -466,61 +469,63 @@ func (l *CustomLogger) SetLogLevel(level logging.LogLevel) {
 }
 
 func TestBenchmarkProcessor(t *testing.T) {
-	customLogger := CustomLogger{Mess:NewInMemoryQueue(100)}
+	old := os.Stdout // keep backup of the real stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
 
-	logging.SetLogger(&customLogger)
+	logging.SetLogger(logging.NewFilteredLevelLogConsumer(logging.LogLevelInfo, os.Stdout))
 
+	outC := make(chan string)
+	// copy the output in a separate goroutine so printing can't block indefinitely
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		outC <- buf.String()
+	}()
 
 	result := testing.Benchmark(benchmarkProcessor)
 
 	fmt.Print(result)
 
-	if customLogger.Mess.Size() > 0 {
-		found := false
-		size := customLogger.Mess.Size()
-		for i := 0; i < size; i++ {
-			item := customLogger.Mess.Remove(1)
-			if m, ok := item[0].(string); ok && m == "MaxQueueSize has been met. Discarding event" {
-				found = true
-				break
-			}
-		}
-		assert.True(t, found)
-	} else {
-		assert.True(t, false)
-	}
+	// back to normal state
+	w.Close()
+	os.Stdout = old // restoring the real stdout
+	out := <-outC
 
-	logging.SetLogger(logging.NewFilteredLevelLogConsumer(logging.LogLevelInfo, os.Stdout))
-	customLogger.Mess.Remove(customLogger.Mess.Size())
+	assert.True(t, strings.Contains(out, "MaxQueueSize has been met. Discarding event"))
+
+	print(out)
+
 }
 
 func TestBenchmarkProcessorDefault(t *testing.T) {
-	customLogger := CustomLogger{Mess:NewInMemoryQueue(100)}
+	old := os.Stdout // keep backup of the real stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
 
-	logging.SetLogger(&customLogger)
+	logging.SetLogger(logging.NewFilteredLevelLogConsumer(logging.LogLevelInfo, os.Stdout))
 
+	outC := make(chan string)
+	// copy the output in a separate goroutine so printing can't block indefinitely
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		outC <- buf.String()
+	}()
 
 	result := testing.Benchmark(benchmarkProcessorDefault)
 
 	fmt.Print(result)
 
-	if customLogger.Mess.Size() > 0 {
-		found := false
-		size := customLogger.Mess.Size()
-		for i := 0; i < size; i++ {
-			item := customLogger.Mess.Remove(1)
-			if m, ok := item[0].(string); ok && m == "MaxQueueSize has been met. Discarding event" {
-				found = true
-				break
-			}
-		}
-		assert.False(t, found)
-	} else {
-		assert.True(t, false)
-	}
+	// back to normal state
+	w.Close()
+	os.Stdout = old // restoring the real stdout
+	out := <-outC
 
-	//logging.SetLogger(logging.NewFilteredLevelLogConsumer(logging.LogLevelInfo, os.Stdout))
-	customLogger.Mess.Remove(customLogger.Mess.Size())
+	assert.False(t, strings.Contains(out, "MaxQueueSize has been met. Discarding event"))
+
+	print(out)
+
 }
 
 func benchmarkProcessor(b *testing.B) {
