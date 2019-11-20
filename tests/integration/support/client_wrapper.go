@@ -38,9 +38,10 @@ var clientInstance *ClientWrapper
 
 // ClientWrapper - wrapper around the optimizely client that keeps track of various custom components used with the client
 type ClientWrapper struct {
-	Client          *client.OptimizelyClient
-	DecisionService decision.Service
-	EventDispatcher event.Dispatcher
+	Client             *client.OptimizelyClient
+	DecisionService    decision.Service
+	EventDispatcher    event.Dispatcher
+	UserProfileService decision.UserProfileService
 }
 
 // DeleteInstance deletes cached instance of optly wrapper
@@ -49,14 +50,14 @@ func DeleteInstance() {
 }
 
 // GetInstance returns a cached or new instance of the optly wrapper
-func GetInstance(datafileName string) *ClientWrapper {
+func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 
 	if clientInstance != nil {
 		return clientInstance
 	}
 
 	datafileDir := os.Getenv("DATAFILES_DIR")
-	datafile, err := ioutil.ReadFile(filepath.Clean(path.Join(datafileDir, datafileName)))
+	datafile, err := ioutil.ReadFile(filepath.Clean(path.Join(datafileDir, apiOptions.DatafileName)))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -75,8 +76,51 @@ func GetInstance(datafileName string) *ClientWrapper {
 		Datafile: datafile,
 	}
 
-	decisionService := &optlyplugins.TestCompositeService{CompositeService: *decision.NewCompositeService("")}
 	eventProcessor.EventDispatcher = &optlyplugins.ProxyEventDispatcher{}
+
+	var userProfileService decision.UserProfileService
+	switch apiOptions.UserProfileServiceType {
+	case "NormalService":
+		userProfileService = new(optlyplugins.NormalUserProfileService)
+		break
+	case "LookupErrorService":
+		userProfileService = new(optlyplugins.LookupErrorUserProfileService)
+		break
+	case "SaveErrorService":
+		userProfileService = new(optlyplugins.SaveErrorUserProfileService)
+		break
+	default:
+		userProfileService = new(optlyplugins.NoOpUserProfileService)
+		break
+	}
+
+	var profilesArray []decision.UserProfile
+	for userID, bucketMap := range apiOptions.UPSMapping {
+		var profile decision.UserProfile
+		profile.ID = userID
+		if config, err := configManager.GetConfig(); err == nil {
+			profile.ExperimentBucketMap = make(map[decision.UserDecisionKey]string)
+			for experimentKey, variationKey := range bucketMap {
+				if experiment, err := config.GetExperimentByKey(experimentKey); err == nil {
+					decisionKey := decision.NewUserDecisionKey(experiment.ID)
+					for _, variation := range experiment.Variations {
+						if variation.Key == variationKey {
+							profile.ExperimentBucketMap[decisionKey] = variation.ID
+							break
+						}
+					}
+				}
+			}
+		}
+		profilesArray = append(profilesArray, profile)
+	}
+	userProfileService.(optlyplugins.UPSHelper).SaveUserProfiles(profilesArray)
+
+	experimentServiceOptions := []decision.CESOptionFunc{}
+	experimentServiceOptions = append(experimentServiceOptions, decision.WithUserProfileService(userProfileService))
+	compositeExperimentService := decision.NewCompositeExperimentService(experimentServiceOptions...)
+	compositeService := *decision.NewCompositeService("", decision.WithCompositeExperimentService(compositeExperimentService))
+	decisionService := &optlyplugins.TestCompositeService{CompositeService: compositeService}
 
 	client, err := optimizelyFactory.Client(
 		client.WithConfigManager(configManager),
@@ -87,9 +131,10 @@ func GetInstance(datafileName string) *ClientWrapper {
 	}
 
 	clientInstance = &ClientWrapper{
-		Client:          client,
-		DecisionService: decisionService,
-		EventDispatcher: eventProcessor.EventDispatcher,
+		Client:             client,
+		DecisionService:    decisionService,
+		EventDispatcher:    eventProcessor.EventDispatcher,
+		UserProfileService: userProfileService,
 	}
 	return clientInstance
 }

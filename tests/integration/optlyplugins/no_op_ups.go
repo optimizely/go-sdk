@@ -14,34 +14,20 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package decision //
-package decision
+package optlyplugins
 
-import "sync"
+import "github.com/optimizely/go-sdk/pkg/decision"
 
-// DefaultUserProfileService represents the default implementation of UserProfileService interface
-type DefaultUserProfileService struct {
-	sync.RWMutex
-	profiles map[string]UserProfile
+// NoOpUserProfileService represents a user profile service with save and lookup error
+type NoOpUserProfileService struct {
+	NormalUserProfileService
 }
 
 // Lookup is used to retrieve past bucketing decisions for users
-func (s *DefaultUserProfileService) Lookup(userID string) UserProfile {
-	s.RLock()
-	profile := s.profiles[userID]
-	s.RUnlock()
-	return profile
+func (s *NoOpUserProfileService) Lookup(userID string) decision.UserProfile {
+	return decision.UserProfile{}
 }
 
 // Save is used to save bucketing decisions for users
-func (s *DefaultUserProfileService) Save(userProfile UserProfile) {
-	if userProfile.ID == "" {
-		return
-	}
-	s.Lock()
-	if s.profiles == nil {
-		s.profiles = make(map[string]UserProfile)
-	}
-	s.profiles[userProfile.ID] = userProfile
-	s.Unlock()
+func (s *NoOpUserProfileService) Save(userProfile decision.UserProfile) {
 }

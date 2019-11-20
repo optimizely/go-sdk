@@ -14,14 +14,17 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package models
+package optlyplugins
 
-// APIOptions represents parameters for a scenario
-type APIOptions struct {
-	DatafileName           string
-	APIName                string
-	Arguments              string
-	Listeners              map[string]int
-	UserProfileServiceType string
-	UPSMapping             map[string]map[string]string
+import (
+	"github.com/optimizely/go-sdk/pkg/decision"
+)
+
+// SaveErrorUserProfileService represents a user profile service with save error
+type SaveErrorUserProfileService struct {
+	NormalUserProfileService
+}
+
+// Save is used to save bucketing decisions for users
+func (s *SaveErrorUserProfileService) Save(userProfile decision.UserProfile) {
 }
