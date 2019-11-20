@@ -45,7 +45,7 @@ func (m *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	return true, nil
 }
 
-func NewMockDispatcher(queueSize int, shouldFail bool) Dispatcher {
+func NewMockDispatcher(queueSize int, shouldFail bool) *MockDispatcher {
 	return &MockDispatcher{Events:NewInMemoryQueue(queueSize), ShouldFail:shouldFail}
 }
 
@@ -565,27 +565,31 @@ func TestBenchmarkProcessorLarge(t *testing.T) {
 
 	println("count number ", count)
 
-	assert.True(t, count  < 500)
+	assert.True(t, count  < 5000 && count > 4000)
 
 	//print(out)
 
 }
 
 func benchmarkProcessor100(b *testing.B) {
-	benchmarkProcessor(100, b)
+	processed := benchmarkProcessor(100, b)
+	if processed < 100 {
+		b.Failed()
+	}
 }
 func benchmarkProcessor1000(b *testing.B) {
-	benchmarkProcessor(2000, b)
+	benchmarkProcessor(1000, b)
 }
 func benchmarkProcessor10000(b *testing.B) {
 	benchmarkProcessor(10000, b)
 }
 
-func benchmarkProcessor(qSize int, b *testing.B) {
+func benchmarkProcessor(qSize int, b *testing.B) int {
 	exeCtx := utils.NewCancelableExecutionCtx()
+	dispatcher := NewMockDispatcher(100, false)
 	processor := NewBatchEventProcessor(
 		WithQueueSize(qSize),
-		WithEventDispatcher(NewMockDispatcher(100, false)))
+		WithEventDispatcher(dispatcher))
 	processor.Start(exeCtx)
 
 	impression := BuildTestImpressionEvent()
@@ -594,7 +598,10 @@ func benchmarkProcessor(qSize int, b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		processor.ProcessEvent(impression)
 		processor.ProcessEvent(conversion)
+		time.Sleep(500)
 	}
 
 	exeCtx.TerminateAndWait()
+
+	return dispatcher.Events.Size()
 }
