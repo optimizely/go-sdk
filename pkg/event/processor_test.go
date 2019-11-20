@@ -494,7 +494,7 @@ func TestBenchmarkProcessor(t *testing.T) {
 
 	assert.True(t, strings.Contains(out, "MaxQueueSize has been met. Discarding event"))
 
-	print(out)
+	//print(out)
 
 }
 
@@ -524,7 +524,7 @@ func TestBenchmarkProcessorDefault(t *testing.T) {
 
 	assert.False(t, strings.Contains(out, "MaxQueueSize has been met. Discarding event"))
 
-	print(out)
+	//print(out)
 
 }
 
