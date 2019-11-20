@@ -38,7 +38,7 @@ type StaticProjectConfigManager struct {
 func NewStaticProjectConfigManagerFromURL(sdkKey string) (*StaticProjectConfigManager, error) {
 
 	requester := utils.NewHTTPRequester(fmt.Sprintf(DatafileURLTemplate, sdkKey))
-	datafile, code, e := requester.Get()
+	datafile, _, code, e := requester.Get()
 	if e != nil {
 		cmLogger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
 		return nil, e

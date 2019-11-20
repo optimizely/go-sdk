@@ -31,13 +31,13 @@ import (
 
 type RolloutServiceTestSuite struct {
 	suite.Suite
-	mockConfig *mockProjectConfig
-	mockAudienceTreeEvaluator *MockAudienceTreeEvaluator
-	mockExperimentService *MockExperimentDecisionService
+	mockConfig                    *mockProjectConfig
+	mockAudienceTreeEvaluator     *MockAudienceTreeEvaluator
+	mockExperimentService         *MockExperimentDecisionService
 	testExperimentDecisionContext ExperimentDecisionContext
-	testFeatureDecisionContext FeatureDecisionContext
-	testConditionTreeParams *entities.TreeParameters
-	testUserContext entities.UserContext
+	testFeatureDecisionContext    FeatureDecisionContext
+	testConditionTreeParams       *entities.TreeParameters
+	testUserContext               entities.UserContext
 }
 
 func (s *RolloutServiceTestSuite) SetupTest() {
@@ -67,9 +67,9 @@ func (s *RolloutServiceTestSuite) TestGetDecisionHappyPath() {
 	// Test experiment passes targeting and bucketing
 	testExperimentBucketerDecision := ExperimentDecision{
 		Variation: &testExp1112Var2222,
-		Decision: Decision{Reason: reasons.BucketedIntoVariation},
+		Decision:  Decision{Reason: reasons.BucketedIntoVariation},
 	}
-	s.mockAudienceTreeEvaluator.On("Evaluate", testExp1112.AudienceConditionTree, s.testConditionTreeParams).Return(true)
+	s.mockAudienceTreeEvaluator.On("Evaluate", testExp1112.AudienceConditionTree, s.testConditionTreeParams).Return(true, true)
 	s.mockExperimentService.On("GetDecision", s.testExperimentDecisionContext, s.testUserContext).Return(testExperimentBucketerDecision, nil)
 
 	testRolloutService := RolloutService{
@@ -96,7 +96,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionFailsBucketing() {
 		},
 	}
 
-	s.mockAudienceTreeEvaluator.On("Evaluate", testExp1112.AudienceConditionTree, s.testConditionTreeParams).Return(true)
+	s.mockAudienceTreeEvaluator.On("Evaluate", testExp1112.AudienceConditionTree, s.testConditionTreeParams).Return(true, true)
 	s.mockExperimentService.On("GetDecision", s.testExperimentDecisionContext, s.testUserContext).Return(testExperimentBucketerDecision, nil)
 	testRolloutService := RolloutService{
 		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
@@ -116,7 +116,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionFailsBucketing() {
 }
 
 func (s *RolloutServiceTestSuite) TestGetDecisionFailsTargeting() {
-	s.mockAudienceTreeEvaluator.On("Evaluate", testExp1112.AudienceConditionTree, s.testConditionTreeParams).Return(false)
+	s.mockAudienceTreeEvaluator.On("Evaluate", testExp1112.AudienceConditionTree, s.testConditionTreeParams).Return(false, true)
 	testRolloutService := RolloutService{
 		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
 		experimentBucketerService: s.mockExperimentService,
