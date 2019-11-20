@@ -485,14 +485,19 @@ func TestBenchmarkProcessor(t *testing.T) {
 
 	result := testing.Benchmark(benchmarkProcessor)
 
-	fmt.Print(result)
-
 	// back to normal state
 	w.Close()
 	os.Stdout = old // restoring the real stdout
 	out := <-outC
 
-	assert.True(t, strings.Contains(out, "MaxQueueSize has been met. Discarding event"))
+	count := strings.Count(out, "MaxQueueSize has been met. Discarding event")
+
+	fmt.Println(result)
+
+	println("count number ", count)
+	assert.True(t, count  > 5)
+
+
 
 	//print(out)
 
@@ -515,14 +520,18 @@ func TestBenchmarkProcessorDefault(t *testing.T) {
 
 	result := testing.Benchmark(benchmarkProcessorDefault)
 
-	fmt.Print(result)
-
 	// back to normal state
 	w.Close()
 	os.Stdout = old // restoring the real stdout
 	out := <-outC
 
-	assert.False(t, strings.Contains(out, "MaxQueueSize has been met. Discarding event"))
+	count := strings.Count(out, "MaxQueueSize has been met. Discarding event")
+
+	fmt.Println(result)
+
+	println("count number ", count)
+
+ 	assert.False(t, count > 5)
 
 	//print(out)
 
