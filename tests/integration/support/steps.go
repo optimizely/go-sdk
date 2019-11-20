@@ -399,8 +399,10 @@ func (c *ScenarioCtx) TheUserProfileServiceStateShouldBe(value *gherkin.DocStrin
 	success := false
 	for _, expectedProfile := range expectedProfiles {
 		success = false
-		for _, actualProfile := range actualProfiles {
+		for index, actualProfile := range actualProfiles {
 			if subset.Check(expectedProfile, actualProfile) {
+				// Removing already found profile from actual profiles for performance
+				actualProfiles = append(actualProfiles[:index], actualProfiles[index+1:]...)
 				success = true
 				break
 			}
