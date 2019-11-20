@@ -549,7 +549,7 @@ func benchmarkProcessor(b *testing.B) {
 func benchmarkProcessorDefault(b *testing.B) {
 	exeCtx := utils.NewCancelableExecutionCtx()
 	processor := NewBatchEventProcessor(
-		//WithFlushInterval(10 * time.Millisecond),
+		WithFlushInterval(10 * time.Millisecond),
 		WithEventDispatcher(NewMockDispatcher(100, false)))
 	processor.Start(exeCtx)
 
