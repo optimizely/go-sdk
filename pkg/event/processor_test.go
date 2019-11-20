@@ -538,6 +538,7 @@ func benchmarkProcessor(b *testing.B) {
 		processor.ProcessEvent(conversion)
 	}
 
+	exeCtx.TerminateAndWait()
 }
 
 func benchmarkProcessorDefault(b *testing.B) {
@@ -554,4 +555,7 @@ func benchmarkProcessorDefault(b *testing.B) {
 		processor.ProcessEvent(impression)
 		processor.ProcessEvent(conversion)
 	}
+
+	exeCtx.TerminateAndWait()
+
 }
