@@ -16,9 +16,23 @@
 
 package optimizely
 
-import "github.com/optimizely/go-sdk/cmd"
+import (
+	"github.com/optimizely/go-sdk/pkg/client"
+	"github.com/optimizely/go-sdk/pkg/entities"
+)
 
-// This is used to execute the command-line tool when running the `go-sdk` command from the command-line.
-func main() {
-	cmd.Execute()
+// Client returns an OptimizelyClient instantitated with the given key and options
+func Client(sdkKey string, options ...client.OptionFunc) (*client.OptimizelyClient, error) {
+	factory := &client.OptimizelyFactory{
+		SDKKey: sdkKey,
+	}
+	return factory.Client(options...)
+}
+
+// UserContext is a helper method for creating a user context
+func UserContext(userID string, attributes map[string]interface{}) entities.UserContext {
+	return entities.UserContext{
+		ID: userID,
+		Attributes: attributes,
+	}
 }

@@ -41,7 +41,7 @@ type OptimizelyFactory struct {
 	overrideStore      decision.ExperimentOverrideStore
 }
 
-// OptionFunc is a type to a proper func
+// OptionFunc is used to provide custom client configuration to the OptimizelyFactory
 type OptionFunc func(*OptimizelyFactory)
 
 // Client gets client and sets some parameters
