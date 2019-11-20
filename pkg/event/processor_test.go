@@ -575,10 +575,10 @@ func benchmarkProcessor100(b *testing.B) {
 	benchmarkProcessor(100, b)
 }
 func benchmarkProcessor2000(b *testing.B) {
-	benchmarkProcessor(100, b)
+	benchmarkProcessor(2000, b)
 }
 func benchmarkProcessor4000(b *testing.B) {
-	benchmarkProcessor(100, b)
+	benchmarkProcessor(4000, b)
 }
 
 func benchmarkProcessor(qSize int, b *testing.B) {
