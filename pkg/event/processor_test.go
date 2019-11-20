@@ -495,7 +495,7 @@ func TestBenchmarkProcessor100(t *testing.T) {
 	fmt.Println(result)
 
 	println("count number ", count)
-	assert.True(t, count  > 5)
+	assert.True(t, count  > 50000, "Loss of 50000 messages")
 
 
 
@@ -503,7 +503,7 @@ func TestBenchmarkProcessor100(t *testing.T) {
 
 }
 
-func TestBenchmarkProcessorDefault(t *testing.T) {
+func TestBenchmarkProcessor1000(t *testing.T) {
 	old := os.Stdout // keep backup of the real stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
@@ -518,7 +518,7 @@ func TestBenchmarkProcessorDefault(t *testing.T) {
 		outC <- buf.String()
 	}()
 
-	result := testing.Benchmark(benchmarkProcessor2000)
+	result := testing.Benchmark(benchmarkProcessor1000)
 
 	// back to normal state
 	w.Close()
@@ -531,7 +531,7 @@ func TestBenchmarkProcessorDefault(t *testing.T) {
 
 	println("count number ", count)
 
- 	assert.True(t, count > 5)
+ 	assert.True(t, count > 5000)
 
 	//print(out)
 
@@ -552,7 +552,7 @@ func TestBenchmarkProcessorLarge(t *testing.T) {
 		outC <- buf.String()
 	}()
 
-	result := testing.Benchmark(benchmarkProcessor5000)
+	result := testing.Benchmark(benchmarkProcessor10000)
 
 	// back to normal state
 	w.Close()
@@ -565,7 +565,7 @@ func TestBenchmarkProcessorLarge(t *testing.T) {
 
 	println("count number ", count)
 
-	assert.False(t, count > 5)
+	assert.True(t, count  < 500)
 
 	//print(out)
 
@@ -574,11 +574,11 @@ func TestBenchmarkProcessorLarge(t *testing.T) {
 func benchmarkProcessor100(b *testing.B) {
 	benchmarkProcessor(100, b)
 }
-func benchmarkProcessor2000(b *testing.B) {
+func benchmarkProcessor1000(b *testing.B) {
 	benchmarkProcessor(2000, b)
 }
-func benchmarkProcessor5000(b *testing.B) {
-	benchmarkProcessor(5000, b)
+func benchmarkProcessor10000(b *testing.B) {
+	benchmarkProcessor(10000, b)
 }
 
 func benchmarkProcessor(qSize int, b *testing.B) {
