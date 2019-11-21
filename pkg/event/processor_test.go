@@ -603,8 +603,8 @@ func benchmarkProcessor(qSize int, b *testing.B) int {
 
 	for i := 0; i < b.N; i++ {
 		processor.ProcessEvent(impression)
-		processor.ProcessEvent(conversion)
 		time.Sleep(1)
+		processor.ProcessEvent(conversion)
 	}
 
 	exeCtx.TerminateAndWait()
