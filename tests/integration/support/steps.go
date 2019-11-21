@@ -24,10 +24,10 @@ import (
 
 	"github.com/DATA-DOG/godog/gherkin"
 	"github.com/google/uuid"
-	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 	"github.com/optimizely/go-sdk/tests/integration/optlyplugins"
+	"github.com/optimizely/go-sdk/tests/integration/optlyplugins/userprofileservice"
 	"github.com/optimizely/subset"
 	"gopkg.in/yaml.v3"
 )
@@ -371,30 +371,13 @@ func (c *ScenarioCtx) TheUserProfileServiceStateShouldBe(value *gherkin.DocStrin
 	if err != nil {
 		return fmt.Errorf("Invalid Project Config")
 	}
-	parsedProfiles, err := parseYamlArray(value.Content, config)
+	rawProfiles, err := parseYamlArray(value.Content, config)
 	if err != nil {
 		return fmt.Errorf("Invalid request for user profile service state")
 	}
 
-	var expectedProfiles []decision.UserProfile
-	for _, profile := range parsedProfiles {
-		userProfile := decision.UserProfile{}
-		if userID, ok := profile["user_id"]; ok {
-			userProfile.ID = userID.(string)
-		}
-		if experimentBucketMap, ok := profile["experiment_bucket_map"]; ok {
-			userProfile.ExperimentBucketMap = make(map[decision.UserDecisionKey]string)
-			for k, v := range experimentBucketMap.(map[string]interface{}) {
-				decisionKey := decision.NewUserDecisionKey(k)
-				if bucketMap, ok := v.(map[string]interface{}); ok {
-					userProfile.ExperimentBucketMap[decisionKey] = bucketMap[decisionKey.Field].(string)
-				}
-			}
-		}
-		expectedProfiles = append(expectedProfiles, userProfile)
-	}
-
-	actualProfiles := c.clientWrapper.UserProfileService.(optlyplugins.UPSHelper).GetUserProfiles()
+	expectedProfiles := userprofileservice.ParseUserProfiles(rawProfiles)
+	actualProfiles := c.clientWrapper.UserProfileService.(userprofileservice.UPSHelper).GetUserProfiles()
 
 	success := false
 	for _, expectedProfile := range expectedProfiles {
@@ -414,12 +397,13 @@ func (c *ScenarioCtx) TheUserProfileServiceStateShouldBe(value *gherkin.DocStrin
 	if success {
 		return nil
 	}
+
 	return fmt.Errorf("User profile state not equal")
 }
 
 // ThereIsNoUserProfileState checks that UPS is empty
 func (c *ScenarioCtx) ThereIsNoUserProfileState() error {
-	actualProfiles := c.clientWrapper.UserProfileService.(optlyplugins.UPSHelper).GetUserProfiles()
+	actualProfiles := c.clientWrapper.UserProfileService.(userprofileservice.UPSHelper).GetUserProfiles()
 	if len(actualProfiles) == 0 {
 		return nil
 	}

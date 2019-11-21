@@ -14,17 +14,16 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package optlyplugins
+package userprofileservice
 
-import (
-	"github.com/optimizely/go-sdk/pkg/decision"
-)
+import "github.com/optimizely/go-sdk/pkg/decision"
 
-// SaveErrorUserProfileService represents a user profile service with save error
-type SaveErrorUserProfileService struct {
+// LookupErrorUserProfileService represents a user profile service with lookup error
+type LookupErrorUserProfileService struct {
 	NormalUserProfileService
 }
 
-// Save is used to save bucketing decisions for users
-func (s *SaveErrorUserProfileService) Save(userProfile decision.UserProfile) {
+// Lookup is used to retrieve past bucketing decisions for users
+func (s *LookupErrorUserProfileService) Lookup(userID string) decision.UserProfile {
+	return decision.UserProfile{}
 }

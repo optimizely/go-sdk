@@ -14,19 +14,13 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package optlyplugins
+package userprofileservice
 
 import (
 	"sync"
 
 	"github.com/optimizely/go-sdk/pkg/decision"
 )
-
-// UPSHelper defines Helper methods for UPS
-type UPSHelper interface {
-	SaveUserProfiles(userProfiles []decision.UserProfile)
-	GetUserProfiles() (savedProfiles []decision.UserProfile)
-}
 
 // NormalUserProfileService represents the default implementation of UserProfileService interface
 type NormalUserProfileService struct {

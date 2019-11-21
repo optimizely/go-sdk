@@ -23,7 +23,6 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/optimizely/go-sdk/pkg"
 	"github.com/optimizely/go-sdk/pkg/client"
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decision"
@@ -31,6 +30,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 	"github.com/optimizely/go-sdk/tests/integration/optlyplugins"
+	"github.com/optimizely/go-sdk/tests/integration/optlyplugins/userprofileservice"
 	"gopkg.in/yaml.v3"
 )
 
@@ -83,11 +83,11 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 	if err != nil {
 		log.Fatal(err)
 	}
-	userProfileService := createUserProfileService(config, apiOptions)
 
-	experimentServiceOptions := []decision.CESOptionFunc{}
-	experimentServiceOptions = append(experimentServiceOptions, decision.WithUserProfileService(userProfileService))
-	compositeExperimentService := decision.NewCompositeExperimentService(experimentServiceOptions...)
+	userProfileService := userprofileservice.CreateUserProfileService(config, apiOptions)
+	compositeExperimentService := decision.NewCompositeExperimentService(
+		decision.WithUserProfileService(userProfileService),
+	)
 	compositeService := *decision.NewCompositeService("", decision.WithCompositeExperimentService(compositeExperimentService))
 	decisionService := &optlyplugins.TestCompositeService{CompositeService: compositeService}
 
@@ -326,43 +326,4 @@ func (c *ClientWrapper) track(request models.APIOptions) (models.APIResponse, er
 	}
 	response.Result = "NULL"
 	return response, err
-}
-
-func createUserProfileService(config pkg.ProjectConfig, apiOptions models.APIOptions) decision.UserProfileService {
-	var userProfileService decision.UserProfileService
-	switch apiOptions.UserProfileServiceType {
-	case "NormalService":
-		userProfileService = new(optlyplugins.NormalUserProfileService)
-		break
-	case "LookupErrorService":
-		userProfileService = new(optlyplugins.LookupErrorUserProfileService)
-		break
-	case "SaveErrorService":
-		userProfileService = new(optlyplugins.SaveErrorUserProfileService)
-		break
-	default:
-		userProfileService = new(optlyplugins.NoOpUserProfileService)
-		break
-	}
-
-	var profilesArray []decision.UserProfile
-	for userID, bucketMap := range apiOptions.UPSMapping {
-		var profile decision.UserProfile
-		profile.ID = userID
-		profile.ExperimentBucketMap = make(map[decision.UserDecisionKey]string)
-		for experimentKey, variationKey := range bucketMap {
-			if experiment, err := config.GetExperimentByKey(experimentKey); err == nil {
-				decisionKey := decision.NewUserDecisionKey(experiment.ID)
-				for _, variation := range experiment.Variations {
-					if variation.Key == variationKey {
-						profile.ExperimentBucketMap[decisionKey] = variation.ID
-						break
-					}
-				}
-			}
-		}
-		profilesArray = append(profilesArray, profile)
-	}
-	userProfileService.(optlyplugins.UPSHelper).SaveUserProfiles(profilesArray)
-	return userProfileService
 }
