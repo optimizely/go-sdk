@@ -495,7 +495,7 @@ func TestBenchmarkProcessor100(t *testing.T) {
 	fmt.Println(result)
 
 	println("count number ", count)
-	assert.True(t, count  > 0, "Loss of 50000 messages")
+	assert.True(t, count  > 0)
 
 
 
@@ -531,7 +531,7 @@ func TestBenchmarkProcessor1000(t *testing.T) {
 
 	println("count number ", count)
 
- 	assert.True(t, count > 0)
+ 	assert.True(t, count == 0)
 
 	//print(out)
 
@@ -552,7 +552,7 @@ func TestBenchmarkProcessorLarge(t *testing.T) {
 		outC <- buf.String()
 	}()
 
-	result := testing.Benchmark(benchmarkProcessor10000)
+	result := testing.Benchmark(benchmarkProcessor2000)
 
 	// back to normal state
 	w.Close()
@@ -583,7 +583,7 @@ func benchmarkProcessor1000(b *testing.B) {
 		b.Failed()
 	}
 }
-func benchmarkProcessor10000(b *testing.B) {
+func benchmarkProcessor2000(b *testing.B) {
 	processed := benchmarkProcessor(2000, b)
 	if processed < b.N {
 		b.Failed()
@@ -604,7 +604,7 @@ func benchmarkProcessor(qSize int, b *testing.B) int {
 	for i := 0; i < b.N; i++ {
 		processor.ProcessEvent(impression)
 		processor.ProcessEvent(conversion)
-		time.Sleep(5)
+		time.Sleep(1)
 	}
 
 	exeCtx.TerminateAndWait()
