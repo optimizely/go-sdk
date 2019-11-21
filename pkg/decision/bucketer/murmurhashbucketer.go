@@ -20,6 +20,7 @@ package bucketer
 import (
 	"math"
 
+	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/twmb/murmur3"
 )
@@ -34,6 +35,7 @@ const maxTrafficValue = 10000
 // Bucketer is used to generate bucket value using bucketing key
 type Bucketer interface {
 	Generate(bucketingKey string) int
+	BucketToEntity(bucketKey string, trafficAllocations []entities.Range) (entityID string)
 }
 
 // MurmurhashBucketer generates the bucketing value using the mmh3 algorightm
@@ -57,4 +59,19 @@ func (b MurmurhashBucketer) Generate(bucketingKey string) int {
 	hashCode := hasher.Sum32()
 	ratio := float32(hashCode) / maxHashValue
 	return int(ratio * maxTrafficValue)
+}
+
+// BucketToEntity buckets into a traffic against given bucketKey
+func (b MurmurhashBucketer) BucketToEntity(bucketKey string, trafficAllocations []entities.Range) (entityID string) {
+	bucketValue := b.Generate(bucketKey)
+
+	var currentEndOfRange int
+	for _, trafficAllocationRange := range trafficAllocations {
+		currentEndOfRange = trafficAllocationRange.EndOfRange
+		if bucketValue < currentEndOfRange {
+			return trafficAllocationRange.EntityID
+		}
+	}
+
+	return ""
 }

@@ -43,7 +43,7 @@ func NewMurmurhashExperimentBucketer(hashSeed uint32) *MurmurhashExperimentBucke
 func (b MurmurhashExperimentBucketer) Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (*entities.Variation, reasons.Reason, error) {
 	if experiment.GroupID != "" && group.Policy == "random" {
 		bucketKey := bucketingID + group.ID
-		bucketedExperimentID := b.bucketToEntity(bucketKey, group.TrafficAllocation)
+		bucketedExperimentID := b.bucketer.BucketToEntity(bucketKey, group.TrafficAllocation)
 		if bucketedExperimentID == "" || bucketedExperimentID != experiment.ID {
 			// User is not bucketed into provided experiment in mutex group
 			return nil, reasons.NotBucketedIntoVariation, nil
@@ -51,7 +51,7 @@ func (b MurmurhashExperimentBucketer) Bucket(bucketingID string, experiment enti
 	}
 
 	bucketKey := bucketingID + experiment.ID
-	bucketedVariationID := b.bucketToEntity(bucketKey, experiment.TrafficAllocation)
+	bucketedVariationID := b.bucketer.BucketToEntity(bucketKey, experiment.TrafficAllocation)
 	if bucketedVariationID == "" {
 		// User is not bucketed into a variation in the experiment, return nil variation
 		return nil, reasons.NotBucketedIntoVariation, nil
@@ -62,18 +62,4 @@ func (b MurmurhashExperimentBucketer) Bucket(bucketingID string, experiment enti
 	}
 
 	return nil, reasons.BucketedVariationNotFound, nil
-}
-
-func (b MurmurhashExperimentBucketer) bucketToEntity(bucketKey string, trafficAllocations []entities.Range) (entityID string) {
-	bucketValue := b.bucketer.Generate(bucketKey)
-
-	var currentEndOfRange int
-	for _, trafficAllocationRange := range trafficAllocations {
-		currentEndOfRange = trafficAllocationRange.EndOfRange
-		if bucketValue < currentEndOfRange {
-			return trafficAllocationRange.EntityID
-		}
-	}
-
-	return ""
 }

@@ -1,7 +1,6 @@
 package bucketer
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
@@ -9,48 +8,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestBucketToEntity(t *testing.T) {
-	bucketer := NewMurmurhashExperimentBucketer(DefaultHashSeed)
-
-	experimentID := "1886780721"
-	experimentID2 := "1886780722"
-
-	// bucket value 5254
-	bucketingKey1 := fmt.Sprintf("%s%s", "ppid1", experimentID)
-	// bucket value 4299
-	bucketingKey2 := fmt.Sprintf("%s%s", "ppid2", experimentID)
-	// bucket value 2434
-	bucketingKey3 := fmt.Sprintf("%s%s", "ppid2", experimentID2)
-	// bucket value 5439
-	bucketingKey4 := fmt.Sprintf("%s%s", "ppid3", experimentID)
-
-	variation1 := "1234567123"
-	variation2 := "5949300123"
-	trafficAlloc := []entities.Range{
-		entities.Range{
-			EntityID:   "",
-			EndOfRange: 2500,
-		},
-		entities.Range{
-			EntityID:   variation1,
-			EndOfRange: 4999,
-		},
-		entities.Range{
-			EntityID:   variation2,
-			EndOfRange: 5399,
-		},
-	}
-
-	assert.Equal(t, variation2, bucketer.bucketToEntity(bucketingKey1, trafficAlloc))
-	assert.Equal(t, variation1, bucketer.bucketToEntity(bucketingKey2, trafficAlloc))
-
-	// bucket to empty variation range
-	assert.Equal(t, "", bucketer.bucketToEntity(bucketingKey3, trafficAlloc))
-
-	// bucket outside of range (not in experiment)
-	assert.Equal(t, "", bucketer.bucketToEntity(bucketingKey4, trafficAlloc))
-}
 
 func TestBucketExclusionGroups(t *testing.T) {
 	experiment1 := entities.Experiment{
