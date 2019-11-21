@@ -73,7 +73,7 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 		sourceInfo := map[string]string{}
 
 		if featureDecision.Source == FeatureTest {
-			sourceInfo["experimentKey"] = featureDecisionContext.Feature.Key
+			sourceInfo["experimentKey"] = featureDecision.Experiment.Key
 			sourceInfo["variationKey"] = featureDecision.Variation.Key
 		}
 
