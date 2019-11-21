@@ -498,9 +498,9 @@ func BenchmarkWithBatchSize(b *testing.B) {
 		fun  func(bs int, b *testing.B) int
 	}{
 		{"BatchSize10", 10, benchmarkProcessorWithBatchSize},
-		{"BatchSize20", 20,benchmarkProcessorWithBatchSize},
+		{"BatchSize20", 20, benchmarkProcessorWithBatchSize},
 		{"BatchSize30", 30, benchmarkProcessorWithBatchSize},
-		{"BatchSize40", 40,benchmarkProcessorWithBatchSize},
+		{"BatchSize40", 40, benchmarkProcessorWithBatchSize},
 		{"BatchSize50", 50, benchmarkProcessorWithBatchSize},
 		{"BatchSize60", 60, benchmarkProcessorWithBatchSize},
 	}
