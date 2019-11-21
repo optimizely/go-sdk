@@ -50,7 +50,9 @@ func (c *TestCompositeService) AddListeners(listeners map[string]int) {
 
 // GetListenersCalled - Returns listeners called
 func (c *TestCompositeService) GetListenersCalled() []models.DecisionListener {
-	return c.listenersCalled
+	listenerCalled := c.listenersCalled
+	c.listenersCalled = nil
+	return listenerCalled
 }
 
 func (c *TestCompositeService) decisionNotificationCallback(notification notification.DecisionNotification) {
