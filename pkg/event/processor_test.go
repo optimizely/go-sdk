@@ -18,15 +18,10 @@
 package event
 
 import (
-	"bytes"
 	"errors"
-	"fmt"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/utils"
 	"github.com/stretchr/testify/assert"
-	"io"
-	"os"
-	"strings"
 	"testing"
 	"time"
 )
@@ -454,149 +449,143 @@ func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
 	}
 }
 
-type CustomLogger struct {
-	Mess Queue
+type NoOpLogger struct {
 }
 
 
-func (l *CustomLogger) Log(level logging.LogLevel, message string, fields map[string]interface{}) {
-	l.Mess.Add(message)
+func (l *NoOpLogger) Log(level logging.LogLevel, message string, fields map[string]interface{}) {
 }
 
 
-func (l *CustomLogger) SetLogLevel(level logging.LogLevel) {
+func (l *NoOpLogger) SetLogLevel(level logging.LogLevel) {
 
 }
 
-func TestBenchmarkProcessor100(t *testing.T) {
-	old := os.Stdout // keep backup of the real stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
+func BenchmarkWithQueueSize(b *testing.B) {
+	logging.SetLogger(&NoOpLogger{})
 
-	logging.SetLogger(logging.NewFilteredLevelLogConsumer(logging.LogLevelInfo, os.Stdout))
+	merges := []struct {
+		name string
+		fun  func(*testing.B)
+	}{
+		{"QueueSize100", benchmarkProcessor100},
+		{"QueueSize500", benchmarkProcessor500},
+		{"QueueSize1000", benchmarkProcessor1000},
+		{"QueueSize2000", benchmarkProcessor2000},
+		{"QueueSize3000", benchmarkProcessor3000},
+		{"QueueSize4000", benchmarkProcessor4000},
+	}
 
-	outC := make(chan string)
-	// copy the output in a separate goroutine so printing can't block indefinitely
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
+	for _, merge := range merges {
+		b.Run(merge.name, merge.fun)
+	}
+}
 
-	result := testing.Benchmark(benchmarkProcessor100)
+func BenchmarkWithBatchSize(b *testing.B) {
+	logging.SetLogger(&NoOpLogger{})
 
-	// back to normal state
-	w.Close()
-	os.Stdout = old // restoring the real stdout
-	out := <-outC
+	merges := []struct {
+		name string
+		batchSize int
+		fun  func(bs int, b *testing.B) int
+	}{
+		{"BatchSize10", 10, benchmarkProcessorWithBatchSize},
+		{"BatchSize20", 20,benchmarkProcessorWithBatchSize},
+		{"BatchSize30", 30, benchmarkProcessorWithBatchSize},
+		{"BatchSize40", 40,benchmarkProcessorWithBatchSize},
+		{"BatchSize50", 50, benchmarkProcessorWithBatchSize},
+		{"BatchSize60", 60, benchmarkProcessorWithBatchSize},
+	}
 
-	count := strings.Count(out, "MaxQueueSize has been met. Discarding event")
-
-	fmt.Println(result)
-	val := float64(count)/float64(result.N)
-	percent := int(val * 100)
-
-	println("count number ", count)
-	// at 100 the loss rate is greater than 40%
-	// result.N is somewhere between 500k and 1m
-	assert.True(t, percent > 40 )
-
-
-
-	//print(out)
+	for _, merge := range merges {
+		b.Run(merge.name, func (b *testing.B) {
+			benchmarkProcessorWithBatchSize(merge.batchSize, b)
+		})
+	}
 
 }
 
-func TestBenchmarkProcessor1000(t *testing.T) {
-	old := os.Stdout // keep backup of the real stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
+func BenchmarkWithQueue(b *testing.B) {
+	logging.SetLogger(&NoOpLogger{})
 
-	logging.SetLogger(logging.NewFilteredLevelLogConsumer(logging.LogLevelInfo, os.Stdout))
+	b.Run("InMemoryQueue", func (b *testing.B) {
+		benchmarkProcessorQueue(NewInMemoryQueue(defaultQueueSize), b)
+	})
 
-	outC := make(chan string)
-	// copy the output in a separate goroutine so printing can't block indefinitely
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
-
-	result := testing.Benchmark(benchmarkProcessor1000)
-
-	// back to normal state
-	w.Close()
-	os.Stdout = old // restoring the real stdout
-	out := <-outC
-
-	count := strings.Count(out, "MaxQueueSize has been met. Discarding event")
-
-	fmt.Println(result)
-
-	println("count number ", count)
-	val := float64(count)/float64(result.N)
-	percent := int(val * 100)
-
-	assert.True(t, percent > 40 )
-
-	//print(out)
-
-}
-
-func TestBenchmarkProcessorLarge(t *testing.T) {
-	old := os.Stdout // keep backup of the real stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	logging.SetLogger(logging.NewFilteredLevelLogConsumer(logging.LogLevelInfo, os.Stdout))
-
-	outC := make(chan string)
-	// copy the output in a separate goroutine so printing can't block indefinitely
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
-
-	result := testing.Benchmark(benchmarkProcessor2000)
-
-	// back to normal state
-	w.Close()
-	os.Stdout = old // restoring the real stdout
-	out := <-outC
-
-	count := strings.Count(out, "MaxQueueSize has been met. Discarding event")
-
-	fmt.Println(result)
-
-	println("count number ", count)
-
-	val := float64(count)/float64(result.N)
-	percent := int(val * 100)
-
-	assert.True(t, percent < 40 )
-
-	//print(out)
+	b.Run("ChannelQueue", func (b *testing.B) {
+		benchmarkProcessorQueue(NewChanQueue(defaultQueueSize), b)
+	})
 
 }
 
 func benchmarkProcessor100(b *testing.B) {
-	benchmarkProcessor(100, b)
-}
-func benchmarkProcessor1000(b *testing.B) {
-	benchmarkProcessor(1000, b)
-}
-func benchmarkProcessor2000(b *testing.B) {
-	benchmarkProcessor(2000, b)
+	benchmarkProcessorQueueSize(100, b)
 }
 
-func benchmarkProcessor(qSize int, b *testing.B) int {
+func benchmarkProcessor500(b *testing.B) {
+	benchmarkProcessorQueueSize(500, b)
+}
+
+func benchmarkProcessor1000(b *testing.B) {
+	benchmarkProcessorQueueSize(1000, b)
+}
+
+func benchmarkProcessor2000(b *testing.B) {
+	benchmarkProcessorQueueSize(2000, b)
+}
+
+func benchmarkProcessor3000(b *testing.B) {
+	benchmarkProcessorQueueSize(3000, b)
+}
+
+func benchmarkProcessor4000(b *testing.B) {
+	benchmarkProcessorQueueSize(4000, b)
+}
+
+func benchmarkProcessorQueueSize(qSize int, b *testing.B) int {
 	exeCtx := utils.NewCancelableExecutionCtx()
 	dispatcher := NewMockDispatcher(100, false)
 	processor := NewBatchEventProcessor(
 		WithQueueSize(qSize),
-		WithEventDispatcher(dispatcher),
-		WithFlushInterval(1200))
+		WithEventDispatcher(dispatcher))
+	processor.Start(exeCtx)
+
+	conversion := BuildTestConversionEvent()
+
+	for i := 0; i < b.N; i++ {
+		processor.ProcessEvent(conversion)
+	}
+
+	exeCtx.TerminateAndWait()
+
+	return dispatcher.Events.Size()
+}
+
+func benchmarkProcessorQueue(q Queue, b *testing.B) int {
+	exeCtx := utils.NewCancelableExecutionCtx()
+	dispatcher := NewMockDispatcher(100, false)
+	processor := NewBatchEventProcessor(
+		WithQueue(q),
+		WithEventDispatcher(dispatcher))
+	processor.Start(exeCtx)
+
+	conversion := BuildTestConversionEvent()
+
+	for i := 0; i < b.N; i++ {
+		processor.ProcessEvent(conversion)
+	}
+
+	exeCtx.TerminateAndWait()
+
+	return dispatcher.Events.Size()
+}
+
+func benchmarkProcessorWithBatchSize(bs int, b *testing.B) int {
+	exeCtx := utils.NewCancelableExecutionCtx()
+	dispatcher := NewMockDispatcher(100, false)
+	processor := NewBatchEventProcessor(
+		WithBatchSize(bs),
+		WithEventDispatcher(dispatcher))
 	processor.Start(exeCtx)
 
 	conversion := BuildTestConversionEvent()
