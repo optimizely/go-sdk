@@ -18,6 +18,7 @@ package optlyplugins
 
 import (
 	"github.com/optimizely/go-sdk/pkg/decision"
+	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 )
@@ -68,15 +69,17 @@ func (c *TestCompositeService) decisionNotificationCallback(notification notific
 	c.listenersCalled = append(c.listenersCalled, model)
 }
 
-func getDecisionInfoForNotification(notification notification.DecisionNotification) map[string]interface{} {
+func getDecisionInfoForNotification(notify notification.DecisionNotification) map[string]interface{} {
 	decisionInfoDict := make(map[string]interface{})
 
 	updateSourceInfo := func(source string) {
 		decisionInfoDict["source_info"] = make(map[string]interface{})
-		if source == "feature-test" {
-			if sourceInfo, ok := notification.DecisionInfo["source_info"].(map[string]interface{}); ok {
-				if experimentKey, ok := sourceInfo["experiment_key"].(string); ok {
-					if variationKey, ok := sourceInfo["variation_key"].(string); ok {
+		if source == string(decision.FeatureTest) {
+			featureInfoDict := notify.DecisionInfo["feature"].(map[string]interface{})
+			if sourceInfo, ok := featureInfoDict["sourceInfo"].(interface{}); ok {
+				sourceInfoDict := sourceInfo.((map[string]string))
+				if experimentKey, ok := sourceInfoDict["experimentKey"]; ok {
+					if variationKey, ok := sourceInfoDict["variationKey"]; ok {
 						dict := make(map[string]interface{})
 						dict["experiment_key"] = experimentKey
 						dict["variation_key"] = variationKey
@@ -87,33 +90,41 @@ func getDecisionInfoForNotification(notification notification.DecisionNotificati
 		}
 	}
 
-	switch notificationType := notification.Type; notificationType {
-	case "ab-test", "feature-test":
-		decisionInfoDict["experiment_key"] = notification.DecisionInfo["experimentKey"]
-		decisionInfoDict["variation_key"] = notification.DecisionInfo["variationKey"]
+	switch notificationType := notify.Type; notificationType {
+	case notification.ABTest, notification.FeatureTest:
+		decisionInfoDict["experiment_key"] = notify.DecisionInfo["experimentKey"]
+		decisionInfoDict["variation_key"] = notify.DecisionInfo["variationKey"]
 		break
-	case "feature":
-		decisionInfoDict = notification.DecisionInfo["feature"].(map[string]interface{})
+	case notification.Feature:
+		featureInfoDict := notify.DecisionInfo["feature"].(map[string]interface{})
 		source := ""
-		if decisionSource, ok := decisionInfoDict["source"].(decision.Source); ok {
+		if decisionSource, ok := featureInfoDict["source"].(decision.Source); ok {
 			source = string(decisionSource)
 		} else {
-			source = decisionInfoDict["source"].(string)
+			source = featureInfoDict["source"].(string)
 		}
 		decisionInfoDict["source"] = source
+		decisionInfoDict["feature_enabled"] = featureInfoDict["featureEnabled"]
+		decisionInfoDict["feature_key"] = featureInfoDict["featureKey"]
 		updateSourceInfo(source)
 	case "feature-variable":
-		decisionInfoDict = notification.DecisionInfo["feature"].(map[string]interface{})
+		featureInfoDict := notify.DecisionInfo["feature"].(map[string]interface{})
 		source := ""
-		if decisionSource, ok := decisionInfoDict["source"].(decision.Source); ok {
+		if decisionSource, ok := featureInfoDict["source"].(decision.Source); ok {
 			source = string(decisionSource)
 		} else {
-			source = decisionInfoDict["source"].(string)
+			source = featureInfoDict["source"].(string)
 		}
 		decisionInfoDict["source"] = source
-		decisionInfoDict["variable_key"] = notification.DecisionInfo["variable_key"]
-		decisionInfoDict["variable_type"] = notification.DecisionInfo["variable_type"]
-		decisionInfoDict["variable_value"] = notification.DecisionInfo["variable_value"]
+		decisionInfoDict["variable_key"] = featureInfoDict["variableKey"]
+		if variableType, ok := featureInfoDict["variableType"].(entities.VariableType); ok {
+			decisionInfoDict["variable_type"] = string(variableType)
+		} else {
+			decisionInfoDict["variable_type"] = featureInfoDict["variableType"].(string)
+		}
+		decisionInfoDict["variable_value"] = featureInfoDict["variableValue"]
+		decisionInfoDict["feature_enabled"] = featureInfoDict["featureEnabled"]
+		decisionInfoDict["feature_key"] = featureInfoDict["featureKey"]
 		updateSourceInfo(source)
 	default:
 	}
