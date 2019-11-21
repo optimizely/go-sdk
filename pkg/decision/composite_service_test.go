@@ -124,7 +124,7 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWith
 	s.Equal(numberOfCalls, 1)
 
 	expectedDecisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": false, "featureKey": "my_test_feature_3333", "source": FeatureTest,
-		"sourceInfo":  map[string]string{"experimentKey": "my_test_feature_3333", "variationKey": "2222"},
+		"sourceInfo":  map[string]string{"experimentKey": "test_experiment_1111", "variationKey": "2222"},
 		"variableKey": "Key", "variableType": entities.Double, "variableValue": 23.34}}
 
 	s.Equal(expectedDecisionInfo, note.DecisionInfo)
@@ -162,7 +162,7 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWith
 	s.Equal(numberOfCalls, 1)
 
 	expectedDecisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": false, "featureKey": "my_test_feature_3333", "source": FeatureTest,
-		"sourceInfo":  map[string]string{"experimentKey": "my_test_feature_3333", "variationKey": "2222"},
+		"sourceInfo":  map[string]string{"experimentKey": "test_experiment_1111", "variationKey": "2222"},
 		"variableKey": "Key", "variableType": entities.Integer, "variableValue": 23}}
 
 	s.Equal(expectedDecisionInfo, note.DecisionInfo)
@@ -200,7 +200,7 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWith
 	s.Equal(numberOfCalls, 1)
 
 	expectedDecisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": false, "featureKey": "my_test_feature_3333", "source": FeatureTest,
-		"sourceInfo":  map[string]string{"experimentKey": "my_test_feature_3333", "variationKey": "2222"},
+		"sourceInfo":  map[string]string{"experimentKey": "test_experiment_1111", "variationKey": "2222"},
 		"variableKey": "Key", "variableType": entities.Boolean, "variableValue": true}}
 
 	s.Equal(expectedDecisionInfo, note.DecisionInfo)
@@ -238,7 +238,7 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWith
 	s.Equal(numberOfCalls, 1)
 
 	expectedDecisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": false, "featureKey": "my_test_feature_3333", "source": FeatureTest,
-		"sourceInfo":  map[string]string{"experimentKey": "my_test_feature_3333", "variationKey": "2222"},
+		"sourceInfo":  map[string]string{"experimentKey": "test_experiment_1111", "variationKey": "2222"},
 		"variableKey": "Key", "variableType": entities.Double, "variableValue": "string"}}
 
 	s.Equal(expectedDecisionInfo, note.DecisionInfo)
@@ -271,7 +271,7 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWith
 	s.Equal(numberOfCalls, 1)
 
 	expectedDecisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": false, "featureKey": "my_test_feature_3333", "source": FeatureTest,
-		"sourceInfo": map[string]string{"experimentKey": "my_test_feature_3333", "variationKey": "2222"}}}
+		"sourceInfo": map[string]string{"experimentKey": "test_experiment_1111", "variationKey": "2222"}}}
 
 	s.Equal(expectedDecisionInfo, note.DecisionInfo)
 }
