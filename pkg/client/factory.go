@@ -44,7 +44,7 @@ type OptimizelyFactory struct {
 // OptionFunc is used to provide custom client configuration to the OptimizelyFactory
 type OptionFunc func(*OptimizelyFactory)
 
-// Client gets client and sets some parameters
+// Client instantiates a new OptimizelyClient with the given options
 func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClient, error) {
 	// extract options
 	for _, opt := range clientOptions {

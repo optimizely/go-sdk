@@ -10,7 +10,7 @@ import (
 	"github.com/optimizely/go-sdk"
 	"github.com/optimizely/go-sdk/pkg/client"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/optimizely/go-sdk/pkg/events"
+	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
