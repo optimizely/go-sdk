@@ -37,8 +37,10 @@ const (
 	ABTest DecisionNotificationType = "ab-test"
 	// Feature is used when the decision is returned as part of evaluating a feature
 	Feature DecisionNotificationType = "feature"
-	// FeatureTest is used when the decision is returned as part of evaluating a feature
+	// FeatureTest is used when the decision is returned as part of evaluating a feature test
 	FeatureTest DecisionNotificationType = "feature-test"
+	// FeatureVariable is used when the decision is returned as part of evaluating a feature with a variable
+	FeatureVariable DecisionNotificationType = "feature-variable"
 	// LogEvent notification type
 	LogEvent Type = "log_event_notification"
 )

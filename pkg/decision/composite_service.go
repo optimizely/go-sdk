@@ -86,11 +86,14 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 		if featureDecision.Variation != nil {
 			featureInfo["featureEnabled"] = featureDecision.Variation.FeatureEnabled
 		}
+
+		notificationType := notification.Feature
 		variable := featureDecisionContext.Variable
 		if variable.ID != "" && variable.Key != "" {
 			featureInfo["variableKey"] = variable.Key
 			featureInfo["variableType"] = variable.Type
 
+			notificationType = notification.FeatureVariable
 			variableValue := variable.DefaultValue
 
 			if featureDecision.Variation != nil {
@@ -125,7 +128,7 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 
 		decisionNotification := notification.DecisionNotification{
 			DecisionInfo: decisionInfo,
-			Type:         notification.Feature,
+			Type:         notificationType,
 			UserContext:  userContext,
 		}
 		if err = s.notificationCenter.Send(notification.Decision, decisionNotification); err != nil {
