@@ -461,23 +461,31 @@ func (l *NoOpLogger) SetLogLevel(level logging.LogLevel) {
 
 }
 
+const benchmarkSleep = 5
+
 func BenchmarkWithQueueSize(b *testing.B) {
+	// no op logger added to keep out extra discarded events
 	logging.SetLogger(&NoOpLogger{})
 
 	merges := []struct {
 		name string
-		fun  func(*testing.B)
+		qSize int
 	}{
-		{"QueueSize100", benchmarkProcessor100},
-		{"QueueSize500", benchmarkProcessor500},
-		{"QueueSize1000", benchmarkProcessor1000},
-		{"QueueSize2000", benchmarkProcessor2000},
-		{"QueueSize3000", benchmarkProcessor3000},
-		{"QueueSize4000", benchmarkProcessor4000},
+		{"QueueSize100", 100},
+		{"QueueSize500", 500},
+		{"QueueSize1000", 1000},
+		{"QueueSize2000", 2000},
+		{"QueueSize3000", 3000},
+		{"QueueSize4000", 4000},
 	}
 
 	for _, merge := range merges {
-		b.Run(merge.name, merge.fun)
+		b.Run(merge.name, func (b *testing.B) {
+			count := benchmarkProcessorWithQueueSize(merge.qSize, b)
+			if count != b.N {
+				b.Fail()
+			}
+		})
 	}
 }
 
@@ -509,40 +517,16 @@ func BenchmarkWithQueue(b *testing.B) {
 	logging.SetLogger(&NoOpLogger{})
 
 	b.Run("InMemoryQueue", func (b *testing.B) {
-		benchmarkProcessorQueue(NewInMemoryQueue(defaultQueueSize), b)
+		benchmarkProcessorWithQueue(NewInMemoryQueue(defaultQueueSize), b)
 	})
 
 	b.Run("ChannelQueue", func (b *testing.B) {
-		benchmarkProcessorQueue(NewChanQueue(defaultQueueSize), b)
+		benchmarkProcessorWithQueue(NewChanQueue(defaultQueueSize), b)
 	})
 
 }
 
-func benchmarkProcessor100(b *testing.B) {
-	benchmarkProcessorQueueSize(100, b)
-}
-
-func benchmarkProcessor500(b *testing.B) {
-	benchmarkProcessorQueueSize(500, b)
-}
-
-func benchmarkProcessor1000(b *testing.B) {
-	benchmarkProcessorQueueSize(1000, b)
-}
-
-func benchmarkProcessor2000(b *testing.B) {
-	benchmarkProcessorQueueSize(2000, b)
-}
-
-func benchmarkProcessor3000(b *testing.B) {
-	benchmarkProcessorQueueSize(3000, b)
-}
-
-func benchmarkProcessor4000(b *testing.B) {
-	benchmarkProcessorQueueSize(4000, b)
-}
-
-func benchmarkProcessorQueueSize(qSize int, b *testing.B) int {
+func benchmarkProcessorWithQueueSize(qSize int, b *testing.B) int {
 	exeCtx := utils.NewCancelableExecutionCtx()
 	dispatcher := NewMockDispatcher(100, false)
 	processor := NewBatchEventProcessor(
@@ -554,6 +538,7 @@ func benchmarkProcessorQueueSize(qSize int, b *testing.B) int {
 
 	for i := 0; i < b.N; i++ {
 		processor.ProcessEvent(conversion)
+		time.Sleep(benchmarkSleep)
 	}
 
 	exeCtx.TerminateAndWait()
@@ -561,7 +546,7 @@ func benchmarkProcessorQueueSize(qSize int, b *testing.B) int {
 	return dispatcher.Events.Size()
 }
 
-func benchmarkProcessorQueue(q Queue, b *testing.B) int {
+func benchmarkProcessorWithQueue(q Queue, b *testing.B) int {
 	exeCtx := utils.NewCancelableExecutionCtx()
 	dispatcher := NewMockDispatcher(100, false)
 	processor := NewBatchEventProcessor(
@@ -573,6 +558,7 @@ func benchmarkProcessorQueue(q Queue, b *testing.B) int {
 
 	for i := 0; i < b.N; i++ {
 		processor.ProcessEvent(conversion)
+		time.Sleep(benchmarkSleep)
 	}
 
 	exeCtx.TerminateAndWait()
@@ -592,6 +578,7 @@ func benchmarkProcessorWithBatchSize(bs int, b *testing.B) int {
 
 	for i := 0; i < b.N; i++ {
 		processor.ProcessEvent(conversion)
+		time.Sleep(benchmarkSleep)
 	}
 
 	exeCtx.TerminateAndWait()

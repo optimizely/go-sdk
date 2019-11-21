@@ -56,7 +56,7 @@ func init() {
 // SetLogger replaces the default logger with the given logger
 func SetLogger(logger OptimizelyLogConsumer) {
 	mutex.Lock()
-	 defaultLogConsumer = logger
+	defaultLogConsumer = logger
 	mutex.Unlock()
 }
 
