@@ -587,7 +587,7 @@ func benchmarkProcessor1000(b *testing.B) {
 	benchmarkProcessor(1000, b)
 }
 func benchmarkProcessor2000(b *testing.B) {
-	benchmarkProcessor(1200, b)
+	benchmarkProcessor(2000, b)
 }
 
 func benchmarkProcessor(qSize int, b *testing.B) int {
@@ -596,7 +596,7 @@ func benchmarkProcessor(qSize int, b *testing.B) int {
 	processor := NewBatchEventProcessor(
 		WithQueueSize(qSize),
 		WithEventDispatcher(dispatcher),
-		WithFlushInterval(2000))
+		WithFlushInterval(1200))
 	processor.Start(exeCtx)
 
 	conversion := BuildTestConversionEvent()
