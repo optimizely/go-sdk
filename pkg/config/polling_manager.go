@@ -19,6 +19,7 @@ package config
 
 import (
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
@@ -36,6 +37,12 @@ const DefaultPollingInterval = 5 * time.Minute // default to 5 minutes for polli
 // DatafileURLTemplate is used to construct the endpoint for retrieving the datafile from the CDN
 const DatafileURLTemplate = "https://cdn.optimizely.com/datafiles/%s.json"
 
+// ModifiedSince header key for request
+const ModifiedSince = "If-Modified-Since"
+
+// LastModified header key for response
+const LastModified = "Last-Modified"
+
 var cmLogger = logging.GetLogger("PollingConfigManager")
 
 // PollingProjectConfigManager maintains a dynamic copy of the project config
@@ -44,6 +51,7 @@ type PollingProjectConfigManager struct {
 	pollingInterval    time.Duration
 	notificationCenter notification.Center
 	initDatafile       []byte
+	lastModified       string
 
 	configLock    sync.RWMutex
 	err           error
@@ -89,24 +97,49 @@ func InitialDatafile(datafile []byte) OptionFunc {
 func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	var e error
 	var code int
+	var respHeaders http.Header
+
+	closeMutex := func(e error) {
+		cm.err = e
+		cm.configLock.Unlock()
+	}
+
 	if len(datafile) == 0 {
-		datafile, code, e = cm.requester.Get()
+		if cm.lastModified != "" {
+			lastModifiedHeader := utils.Header{Name: ModifiedSince, Value: cm.lastModified}
+			datafile, respHeaders, code, e = cm.requester.Get(lastModifiedHeader)
+		} else {
+			datafile, respHeaders, code, e = cm.requester.Get()
+		}
 
 		if e != nil {
 			cmLogger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
+			cm.configLock.Lock()
+			closeMutex(e)
+			return
+		}
+
+		if code == http.StatusNotModified {
+			cmLogger.Debug("The datafile was not modified and won't be downloaded again")
+			return
+		}
+
+		// Save last-modified date from response header
+		lastModified := respHeaders.Get(LastModified)
+		if lastModified != "" {
+			cm.configLock.Lock()
+			cm.lastModified = lastModified
+			cm.configLock.Unlock()
 		}
 	}
 
 	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(datafile)
 
 	cm.configLock.Lock()
-	closeMutex := func() {
-		cm.err = err
-		cm.configLock.Unlock()
-	}
+
 	if err != nil {
 		cmLogger.Error("failed to create project config", err)
-		closeMutex()
+		closeMutex(err)
 		return
 	}
 
@@ -116,12 +149,12 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	}
 	if projectConfig.GetRevision() == previousRevision {
 		cmLogger.Debug(fmt.Sprintf("No datafile updates. Current revision number: %s", cm.projectConfig.GetRevision()))
-		closeMutex()
+		closeMutex(nil)
 		return
 	}
 	cmLogger.Debug(fmt.Sprintf("New datafile set with revision: %s. Old revision: %s", projectConfig.GetRevision(), previousRevision))
 	cm.projectConfig = projectConfig
-	closeMutex()
+	closeMutex(nil)
 
 	if cm.notificationCenter != nil {
 		projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
@@ -174,7 +207,10 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 func (cm *PollingProjectConfigManager) GetConfig() (pkg.ProjectConfig, error) {
 	cm.configLock.RLock()
 	defer cm.configLock.RUnlock()
-	return cm.projectConfig, cm.err
+	if cm.projectConfig == nil {
+		return cm.projectConfig, cm.err
+	}
+	return cm.projectConfig, nil
 }
 
 // OnProjectConfigUpdate registers a handler for ProjectConfigUpdate notifications

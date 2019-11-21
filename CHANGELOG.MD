@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.0.0-beta7] - November 14th, 2019
+
+## New Features
+- feat: Method for removing forced variations [#176](https://github.com/optimizely/go-sdk/pull/176)
+
+### Bug Fixes
+- fix: Update built-in map-based ExperimentOverrideStore implementation to be concurrently usable [#171](https://github.com/optimizely/go-sdk/pull/171)
+- fix: Add a public constructor for MapExperimentOverridesStore [#174](https://github.com/optimizely/go-sdk/pull/174)
+- fix: don't return error when there is a good projectConfig in polling manager [#179](https://github.com/optimizely/go-sdk/pull/179)
+- fix(decision): Logs produced by the various decision services. [#180](https://github.com/optimizely/go-sdk/pull/180)
+- fix(exists-condition) Fixed exists comparison for leaf condition. [#185](https://github.com/optimizely/go-sdk/pull/185)
+
+## [1.0.0-beta6] - November 8th, 2019
+
+## New Features
+- Experiment override service - implement groups
+[#164](https://github.com/optimizely/go-sdk/pull/164)
+- Add User profile service
+[#163](https://github.com/optimizely/go-sdk/pull/163)
+
+### Bug Fixes
+- Fix config managers so that they don't try and parse on error returned from CDN. [#170](https://github.com/optimizely/go-sdk/pull/170)
+- When event batch size has been reached only start one batch event processing go routine.
+- When queue size is met, log a message and do not add to the queue.
+- Duration used was setting the time too far into the future by multiplying by second and then by milliseconds. Flush interval is now any duration, default is 30 seconds.  If you don't pass in a multiplier the duration created is in microseconds.
+[#167](https://github.com/optimizely/go-sdk/pull/167)
+- fixed parsing for audience conditions.
+[#165] (https://github.com/optimizely/go-sdk/pull/165)
+- Check nil to prevent panic. [#162] (https://github.com/optimizely/go-sdk/pull/162)
+- fix: support audience ids. [#161] (https://github.com/optimizely/go-sdk/pull/161)
+
+## [1.0.0-beta5] - October 30th, 2019
+
+### Bug Fixes
+- fix(ExperimentWhitelistService): Fix finding variation by key [#155](https://github.com/optimizely/go-sdk/pull/155)
+
 ## [1.0.0-beta4] - October 28th, 2019
 
 ### New Features

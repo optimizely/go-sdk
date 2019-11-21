@@ -21,7 +21,7 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
@@ -31,21 +31,16 @@ var json = jsoniter.ConfigCompatibleWithStandardLibrary
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
 func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, retErr error) {
 
-	var parsedConditions interface{}
-	switch v := conditions.(type) {
-	case string:
-		if err := json.Unmarshal([]byte(v), &parsedConditions); err != nil {
-			retErr = err
-			return
-		}
-	default:
-		parsedConditions = conditions
+	parsedConditions, retErr := parseConditions(conditions)
+	if retErr != nil {
+		return
 	}
 
 	value := reflect.ValueOf(parsedConditions)
 	visited := make(map[interface{}]bool)
 
 	conditionTree = &entities.TreeNode{}
+
 	var populateConditions func(v reflect.Value, root *entities.TreeNode)
 	populateConditions = func(v reflect.Value, root *entities.TreeNode) {
 
@@ -73,17 +68,10 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 					continue
 
 				case map[string]interface{}:
-					jsonBody, err := json.Marshal(typedV)
-					if err != nil {
+					if err := createLeafCondition(value, n); err != nil {
 						retErr = err
 						return
 					}
-					condition := entities.Condition{}
-					if err := json.Unmarshal(jsonBody, &condition); err != nil {
-						retErr = err
-						return
-					}
-					n.Item = condition
 				}
 
 				root.Nodes = append(root.Nodes, n)
@@ -93,12 +81,54 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 		}
 	}
 
-	populateConditions(value, conditionTree)
+	// Check for leaf conditions
+	if value.Kind() == reflect.Map {
+		typedV := value.Interface()
+		if v, ok := typedV.(map[string]interface{}); ok {
+			n := &entities.TreeNode{}
+			if err := createLeafCondition(v, n); err != nil {
+				retErr = err
+				return
+			}
+			conditionTree.Operator = "or"
+			conditionTree.Nodes = append(conditionTree.Nodes, n)
+		}
+	} else {
+		populateConditions(value, conditionTree)
+	}
+
 	if conditionTree.Nodes == nil && conditionTree.Operator == "" {
 		retErr = errEmptyTree
 		conditionTree = nil
 	}
 	return conditionTree, retErr
+}
+
+// Parses conditions for audience in the datafile
+func parseConditions(conditions interface{}) (parsedConditions interface{}, retErr error) {
+	switch v := conditions.(type) {
+	case string:
+		if err := json.Unmarshal([]byte(v), &parsedConditions); err != nil {
+			return nil, err
+		}
+	default:
+		parsedConditions = conditions
+	}
+	return parsedConditions, nil
+}
+
+// Creates condition for the leaf node in the condition tree
+func createLeafCondition(typedV map[string]interface{}, node *entities.TreeNode) error {
+	jsonBody, err := json.Marshal(typedV)
+	if err != nil {
+		return err
+	}
+	condition := entities.Condition{}
+	if err := json.Unmarshal(jsonBody, &condition); err != nil {
+		return err
+	}
+	node.Item = condition
+	return nil
 }
 
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
@@ -108,7 +138,7 @@ func buildAudienceConditionTree(conditions interface{}) (conditionTree *entities
 	value := reflect.ValueOf(conditions)
 	visited := make(map[interface{}]bool)
 
-	conditionTree = &entities.TreeNode{}
+	conditionTree = &entities.TreeNode{Operator: "or"}
 	var populateConditions func(v reflect.Value, root *entities.TreeNode)
 	populateConditions = func(v reflect.Value, root *entities.TreeNode) {
 

@@ -53,7 +53,7 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	// Determine if user can be part of the experiment
 	if experiment.AudienceConditionTree != nil {
 		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
-		evalResult := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
+		evalResult, _ := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
 		if !evalResult {
 			experimentDecision.Reason = reasons.FailedAudienceTargeting
 			return experimentDecision, nil
@@ -71,7 +71,9 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 		bLogger.Debug(fmt.Sprintf(`Error computing bucketing ID for experiment "%s": "%s"`, experiment.Key, err.Error()))
 	}
 
-	bLogger.Debug(fmt.Sprintf(`Using bucketing ID: "%s"`, bucketingID))
+	if bucketingID != userContext.ID {
+		bLogger.Debug(fmt.Sprintf(`Using bucketing ID: "%s" for user "%s"`, bucketingID, userContext.ID))
+	}
 	// @TODO: handle error from bucketer
 	variation, reason, _ := s.bucketer.Bucket(bucketingID, *experiment, group)
 	experimentDecision.Reason = reason

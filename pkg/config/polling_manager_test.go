@@ -17,6 +17,7 @@
 package config
 
 import (
+	"net/http"
 	"testing"
 	"time"
 
@@ -33,9 +34,9 @@ type MockRequester struct {
 	mock.Mock
 }
 
-func (m *MockRequester) Get(headers ...utils.Header) (response []byte, code int, err error) {
+func (m *MockRequester) Get(headers ...utils.Header) (response []byte, responseHeaders http.Header, code int, err error) {
 	args := m.Called(headers)
-	return args.Get(0).([]byte), args.Int(1), args.Error(2)
+	return args.Get(0).([]byte), args.Get(1).(http.Header), args.Int(2), args.Error(3)
 }
 
 func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
@@ -43,7 +44,7 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 	mockDatafile := []byte(`{"revision":"42"}`)
 	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, 200, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
@@ -57,13 +58,14 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, actual)
 	assert.Equal(t, projectConfig, actual)
+
 	exeCtx.TerminateAndWait() // just sending signal and improving coverage
 }
 
 func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
 	mockDatafile := []byte("NOT-VALID")
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, 200, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
@@ -82,7 +84,7 @@ func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T
 	mockDatafile2 := []byte(`{"revision":"42","botFiltering":false}`)
 	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, 200, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil)
 
 	sdkKey := "test_sdk_key"
 
@@ -101,13 +103,45 @@ func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T
 	assert.Equal(t, projectConfig1, actual)
 }
 
+func TestNewPollingProjectConfigManagerWithLastModifiedDates(t *testing.T) {
+	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true}`)
+	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
+	mockRequester := new(MockRequester)
+	modifiedDate := "Wed, 16 Oct 2019 20:16:45 GMT"
+	responseHeaders := http.Header{}
+	responseHeaders.Set(LastModified, modifiedDate)
+
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, responseHeaders, http.StatusOK, nil)
+	mockRequester.On("Get", []utils.Header{utils.Header{Name: ModifiedSince, Value: modifiedDate}}).Return([]byte{}, responseHeaders, http.StatusNotModified, nil)
+
+	sdkKey := "test_sdk_key"
+
+	exeCtx := utils.NewCancelableExecutionCtx()
+	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager.Start(exeCtx)
+
+	// Fetch valid config
+	actual, err := configManager.GetConfig()
+	assert.Nil(t, err)
+	assert.NotNil(t, actual)
+	assert.Equal(t, projectConfig1, actual)
+
+	// Sync and check no changes were made to the previous config because of 304 error code
+	configManager.SyncConfig([]byte{})
+	actual, err = configManager.GetConfig()
+	assert.Nil(t, err)
+	assert.NotNil(t, actual)
+	assert.Equal(t, projectConfig1, actual)
+	mockRequester.AssertExpectations(t)
+}
+
 func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing.T) {
 	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true}`)
 	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false}`)
 	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
 	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, 200, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil)
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
@@ -127,12 +161,45 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 	assert.Equal(t, projectConfig2, actual)
 }
 
+func TestNewPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
+	mockDatafile1 := []byte("NOT-VALID")
+	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false}`)
+
+	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
+	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
+	mockRequester := new(MockRequester)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil)
+
+	// Test we fetch using requester
+	sdkKey := "test_sdk_key"
+
+	exeCtx := utils.NewCancelableExecutionCtx()
+	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager.Start(exeCtx)
+	mockRequester.AssertExpectations(t)
+
+	actual, err := configManager.GetConfig() // polling for bad file
+	assert.NotNil(t, err)
+	assert.Nil(t, actual)
+	assert.Nil(t, projectConfig1)
+
+	configManager.SyncConfig(mockDatafile2) // polling for good file
+	actual, err = configManager.GetConfig()
+	assert.Nil(t, err)
+	assert.Equal(t, projectConfig2, actual)
+
+	configManager.SyncConfig(mockDatafile1) // polling for bad file, error not null but good project
+	actual, err = configManager.GetConfig()
+	assert.Nil(t, err)
+	assert.Equal(t, projectConfig2, actual)
+}
+
 func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true}`)
 	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false}`)
 
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, 200, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil)
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"

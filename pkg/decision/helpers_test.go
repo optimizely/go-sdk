@@ -75,9 +75,23 @@ type MockAudienceTreeEvaluator struct {
 	mock.Mock
 }
 
-func (m *MockAudienceTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) bool {
+type MockUserProfileService struct {
+	UserProfileService
+	mock.Mock
+}
+
+func (m *MockUserProfileService) Lookup(userID string) UserProfile {
+	args := m.Called(userID)
+	return args.Get(0).(UserProfile)
+}
+
+func (m *MockUserProfileService) Save(userProfile UserProfile) {
+	m.Called(userProfile)
+}
+
+func (m *MockAudienceTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
 	args := m.Called(node, condTreeParams)
-	return args.Bool(0)
+	return args.Bool(0), args.Bool(1)
 }
 
 // Single variation experiment
@@ -102,6 +116,13 @@ var testFeat3333 = entities.Feature{
 	ID:                 "3333",
 	Key:                testFeat3333Key,
 	FeatureExperiments: []entities.Experiment{testExp1111},
+}
+
+var testVariable = entities.Variable{
+	DefaultValue: "defaultString",
+	ID:           "1",
+	Key:          "test_feature_flag_key",
+	Type:         entities.String,
 }
 
 // Feature rollout
@@ -226,7 +247,7 @@ var testTargetedExp1116 = entities.Experiment{
 // Experiment with a whitelist
 const testExpWhitelistKey = "test_experiment_whitelist"
 
-var testExpWhitelistVar2229 = entities.Variation{ID: "2229", Key: "2229"}
+var testExpWhitelistVar2229 = entities.Variation{ID: "2229", Key: "var_2229"}
 var testExpWhitelist = entities.Experiment{
 	ID:  "1117",
 	Key: testExpWhitelistKey,
@@ -237,8 +258,8 @@ var testExpWhitelist = entities.Experiment{
 		entities.Range{EntityID: "2229", EndOfRange: 10000},
 	},
 	Whitelist: map[string]string{
-		"test_user_1": "2229",
-		// Note: this is an invalid entry, there is no variation 2230 in this experiment
-		"test_user_2": "2230",
+		"test_user_1": "var_2229",
+		// Note: this is an invalid entry, there is no variation with key "var_2230" in this experiment
+		"test_user_2": "var_2230",
 	},
 }

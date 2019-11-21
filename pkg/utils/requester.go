@@ -38,10 +38,10 @@ var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // Requester is used to make outbound requests with
 type Requester interface {
-	Get(...Header) (response []byte, code int, err error)
+	Get(...Header) (response []byte, responseHeaders http.Header, code int, err error)
 	GetObj(result interface{}, headers ...Header) error
 
-	Post(body interface{}, headers ...Header) (response []byte, code int, err error)
+	Post(body interface{}, headers ...Header) (response []byte, responseHeaders http.Header, code int, err error)
 	PostObj(body interface{}, result interface{}, headers ...Header) error
 
 	String() string
@@ -101,13 +101,13 @@ func NewHTTPRequester(url string, params ...func(*HTTPRequester)) *HTTPRequester
 
 // Get executes HTTP GET with url and optional extra headers, returns body in []bytes
 // url created as url+sdkKey.json
-func (r HTTPRequester) Get(headers ...Header) (response []byte, code int, err error) {
+func (r HTTPRequester) Get(headers ...Header) (response []byte, responseHeaders http.Header, code int, err error) {
 	return r.Do("GET", nil, headers)
 }
 
 // GetObj executes HTTP GET with url and optional extra headers, returns filled object
 func (r HTTPRequester) GetObj(result interface{}, headers ...Header) error {
-	b, _, err := r.Do("GET", nil, headers)
+	b, _, _, err := r.Do("GET", nil, headers)
 	if err != nil {
 		return err
 	}
@@ -115,17 +115,17 @@ func (r HTTPRequester) GetObj(result interface{}, headers ...Header) error {
 }
 
 // Post executes HTTP POST with url, body and optional extra headers
-func (r HTTPRequester) Post(body interface{}, headers ...Header) (response []byte, code int, err error) {
+func (r HTTPRequester) Post(body interface{}, headers ...Header) (response []byte, responseHeaders http.Header, code int, err error) {
 	b, err := json.Marshal(body)
 	if err != nil {
-		return nil, 400, err
+		return nil, nil, http.StatusBadRequest, err
 	}
 	return r.Do("POST", bytes.NewBuffer(b), headers)
 }
 
 // PostObj executes HTTP POST with uri, body and optional extra headers. Returns filled object
 func (r HTTPRequester) PostObj(body, result interface{}, headers ...Header) error {
-	b, _, err := r.Post(body, headers...)
+	b, _, _, err := r.Post(body, headers...)
 	if err != nil {
 		return err
 	}
@@ -133,13 +133,13 @@ func (r HTTPRequester) PostObj(body, result interface{}, headers ...Header) erro
 }
 
 // Do executes request and returns response body for requested uri (sdkKey.json).
-func (r HTTPRequester) Do(method string, body io.Reader, headers []Header) (response []byte, code int, err error) {
+func (r HTTPRequester) Do(method string, body io.Reader, headers []Header) (response []byte, responseHeaders http.Header, code int, err error) {
 
-	single := func(request *http.Request) (response []byte, code int, e error) {
+	single := func(request *http.Request) (response []byte, responseHeaders http.Header, code int, e error) {
 		resp, doErr := r.client.Do(request)
 		if doErr != nil {
 			requesterLogger.Error(fmt.Sprintf("failed to send request %v", request), e)
-			return nil, 0, doErr
+			return nil, http.Header{}, 0, doErr
 		}
 		defer func() {
 			if e := resp.Body.Close(); e != nil {
@@ -149,35 +149,35 @@ func (r HTTPRequester) Do(method string, body io.Reader, headers []Header) (resp
 
 		if response, err = ioutil.ReadAll(resp.Body); err != nil {
 			requesterLogger.Error("failed to read body", err)
-			return nil, resp.StatusCode, err
+			return nil, resp.Header, resp.StatusCode, err
 		}
 
-		if resp.StatusCode >= 400 {
+		if resp.StatusCode >= http.StatusBadRequest {
 			requesterLogger.Warning(fmt.Sprintf("error status code=%d", resp.StatusCode))
-			return response, resp.StatusCode, errors.New(resp.Status)
+			return response, resp.Header, resp.StatusCode, errors.New(resp.Status)
 		}
 
-		return response, resp.StatusCode, nil
+		return response, resp.Header, resp.StatusCode, nil
 	}
 
 	requesterLogger.Debug(fmt.Sprintf("request %s", r.url))
 	req, err := http.NewRequest(method, r.url, body)
 	if err != nil {
 		requesterLogger.Error(fmt.Sprintf("failed to make request %s", r.url), err)
-		return nil, 0, err
+		return nil, nil, 0, err
 	}
 
 	r.addHeaders(req, headers)
 
 	for i := 0; i < r.retries; i++ {
 
-		if response, code, err = single(req); err == nil {
+		if response, responseHeaders, code, err = single(req); err == nil {
 			triedMsg := ""
 			if i > 0 {
 				triedMsg = fmt.Sprintf(", tried %d time(s)", i+1)
 			}
 			requesterLogger.Debug(fmt.Sprintf("completed %s%s", r.url, triedMsg))
-			return response, code, err
+			return response, responseHeaders, code, err
 		}
 		requesterLogger.Debug(fmt.Sprintf("failed %s with %v", r.url, err))
 
@@ -187,7 +187,7 @@ func (r HTTPRequester) Do(method string, body io.Reader, headers []Header) (resp
 		}
 	}
 
-	return response, code, err
+	return response, responseHeaders, code, err
 }
 
 func (r HTTPRequester) addHeaders(req *http.Request, headers []Header) *http.Request {

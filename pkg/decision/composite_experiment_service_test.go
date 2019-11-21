@@ -110,7 +110,7 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionNoDecisionsMade() {
 	}
 	decision, err := compositeExperimentService.GetDecision(s.testDecisionContext, testUserContext)
 
-	s.Error(err)
+	s.NoError(err)
 	s.Equal(expectedExperimentDecision2, decision)
 	s.mockExperimentService.AssertExpectations(s.T())
 	s.mockExperimentService2.AssertExpectations(s.T())
@@ -156,6 +156,17 @@ func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentService() {
 	s.Equal(2, len(compositeExperimentService.experimentServices))
 	s.IsType(&ExperimentWhitelistService{}, compositeExperimentService.experimentServices[0])
 	s.IsType(&ExperimentBucketerService{}, compositeExperimentService.experimentServices[1])
+}
+
+func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithCustomOptions() {
+	mockUserProfileService := new(MockUserProfileService)
+	mockExperimentOverrideStore := new(MapExperimentOverridesStore)
+	compositeExperimentService := NewCompositeExperimentService(
+		WithUserProfileService(mockUserProfileService),
+		WithOverrideStore(mockExperimentOverrideStore),
+	)
+	s.Equal(mockUserProfileService, compositeExperimentService.userProfileService)
+	s.Equal(mockExperimentOverrideStore, compositeExperimentService.overrideStore)
 }
 
 func TestCompositeExperimentTestSuite(t *testing.T) {

@@ -86,7 +86,7 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingPasses() {
 	s.mockBucketer.On("Bucket", testUserContext.ID, testTargetedExp1116, entities.Group{}).Return(&testTargetedExp1116Var2228, reasons.BucketedIntoVariation, nil)
 
 	mockAudienceTreeEvaluator := new(MockAudienceTreeEvaluator)
-	mockAudienceTreeEvaluator.On("Evaluate", mock.Anything, mock.Anything).Return(true)
+	mockAudienceTreeEvaluator.On("Evaluate", mock.Anything, mock.Anything).Return(true, true)
 	experimentBucketerService := ExperimentBucketerService{
 		audienceTreeEvaluator: mockAudienceTreeEvaluator,
 		bucketer:              s.mockBucketer,
@@ -113,7 +113,7 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingFails() {
 		},
 	}
 	mockAudienceTreeEvaluator := new(MockAudienceTreeEvaluator)
-	mockAudienceTreeEvaluator.On("Evaluate", mock.Anything, mock.Anything).Return(false)
+	mockAudienceTreeEvaluator.On("Evaluate", mock.Anything, mock.Anything).Return(false, true)
 	experimentBucketerService := ExperimentBucketerService{
 		audienceTreeEvaluator: mockAudienceTreeEvaluator,
 		bucketer:              s.mockBucketer,

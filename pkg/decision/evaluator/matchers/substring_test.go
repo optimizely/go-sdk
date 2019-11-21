@@ -55,7 +55,7 @@ func TestSubstringMatcher(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, result)
 
-	// Test error case
+	// Test attribute not found
 	user = entities.UserContext{
 		Attributes: map[string]interface{}{
 			"not_string_foo": "foo",

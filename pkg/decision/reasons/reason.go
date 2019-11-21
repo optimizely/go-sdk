@@ -25,6 +25,12 @@ const (
 	BucketedVariationNotFound Reason = "Bucketed variation not found"
 	// BucketedIntoVariation - the user is bucketed into a variation for the given experiment
 	BucketedIntoVariation Reason = "Bucketed into variation"
+	// BucketedIntoFeatureTest - the user is bucketed into a variation for the given feature test
+	BucketedIntoFeatureTest Reason = "Bucketed into feature test"
+	// BucketedIntoRollout - the user is bucketed into a variation for the given feature rollout
+	BucketedIntoRollout Reason = "Bucketed into feature rollout"
+	// FailedRolloutBucketing - the user is not bucketed into the feature rollout
+	FailedRolloutBucketing Reason = "Not bucketed into rollout"
 	// FailedRolloutTargeting - the user does not meet the rollout targeting rules
 	FailedRolloutTargeting Reason = "Does not meet rollout targeting rule"
 	// FailedAudienceTargeting - the user failed the audience targeting conditions
@@ -43,4 +49,10 @@ const (
 	InvalidWhitelistVariationAssignment Reason = "Invalid whitelist variation assignment"
 	// WhitelistVariationAssignmentFound - a valid variation assignment was found for the given user and experiment
 	WhitelistVariationAssignmentFound Reason = "Whitelist variation assignment found"
+	// NoOverrideVariationAssignment - No override variation was found for the given user and experiment
+	NoOverrideVariationAssignment Reason = "No override variation assignment"
+	// InvalidOverrideVariationAssignment - An override variation was found for the given user and experiment, but no variation with that key exists in the given experiment
+	InvalidOverrideVariationAssignment Reason = "Invalid override variation assignment"
+	// OverrideVariationAssignmentFound - A valid override variation was found for the given user and experiment
+	OverrideVariationAssignmentFound Reason = "Override variation assignment found"
 )

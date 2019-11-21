@@ -14,12 +14,44 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package models
+package mappers
 
-// APIOptions represents parameters for a scenario
-type APIOptions struct {
-	DatafileName string
-	APIName      string
-	Arguments    string
-	Listeners    map[string]int
+import (
+	"testing"
+
+	datafileEntities "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
+	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestMapGroups(t *testing.T) {
+
+	rawGroup := datafileEntities.Group{
+		Policy: "random",
+		ID:     "14",
+		TrafficAllocation: []datafileEntities.TrafficAllocation{
+			datafileEntities.TrafficAllocation{
+				EntityID:   "13",
+				EndOfRange: 4000,
+			},
+		},
+	}
+
+	rawGroups := []datafileEntities.Group{rawGroup}
+	groupMap, _ := MapGroups(rawGroups)
+
+	expectedGroupsMap := map[string]entities.Group{
+		"14": entities.Group{
+			ID:     "14",
+			Policy: "random",
+			TrafficAllocation: []entities.Range{
+				entities.Range{
+					EntityID:   "13",
+					EndOfRange: 4000,
+				},
+			},
+		},
+	}
+
+	assert.Equal(t, expectedGroupsMap, groupMap)
 }

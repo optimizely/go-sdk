@@ -33,6 +33,7 @@ type ExperimentDecisionContext struct {
 type FeatureDecisionContext struct {
 	Feature       *entities.Feature
 	ProjectConfig pkg.ProjectConfig
+	Variable      entities.Variable
 }
 
 // Source is where the decision came from
@@ -62,4 +63,24 @@ type FeatureDecision struct {
 type ExperimentDecision struct {
 	Decision
 	Variation *entities.Variation
+}
+
+// UserDecisionKey is used to access the saved decisions in a user profile
+type UserDecisionKey struct {
+	ExperimentID string
+	Field        string
+}
+
+// NewUserDecisionKey returns a new UserDecisionKey with the given experiment ID
+func NewUserDecisionKey(experimentID string) UserDecisionKey {
+	return UserDecisionKey{
+		ExperimentID: experimentID,
+		Field:        "variation_id",
+	}
+}
+
+// UserProfile represents a saved user profile
+type UserProfile struct {
+	ID                  string
+	ExperimentBucketMap map[UserDecisionKey]string
 }

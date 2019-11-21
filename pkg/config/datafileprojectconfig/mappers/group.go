@@ -14,12 +14,30 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package models
+// Package mappers  ...
+package mappers
 
-// APIOptions represents parameters for a scenario
-type APIOptions struct {
-	DatafileName string
-	APIName      string
-	Arguments    string
-	Listeners    map[string]int
+import (
+	datafileEntities "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
+	"github.com/optimizely/go-sdk/pkg/entities"
+)
+
+// MapGroups maps the raw group entity from the datafile to an SDK Group entity
+func MapGroups(rawGroups []datafileEntities.Group) (groupMap map[string]entities.Group, experimentGroupMap map[string]string) {
+	groupMap = make(map[string]entities.Group)
+	experimentGroupMap = make(map[string]string)
+	for _, group := range rawGroups {
+		groupEntity := entities.Group{
+			ID:     group.ID,
+			Policy: group.Policy,
+		}
+		for _, allocation := range group.TrafficAllocation {
+			groupEntity.TrafficAllocation = append(groupEntity.TrafficAllocation, entities.Range(allocation))
+		}
+		groupMap[group.ID] = groupEntity
+		for _, experiment := range group.Experiments {
+			experimentGroupMap[experiment.ID] = group.ID
+		}
+	}
+	return groupMap, experimentGroupMap
 }
