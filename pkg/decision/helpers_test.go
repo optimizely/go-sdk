@@ -33,6 +33,11 @@ type mockProjectConfig struct {
 	mock.Mock
 }
 
+func (c *mockProjectConfig) IsFeatureExperiment(experimentID string) bool {
+	args := c.Called(experimentID)
+	return args.Get(0).(bool)
+}
+
 func (c *mockProjectConfig) GetFeatureByKey(featureKey string) (entities.Feature, error) {
 	args := c.Called(featureKey)
 	return args.Get(0).(entities.Feature), args.Error(1)

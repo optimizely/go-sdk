@@ -49,7 +49,7 @@ func TestMapFeatures(t *testing.T) {
 		"31111": experiment31111,
 		"31112": experiment31112,
 	}
-	featureMap := MapFeatures(rawFeatureFlags, rolloutMap, experimentMap)
+	featureMap, experimentFeatureMap := MapFeatures(rawFeatureFlags, rolloutMap, experimentMap)
 	variable := entities.Variable{
 		ID:           "1",
 		DefaultValue: "1",
@@ -66,5 +66,10 @@ func TestMapFeatures(t *testing.T) {
 		},
 	}
 
+	expectedExperimentFeatureMap := map[string][]string{}
+	expectedExperimentFeatureMap["31111"] = []string{"21111"}
+	expectedExperimentFeatureMap["31112"] = []string{"21111"}
+
 	assert.Equal(t, expectedFeatureMap, featureMap)
+	assert.Equal(t, expectedExperimentFeatureMap, experimentFeatureMap)
 }

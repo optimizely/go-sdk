@@ -160,8 +160,6 @@ func (c *ScenarioCtx) InTheResponseKeyShouldBeObject(argumentType, value string)
 		if value == "NULL" && c.apiResponse.ListenerCalled == nil {
 			return nil
 		}
-		// @TODO: Revert this to test listener called
-		return nil
 	default:
 		break
 	}
@@ -180,8 +178,6 @@ func (c *ScenarioCtx) InTheResponseShouldMatch(argumentType string, value *gherk
 		if subset.Check(requestListenersCalled, c.apiResponse.ListenerCalled) {
 			return nil
 		}
-		// @TODO: Revert this to test listener called
-		return nil
 	default:
 		break
 	}
@@ -205,8 +201,6 @@ func (c *ScenarioCtx) ResponseShouldHaveThisExactlyNTimes(argumentType string, c
 		if subset.Check(expectedListenersArray, c.apiResponse.ListenerCalled) {
 			return nil
 		}
-		// @TODO: Revert this to test listener called
-		return nil
 	default:
 		break
 	}
@@ -239,8 +233,6 @@ func (c *ScenarioCtx) InTheResponseShouldHaveEachOneOfThese(argumentType string,
 		if found {
 			return nil
 		}
-		// @TODO: Revert this to test listener called
-		return nil
 	default:
 		break
 	}

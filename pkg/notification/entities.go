@@ -37,6 +37,8 @@ const (
 	ABTest DecisionNotificationType = "ab-test"
 	// Feature is used when the decision is returned as part of evaluating a feature
 	Feature DecisionNotificationType = "feature"
+	// FeatureTest is used when the decision is returned as part of evaluating a feature
+	FeatureTest DecisionNotificationType = "feature-test"
 	// LogEvent notification type
 	LogEvent Type = "log_event_notification"
 )
@@ -56,6 +58,6 @@ type ProjectConfigUpdateNotification struct {
 
 // LogEventNotification is the notification triggered before log event is dispatched.
 type LogEventNotification struct {
-	Type         Type
-	LogEvent  	 interface{}
+	Type     Type
+	LogEvent interface{}
 }

@@ -141,16 +141,22 @@ func (s CompositeService) GetExperimentDecision(experimentDecisionContext Experi
 		return experimentDecision, err
 	}
 
-	if s.notificationCenter != nil && experimentDecision.Variation != nil {
+	if s.notificationCenter != nil {
 		decisionInfo := map[string]interface{}{
 			"experimentKey": experimentDecisionContext.Experiment.Key,
-			"variationKey":  experimentDecision.Variation.Key,
+		}
+
+		if experimentDecision.Variation != nil {
+			decisionInfo["variationKey"] = experimentDecision.Variation.Key
 		}
 
 		decisionNotification := notification.DecisionNotification{
 			DecisionInfo: decisionInfo,
-			Type:         notification.ABTest,
 			UserContext:  userContext,
+			Type:         notification.ABTest,
+		}
+		if experimentDecisionContext.ProjectConfig.IsFeatureExperiment(experimentDecisionContext.Experiment.ID) {
+			decisionNotification.Type = notification.FeatureTest
 		}
 
 		if err = s.notificationCenter.Send(notification.Decision, decisionNotification); err != nil {
