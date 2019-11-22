@@ -55,6 +55,8 @@ func FeatureContext(s *godog.Suite) {
 	})
 	s.Step(`^the datafile is "([^"]*)"$`, context.TheDatafileIs)
 	s.Step(`^(\d+) "([^"]*)" listener is added$`, context.ListenerIsAdded)
+	s.Step(`^the User Profile Service is "([^"]*)"$`, context.TheUserProfileServiceIs)
+	s.Step(`^user "([^"]*)" has mapping "([^"]*)": "([^"]*)" in User Profile Service$`, context.UserHasMappingInUserProfileService)
 	s.Step(`^([^\\\"]*) is called with arguments$`, context.IsCalledWithArguments)
 	s.Step(`^the result should be (?:string )?"([^"]*)"$`, context.TheResultShouldBeString)
 	s.Step(`^the result should be (?:integer )?(\d+)$`, context.TheResultShouldBeInteger)
@@ -70,4 +72,7 @@ func FeatureContext(s *godog.Suite) {
 	s.Step(`^there are no dispatched events$`, context.ThereAreNoDispatchedEvents)
 	s.Step(`^dispatched events payloads include$`, context.DispatchedEventsPayloadsInclude)
 	s.Step(`^payloads of dispatched events don\'t include decisions$`, context.PayloadsOfDispatchedEventsDontIncludeDecisions)
+	s.Step(`^the User Profile Service state should be$`, context.TheUserProfileServiceStateShouldBe)
+	s.Step(`^there is no user profile state$`, context.ThereIsNoUserProfileState)
+
 }
