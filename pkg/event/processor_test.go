@@ -461,8 +461,28 @@ func (l *NoOpLogger) SetLogLevel(level logging.LogLevel) {
 
 }
 
-const benchmarkSleep = 5
+/**
+goos: darwin
+goarch: amd64
+pkg: github.com/optimizely/go-sdk/pkg/event
+BenchmarkWithQueueSize/QueueSize100-8         	 2000000	       774 ns/op
+BenchmarkWithQueueSize/QueueSize500-8         	 2000000	       716 ns/op
+BenchmarkWithQueueSize/QueueSize1000-8        	 2000000	       690 ns/op
+BenchmarkWithQueueSize/QueueSize2000-8        	 2000000	       732 ns/op
+BenchmarkWithQueueSize/QueueSize3000-8        	 2000000	       735 ns/op
+BenchmarkWithQueueSize/QueueSize4000-8        	 2000000	       740 ns/op
 
+BenchmarkWithBatchSize/BatchSize10-8          	 2000000	       665 ns/op
+BenchmarkWithBatchSize/BatchSize20-8          	 2000000	       597 ns/op
+BenchmarkWithBatchSize/BatchSize30-8          	 3000000	       556 ns/op
+BenchmarkWithBatchSize/BatchSize40-8          	 3000000	       566 ns/op
+BenchmarkWithBatchSize/BatchSize50-8          	 3000000	       546 ns/op
+BenchmarkWithBatchSize/BatchSize60-8          	 3000000	       504 ns/op
+
+BenchmarkWithQueue/InMemoryQueue-8            	 2000000	       674 ns/op
+BenchmarkWithQueue/ChannelQueue-8             	 2000000	       937 ns/op
+
+ */
 func BenchmarkWithQueueSize(b *testing.B) {
 	// no op logger added to keep out extra discarded events
 	logging.SetLogger(&NoOpLogger{})
@@ -480,12 +500,15 @@ func BenchmarkWithQueueSize(b *testing.B) {
 	}
 
 	for _, merge := range merges {
+		var eventCount = 0
+		var processCount = 0
 		b.Run(merge.name, func (b *testing.B) {
-			count := benchmarkProcessorWithQueueSize(merge.qSize, b)
-			if count != b.N {
-				b.Fail()
-			}
+			eventCount = benchmarkProcessorWithQueueSize(merge.qSize, b)
+			processCount = b.N
 		})
+		if eventCount != processCount {
+			b.Fail()
+		}
 	}
 }
 
@@ -537,8 +560,11 @@ func benchmarkProcessorWithQueueSize(qSize int, b *testing.B) int {
 	conversion := BuildTestConversionEvent()
 
 	for i := 0; i < b.N; i++ {
-		processor.ProcessEvent(conversion)
-		time.Sleep(benchmarkSleep)
+		var success = false
+		for !success {
+			success = processor.ProcessEvent(conversion)
+		}
+		//time.Sleep(benchmarkSleep)
 	}
 
 	exeCtx.TerminateAndWait()
@@ -557,8 +583,11 @@ func benchmarkProcessorWithQueue(q Queue, b *testing.B) int {
 	conversion := BuildTestConversionEvent()
 
 	for i := 0; i < b.N; i++ {
-		processor.ProcessEvent(conversion)
-		time.Sleep(benchmarkSleep)
+		var success = false
+		for !success {
+			success = processor.ProcessEvent(conversion)
+		}
+		//time.Sleep(benchmarkSleep)
 	}
 
 	exeCtx.TerminateAndWait()
@@ -577,8 +606,11 @@ func benchmarkProcessorWithBatchSize(bs int, b *testing.B) int {
 	conversion := BuildTestConversionEvent()
 
 	for i := 0; i < b.N; i++ {
-		processor.ProcessEvent(conversion)
-		time.Sleep(benchmarkSleep)
+		var success = false
+		for !success {
+			success = processor.ProcessEvent(conversion)
+		}
+		//time.Sleep(benchmarkSleep)
 	}
 
 	exeCtx.TerminateAndWait()

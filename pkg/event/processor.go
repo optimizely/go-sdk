@@ -155,17 +155,17 @@ func (p *BatchEventProcessor) Start(exeCtx utils.ExecutionCtx) {
 }
 
 // ProcessEvent processes the given impression event
-func (p *BatchEventProcessor) ProcessEvent(event UserEvent) {
+func (p *BatchEventProcessor) ProcessEvent(event UserEvent) bool {
 
 	if p.Q.Size() >= p.MaxQueueSize {
 		pLogger.Warning("MaxQueueSize has been met. Discarding event")
-		return
+		return false
 	}
 
 	p.Q.Add(event)
 
 	if p.Q.Size() < p.BatchSize {
-		return
+		return true
 	}
 
 	if p.processing.TryAcquire(1) {
@@ -178,6 +178,7 @@ func (p *BatchEventProcessor) ProcessEvent(event UserEvent) {
 		}()
 	}
 
+	return true
 }
 
 // EventsCount returns size of an event queue
