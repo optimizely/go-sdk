@@ -61,8 +61,9 @@ type MockProcessor struct {
 	Events []event.UserEvent
 }
 
-func (f *MockProcessor) ProcessEvent(event event.UserEvent) {
+func (f *MockProcessor) ProcessEvent(event event.UserEvent) bool {
 	f.Events = append(f.Events, event)
+	return false
 }
 
 type TestConfig struct {

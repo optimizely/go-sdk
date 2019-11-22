@@ -33,7 +33,7 @@ import (
 
 // Processor processes events
 type Processor interface {
-	ProcessEvent(event UserEvent)
+	ProcessEvent(event UserEvent) bool
 }
 
 // BatchEventProcessor is used out of the box by the SDK
