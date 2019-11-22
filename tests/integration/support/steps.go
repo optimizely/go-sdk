@@ -22,11 +22,14 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/optimizely/go-sdk/pkg/decision"
+
 	"github.com/DATA-DOG/godog/gherkin"
 	"github.com/google/uuid"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 	"github.com/optimizely/go-sdk/tests/integration/optlyplugins"
+	"github.com/optimizely/go-sdk/tests/integration/optlyplugins/userprofileservice"
 	"github.com/optimizely/subset"
 	"gopkg.in/yaml.v3"
 )
@@ -54,6 +57,27 @@ func (c *ScenarioCtx) ListenerIsAdded(numberOfListeners int, ListenerName string
 	return nil
 }
 
+// TheUserProfileServiceIs defines UserProfileService type
+func (c *ScenarioCtx) TheUserProfileServiceIs(upsType string) error {
+	c.apiOptions.UserProfileServiceType = upsType
+	return nil
+}
+
+// UserHasMappingInUserProfileService defines UserMapping in UPS
+func (c *ScenarioCtx) UserHasMappingInUserProfileService(userID, experimentKey, variationKey string) error {
+	if c.apiOptions.UPSMapping == nil {
+		c.apiOptions.UPSMapping = make(map[string]map[string]string)
+	}
+
+	if profile, ok := c.apiOptions.UPSMapping[userID]; ok {
+		profile[experimentKey] = variationKey
+		c.apiOptions.UPSMapping[userID] = profile
+	} else {
+		c.apiOptions.UPSMapping[userID] = map[string]string{experimentKey: variationKey}
+	}
+	return nil
+}
+
 // IsCalledWithArguments calls an SDK API with arguments.
 func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.DocString) error {
 	c.apiOptions.APIName = apiName
@@ -61,7 +85,7 @@ func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.D
 
 	// Clearing old state of response, eventdispatcher and decision service
 	c.apiResponse = models.APIResponse{}
-	c.clientWrapper = GetInstance(c.apiOptions.DatafileName)
+	c.clientWrapper = GetInstance(c.apiOptions)
 	response, err := c.clientWrapper.InvokeAPI(c.apiOptions)
 	c.apiResponse = response
 	//Reset listeners so that same listener is not added twice for a scenario
@@ -264,7 +288,7 @@ func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) 
 	if err != nil {
 		return fmt.Errorf("Invalid Project Config")
 	}
-	expectedBatchEvents, err := getDispatchedEventsMapFromYaml(value.Content, config)
+	expectedBatchEvents, err := parseYamlArray(value.Content, config)
 	if err != nil {
 		return fmt.Errorf("Invalid request for dispatched Events")
 	}
@@ -333,6 +357,50 @@ func (c *ScenarioCtx) PayloadsOfDispatchedEventsDontIncludeDecisions() error {
 		}
 	}
 	return nil
+}
+
+// TheUserProfileServiceStateShouldBe checks current state of UPS
+func (c *ScenarioCtx) TheUserProfileServiceStateShouldBe(value *gherkin.DocString) error {
+	config, err := c.clientWrapper.Client.GetProjectConfig()
+	if err != nil {
+		return fmt.Errorf("Invalid Project Config")
+	}
+	rawProfiles, err := parseYamlArray(value.Content, config)
+	if err != nil {
+		return fmt.Errorf("Invalid request for user profile service state")
+	}
+
+	expectedProfiles := userprofileservice.ParseUserProfiles(rawProfiles)
+	actualProfiles := c.clientWrapper.UserProfileService.(userprofileservice.UPSHelper).GetUserProfiles()
+
+	success := false
+	for _, expectedProfile := range expectedProfiles {
+		success = false
+		for _, actualProfile := range actualProfiles {
+			if subset.Check(expectedProfile, actualProfile) {
+				success = true
+				break
+			}
+		}
+		if !success {
+			break
+		}
+	}
+	if success {
+		return nil
+	}
+	// @TODO: Temporary fix, need to look into it
+	return getErrorWithDiff(expectedProfiles, actualProfiles, "User profile state not equal")
+}
+
+// ThereIsNoUserProfileState checks that UPS is empty
+func (c *ScenarioCtx) ThereIsNoUserProfileState() error {
+	actualProfiles := c.clientWrapper.UserProfileService.(userprofileservice.UPSHelper).GetUserProfiles()
+	if len(actualProfiles) == 0 {
+		return nil
+	}
+	// @TODO: Temporary fix, need to look into it
+	return getErrorWithDiff([]decision.UserProfile{}, actualProfiles, "User profile state not empty")
 }
 
 // Reset clears all data before each scenario, assigns new scenarioID and sets session as false
