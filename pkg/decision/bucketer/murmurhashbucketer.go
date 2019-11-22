@@ -18,6 +18,7 @@
 package bucketer
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
@@ -54,7 +55,7 @@ func NewMurmurhashBucketer(hashSeed uint32) *MurmurhashBucketer {
 func (b MurmurhashBucketer) Generate(bucketingKey string) int {
 	hasher := murmur3.SeedNew32(b.hashSeed)
 	if _, err := hasher.Write([]byte(bucketingKey)); err != nil {
-		logger.Error("Unable to generate a hash for the bucketing key", err)
+		logger.Error(fmt.Sprintf("Unable to generate a hash for the bucketing key=%s", bucketingKey), err)
 	}
 	hashCode := hasher.Sum32()
 	ratio := float32(hashCode) / maxHashValue
