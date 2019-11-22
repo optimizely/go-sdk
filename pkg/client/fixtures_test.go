@@ -121,7 +121,7 @@ type MockEventProcessor struct {
 }
 
 func (m *MockEventProcessor) ProcessEvent(event event.UserEvent) bool {
-	m.Called(userEvent)
+	m.Called(event)
 	return false
 }
 
