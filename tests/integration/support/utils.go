@@ -17,10 +17,12 @@
 package support
 
 import (
+	"fmt"
 	"regexp"
 	"sort"
 	"strings"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/optimizely/go-sdk/pkg"
 
 	"gopkg.in/yaml.v3"
@@ -115,6 +117,11 @@ func parseTemplate(s string, config pkg.ProjectConfig) string {
 	replaceCampaignID()
 	replaceVariableID()
 	return parsedString
+}
+
+func getErrorWithDiff(a, b interface{}, message string) error {
+	diff := cmp.Diff(a, b)
+	return fmt.Errorf("%s:\n--expected\n++actual\n%s", message, diff)
 }
 
 // https://stackoverflow.com/a/36000696/4849178

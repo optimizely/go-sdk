@@ -22,6 +22,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/optimizely/go-sdk/pkg/decision"
+
 	"github.com/DATA-DOG/godog/gherkin"
 	"github.com/google/uuid"
 	"github.com/optimizely/go-sdk/pkg/entities"
@@ -382,10 +384,8 @@ func (c *ScenarioCtx) TheUserProfileServiceStateShouldBe(value *gherkin.DocStrin
 	success := false
 	for _, expectedProfile := range expectedProfiles {
 		success = false
-		for index, actualProfile := range actualProfiles {
+		for _, actualProfile := range actualProfiles {
 			if subset.Check(expectedProfile, actualProfile) {
-				// Removing already found profile from actual profiles for performance
-				actualProfiles = append(actualProfiles[:index], actualProfiles[index+1:]...)
 				success = true
 				break
 			}
@@ -397,8 +397,8 @@ func (c *ScenarioCtx) TheUserProfileServiceStateShouldBe(value *gherkin.DocStrin
 	if success {
 		return nil
 	}
-
-	return fmt.Errorf("User profile state not equal")
+	// @TODO: Temporary fix, need to look into it
+	return getErrorWithDiff(expectedProfiles, actualProfiles, "User profile state not equal")
 }
 
 // ThereIsNoUserProfileState checks that UPS is empty
@@ -407,7 +407,8 @@ func (c *ScenarioCtx) ThereIsNoUserProfileState() error {
 	if len(actualProfiles) == 0 {
 		return nil
 	}
-	return fmt.Errorf("User profile state not empty")
+	// @TODO: Temporary fix, need to look into it
+	return getErrorWithDiff([]decision.UserProfile{}, actualProfiles, "User profile state not empty")
 }
 
 // Reset clears all data before each scenario, assigns new scenarioID and sets session as false

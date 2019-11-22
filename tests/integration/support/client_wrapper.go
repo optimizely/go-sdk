@@ -88,6 +88,7 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 	compositeExperimentService := decision.NewCompositeExperimentService(
 		decision.WithUserProfileService(userProfileService),
 	)
+	// @TODO: Add sdkKey dynamically once event-batching support is implemented
 	compositeService := *decision.NewCompositeService("", decision.WithCompositeExperimentService(compositeExperimentService))
 	decisionService := &optlyplugins.TestCompositeService{CompositeService: compositeService}
 
