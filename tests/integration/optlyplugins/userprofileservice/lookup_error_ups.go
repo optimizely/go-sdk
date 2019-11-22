@@ -14,14 +14,16 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package models
+package userprofileservice
 
-// APIOptions represents parameters for a scenario
-type APIOptions struct {
-	DatafileName           string
-	APIName                string
-	Arguments              string
-	Listeners              map[string]int
-	UserProfileServiceType string
-	UPSMapping             map[string]map[string]string
+import "github.com/optimizely/go-sdk/pkg/decision"
+
+// LookupErrorUserProfileService represents a user profile service with lookup error
+type LookupErrorUserProfileService struct {
+	NormalUserProfileService
+}
+
+// Lookup is used to retrieve past bucketing decisions for users
+func (s *LookupErrorUserProfileService) Lookup(userID string) decision.UserProfile {
+	return decision.UserProfile{}
 }
