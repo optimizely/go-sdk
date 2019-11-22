@@ -109,7 +109,7 @@ func getDecisionInfoForNotification(notify notification.DecisionNotification) ma
 		decisionInfoDict["feature_enabled"] = featureInfoDict["featureEnabled"]
 		decisionInfoDict["feature_key"] = featureInfoDict["featureKey"]
 		updateSourceInfo(source)
-	case "feature-variable":
+	case notification.FeatureVariable:
 		featureInfoDict := notify.DecisionInfo["feature"].(map[string]interface{})
 		source := ""
 		if decisionSource, ok := featureInfoDict["source"].(decision.Source); ok {
