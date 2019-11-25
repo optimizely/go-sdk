@@ -449,6 +449,7 @@ func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
 	}
 }
 
+// The NoOpLogger is used during benchmarking so that results are printed nicely.
 type NoOpLogger struct {
 }
 
@@ -518,14 +519,13 @@ func BenchmarkWithBatchSize(b *testing.B) {
 	merges := []struct {
 		name string
 		batchSize int
-		fun  func(bs int, b *testing.B) int
 	}{
-		{"BatchSize10", 10, benchmarkProcessorWithBatchSize},
-		{"BatchSize20", 20, benchmarkProcessorWithBatchSize},
-		{"BatchSize30", 30, benchmarkProcessorWithBatchSize},
-		{"BatchSize40", 40, benchmarkProcessorWithBatchSize},
-		{"BatchSize50", 50, benchmarkProcessorWithBatchSize},
-		{"BatchSize60", 60, benchmarkProcessorWithBatchSize},
+		{"BatchSize10", 10},
+		{"BatchSize20", 20},
+		{"BatchSize30", 30},
+		{"BatchSize40", 40},
+		{"BatchSize50", 50},
+		{"BatchSize60", 60},
 	}
 
 	for _, merge := range merges {
