@@ -120,8 +120,9 @@ type MockEventProcessor struct {
 	mock.Mock
 }
 
-func (m *MockEventProcessor) ProcessEvent(userEvent event.UserEvent) {
-	m.Called(userEvent)
+func (m *MockEventProcessor) ProcessEvent(event event.UserEvent) bool {
+	m.Called(event)
+	return false
 }
 
 type PanickingConfigManager struct {
