@@ -143,7 +143,7 @@ func (r HTTPRequester) PostObj(uri string, body, result interface{}, headers ...
 }
 
 // Do executes request and returns response body for requested uri (sdkKey.json).
-func (r HTTPRequester) Do(uri string, method string, body io.Reader, headers []Header) (response []byte, responseHeaders http.Header, code int, err error) {
+func (r HTTPRequester) Do(uri, method string, body io.Reader, headers []Header) (response []byte, responseHeaders http.Header, code int, err error) {
 
 	single := func(request *http.Request) (response []byte, responseHeaders http.Header, code int, e error) {
 		resp, doErr := r.client.Do(request)
