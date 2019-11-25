@@ -501,13 +501,16 @@ func BenchmarkWithQueueSize(b *testing.B) {
 	}
 
 	for _, merge := range merges {
-		var eventCount = 0
-		var processCount = 0
+		var totalSent = 0
+		var numberRun = 0
 		b.Run(merge.name, func (b *testing.B) {
-			eventCount = benchmarkProcessorWithQueueSize(merge.qSize, b)
-			processCount = b.N
+			if numberRun == 0 {
+				numberRun = b.N
+			}
+			totalSent += benchmarkProcessorWithQueueSize(merge.qSize, b)
 		})
-		if eventCount != processCount {
+		if totalSent < numberRun {
+			println("Total sent and run ", totalSent, numberRun)
 			b.Fail()
 		}
 	}
@@ -564,7 +567,6 @@ func benchmarkProcessorWithQueueSize(qSize int, b *testing.B) int {
 		for !success {
 			success = processor.ProcessEvent(conversion)
 		}
-		//time.Sleep(benchmarkSleep)
 	}
 
 	exeCtx.TerminateAndWait()
