@@ -158,7 +158,7 @@ func (s CompositeService) GetExperimentDecision(experimentDecisionContext Experi
 			UserContext:  userContext,
 			Type:         notification.ABTest,
 		}
-		if experimentDecisionContext.ProjectConfig.IsFeatureExperiment(experimentDecisionContext.Experiment.ID) {
+		if experimentDecisionContext.Experiment.IsFeatureExperiment {
 			decisionNotification.Type = notification.FeatureTest
 		}
 

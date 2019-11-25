@@ -30,7 +30,7 @@ func TestMapFeatures(t *testing.T) {
 		"id": "21111",
 		"key": "test_feature_21111",
 		"rolloutId": "41111",
-		"experimentIds": ["31111", "31112"],
+		"experimentIds": ["31111"],
 		"variables": [{"defaultValue":"1","id":"1","key":"test","type":"integer"}]
 	}`
 
@@ -43,13 +43,15 @@ func TestMapFeatures(t *testing.T) {
 	rolloutMap := map[string]entities.Rollout{
 		"41111": rollout,
 	}
-	experiment31111 := entities.Experiment{ID: "31111"}
-	experiment31112 := entities.Experiment{ID: "31112"}
+	experiment31111 := entities.Experiment{ID: "31111", IsFeatureExperiment: false}
+	experiment31112 := entities.Experiment{ID: "31112", IsFeatureExperiment: false}
 	experimentMap := map[string]entities.Experiment{
 		"31111": experiment31111,
 		"31112": experiment31112,
 	}
-	featureMap, experimentFeatureMap := MapFeatures(rawFeatureFlags, rolloutMap, experimentMap)
+	featureMap := MapFeatures(rawFeatureFlags, rolloutMap, &experimentMap)
+
+	experiment31111.IsFeatureExperiment = true
 	variable := entities.Variable{
 		ID:           "1",
 		DefaultValue: "1",
@@ -61,15 +63,15 @@ func TestMapFeatures(t *testing.T) {
 			ID:                 "21111",
 			Key:                "test_feature_21111",
 			Rollout:            rollout,
-			FeatureExperiments: []entities.Experiment{experiment31111, experiment31112},
+			FeatureExperiments: []entities.Experiment{experiment31111},
 			VariableMap:        map[string]entities.Variable{variable.Key: variable},
 		},
 	}
-
-	expectedExperimentFeatureMap := map[string][]string{}
-	expectedExperimentFeatureMap["31111"] = []string{"21111"}
-	expectedExperimentFeatureMap["31112"] = []string{"21111"}
+	expectedExperimentMap := map[string]entities.Experiment{
+		"31111": experiment31111,
+		"31112": experiment31112,
+	}
 
 	assert.Equal(t, expectedFeatureMap, featureMap)
-	assert.Equal(t, expectedExperimentFeatureMap, experimentFeatureMap)
+	assert.Equal(t, expectedExperimentMap, experimentMap)
 }

@@ -19,7 +19,6 @@ package decision
 import (
 	"testing"
 
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
@@ -300,7 +299,6 @@ type CompositeServiceExperimentTestSuite struct {
 
 func (s *CompositeServiceExperimentTestSuite) SetupTest() {
 	mockConfig := new(mockProjectConfig)
-	mockConfig.On("IsFeatureExperiment", mock.Anything).Return(false)
 	s.decisionContext = ExperimentDecisionContext{
 		Experiment:    &testExp1111,
 		ProjectConfig: mockConfig,

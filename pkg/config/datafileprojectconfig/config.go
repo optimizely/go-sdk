@@ -38,7 +38,6 @@ type DatafileProjectConfig struct {
 	eventMap             map[string]entities.Event
 	attributeKeyToIDMap  map[string]string
 	experimentMap        map[string]entities.Experiment
-	experimentFeatureMap map[string][]string
 	featureMap           map[string]entities.Feature
 	groupMap             map[string]entities.Group
 	rolloutMap           map[string]entities.Rollout
@@ -74,14 +73,6 @@ func (c DatafileProjectConfig) GetAttributeID(key string) string {
 // GetBotFiltering returns GetBotFiltering
 func (c DatafileProjectConfig) GetBotFiltering() bool {
 	return c.botFiltering
-}
-
-// IsFeatureExperiment returns true if experiment belongs to any feature, false otherwise.
-func (c DatafileProjectConfig) IsFeatureExperiment(experimentID string) bool {
-	if _, ok := c.experimentFeatureMap[experimentID]; ok {
-		return true
-	}
-	return false
 }
 
 // GetEventByKey returns the event with the given key
@@ -186,7 +177,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, erro
 	rolloutMap := mappers.MapRollouts(datafile.Rollouts)
 	eventMap := mappers.MapEvents(datafile.Events)
 	mergedAudiences := append(datafile.TypedAudiences, datafile.Audiences...)
-	featureMap, experimentFeatureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentMap)
+	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, &experimentMap)
 	config := &DatafileProjectConfig{
 		accountID:            datafile.AccountID,
 		anonymizeIP:          datafile.AnonymizeIP,
@@ -199,7 +190,6 @@ func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, erro
 		groupMap:             groupMap,
 		eventMap:             eventMap,
 		featureMap:           featureMap,
-		experimentFeatureMap: experimentFeatureMap,
 		projectID:            datafile.ProjectID,
 		revision:             datafile.Revision,
 		rolloutMap:           rolloutMap,

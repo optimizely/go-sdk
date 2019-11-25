@@ -51,6 +51,9 @@ func (c *TestCompositeService) AddListeners(listeners map[string]int) {
 // GetListenersCalled - Returns listeners called
 func (c *TestCompositeService) GetListenersCalled() []models.DecisionListener {
 	listenerCalled := c.listenersCalled
+	// Since for every scenario, a new sdk instance is created, emptying listenersCalled is required for scenario's
+	// where multiple requests are executed but no session is to be maintained among them.
+	// @TODO: Make it optional once event-batching(sessioned) tests are implemented.
 	c.listenersCalled = nil
 	return listenerCalled
 }
@@ -71,13 +74,13 @@ func (c *TestCompositeService) decisionNotificationCallback(notification notific
 	c.listenersCalled = append(c.listenersCalled, model)
 }
 
-func getDecisionInfoForNotification(notify notification.DecisionNotification) map[string]interface{} {
+func getDecisionInfoForNotification(decisionNotification notification.DecisionNotification) map[string]interface{} {
 	decisionInfoDict := make(map[string]interface{})
 
 	updateSourceInfo := func(source string) {
 		decisionInfoDict["source_info"] = make(map[string]interface{})
 		if source == string(decision.FeatureTest) {
-			featureInfoDict := notify.DecisionInfo["feature"].(map[string]interface{})
+			featureInfoDict := decisionNotification.DecisionInfo["feature"].(map[string]interface{})
 			if sourceInfo, ok := featureInfoDict["sourceInfo"].(interface{}); ok {
 				sourceInfoDict := sourceInfo.((map[string]string))
 				if experimentKey, ok := sourceInfoDict["experimentKey"]; ok {
@@ -92,13 +95,13 @@ func getDecisionInfoForNotification(notify notification.DecisionNotification) ma
 		}
 	}
 
-	switch notificationType := notify.Type; notificationType {
+	switch notificationType := decisionNotification.Type; notificationType {
 	case notification.ABTest, notification.FeatureTest:
-		decisionInfoDict["experiment_key"] = notify.DecisionInfo["experimentKey"]
-		decisionInfoDict["variation_key"] = notify.DecisionInfo["variationKey"]
+		decisionInfoDict["experiment_key"] = decisionNotification.DecisionInfo["experimentKey"]
+		decisionInfoDict["variation_key"] = decisionNotification.DecisionInfo["variationKey"]
 		break
 	case notification.Feature:
-		featureInfoDict := notify.DecisionInfo["feature"].(map[string]interface{})
+		featureInfoDict := decisionNotification.DecisionInfo["feature"].(map[string]interface{})
 		source := ""
 		if decisionSource, ok := featureInfoDict["source"].(decision.Source); ok {
 			source = string(decisionSource)
@@ -110,7 +113,7 @@ func getDecisionInfoForNotification(notify notification.DecisionNotification) ma
 		decisionInfoDict["feature_key"] = featureInfoDict["featureKey"]
 		updateSourceInfo(source)
 	case notification.FeatureVariable:
-		featureInfoDict := notify.DecisionInfo["feature"].(map[string]interface{})
+		featureInfoDict := decisionNotification.DecisionInfo["feature"].(map[string]interface{})
 		source := ""
 		if decisionSource, ok := featureInfoDict["source"].(decision.Source); ok {
 			source = string(decisionSource)
