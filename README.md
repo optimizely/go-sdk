@@ -3,6 +3,52 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/optimizely/go-sdk)](https://goreportcard.com/report/github.com/optimizely/go-sdk)
 [![Coverage Status](https://coveralls.io/repos/github/optimizely/go-sdk/badge.svg?branch=master)](https://coveralls.io/github/optimizely/go-sdk?branch=master)
 
+## Installation
+
+### Install from github:
+
+```$sh
+go install github.com/optimizely/go-sdk
+```
+
+### Install from source:
+```$sh
+go get github.com/optimizely/go-sdk
+cd $GOPATH/src/github.com/optimizely/go-sdk
+go install
+```
+
+NOTE:
+We practice trunk-based development, and as such our default branch, `master` might not always be the most stable. We do tag releases on Github and you can pin your installation to those particular release versions. One way to do this is to use [*Go Modules*](https://blog.golang.org/using-go-modules) for managing external dependencies:
+
+### Install using go.mod:
+
+```
+module mymodule
+
+go 1.12
+
+require (
+	github.com/optimizely/go-sdk v1.0.0-beta6
+)
+```
+
+If you are already using `go.mod` in your application you can run the following:
+
+```
+go mod edit -require github.com/optimizely/go-sdk@v1.0.0-beta6
+```
+
+NOTE:
+```$sh
+go get github.com/optimizely/go-sdk/...
+```
+or
+```$sh
+go get github.com/optimizely/go-sdk/pkg
+```
+will install it as a package to pkg directory, rather than src directory. It could be useful for future development and vendoring.
+
 ## Usage
 
 ### Instantiation
