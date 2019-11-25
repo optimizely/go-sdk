@@ -60,6 +60,7 @@ func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecis
 	experimentDecision, err = p.experimentBucketedService.GetDecision(decisionContext, userContext)
 	if experimentDecision.Variation != nil {
 		// save decision if a user profile service is provided
+		userProfile.ID = userContext.ID
 		p.saveDecision(userProfile, decisionContext.Experiment, experimentDecision)
 	}
 
