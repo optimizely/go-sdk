@@ -41,7 +41,7 @@ func NewExperimentBucketerService() *ExperimentBucketerService {
 	// @TODO(mng): add experiment override service
 	return &ExperimentBucketerService{
 		audienceTreeEvaluator: evaluator.NewMixedTreeEvaluator(),
-		bucketer:              *bucketer.NewMurmurhashBucketer(bucketer.DefaultHashSeed),
+		bucketer:              *bucketer.NewMurmurhashExperimentBucketer(bucketer.DefaultHashSeed),
 	}
 }
 
