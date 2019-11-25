@@ -37,8 +37,10 @@ type StaticProjectConfigManager struct {
 // NewStaticProjectConfigManagerFromURL returns new instance of StaticProjectConfigManager for URL
 func NewStaticProjectConfigManagerFromURL(sdkKey string) (*StaticProjectConfigManager, error) {
 
-	requester := utils.NewHTTPRequester(fmt.Sprintf(DatafileURLTemplate, sdkKey))
-	datafile, _, code, e := requester.Get()
+	requester := utils.NewHTTPRequester()
+
+	uri := "/" + sdkKey + ".json"
+	datafile, _, code, e := requester.Get(uri)
 	if e != nil {
 		cmLogger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
 		return nil, e

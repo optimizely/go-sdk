@@ -18,10 +18,6 @@ package client
 
 import (
 	"errors"
-	"fmt"
-	"log"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -75,15 +71,8 @@ func TestClientWithPollingConfigManager(t *testing.T) {
 
 func TestClientWithPollingConfigManagerRequester(t *testing.T) {
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Print(">request: ", r)
-		if r.URL.String() == "/good" {
-			fmt.Fprintln(w, "Hello, client")
-		}
-	}))
-
 	factory := OptimizelyFactory{}
-	requester := utils.NewHTTPRequester(ts.URL + "/good")
+	requester := utils.NewHTTPRequester()
 	optimizelyClient, err := factory.Client(WithPollingConfigManagerRequester(requester, time.Minute, nil))
 	assert.NoError(t, err)
 	assert.NotNil(t, optimizelyClient.ConfigManager)

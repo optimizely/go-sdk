@@ -33,16 +33,19 @@ import (
 
 const defaultTTL = 5 * time.Second
 
+// DatafileAPI is used as a default API for retrieving the datafile from the CDN
+const DatafileAPI = "https://cdn.optimizely.com/datafiles"
+
 var requesterLogger = logging.GetLogger("Requester")
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // Requester is used to make outbound requests with
 type Requester interface {
-	Get(...Header) (response []byte, responseHeaders http.Header, code int, err error)
-	GetObj(result interface{}, headers ...Header) error
+	Get(uri string, headers ...Header) (response []byte, responseHeaders http.Header, code int, err error)
+	GetObj(uri string, result interface{}, headers ...Header) error
 
-	Post(body interface{}, headers ...Header) (response []byte, responseHeaders http.Header, code int, err error)
-	PostObj(body interface{}, result interface{}, headers ...Header) error
+	Post(uri string, body interface{}, headers ...Header) (response []byte, responseHeaders http.Header, code int, err error)
+	PostObj(uri string, body interface{}, result interface{}, headers ...Header) error
 
 	String() string
 }
@@ -56,6 +59,13 @@ type Header struct {
 func Timeout(timeout time.Duration) func(r *HTTPRequester) {
 	return func(r *HTTPRequester) {
 		r.client = http.Client{Timeout: timeout}
+	}
+}
+
+// API sets api portion of url
+func API(api string) func(r *HTTPRequester) {
+	return func(r *HTTPRequester) {
+		r.api = api
 	}
 }
 
@@ -76,18 +86,18 @@ func Headers(headers ...Header) func(r *HTTPRequester) {
 
 // HTTPRequester contains main info
 type HTTPRequester struct {
-	url     string
+	api     string
 	client  http.Client
 	retries int
 	headers []Header
 }
 
 // NewHTTPRequester makes Requester with api and parameters. Sets defaults
-// url has a complete url of the request like https://cdn.optimizely.com/datafiles/24234.json
-func NewHTTPRequester(url string, params ...func(*HTTPRequester)) *HTTPRequester {
+// api has the base part of request's url, like http://localhost/api/v1
+func NewHTTPRequester(params ...func(*HTTPRequester)) *HTTPRequester {
 
 	res := HTTPRequester{
-		url:     url,
+		api:     DatafileAPI,
 		retries: 1,
 		headers: []Header{{"Content-Type", "application/json"}, {"Accept", "application/json"}},
 		client:  http.Client{Timeout: defaultTTL},
@@ -100,14 +110,14 @@ func NewHTTPRequester(url string, params ...func(*HTTPRequester)) *HTTPRequester
 }
 
 // Get executes HTTP GET with url and optional extra headers, returns body in []bytes
-// url created as url+sdkKey.json
-func (r HTTPRequester) Get(headers ...Header) (response []byte, responseHeaders http.Header, code int, err error) {
-	return r.Do("GET", nil, headers)
+// url created as api+sdkKey.json
+func (r HTTPRequester) Get(uri string, headers ...Header) (response []byte, responseHeaders http.Header, code int, err error) {
+	return r.Do(uri, "GET", nil, headers)
 }
 
 // GetObj executes HTTP GET with url and optional extra headers, returns filled object
-func (r HTTPRequester) GetObj(result interface{}, headers ...Header) error {
-	b, _, _, err := r.Do("GET", nil, headers)
+func (r HTTPRequester) GetObj(uri string, result interface{}, headers ...Header) error {
+	b, _, _, err := r.Do(uri, "GET", nil, headers)
 	if err != nil {
 		return err
 	}
@@ -115,17 +125,17 @@ func (r HTTPRequester) GetObj(result interface{}, headers ...Header) error {
 }
 
 // Post executes HTTP POST with url, body and optional extra headers
-func (r HTTPRequester) Post(body interface{}, headers ...Header) (response []byte, responseHeaders http.Header, code int, err error) {
+func (r HTTPRequester) Post(uri string, body interface{}, headers ...Header) (response []byte, responseHeaders http.Header, code int, err error) {
 	b, err := json.Marshal(body)
 	if err != nil {
 		return nil, nil, http.StatusBadRequest, err
 	}
-	return r.Do("POST", bytes.NewBuffer(b), headers)
+	return r.Do(uri, "POST", bytes.NewBuffer(b), headers)
 }
 
 // PostObj executes HTTP POST with uri, body and optional extra headers. Returns filled object
-func (r HTTPRequester) PostObj(body, result interface{}, headers ...Header) error {
-	b, _, _, err := r.Post(body, headers...)
+func (r HTTPRequester) PostObj(uri string, body, result interface{}, headers ...Header) error {
+	b, _, _, err := r.Post(uri, body, headers...)
 	if err != nil {
 		return err
 	}
@@ -133,7 +143,7 @@ func (r HTTPRequester) PostObj(body, result interface{}, headers ...Header) erro
 }
 
 // Do executes request and returns response body for requested uri (sdkKey.json).
-func (r HTTPRequester) Do(method string, body io.Reader, headers []Header) (response []byte, responseHeaders http.Header, code int, err error) {
+func (r HTTPRequester) Do(uri string, method string, body io.Reader, headers []Header) (response []byte, responseHeaders http.Header, code int, err error) {
 
 	single := func(request *http.Request) (response []byte, responseHeaders http.Header, code int, e error) {
 		resp, doErr := r.client.Do(request)
@@ -159,11 +169,11 @@ func (r HTTPRequester) Do(method string, body io.Reader, headers []Header) (resp
 
 		return response, resp.Header, resp.StatusCode, nil
 	}
-
-	requesterLogger.Debug(fmt.Sprintf("request %s", r.url))
-	req, err := http.NewRequest(method, r.url, body)
+	reqURL := fmt.Sprintf("%s%s", r.api, uri)
+	requesterLogger.Debug(fmt.Sprintf("request %s", reqURL))
+	req, err := http.NewRequest(method, reqURL, body)
 	if err != nil {
-		requesterLogger.Error(fmt.Sprintf("failed to make request %s", r.url), err)
+		requesterLogger.Error(fmt.Sprintf("failed to make request %s", reqURL), err)
 		return nil, nil, 0, err
 	}
 
@@ -176,10 +186,10 @@ func (r HTTPRequester) Do(method string, body io.Reader, headers []Header) (resp
 			if i > 0 {
 				triedMsg = fmt.Sprintf(", tried %d time(s)", i+1)
 			}
-			requesterLogger.Debug(fmt.Sprintf("completed %s%s", r.url, triedMsg))
+			requesterLogger.Debug(fmt.Sprintf("completed %s%s", reqURL, triedMsg))
 			return response, responseHeaders, code, err
 		}
-		requesterLogger.Debug(fmt.Sprintf("failed %s with %v", r.url, err))
+		requesterLogger.Debug(fmt.Sprintf("failed %s with %v", reqURL, err))
 
 		if i != r.retries {
 			delay := time.Duration(500) * time.Millisecond
@@ -201,6 +211,5 @@ func (r HTTPRequester) addHeaders(req *http.Request, headers []Header) *http.Req
 }
 
 func (r HTTPRequester) String() string {
-	return fmt.Sprintf("{url: %s, timeout: %v, retries: %d}",
-		r.url, r.client.Timeout, r.retries)
+	return fmt.Sprintf("{api: %s, timeout: %v, retries: %d}", r.api, r.client.Timeout, r.retries)
 }

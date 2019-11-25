@@ -34,9 +34,6 @@ import (
 // DefaultPollingInterval sets default interval for polling manager
 const DefaultPollingInterval = 5 * time.Minute // default to 5 minutes for polling
 
-// DatafileURLTemplate is used to construct the endpoint for retrieving the datafile from the CDN
-const DatafileURLTemplate = "https://cdn.optimizely.com/datafiles/%s.json"
-
 // ModifiedSince header key for request
 const ModifiedSince = "If-Modified-Since"
 
@@ -61,13 +58,11 @@ type PollingProjectConfigManager struct {
 // OptionFunc is a type to a proper func
 type OptionFunc func(*PollingProjectConfigManager)
 
-// DefaultRequester is an optional function, sets default requester based on a key.
-func DefaultRequester(sdkKey string) OptionFunc {
+// DefaultRequester is an optional function, sets default requester
+func DefaultRequester() OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 
-		url := fmt.Sprintf(DatafileURLTemplate, sdkKey)
-		requester := utils.NewHTTPRequester(url)
-
+		requester := utils.NewHTTPRequester()
 		p.requester = requester
 	}
 }
@@ -94,7 +89,7 @@ func InitialDatafile(datafile []byte) OptionFunc {
 }
 
 // SyncConfig gets current datafile and updates projectConfig
-func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
+func (cm *PollingProjectConfigManager) SyncConfig(sdkKey string, datafile []byte) {
 	var e error
 	var code int
 	var respHeaders http.Header
@@ -103,13 +98,13 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 		cm.err = e
 		cm.configLock.Unlock()
 	}
-
+	uri := "/" + sdkKey + ".json"
 	if len(datafile) == 0 {
 		if cm.lastModified != "" {
 			lastModifiedHeader := utils.Header{Name: ModifiedSince, Value: cm.lastModified}
-			datafile, respHeaders, code, e = cm.requester.Get(lastModifiedHeader)
+			datafile, respHeaders, code, e = cm.requester.Get(uri, lastModifiedHeader)
 		} else {
-			datafile, respHeaders, code, e = cm.requester.Get()
+			datafile, respHeaders, code, e = cm.requester.Get(uri)
 		}
 
 		if e != nil {
@@ -168,14 +163,14 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 }
 
 // Start starts the polling
-func (cm *PollingProjectConfigManager) Start(exeCtx utils.ExecutionCtx) {
+func (cm *PollingProjectConfigManager) Start(sdkKey string, exeCtx utils.ExecutionCtx) {
 	go func() {
 		cmLogger.Debug("Polling Config Manager Initiated")
 		t := time.NewTicker(cm.pollingInterval)
 		for {
 			select {
 			case <-t.C:
-				cm.SyncConfig([]byte{})
+				cm.SyncConfig(sdkKey, []byte{})
 			case <-exeCtx.GetContext().Done():
 				cmLogger.Debug("Polling Config Manager Stopped")
 				return
@@ -186,12 +181,11 @@ func (cm *PollingProjectConfigManager) Start(exeCtx utils.ExecutionCtx) {
 
 // NewPollingProjectConfigManager returns an instance of the polling config manager with the customized configuration
 func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
-	url := fmt.Sprintf(DatafileURLTemplate, sdkKey)
 
 	pollingProjectConfigManager := PollingProjectConfigManager{
 		notificationCenter: registry.GetNotificationCenter(sdkKey),
 		pollingInterval:    DefaultPollingInterval,
-		requester:          utils.NewHTTPRequester(url),
+		requester:          utils.NewHTTPRequester(),
 	}
 
 	for _, opt := range pollingMangerOptions {
@@ -199,7 +193,7 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 	}
 
 	initDatafile := pollingProjectConfigManager.initDatafile
-	pollingProjectConfigManager.SyncConfig(initDatafile) // initial poll
+	pollingProjectConfigManager.SyncConfig(sdkKey, initDatafile) // initial poll
 	return &pollingProjectConfigManager
 }
 
