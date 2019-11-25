@@ -27,7 +27,7 @@ func main() {
 			"likes_donuts": true,
 		},
 	)
-	optimizelyClient, _ := optimizely.Client(sdkKey)
+	optimizelyClient, err := optimizely.Client(sdkKey)
 	enabled, _ := optimizelyClient.IsFeatureEnabled("mutext_feat", user)
 	fmt.Printf("Is feature enabled? %v\n", enabled)
 
