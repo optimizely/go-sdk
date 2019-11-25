@@ -30,6 +30,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 	"github.com/optimizely/go-sdk/tests/integration/optlyplugins"
+	"github.com/optimizely/go-sdk/tests/integration/optlyplugins/userprofileservice"
 	"gopkg.in/yaml.v3"
 )
 
@@ -38,9 +39,10 @@ var clientInstance *ClientWrapper
 
 // ClientWrapper - wrapper around the optimizely client that keeps track of various custom components used with the client
 type ClientWrapper struct {
-	Client          *client.OptimizelyClient
-	DecisionService decision.Service
-	EventDispatcher event.Dispatcher
+	Client             *client.OptimizelyClient
+	DecisionService    decision.Service
+	EventDispatcher    event.Dispatcher
+	UserProfileService decision.UserProfileService
 }
 
 // DeleteInstance deletes cached instance of optly wrapper
@@ -49,14 +51,14 @@ func DeleteInstance() {
 }
 
 // GetInstance returns a cached or new instance of the optly wrapper
-func GetInstance(datafileName string) *ClientWrapper {
+func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 
 	if clientInstance != nil {
 		return clientInstance
 	}
 
 	datafileDir := os.Getenv("DATAFILES_DIR")
-	datafile, err := ioutil.ReadFile(filepath.Clean(path.Join(datafileDir, datafileName)))
+	datafile, err := ioutil.ReadFile(filepath.Clean(path.Join(datafileDir, apiOptions.DatafileName)))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -75,8 +77,20 @@ func GetInstance(datafileName string) *ClientWrapper {
 		Datafile: datafile,
 	}
 
-	decisionService := &optlyplugins.TestCompositeService{CompositeService: *decision.NewCompositeService("")}
 	eventProcessor.EventDispatcher = &optlyplugins.ProxyEventDispatcher{}
+
+	config, err := configManager.GetConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	userProfileService := userprofileservice.CreateUserProfileService(config, apiOptions)
+	compositeExperimentService := decision.NewCompositeExperimentService(
+		decision.WithUserProfileService(userProfileService),
+	)
+	// @TODO: Add sdkKey dynamically once event-batching support is implemented
+	compositeService := *decision.NewCompositeService("", decision.WithCompositeExperimentService(compositeExperimentService))
+	decisionService := &optlyplugins.TestCompositeService{CompositeService: compositeService}
 
 	client, err := optimizelyFactory.Client(
 		client.WithConfigManager(configManager),
@@ -87,9 +101,10 @@ func GetInstance(datafileName string) *ClientWrapper {
 	}
 
 	clientInstance = &ClientWrapper{
-		Client:          client,
-		DecisionService: decisionService,
-		EventDispatcher: eventProcessor.EventDispatcher,
+		Client:             client,
+		DecisionService:    decisionService,
+		EventDispatcher:    eventProcessor.EventDispatcher,
+		UserProfileService: userProfileService,
 	}
 	return clientInstance
 }
