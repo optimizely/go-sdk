@@ -177,7 +177,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, erro
 	rolloutMap := mappers.MapRollouts(datafile.Rollouts)
 	eventMap := mappers.MapEvents(datafile.Events)
 	mergedAudiences := append(datafile.TypedAudiences, datafile.Audiences...)
-	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, &experimentMap)
+	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentMap)
 	config := &DatafileProjectConfig{
 		accountID:            datafile.AccountID,
 		anonymizeIP:          datafile.AnonymizeIP,

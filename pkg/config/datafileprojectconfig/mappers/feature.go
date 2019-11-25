@@ -23,7 +23,7 @@ import (
 )
 
 // MapFeatures maps the raw datafile feature flag entities to SDK Feature entities
-func MapFeatures(featureFlags []datafileEntities.FeatureFlag, rolloutMap map[string]entities.Rollout, experimentMap *map[string]entities.Experiment,
+func MapFeatures(featureFlags []datafileEntities.FeatureFlag, rolloutMap map[string]entities.Rollout, experimentMap map[string]entities.Experiment,
 ) (featureMap map[string]entities.Feature) {
 
 	featureMap = make(map[string]entities.Feature)
@@ -37,10 +37,10 @@ func MapFeatures(featureFlags []datafileEntities.FeatureFlag, rolloutMap map[str
 		}
 		featureExperiments := []entities.Experiment{}
 		for _, experimentID := range featureFlag.ExperimentIDs {
-			if experiment, ok := (*experimentMap)[experimentID]; ok {
+			if experiment, ok := experimentMap[experimentID]; ok {
 				experiment.IsFeatureExperiment = true
 				featureExperiments = append(featureExperiments, experiment)
-				(*experimentMap)[experimentID] = experiment
+				experimentMap[experimentID] = experiment
 			}
 		}
 

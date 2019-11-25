@@ -49,8 +49,9 @@ func TestMapFeatures(t *testing.T) {
 		"31111": experiment31111,
 		"31112": experiment31112,
 	}
-	featureMap := MapFeatures(rawFeatureFlags, rolloutMap, &experimentMap)
+	featureMap := MapFeatures(rawFeatureFlags, rolloutMap, experimentMap)
 
+	// Test MapFeatures should only change IsFeatureExperiment to true for experiment31111 since it belongs to a featureflag
 	experiment31111.IsFeatureExperiment = true
 	variable := entities.Variable{
 		ID:           "1",
