@@ -43,7 +43,7 @@ type OptimizelyClient struct {
 	EventProcessor  event.Processor
 
 	executionCtx utils.ExecutionCtx
-	onTracks     []OnTrack
+	onTrack      OnTrack
 }
 
 // Activate returns the key of the variation the user is bucketed into and sends an impression event to the Optimizely log endpoint
@@ -334,8 +334,8 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 	userEvent := event.CreateConversionUserEvent(projectConfig, configEvent, userContext, eventTags)
 	o.EventProcessor.ProcessEvent(userEvent)
 
-	for _, onTrack := range o.onTracks {
-		onTrack(eventKey, userContext, eventTags, userEvent)
+	if o.onTrack != nil {
+		o.onTrack(eventKey, userContext, eventTags, userEvent)
 	}
 
 	return nil

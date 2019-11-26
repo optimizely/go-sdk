@@ -39,7 +39,7 @@ type OptimizelyFactory struct {
 	executionCtx       utils.ExecutionCtx
 	userProfileService decision.UserProfileService
 	overrideStore      decision.ExperimentOverrideStore
-	onTracks           []OnTrack
+	onTrack            OnTrack
 }
 
 // OptionFunc is a type to a proper func
@@ -110,7 +110,7 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		batchProcessor.Start(appClient.executionCtx)
 	}
 
-	appClient.onTracks = f.onTracks
+	appClient.onTrack = f.onTrack
 
 	return appClient, nil
 }
@@ -138,15 +138,10 @@ func WithConfigManager(configManager pkg.ProjectConfigManager) OptionFunc {
 	}
 }
 
-func WithOnTracks(onTracks []OnTrack) OptionFunc {
-	return func(f *OptimizelyFactory) {
-		f.onTracks = onTracks
-	}
-}
-
+// WithOnTrack sets callback which is called when Track is called.
 func WithOnTrack(onTrack OnTrack) OptionFunc {
 	return func(f *OptimizelyFactory) {
-		f.onTracks = []OnTrack{onTrack}
+		f.onTrack = onTrack
 	}
 }
 

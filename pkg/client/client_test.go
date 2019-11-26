@@ -141,9 +141,7 @@ func TestTrackWithNotification(t *testing.T) {
 		ConfigManager:   ValidProjectConfigManager(),
 		DecisionService: mockDecisionService,
 		EventProcessor:  mockProcessor,
-		onTracks: []OnTrack{
-			onTrack,
-		},
+		onTrack:         onTrack,
 	}
 
 	err := client.Track("sample_conversion", userContext, map[string]interface{}{})
@@ -174,9 +172,7 @@ func TestTrackWithNotificationAndEventTag(t *testing.T) {
 		ConfigManager:   ValidProjectConfigManager(),
 		DecisionService: mockDecisionService,
 		EventProcessor:  mockProcessor,
-		onTracks: []OnTrack{
-			onTrack,
-		},
+		onTrack:         onTrack,
 	}
 
 	err := client.Track("sample_conversion", userContext, expectedEvenTags)
@@ -207,9 +203,7 @@ func TestTrackWithNotificationAndUserEvent(t *testing.T) {
 		ConfigManager:   ValidProjectConfigManager(),
 		DecisionService: mockDecisionService,
 		EventProcessor:  mockProcessor,
-		onTracks: []OnTrack{
-			onTrack,
-		},
+		onTrack:         onTrack,
 	}
 
 	err := client.Track("sample_conversion", userContext, expectedEvenTags)
@@ -218,6 +212,29 @@ func TestTrackWithNotificationAndUserEvent(t *testing.T) {
 	assert.True(t, len(mockProcessor.Events) == 1)
 	assert.True(t, mockProcessor.Events[0].VisitorID == "1212121")
 	assert.True(t, mockProcessor.Events[0].EventContext.ProjectID == "15389410617")
+}
+
+func TestTrackNotificationNotCalledWhenInvalidParamsProvided(t *testing.T) {
+	mockProcessor := &MockProcessor{}
+	mockDecisionService := new(MockDecisionService)
+
+	isTrackCalled := false
+	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, userEvent event.UserEvent) {
+		isTrackCalled = true
+	}
+
+	client := OptimizelyClient{
+		ConfigManager:   ValidProjectConfigManager(),
+		DecisionService: mockDecisionService,
+		EventProcessor:  mockProcessor,
+		onTrack:         onTrack,
+	}
+
+	err := client.Track("bob", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
+
+	assert.NoError(t, err)
+	assert.True(t, len(mockProcessor.Events) == 0)
+	assert.False(t, isTrackCalled)
 }
 
 func TestTrackFailEventNotFound(t *testing.T) {
