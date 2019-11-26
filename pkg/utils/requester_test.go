@@ -62,14 +62,14 @@ func TestGet(t *testing.T) {
 	defer ts.Close()
 
 	var httpreq Requester
-	httpreq = NewHTTPRequester(ts.URL + "/good")
-	resp, headers, code, err := httpreq.Get()
+	httpreq = NewHTTPRequester()
+	resp, headers, code, err := httpreq.Get(ts.URL + "/good")
 	assert.NotEqual(t, headers.Get("Content-Type"), "")
 	assert.Nil(t, err)
 	assert.Equal(t, "Hello, client\n", string(resp))
 
-	httpreq = NewHTTPRequester(ts.URL + "/bad")
-	_, headers, code, err = httpreq.Get()
+	httpreq = NewHTTPRequester()
+	_, headers, code, err = httpreq.Get(ts.URL + "/bad")
 	assert.Equal(t, errors.New("400 Bad Request"), err)
 	assert.Equal(t, code, http.StatusBadRequest)
 }
@@ -94,14 +94,14 @@ func TestGetObj(t *testing.T) {
 	defer ts.Close()
 
 	var httpreq Requester
-	httpreq = NewHTTPRequester(ts.URL + "/good")
+	httpreq = NewHTTPRequester()
 	r := resp{}
-	err := httpreq.GetObj(&r)
+	err := httpreq.GetObj(ts.URL+"/good", &r)
 	assert.Nil(t, err)
 	assert.Equal(t, resp{Fld1: "Hello, client", Fld2: 123}, r)
 
-	httpreq = NewHTTPRequester(ts.URL + "/bad")
-	err = httpreq.GetObj(&r)
+	httpreq = NewHTTPRequester()
+	err = httpreq.GetObj(ts.URL+"/bad", &r)
 	assert.NotNil(t, err)
 }
 
@@ -124,16 +124,16 @@ func TestPost(t *testing.T) {
 	defer ts.Close()
 	b := body{"one", 1}
 	var httpreq Requester
-	httpreq = NewHTTPRequester(ts.URL + "/good")
-	resp, headers, code, err := httpreq.Post(b)
+	httpreq = NewHTTPRequester()
+	resp, headers, code, err := httpreq.Post(ts.URL+"/good", b)
 
 	assert.Nil(t, err)
 	assert.NotEqual(t, headers.Get("Content-Type"), "")
 	assert.Equal(t, "Hello, client\n", string(resp))
 	assert.Equal(t, code, http.StatusOK)
 
-	httpreq = NewHTTPRequester(ts.URL + "/bad")
-	_, _, code, err = httpreq.Post(nil)
+	httpreq = NewHTTPRequester()
+	_, _, code, err = httpreq.Post(ts.URL+"/bad", nil)
 	assert.Equal(t, errors.New("400 Bad Request"), err)
 	assert.Equal(t, code, http.StatusBadRequest)
 }
@@ -158,21 +158,22 @@ func TestPostObj(t *testing.T) {
 	defer ts.Close()
 
 	var httpreq Requester
-	httpreq = NewHTTPRequester(ts.URL + "/good")
+	httpreq = NewHTTPRequester()
 	b := body{"one", 1}
 	r := body{}
-	err := httpreq.PostObj(b, &r)
+	err := httpreq.PostObj(ts.URL+"/good", b, &r)
 	assert.Nil(t, err)
 	assert.Equal(t, body{Fld1: "Hello, client", Fld2: 123}, r)
 
-	httpreq = NewHTTPRequester(ts.URL + "/bad")
-	err = httpreq.PostObj(b, &r)
+	httpreq = NewHTTPRequester()
+	err = httpreq.PostObj(ts.URL+"/bad", b, &r)
 	assert.NotNil(t, err)
 }
 
 func TestGetBad(t *testing.T) {
-	httpreq := NewHTTPRequester("blah12345/good")
-	_, _, _, err := httpreq.Get()
+
+	httpreq := NewHTTPRequester()
+	_, _, _, err := httpreq.Get("blah12345/good")
 	_, ok := err.(*url.Error)
 	assert.True(t, ok, "url error")
 }
@@ -191,8 +192,8 @@ func TestGetBadWithResponse(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	httpreq := NewHTTPRequester(ts.URL+"/bad", Retries(1))
-	data, _, _, err := httpreq.Get()
+	httpreq := NewHTTPRequester(Retries(1))
+	data, _, _, err := httpreq.Get(ts.URL + "/bad")
 	assert.Equal(t, "400 Bad Request", err.Error())
 	assert.Equal(t, "bad bad response\n", string(data))
 }
@@ -220,10 +221,10 @@ func TestGetRetry(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	httpreq := NewHTTPRequester(ts.URL+"/test", Retries(10))
+	httpreq := NewHTTPRequester(Retries(10))
 
 	st := time.Now()
-	resp, _, _, err := httpreq.Get()
+	resp, _, _, err := httpreq.Get(ts.URL + "/test")
 	assert.Nil(t, err)
 	assert.Equal(t, "Hello, client\n", string(resp))
 	assert.Equal(t, 5, called, "called 5 retries")
@@ -231,27 +232,28 @@ func TestGetRetry(t *testing.T) {
 
 	assert.True(t, elapsed >= 400*5*time.Millisecond && elapsed <= 510*5*time.Second, "took %s", elapsed)
 
-	httpreq = NewHTTPRequester(ts.URL+"/test", Retries(3))
+	httpreq = NewHTTPRequester(Retries(3))
 	called = 0
-	_, _, _, err = httpreq.Get()
+	_, _, _, err = httpreq.Get(ts.URL + "/test")
 	assert.Equal(t, errors.New("400 Bad Request"), err)
 	assert.Equal(t, 3, called, "called 3 retries")
 
-	httpreq = NewHTTPRequester(ts.URL+"/test", Retries(1))
+	httpreq = NewHTTPRequester(Retries(1))
 	called = 0
-	_, _, _, err = httpreq.Get()
+	_, _, _, err = httpreq.Get(ts.URL + "/test")
 	assert.Equal(t, errors.New("400 Bad Request"), err)
 	assert.Equal(t, 1, called, "called 1 retries")
 
-	httpreq = NewHTTPRequester(ts.URL + "/test")
+	httpreq = NewHTTPRequester()
 	called = 0
-	_, _, _, err = httpreq.Get()
+	_, _, _, err = httpreq.Get(ts.URL + "/test")
 	assert.Equal(t, errors.New("400 Bad Request"), err)
 	assert.Equal(t, 1, called, "called 1 retries")
 }
 
 func TestString(t *testing.T) {
-	assert.Equal(t, "{url: 127.0.0.1/blah, timeout: 5s, retries: 1}", NewHTTPRequester("127.0.0.1/blah").String())
-	assert.Equal(t, "{url: 127.0.0.1/blah, timeout: 19s, retries: 10}",
-		NewHTTPRequester("127.0.0.1/blah", Retries(10), Timeout(time.Duration(19)*time.Second)).String())
+	assert.Equal(t, "{timeout: 5s, retries: 1}", NewHTTPRequester().String())
+	assert.Equal(t, "{timeout: 19s, retries: 10}",
+		NewHTTPRequester(Retries(10), Timeout(time.Duration(19)*time.Second)).String())
+
 }

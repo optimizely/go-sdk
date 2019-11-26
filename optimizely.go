@@ -14,37 +14,25 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package cmd
+package optimizely
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/spf13/cobra"
+	"github.com/optimizely/go-sdk/pkg/client"
+	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
-var (
-	userID      string
-	featureKey  string
-	variableKey string
-	eventKey    string
-	sdkKey      string
-)
-
-var rootCmd = &cobra.Command{
-	Use:   "go-sdk",
-	Short: "go-sdk provides cli access to your Optimizely fullstack project",
-}
-
-// Execute executes rootCmd, exits if error found
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+// Client returns an OptimizelyClient instantitated with the given key and options
+func Client(sdkKey string, options ...client.OptionFunc) (*client.OptimizelyClient, error) {
+	factory := &client.OptimizelyFactory{
+		SDKKey: sdkKey,
 	}
+	return factory.Client(options...)
 }
 
-func init() {
-	rootCmd.PersistentFlags().StringVarP(&sdkKey, "sdkKey", "s", "", "Optimizely project SDK key")
-	rootCmd.MarkPersistentFlagRequired("sdkKey")
+// UserContext is a helper method for creating a user context
+func UserContext(userID string, attributes map[string]interface{}) entities.UserContext {
+	return entities.UserContext{
+		ID: userID,
+		Attributes: attributes,
+	}
 }

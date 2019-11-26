@@ -41,10 +41,10 @@ type OptimizelyFactory struct {
 	overrideStore      decision.ExperimentOverrideStore
 }
 
-// OptionFunc is a type to a proper func
+// OptionFunc is used to provide custom client configuration to the OptimizelyFactory
 type OptionFunc func(*OptimizelyFactory)
 
-// Client gets client and sets some parameters
+// Client instantiates a new OptimizelyClient with the given options
 func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClient, error) {
 	// extract options
 	for _, opt := range clientOptions {
@@ -102,7 +102,7 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 
 	// Initialize the default services with the execution context
 	if pollingConfigManager, ok := appClient.ConfigManager.(*config.PollingProjectConfigManager); ok {
-		pollingConfigManager.Start(appClient.executionCtx)
+		pollingConfigManager.Start(f.SDKKey, appClient.executionCtx)
 	}
 
 	if batchProcessor, ok := appClient.EventProcessor.(*event.BatchEventProcessor); ok {
