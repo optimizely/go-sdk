@@ -125,6 +125,101 @@ func TestTrack(t *testing.T) {
 
 }
 
+func TestTrackWithNotification(t *testing.T) {
+	mockProcessor := &MockProcessor{}
+	mockDecisionService := new(MockDecisionService)
+
+	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
+
+	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, userEvent event.UserEvent) {
+		assert.Equal(t, "sample_conversion", eventKey)
+		assert.Equal(t, userContext, userContext)
+		// TODO: Need to add userEvent comparison.
+	}
+
+	client := OptimizelyClient{
+		ConfigManager:   ValidProjectConfigManager(),
+		DecisionService: mockDecisionService,
+		EventProcessor:  mockProcessor,
+		onTracks: []OnTrack{
+			onTrack,
+		},
+	}
+
+	err := client.Track("sample_conversion", userContext, map[string]interface{}{})
+
+	assert.Nil(t, err)
+	assert.True(t, len(mockProcessor.Events) == 1)
+	assert.True(t, mockProcessor.Events[0].VisitorID == "1212121")
+	assert.True(t, mockProcessor.Events[0].EventContext.ProjectID == "15389410617")
+}
+
+func TestTrackWithNotificationAndEventTag(t *testing.T) {
+	mockProcessor := &MockProcessor{}
+	mockDecisionService := new(MockDecisionService)
+
+	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
+	expectedEvenTags := map[string]interface{}{
+		"client":  "ios",
+		"version": "7.0",
+	}
+	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, userEvent event.UserEvent) {
+		assert.Equal(t, "sample_conversion", eventKey)
+		assert.Equal(t, userContext, userContext)
+		assert.Equal(t, expectedEvenTags, eventTags)
+		// TODO: Need to add userEvent comparison.
+	}
+
+	client := OptimizelyClient{
+		ConfigManager:   ValidProjectConfigManager(),
+		DecisionService: mockDecisionService,
+		EventProcessor:  mockProcessor,
+		onTracks: []OnTrack{
+			onTrack,
+		},
+	}
+
+	err := client.Track("sample_conversion", userContext, expectedEvenTags)
+
+	assert.Nil(t, err)
+	assert.True(t, len(mockProcessor.Events) == 1)
+	assert.True(t, mockProcessor.Events[0].VisitorID == "1212121")
+	assert.True(t, mockProcessor.Events[0].EventContext.ProjectID == "15389410617")
+}
+
+func TestTrackWithNotificationAndUserEvent(t *testing.T) {
+	mockProcessor := &MockProcessor{}
+	mockDecisionService := new(MockDecisionService)
+
+	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
+	expectedEvenTags := map[string]interface{}{
+		"client":  "ios",
+		"version": "7.0",
+	}
+	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, userEvent event.UserEvent) {
+		assert.Equal(t, "sample_conversion", eventKey)
+		assert.Equal(t, userContext, userContext)
+		assert.Equal(t, expectedEvenTags, eventTags)
+		assert.Equal(t, mockProcessor.Events, userEvent)
+	}
+
+	client := OptimizelyClient{
+		ConfigManager:   ValidProjectConfigManager(),
+		DecisionService: mockDecisionService,
+		EventProcessor:  mockProcessor,
+		onTracks: []OnTrack{
+			onTrack,
+		},
+	}
+
+	err := client.Track("sample_conversion", userContext, expectedEvenTags)
+
+	assert.Nil(t, err)
+	assert.True(t, len(mockProcessor.Events) == 1)
+	assert.True(t, mockProcessor.Events[0].VisitorID == "1212121")
+	assert.True(t, mockProcessor.Events[0].EventContext.ProjectID == "15389410617")
+}
+
 func TestTrackFailEventNotFound(t *testing.T) {
 	mockProcessor := &MockProcessor{}
 	mockDecisionService := new(MockDecisionService)

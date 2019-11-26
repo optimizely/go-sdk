@@ -39,6 +39,7 @@ type OptimizelyFactory struct {
 	executionCtx       utils.ExecutionCtx
 	userProfileService decision.UserProfileService
 	overrideStore      decision.ExperimentOverrideStore
+	onTracks           []OnTrack
 }
 
 // OptionFunc is a type to a proper func
@@ -109,6 +110,8 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		batchProcessor.Start(appClient.executionCtx)
 	}
 
+	appClient.onTracks = f.onTracks
+
 	return appClient, nil
 }
 
@@ -132,6 +135,18 @@ func WithPollingConfigManagerRequester(requester utils.Requester, pollingInterva
 func WithConfigManager(configManager pkg.ProjectConfigManager) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.configManager = configManager
+	}
+}
+
+func WithOnTracks(onTracks []OnTrack) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.onTracks = onTracks
+	}
+}
+
+func WithOnTrack(onTrack OnTrack) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.onTracks = []OnTrack{onTrack}
 	}
 }
 
@@ -213,5 +228,6 @@ func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 		WithCompositeDecisionService(f.SDKKey),
 		WithBatchEventProcessor(event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
 	)
+
 	return optlyClient, e
 }

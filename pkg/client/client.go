@@ -33,6 +33,9 @@ import (
 
 var logger = logging.GetLogger("Client")
 
+// OnTrack called while Track is called
+type OnTrack func(eventKey string, userAttributes entities.UserContext, eventTags map[string]interface{}, userEvent event.UserEvent)
+
 // OptimizelyClient is the entry point to the Optimizely SDK
 type OptimizelyClient struct {
 	ConfigManager   pkg.ProjectConfigManager
@@ -40,6 +43,7 @@ type OptimizelyClient struct {
 	EventProcessor  event.Processor
 
 	executionCtx utils.ExecutionCtx
+	onTracks     []OnTrack
 }
 
 // Activate returns the key of the variation the user is bucketed into and sends an impression event to the Optimizely log endpoint
@@ -329,6 +333,11 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 
 	userEvent := event.CreateConversionUserEvent(projectConfig, configEvent, userContext, eventTags)
 	o.EventProcessor.ProcessEvent(userEvent)
+
+	for _, onTrack := range o.onTracks {
+		onTrack(eventKey, userContext, eventTags, userEvent)
+	}
+
 	return nil
 }
 
