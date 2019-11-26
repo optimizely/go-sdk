@@ -65,7 +65,8 @@ func TestClientWithSDKKey(t *testing.T) {
 }
 
 func TestClientWithOnTrack(t *testing.T) {
-	factory := OptimizelyFactory{onTrack: onTrackCallback}
+	factory := OptimizelyFactory{onTrack: onTrackCallback, SDKKey: "1212"}
+
 	optimizelyClient, err := factory.Client()
 	assert.NoError(t, err)
 	assert.NotNil(t, optimizelyClient.onTrack)

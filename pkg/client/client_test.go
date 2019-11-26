@@ -196,7 +196,8 @@ func TestTrackWithNotificationAndUserEvent(t *testing.T) {
 		assert.Equal(t, "sample_conversion", eventKey)
 		assert.Equal(t, userContext, userContext)
 		assert.Equal(t, expectedEvenTags, eventTags)
-		assert.Equal(t, mockProcessor.Events, userEvent)
+		assert.True(t, len(mockProcessor.Events) > 0)
+		assert.Equal(t, mockProcessor.Events[0], userEvent)
 	}
 
 	client := OptimizelyClient{
