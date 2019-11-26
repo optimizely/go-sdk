@@ -9,7 +9,6 @@ import (
 
 	"github.com/optimizely/go-sdk"
 	"github.com/optimizely/go-sdk/pkg/client"
-	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
@@ -44,7 +43,7 @@ func main() {
 		return
 	}
 
-	enabled, _ := optimizelyClient.IsFeatureEnabled("mutext_feat", user)
+	enabled, _ = optimizelyClient.IsFeatureEnabled("mutext_feat", user)
 	fmt.Printf("Is feature enabled? %v\n", enabled)
 
 	fmt.Println()
