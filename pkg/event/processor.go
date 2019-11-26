@@ -36,7 +36,8 @@ type Processor interface {
 	ProcessEvent(event UserEvent) bool
 }
 
-// BatchEventProcessor is used out of the box by the SDK
+// BatchEventProcessor is used out of the box by the SDK to queue up and batch events to be sent to the Optimizely
+// log endpoint for results processing.
 type BatchEventProcessor struct {
 	sdkKey          string
 	MaxQueueSize    int           // max size of the queue before flush
@@ -154,7 +155,9 @@ func (p *BatchEventProcessor) Start(exeCtx utils.ExecutionCtx) {
 	pLogger.Debug("Batch event processor started")
 }
 
-// ProcessEvent processes the given impression event
+// ProcessEvent takes the given user event (can be an impression or conversion event) and queues it up to be dispatched
+// to the Optimizely log endpoint. A dispatch happens when we flush the events, which can happen on a set interval or
+// when the specified batch size (defaulted to 10) is reached.
 func (p *BatchEventProcessor) ProcessEvent(event UserEvent) bool {
 
 	if p.Q.Size() >= p.MaxQueueSize {
@@ -173,7 +176,7 @@ func (p *BatchEventProcessor) ProcessEvent(event UserEvent) bool {
 		// we just want to start one go routine when the batch size is met.
 		pLogger.Debug("batch size reached.  Flushing routine being called")
 		go func() {
-			p.FlushEvents()
+			p.flushEvents()
 			p.processing.Release(1)
 		}()
 	}
@@ -181,18 +184,18 @@ func (p *BatchEventProcessor) ProcessEvent(event UserEvent) bool {
 	return true
 }
 
-// EventsCount returns size of an event queue
-func (p *BatchEventProcessor) EventsCount() int {
+// eventsCount returns size of an event queue
+func (p *BatchEventProcessor) eventsCount() int {
 	return p.Q.Size()
 }
 
-// GetEvents returns events from event queue for count
-func (p *BatchEventProcessor) GetEvents(count int) []interface{} {
+// getEvents returns events from event queue for count
+func (p *BatchEventProcessor) getEvents(count int) []interface{} {
 	return p.Q.Get(count)
 }
 
-// Remove removes events from queue for count
-func (p *BatchEventProcessor) Remove(count int) []interface{} {
+// remove removes events from queue for count
+func (p *BatchEventProcessor) remove(count int) []interface{} {
 	return p.Q.Remove(count)
 }
 
@@ -210,10 +213,10 @@ func (p *BatchEventProcessor) startTicker(exeCtx utils.ExecutionCtx) {
 		for {
 			select {
 			case <-p.Ticker.C:
-				p.FlushEvents()
+				p.flushEvents()
 			case <-exeCtx.GetContext().Done():
 				pLogger.Debug("Event processor stopped, flushing events.")
-				p.FlushEvents()
+				p.flushEvents()
 				d, ok := p.EventDispatcher.(*QueueEventDispatcher)
 				if ok {
 					d.flushEvents()
@@ -240,23 +243,23 @@ func (p *BatchEventProcessor) addToBatch(current *Batch, visitor Visitor) {
 	current.Visitors = visitors
 }
 
-// FlushEvents flushes events in queue
-func (p *BatchEventProcessor) FlushEvents() {
+// flushEvents flushes events in queue
+func (p *BatchEventProcessor) flushEvents() {
 	// we flush when queue size is reached.
 	// however, if there is a ticker cycle already processing, we should wait
 	p.flushLock.Lock()
 	defer p.flushLock.Unlock()
-	
+
 	var batchEvent Batch
 	var batchEventCount = 0
 	var failedToSend = false
 
-	for p.EventsCount() > 0 {
+	for p.eventsCount() > 0 {
 		if failedToSend {
 			pLogger.Error("last Event Batch failed to send; retry on next flush", errors.New("dispatcher failed"))
 			break
 		}
-		events := p.GetEvents(p.BatchSize)
+		events := p.getEvents(p.BatchSize)
 
 		if len(events) > 0 {
 			for i := 0; i < len(events); i++ {
@@ -295,7 +298,7 @@ func (p *BatchEventProcessor) FlushEvents() {
 			}
 			if success, _ := p.EventDispatcher.DispatchEvent(logEvent); success {
 				pLogger.Debug("Dispatched event successfully")
-				p.Remove(batchEventCount)
+				p.remove(batchEventCount)
 				batchEventCount = 0
 				batchEvent = Batch{}
 			} else {

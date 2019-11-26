@@ -45,7 +45,8 @@ const LastModified = "Last-Modified"
 
 var cmLogger = logging.GetLogger("PollingConfigManager")
 
-// PollingProjectConfigManager maintains a dynamic copy of the project config
+// PollingProjectConfigManager maintains a dynamic copy of the project config by continuously polling for the datafile
+// from the Optimizely CDN at a given (configurable) interval.
 type PollingProjectConfigManager struct {
 	requester          utils.Requester
 	pollingInterval    time.Duration
@@ -58,7 +59,7 @@ type PollingProjectConfigManager struct {
 	projectConfig pkg.ProjectConfig
 }
 
-// OptionFunc is a type to a proper func
+// OptionFunc is s used to provide custom configuration to the PollingProjectConfigManager.
 type OptionFunc func(*PollingProjectConfigManager)
 
 // DefaultRequester is an optional function, sets default requester based on a key.

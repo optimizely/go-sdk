@@ -29,14 +29,14 @@ import (
 
 var csLogger = logging.GetLogger("CompositeDecisionService")
 
-// CompositeService is the entrypoint into the decision service. It provides out of the box decision making for Features and Experiments.
+// CompositeService is the entry-point into the decision service. It provides out of the box decision making for Features and Experiments.
 type CompositeService struct {
 	compositeExperimentService ExperimentService
 	compositeFeatureService    FeatureService
 	notificationCenter         notification.Center
 }
 
-// CSOptionFunc is used to pass config options into the CompositeService
+// CSOptionFunc is used to pass custom config options into the CompositeService.
 type CSOptionFunc func(*CompositeService)
 
 // WithCompositeExperimentService sets the composite experiment service on the CompositeService

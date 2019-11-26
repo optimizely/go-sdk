@@ -21,7 +21,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
-// Client returns an OptimizelyClient instantitated with the given key and options
+// Client returns an OptimizelyClient instantiated with the given key and options
 func Client(sdkKey string, options ...client.OptionFunc) (*client.OptimizelyClient, error) {
 	factory := &client.OptimizelyFactory{
 		SDKKey: sdkKey,
