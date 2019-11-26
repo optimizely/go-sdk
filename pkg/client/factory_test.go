@@ -132,8 +132,10 @@ func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 
 func TestClientWithOnTrackInOptions(t *testing.T) {
 	factory := OptimizelyFactory{}
+	projectConfig := datafileprojectconfig.DatafileProjectConfig{}
+	configManager := config.NewStaticProjectConfigManager(projectConfig)
 
-	optimizelyClient, err := factory.Client(WithOnTrack(onTrackCallback))
+	optimizelyClient, err := factory.Client(WithOnTrack(onTrackCallback), WithConfigManager(configManager))
 	assert.NoError(t, err)
 	assert.NotNil(t, optimizelyClient.onTrack)
 }
