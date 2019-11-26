@@ -43,8 +43,8 @@ func TestMapFeatures(t *testing.T) {
 	rolloutMap := map[string]entities.Rollout{
 		"41111": rollout,
 	}
-	experiment31111 := entities.Experiment{ID: "31111", IsFeatureExperiment: false}
-	experiment31112 := entities.Experiment{ID: "31112", IsFeatureExperiment: false}
+	experiment31111 := entities.Experiment{ID: "31111"}
+	experiment31112 := entities.Experiment{ID: "31112"}
 	experimentMap := map[string]entities.Experiment{
 		"31111": experiment31111,
 		"31112": experiment31112,
