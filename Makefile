@@ -31,5 +31,8 @@ lint: ## runs `golangci-lint` linters defined in `.golangci.yml` file
 test: ## recursively test source code in pkg without coverage
 	GO111MODULE=$(GO111MODULE) $(GOTEST) ./pkg/...
 
+benchmark: ## recursively test source code in pkg without coverage
+	GO111MODULE=$(GO111MODULE) $(GOTEST) -bench=. -run=^a ./pkg/...
+
 help: ## help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
