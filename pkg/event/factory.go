@@ -39,13 +39,12 @@ const clientVersion string = pkg.Version
 const attributeType = "custom"
 const specialPrefix = "$opt_"
 const botFilteringKey = "$opt_bot_filtering"
-const eventAPI = "https://logx.optimizely.com/v1"
-const eventURI = "/events"
+const eventEndPoint = "https://logx.optimizely.com/v1/events"
 const revenueKey = "revenue"
 const valueKey = "value"
 
 func createLogEvent(event Batch) LogEvent {
-	return LogEvent{EndPoint: eventAPI + eventURI, Event: event}
+	return LogEvent{EndPoint: eventEndPoint, Event: event}
 }
 
 func makeTimestamp() int64 {

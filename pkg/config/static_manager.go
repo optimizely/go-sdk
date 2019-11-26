@@ -39,8 +39,8 @@ func NewStaticProjectConfigManagerFromURL(sdkKey string) (*StaticProjectConfigMa
 
 	requester := utils.NewHTTPRequester()
 
-	uri := "/" + sdkKey + ".json"
-	datafile, _, code, e := requester.Get(uri)
+	url := fmt.Sprintf(DatafileURLTemplate, sdkKey)
+	datafile, _, code, e := requester.Get(url)
 	if e != nil {
 		cmLogger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
 		return nil, e

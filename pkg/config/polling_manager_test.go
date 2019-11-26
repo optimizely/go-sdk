@@ -243,7 +243,7 @@ func TestDefaultRequester(t *testing.T) {
 
 	requester := configManager.requester
 	assert.NotNil(t, requester)
-	assert.Equal(t, requester.String(), "{api: https://cdn.optimizely.com/datafiles, timeout: 5s, retries: 1}")
+	assert.Equal(t, requester.String(), "{timeout: 5s, retries: 1}")
 }
 
 func TestPollingInterval(t *testing.T) {
@@ -265,4 +265,13 @@ func TestInitialDatafile(t *testing.T) {
 	configManager.Start(sdkKey, exeCtx)
 
 	assert.Equal(t, configManager.initDatafile, []byte("test"))
+}
+
+func TestDatafileTemplate(t *testing.T) {
+
+	sdkKey := "test_sdk_key"
+	datafileTemplate := "https://localhost/v1/%s.json"
+	configManager := NewPollingProjectConfigManager(sdkKey, DatafileTemplate(datafileTemplate))
+
+	assert.Equal(t, datafileTemplate, configManager.datafileURLTemplate)
 }

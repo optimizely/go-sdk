@@ -46,8 +46,8 @@ type HTTPEventDispatcher struct {
 // DispatchEvent dispatches event with callback
 func (*HTTPEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 
-	requester := utils.NewHTTPRequester(utils.API(eventAPI))
-	_, _, code, err := requester.Post(eventURI, event.Event)
+	requester := utils.NewHTTPRequester()
+	_, _, code, err := requester.Post(event.EndPoint, event.Event)
 
 	// also check response codes
 	// resp.StatusCode == 400 is an error
