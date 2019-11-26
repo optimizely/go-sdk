@@ -234,18 +234,6 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestDefaultRequester(t *testing.T) {
-
-	sdkKey := "test_sdk_key"
-	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(sdkKey, DefaultRequester())
-	configManager.Start(sdkKey, exeCtx)
-
-	requester := configManager.requester
-	assert.NotNil(t, requester)
-	assert.Equal(t, requester.String(), "{timeout: 5s, retries: 1}")
-}
-
 func TestPollingInterval(t *testing.T) {
 
 	sdkKey := "test_sdk_key"

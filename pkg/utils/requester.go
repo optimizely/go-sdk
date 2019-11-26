@@ -98,7 +98,6 @@ func NewHTTPRequester(params ...func(*HTTPRequester)) *HTTPRequester {
 }
 
 // Get executes HTTP GET with url and optional extra headers, returns body in []bytes
-// url created as api+sdkKey.json
 func (r HTTPRequester) Get(url string, headers ...Header) (response []byte, responseHeaders http.Header, code int, err error) {
 	return r.Do(url, "GET", nil, headers)
 }

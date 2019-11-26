@@ -62,15 +62,6 @@ type PollingProjectConfigManager struct {
 // OptionFunc is a type to a proper func
 type OptionFunc func(*PollingProjectConfigManager)
 
-// DefaultRequester is an optional function, sets default requester
-func DefaultRequester() OptionFunc {
-	return func(p *PollingProjectConfigManager) {
-
-		requester := utils.NewHTTPRequester()
-		p.requester = requester
-	}
-}
-
 // Requester is an optional function, sets a passed requester
 func Requester(requester utils.Requester) OptionFunc {
 	return func(p *PollingProjectConfigManager) {

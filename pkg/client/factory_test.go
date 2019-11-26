@@ -18,6 +18,7 @@ package client
 
 import (
 	"errors"
+	"net/http"
 	"testing"
 	"time"
 
@@ -28,7 +29,18 @@ import (
 	"github.com/optimizely/go-sdk/pkg/utils"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
+
+type MockRequester struct {
+	utils.Requester
+	mock.Mock
+}
+
+func (m *MockRequester) Get(uri string, headers ...utils.Header) (response []byte, responseHeaders http.Header, code int, err error) {
+	args := m.Called(headers)
+	return args.Get(0).([]byte), args.Get(1).(http.Header), args.Int(2), args.Error(3)
+}
 
 type MockDispatcher struct {
 	Events []event.LogEvent
@@ -72,8 +84,10 @@ func TestClientWithPollingConfigManager(t *testing.T) {
 func TestClientWithPollingConfigManagerRequester(t *testing.T) {
 
 	factory := OptimizelyFactory{}
-	requester := utils.NewHTTPRequester()
-	optimizelyClient, err := factory.Client(WithPollingConfigManagerRequester(requester, time.Minute, nil))
+	mockRequester := new(MockRequester)
+	mockRequester.On("Get", []utils.Header(nil)).Return([]byte(`{"revision":"42"}`), http.Header{}, http.StatusOK, nil)
+
+	optimizelyClient, err := factory.Client(WithPollingConfigManagerRequester(mockRequester, time.Minute, nil))
 	assert.NoError(t, err)
 	assert.NotNil(t, optimizelyClient.ConfigManager)
 	assert.NotNil(t, optimizelyClient.DecisionService)
