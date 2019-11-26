@@ -20,6 +20,7 @@ package logging
 import (
 	"fmt"
 	"os"
+	"sync"
 )
 
 // LogLevel represents the level of the log (i.e. Debug, Info, Warning, Error)
@@ -30,6 +31,7 @@ func (l LogLevel) String() string {
 }
 
 var defaultLogConsumer OptimizelyLogConsumer
+var mutex = &sync.Mutex{}
 
 const (
 	// LogLevelDebug log level
@@ -46,17 +48,23 @@ const (
 )
 
 func init() {
+	mutex.Lock()
 	defaultLogConsumer = NewFilteredLevelLogConsumer(LogLevelInfo, os.Stdout)
+	mutex.Unlock()
 }
 
 // SetLogger replaces the default logger with the given logger
 func SetLogger(logger OptimizelyLogConsumer) {
+	mutex.Lock()
 	defaultLogConsumer = logger
+	mutex.Unlock()
 }
 
 // SetLogLevel sets the log level to the given level
 func SetLogLevel(logLevel LogLevel) {
+	mutex.Lock()
 	defaultLogConsumer.SetLogLevel(logLevel)
+	mutex.Unlock()
 }
 
 // GetLogger returns a log producer with the given name
@@ -95,5 +103,7 @@ func (p NamedLogProducer) Error(message string, err interface{}) {
 }
 
 func (p NamedLogProducer) log(logLevel LogLevel, message string) {
+	mutex.Lock()
 	defaultLogConsumer.Log(logLevel, message, p.fields)
+	mutex.Unlock()
 }
