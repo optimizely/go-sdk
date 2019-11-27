@@ -204,8 +204,11 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 		opt(&pollingProjectConfigManager)
 	}
 
+	// To send notification for initial poll aswell
 	for _, handler := range pollingProjectConfigManager.projectConfigUpdateHandlers {
-		pollingProjectConfigManager.OnProjectConfigUpdate(handler)
+		if _, err := pollingProjectConfigManager.OnProjectConfigUpdate(handler); err != nil {
+			break
+		}
 	}
 
 	initDatafile := pollingProjectConfigManager.initDatafile
