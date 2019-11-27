@@ -33,8 +33,8 @@ type TestConfigManager struct {
 	listenersCalled []notification.ProjectConfigUpdateNotification
 }
 
-// CreateListenerCallbacks - Creates Notification Listeners
-func (c *TestConfigManager) CreateListenerCallbacks(apiOptions models.APIOptions) (listeners []func(notification notification.ProjectConfigUpdateNotification)) {
+// GetListenerCallbacks - Creates and returns listener callback array
+func (c *TestConfigManager) GetListenerCallbacks(apiOptions models.APIOptions) (listeners []func(notification notification.ProjectConfigUpdateNotification)) {
 
 	projectConfigUpdateCallback := func(notification notification.ProjectConfigUpdateNotification) {
 		c.listenersCalled = append(c.listenersCalled, notification)
@@ -55,14 +55,14 @@ func (c *TestConfigManager) CreateListenerCallbacks(apiOptions models.APIOptions
 }
 
 // Verify - Verifies configuration tests
-func (c *TestConfigManager) Verify(apiOptions models.APIOptions) {
+func (c *TestConfigManager) Verify(configuration models.DataFileManagerConfiguration) {
 	timeout := DefaultInitializationTimeout
-	if apiOptions.DFMConfiguration.Timeout != nil {
-		timeout = time.Duration(*(apiOptions.DFMConfiguration.Timeout)) * time.Millisecond
+	if configuration.Timeout != nil {
+		timeout = time.Duration(*(configuration.Timeout)) * time.Millisecond
 	}
 
 	start := time.Now()
-	switch apiOptions.DFMConfiguration.Mode {
+	switch configuration.Mode {
 	case "wait_for_on_ready":
 		for {
 			t := time.Now()
@@ -79,8 +79,8 @@ func (c *TestConfigManager) Verify(apiOptions models.APIOptions) {
 		break
 	case "wait_for_config_update":
 		revision := 0
-		if apiOptions.DFMConfiguration.Revision != nil {
-			revision = *(apiOptions.DFMConfiguration.Revision)
+		if configuration.Revision != nil {
+			revision = *(configuration.Revision)
 		}
 		for {
 			t := time.Now()

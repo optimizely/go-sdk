@@ -84,8 +84,8 @@ func PollingInterval(interval time.Duration) OptionFunc {
 	}
 }
 
-// ProjectConfigUpdateNotificationHandlers is an optional function, sets passed notification handlers
-func ProjectConfigUpdateNotificationHandlers(handlers ...func(notification.ProjectConfigUpdateNotification)) OptionFunc {
+// NotificationHandlers is an optional function, sets passed notification handlers
+func NotificationHandlers(handlers ...func(notification.ProjectConfigUpdateNotification)) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.projectConfigUpdateHandlers = handlers
 	}
@@ -204,7 +204,6 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 		opt(&pollingProjectConfigManager)
 	}
 
-	// To send notification for initial poll aswell
 	for _, handler := range pollingProjectConfigManager.projectConfigUpdateHandlers {
 		if _, err := pollingProjectConfigManager.OnProjectConfigUpdate(handler); err != nil {
 			break

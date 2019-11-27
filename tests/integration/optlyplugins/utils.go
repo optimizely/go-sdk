@@ -59,7 +59,7 @@ func CreatePollingConfigManager(options models.APIOptions) *TestConfigManager {
 	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.DatafileTemplate(urlString))
 
 	testConfigManagerInstance := &TestConfigManager{}
-	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.ProjectConfigUpdateNotificationHandlers(testConfigManagerInstance.CreateListenerCallbacks(options)...))
+	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.NotificationHandlers(testConfigManagerInstance.GetListenerCallbacks(options)...))
 
 	configManager := config.NewPollingProjectConfigManager(
 		sdkKey,
@@ -70,7 +70,8 @@ func CreatePollingConfigManager(options models.APIOptions) *TestConfigManager {
 	// not call the start method for ProjectConfigManager, so we have to do it manually
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager.Start(sdkKey, exeCtx)
-	testConfigManagerInstance.Verify(options)
+	// Verify datafile configuration tests
+	testConfigManagerInstance.Verify(options.DFMConfiguration)
 
 	return testConfigManagerInstance
 }
