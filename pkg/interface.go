@@ -22,7 +22,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/notification"
 )
 
-// ProjectConfig contains the parsed project entities
+// ProjectConfig represents the project's experiments and feature flags and contains methods for accessing the them.
 type ProjectConfig interface {
 	GetAccountID() string
 	GetAnonymizeIP() bool
@@ -41,7 +41,7 @@ type ProjectConfig interface {
 	GetRevision() string
 }
 
-// ProjectConfigManager manages the config
+// ProjectConfigManager maintains an instance of the ProjectConfig
 type ProjectConfigManager interface {
 	GetConfig() (ProjectConfig, error)
 	RemoveOnProjectConfigUpdate(id int) error
