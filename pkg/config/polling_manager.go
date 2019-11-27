@@ -60,7 +60,7 @@ type PollingProjectConfigManager struct {
 	projectConfig pkg.ProjectConfig
 }
 
-// OptionFunc is s used to provide custom configuration to the PollingProjectConfigManager.
+// OptionFunc is used to provide custom configuration to the PollingProjectConfigManager.
 type OptionFunc func(*PollingProjectConfigManager)
 
 // Requester is an optional function, sets a passed requester
