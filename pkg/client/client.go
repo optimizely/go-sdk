@@ -46,7 +46,8 @@ type OptimizelyClient struct {
 	onTrack      OnTrack
 }
 
-// Activate returns the key of the variation the user is bucketed into and sends an impression event to the Optimizely log endpoint
+// Activate returns the key of the variation the user is bucketed into and queues up an impression event to be sent to
+// the Optimizely log endpoint for results processing.
 func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.UserContext) (result string, err error) {
 
 	defer func() {
@@ -81,7 +82,8 @@ func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.U
 	return result, err
 }
 
-// IsFeatureEnabled returns true if the feature is enabled for the given user
+// IsFeatureEnabled returns true if the feature is enabled for the given user. If the user is part of a feature test
+// then an impression event will be queued up to be sent to the Optimizely log endpoint for results processing.
 func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entities.UserContext) (result bool, err error) {
 
 	defer func() {
@@ -126,7 +128,8 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 	return result, err
 }
 
-// GetEnabledFeatures returns an array containing the keys of all features in the project that are enabled for the given user.
+// GetEnabledFeatures returns an array containing the keys of all features in the project that are enabled for the given
+// user. For features tests, impression events will be queued up to be sent to the Optimizely log endpoint for results processing.
 func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) (enabledFeatures []string, err error) {
 
 	defer func() {
@@ -160,7 +163,7 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 	return enabledFeatures, err
 }
 
-// GetFeatureVariableBoolean returns boolean feature variable value
+// GetFeatureVariableBoolean returns the feature variable value of type bool associated with the given feature and variable keys.
 func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey, variableKey string, userContext entities.UserContext) (value bool, err error) {
 
 	val, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
@@ -174,7 +177,7 @@ func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey, variableKey str
 	return convertedValue, err
 }
 
-// GetFeatureVariableDouble returns double feature variable value
+// GetFeatureVariableDouble returns the feature variable value of type double associated with the given feature and variable keys.
 func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey, variableKey string, userContext entities.UserContext) (value float64, err error) {
 
 	val, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
@@ -188,7 +191,7 @@ func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey, variableKey stri
 	return convertedValue, err
 }
 
-// GetFeatureVariableInteger returns integer feature variable value
+// GetFeatureVariableInteger returns the feature variable value of type int associated with the given feature and variable keys.
 func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey, variableKey string, userContext entities.UserContext) (value int, err error) {
 
 	val, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
@@ -202,7 +205,7 @@ func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey, variableKey str
 	return convertedValue, err
 }
 
-// GetFeatureVariableString returns string feature variable value
+// GetFeatureVariableString returns the feature variable value of type string associated with the given feature and variable keys.
 func (o *OptimizelyClient) GetFeatureVariableString(featureKey, variableKey string, userContext entities.UserContext) (value string, err error) {
 
 	value, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
@@ -215,7 +218,7 @@ func (o *OptimizelyClient) GetFeatureVariableString(featureKey, variableKey stri
 	return value, err
 }
 
-// GetFeatureVariable returns feature as a string along with it's associated type
+// GetFeatureVariable returns feature variable as a string along with it's associated type.
 func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, userContext entities.UserContext) (value string, valueType entities.VariableType, err error) {
 
 	featureDecisionContext, featureDecision, err := o.getFeatureDecision(featureKey, variableKey, userContext)
@@ -234,7 +237,7 @@ func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, us
 	return variable.DefaultValue, variable.Type, err
 }
 
-// GetAllFeatureVariables returns all the variables for a given feature along with the enabled state
+// GetAllFeatureVariables returns all the variables for a given feature along with the enabled state.
 func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]string, err error) {
 
 	variableMap = make(map[string]string)
@@ -267,7 +270,7 @@ func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext
 	return enabled, variableMap, err
 }
 
-// GetVariation returns the key of the variation the user is bucketed into
+// GetVariation returns the key of the variation the user is bucketed into. Does not generate impression events.
 func (o *OptimizelyClient) GetVariation(experimentKey string, userContext entities.UserContext) (result string, err error) {
 
 	defer func() {
@@ -298,7 +301,8 @@ func (o *OptimizelyClient) GetVariation(experimentKey string, userContext entiti
 	return result, err
 }
 
-// Track take and event key with event tags and if the event is part of the config, send to events backend.
+// Track generates a conversion event with the given event key if it exists and queues it up to be sent to the Optimizely
+// log endpoint for results processing.
 func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}) (err error) {
 
 	defer func() {
@@ -434,7 +438,7 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 	return decisionContext, experimentDecision, err
 }
 
-// GetProjectConfig returns the current ProjectConfig or nil if the instance is not valid
+// GetProjectConfig returns the current ProjectConfig or nil if the instance is not valid.
 func (o *OptimizelyClient) GetProjectConfig() (projectConfig pkg.ProjectConfig, err error) {
 
 	projectConfig, err = o.ConfigManager.GetConfig()
@@ -445,7 +449,7 @@ func (o *OptimizelyClient) GetProjectConfig() (projectConfig pkg.ProjectConfig, 
 	return projectConfig, nil
 }
 
-// Close closes the Optimizely instance and stops any ongoing tasks from its children components
+// Close closes the Optimizely instance and stops any ongoing tasks from its children components.
 func (o *OptimizelyClient) Close() {
 	o.executionCtx.TerminateAndWait()
 }

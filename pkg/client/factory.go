@@ -28,7 +28,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
-// OptimizelyFactory is used to construct an instance of the OptimizelyClient
+// OptimizelyFactory is used to customize and construct an instance of the OptimizelyClient.
 type OptimizelyFactory struct {
 	SDKKey   string
 	Datafile []byte
@@ -42,10 +42,10 @@ type OptimizelyFactory struct {
 	onTrack            OnTrack
 }
 
-// OptionFunc is used to provide custom client configuration to the OptimizelyFactory
+// OptionFunc is used to provide custom client configuration to the OptimizelyFactory.
 type OptionFunc func(*OptimizelyFactory)
 
-// Client instantiates a new OptimizelyClient with the given options
+// Client instantiates a new OptimizelyClient with the given options.
 func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClient, error) {
 	// extract options
 	for _, opt := range clientOptions {
@@ -115,7 +115,7 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 	return appClient, nil
 }
 
-// WithPollingConfigManager sets polling config manager on a client
+// WithPollingConfigManager sets polling config manager on a client.
 func WithPollingConfigManager(sdkKey string, pollingInterval time.Duration, initDataFile []byte) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.configManager = config.NewPollingProjectConfigManager(sdkKey, config.InitialDatafile(initDataFile),
@@ -123,7 +123,7 @@ func WithPollingConfigManager(sdkKey string, pollingInterval time.Duration, init
 	}
 }
 
-// WithPollingConfigManagerRequester sets polling config manager on a client
+// WithPollingConfigManagerRequester sets polling config manager on a client.
 func WithPollingConfigManagerRequester(requester utils.Requester, pollingInterval time.Duration, initDataFile []byte) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.configManager = config.NewPollingProjectConfigManager("", config.InitialDatafile(initDataFile),
@@ -131,7 +131,7 @@ func WithPollingConfigManagerRequester(requester utils.Requester, pollingInterva
 	}
 }
 
-// WithConfigManager sets polling config manager on a client
+// WithConfigManager sets polling config manager on a client.
 func WithConfigManager(configManager pkg.ProjectConfigManager) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.configManager = configManager
@@ -152,28 +152,28 @@ func WithCompositeDecisionService(sdkKey string) OptionFunc {
 	}
 }
 
-// WithDecisionService sets decision service on a client
+// WithDecisionService sets decision service on a client.
 func WithDecisionService(decisionService decision.Service) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.decisionService = decisionService
 	}
 }
 
-// WithUserProfileService sets the user profile service on the decision service
+// WithUserProfileService sets the user profile service on the decision service.
 func WithUserProfileService(userProfileService decision.UserProfileService) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.userProfileService = userProfileService
 	}
 }
 
-// WithExperimentOverrides sets the experiment override store on the decision service
+// WithExperimentOverrides sets the experiment override store on the decision service.
 func WithExperimentOverrides(overrideStore decision.ExperimentOverrideStore) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.overrideStore = overrideStore
 	}
 }
 
-// WithBatchEventProcessor sets event processor on a client
+// WithBatchEventProcessor sets event processor on a client.
 func WithBatchEventProcessor(batchSize, queueSize int, flushInterval time.Duration) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.eventProcessor = event.NewBatchEventProcessor(event.WithBatchSize(batchSize),
@@ -188,14 +188,14 @@ func WithEventProcessor(eventProcessor event.Processor) OptionFunc {
 	}
 }
 
-// WithExecutionContext allows user to pass in their own execution context to override the default one in the client
+// WithExecutionContext allows user to pass in their own execution context to override the default one in the client.
 func WithExecutionContext(executionContext utils.ExecutionCtx) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.executionCtx = executionContext
 	}
 }
 
-// StaticClient returns a client initialized with a static project config
+// StaticClient returns a client initialized with a static project config.
 func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 	var configManager pkg.ProjectConfigManager
 

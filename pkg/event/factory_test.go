@@ -129,11 +129,11 @@ func TestCreateAndSendImpressionEvent(t *testing.T) {
 
 	processor.ProcessEvent(impressionUserEvent)
 
-	assert.Equal(t, 1, processor.EventsCount())
+	assert.Equal(t, 1, processor.eventsCount())
 
 	time.Sleep(100 * time.Millisecond)
 
-	assert.Equal(t, 0, processor.EventsCount())
+	assert.Equal(t, 0, processor.eventsCount())
 }
 
 func TestCreateAndSendConversionEvent(t *testing.T) {
@@ -147,11 +147,11 @@ func TestCreateAndSendConversionEvent(t *testing.T) {
 
 	processor.ProcessEvent(conversionUserEvent)
 
-	assert.Equal(t, 1, processor.EventsCount())
+	assert.Equal(t, 1, processor.eventsCount())
 
 	time.Sleep(100 * time.Millisecond)
 
-	assert.Equal(t, 0, processor.EventsCount())
+	assert.Equal(t, 0, processor.eventsCount())
 }
 
 func TestCreateConversionEventRevenue(t *testing.T) {
