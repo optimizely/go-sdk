@@ -7,6 +7,7 @@ install:
 stages:
   - 'Lint'
   - 'Unit test'
+  - 'Benchmark test'
   - 'Integration tests'
   - 'Source clear'
 jobs:
@@ -43,6 +44,11 @@ jobs:
         - go get github.com/mattn/goveralls
       after_success:
         - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
+
+    - stage: 'Benchmark test'
+      env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
+      script:
+        - make benchmark
 
     - stage: 'Integration tests'
       env: GIMME_GO_VERSION=1.12.x FSC_PATH="/tmp/fsc-repo"
