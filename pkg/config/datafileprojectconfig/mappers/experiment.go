@@ -88,6 +88,7 @@ func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experimen
 		TrafficAllocation:     make([]entities.Range, len(rawExperiment.TrafficAllocation)),
 		AudienceConditionTree: audienceConditionTree,
 		Whitelist:             rawExperiment.ForcedVariations,
+		IsFeatureExperiment:   false,
 	}
 
 	for _, variation := range rawExperiment.Variations {
