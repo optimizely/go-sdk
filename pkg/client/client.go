@@ -332,9 +332,7 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 	}
 
 	userEvent := event.CreateConversionUserEvent(projectConfig, configEvent, userContext, eventTags)
-	o.EventProcessor.ProcessEvent(userEvent)
-
-	if o.onTrack != nil {
+	if o.EventProcessor.ProcessEvent(userEvent) && o.onTrack != nil {
 		o.onTrack(eventKey, userContext, eventTags, userEvent)
 	}
 
