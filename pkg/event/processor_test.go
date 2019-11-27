@@ -123,7 +123,9 @@ func TestDefaultEventProcessor_LogEventNotification(t *testing.T) {
 func TestDefaultEventProcessor_DefaultConfig(t *testing.T) {
 	exeCtx := utils.NewCancelableExecutionCtx()
 	processor := NewBatchEventProcessor(
-		WithEventDispatcher(NewMockDispatcher(100, false)))
+		WithEventDispatcher(NewMockDispatcher(100, false)),
+		// here we are setting the timing interval so that we don't have to wait the default 30 seconds
+		WithFlushInterval(500 * time.Millisecond))
 	processor.Start(exeCtx)
 
 	impression := BuildTestImpressionEvent()
@@ -136,7 +138,8 @@ func TestDefaultEventProcessor_DefaultConfig(t *testing.T) {
 
 	assert.Equal(t, 4, processor.eventsCount())
 
-	time.Sleep(31 * time.Second)
+	// sleep for 1 second here. to allow event processor to run.
+	time.Sleep(1 * time.Second)
 
 	assert.NotNil(t, processor.Ticker)
 
