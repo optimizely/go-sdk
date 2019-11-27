@@ -30,7 +30,7 @@ func TestMapFeatures(t *testing.T) {
 		"id": "21111",
 		"key": "test_feature_21111",
 		"rolloutId": "41111",
-		"experimentIds": ["31111", "31112"],
+		"experimentIds": ["31111"],
 		"variables": [{"defaultValue":"1","id":"1","key":"test","type":"integer"}]
 	}`
 
@@ -50,6 +50,9 @@ func TestMapFeatures(t *testing.T) {
 		"31112": experiment31112,
 	}
 	featureMap := MapFeatures(rawFeatureFlags, rolloutMap, experimentMap)
+
+	// Test MapFeatures should only change IsFeatureExperiment to true for experiment31111 since it belongs to a featureflag
+	experiment31111.IsFeatureExperiment = true
 	variable := entities.Variable{
 		ID:           "1",
 		DefaultValue: "1",
@@ -61,10 +64,15 @@ func TestMapFeatures(t *testing.T) {
 			ID:                 "21111",
 			Key:                "test_feature_21111",
 			Rollout:            rollout,
-			FeatureExperiments: []entities.Experiment{experiment31111, experiment31112},
+			FeatureExperiments: []entities.Experiment{experiment31111},
 			VariableMap:        map[string]entities.Variable{variable.Key: variable},
 		},
 	}
+	expectedExperimentMap := map[string]entities.Experiment{
+		"31111": experiment31111,
+		"31112": experiment31112,
+	}
 
 	assert.Equal(t, expectedFeatureMap, featureMap)
+	assert.Equal(t, expectedExperimentMap, experimentMap)
 }

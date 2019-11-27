@@ -14,39 +14,55 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package entities //
-package entities
+package utils
 
-// Variation represents a variation in the experiment
-type Variation struct {
-	ID             string
-	Variables      map[string]VariationVariable
-	Key            string
-	FeatureEnabled bool
-}
+import (
+	"testing"
 
-// Experiment represents an experiment
-type Experiment struct {
-	AudienceIds           []string
-	ID                    string
-	LayerID               string
-	Key                   string
-	Variations            map[string]Variation // keyed by variation ID
-	TrafficAllocation     []Range
-	GroupID               string
-	AudienceConditionTree *TreeNode
-	Whitelist             map[string]string
-	IsFeatureExperiment   bool
-}
+	"math"
 
-// Range represents bucketing range that the specify entityID falls into
-type Range struct {
-	EntityID   string
-	EndOfRange int
-}
+	"github.com/stretchr/testify/assert"
+)
 
-// VariationVariable represents a Variable object from the Variation
-type VariationVariable struct {
-	ID    string
-	Value string
+func TestToFloat(t *testing.T) {
+
+	// Invalid values
+	zeroValue := float64(0)
+
+	result, success := ToFloat("abc")
+	assert.Equal(t, zeroValue, result)
+	assert.Equal(t, false, success)
+
+	result, success = ToFloat("1212")
+	assert.Equal(t, zeroValue, result)
+	assert.Equal(t, false, success)
+
+	result, success = ToFloat(math.Inf)
+	assert.Equal(t, zeroValue, result)
+	assert.Equal(t, false, success)
+
+	result, success = ToFloat(nil)
+	assert.Equal(t, zeroValue, result)
+	assert.Equal(t, false, success)
+
+	result, success = ToFloat(true)
+	assert.Equal(t, zeroValue, result)
+	assert.Equal(t, false, success)
+
+	result, success = ToFloat([]string{})
+	assert.Equal(t, zeroValue, result)
+	assert.Equal(t, false, success)
+
+	result, success = ToFloat(map[string]string{})
+	assert.Equal(t, zeroValue, result)
+	assert.Equal(t, false, success)
+
+	// Valid values
+	result, success = ToFloat(121.0)
+	assert.Equal(t, float64(121), result)
+	assert.Equal(t, true, success)
+
+	result, success = ToFloat(5000)
+	assert.Equal(t, float64(5000), result)
+	assert.Equal(t, true, success)
 }
