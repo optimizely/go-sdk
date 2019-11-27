@@ -41,13 +41,13 @@ type Dispatcher interface {
 
 // HTTPEventDispatcher is the HTTP implementation of the Dispatcher interface
 type HTTPEventDispatcher struct {
+	requester *utils.HTTPRequester
 }
 
 // DispatchEvent dispatches event with callback
-func (*HTTPEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
+func (ed *HTTPEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 
-	requester := utils.NewHTTPRequester()
-	_, _, code, err := requester.Post(event.EndPoint, event.Event)
+	_, _, code, err := ed.requester.Post(event.EndPoint, event.Event)
 
 	// also check response codes
 	// resp.StatusCode == 400 is an error
@@ -140,7 +140,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 
 // NewQueueEventDispatcher creates a Dispatcher that queues in memory and then sends via go routine.
 func NewQueueEventDispatcher(ctx context.Context) Dispatcher {
-	dispatcher := &QueueEventDispatcher{eventQueue: NewInMemoryQueue(defaultQueueSize), Dispatcher: &HTTPEventDispatcher{}}
+	dispatcher := &QueueEventDispatcher{eventQueue: NewInMemoryQueue(defaultQueueSize), Dispatcher: &HTTPEventDispatcher{requester: utils.NewHTTPRequester()}}
 
 	go func() {
 		<-ctx.Done()
