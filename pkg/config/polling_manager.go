@@ -47,12 +47,13 @@ var cmLogger = logging.GetLogger("PollingConfigManager")
 
 // PollingProjectConfigManager maintains a dynamic copy of the project config
 type PollingProjectConfigManager struct {
-	requester           utils.Requester
-	pollingInterval     time.Duration
-	notificationCenter  notification.Center
-	initDatafile        []byte
-	lastModified        string
-	datafileURLTemplate string
+	requester                   utils.Requester
+	pollingInterval             time.Duration
+	notificationCenter          notification.Center
+	initDatafile                []byte
+	lastModified                string
+	datafileURLTemplate         string
+	projectConfigUpdateHandlers []func(notification.ProjectConfigUpdateNotification)
 
 	configLock    sync.RWMutex
 	err           error
@@ -80,6 +81,13 @@ func DatafileTemplate(datafileTemplate string) OptionFunc {
 func PollingInterval(interval time.Duration) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.pollingInterval = interval
+	}
+}
+
+// ProjectConfigUpdateNotificationHandlers is an optional function, sets passed notification handlers
+func ProjectConfigUpdateNotificationHandlers(handlers ...func(notification.ProjectConfigUpdateNotification)) OptionFunc {
+	return func(p *PollingProjectConfigManager) {
+		p.projectConfigUpdateHandlers = handlers
 	}
 }
 
@@ -194,6 +202,10 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 
 	for _, opt := range pollingMangerOptions {
 		opt(&pollingProjectConfigManager)
+	}
+
+	for _, handler := range pollingProjectConfigManager.projectConfigUpdateHandlers {
+		pollingProjectConfigManager.OnProjectConfigUpdate(handler)
 	}
 
 	initDatafile := pollingProjectConfigManager.initDatafile

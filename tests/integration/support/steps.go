@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/optimizely/go-sdk/pkg/decision"
+	"github.com/optimizely/go-sdk/pkg/notification"
 
 	"github.com/DATA-DOG/godog/gherkin"
 	"github.com/google/uuid"
@@ -78,6 +79,18 @@ func (c *ScenarioCtx) UserHasMappingInUserProfileService(userID, experimentKey, 
 	return nil
 }
 
+// DatafileManagerConfigurationIs provides dfm configuration
+func (c *ScenarioCtx) DatafileManagerConfigurationIs(options *gherkin.DocString) error {
+
+	var datafileManagerConfiguration models.DataFileManagerConfiguration
+
+	if err := yaml.Unmarshal([]byte(options.Content), &datafileManagerConfiguration); err != nil {
+		return fmt.Errorf("invalid dfm configuration")
+	}
+	c.apiOptions.DFMConfiguration = datafileManagerConfiguration
+	return nil
+}
+
 // IsCalledWithArguments calls an SDK API with arguments.
 func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.DocString) error {
 	c.apiOptions.APIName = apiName
@@ -86,6 +99,7 @@ func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.D
 	// Clearing old state of response, eventdispatcher and decision service
 	c.apiResponse = models.APIResponse{}
 	c.clientWrapper = GetInstance(c.apiOptions)
+
 	response, err := c.clientWrapper.InvokeAPI(c.apiOptions)
 	c.apiResponse = response
 	//Reset listeners so that same listener is not added twice for a scenario
@@ -403,6 +417,18 @@ func (c *ScenarioCtx) ThereIsNoUserProfileState() error {
 	return getErrorWithDiff([]decision.UserProfile{}, actualProfiles, "User profile state not empty")
 }
 
+// TheListenerWasCalledNTimes checks if listener was called a given amount of time
+func (c *ScenarioCtx) TheListenerWasCalledNTimes(listenerType string, count int) error {
+	var listenersCalled []notification.ProjectConfigUpdateNotification
+	if listenerType == "Config-update" {
+		listenersCalled = c.clientWrapper.PollingConfigManager.(*optlyplugins.TestConfigManager).GetListenersCalled()
+		if len(listenersCalled) == count {
+			return nil
+		}
+	}
+	return fmt.Errorf("Number of listeners called should be %d but received %d", count, len(listenersCalled))
+}
+
 // Reset clears all data before each scenario, assigns new scenarioID and sets session as false
 func (c *ScenarioCtx) Reset() {
 	// Delete cached optly wrapper instance
@@ -411,5 +437,5 @@ func (c *ScenarioCtx) Reset() {
 	c.apiOptions = models.APIOptions{}
 	c.apiResponse = models.APIResponse{}
 	c.clientWrapper = nil
-	c.scenarioID = uuid.New().String()
+	c.apiOptions.ScenarioID = uuid.New().String()
 }

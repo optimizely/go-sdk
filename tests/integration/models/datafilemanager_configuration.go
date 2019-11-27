@@ -16,14 +16,12 @@
 
 package models
 
-// APIOptions represents parameters for a scenario
-type APIOptions struct {
-	DatafileName           string
-	APIName                string
-	Arguments              string
-	DFMConfiguration       DataFileManagerConfiguration
-	Listeners              map[string]int
-	UserProfileServiceType string
-	UPSMapping             map[string]map[string]string
-	ScenarioID             string
+// DataFileManagerConfiguration represents a datafile manager configuration
+type DataFileManagerConfiguration struct {
+	SDKKey            string `yaml:"sdk_key"`
+	Mode              string `yaml:"mode,omitempty"`
+	Revision          *int   `yaml:"revision,omitempty"`
+	DatafileCondition string `yaml:"datafile_condition,omitempty"`
+	UpdateInterval    *int   `yaml:"update_interval,omitempty"`
+	Timeout           *int   `yaml:"timeout,omitempty"`
 }

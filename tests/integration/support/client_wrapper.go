@@ -17,11 +17,9 @@
 package support
 
 import (
-	"io/ioutil"
 	"log"
-	"os"
-	"path"
-	"path/filepath"
+
+	"github.com/optimizely/go-sdk/pkg"
 
 	"github.com/optimizely/go-sdk/pkg/client"
 	"github.com/optimizely/go-sdk/pkg/config"
@@ -39,10 +37,11 @@ var clientInstance *ClientWrapper
 
 // ClientWrapper - wrapper around the optimizely client that keeps track of various custom components used with the client
 type ClientWrapper struct {
-	Client             *client.OptimizelyClient
-	DecisionService    decision.Service
-	EventDispatcher    event.Dispatcher
-	UserProfileService decision.UserProfileService
+	Client               *client.OptimizelyClient
+	DecisionService      decision.Service
+	EventDispatcher      event.Dispatcher
+	UserProfileService   decision.UserProfileService
+	PollingConfigManager pkg.ProjectConfigManager
 }
 
 // DeleteInstance deletes cached instance of optly wrapper
@@ -56,56 +55,62 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 	if clientInstance != nil {
 		return clientInstance
 	}
+	optimizelyFactory := &client.OptimizelyFactory{}
+	factoryClientoptions := []client.OptionFunc{}
+	compositeExperimentServiceoptions := []decision.CESOptionFunc{}
 
-	datafileDir := os.Getenv("DATAFILES_DIR")
-	datafile, err := ioutil.ReadFile(filepath.Clean(path.Join(datafileDir, apiOptions.DatafileName)))
-	if err != nil {
-		log.Fatal(err)
-	}
-	configManager, err := config.NewStaticProjectConfigManagerFromPayload(datafile)
-	if err != nil {
-		log.Fatal(err)
+	clientInstance = &ClientWrapper{}
+
+	// Check if DFM configuration was provided
+	if apiOptions.DFMConfiguration.SDKKey != "" {
+		clientInstance.PollingConfigManager = optlyplugins.CreatePollingConfigManager(apiOptions)
+	} else {
+		datafile, err := optlyplugins.GetDatafile(apiOptions.DatafileName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		configManager, err := config.NewStaticProjectConfigManagerFromPayload(datafile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		config, err := configManager.GetConfig()
+		if err != nil {
+			log.Fatal(err)
+		}
+		optimizelyFactory.Datafile = datafile
+		clientInstance.PollingConfigManager = &optlyplugins.TestConfigManager{ProjectConfigManager: configManager}
+
+		userProfileService := userprofileservice.CreateUserProfileService(config, apiOptions)
+		compositeExperimentServiceoptions = append(compositeExperimentServiceoptions, decision.WithUserProfileService(userProfileService))
+		clientInstance.UserProfileService = userProfileService
 	}
 
+	factoryClientoptions = append(factoryClientoptions, client.WithConfigManager(clientInstance.PollingConfigManager))
 	eventProcessor := event.NewBatchEventProcessor(
 		event.WithBatchSize(models.EventProcessorDefaultBatchSize),
 		event.WithQueueSize(models.EventProcessorDefaultQueueSize),
 		event.WithFlushInterval(models.EventProcessorDefaultFlushInterval),
 	)
 
-	optimizelyFactory := &client.OptimizelyFactory{
-		Datafile: datafile,
-	}
-
 	eventProcessor.EventDispatcher = &optlyplugins.ProxyEventDispatcher{}
-
-	config, err := configManager.GetConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	userProfileService := userprofileservice.CreateUserProfileService(config, apiOptions)
 	compositeExperimentService := decision.NewCompositeExperimentService(
-		decision.WithUserProfileService(userProfileService),
+		compositeExperimentServiceoptions...,
 	)
-	// @TODO: Add sdkKey dynamically once event-batching support is implemented
-	compositeService := *decision.NewCompositeService("", decision.WithCompositeExperimentService(compositeExperimentService))
+
+	compositeService := *decision.NewCompositeService(optlyplugins.GetSDKKey(apiOptions.DFMConfiguration), decision.WithCompositeExperimentService(compositeExperimentService))
 	decisionService := &optlyplugins.TestCompositeService{CompositeService: compositeService}
 
-	client, err := optimizelyFactory.Client(
-		client.WithConfigManager(configManager),
-		client.WithDecisionService(decisionService),
-		client.WithEventProcessor(eventProcessor))
+	factoryClientoptions = append(factoryClientoptions, client.WithDecisionService(decisionService))
+	factoryClientoptions = append(factoryClientoptions, client.WithEventProcessor(eventProcessor))
+
+	client, err := optimizelyFactory.Client(factoryClientoptions...)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	clientInstance = &ClientWrapper{
-		Client:             client,
-		DecisionService:    decisionService,
-		EventDispatcher:    eventProcessor.EventDispatcher,
-		UserProfileService: userProfileService,
-	}
+	clientInstance.Client = client
+	clientInstance.DecisionService = decisionService
+	clientInstance.EventDispatcher = eventProcessor.EventDispatcher
 	return clientInstance
 }
 
