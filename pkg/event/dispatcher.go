@@ -45,9 +45,9 @@ type HTTPEventDispatcher struct {
 }
 
 // DispatchEvent dispatches event with callback
-func (eventDispacher *HTTPEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
+func (ed *HTTPEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 
-	_, _, code, err := eventDispacher.requester.Post(event.EndPoint, event.Event)
+	_, _, code, err := ed.requester.Post(event.EndPoint, event.Event)
 
 	// also check response codes
 	// resp.StatusCode == 400 is an error
