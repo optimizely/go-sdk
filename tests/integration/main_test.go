@@ -26,7 +26,7 @@ import (
 	"github.com/optimizely/go-sdk/tests/integration/support"
 )
 
-var opt = godog.Options{Output: colors.Colored(os.Stdout), Tags: "@DATAFILE_MANAGER"}
+var opt = godog.Options{Output: colors.Colored(os.Stdout)}
 
 func init() {
 	godog.BindFlags("godog.", flag.CommandLine, &opt)

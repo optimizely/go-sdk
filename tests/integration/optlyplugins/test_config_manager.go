@@ -88,12 +88,13 @@ func (c *TestConfigManager) Verify(apiOptions models.APIOptions) {
 			if elapsed >= timeout {
 				break
 			}
-			// this means we want the manager to poll until we get to a specific revision
 			if revision > 0 {
+				// This means we want the manager to poll until we get to a specific revision
 				if revision == len(c.listenersCalled) {
 					break
 				}
 			} else if len(c.listenersCalled) == 1 {
+				// For cases where we are just waiting for config listener
 				break
 			}
 		}

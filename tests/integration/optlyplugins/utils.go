@@ -30,6 +30,10 @@ import (
 )
 
 const localDatafileURLTemplate = "http://localhost:3001/datafiles/%s.json?request_id="
+
+// SyncConfig doesn't request for new datafile if we provide a valid datafile
+// this requires us to keep defaultPollingInterval low so that the request
+// initiated from Start method is executed quickly
 const defaultPollingInterval = time.Duration(1000) * time.Millisecond
 
 // CreatePollingConfigManager creates a pollingConfigManager with given configuration
@@ -62,6 +66,8 @@ func CreatePollingConfigManager(options models.APIOptions) *TestConfigManager {
 		pollingConfigManagerOptions...,
 	)
 	testConfigManagerInstance.ProjectConfigManager = configManager
+	// Since we are using TestConfigManager over ProjectConfigManager, factory will
+	// not call the start method for ProjectConfigManager, so we have to do it manually
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager.Start(sdkKey, exeCtx)
 	testConfigManagerInstance.Verify(options)
