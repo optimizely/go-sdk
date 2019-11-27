@@ -62,29 +62,29 @@ type PollingProjectConfigManager struct {
 // OptionFunc is a type to a proper func
 type OptionFunc func(*PollingProjectConfigManager)
 
-// Requester is an optional function, sets a passed requester
-func Requester(requester utils.Requester) OptionFunc {
+// WithRequester is an optional function, sets a passed requester
+func WithRequester(requester utils.Requester) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.requester = requester
 	}
 }
 
-// DatafileTemplate is an optional function, sets a passed datafile URL template
-func DatafileTemplate(datafileTemplate string) OptionFunc {
+// WithDatafileURLTemplate is an optional function, sets a passed datafile URL template
+func WithDatafileURLTemplate(datafileTemplate string) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.datafileURLTemplate = datafileTemplate
 	}
 }
 
-// PollingInterval is an optional function, sets a passed polling interval
-func PollingInterval(interval time.Duration) OptionFunc {
+// WithPollingInterval is an optional function, sets a passed polling interval
+func WithPollingInterval(interval time.Duration) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.pollingInterval = interval
 	}
 }
 
-// InitialDatafile is an optional function, sets a passed datafile
-func InitialDatafile(datafile []byte) OptionFunc {
+// WithInitialDatafile is an optional function, sets a passed datafile
+func WithInitialDatafile(datafile []byte) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.initDatafile = datafile
 	}

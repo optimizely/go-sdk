@@ -50,7 +50,7 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
 	configManager.Start(sdkKey, exeCtx)
 	mockRequester.AssertExpectations(t)
 
@@ -71,7 +71,7 @@ func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
 	configManager.Start(sdkKey, exeCtx)
 	mockRequester.AssertExpectations(t)
 
@@ -89,7 +89,7 @@ func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
 	configManager.Start(sdkKey, exeCtx)
 	mockRequester.AssertExpectations(t)
 
@@ -117,7 +117,7 @@ func TestNewPollingProjectConfigManagerWithLastModifiedDates(t *testing.T) {
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
 	configManager.Start(sdkKey, exeCtx)
 
 	// Fetch valid config
@@ -147,7 +147,7 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
 	configManager.Start(sdkKey, exeCtx)
 	mockRequester.AssertExpectations(t)
 
@@ -174,7 +174,7 @@ func TestNewPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
 	configManager.Start(sdkKey, exeCtx)
 	mockRequester.AssertExpectations(t)
 
@@ -205,7 +205,7 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(sdkKey, Requester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
 	configManager.Start(sdkKey, exeCtx)
 
 	var numberOfCalls = 0
@@ -239,7 +239,7 @@ func TestPollingInterval(t *testing.T) {
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(sdkKey, PollingInterval(5*time.Second))
+	configManager := NewPollingProjectConfigManager(sdkKey, WithPollingInterval(5*time.Second))
 	configManager.Start(sdkKey, exeCtx)
 
 	assert.Equal(t, configManager.pollingInterval, 5*time.Second)
@@ -249,7 +249,7 @@ func TestInitialDatafile(t *testing.T) {
 
 	sdkKey := "test_sdk_key"
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(sdkKey, InitialDatafile([]byte("test")))
+	configManager := NewPollingProjectConfigManager(sdkKey, WithInitialDatafile([]byte("test")))
 	configManager.Start(sdkKey, exeCtx)
 
 	assert.Equal(t, configManager.initDatafile, []byte("test"))
@@ -259,7 +259,7 @@ func TestDatafileTemplate(t *testing.T) {
 
 	sdkKey := "test_sdk_key"
 	datafileTemplate := "https://localhost/v1/%s.json"
-	configManager := NewPollingProjectConfigManager(sdkKey, DatafileTemplate(datafileTemplate))
+	configManager := NewPollingProjectConfigManager(sdkKey, WithDatafileURLTemplate(datafileTemplate))
 
 	assert.Equal(t, datafileTemplate, configManager.datafileURLTemplate)
 }
