@@ -46,20 +46,20 @@ func CreatePollingConfigManager(options models.APIOptions) *TestConfigManager {
 		if err != nil {
 			log.Fatal(err)
 		}
-		pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.InitialDatafile(datafile))
+		pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.WithInitialDatafile(datafile))
 	}
 	// Setting up polling interval
 	pollingTimeInterval := defaultPollingInterval
 	if options.DFMConfiguration.UpdateInterval != nil {
 		pollingTimeInterval = time.Duration((*options.DFMConfiguration.UpdateInterval)) * time.Millisecond
 	}
-	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.PollingInterval(pollingTimeInterval))
+	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.WithPollingInterval(pollingTimeInterval))
 	sdkKey := GetSDKKey(options.DFMConfiguration)
 	urlString := localDatafileURLTemplate + options.ScenarioID
-	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.DatafileTemplate(urlString))
+	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.WithDatafileURLTemplate(urlString))
 
 	testConfigManagerInstance := &TestConfigManager{}
-	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.NotificationHandlers(testConfigManagerInstance.GetListenerCallbacks(options)...))
+	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.WithNotificationHandlers(testConfigManagerInstance.GetListenerCallbacks(options)...))
 
 	configManager := config.NewPollingProjectConfigManager(
 		sdkKey,

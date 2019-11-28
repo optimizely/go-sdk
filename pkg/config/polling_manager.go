@@ -45,7 +45,8 @@ const DatafileURLTemplate = "https://cdn.optimizely.com/datafiles/%s.json"
 
 var cmLogger = logging.GetLogger("PollingConfigManager")
 
-// PollingProjectConfigManager maintains a dynamic copy of the project config
+// PollingProjectConfigManager maintains a dynamic copy of the project config by continuously polling for the datafile
+// from the Optimizely CDN at a given (configurable) interval.
 type PollingProjectConfigManager struct {
 	requester                   utils.Requester
 	pollingInterval             time.Duration
@@ -60,39 +61,39 @@ type PollingProjectConfigManager struct {
 	projectConfig pkg.ProjectConfig
 }
 
-// OptionFunc is a type to a proper func
+// OptionFunc is used to provide custom configuration to the PollingProjectConfigManager.
 type OptionFunc func(*PollingProjectConfigManager)
 
-// Requester is an optional function, sets a passed requester
-func Requester(requester utils.Requester) OptionFunc {
+// WithRequester is an optional function, sets a passed requester
+func WithRequester(requester utils.Requester) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.requester = requester
 	}
 }
 
-// DatafileTemplate is an optional function, sets a passed datafile URL template
-func DatafileTemplate(datafileTemplate string) OptionFunc {
+// WithDatafileURLTemplate is an optional function, sets a passed datafile URL template
+func WithDatafileURLTemplate(datafileTemplate string) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.datafileURLTemplate = datafileTemplate
 	}
 }
 
-// PollingInterval is an optional function, sets a passed polling interval
-func PollingInterval(interval time.Duration) OptionFunc {
+// WithPollingInterval is an optional function, sets a passed polling interval
+func WithPollingInterval(interval time.Duration) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.pollingInterval = interval
 	}
 }
 
-// NotificationHandlers is an optional function, sets passed notification handlers
-func NotificationHandlers(handlers ...func(notification.ProjectConfigUpdateNotification)) OptionFunc {
+// WithNotificationHandlers is an optional function, sets passed notification handlers
+func WithNotificationHandlers(handlers ...func(notification.ProjectConfigUpdateNotification)) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.projectConfigUpdateHandlers = handlers
 	}
 }
 
-// InitialDatafile is an optional function, sets a passed datafile
-func InitialDatafile(datafile []byte) OptionFunc {
+// WithInitialDatafile is an optional function, sets a passed datafile
+func WithInitialDatafile(datafile []byte) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.initDatafile = datafile
 	}
