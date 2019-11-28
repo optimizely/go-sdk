@@ -70,8 +70,8 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 	} else {
 		appClient.ConfigManager = config.NewPollingProjectConfigManager(
 			f.SDKKey,
-			config.InitialDatafile(f.Datafile),
-			config.PollingInterval(config.DefaultPollingInterval),
+			config.WithInitialDatafile(f.Datafile),
+			config.WithPollingInterval(config.DefaultPollingInterval),
 		)
 	}
 
@@ -118,16 +118,16 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 // WithPollingConfigManager sets polling config manager on a client.
 func WithPollingConfigManager(sdkKey string, pollingInterval time.Duration, initDataFile []byte) OptionFunc {
 	return func(f *OptimizelyFactory) {
-		f.configManager = config.NewPollingProjectConfigManager(sdkKey, config.InitialDatafile(initDataFile),
-			config.PollingInterval(pollingInterval))
+		f.configManager = config.NewPollingProjectConfigManager(sdkKey, config.WithInitialDatafile(initDataFile),
+			config.WithPollingInterval(pollingInterval))
 	}
 }
 
 // WithPollingConfigManagerRequester sets polling config manager on a client.
 func WithPollingConfigManagerRequester(requester utils.Requester, pollingInterval time.Duration, initDataFile []byte) OptionFunc {
 	return func(f *OptimizelyFactory) {
-		f.configManager = config.NewPollingProjectConfigManager("", config.InitialDatafile(initDataFile),
-			config.PollingInterval(pollingInterval), config.Requester(requester))
+		f.configManager = config.NewPollingProjectConfigManager("", config.WithInitialDatafile(initDataFile),
+			config.WithPollingInterval(pollingInterval), config.WithRequester(requester))
 	}
 }
 
