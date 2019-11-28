@@ -74,7 +74,7 @@ func TestMapExperiments(t *testing.T) {
 			ID:          "11111",
 			GroupID:     "15",
 			Key:         "test_experiment_11111",
-			Variations: map[string]entities.Variation{
+			VariationsIDMap: map[string]entities.Variation{
 				"21111": {
 					ID:             "21111",
 					Variables:      map[string]entities.VariationVariable{"1": entities.VariationVariable{ID: "1", Value: "1"}},
@@ -82,6 +82,20 @@ func TestMapExperiments(t *testing.T) {
 					FeatureEnabled: true,
 				},
 				"21112": {
+					ID:             "21112",
+					Variables:      map[string]entities.VariationVariable{"2": entities.VariationVariable{ID: "2", Value: "2"}},
+					Key:            "variation_2",
+					FeatureEnabled: false,
+				},
+			},
+			VariationsKeyMap: map[string]entities.Variation{
+				"variation_1": {
+					ID:             "21111",
+					Variables:      map[string]entities.VariationVariable{"1": entities.VariationVariable{ID: "1", Value: "1"}},
+					Key:            "variation_1",
+					FeatureEnabled: true,
+				},
+				"variation_2": {
 					ID:             "21112",
 					Variables:      map[string]entities.VariationVariable{"2": entities.VariationVariable{ID: "2", Value: "2"}},
 					Key:            "variation_2",
@@ -136,7 +150,8 @@ func TestMapExperimentsWithStringAudienceCondition(t *testing.T) {
 			ID:                "11111",
 			GroupID:           "15",
 			Key:               "test_experiment_11111",
-			Variations:        map[string]entities.Variation{},
+			VariationsIDMap:   map[string]entities.Variation{},
+			VariationsKeyMap:  map[string]entities.Variation{},
 			TrafficAllocation: []entities.Range{},
 			AudienceConditionTree: &entities.TreeNode{
 				Operator: "or",

@@ -78,7 +78,7 @@ func (p PersistingExperimentService) getSavedDecision(decisionContext Experiment
 	}
 
 	if savedVariationID, ok := userProfile.ExperimentBucketMap[decisionKey]; ok {
-		if variation, ok := decisionContext.Experiment.Variations[savedVariationID]; ok {
+		if variation, ok := decisionContext.Experiment.VariationsIDMap[savedVariationID]; ok {
 			experimentDecision.Variation = &variation
 			pesLogger.Debug(fmt.Sprintf(`User "%s" was previously bucketed into variation "%s" of experiment "%s".`, userContext.ID, variation.Key, decisionContext.Experiment.Key))
 		} else {

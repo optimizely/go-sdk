@@ -101,12 +101,9 @@ func parseTemplate(s string, config pkg.ProjectConfig) string {
 		if len(matches) > 1 {
 			expVarKey := strings.Split(matches[1], ".")
 			if exp, err := config.GetExperimentByKey(expVarKey[0]); err == nil {
-				for _, variation := range exp.Variations {
-					if variation.Key == expVarKey[1] {
-						parsedString = strings.Replace(parsedString, matches[0], variation.ID, -1)
-						replaceVariableID()
-						break
-					}
+				if variation, ok := exp.VariationsKeyMap[expVarKey[1]]; ok {
+					parsedString = strings.Replace(parsedString, matches[0], variation.ID, -1)
+					replaceVariableID()
 				}
 			}
 		}

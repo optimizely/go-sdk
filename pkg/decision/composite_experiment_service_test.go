@@ -51,7 +51,7 @@ func (s *CompositeExperimentTestSuite) TestGetDecision() {
 		ID: "test_user_1",
 	}
 
-	expectedVariation := testExp1111.Variations["2222"]
+	expectedVariation := testExp1111.VariationsIDMap["2222"]
 	expectedExperimentDecision := ExperimentDecision{
 		Variation: &expectedVariation,
 	}
@@ -74,7 +74,7 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionFallthrough() {
 		ID: "test_user_1",
 	}
 
-	expectedVariation := testExp1111.Variations["2222"]
+	expectedVariation := testExp1111.VariationsIDMap["2222"]
 	expectedExperimentDecision := ExperimentDecision{}
 	s.mockExperimentService.On("GetDecision", s.testDecisionContext, testUserContext).Return(expectedExperimentDecision, nil)
 

@@ -161,7 +161,7 @@ type MockUserProfileService struct {
 func makeTestExperiment(experimentKey string) entities.Experiment {
 	return entities.Experiment{
 		Key: experimentKey,
-		Variations: map[string]entities.Variation{
+		VariationsIDMap: map[string]entities.Variation{
 			"v1": entities.Variation{Key: "v1"},
 			"v2": entities.Variation{Key: "v2"},
 		},
@@ -182,9 +182,9 @@ func makeTestExperimentWithVariations(experimentKey string, variations []entitie
 		variationsMap[variation.ID] = variation
 	}
 	return entities.Experiment{
-		Key:        experimentKey,
-		ID:         fmt.Sprintf("test_experiment_%s", experimentKey),
-		Variations: variationsMap,
+		Key:             experimentKey,
+		ID:              fmt.Sprintf("test_experiment_%s", experimentKey),
+		VariationsIDMap: variationsMap,
 	}
 }
 

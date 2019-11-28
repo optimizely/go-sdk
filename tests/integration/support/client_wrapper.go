@@ -43,6 +43,7 @@ type ClientWrapper struct {
 	DecisionService    decision.Service
 	EventDispatcher    event.Dispatcher
 	UserProfileService decision.UserProfileService
+	OverrideStore      decision.ExperimentOverrideStore
 }
 
 // DeleteInstance deletes cached instance of optly wrapper
@@ -84,10 +85,13 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 		log.Fatal(err)
 	}
 
+	overrideService := decision.NewMapExperimentOverridesStore(decision.WithConfig(config))
 	userProfileService := userprofileservice.CreateUserProfileService(config, apiOptions)
 	compositeExperimentService := decision.NewCompositeExperimentService(
 		decision.WithUserProfileService(userProfileService),
+		decision.WithOverrideStore(overrideService),
 	)
+
 	// @TODO: Add sdkKey dynamically once event-batching support is implemented
 	compositeService := *decision.NewCompositeService("", decision.WithCompositeExperimentService(compositeExperimentService))
 	decisionService := &optlyplugins.TestCompositeService{CompositeService: compositeService}
@@ -95,7 +99,8 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 	client, err := optimizelyFactory.Client(
 		client.WithConfigManager(configManager),
 		client.WithDecisionService(decisionService),
-		client.WithEventProcessor(eventProcessor))
+		client.WithEventProcessor(eventProcessor),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -105,6 +110,7 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 		DecisionService:    decisionService,
 		EventDispatcher:    eventProcessor.EventDispatcher,
 		UserProfileService: userProfileService,
+		OverrideStore:      overrideService,
 	}
 	return clientInstance
 }
@@ -146,6 +152,12 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (models.APIResponse
 		break
 	case models.Track:
 		response, err = c.track(request)
+		break
+	case models.SetForcedVariation:
+		response, err = c.setForcedVariation(request)
+		break
+	case models.GetForcedVariation:
+		response, err = c.getForcedVariation(request)
 		break
 	default:
 		break
@@ -326,5 +338,38 @@ func (c *ClientWrapper) track(request models.APIOptions) (models.APIResponse, er
 		err = c.Client.Track(params.EventKey, user, params.EventTags)
 	}
 	response.Result = "NULL"
+	return response, err
+}
+
+func (c *ClientWrapper) setForcedVariation(request models.APIOptions) (models.APIResponse, error) {
+	var params models.ForcedVariationRequestParams
+	var response models.APIResponse
+	err := yaml.Unmarshal([]byte(request.Arguments), &params)
+	response.Result = "NULL"
+	if err == nil {
+		// For removeForcedVariation cases
+		if params.VariationKey == "" {
+			c.OverrideStore.(*decision.MapExperimentOverridesStore).RemoveVariation(decision.ExperimentOverrideKey{ExperimentKey: params.ExperimentKey, UserID: params.UserID})
+		} else {
+			result := c.OverrideStore.(*decision.MapExperimentOverridesStore).SetVariation(decision.ExperimentOverrideKey{ExperimentKey: params.ExperimentKey, UserID: params.UserID}, params.VariationKey)
+			if result {
+				response.Result = params.VariationKey
+			}
+		}
+	}
+	return response, err
+}
+
+func (c *ClientWrapper) getForcedVariation(request models.APIOptions) (models.APIResponse, error) {
+	var params models.ForcedVariationRequestParams
+	var response models.APIResponse
+	err := yaml.Unmarshal([]byte(request.Arguments), &params)
+	response.Result = "NULL"
+	if err == nil {
+		variation, success := c.OverrideStore.(*decision.MapExperimentOverridesStore).GetVariation(decision.ExperimentOverrideKey{ExperimentKey: params.ExperimentKey, UserID: params.UserID})
+		if success {
+			response.Result = variation
+		}
+	}
 	return response, err
 }

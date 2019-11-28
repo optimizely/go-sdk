@@ -57,7 +57,7 @@ func (b MurmurhashExperimentBucketer) Bucket(bucketingID string, experiment enti
 		return nil, reasons.NotBucketedIntoVariation, nil
 	}
 
-	if variation, ok := experiment.Variations[bucketedVariationID]; ok {
+	if variation, ok := experiment.VariationsIDMap[bucketedVariationID]; ok {
 		return &variation, reasons.BucketedIntoVariation, nil
 	}
 

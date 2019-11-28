@@ -18,6 +18,7 @@
 package decision
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 
@@ -28,15 +29,24 @@ import (
 
 type ExperimentOverrideServiceTestSuite struct {
 	suite.Suite
-	mockConfig      *mockProjectConfig
-	overrides       *MapExperimentOverridesStore
-	overrideService *ExperimentOverrideService
+	mockConfig                *mockProjectConfig
+	overrides                 *MapExperimentOverridesStore
+	overrideService           *ExperimentOverrideService
+	overridesWithConfig       *MapExperimentOverridesStore
+	overrideServiceWithConfig *ExperimentOverrideService
 }
 
 func (s *ExperimentOverrideServiceTestSuite) SetupTest() {
-	s.mockConfig = new(mockProjectConfig)
+	config := new(mockProjectConfig)
+	s.mockConfig = config
+	s.mockConfig.On("GetExperimentByKey", testExp1111.Key).Return(testExp1111, nil)
+	s.mockConfig.On("GetExperimentByKey", testExp1113.Key).Return(testExp1113, nil)
+	s.mockConfig.On("GetExperimentByKey", "").Return(entities.Experiment{}, fmt.Errorf(""))
+
 	s.overrides = NewMapExperimentOverridesStore()
 	s.overrideService = NewExperimentOverrideService(s.overrides)
+	s.overridesWithConfig = NewMapExperimentOverridesStore(WithConfig(config))
+	s.overrideService = NewExperimentOverrideService(s.overridesWithConfig)
 }
 
 func (s *ExperimentOverrideServiceTestSuite) TestOverridesIncludeVariation() {
@@ -116,6 +126,9 @@ func (s *ExperimentOverrideServiceTestSuite) TestNoOverrideForUserOrExperiment()
 }
 
 func (s *ExperimentOverrideServiceTestSuite) TestInvalidVariationInOverride() {
+	overrides := NewMapExperimentOverridesStore()
+	overrideService := NewExperimentOverrideService(overrides)
+
 	testDecisionContext := ExperimentDecisionContext{
 		Experiment:    &testExp1111,
 		ProjectConfig: s.mockConfig,
@@ -124,11 +137,39 @@ func (s *ExperimentOverrideServiceTestSuite) TestInvalidVariationInOverride() {
 		ID: "test_user_1",
 	}
 	// This override variation key does not exist in the experiment
-	s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}, "invalid_variation_key")
-	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
+	overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}, "invalid_variation_key")
+	decision, err := overrideService.GetDecision(testDecisionContext, testUserContext)
 	s.NoError(err)
 	s.Nil(decision.Variation)
 	s.Exactly(reasons.InvalidOverrideVariationAssignment, decision.Reason)
+}
+
+// Test setVariation with projectconfig in overridestore
+func (s *ExperimentOverrideServiceTestSuite) TestSetVariationWithInvalidExperimentKey() {
+	overrideKey := ExperimentOverrideKey{ExperimentKey: "", UserID: "test_user_1"}
+	success := s.overridesWithConfig.SetVariation(overrideKey, testExp1111Var2222.Key)
+	s.False(success)
+	variation, success := s.overridesWithConfig.GetVariation(overrideKey)
+	s.Exactly("", variation)
+	s.False(success)
+}
+
+func (s *ExperimentOverrideServiceTestSuite) TestSetVariationWithInvalidVariationKey() {
+	overrideKey := ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}
+	success := s.overridesWithConfig.SetVariation(overrideKey, "")
+	s.False(success)
+	variation, success := s.overridesWithConfig.GetVariation(overrideKey)
+	s.Exactly("", variation)
+	s.False(success)
+}
+
+func (s *ExperimentOverrideServiceTestSuite) TestSetVariationWithValidVariationKeyAndExperimentKey() {
+	overrideKey := ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}
+	success := s.overridesWithConfig.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}, testExp1111Var2222.Key)
+	s.True(success)
+	variation, success := s.overridesWithConfig.GetVariation(overrideKey)
+	s.Exactly(testExp1111Var2222.Key, variation)
+	s.True(success)
 }
 
 // Test concurrent use of the MapExperimentOverrideStore

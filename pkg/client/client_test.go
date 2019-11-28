@@ -192,8 +192,8 @@ func TestGetFeatureVariableBooleanWithValidValue(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -238,8 +238,8 @@ func TestGetFeatureVariableBooleanWithInvalidValue(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -285,8 +285,8 @@ func TestGetFeatureVariableBooleanWithInvalidValueType(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -332,8 +332,8 @@ func TestGetFeatureVariableBooleanWithEmptyValueType(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -379,8 +379,8 @@ func TestGetFeatureVariableBooleanReturnsDefaultValueIfFeatureNotEnabled(t *test
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -444,8 +444,8 @@ func TestGetFeatureVariableDoubleWithValidValue(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -490,8 +490,8 @@ func TestGetFeatureVariableDoubleWithInvalidValue(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -537,8 +537,8 @@ func TestGetFeatureVariableDoubleWithInvalidValueType(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -584,8 +584,8 @@ func TestGetFeatureVariableDoubleWithEmptyValueType(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -631,8 +631,8 @@ func TestGetFeatureVariableDoubleReturnsDefaultValueIfFeatureNotEnabled(t *testi
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -696,8 +696,8 @@ func TestGetFeatureVariableIntegerWithValidValue(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -742,8 +742,8 @@ func TestGetFeatureVariableIntegerWithInvalidValue(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -789,8 +789,8 @@ func TestGetFeatureVariableIntegerWithInvalidValueType(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -836,8 +836,8 @@ func TestGetFeatureVariableIntegerWithEmptyValueType(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -883,8 +883,8 @@ func TestGetFeatureVariableIntegerReturnsDefaultValueIfFeatureNotEnabled(t *test
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -948,8 +948,8 @@ func TestGetFeatureVariableStringWithValidValue(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -994,8 +994,8 @@ func TestGetFeatureVariableStringWithInvalidValueType(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -1041,8 +1041,8 @@ func TestGetFeatureVariableStringWithEmptyValueType(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -1088,8 +1088,8 @@ func TestGetFeatureVariableStringReturnsDefaultValueIfFeatureNotEnabled(t *testi
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -1190,8 +1190,8 @@ func TestGetFeatureDecisionValid(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -1235,8 +1235,8 @@ func TestGetFeatureDecisionErrProjectConfig(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -1279,8 +1279,8 @@ func TestGetFeatureDecisionPanicProjectConfig(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -1322,8 +1322,8 @@ func TestGetFeatureDecisionPanicDecisionService(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -1357,8 +1357,8 @@ func TestGetFeatureDecisionErrFeatureDecision(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
@@ -1403,8 +1403,8 @@ func TestGetAllFeatureVariables(t *testing.T) {
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testVariation.FeatureEnabled = true
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	testFeature.VariableMap = map[string]entities.Variable{testVariable.Key: testVariable}
@@ -1449,8 +1449,8 @@ func TestGetAllFeatureVariablesWithError(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
+		ID:              "111111",
+		VariationsIDMap: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
 	testFeature.VariableMap = map[string]entities.Variable{testVariable.Key: testVariable}
@@ -1562,7 +1562,7 @@ func (s *ClientTestSuiteAB) TestActivate() {
 		ProjectConfig: s.mockConfig,
 	}
 
-	expectedVariation := testExperiment.Variations["v2"]
+	expectedVariation := testExperiment.VariationsIDMap["v2"]
 	expectedExperimentDecision := decision.ExperimentDecision{
 		Variation: &expectedVariation,
 	}
@@ -1628,7 +1628,7 @@ func (s *ClientTestSuiteAB) TestGetVariation() {
 		ProjectConfig: s.mockConfig,
 	}
 
-	expectedVariation := testExperiment.Variations["v2"]
+	expectedVariation := testExperiment.VariationsIDMap["v2"]
 	expectedExperimentDecision := decision.ExperimentDecision{
 		Variation: &expectedVariation,
 	}
@@ -1657,7 +1657,7 @@ func (s *ClientTestSuiteAB) TestGetVariationWithDecisionError() {
 		ProjectConfig: s.mockConfig,
 	}
 
-	expectedVariation := testExperiment.Variations["v2"]
+	expectedVariation := testExperiment.VariationsIDMap["v2"]
 	expectedExperimentDecision := decision.ExperimentDecision{
 		Variation: &expectedVariation,
 	}
