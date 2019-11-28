@@ -46,7 +46,7 @@ func (s *ExperimentOverrideServiceTestSuite) SetupTest() {
 	s.overrides = NewMapExperimentOverridesStore()
 	s.overrideService = NewExperimentOverrideService(s.overrides)
 	s.overridesWithConfig = NewMapExperimentOverridesStore(WithConfig(config))
-	s.overrideService = NewExperimentOverrideService(s.overridesWithConfig)
+	s.overrideServiceWithConfig = NewExperimentOverrideService(s.overridesWithConfig)
 }
 
 func (s *ExperimentOverrideServiceTestSuite) TestOverridesIncludeVariation() {
