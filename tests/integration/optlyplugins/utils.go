@@ -37,7 +37,7 @@ const localDatafileURLTemplate = "http://localhost:3001/datafiles/%s.json?reques
 const defaultPollingInterval = time.Duration(1000) * time.Millisecond
 
 // CreatePollingConfigManager creates a pollingConfigManager with given configuration
-func CreatePollingConfigManager(options models.APIOptions) *TestConfigManager {
+func CreatePollingConfigManager(options models.APIOptions) *TestProjectConfigManager {
 	var pollingConfigManagerOptions []config.OptionFunc
 
 	// Setting up initial datafile
@@ -58,22 +58,22 @@ func CreatePollingConfigManager(options models.APIOptions) *TestConfigManager {
 	urlString := localDatafileURLTemplate + options.ScenarioID
 	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.WithDatafileURLTemplate(urlString))
 
-	testConfigManagerInstance := &TestConfigManager{}
-	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.WithNotificationHandlers(testConfigManagerInstance.GetListenerCallbacks(options)...))
+	testProjectConfigManagerInstance := &TestProjectConfigManager{}
+	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.WithNotificationHandlers(testProjectConfigManagerInstance.GetListenerCallbacks(options)...))
 
 	configManager := config.NewPollingProjectConfigManager(
 		sdkKey,
 		pollingConfigManagerOptions...,
 	)
-	testConfigManagerInstance.ProjectConfigManager = configManager
-	// Since we are using TestConfigManager over ProjectConfigManager, factory will
+	testProjectConfigManagerInstance.ProjectConfigManager = configManager
+	// Since we are using TestProjectConfigManager over ProjectConfigManager, factory will
 	// not call the start method for ProjectConfigManager, so we have to do it manually
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager.Start(sdkKey, exeCtx)
 	// Verify datafile configuration tests
-	testConfigManagerInstance.Verify(options.DFMConfiguration)
+	testProjectConfigManagerInstance.Verify(options.DFMConfiguration)
 
-	return testConfigManagerInstance
+	return testProjectConfigManagerInstance
 }
 
 // GetDatafile returns datafile,error for the provided datafileName

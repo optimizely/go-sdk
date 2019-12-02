@@ -78,7 +78,7 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 			log.Fatal(err)
 		}
 		optimizelyFactory.Datafile = datafile
-		clientInstance.PollingConfigManager = &optlyplugins.TestConfigManager{ProjectConfigManager: configManager}
+		clientInstance.PollingConfigManager = &optlyplugins.TestProjectConfigManager{ProjectConfigManager: configManager}
 
 		userProfileService := userprofileservice.CreateUserProfileService(config, apiOptions)
 		compositeExperimentServiceoptions = append(compositeExperimentServiceoptions, decision.WithUserProfileService(userProfileService))

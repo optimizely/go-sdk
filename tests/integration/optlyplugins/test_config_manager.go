@@ -17,6 +17,7 @@
 package optlyplugins
 
 import (
+	"sync"
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg"
@@ -27,14 +28,14 @@ import (
 // DefaultInitializationTimeout defines default timeout for datafile sync
 const DefaultInitializationTimeout = time.Duration(3000) * time.Millisecond
 
-// TestConfigManager represents a ProjectConfigManager with custom implementations
-type TestConfigManager struct {
+// TestProjectConfigManager represents a ProjectConfigManager with custom implementations
+type TestProjectConfigManager struct {
 	pkg.ProjectConfigManager
 	listenersCalled []notification.ProjectConfigUpdateNotification
 }
 
 // GetListenerCallbacks - Creates and returns listener callback array
-func (c *TestConfigManager) GetListenerCallbacks(apiOptions models.APIOptions) (listeners []func(notification notification.ProjectConfigUpdateNotification)) {
+func (c *TestProjectConfigManager) GetListenerCallbacks(apiOptions models.APIOptions) (listeners []func(notification notification.ProjectConfigUpdateNotification)) {
 
 	projectConfigUpdateCallback := func(notification notification.ProjectConfigUpdateNotification) {
 		c.listenersCalled = append(c.listenersCalled, notification)
@@ -55,57 +56,65 @@ func (c *TestConfigManager) GetListenerCallbacks(apiOptions models.APIOptions) (
 }
 
 // Verify - Verifies configuration tests
-func (c *TestConfigManager) Verify(configuration models.DataFileManagerConfiguration) {
+func (c *TestProjectConfigManager) Verify(configuration models.DataFileManagerConfiguration) {
 	timeout := DefaultInitializationTimeout
 	if configuration.Timeout != nil {
 		timeout = time.Duration(*(configuration.Timeout)) * time.Millisecond
 	}
 
-	start := time.Now()
-	switch configuration.Mode {
-	case "wait_for_on_ready":
-		for {
-			t := time.Now()
-			elapsed := t.Sub(start)
-			if elapsed >= timeout {
-				break
-			}
-			// Check if projectconfig is ready
-			_, err := c.GetConfig()
-			if err == nil {
-				break
-			}
-		}
-		break
-	case "wait_for_config_update":
-		revision := 0
-		if configuration.Revision != nil {
-			revision = *(configuration.Revision)
-		}
-		for {
-			t := time.Now()
-			elapsed := t.Sub(start)
-			if elapsed >= timeout {
-				break
-			}
-			if revision > 0 {
-				// This means we want the manager to poll until we get to a specific revision
-				if revision == len(c.listenersCalled) {
+	verify := func(wg *sync.WaitGroup) {
+		start := time.Now()
+		switch configuration.Mode {
+		case "wait_for_on_ready":
+			for {
+				t := time.Now()
+				elapsed := t.Sub(start)
+				if elapsed >= timeout {
 					break
 				}
-			} else if len(c.listenersCalled) == 1 {
-				// For cases where we are just waiting for config listener
-				break
+				// Check if projectconfig is ready
+				_, err := c.GetConfig()
+				if err == nil {
+					break
+				}
 			}
+			break
+		case "wait_for_config_update":
+			revision := 0
+			if configuration.Revision != nil {
+				revision = *(configuration.Revision)
+			}
+			for {
+				t := time.Now()
+				elapsed := t.Sub(start)
+				if elapsed >= timeout {
+					break
+				}
+				if revision > 0 {
+					// This means we want the manager to poll until we get to a specific revision
+					if revision == len(c.listenersCalled) {
+						break
+					}
+				} else if len(c.listenersCalled) == 1 {
+					// For cases where we are just waiting for config listener
+					break
+				}
+			}
+			break
+		default:
+			break
 		}
-		break
-	default:
-		break
+		wg.Done()
 	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go verify(&wg)
+	wg.Wait()
 }
 
 // GetListenersCalled - Returns listeners called
-func (c *TestConfigManager) GetListenersCalled() []notification.ProjectConfigUpdateNotification {
+func (c *TestProjectConfigManager) GetListenersCalled() []notification.ProjectConfigUpdateNotification {
 	listenerCalled := c.listenersCalled
 	// Since for every scenario, a new sdk instance is created, emptying listenersCalled is required for scenario's
 	// where multiple requests are executed but no session is to be maintained among them.

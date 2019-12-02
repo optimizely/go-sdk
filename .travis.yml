@@ -5,9 +5,9 @@ git:
 install:
   - eval "$(gimme)"
 stages:
-  - 'Integration tests'
   - 'Lint'
   - 'Unit test'
+  - 'Integration tests'
   - 'Benchmark test'
   - 'Source clear'
 jobs:
