@@ -182,8 +182,8 @@ func makeTestExperimentWithVariations(experimentKey string, variations []entitie
 		variationsMap[variation.ID] = variation
 	}
 	return entities.Experiment{
-		Key:             experimentKey,
-		ID:              fmt.Sprintf("test_experiment_%s", experimentKey),
+		Key:        experimentKey,
+		ID:         fmt.Sprintf("test_experiment_%s", experimentKey),
 		Variations: variationsMap,
 	}
 }

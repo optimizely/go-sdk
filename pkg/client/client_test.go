@@ -332,7 +332,7 @@ func TestGetFeatureVariableBooleanWithEmptyValueType(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -379,7 +379,7 @@ func TestGetFeatureVariableBooleanReturnsDefaultValueIfFeatureNotEnabled(t *test
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -444,7 +444,7 @@ func TestGetFeatureVariableDoubleWithValidValue(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -490,7 +490,7 @@ func TestGetFeatureVariableDoubleWithInvalidValue(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -537,7 +537,7 @@ func TestGetFeatureVariableDoubleWithInvalidValueType(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -584,7 +584,7 @@ func TestGetFeatureVariableDoubleWithEmptyValueType(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -631,7 +631,7 @@ func TestGetFeatureVariableDoubleReturnsDefaultValueIfFeatureNotEnabled(t *testi
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -696,7 +696,7 @@ func TestGetFeatureVariableIntegerWithValidValue(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -742,7 +742,7 @@ func TestGetFeatureVariableIntegerWithInvalidValue(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -789,7 +789,7 @@ func TestGetFeatureVariableIntegerWithInvalidValueType(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -836,7 +836,7 @@ func TestGetFeatureVariableIntegerWithEmptyValueType(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -883,7 +883,7 @@ func TestGetFeatureVariableIntegerReturnsDefaultValueIfFeatureNotEnabled(t *test
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -948,7 +948,7 @@ func TestGetFeatureVariableStringWithValidValue(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -994,7 +994,7 @@ func TestGetFeatureVariableStringWithInvalidValueType(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -1041,7 +1041,7 @@ func TestGetFeatureVariableStringWithEmptyValueType(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -1088,7 +1088,7 @@ func TestGetFeatureVariableStringReturnsDefaultValueIfFeatureNotEnabled(t *testi
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -1190,7 +1190,7 @@ func TestGetFeatureDecisionValid(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -1235,7 +1235,7 @@ func TestGetFeatureDecisionErrProjectConfig(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -1279,7 +1279,7 @@ func TestGetFeatureDecisionPanicProjectConfig(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -1322,7 +1322,7 @@ func TestGetFeatureDecisionPanicDecisionService(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -1357,7 +1357,7 @@ func TestGetFeatureDecisionErrFeatureDecision(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -1403,7 +1403,7 @@ func TestGetAllFeatureVariables(t *testing.T) {
 	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
 	testVariation.FeatureEnabled = true
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
@@ -1449,7 +1449,7 @@ func TestGetAllFeatureVariablesWithError(t *testing.T) {
 	}
 	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
 	testExperiment := entities.Experiment{
-		ID:              "111111",
+		ID:         "111111",
 		Variations: map[string]entities.Variation{"22222": testVariation},
 	}
 	testFeature := getTestFeature(testFeatureKey, testExperiment)
