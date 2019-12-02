@@ -98,9 +98,11 @@ func (m *MapExperimentOverridesStore) SetVariation(overrideKey ExperimentOverrid
 		if strings.TrimSpace(variationKey) == "" {
 			return false
 		}
-		if _, ok := experiment.VariationsKeyMap[variationKey]; ok {
-			assignVariationKey()
-			return true
+		if variationID, ok := experiment.VariationKeyToIDMap[variationKey]; ok {
+			if _, ok := experiment.Variations[variationID]; ok {
+				assignVariationKey()
+				return true
+			}
 		}
 	}
 	return false
@@ -141,11 +143,13 @@ func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisio
 		return decision, nil
 	}
 
-	if variation, ok := decisionContext.Experiment.VariationsKeyMap[variationKey]; ok {
-		decision.Variation = &variation
-		decision.Reason = reasons.OverrideVariationAssignmentFound
-		eosLogger.Debug(fmt.Sprintf("Override variation %v found for user %v", variationKey, userContext.ID))
-		return decision, nil
+	if variationID, ok := decisionContext.Experiment.VariationKeyToIDMap[variationKey]; ok {
+		if variation, ok := decisionContext.Experiment.Variations[variationID]; ok {
+			decision.Variation = &variation
+			decision.Reason = reasons.OverrideVariationAssignmentFound
+			eosLogger.Debug(fmt.Sprintf("Override variation %v found for user %v", variationKey, userContext.ID))
+			return decision, nil
+		}
 	}
 
 	decision.Reason = reasons.InvalidOverrideVariationAssignment

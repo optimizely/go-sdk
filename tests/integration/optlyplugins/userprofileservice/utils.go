@@ -54,8 +54,10 @@ func CreateUserProfileService(config pkg.ProjectConfig, apiOptions models.APIOpt
 		for experimentKey, variationKey := range bucketMap {
 			if experiment, err := config.GetExperimentByKey(experimentKey); err == nil {
 				decisionKey := decision.NewUserDecisionKey(experiment.ID)
-				if variation, ok := experiment.VariationsKeyMap[variationKey]; ok {
-					profile.ExperimentBucketMap[decisionKey] = variation.ID
+				if variationID, ok := experiment.VariationKeyToIDMap[variationKey]; ok {
+					if variation, ok := experiment.Variations[variationID]; ok {
+						profile.ExperimentBucketMap[decisionKey] = variation.ID
+					}
 				}
 			}
 		}

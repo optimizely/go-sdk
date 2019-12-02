@@ -45,7 +45,7 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecision() {
 		ID: "test_user_1",
 	}
 
-	expectedVariation := testExp1113.VariationsIDMap["2223"]
+	expectedVariation := testExp1113.Variations["2223"]
 	returnExperimentDecision := ExperimentDecision{
 		Variation: &expectedVariation,
 	}
@@ -84,7 +84,7 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionMutex() {
 	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext1, testUserContext).Return(nilDecision, nil)
 
 	// second experiment returns a valid decision to simulate user being bucketed into this experiment in the group
-	expectedVariation := testExp1114.VariationsIDMap["2225"]
+	expectedVariation := testExp1114.Variations["2225"]
 	returnExperimentDecision := ExperimentDecision{
 		Variation: &expectedVariation,
 	}

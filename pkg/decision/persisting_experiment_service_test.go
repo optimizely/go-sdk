@@ -47,7 +47,7 @@ func (s *PersistingExperimentServiceTestSuite) SetupTest() {
 		ProjectConfig: s.mockProjectConfig,
 	}
 
-	computedVariation := testExp1113.VariationsIDMap["2223"]
+	computedVariation := testExp1113.Variations["2223"]
 	s.testComputedDecision = ExperimentDecision{
 		Variation: &computedVariation,
 	}

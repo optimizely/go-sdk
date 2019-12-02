@@ -101,11 +101,11 @@ var testExp1111Var2222 = entities.Variation{ID: "2222", Key: "2222"}
 var testExp1111 = entities.Experiment{
 	ID:  "1111",
 	Key: testExp1111Key,
-	VariationsIDMap: map[string]entities.Variation{
+	Variations: map[string]entities.Variation{
 		"2222": testExp1111Var2222,
 	},
-	VariationsKeyMap: map[string]entities.Variation{
-		"2222": testExp1111Var2222,
+	VariationKeyToIDMap: map[string]string{
+		"2222": "2222",
 	},
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2222", EndOfRange: 10000},
@@ -140,11 +140,11 @@ var testExp1112 = entities.Experiment{
 	},
 	ID:  "1112",
 	Key: testExp1111Key,
-	VariationsIDMap: map[string]entities.Variation{
+	Variations: map[string]entities.Variation{
 		"2222": testExp1111Var2222,
 	},
-	VariationsKeyMap: map[string]entities.Variation{
-		"2222": testExp1111Var2222,
+	VariationKeyToIDMap: map[string]string{
+		"2222": "2222",
 	},
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2222", EndOfRange: 10000},
@@ -174,13 +174,13 @@ var testExp1113 = entities.Experiment{
 	ID:      "1113",
 	Key:     testExp1113Key,
 	GroupID: "6666",
-	VariationsIDMap: map[string]entities.Variation{
+	Variations: map[string]entities.Variation{
 		"2223": testExp1113Var2223,
 		"2224": testExp1113Var2224,
 	},
-	VariationsKeyMap: map[string]entities.Variation{
-		"2223": testExp1113Var2223,
-		"2224": testExp1113Var2224,
+	VariationKeyToIDMap: map[string]string{
+		"2223": "2223",
+		"2224": "2224",
 	},
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2223", EndOfRange: 5000},
@@ -196,13 +196,13 @@ var testExp1114 = entities.Experiment{
 	ID:      "1114",
 	Key:     testExp1114Key,
 	GroupID: "6666",
-	VariationsIDMap: map[string]entities.Variation{
+	Variations: map[string]entities.Variation{
 		"2225": testExp1114Var2225,
 		"2226": testExp1114Var2226,
 	},
-	VariationsKeyMap: map[string]entities.Variation{
-		"2225": testExp1114Var2225,
-		"2226": testExp1114Var2226,
+	VariationKeyToIDMap: map[string]string{
+		"2225": "2225",
+		"2226": "2226",
 	},
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2225", EndOfRange: 5000},
@@ -225,11 +225,11 @@ var testExp1115Var2227 = entities.Variation{ID: "2227", Key: "2227", FeatureEnab
 var testExp1115 = entities.Experiment{
 	ID:  "1115",
 	Key: testExp1115Key,
-	VariationsIDMap: map[string]entities.Variation{
+	Variations: map[string]entities.Variation{
 		"2227": testExp1115Var2227,
 	},
-	VariationsKeyMap: map[string]entities.Variation{
-		"2227": testExp1115Var2227,
+	VariationKeyToIDMap: map[string]string{
+		"2227": "2227",
 	},
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2227", EndOfRange: 5000},
@@ -253,11 +253,11 @@ var testTargetedExp1116 = entities.Experiment{
 	AudienceConditionTree: &entities.TreeNode{Operator: "or", Item: "7771"},
 	ID:                    "1116",
 	Key:                   testTargetedExp1116Key,
-	VariationsIDMap: map[string]entities.Variation{
+	Variations: map[string]entities.Variation{
 		"2228": testTargetedExp1116Var2228,
 	},
-	VariationsKeyMap: map[string]entities.Variation{
-		"2228": testTargetedExp1116Var2228,
+	VariationKeyToIDMap: map[string]string{
+		"2228": "2228",
 	},
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2228", EndOfRange: 10000},
@@ -271,11 +271,11 @@ var testExpWhitelistVar2229 = entities.Variation{ID: "2229", Key: "var_2229"}
 var testExpWhitelist = entities.Experiment{
 	ID:  "1117",
 	Key: testExpWhitelistKey,
-	VariationsIDMap: map[string]entities.Variation{
+	Variations: map[string]entities.Variation{
 		"2229": testExpWhitelistVar2229,
 	},
-	VariationsKeyMap: map[string]entities.Variation{
-		"var_2229": testExpWhitelistVar2229,
+	VariationKeyToIDMap: map[string]string{
+		"var_2229": "2229",
 	},
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2229", EndOfRange: 10000},
