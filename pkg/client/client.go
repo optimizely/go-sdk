@@ -338,7 +338,10 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 		var payload []interface{}
 		payload = append(payload, trackNotification)
 		payload = append(payload, userEvent)
-		o.NotificationCenter.Send(notification.Track, payload)
+
+		if err = o.NotificationCenter.Send(notification.Track, payload); err != nil {
+			logger.Warning("Problem with sending notification")
+		}
 	}
 
 	return nil
