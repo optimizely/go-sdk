@@ -26,6 +26,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
+	"github.com/optimizely/go-sdk/pkg/notification"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -110,6 +111,90 @@ func (TestConfig) GetClientVersion() string {
 	return "1.0.0"
 }
 
+func TestAddandRemoveOnTrack(t *testing.T) {
+	mockProcessor := new(MockProcessor)
+	mockDecisionService := new(MockDecisionService)
+	mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
+
+	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
+
+	client := OptimizelyClient{
+		ConfigManager:      ValidProjectConfigManager(),
+		DecisionService:    mockDecisionService,
+		EventProcessor:     mockProcessor,
+		NotificationCenter: notification.NewNotificationCenter(),
+	}
+
+	numberOfCalls := 0
+	callbackIds := []int{}
+	addOnTrack := func(count int) {
+		for i := 0; i < count; i++ {
+			onTrack := func(notification notification.TrackNotification, userEvent event.UserEvent) {
+				numberOfCalls++
+			}
+			id, err := client.OnTrack(onTrack)
+			callbackIds = append(callbackIds, id)
+			assert.NoError(t, err)
+		}
+	}
+
+	// Add 5 on track callbacks
+	addOnTrack(5)
+	err := client.Track("sample_conversion", userContext, map[string]interface{}{})
+	assert.NoError(t, err)
+	assert.Equal(t, 5, numberOfCalls)
+
+	// Add 2 more on track callbacks
+	numberOfCalls = 0
+	addOnTrack(2)
+	err = client.Track("sample_conversion", userContext, map[string]interface{}{})
+	assert.NoError(t, err)
+	assert.Equal(t, 7, numberOfCalls)
+
+	// Remove 2 track callbacks
+	numberOfCalls = 0
+	for i := 0; i < 2; i++ {
+		err = client.RemoveOnTrack(callbackIds[i])
+		assert.NoError(t, err)
+	}
+	callbackIds = callbackIds[2:]
+
+	err = client.Track("sample_conversion", userContext, map[string]interface{}{})
+	assert.NoError(t, err)
+	assert.Equal(t, 5, numberOfCalls)
+
+	// Remove all track callbacks
+	numberOfCalls = 0
+	for _, id := range callbackIds {
+		err = client.RemoveOnTrack(id)
+		assert.NoError(t, err)
+	}
+	err = client.Track("sample_conversion", userContext, map[string]interface{}{})
+	assert.NoError(t, err)
+	assert.Equal(t, 0, numberOfCalls)
+}
+
+func TestOnTrackThrowsErrorWithoutNotificationCenter(t *testing.T) {
+	mockProcessor := new(MockProcessor)
+	mockDecisionService := new(MockDecisionService)
+	mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
+
+	client := OptimizelyClient{
+		ConfigManager:   ValidProjectConfigManager(),
+		DecisionService: mockDecisionService,
+		EventProcessor:  mockProcessor,
+	}
+
+	onTrack := func(notification notification.TrackNotification, userEvent event.UserEvent) {
+	}
+	id, err := client.OnTrack(onTrack)
+	assert.Equal(t, 0, id)
+	assert.Error(t, err)
+
+	err = client.RemoveOnTrack(0)
+	assert.Error(t, err)
+}
+
 func TestTrack(t *testing.T) {
 	mockProcessor := new(MockProcessor)
 	mockDecisionService := new(MockDecisionService)
@@ -137,22 +222,27 @@ func TestTrackWithNotification(t *testing.T) {
 
 	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
 
-	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, userEvent event.UserEvent) {
-		assert.Equal(t, "sample_conversion", eventKey)
-		assert.Equal(t, userContext, userContext)
+	isTrackCalled := false
+	onTrack := func(notification notification.TrackNotification, userEvent event.UserEvent) {
+		isTrackCalled = true
+		assert.Equal(t, "sample_conversion", notification.EventKey)
+		assert.Equal(t, userContext, notification.UserContext)
 		assert.Equal(t, mockProcessor.Events[0], userEvent)
 	}
 
 	client := OptimizelyClient{
-		ConfigManager:   ValidProjectConfigManager(),
-		DecisionService: mockDecisionService,
-		EventProcessor:  mockProcessor,
-		onTrack:         onTrack,
+		ConfigManager:      ValidProjectConfigManager(),
+		DecisionService:    mockDecisionService,
+		EventProcessor:     mockProcessor,
+		NotificationCenter: notification.NewNotificationCenter(),
 	}
+
+	client.OnTrack(onTrack)
 
 	err := client.Track("sample_conversion", userContext, map[string]interface{}{})
 
 	assert.NoError(t, err)
+	assert.True(t, isTrackCalled)
 	assert.Equal(t, 1, len(mockProcessor.Events))
 	assert.Equal(t, "1212121", mockProcessor.Events[0].VisitorID)
 	assert.Equal(t, "15389410617", mockProcessor.Events[0].EventContext.ProjectID)
@@ -168,23 +258,27 @@ func TestTrackWithNotificationAndEventTag(t *testing.T) {
 		"client":  "ios",
 		"version": "7.0",
 	}
-	onTrack := func(eventKey string, actualUserContext entities.UserContext, actualEventTags map[string]interface{}, userEvent event.UserEvent) {
-		assert.Equal(t, "sample_conversion", eventKey)
-		assert.Equal(t, expectedUserContext, actualUserContext)
-		assert.Equal(t, expectedEvenTags, actualEventTags)
+	isTrackCalled := false
+	onTrack := func(notification notification.TrackNotification, userEvent event.UserEvent) {
+		isTrackCalled = true
+		assert.Equal(t, "sample_conversion", notification.EventKey)
+		assert.Equal(t, expectedUserContext, notification.UserContext)
+		assert.Equal(t, expectedEvenTags, notification.EventTags)
 		assert.Equal(t, mockProcessor.Events[0], userEvent)
 	}
 
 	client := OptimizelyClient{
-		ConfigManager:   ValidProjectConfigManager(),
-		DecisionService: mockDecisionService,
-		EventProcessor:  mockProcessor,
-		onTrack:         onTrack,
+		ConfigManager:      ValidProjectConfigManager(),
+		DecisionService:    mockDecisionService,
+		EventProcessor:     mockProcessor,
+		NotificationCenter: notification.NewNotificationCenter(),
 	}
 
+	client.OnTrack(onTrack)
 	err := client.Track("sample_conversion", expectedUserContext, expectedEvenTags)
 
 	assert.NoError(t, err)
+	assert.True(t, isTrackCalled)
 	assert.Equal(t, 1, len(mockProcessor.Events))
 	assert.Equal(t, "1212121", mockProcessor.Events[0].VisitorID)
 	assert.Equal(t, "15389410617", mockProcessor.Events[0].EventContext.ProjectID)
@@ -200,24 +294,27 @@ func TestTrackWithNotificationAndUserEvent(t *testing.T) {
 		"client":  "ios",
 		"version": "7.0",
 	}
-	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, userEvent event.UserEvent) {
-		assert.Equal(t, "sample_conversion", eventKey)
-		assert.Equal(t, userContext, userContext)
-		assert.Equal(t, expectedEvenTags, eventTags)
+	isTrackCalled := false
+	onTrack := func(notification notification.TrackNotification, userEvent event.UserEvent) {
+		isTrackCalled = true
+		assert.Equal(t, "sample_conversion", notification.EventKey)
+		assert.Equal(t, userContext, notification.UserContext)
+		assert.Equal(t, expectedEvenTags, notification.EventTags)
 		assert.Equal(t, 1, len(mockProcessor.Events))
 		assert.Equal(t, mockProcessor.Events[0], userEvent)
 	}
 
 	client := OptimizelyClient{
-		ConfigManager:   ValidProjectConfigManager(),
-		DecisionService: mockDecisionService,
-		EventProcessor:  mockProcessor,
-		onTrack:         onTrack,
+		ConfigManager:      ValidProjectConfigManager(),
+		DecisionService:    mockDecisionService,
+		EventProcessor:     mockProcessor,
+		NotificationCenter: notification.NewNotificationCenter(),
 	}
-
+	client.OnTrack(onTrack)
 	err := client.Track("sample_conversion", userContext, expectedEvenTags)
 
 	assert.NoError(t, err)
+	assert.True(t, isTrackCalled)
 	assert.Equal(t, 1, len(mockProcessor.Events))
 	assert.Equal(t, "1212121", mockProcessor.Events[0].VisitorID)
 	assert.Equal(t, "15389410617", mockProcessor.Events[0].EventContext.ProjectID)
@@ -230,7 +327,7 @@ func TestTrackNotificationNotCalledWhenEventProcessorReturnsFalse(t *testing.T) 
 	mockProcessor.On("ProcessEvent", mock.Anything).Return(false)
 
 	isTrackCalled := false
-	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, userEvent event.UserEvent) {
+	onTrack := func(notification notification.TrackNotification, userEvent event.UserEvent) {
 		isTrackCalled = true
 	}
 
@@ -238,13 +335,37 @@ func TestTrackNotificationNotCalledWhenEventProcessorReturnsFalse(t *testing.T) 
 		ConfigManager:   ValidProjectConfigManager(),
 		DecisionService: mockDecisionService,
 		EventProcessor:  mockProcessor,
-		onTrack:         onTrack,
 	}
-
+	client.OnTrack(onTrack)
 	err := client.Track("sample_conversion", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(mockProcessor.Events))
+	assert.False(t, isTrackCalled)
+}
+
+func TestTrackNotificationNotCalledWhenNoNotificationCenterProvided(t *testing.T) {
+	mockProcessor := new(MockProcessor)
+	mockDecisionService := new(MockDecisionService)
+	mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
+
+	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
+
+	isTrackCalled := false
+	onTrack := func(notification notification.TrackNotification, userEvent event.UserEvent) {
+		isTrackCalled = true
+	}
+
+	client := OptimizelyClient{
+		ConfigManager:   ValidProjectConfigManager(),
+		DecisionService: mockDecisionService,
+		EventProcessor:  mockProcessor,
+	}
+
+	client.OnTrack(onTrack)
+	err := client.Track("sample_conversion", userContext, map[string]interface{}{})
+
+	assert.NoError(t, err)
 	assert.False(t, isTrackCalled)
 }
 
@@ -254,7 +375,7 @@ func TestTrackNotificationNotCalledWhenInvalidParamsProvided(t *testing.T) {
 	mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
 
 	isTrackCalled := false
-	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, userEvent event.UserEvent) {
+	onTrack := func(notification notification.TrackNotification, userEvent event.UserEvent) {
 		isTrackCalled = true
 	}
 
@@ -262,9 +383,8 @@ func TestTrackNotificationNotCalledWhenInvalidParamsProvided(t *testing.T) {
 		ConfigManager:   ValidProjectConfigManager(),
 		DecisionService: mockDecisionService,
 		EventProcessor:  mockProcessor,
-		onTrack:         onTrack,
 	}
-
+	client.OnTrack(onTrack)
 	err := client.Track("bob", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
 
 	assert.NoError(t, err)

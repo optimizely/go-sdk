@@ -28,22 +28,19 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
 var logger = logging.GetLogger("Client")
 
-// OnTrack called while Track is called
-type OnTrack func(eventKey string, userAttributes entities.UserContext, eventTags map[string]interface{}, userEvent event.UserEvent)
-
 // OptimizelyClient is the entry point to the Optimizely SDK
 type OptimizelyClient struct {
-	ConfigManager   pkg.ProjectConfigManager
-	DecisionService decision.Service
-	EventProcessor  event.Processor
-
-	executionCtx utils.ExecutionCtx
-	onTrack      OnTrack
+	ConfigManager      pkg.ProjectConfigManager
+	DecisionService    decision.Service
+	EventProcessor     event.Processor
+	NotificationCenter notification.Center
+	executionCtx       utils.ExecutionCtx
 }
 
 // Activate returns the key of the variation the user is bucketed into and queues up an impression event to be sent to
@@ -336,8 +333,12 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 	}
 
 	userEvent := event.CreateConversionUserEvent(projectConfig, configEvent, userContext, eventTags)
-	if o.EventProcessor.ProcessEvent(userEvent) && o.onTrack != nil {
-		o.onTrack(eventKey, userContext, eventTags, userEvent)
+	if o.EventProcessor.ProcessEvent(userEvent) && o.NotificationCenter != nil {
+		trackNotification := notification.TrackNotification{Type: notification.Track, EventKey: eventKey, UserContext: userContext, EventTags: eventTags}
+		var payload []interface{}
+		payload = append(payload, trackNotification)
+		payload = append(payload, userEvent)
+		o.NotificationCenter.Send(notification.Track, payload)
 	}
 
 	return nil
@@ -436,6 +437,45 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 	}
 
 	return decisionContext, experimentDecision, err
+}
+
+// OnTrack registers a handler for Track notifications
+func (o *OptimizelyClient) OnTrack(callback func(notification notification.TrackNotification, userEvent event.UserEvent)) (int, error) {
+	if o.NotificationCenter == nil {
+		return 0, fmt.Errorf("no notification center found")
+	}
+	handler := func(payload interface{}) {
+		success := false
+		if trackPayload, ok := payload.([]interface{}); ok {
+			if parsedNotification, ok := trackPayload[0].(notification.TrackNotification); ok {
+				if parsedEvent, ok := trackPayload[1].(event.UserEvent); ok {
+					success = true
+					callback(parsedNotification, parsedEvent)
+				}
+			}
+		}
+		if !success {
+			logger.Warning(fmt.Sprintf("Unable to convert notification payload %v into TrackNotification", payload))
+		}
+	}
+	id, err := o.NotificationCenter.AddHandler(notification.Track, handler)
+	if err != nil {
+		logger.Warning("Problem with adding notification handler")
+		return 0, err
+	}
+	return id, nil
+}
+
+// RemoveOnTrack removes handler for Track notification with given id
+func (o *OptimizelyClient) RemoveOnTrack(id int) error {
+	if o.NotificationCenter == nil {
+		return fmt.Errorf("no notification center found")
+	}
+	if err := o.NotificationCenter.RemoveHandler(id, notification.Track); err != nil {
+		logger.Warning("Problem with removing notification handler")
+		return err
+	}
+	return nil
 }
 
 // GetProjectConfig returns the current ProjectConfig or nil if the instance is not valid.

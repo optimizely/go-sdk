@@ -25,7 +25,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/pkg/decision"
-	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/utils"
 
@@ -70,14 +69,6 @@ func TestClientWithSDKKey(t *testing.T) {
 	assert.NotNil(t, optimizelyClient.ConfigManager)
 	assert.NotNil(t, optimizelyClient.DecisionService)
 	assert.NotNil(t, optimizelyClient.EventProcessor)
-}
-
-func TestClientWithOnTrack(t *testing.T) {
-	factory := OptimizelyFactory{onTrack: onTrackCallback, SDKKey: "1212"}
-
-	optimizelyClient, err := factory.Client()
-	assert.NoError(t, err)
-	assert.NotNil(t, optimizelyClient.onTrack)
 }
 
 func TestClientWithPollingConfigManager(t *testing.T) {
@@ -133,16 +124,6 @@ func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 	assert.Equal(t, processor, optimizelyClient.EventProcessor)
 }
 
-func TestClientWithOnTrackInOptions(t *testing.T) {
-	factory := OptimizelyFactory{}
-	projectConfig := datafileprojectconfig.DatafileProjectConfig{}
-	configManager := config.NewStaticProjectConfigManager(projectConfig)
-
-	optimizelyClient, err := factory.Client(WithOnTrack(onTrackCallback), WithConfigManager(configManager))
-	assert.NoError(t, err)
-	assert.NotNil(t, optimizelyClient.onTrack)
-}
-
 func TestClientWithCustomCtx(t *testing.T) {
 	factory := OptimizelyFactory{}
 	testExecutionCtx := utils.NewCancelableExecutionCtx()
@@ -180,8 +161,4 @@ func TestClientWithCustomDecisionServiceOptions(t *testing.T) {
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, optimizelyClient.DecisionService)
-}
-
-func onTrackCallback(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, userEvent event.UserEvent) {
-
 }

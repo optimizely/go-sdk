@@ -25,6 +25,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/event"
+	"github.com/optimizely/go-sdk/pkg/registry"
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
@@ -39,7 +40,6 @@ type OptimizelyFactory struct {
 	executionCtx       utils.ExecutionCtx
 	userProfileService decision.UserProfileService
 	overrideStore      decision.ExperimentOverrideStore
-	onTrack            OnTrack
 }
 
 // OptionFunc is used to provide custom client configuration to the OptimizelyFactory.
@@ -64,6 +64,7 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 	}
 
 	appClient := &OptimizelyClient{executionCtx: executionCtx}
+	appClient.NotificationCenter = registry.GetNotificationCenter(f.SDKKey)
 
 	if f.configManager != nil {
 		appClient.ConfigManager = f.configManager
@@ -110,8 +111,6 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		batchProcessor.Start(appClient.executionCtx)
 	}
 
-	appClient.onTrack = f.onTrack
-
 	return appClient, nil
 }
 
@@ -135,13 +134,6 @@ func WithPollingConfigManagerRequester(requester utils.Requester, pollingInterva
 func WithConfigManager(configManager pkg.ProjectConfigManager) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.configManager = configManager
-	}
-}
-
-// WithOnTrack sets callback which is called when Track is called.
-func WithOnTrack(onTrack OnTrack) OptionFunc {
-	return func(f *OptimizelyFactory) {
-		f.onTrack = onTrack
 	}
 }
 
