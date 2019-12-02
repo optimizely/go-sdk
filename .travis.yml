@@ -58,7 +58,7 @@ jobs:
       install:
         - eval "$(gimme)"
       script:
-        - ./scripts/run-fsc-tests.sh -f "$FSC_PATH/features/" -d "$FSC_PATH/features/support/datafiles/" -t "~@FORCED_VARIATION&&~@INPUT_VALIDATION&&~@EVENT_BATCHING&&~@NO_EASY_EVENT_TRACKING&&~@OASIS-3654&&~@TARGETED_ROLLOUT&&~@EXPERIMENT_STATUS&&@~UNSUPPORTED_DATAFILE_VERSION&&@~TRACK_LISTENER&&@~ACTIVATE_LISTENER&&~@OPTIMIZELY_CONFIG"
+        - ./scripts/run-fsc-tests.sh -f "$FSC_PATH/features/" -d "$FSC_PATH/features/support/datafiles/" -t "$TAGS"
 
     - stage: 'Source clear'
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
