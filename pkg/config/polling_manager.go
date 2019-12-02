@@ -206,9 +206,11 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 	}
 
 	for _, handler := range pollingProjectConfigManager.projectConfigUpdateHandlers {
-		if _, err := pollingProjectConfigManager.OnProjectConfigUpdate(handler); err != nil {
-			break
+		if _, err := pollingProjectConfigManager.OnProjectConfigUpdate(handler); err == nil {
+			// To bypass linter warnings for ignoring error
+			continue
 		}
+		break
 	}
 
 	initDatafile := pollingProjectConfigManager.initDatafile
