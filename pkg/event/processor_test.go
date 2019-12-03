@@ -481,23 +481,61 @@ func (l *NoOpLogger) SetLogLevel(level logging.LogLevel) {
 goos: darwin
 goarch: amd64
 pkg: github.com/optimizely/go-sdk/pkg/event
-BenchmarkWithQueueSize/QueueSize100-8         	 2000000	       774 ns/op
-BenchmarkWithQueueSize/QueueSize500-8         	 2000000	       716 ns/op
-BenchmarkWithQueueSize/QueueSize1000-8        	 2000000	       690 ns/op
-BenchmarkWithQueueSize/QueueSize2000-8        	 2000000	       732 ns/op
-BenchmarkWithQueueSize/QueueSize3000-8        	 2000000	       735 ns/op
-BenchmarkWithQueueSize/QueueSize4000-8        	 2000000	       740 ns/op
-
-BenchmarkWithBatchSize/BatchSize10-8          	 2000000	       665 ns/op
-BenchmarkWithBatchSize/BatchSize20-8          	 2000000	       597 ns/op
-BenchmarkWithBatchSize/BatchSize30-8          	 3000000	       556 ns/op
-BenchmarkWithBatchSize/BatchSize40-8          	 3000000	       566 ns/op
-BenchmarkWithBatchSize/BatchSize50-8          	 3000000	       546 ns/op
-BenchmarkWithBatchSize/BatchSize60-8          	 3000000	       504 ns/op
-
-BenchmarkWithQueue/InMemoryQueue-8            	 2000000	       674 ns/op
-BenchmarkWithQueue/ChannelQueue-8             	 2000000	       937 ns/op
-
+BenchmarkProcessor/InMemory/BatchSize-10/QueueSize-10-8         	 2531830	       456 ns/op
+BenchmarkProcessor/InMemory/BatchSize-20/QueueSize-10-8         	 2966862	       398 ns/op
+BenchmarkProcessor/InMemory/BatchSize-30/QueueSize-10-8         	 3224689	       372 ns/op
+BenchmarkProcessor/InMemory/BatchSize-40/QueueSize-10-8         	 3283634	       384 ns/op
+BenchmarkProcessor/InMemory/BatchSize-50/QueueSize-10-8         	 3368804	       352 ns/op
+BenchmarkProcessor/InMemory/BatchSize-60/QueueSize-10-8         	 3468763	       336 ns/op
+BenchmarkProcessor/InMemory/BatchSize-10/QueueSize-100-8        	 2581394	       464 ns/op
+BenchmarkProcessor/InMemory/BatchSize-20/QueueSize-100-8        	 2911731	       408 ns/op
+BenchmarkProcessor/InMemory/BatchSize-30/QueueSize-100-8        	 3224674	       375 ns/op
+BenchmarkProcessor/InMemory/BatchSize-40/QueueSize-100-8        	 3262027	       366 ns/op
+BenchmarkProcessor/InMemory/BatchSize-50/QueueSize-100-8        	 3094736	       354 ns/op
+BenchmarkProcessor/InMemory/BatchSize-60/QueueSize-100-8        	 3523911	       338 ns/op
+BenchmarkProcessor/InMemory/BatchSize-10/QueueSize-1000-8       	 2580465	       467 ns/op
+BenchmarkProcessor/InMemory/BatchSize-20/QueueSize-1000-8       	 2940940	       415 ns/op
+BenchmarkProcessor/InMemory/BatchSize-30/QueueSize-1000-8       	 3229284	       375 ns/op
+BenchmarkProcessor/InMemory/BatchSize-40/QueueSize-1000-8       	 3280029	       367 ns/op
+BenchmarkProcessor/InMemory/BatchSize-50/QueueSize-1000-8       	 3258297	       368 ns/op
+BenchmarkProcessor/InMemory/BatchSize-60/QueueSize-1000-8       	 3484419	       336 ns/op
+BenchmarkProcessor/InMemory/BatchSize-10/QueueSize-10000-8      	 2598885	       462 ns/op
+BenchmarkProcessor/InMemory/BatchSize-20/QueueSize-10000-8      	 2907445	       414 ns/op
+BenchmarkProcessor/InMemory/BatchSize-30/QueueSize-10000-8      	 3215616	       382 ns/op
+BenchmarkProcessor/InMemory/BatchSize-40/QueueSize-10000-8      	 3243544	       367 ns/op
+BenchmarkProcessor/InMemory/BatchSize-50/QueueSize-10000-8      	 3382228	       391 ns/op
+BenchmarkProcessor/InMemory/BatchSize-60/QueueSize-10000-8      	 3503428	       354 ns/op
+BenchmarkProcessor/InMemory/BatchSize-10/QueueSize-100000-8     	 2268799	       512 ns/op
+BenchmarkProcessor/InMemory/BatchSize-20/QueueSize-100000-8     	 2788728	       429 ns/op
+BenchmarkProcessor/InMemory/BatchSize-30/QueueSize-100000-8     	 2799598	       404 ns/op
+BenchmarkProcessor/InMemory/BatchSize-40/QueueSize-100000-8     	 3010062	       368 ns/op
+BenchmarkProcessor/InMemory/BatchSize-50/QueueSize-100000-8     	 3353461	       352 ns/op
+BenchmarkProcessor/InMemory/BatchSize-60/QueueSize-100000-8     	 3429447	       342 ns/op
+BenchmarkProcessor/Channel/BatchSize-20/QueueSize-10-8          	 1755082	       738 ns/op
+BenchmarkProcessor/Channel/BatchSize-30/QueueSize-10-8          	 1770522	       687 ns/op
+BenchmarkProcessor/Channel/BatchSize-40/QueueSize-10-8          	 1784857	       679 ns/op
+BenchmarkProcessor/Channel/BatchSize-50/QueueSize-10-8          	 1805431	       663 ns/op
+BenchmarkProcessor/Channel/BatchSize-60/QueueSize-10-8          	 1815903	       786 ns/op
+BenchmarkProcessor/Channel/BatchSize-10/QueueSize-100-8         	 1640970	       726 ns/op
+BenchmarkProcessor/Channel/BatchSize-20/QueueSize-100-8         	 1719675	       725 ns/op
+BenchmarkProcessor/Channel/BatchSize-40/QueueSize-100-8         	 1761488	       687 ns/op
+BenchmarkProcessor/Channel/BatchSize-50/QueueSize-100-8         	 1734388	       686 ns/op
+BenchmarkProcessor/Channel/BatchSize-60/QueueSize-100-8         	 1772548	       736 ns/op
+BenchmarkProcessor/Channel/BatchSize-10/QueueSize-1000-8        	 1476832	       744 ns/op
+BenchmarkProcessor/Channel/BatchSize-20/QueueSize-1000-8        	 1444575	       725 ns/op
+BenchmarkProcessor/Channel/BatchSize-30/QueueSize-1000-8        	 1707232	       757 ns/op
+BenchmarkProcessor/Channel/BatchSize-50/QueueSize-1000-8        	 1712044	       700 ns/op
+BenchmarkProcessor/Channel/BatchSize-10/QueueSize-10000-8       	 1415298	       836 ns/op
+BenchmarkProcessor/Channel/BatchSize-20/QueueSize-10000-8       	 1607797	       758 ns/op
+BenchmarkProcessor/Channel/BatchSize-30/QueueSize-10000-8       	 1723740	       679 ns/op
+BenchmarkProcessor/Channel/BatchSize-50/QueueSize-10000-8       	 1750117	       741 ns/op
+BenchmarkProcessor/Channel/BatchSize-60/QueueSize-10000-8       	 1784826	       712 ns/op
+BenchmarkProcessor/Channel/BatchSize-10/QueueSize-100000-8      	 1448926	       849 ns/op
+BenchmarkProcessor/Channel/BatchSize-20/QueueSize-100000-8      	 1639345	       783 ns/op
+BenchmarkProcessor/Channel/BatchSize-30/QueueSize-100000-8      	 1643888	       720 ns/op
+BenchmarkProcessor/Channel/BatchSize-40/QueueSize-100000-8      	 1771636	       827 ns/op
+BenchmarkProcessor/Channel/BatchSize-50/QueueSize-100000-8      	 1607248	       790 ns/op
+BenchmarkProcessor/Channel/BatchSize-60/QueueSize-100000-8      	 1714305	       749 ns/op
 */
 func BenchmarkProcessor(b *testing.B) {
 	// no op logger added to keep out extra discarded events
