@@ -141,7 +141,7 @@ func (cm *PollingProjectConfigManager) SyncConfig(sdkKey string, datafile []byte
 
 	if err != nil {
 		cmLogger.Warning("failed to create project config")
-		closeMutex(err)
+		closeMutex(errors.New("unable to parse datafile"))
 		return
 	}
 
