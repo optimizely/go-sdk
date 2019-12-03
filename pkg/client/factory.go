@@ -71,7 +71,6 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		appClient.ConfigManager = config.NewPollingProjectConfigManager(
 			f.SDKKey,
 			config.WithInitialDatafile(f.Datafile),
-			config.WithPollingInterval(config.DefaultPollingInterval),
 		)
 	}
 
@@ -79,9 +78,6 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		appClient.EventProcessor = f.eventProcessor
 	} else {
 		var eventProcessorOptions = []event.BPOptionConfig{
-			event.WithBatchSize(event.DefaultBatchSize),
-			event.WithQueueSize(event.DefaultEventQueueSize),
-			event.WithFlushInterval(event.DefaultEventFlushInterval),
 			event.WithSDKKey(f.SDKKey),
 		}
 		if f.eventDispatcher != nil {
