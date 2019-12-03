@@ -114,7 +114,7 @@ func (cm *PollingProjectConfigManager) SyncConfig(sdkKey string, datafile []byte
 		}
 
 		if e != nil {
-			msg := "unable to get fresh datafile"
+			msg := "unable to fetch fresh datafile"
 			cmLogger.Warning(msg)
 			cm.configLock.Lock()
 			closeMutex(errors.New(fmt.Sprintf("%s, reason (http status code): %s", msg, e.Error())))
