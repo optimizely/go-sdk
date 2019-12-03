@@ -168,7 +168,7 @@ func WithEventProcessor(eventProcessor event.Processor) OptionFunc {
 	}
 }
 
-// WithEventProcessor sets event dispatcher on the factory.
+// WithEventDispatcher sets event dispatcher on the factory.
 func WithEventDispatcher(eventDispatcher event.Dispatcher) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.eventDispatcher = eventDispatcher
