@@ -56,10 +56,10 @@ type DecisionNotification struct {
 
 // TrackNotification is a notification triggered when track is called
 type TrackNotification struct {
-	Type        Type
-	EventKey    string
-	UserContext entities.UserContext
-	EventTags   map[string]interface{}
+	EventKey        string
+	UserContext     entities.UserContext
+	EventTags       map[string]interface{}
+	ConversionEvent interface{}
 }
 
 // ProjectConfigUpdateNotification is a notification triggered when a project config is updated

@@ -334,11 +334,8 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 
 	userEvent := event.CreateConversionUserEvent(projectConfig, configEvent, userContext, eventTags)
 	if o.EventProcessor.ProcessEvent(userEvent) && o.NotificationCenter != nil {
-		trackNotification := notification.TrackNotification{Type: notification.Track, EventKey: eventKey, UserContext: userContext, EventTags: eventTags}
-		var payload []interface{}
-		payload = append(payload, trackNotification, userEvent)
-
-		if err = o.NotificationCenter.Send(notification.Track, payload); err != nil {
+		trackNotification := notification.TrackNotification{EventKey: eventKey, UserContext: userContext, EventTags: eventTags, ConversionEvent: *userEvent.Conversion}
+		if err = o.NotificationCenter.Send(notification.Track, trackNotification); err != nil {
 			logger.Warning("Problem with sending notification")
 		}
 	}
@@ -442,18 +439,17 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 }
 
 // OnTrack registers a handler for Track notifications
-func (o *OptimizelyClient) OnTrack(callback func(notification notification.TrackNotification, userEvent event.UserEvent)) (int, error) {
+func (o *OptimizelyClient) OnTrack(callback func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent)) (int, error) {
 	if o.NotificationCenter == nil {
 		return 0, fmt.Errorf("no notification center found")
 	}
+
 	handler := func(payload interface{}) {
 		success := false
-		if trackPayload, ok := payload.([]interface{}); ok {
-			if parsedNotification, ok := trackPayload[0].(notification.TrackNotification); ok {
-				if parsedEvent, ok := trackPayload[1].(event.UserEvent); ok {
-					success = true
-					callback(parsedNotification, parsedEvent)
-				}
+		if trackNotification, ok := payload.(notification.TrackNotification); ok {
+			if conversionEvent, ok := trackNotification.ConversionEvent.(event.ConversionEvent); ok {
+				success = true
+				callback(trackNotification.EventKey, trackNotification.UserContext, trackNotification.EventTags, conversionEvent)
 			}
 		}
 		if !success {

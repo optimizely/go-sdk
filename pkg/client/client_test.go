@@ -129,7 +129,7 @@ func TestAddandRemoveOnTrack(t *testing.T) {
 	callbackIds := []int{}
 	addOnTrack := func(count int) {
 		for i := 0; i < count; i++ {
-			onTrack := func(notification notification.TrackNotification, userEvent event.UserEvent) {
+			onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 				numberOfCalls++
 			}
 			id, err := client.OnTrack(onTrack)
@@ -185,7 +185,7 @@ func TestOnTrackThrowsErrorWithoutNotificationCenter(t *testing.T) {
 		EventProcessor:  mockProcessor,
 	}
 
-	onTrack := func(notification notification.TrackNotification, userEvent event.UserEvent) {
+	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 	}
 	id, err := client.OnTrack(onTrack)
 	assert.Equal(t, 0, id)
@@ -220,14 +220,14 @@ func TestTrackWithNotification(t *testing.T) {
 	mockDecisionService := new(MockDecisionService)
 	mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
 
-	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
+	expectedUserContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
 
 	isTrackCalled := false
-	onTrack := func(notification notification.TrackNotification, userEvent event.UserEvent) {
+	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 		isTrackCalled = true
-		assert.Equal(t, "sample_conversion", notification.EventKey)
-		assert.Equal(t, userContext, notification.UserContext)
-		assert.Equal(t, mockProcessor.Events[0], userEvent)
+		assert.Equal(t, "sample_conversion", eventKey)
+		assert.Equal(t, expectedUserContext, userContext)
+		assert.Equal(t, *mockProcessor.Events[0].Conversion, conversionEvent)
 	}
 
 	client := OptimizelyClient{
@@ -239,7 +239,7 @@ func TestTrackWithNotification(t *testing.T) {
 
 	client.OnTrack(onTrack)
 
-	err := client.Track("sample_conversion", userContext, map[string]interface{}{})
+	err := client.Track("sample_conversion", expectedUserContext, map[string]interface{}{})
 
 	assert.NoError(t, err)
 	assert.True(t, isTrackCalled)
@@ -259,12 +259,12 @@ func TestTrackWithNotificationAndEventTag(t *testing.T) {
 		"version": "7.0",
 	}
 	isTrackCalled := false
-	onTrack := func(notification notification.TrackNotification, userEvent event.UserEvent) {
+	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 		isTrackCalled = true
-		assert.Equal(t, "sample_conversion", notification.EventKey)
-		assert.Equal(t, expectedUserContext, notification.UserContext)
-		assert.Equal(t, expectedEvenTags, notification.EventTags)
-		assert.Equal(t, mockProcessor.Events[0], userEvent)
+		assert.Equal(t, "sample_conversion", eventKey)
+		assert.Equal(t, expectedUserContext, userContext)
+		assert.Equal(t, expectedEvenTags, eventTags)
+		assert.Equal(t, *mockProcessor.Events[0].Conversion, conversionEvent)
 	}
 
 	client := OptimizelyClient{
@@ -289,19 +289,19 @@ func TestTrackWithNotificationAndUserEvent(t *testing.T) {
 	mockDecisionService := new(MockDecisionService)
 	mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
 
-	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
-	expectedEvenTags := map[string]interface{}{
+	expectedUserContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
+	expectedEventTags := map[string]interface{}{
 		"client":  "ios",
 		"version": "7.0",
 	}
 	isTrackCalled := false
-	onTrack := func(notification notification.TrackNotification, userEvent event.UserEvent) {
+	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 		isTrackCalled = true
-		assert.Equal(t, "sample_conversion", notification.EventKey)
-		assert.Equal(t, userContext, notification.UserContext)
-		assert.Equal(t, expectedEvenTags, notification.EventTags)
+		assert.Equal(t, "sample_conversion", eventKey)
+		assert.Equal(t, expectedUserContext, userContext)
+		assert.Equal(t, expectedEventTags, eventTags)
 		assert.Equal(t, 1, len(mockProcessor.Events))
-		assert.Equal(t, mockProcessor.Events[0], userEvent)
+		assert.Equal(t, *mockProcessor.Events[0].Conversion, conversionEvent)
 	}
 
 	client := OptimizelyClient{
@@ -311,7 +311,7 @@ func TestTrackWithNotificationAndUserEvent(t *testing.T) {
 		NotificationCenter: notification.NewNotificationCenter(),
 	}
 	client.OnTrack(onTrack)
-	err := client.Track("sample_conversion", userContext, expectedEvenTags)
+	err := client.Track("sample_conversion", expectedUserContext, expectedEventTags)
 
 	assert.NoError(t, err)
 	assert.True(t, isTrackCalled)
@@ -327,7 +327,7 @@ func TestTrackNotificationNotCalledWhenEventProcessorReturnsFalse(t *testing.T) 
 	mockProcessor.On("ProcessEvent", mock.Anything).Return(false)
 
 	isTrackCalled := false
-	onTrack := func(notification notification.TrackNotification, userEvent event.UserEvent) {
+	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 		isTrackCalled = true
 	}
 
@@ -352,7 +352,7 @@ func TestTrackNotificationNotCalledWhenNoNotificationCenterProvided(t *testing.T
 	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
 
 	isTrackCalled := false
-	onTrack := func(notification notification.TrackNotification, userEvent event.UserEvent) {
+	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 		isTrackCalled = true
 	}
 
@@ -375,7 +375,7 @@ func TestTrackNotificationNotCalledWhenInvalidParamsProvided(t *testing.T) {
 	mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
 
 	isTrackCalled := false
-	onTrack := func(notification notification.TrackNotification, userEvent event.UserEvent) {
+	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 		isTrackCalled = true
 	}
 
