@@ -400,7 +400,6 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 
 	projectConfig, e := o.GetProjectConfig()
 	if e != nil {
-		logger.Error("Error calling getExperimentDecision", e)
 		return decisionContext, experimentDecision, e
 	}
 
