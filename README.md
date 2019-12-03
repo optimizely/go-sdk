@@ -8,7 +8,7 @@
 ### Install from github:
 
 ```$sh
-go install github.com/optimizely/go-sdk
+go get github.com/optimizely/go-sdk
 ```
 
 ### Install from source:
@@ -29,14 +29,14 @@ module mymodule
 go 1.12
 
 require (
-	github.com/optimizely/go-sdk v1.0.0-beta6
+	github.com/optimizely/go-sdk v1.0.0-beta7
 )
 ```
 
 If you are already using `go.mod` in your application you can run the following:
 
 ```
-go mod edit -require github.com/optimizely/go-sdk@v1.0.0-beta6
+go mod edit -require github.com/optimizely/go-sdk@v1.0.0-beta7
 ```
 
 NOTE:
@@ -113,3 +113,11 @@ License (MIT): https://github.com/json-iterator/go/blob/master/LICENSE
 subset
 Copyright (c) 2015, Facebook, Inc. All rights reserved.
 License (BSD): https://github.com/facebookarchive/subset/blob/master/license
+
+profile
+Copyright (c) 2013 Dave Cheney. All rights reserved.
+License (BSD): https://github.com/pkg/profile/blob/master/LICENSE
+
+sync
+Copyright (c) 2009 The Go Authors. All rights reserved.
+https://github.com/golang/sync/blob/master/LICENSE
