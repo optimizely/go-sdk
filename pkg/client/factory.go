@@ -35,6 +35,7 @@ type OptimizelyFactory struct {
 
 	configManager      pkg.ProjectConfigManager
 	decisionService    decision.Service
+	eventDispatcher    event.Dispatcher
 	eventProcessor     event.Processor
 	executionCtx       utils.ExecutionCtx
 	userProfileService decision.UserProfileService
@@ -77,18 +78,22 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 	if f.eventProcessor != nil {
 		appClient.EventProcessor = f.eventProcessor
 	} else {
-		appClient.EventProcessor = event.NewBatchEventProcessor(
+		var eventProcessorOptions = []event.BPOptionConfig{
 			event.WithBatchSize(event.DefaultBatchSize),
 			event.WithQueueSize(event.DefaultEventQueueSize),
 			event.WithFlushInterval(event.DefaultEventFlushInterval),
 			event.WithSDKKey(f.SDKKey),
-		)
+		}
+		if f.eventDispatcher != nil {
+			eventProcessorOptions = append(eventProcessorOptions, event.WithEventDispatcher(f.eventDispatcher))
+		}
+		appClient.EventProcessor = event.NewBatchEventProcessor(eventProcessorOptions...)
 	}
 
 	if f.decisionService != nil {
 		appClient.DecisionService = f.decisionService
 	} else {
-		experimentServiceOptions := []decision.CESOptionFunc{}
+		var experimentServiceOptions []decision.CESOptionFunc
 		if f.userProfileService != nil {
 			experimentServiceOptions = append(experimentServiceOptions, decision.WithUserProfileService(f.userProfileService))
 		}
@@ -113,18 +118,10 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 }
 
 // WithPollingConfigManager sets polling config manager on a client.
-func WithPollingConfigManager(sdkKey string, pollingInterval time.Duration, initDataFile []byte) OptionFunc {
+func WithPollingConfigManager(pollingInterval time.Duration, initDataFile []byte) OptionFunc {
 	return func(f *OptimizelyFactory) {
-		f.configManager = config.NewPollingProjectConfigManager(sdkKey, config.WithInitialDatafile(initDataFile),
+		f.configManager = config.NewPollingProjectConfigManager(f.SDKKey, config.WithInitialDatafile(initDataFile),
 			config.WithPollingInterval(pollingInterval))
-	}
-}
-
-// WithPollingConfigManagerRequester sets polling config manager on a client.
-func WithPollingConfigManagerRequester(requester utils.Requester, pollingInterval time.Duration, initDataFile []byte) OptionFunc {
-	return func(f *OptimizelyFactory) {
-		f.configManager = config.NewPollingProjectConfigManager("", config.WithInitialDatafile(initDataFile),
-			config.WithPollingInterval(pollingInterval), config.WithRequester(requester))
 	}
 }
 
@@ -132,13 +129,6 @@ func WithPollingConfigManagerRequester(requester utils.Requester, pollingInterva
 func WithConfigManager(configManager pkg.ProjectConfigManager) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.configManager = configManager
-	}
-}
-
-// WithCompositeDecisionService sets decision service on a client.
-func WithCompositeDecisionService(sdkKey string) OptionFunc {
-	return func(f *OptimizelyFactory) {
-		f.decisionService = decision.NewCompositeService(sdkKey)
 	}
 }
 
@@ -178,6 +168,13 @@ func WithEventProcessor(eventProcessor event.Processor) OptionFunc {
 	}
 }
 
+// WithEventProcessor sets event dispatcher on the factory.
+func WithEventDispatcher(eventDispatcher event.Dispatcher) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.eventDispatcher = eventDispatcher
+	}
+}
+
 // WithExecutionContext allows user to pass in their own execution context to override the default one in the client.
 func WithExecutionContext(executionContext utils.ExecutionCtx) OptionFunc {
 	return func(f *OptimizelyFactory) {
@@ -210,7 +207,6 @@ func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 
 	optlyClient, e := f.Client(
 		WithConfigManager(configManager),
-		WithCompositeDecisionService(f.SDKKey),
 		WithBatchEventProcessor(event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
 	)
 	return optlyClient, e

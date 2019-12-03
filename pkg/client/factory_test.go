@@ -74,20 +74,7 @@ func TestClientWithSDKKey(t *testing.T) {
 func TestClientWithPollingConfigManager(t *testing.T) {
 	factory := OptimizelyFactory{}
 
-	optimizelyClient, err := factory.Client(WithPollingConfigManager("1212", time.Hour, nil))
-	assert.NoError(t, err)
-	assert.NotNil(t, optimizelyClient.ConfigManager)
-	assert.NotNil(t, optimizelyClient.DecisionService)
-	assert.NotNil(t, optimizelyClient.EventProcessor)
-}
-
-func TestClientWithPollingConfigManagerRequester(t *testing.T) {
-
-	factory := OptimizelyFactory{}
-	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return([]byte(`{"revision":"42"}`), http.Header{}, http.StatusOK, nil)
-
-	optimizelyClient, err := factory.Client(WithPollingConfigManagerRequester(mockRequester, time.Minute, nil))
+	optimizelyClient, err := factory.Client(WithPollingConfigManager(time.Hour, nil))
 	assert.NoError(t, err)
 	assert.NotNil(t, optimizelyClient.ConfigManager)
 	assert.NotNil(t, optimizelyClient.DecisionService)
@@ -161,4 +148,15 @@ func TestClientWithCustomDecisionServiceOptions(t *testing.T) {
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, optimizelyClient.DecisionService)
+}
+
+func TestClientWithEventDispatcher(t *testing.T) {
+	factory := OptimizelyFactory{SDKKey: "1212"}
+
+	mockEventDispatcher := new(MockDispatcher)
+	optimizelyClient, err := factory.Client(WithEventDispatcher(mockEventDispatcher))
+	assert.NoError(t, err)
+
+	dispatcher := optimizelyClient.EventProcessor.(*event.BatchEventProcessor).EventDispatcher
+	assert.Equal(t, dispatcher, mockEventDispatcher)
 }
