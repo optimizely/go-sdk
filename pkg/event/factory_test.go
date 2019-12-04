@@ -32,6 +32,10 @@ type TestConfig struct {
 	pkg.ProjectConfig
 }
 
+func (TestConfig) GetAttributeByKey(string) (entities.Attribute, error) {
+	return entities.Attribute{ID: "100000", Key: "sample_attribute"}, nil
+}
+
 func (TestConfig) GetEventByKey(string) (entities.Event, error) {
 	return entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, nil
 }
@@ -77,7 +81,7 @@ func RandomString(len int) string {
 var userID = RandomString(10)
 var userContext = entities.UserContext{
 	ID:         userID,
-	Attributes: make(map[string]interface{}),
+	Attributes: map[string]interface{}{"test": "val"},
 }
 
 func BuildTestImpressionEvent() UserEvent {
