@@ -70,8 +70,7 @@ func main() {
 	/************* Setting Polling Interval ********************/
 
 	optimizelyClient, _ = optimizelyFactory.Client(
-		client.WithPollingConfigManager(sdkKey, time.Second, nil),
-		client.WithCompositeDecisionService(sdkKey),
+		client.WithPollingConfigManager(time.Second, nil),
 		client.WithBatchEventProcessor(event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
 	)
 	optimizelyClient.Close()
