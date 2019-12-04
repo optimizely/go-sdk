@@ -105,7 +105,7 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 
 	// Initialize the default services with the execution context
 	if pollingConfigManager, ok := appClient.ConfigManager.(*config.PollingProjectConfigManager); ok {
-		pollingConfigManager.Start(f.SDKKey, appClient.executionCtx)
+		pollingConfigManager.Start(appClient.executionCtx)
 	}
 
 	if batchProcessor, ok := appClient.EventProcessor.(*event.BatchEventProcessor); ok {
