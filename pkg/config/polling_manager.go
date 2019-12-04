@@ -29,6 +29,8 @@ import (
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/registry"
 	"github.com/optimizely/go-sdk/pkg/utils"
+
+	"github.com/pkg/errors"
 )
 
 // DefaultPollingInterval sets default interval for polling manager
@@ -120,9 +122,10 @@ func (cm *PollingProjectConfigManager) SyncConfig(sdkKey string, datafile []byte
 		}
 
 		if e != nil {
-			cmLogger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
+			msg := "unable to fetch fresh datafile"
+			cmLogger.Warning(msg)
 			cm.configLock.Lock()
-			closeMutex(e)
+			closeMutex(errors.New(fmt.Sprintf("%s, reason (http status code): %s", msg, e.Error())))
 			return
 		}
 
@@ -145,8 +148,8 @@ func (cm *PollingProjectConfigManager) SyncConfig(sdkKey string, datafile []byte
 	cm.configLock.Lock()
 
 	if err != nil {
-		cmLogger.Error("failed to create project config", err)
-		closeMutex(err)
+		cmLogger.Warning("failed to create project config")
+		closeMutex(errors.New("unable to parse datafile"))
 		return
 	}
 
