@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
-## [1.0.0-rc1] - December 3rd, 2019
+## [1.0.0-rc1] - December 4th, 2019
 
 ## New Features
 - feat(PollingConfigManager): Implemented caching headers in PollingConfigManager. [#189](https://github.com/optimizely/go-sdk/pull/189)
