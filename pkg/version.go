@@ -18,7 +18,7 @@
 package pkg
 
 // Version is the current version of the client
-const Version = "1.0.0-beta7"
+const Version = "1.0.0-rc1"
 
 // ClientName is the name of the client
 const ClientName = "go-sdk"
