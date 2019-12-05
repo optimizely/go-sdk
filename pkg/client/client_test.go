@@ -1980,7 +1980,6 @@ func (s *ClientTestSuiteTrackEvent) TestTrackWithNotification() {
 	}
 
 	s.client.OnTrack(onTrack)
-
 	err := s.client.Track("sample_conversion", expectedUserContext, map[string]interface{}{})
 
 	s.NoError(err)
@@ -2232,7 +2231,6 @@ func (s *ClientTestSuiteTrackNotification) TestRemoveOnTrackThrowsErrorWhenRemov
 
 	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 	}
-
 	id, err := s.client.OnTrack(onTrack)
 	s.Equal(1, id)
 	s.NoError(err)
