@@ -20,10 +20,7 @@ package decision
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
-
-	"github.com/optimizely/go-sdk/pkg"
 
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
@@ -49,27 +46,14 @@ type MEOptionFunc func(*MapExperimentOverridesStore)
 // MapExperimentOverridesStore is a map-based implementation of ExperimentOverridesStore that is safe to use concurrently
 type MapExperimentOverridesStore struct {
 	overridesMap map[ExperimentOverrideKey]string
-	config       pkg.ProjectConfig
 	mutex        sync.RWMutex
 }
 
-// WithConfig sets the config on the MapExperimentOverridesStore
-func WithConfig(config pkg.ProjectConfig) MEOptionFunc {
-	return func(f *MapExperimentOverridesStore) {
-		f.config = config
-	}
-}
-
 // NewMapExperimentOverridesStore returns a new MapExperimentOverridesStore
-func NewMapExperimentOverridesStore(options ...MEOptionFunc) *MapExperimentOverridesStore {
-	overrideStore := &MapExperimentOverridesStore{
+func NewMapExperimentOverridesStore() *MapExperimentOverridesStore {
+	return &MapExperimentOverridesStore{
 		overridesMap: make(map[ExperimentOverrideKey]string),
 	}
-
-	for _, opts := range options {
-		opts(overrideStore)
-	}
-	return overrideStore
 }
 
 // GetVariation returns the override variation key associated with the given user+experiment key
@@ -81,31 +65,10 @@ func (m *MapExperimentOverridesStore) GetVariation(overrideKey ExperimentOverrid
 }
 
 // SetVariation sets the given variation key as an override for the given user+experiment key
-func (m *MapExperimentOverridesStore) SetVariation(overrideKey ExperimentOverrideKey, variationKey string) bool {
-
-	assignVariationKey := func() {
-		m.mutex.Lock()
-		m.overridesMap[overrideKey] = variationKey
-		m.mutex.Unlock()
-	}
-	// Assign directly if no config provided
-	if m.config == nil {
-		assignVariationKey()
-		return true
-	}
-	// Check if experiment and variation exist
-	if experiment, err := m.config.GetExperimentByKey(overrideKey.ExperimentKey); err == nil {
-		if strings.TrimSpace(variationKey) == "" {
-			return false
-		}
-		if variationID, ok := experiment.VariationKeyToIDMap[variationKey]; ok {
-			if _, ok := experiment.Variations[variationID]; ok {
-				assignVariationKey()
-				return true
-			}
-		}
-	}
-	return false
+func (m *MapExperimentOverridesStore) SetVariation(overrideKey ExperimentOverrideKey, variationKey string) {
+	m.mutex.Lock()
+	m.overridesMap[overrideKey] = variationKey
+	m.mutex.Unlock()
 }
 
 // RemoveVariation removes the override variation key associated with the argument user+experiment key.

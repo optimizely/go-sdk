@@ -45,7 +45,7 @@ func (s *ExperimentOverrideServiceTestSuite) SetupTest() {
 
 	s.overrides = NewMapExperimentOverridesStore()
 	s.overrideService = NewExperimentOverrideService(s.overrides)
-	s.overridesWithConfig = NewMapExperimentOverridesStore(WithConfig(config))
+	s.overridesWithConfig = NewMapExperimentOverridesStore()
 	s.overrideServiceWithConfig = NewExperimentOverrideService(s.overridesWithConfig)
 }
 
@@ -142,34 +142,6 @@ func (s *ExperimentOverrideServiceTestSuite) TestInvalidVariationInOverride() {
 	s.NoError(err)
 	s.Nil(decision.Variation)
 	s.Exactly(reasons.InvalidOverrideVariationAssignment, decision.Reason)
-}
-
-// Test setVariation with projectconfig in overridestore
-func (s *ExperimentOverrideServiceTestSuite) TestSetVariationWithInvalidExperimentKey() {
-	overrideKey := ExperimentOverrideKey{ExperimentKey: "", UserID: "test_user_1"}
-	success := s.overridesWithConfig.SetVariation(overrideKey, testExp1111Var2222.Key)
-	s.False(success)
-	variation, success := s.overridesWithConfig.GetVariation(overrideKey)
-	s.Exactly("", variation)
-	s.False(success)
-}
-
-func (s *ExperimentOverrideServiceTestSuite) TestSetVariationWithInvalidVariationKey() {
-	overrideKey := ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}
-	success := s.overridesWithConfig.SetVariation(overrideKey, "")
-	s.False(success)
-	variation, success := s.overridesWithConfig.GetVariation(overrideKey)
-	s.Exactly("", variation)
-	s.False(success)
-}
-
-func (s *ExperimentOverrideServiceTestSuite) TestSetVariationWithValidVariationKeyAndExperimentKey() {
-	overrideKey := ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}
-	success := s.overridesWithConfig.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}, testExp1111Var2222.Key)
-	s.True(success)
-	variation, success := s.overridesWithConfig.GetVariation(overrideKey)
-	s.Exactly(testExp1111Var2222.Key, variation)
-	s.True(success)
 }
 
 // Test concurrent use of the MapExperimentOverrideStore

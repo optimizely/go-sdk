@@ -34,7 +34,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Map to hold clientwrapper instances against scenarioID
+// Cached instance of optly wrapper
 var clientInstance *ClientWrapper
 
 // ClientWrapper - wrapper around the optimizely client that keeps track of various custom components used with the client
@@ -85,7 +85,7 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 		log.Fatal(err)
 	}
 
-	overrideService := decision.NewMapExperimentOverridesStore(decision.WithConfig(config))
+	overrideService := decision.NewMapExperimentOverridesStore()
 	userProfileService := userprofileservice.CreateUserProfileService(config, apiOptions)
 	compositeExperimentService := decision.NewCompositeExperimentService(
 		decision.WithUserProfileService(userProfileService),
@@ -351,10 +351,8 @@ func (c *ClientWrapper) setForcedVariation(request models.APIOptions) (models.AP
 		if params.VariationKey == "" {
 			c.OverrideStore.(*decision.MapExperimentOverridesStore).RemoveVariation(decision.ExperimentOverrideKey{ExperimentKey: params.ExperimentKey, UserID: params.UserID})
 		} else {
-			result := c.OverrideStore.(*decision.MapExperimentOverridesStore).SetVariation(decision.ExperimentOverrideKey{ExperimentKey: params.ExperimentKey, UserID: params.UserID}, params.VariationKey)
-			if result {
-				response.Result = params.VariationKey
-			}
+			c.OverrideStore.(*decision.MapExperimentOverridesStore).SetVariation(decision.ExperimentOverrideKey{ExperimentKey: params.ExperimentKey, UserID: params.UserID}, params.VariationKey)
+			response.Result = params.VariationKey
 		}
 	}
 	return response, err
