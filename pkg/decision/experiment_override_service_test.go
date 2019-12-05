@@ -18,7 +18,6 @@
 package decision
 
 import (
-	"fmt"
 	"sync"
 	"testing"
 
@@ -29,24 +28,15 @@ import (
 
 type ExperimentOverrideServiceTestSuite struct {
 	suite.Suite
-	mockConfig                *mockProjectConfig
-	overrides                 *MapExperimentOverridesStore
-	overrideService           *ExperimentOverrideService
-	overridesWithConfig       *MapExperimentOverridesStore
-	overrideServiceWithConfig *ExperimentOverrideService
+	mockConfig      *mockProjectConfig
+	overrides       *MapExperimentOverridesStore
+	overrideService *ExperimentOverrideService
 }
 
 func (s *ExperimentOverrideServiceTestSuite) SetupTest() {
-	config := new(mockProjectConfig)
-	s.mockConfig = config
-	s.mockConfig.On("GetExperimentByKey", testExp1111.Key).Return(testExp1111, nil)
-	s.mockConfig.On("GetExperimentByKey", testExp1113.Key).Return(testExp1113, nil)
-	s.mockConfig.On("GetExperimentByKey", "").Return(entities.Experiment{}, fmt.Errorf(""))
-
+	s.mockConfig = new(mockProjectConfig)
 	s.overrides = NewMapExperimentOverridesStore()
 	s.overrideService = NewExperimentOverrideService(s.overrides)
-	s.overridesWithConfig = NewMapExperimentOverridesStore()
-	s.overrideServiceWithConfig = NewExperimentOverrideService(s.overridesWithConfig)
 }
 
 func (s *ExperimentOverrideServiceTestSuite) TestOverridesIncludeVariation() {
@@ -126,9 +116,6 @@ func (s *ExperimentOverrideServiceTestSuite) TestNoOverrideForUserOrExperiment()
 }
 
 func (s *ExperimentOverrideServiceTestSuite) TestInvalidVariationInOverride() {
-	overrides := NewMapExperimentOverridesStore()
-	overrideService := NewExperimentOverrideService(overrides)
-
 	testDecisionContext := ExperimentDecisionContext{
 		Experiment:    &testExp1111,
 		ProjectConfig: s.mockConfig,
@@ -137,8 +124,8 @@ func (s *ExperimentOverrideServiceTestSuite) TestInvalidVariationInOverride() {
 		ID: "test_user_1",
 	}
 	// This override variation key does not exist in the experiment
-	overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}, "invalid_variation_key")
-	decision, err := overrideService.GetDecision(testDecisionContext, testUserContext)
+	s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}, "invalid_variation_key")
+	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext)
 	s.NoError(err)
 	s.Nil(decision.Variation)
 	s.Exactly(reasons.InvalidOverrideVariationAssignment, decision.Reason)

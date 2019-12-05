@@ -40,9 +40,6 @@ type ExperimentOverrideStore interface {
 	GetVariation(overrideKey ExperimentOverrideKey) (string, bool)
 }
 
-// MEOptionFunc is used to pass custom config options into the MapExperimentOverridesStore.
-type MEOptionFunc func(*MapExperimentOverridesStore)
-
 // MapExperimentOverridesStore is a map-based implementation of ExperimentOverridesStore that is safe to use concurrently
 type MapExperimentOverridesStore struct {
 	overridesMap map[ExperimentOverrideKey]string
