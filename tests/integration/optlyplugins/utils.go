@@ -71,7 +71,7 @@ func CreatePollingConfigManager(options models.APIOptions) *TestProjectConfigMan
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager.Start(exeCtx)
 	// Verify datafile configuration tests
-	testProjectConfigManagerInstance.Verify(options.DFMConfiguration)
+	testProjectConfigManagerInstance.TestConfiguration(options.DFMConfiguration)
 
 	return testProjectConfigManagerInstance
 }

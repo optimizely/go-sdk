@@ -272,7 +272,7 @@ func TestNotificationHandlers(t *testing.T) {
 	sdkKey := "test_sdk_key"
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithNotificationHandlers(projectConfigUpdateCallback))
-	configManager.Start(sdkKey, exeCtx)
+	configManager.Start(exeCtx)
 
 	assert.Equal(t, len(configManager.projectConfigUpdateHandlers), 1)
 }

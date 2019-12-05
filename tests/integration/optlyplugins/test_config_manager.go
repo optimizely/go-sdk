@@ -42,21 +42,17 @@ func (c *TestProjectConfigManager) GetListenerCallbacks(apiOptions models.APIOpt
 	}
 
 	for listenerType, count := range apiOptions.Listeners {
-		for i := 1; i <= count; i++ {
-			switch listenerType {
-			case "Config-update":
+		if listenerType == "Config-update" {
+			for i := 1; i <= count; i++ {
 				listeners = append(listeners, projectConfigUpdateCallback)
-				break
-			default:
-				break
 			}
 		}
 	}
 	return listeners
 }
 
-// Verify - Verifies configuration tests
-func (c *TestProjectConfigManager) Verify(configuration models.DataFileManagerConfiguration) {
+// TestConfiguration - Exectues configuration tests
+func (c *TestProjectConfigManager) TestConfiguration(configuration models.DataFileManagerConfiguration) {
 	timeout := DefaultInitializationTimeout
 	if configuration.Timeout != nil {
 		timeout = time.Duration(*(configuration.Timeout)) * time.Millisecond
