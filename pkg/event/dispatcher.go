@@ -161,7 +161,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 
 // NewQueueEventDispatcher creates a Dispatcher that queues in memory and then sends via go routine.
 func NewQueueEventDispatcher(ctx context.Context) Dispatcher {
-	dispatcher := &QueueEventDispatcher{eventQueue: NewInMemoryQueue(defaultQueueSize), Dispatcher: &HTTPEventDispatcher{requester: utils.NewHTTPRequester()}, metrics: &DefaultMetrics{}}
+	dispatcher := &QueueEventDispatcher{eventQueue: NewInMemoryQueue(defaultQueueSize), Dispatcher: &HTTPEventDispatcher{requester: utils.NewHTTPRequester()}, metrics: NewDefaultMetrics()}
 
 	go func() {
 		<-ctx.Done()
