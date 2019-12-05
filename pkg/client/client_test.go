@@ -1950,17 +1950,25 @@ type ClientTestSuiteTrackEvent struct {
 	suite.Suite
 	mockProcessor       *MockProcessor
 	mockDecisionService *MockDecisionService
+	client              OptimizelyClient
 }
 
 func (s *ClientTestSuiteTrackEvent) SetupTest() {
 	mockProcessor := new(MockProcessor)
-	mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
 	s.mockProcessor = mockProcessor
 	s.mockDecisionService = new(MockDecisionService)
+
+	s.client = OptimizelyClient{
+		ConfigManager:      ValidProjectConfigManager(),
+		DecisionService:    s.mockDecisionService,
+		EventProcessor:     s.mockProcessor,
+		NotificationCenter: notification.NewNotificationCenter(),
+	}
 }
 
 func (s *ClientTestSuiteTrackEvent) TestTrackWithNotification() {
 
+	s.mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
 	expectedUserContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
 
 	isTrackCalled := false
@@ -1971,16 +1979,9 @@ func (s *ClientTestSuiteTrackEvent) TestTrackWithNotification() {
 		s.Equal(*s.mockProcessor.Events[0].Conversion, conversionEvent)
 	}
 
-	client := OptimizelyClient{
-		ConfigManager:      ValidProjectConfigManager(),
-		DecisionService:    s.mockDecisionService,
-		EventProcessor:     s.mockProcessor,
-		NotificationCenter: notification.NewNotificationCenter(),
-	}
+	s.client.OnTrack(onTrack)
 
-	client.OnTrack(onTrack)
-
-	err := client.Track("sample_conversion", expectedUserContext, map[string]interface{}{})
+	err := s.client.Track("sample_conversion", expectedUserContext, map[string]interface{}{})
 
 	s.NoError(err)
 	s.True(isTrackCalled)
@@ -1991,6 +1992,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackWithNotification() {
 
 func (s *ClientTestSuiteTrackEvent) TestTrackWithNotificationAndEventTag() {
 
+	s.mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
 	expectedUserContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
 	expectedEvenTags := map[string]interface{}{
 		"client":  "ios",
@@ -2005,15 +2007,8 @@ func (s *ClientTestSuiteTrackEvent) TestTrackWithNotificationAndEventTag() {
 		s.Equal(*s.mockProcessor.Events[0].Conversion, conversionEvent)
 	}
 
-	client := OptimizelyClient{
-		ConfigManager:      ValidProjectConfigManager(),
-		DecisionService:    s.mockDecisionService,
-		EventProcessor:     s.mockProcessor,
-		NotificationCenter: notification.NewNotificationCenter(),
-	}
-
-	client.OnTrack(onTrack)
-	err := client.Track("sample_conversion", expectedUserContext, expectedEvenTags)
+	s.client.OnTrack(onTrack)
+	err := s.client.Track("sample_conversion", expectedUserContext, expectedEvenTags)
 
 	s.NoError(err)
 	s.True(isTrackCalled)
@@ -2024,6 +2019,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackWithNotificationAndEventTag() {
 
 func (s *ClientTestSuiteTrackEvent) TestTrackWithNotificationAndUserEvent() {
 
+	s.mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
 	expectedUserContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
 	expectedEventTags := map[string]interface{}{
 		"client":  "ios",
@@ -2039,14 +2035,8 @@ func (s *ClientTestSuiteTrackEvent) TestTrackWithNotificationAndUserEvent() {
 		s.Equal(*s.mockProcessor.Events[0].Conversion, conversionEvent)
 	}
 
-	client := OptimizelyClient{
-		ConfigManager:      ValidProjectConfigManager(),
-		DecisionService:    s.mockDecisionService,
-		EventProcessor:     s.mockProcessor,
-		NotificationCenter: notification.NewNotificationCenter(),
-	}
-	client.OnTrack(onTrack)
-	err := client.Track("sample_conversion", expectedUserContext, expectedEventTags)
+	s.client.OnTrack(onTrack)
+	err := s.client.Track("sample_conversion", expectedUserContext, expectedEventTags)
 
 	s.NoError(err)
 	s.True(isTrackCalled)
@@ -2056,44 +2046,33 @@ func (s *ClientTestSuiteTrackEvent) TestTrackWithNotificationAndUserEvent() {
 }
 
 func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenEventProcessorReturnsFalse() {
-	mockProcessor := new(MockProcessor)
-	mockProcessor.On("ProcessEvent", mock.Anything).Return(false)
+	s.mockProcessor.On("ProcessEvent", mock.Anything).Return(false)
 
 	isTrackCalled := false
 	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 		isTrackCalled = true
 	}
 
-	client := OptimizelyClient{
-		ConfigManager:   ValidProjectConfigManager(),
-		DecisionService: s.mockDecisionService,
-		EventProcessor:  mockProcessor,
-	}
-	client.OnTrack(onTrack)
-	err := client.Track("sample_conversion", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
+	s.client.OnTrack(onTrack)
+	err := s.client.Track("sample_conversion", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
 
 	s.NoError(err)
-	s.Equal(1, len(mockProcessor.Events))
+	s.Equal(1, len(s.mockProcessor.Events))
 	s.False(isTrackCalled)
 }
 
 func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenNoNotificationCenterProvided() {
 
+	s.mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
 	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
 
 	isTrackCalled := false
 	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 		isTrackCalled = true
 	}
-
-	client := OptimizelyClient{
-		ConfigManager:   ValidProjectConfigManager(),
-		DecisionService: s.mockDecisionService,
-		EventProcessor:  s.mockProcessor,
-	}
-
-	client.OnTrack(onTrack)
-	err := client.Track("sample_conversion", userContext, map[string]interface{}{})
+	s.client.NotificationCenter = nil
+	s.client.OnTrack(onTrack)
+	err := s.client.Track("sample_conversion", userContext, map[string]interface{}{})
 
 	s.NoError(err)
 	s.False(isTrackCalled)
@@ -2106,13 +2085,8 @@ func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenInvalidPar
 		isTrackCalled = true
 	}
 
-	client := OptimizelyClient{
-		ConfigManager:   ValidProjectConfigManager(),
-		DecisionService: s.mockDecisionService,
-		EventProcessor:  s.mockProcessor,
-	}
-	client.OnTrack(onTrack)
-	err := client.Track("bob", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
+	s.client.OnTrack(onTrack)
+	err := s.client.Track("bob", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
 
 	s.NoError(err)
 	s.Equal(0, len(s.mockProcessor.Events))
@@ -2121,6 +2095,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenInvalidPar
 
 func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenSendThrowsError() {
 
+	s.mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
 	expectedUserContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
 
 	isTrackCalled := false
@@ -2129,28 +2104,30 @@ func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenSendThrows
 	}
 
 	mockNotificationCenter := new(MockNotificationCenter)
-	mockNotificationCenter.On("Send", mock.Anything, mock.Anything).Return(fmt.Errorf(""))
-	mockNotificationCenter.On("AddHandler", mock.Anything, mock.Anything).Return(1, nil)
+	config, err := s.client.GetProjectConfig()
+	s.NoError(err)
+	configEvent, err := config.GetEventByKey("sample_conversion")
+	s.NoError(err)
+	userEvent := event.CreateConversionUserEvent(config, configEvent, expectedUserContext, map[string]interface{}{})
+	expectedTrackNotification := notification.TrackNotification{EventKey: "sample_conversion", UserContext: expectedUserContext, EventTags: map[string]interface{}{}, ConversionEvent: *userEvent.Conversion}
 
-	client := OptimizelyClient{
-		ConfigManager:      ValidProjectConfigManager(),
-		DecisionService:    s.mockDecisionService,
-		EventProcessor:     s.mockProcessor,
-		NotificationCenter: mockNotificationCenter,
-	}
-
-	client.OnTrack(onTrack)
-	err := client.Track("sample_conversion", expectedUserContext, map[string]interface{}{})
+	mockNotificationCenter.On("Send", notification.Track, expectedTrackNotification).Return(fmt.Errorf(""))
+	mockNotificationCenter.On("AddHandler", notification.Track, mock.AnythingOfType("func(interface {})")).Return(1, nil)
+	s.client.NotificationCenter = mockNotificationCenter
+	s.client.OnTrack(onTrack)
+	err = s.client.Track("sample_conversion", expectedUserContext, map[string]interface{}{})
 
 	s.NoError(err)
 	s.Equal(1, len(s.mockProcessor.Events))
 	s.False(isTrackCalled)
+	mockNotificationCenter.AssertExpectations(s.T())
 }
 
 type ClientTestSuiteTrackNotification struct {
 	suite.Suite
 	mockProcessor       *MockProcessor
 	mockDecisionService *MockDecisionService
+	client              OptimizelyClient
 }
 
 func (s *ClientTestSuiteTrackNotification) SetupTest() {
@@ -2158,18 +2135,17 @@ func (s *ClientTestSuiteTrackNotification) SetupTest() {
 	mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
 	s.mockProcessor = mockProcessor
 	s.mockDecisionService = new(MockDecisionService)
-}
-
-func (s *ClientTestSuiteTrackNotification) TestAddandRemoveOnTrack() {
-
-	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
-
-	client := OptimizelyClient{
+	s.client = OptimizelyClient{
 		ConfigManager:      ValidProjectConfigManager(),
 		DecisionService:    s.mockDecisionService,
 		EventProcessor:     s.mockProcessor,
 		NotificationCenter: notification.NewNotificationCenter(),
 	}
+}
+
+func (s *ClientTestSuiteTrackNotification) TestAddandRemoveOnTrack() {
+
+	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
 
 	numberOfCalls := 0
 	callbackIds := []int{}
@@ -2178,7 +2154,7 @@ func (s *ClientTestSuiteTrackNotification) TestAddandRemoveOnTrack() {
 			onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 				numberOfCalls++
 			}
-			id, err := client.OnTrack(onTrack)
+			id, err := s.client.OnTrack(onTrack)
 			callbackIds = append(callbackIds, id)
 			s.NoError(err)
 		}
@@ -2186,99 +2162,84 @@ func (s *ClientTestSuiteTrackNotification) TestAddandRemoveOnTrack() {
 
 	// Add 5 on track callbacks
 	addOnTrack(5)
-	err := client.Track("sample_conversion", userContext, map[string]interface{}{})
+	err := s.client.Track("sample_conversion", userContext, map[string]interface{}{})
 	s.NoError(err)
 	s.Equal(5, numberOfCalls)
 
 	// Add 2 more on track callbacks
 	numberOfCalls = 0
 	addOnTrack(2)
-	err = client.Track("sample_conversion", userContext, map[string]interface{}{})
+	err = s.client.Track("sample_conversion", userContext, map[string]interface{}{})
 	s.NoError(err)
 	s.Equal(7, numberOfCalls)
 
 	// Remove 2 track callbacks
 	numberOfCalls = 0
 	for i := 0; i < 2; i++ {
-		err = client.RemoveOnTrack(callbackIds[i])
+		err = s.client.RemoveOnTrack(callbackIds[i])
 		s.NoError(err)
 	}
 	callbackIds = callbackIds[2:]
 
-	err = client.Track("sample_conversion", userContext, map[string]interface{}{})
+	err = s.client.Track("sample_conversion", userContext, map[string]interface{}{})
 	s.NoError(err)
 	s.Equal(5, numberOfCalls)
 
 	// Remove all track callbacks
 	numberOfCalls = 0
 	for _, id := range callbackIds {
-		err = client.RemoveOnTrack(id)
+		err = s.client.RemoveOnTrack(id)
 		s.NoError(err)
 	}
-	err = client.Track("sample_conversion", userContext, map[string]interface{}{})
+	err = s.client.Track("sample_conversion", userContext, map[string]interface{}{})
 	s.NoError(err)
 	s.Equal(0, numberOfCalls)
 }
 
 func (s *ClientTestSuiteTrackNotification) TestOnTrackThrowsErrorWithoutNotificationCenter() {
 
-	client := OptimizelyClient{
-		ConfigManager:   ValidProjectConfigManager(),
-		DecisionService: s.mockDecisionService,
-		EventProcessor:  s.mockProcessor,
-	}
-
+	s.client.NotificationCenter = nil
 	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 	}
-	id, err := client.OnTrack(onTrack)
+	id, err := s.client.OnTrack(onTrack)
 	s.Equal(0, id)
 	s.Error(err)
 
-	err = client.RemoveOnTrack(0)
+	err = s.client.RemoveOnTrack(0)
 	s.Error(err)
 }
 
 func (s *ClientTestSuiteTrackNotification) TestOnTrackThrowsErrorWhenAddHandlerFails() {
 
 	mockNotificationCenter := new(MockNotificationCenter)
-	mockNotificationCenter.On("AddHandler", mock.Anything, mock.Anything).Return(-1, fmt.Errorf(""))
-
-	client := OptimizelyClient{
-		ConfigManager:      ValidProjectConfigManager(),
-		DecisionService:    s.mockDecisionService,
-		EventProcessor:     s.mockProcessor,
-		NotificationCenter: mockNotificationCenter,
-	}
+	mockNotificationCenter.On("AddHandler", notification.Track, mock.AnythingOfType("func(interface {})")).Return(-1, fmt.Errorf(""))
+	s.client.NotificationCenter = mockNotificationCenter
 
 	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 	}
-	id, err := client.OnTrack(onTrack)
+	id, err := s.client.OnTrack(onTrack)
 	s.Equal(0, id)
 	s.Error(err)
+	mockNotificationCenter.AssertExpectations(s.T())
 }
 
 func (s *ClientTestSuiteTrackNotification) TestRemoveOnTrackThrowsErrorWhenRemoveHandlerFails() {
 
 	mockNotificationCenter := new(MockNotificationCenter)
-	mockNotificationCenter.On("AddHandler", mock.Anything, mock.Anything).Return(1, nil)
-	mockNotificationCenter.On("RemoveHandler", mock.Anything, mock.Anything).Return(fmt.Errorf(""))
-
-	client := OptimizelyClient{
-		ConfigManager:      ValidProjectConfigManager(),
-		DecisionService:    s.mockDecisionService,
-		EventProcessor:     s.mockProcessor,
-		NotificationCenter: mockNotificationCenter,
-	}
+	mockNotificationCenter.On("AddHandler", notification.Track, mock.AnythingOfType("func(interface {})")).Return(1, nil)
+	mockNotificationCenter.On("RemoveHandler", 1, notification.Track).Return(fmt.Errorf(""))
+	s.client.NotificationCenter = mockNotificationCenter
 
 	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 	}
 
-	id, err := client.OnTrack(onTrack)
+	id, err := s.client.OnTrack(onTrack)
 	s.Equal(1, id)
 	s.NoError(err)
 
-	err = client.RemoveOnTrack(id)
+	err = s.client.RemoveOnTrack(id)
 	s.Error(err)
+	mockNotificationCenter.AssertExpectations(s.T())
 }
 
 func TestClientTestSuite(t *testing.T) {
