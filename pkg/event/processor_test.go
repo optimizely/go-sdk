@@ -19,12 +19,26 @@ package event
 
 import (
 	"errors"
+	"fmt"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/utils"
 	"github.com/stretchr/testify/assert"
+	"math"
 	"testing"
 	"time"
 )
+
+type CountingDispatcher struct {
+	eventCount int
+	visitorCount int
+}
+
+func (c *CountingDispatcher) DispatchEvent(event LogEvent) (bool, error) {
+	c.eventCount++
+	c.visitorCount += len(event.Event.Visitors)
+	return true, nil
+}
+
 
 type MockDispatcher struct {
 	ShouldFail bool
@@ -467,119 +481,69 @@ func (l *NoOpLogger) SetLogLevel(level logging.LogLevel) {
 goos: darwin
 goarch: amd64
 pkg: github.com/optimizely/go-sdk/pkg/event
-BenchmarkWithQueueSize/QueueSize100-8         	 2000000	       774 ns/op
-BenchmarkWithQueueSize/QueueSize500-8         	 2000000	       716 ns/op
-BenchmarkWithQueueSize/QueueSize1000-8        	 2000000	       690 ns/op
-BenchmarkWithQueueSize/QueueSize2000-8        	 2000000	       732 ns/op
-BenchmarkWithQueueSize/QueueSize3000-8        	 2000000	       735 ns/op
-BenchmarkWithQueueSize/QueueSize4000-8        	 2000000	       740 ns/op
-
-BenchmarkWithBatchSize/BatchSize10-8          	 2000000	       665 ns/op
-BenchmarkWithBatchSize/BatchSize20-8          	 2000000	       597 ns/op
-BenchmarkWithBatchSize/BatchSize30-8          	 3000000	       556 ns/op
-BenchmarkWithBatchSize/BatchSize40-8          	 3000000	       566 ns/op
-BenchmarkWithBatchSize/BatchSize50-8          	 3000000	       546 ns/op
-BenchmarkWithBatchSize/BatchSize60-8          	 3000000	       504 ns/op
-
-BenchmarkWithQueue/InMemoryQueue-8            	 2000000	       674 ns/op
-BenchmarkWithQueue/ChannelQueue-8             	 2000000	       937 ns/op
-
+BenchmarkProcessor/InMemory/BatchSize-10/QueueSize-10-8         	 2531830	       456 ns/op
+BenchmarkProcessor/InMemory/BatchSize-20/QueueSize-10-8         	 2966862	       398 ns/op
+BenchmarkProcessor/InMemory/BatchSize-30/QueueSize-10-8         	 3224689	       372 ns/op
+BenchmarkProcessor/InMemory/BatchSize-40/QueueSize-10-8         	 3283634	       384 ns/op
+BenchmarkProcessor/InMemory/BatchSize-50/QueueSize-10-8         	 3368804	       352 ns/op
+BenchmarkProcessor/InMemory/BatchSize-60/QueueSize-10-8         	 3468763	       336 ns/op
+BenchmarkProcessor/InMemory/BatchSize-10/QueueSize-100-8        	 2581394	       464 ns/op
+BenchmarkProcessor/InMemory/BatchSize-20/QueueSize-100-8        	 2911731	       408 ns/op
+BenchmarkProcessor/InMemory/BatchSize-30/QueueSize-100-8        	 3224674	       375 ns/op
+BenchmarkProcessor/InMemory/BatchSize-40/QueueSize-100-8        	 3262027	       366 ns/op
+BenchmarkProcessor/InMemory/BatchSize-50/QueueSize-100-8        	 3094736	       354 ns/op
+BenchmarkProcessor/InMemory/BatchSize-60/QueueSize-100-8        	 3523911	       338 ns/op
+BenchmarkProcessor/InMemory/BatchSize-10/QueueSize-1000-8       	 2580465	       467 ns/op
+BenchmarkProcessor/InMemory/BatchSize-20/QueueSize-1000-8       	 2940940	       415 ns/op
+BenchmarkProcessor/InMemory/BatchSize-30/QueueSize-1000-8       	 3229284	       375 ns/op
+BenchmarkProcessor/InMemory/BatchSize-40/QueueSize-1000-8       	 3280029	       367 ns/op
+BenchmarkProcessor/InMemory/BatchSize-50/QueueSize-1000-8       	 3258297	       368 ns/op
+BenchmarkProcessor/InMemory/BatchSize-60/QueueSize-1000-8       	 3484419	       336 ns/op
+BenchmarkProcessor/InMemory/BatchSize-10/QueueSize-10000-8      	 2598885	       462 ns/op
+BenchmarkProcessor/InMemory/BatchSize-20/QueueSize-10000-8      	 2907445	       414 ns/op
+BenchmarkProcessor/InMemory/BatchSize-30/QueueSize-10000-8      	 3215616	       382 ns/op
+BenchmarkProcessor/InMemory/BatchSize-40/QueueSize-10000-8      	 3243544	       367 ns/op
+BenchmarkProcessor/InMemory/BatchSize-50/QueueSize-10000-8      	 3382228	       391 ns/op
+BenchmarkProcessor/InMemory/BatchSize-60/QueueSize-10000-8      	 3503428	       354 ns/op
+BenchmarkProcessor/InMemory/BatchSize-10/QueueSize-100000-8     	 2268799	       512 ns/op
+BenchmarkProcessor/InMemory/BatchSize-20/QueueSize-100000-8     	 2788728	       429 ns/op
+BenchmarkProcessor/InMemory/BatchSize-30/QueueSize-100000-8     	 2799598	       404 ns/op
+BenchmarkProcessor/InMemory/BatchSize-40/QueueSize-100000-8     	 3010062	       368 ns/op
+BenchmarkProcessor/InMemory/BatchSize-50/QueueSize-100000-8     	 3353461	       352 ns/op
+BenchmarkProcessor/InMemory/BatchSize-60/QueueSize-100000-8     	 3429447	       342 ns/op
 */
-func BenchmarkWithQueueSize(b *testing.B) {
+func BenchmarkProcessor(b *testing.B) {
 	// no op logger added to keep out extra discarded events
 	logging.SetLogger(&NoOpLogger{})
 
 	merges := []struct {
-		name  string
-		qSize int
+		name string
+		fun  func(qSize int) Queue
 	}{
-		{"QueueSize100", 100},
-		{"QueueSize500", 500},
-		{"QueueSize1000", 1000},
-		{"QueueSize2000", 2000},
-		{"QueueSize3000", 3000},
-		{"QueueSize4000", 4000},
+		{"InMemory", NewInMemoryQueue},
 	}
 
 	for _, merge := range merges {
-		var totalSent = 0
-		var numberRun = 0
-		b.Run(merge.name, func(b *testing.B) {
-			if numberRun == 0 {
-				numberRun = b.N
+		for i := 1.; i <= 5; i++ {
+			qs := int(math.Pow(10, i))
+			for j := 1; j <= 6; j++ {
+				bs := 10 * j
+				b.Run(fmt.Sprintf("%s/BatchSize-%d/QueueSize-%d", merge.name, bs, qs), func(b *testing.B) {
+					q := merge.fun(qs)
+					benchmarkProcessor(q, bs, b)
+				})
 			}
-			totalSent += benchmarkProcessorWithQueueSize(merge.qSize, b)
-		})
-		if totalSent < numberRun {
-			println("Total sent and run ", totalSent, numberRun)
-			b.Fail()
-		}
-	}
-}
-
-func BenchmarkWithBatchSize(b *testing.B) {
-	logging.SetLogger(&NoOpLogger{})
-
-	merges := []struct {
-		name      string
-		batchSize int
-	}{
-		{"BatchSize10", 10},
-		{"BatchSize20", 20},
-		{"BatchSize30", 30},
-		{"BatchSize40", 40},
-		{"BatchSize50", 50},
-		{"BatchSize60", 60},
-	}
-
-	for _, merge := range merges {
-		b.Run(merge.name, func(b *testing.B) {
-			benchmarkProcessorWithBatchSize(merge.batchSize, b)
-		})
-	}
-
-}
-
-func BenchmarkWithQueue(b *testing.B) {
-	logging.SetLogger(&NoOpLogger{})
-
-	b.Run("InMemoryQueue", func(b *testing.B) {
-		benchmarkProcessorWithQueue(NewInMemoryQueue(defaultQueueSize), b)
-	})
-
-	b.Run("ChannelQueue", func(b *testing.B) {
-		benchmarkProcessorWithQueue(NewChanQueue(defaultQueueSize), b)
-	})
-
-}
-
-func benchmarkProcessorWithQueueSize(qSize int, b *testing.B) int {
-	exeCtx := utils.NewCancelableExecutionCtx()
-	dispatcher := NewMockDispatcher(100, false)
-	processor := NewBatchEventProcessor(
-		WithQueueSize(qSize),
-		WithEventDispatcher(dispatcher))
-	processor.Start(exeCtx)
-
-	conversion := BuildTestConversionEvent()
-
-	for i := 0; i < b.N; i++ {
-		var success = false
-		for !success {
-			success = processor.ProcessEvent(conversion)
 		}
 	}
 
-	exeCtx.TerminateAndWait()
-
-	return dispatcher.Events.Size()
 }
 
-func benchmarkProcessorWithQueue(q Queue, b *testing.B) int {
+func benchmarkProcessor(q Queue, bSize int, b *testing.B) {
 	exeCtx := utils.NewCancelableExecutionCtx()
-	dispatcher := NewMockDispatcher(100, false)
+	dispatcher := &CountingDispatcher{}
 	processor := NewBatchEventProcessor(
 		WithQueue(q),
+		WithBatchSize(bSize),
 		WithEventDispatcher(dispatcher))
 	processor.Start(exeCtx)
 
@@ -590,33 +554,12 @@ func benchmarkProcessorWithQueue(q Queue, b *testing.B) int {
 		for !success {
 			success = processor.ProcessEvent(conversion)
 		}
-		//time.Sleep(benchmarkSleep)
 	}
 
 	exeCtx.TerminateAndWait()
 
-	return dispatcher.Events.Size()
-}
-
-func benchmarkProcessorWithBatchSize(bs int, b *testing.B) int {
-	exeCtx := utils.NewCancelableExecutionCtx()
-	dispatcher := NewMockDispatcher(100, false)
-	processor := NewBatchEventProcessor(
-		WithBatchSize(bs),
-		WithEventDispatcher(dispatcher))
-	processor.Start(exeCtx)
-
-	conversion := BuildTestConversionEvent()
-
-	for i := 0; i < b.N; i++ {
-		var success = false
-		for !success {
-			success = processor.ProcessEvent(conversion)
-		}
-		//time.Sleep(benchmarkSleep)
+	if b.N != dispatcher.visitorCount {
+		println("Total sent and run ", dispatcher.visitorCount, b.N)
+		b.Fail()
 	}
-
-	exeCtx.TerminateAndWait()
-
-	return dispatcher.Events.Size()
 }
