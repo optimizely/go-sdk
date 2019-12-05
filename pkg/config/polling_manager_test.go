@@ -51,7 +51,7 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
-	configManager.Start(sdkKey, exeCtx)
+	configManager.Start(exeCtx)
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()
@@ -72,7 +72,7 @@ func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
 
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
-	configManager.Start(sdkKey, exeCtx)
+	configManager.Start(exeCtx)
 	mockRequester.AssertExpectations(t)
 
 	_, err := configManager.GetConfig()
@@ -90,7 +90,7 @@ func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T
 
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
-	configManager.Start(sdkKey, exeCtx)
+	configManager.Start(exeCtx)
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()
@@ -98,7 +98,7 @@ func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T
 	assert.NotNil(t, actual)
 	assert.Equal(t, projectConfig1, actual)
 
-	configManager.SyncConfig(sdkKey, mockDatafile2)
+	configManager.SyncConfig(mockDatafile2)
 	actual, err = configManager.GetConfig()
 	assert.Equal(t, projectConfig1, actual)
 }
@@ -118,7 +118,7 @@ func TestNewPollingProjectConfigManagerWithLastModifiedDates(t *testing.T) {
 
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
-	configManager.Start(sdkKey, exeCtx)
+	configManager.Start(exeCtx)
 
 	// Fetch valid config
 	actual, err := configManager.GetConfig()
@@ -127,7 +127,7 @@ func TestNewPollingProjectConfigManagerWithLastModifiedDates(t *testing.T) {
 	assert.Equal(t, projectConfig1, actual)
 
 	// Sync and check no changes were made to the previous config because of 304 error code
-	configManager.SyncConfig(sdkKey, []byte{})
+	configManager.SyncConfig([]byte{})
 	actual, err = configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, actual)
@@ -148,7 +148,7 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
-	configManager.Start(sdkKey, exeCtx)
+	configManager.Start(exeCtx)
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()
@@ -156,7 +156,7 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 	assert.NotNil(t, actual)
 	assert.Equal(t, projectConfig1, actual)
 
-	configManager.SyncConfig(sdkKey, mockDatafile2)
+	configManager.SyncConfig(mockDatafile2)
 	actual, err = configManager.GetConfig()
 	assert.Equal(t, projectConfig2, actual)
 }
@@ -175,7 +175,7 @@ func TestNewPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
-	configManager.Start(sdkKey, exeCtx)
+	configManager.Start(exeCtx)
 	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig() // polling for bad file
@@ -183,12 +183,12 @@ func TestNewPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 	assert.Nil(t, actual)
 	assert.Nil(t, projectConfig1)
 
-	configManager.SyncConfig(sdkKey, mockDatafile2) // polling for good file
+	configManager.SyncConfig(mockDatafile2) // polling for good file
 	actual, err = configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.Equal(t, projectConfig2, actual)
 
-	configManager.SyncConfig(sdkKey, mockDatafile1) // polling for bad file, error not null but good project
+	configManager.SyncConfig(mockDatafile1) // polling for bad file, error not null but good project
 	actual, err = configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.Equal(t, projectConfig2, actual)
@@ -206,7 +206,7 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
-	configManager.Start(sdkKey, exeCtx)
+	configManager.Start(exeCtx)
 
 	var numberOfCalls = 0
 	callback := func(notification notification.ProjectConfigUpdateNotification) {
@@ -219,7 +219,7 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, actual)
 
-	configManager.SyncConfig(sdkKey, mockDatafile2)
+	configManager.SyncConfig(mockDatafile2)
 	actual, err = configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, actual)
@@ -240,7 +240,7 @@ func TestPollingInterval(t *testing.T) {
 
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithPollingInterval(5*time.Second))
-	configManager.Start(sdkKey, exeCtx)
+	configManager.Start(exeCtx)
 
 	assert.Equal(t, configManager.pollingInterval, 5*time.Second)
 }
@@ -250,7 +250,7 @@ func TestInitialDatafile(t *testing.T) {
 	sdkKey := "test_sdk_key"
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithInitialDatafile([]byte("test")))
-	configManager.Start(sdkKey, exeCtx)
+	configManager.Start(exeCtx)
 
 	assert.Equal(t, configManager.initDatafile, []byte("test"))
 }

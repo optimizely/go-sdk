@@ -50,12 +50,13 @@ var cmLogger = logging.GetLogger("PollingConfigManager")
 // PollingProjectConfigManager maintains a dynamic copy of the project config by continuously polling for the datafile
 // from the Optimizely CDN at a given (configurable) interval.
 type PollingProjectConfigManager struct {
-	requester                   utils.Requester
-	pollingInterval             time.Duration
-	notificationCenter          notification.Center
+	datafileURLTemplate         string
 	initDatafile                []byte
 	lastModified                string
-	datafileURLTemplate         string
+	notificationCenter          notification.Center
+	pollingInterval             time.Duration
+	requester                   utils.Requester
+	sdkKey                      string
 	projectConfigUpdateHandlers []func(notification.ProjectConfigUpdateNotification)
 
 	configLock    sync.RWMutex
@@ -102,7 +103,7 @@ func WithInitialDatafile(datafile []byte) OptionFunc {
 }
 
 // SyncConfig gets current datafile and updates projectConfig
-func (cm *PollingProjectConfigManager) SyncConfig(sdkKey string, datafile []byte) {
+func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	var e error
 	var code int
 	var respHeaders http.Header
@@ -112,7 +113,7 @@ func (cm *PollingProjectConfigManager) SyncConfig(sdkKey string, datafile []byte
 		cm.configLock.Unlock()
 	}
 
-	url := fmt.Sprintf(cm.datafileURLTemplate, sdkKey)
+	url := fmt.Sprintf(cm.datafileURLTemplate, cm.sdkKey)
 	if len(datafile) == 0 {
 		if cm.lastModified != "" {
 			lastModifiedHeader := utils.Header{Name: ModifiedSince, Value: cm.lastModified}
@@ -178,14 +179,14 @@ func (cm *PollingProjectConfigManager) SyncConfig(sdkKey string, datafile []byte
 }
 
 // Start starts the polling
-func (cm *PollingProjectConfigManager) Start(sdkKey string, exeCtx utils.ExecutionCtx) {
+func (cm *PollingProjectConfigManager) Start(exeCtx utils.ExecutionCtx) {
 	go func() {
 		cmLogger.Debug("Polling Config Manager Initiated")
 		t := time.NewTicker(cm.pollingInterval)
 		for {
 			select {
 			case <-t.C:
-				cm.SyncConfig(sdkKey, []byte{})
+				cm.SyncConfig([]byte{})
 			case <-exeCtx.GetContext().Done():
 				cmLogger.Debug("Polling Config Manager Stopped")
 				return
@@ -202,6 +203,7 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 		pollingInterval:     DefaultPollingInterval,
 		requester:           utils.NewHTTPRequester(),
 		datafileURLTemplate: DatafileURLTemplate,
+		sdkKey:              sdkKey,
 	}
 
 	for _, opt := range pollingMangerOptions {
@@ -217,7 +219,7 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 	}
 
 	initDatafile := pollingProjectConfigManager.initDatafile
-	pollingProjectConfigManager.SyncConfig(sdkKey, initDatafile) // initial poll
+	pollingProjectConfigManager.SyncConfig(initDatafile) // initial poll
 	return &pollingProjectConfigManager
 }
 
