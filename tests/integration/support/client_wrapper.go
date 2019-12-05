@@ -85,11 +85,11 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 		log.Fatal(err)
 	}
 
-	overrideService := decision.NewMapExperimentOverridesStore()
+	overrideStore := decision.NewMapExperimentOverridesStore()
 	userProfileService := userprofileservice.CreateUserProfileService(config, apiOptions)
 	compositeExperimentService := decision.NewCompositeExperimentService(
 		decision.WithUserProfileService(userProfileService),
-		decision.WithOverrideStore(overrideService),
+		decision.WithOverrideStore(overrideStore),
 	)
 
 	// @TODO: Add sdkKey dynamically once event-batching support is implemented
@@ -110,7 +110,7 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 		DecisionService:    decisionService,
 		EventDispatcher:    eventProcessor.EventDispatcher,
 		UserProfileService: userProfileService,
-		OverrideStore:      overrideService,
+		OverrideStore:      overrideStore,
 	}
 	return clientInstance
 }
