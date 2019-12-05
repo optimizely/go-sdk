@@ -17,6 +17,7 @@
 // Package event //
 package event
 
+// Metrics is the interface for event processor
 type Metrics interface {
 	SetQueueSize(queueSize int)
 	IncrSuccessFlushCount()
@@ -24,6 +25,7 @@ type Metrics interface {
 	IncrRetryFlushCount()
 }
 
+// DefaultMetrics stores the actual metrics
 type DefaultMetrics struct {
 	QueueSize         int
 	SuccessFlushCount int64
@@ -36,16 +38,22 @@ func NewDefaultMetrics() *DefaultMetrics {
 	return &DefaultMetrics{}
 }
 
+// SetQueueSize sets the queue size
 func (m *DefaultMetrics) SetQueueSize(queueSize int) {
 	m.QueueSize = queueSize
 }
 
+// IncrSuccessFlushCount increments counter for successful flush
 func (m *DefaultMetrics) IncrSuccessFlushCount() {
 	m.SuccessFlushCount++
 }
+
+// IncrFailFlushCount increments counter for failed flush
 func (m *DefaultMetrics) IncrFailFlushCount() {
 	m.FailFlushCount++
 }
+
+// IncrRetryFlushCount increments counter for retried flush
 func (m *DefaultMetrics) IncrRetryFlushCount() {
 	m.RetryFlushCount++
 }

@@ -45,6 +45,7 @@ type HTTPEventDispatcher struct {
 	requester *utils.HTTPRequester
 }
 
+// GetMetrics is the metric accessor
 func (ed *HTTPEventDispatcher) GetMetrics() Metrics {
 	return nil
 }
@@ -89,6 +90,7 @@ func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	return true, nil
 }
 
+// GetMetrics is the metric accessor
 func (ed *QueueEventDispatcher) GetMetrics() Metrics {
 	return ed.metrics
 }

@@ -51,6 +51,10 @@ func (f *MockDispatcher) DispatchEvent(event event.LogEvent) (bool, error) {
 	return true, nil
 }
 
+func (f *MockDispatcher) GetMetrics() event.Metrics {
+	return nil
+}
+
 func TestFactoryClientReturnsDefaultClient(t *testing.T) {
 	factory := OptimizelyFactory{}
 
