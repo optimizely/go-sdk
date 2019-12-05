@@ -18,7 +18,6 @@
 package event
 
 import (
-	"context"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -26,12 +25,8 @@ import (
 )
 
 func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
-	ctx := context.TODO()
-	q := NewQueueEventDispatcher(ctx)
-
-	if qed, ok := q.(*QueueEventDispatcher); ok {
-		qed.Dispatcher = &MockDispatcher{Events: NewInMemoryQueue(100)}
-	}
+	q := NewQueueEventDispatcher()
+	q.Dispatcher = &MockDispatcher{Events: NewInMemoryQueue(100)}
 
 	eventTags := map[string]interface{}{"revenue": 55.0, "value": 25.1}
 	config := TestConfig{}
@@ -42,22 +37,20 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 
 	logEvent := createLogEvent(batch)
 
-	qd, _ := q.(*QueueEventDispatcher)
-
-	success, _ := qd.DispatchEvent(logEvent)
+	success, _ := q.DispatchEvent(logEvent)
 
 	assert.True(t, success)
 
 	// its been queued
-	assert.Equal(t, 1, qd.eventQueue.Size())
+	assert.Equal(t, 1, q.eventQueue.Size())
 
 	// give the queue a chance to run
 	time.Sleep(1 * time.Second)
 
 	// check the queue
-	assert.Equal(t, 0, qd.eventQueue.Size())
+	assert.Equal(t, 0, q.eventQueue.Size())
 
-	metric := qd.GetMetrics().(*DefaultMetrics)
+	metric, _ := q.GetMetrics().(*DefaultMetrics)
 	assert.Equal(t, 0, metric.QueueSize)
 	assert.Equal(t, int64(1), metric.SuccessFlushCount)
 	assert.Equal(t, int64(0), metric.FailFlushCount)
@@ -66,27 +59,21 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 }
 
 func TestQueueEventDispatcher_InvalidEvent(t *testing.T) {
-	ctx := context.TODO()
-	q := NewQueueEventDispatcher(ctx)
+	q := NewQueueEventDispatcher()
+	q.Dispatcher = &MockDispatcher{Events: NewInMemoryQueue(100)}
 
 	config := TestConfig{}
+	q.eventQueue.Add(config)
 
-	if qed, ok := q.(*QueueEventDispatcher); ok {
-		qed.Dispatcher = &MockDispatcher{Events: NewInMemoryQueue(100)}
-		qed.eventQueue.Add(config)
-	}
-
-	qd, _ := q.(*QueueEventDispatcher)
-
-	assert.Equal(t, 1, qd.eventQueue.Size())
+	assert.Equal(t, 1, q.eventQueue.Size())
 
 	// give the queue a chance to run
-	qd.flushEvents()
+	q.flushEvents()
 
 	// check the queue. bad event type should be removed.  but, not sent.
-	assert.Equal(t, 0, qd.eventQueue.Size())
+	assert.Equal(t, 0, q.eventQueue.Size())
 
-	metric := qd.GetMetrics().(*DefaultMetrics)
+	metric, _ := q.GetMetrics().(*DefaultMetrics)
 	assert.Equal(t, 0, metric.QueueSize)
 	assert.Equal(t, int64(0), metric.SuccessFlushCount)
 	assert.Equal(t, int64(1), metric.FailFlushCount)
@@ -95,12 +82,8 @@ func TestQueueEventDispatcher_InvalidEvent(t *testing.T) {
 }
 
 func TestQueueEventDispatcher_FailDispath(t *testing.T) {
-	ctx := context.TODO()
-	q := NewQueueEventDispatcher(ctx)
-
-	if qed, ok := q.(*QueueEventDispatcher); ok {
-		qed.Dispatcher = &MockDispatcher{ShouldFail: true, Events: NewInMemoryQueue(100)}
-	}
+	q := NewQueueEventDispatcher()
+	q.Dispatcher = &MockDispatcher{ShouldFail: true, Events: NewInMemoryQueue(100)}
 
 	eventTags := map[string]interface{}{"revenue": 55.0, "value": 25.1}
 	config := TestConfig{}
@@ -113,19 +96,21 @@ func TestQueueEventDispatcher_FailDispath(t *testing.T) {
 
 	q.DispatchEvent(logEvent)
 
-	qd, _ := q.(*QueueEventDispatcher)
-
-	assert.Equal(t, 1, qd.eventQueue.Size())
+	assert.Equal(t, 1, q.eventQueue.Size())
 
 	// give the queue a chance to run
-	qd.flushEvents()
+	q.flushEvents()
 	time.Sleep(1 * time.Second)
 
 	// check the queue. bad event type should be removed.  but, not sent.
-	assert.Equal(t, 1, qd.eventQueue.Size())
-	metric := qd.GetMetrics().(*DefaultMetrics)
+	assert.Equal(t, 1, q.eventQueue.Size())
+	metric, _ := q.GetMetrics().(*DefaultMetrics)
 	assert.Equal(t, 1, metric.QueueSize)
 	assert.Equal(t, int64(0), metric.SuccessFlushCount)
 	assert.True(t, metric.RetryFlushCount > 1)
 
+	q.flushEvents()
+
+	// check the queue. bad event type should be removed.  but, not sent.
+	assert.Equal(t, 1, q.eventQueue.Size())
 }

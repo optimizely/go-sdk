@@ -18,6 +18,7 @@
 package event
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -28,7 +29,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/registry"
-	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
 // Processor processes events
@@ -111,7 +111,7 @@ func WithSDKKey(sdkKey string) BPOptionConfig {
 
 // NewBatchEventProcessor returns a new instance of BatchEventProcessor with queueSize and flushInterval
 func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
-	p := &BatchEventProcessor{processing:semaphore.NewWeighted(int64(maxFlushWorkers))}
+	p := &BatchEventProcessor{processing: semaphore.NewWeighted(int64(maxFlushWorkers))}
 
 	for _, opt := range options {
 		opt(p)
@@ -146,13 +146,15 @@ func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 }
 
 // Start initializes the event processor
-func (p *BatchEventProcessor) Start(exeCtx utils.ExecutionCtx) {
+func (p *BatchEventProcessor) Start(ctx context.Context) {
 	if p.EventDispatcher == nil {
-		p.EventDispatcher = NewQueueEventDispatcher(exeCtx.GetContext())
+		dispatcher := NewQueueEventDispatcher()
+		defer dispatcher.flushEvents()
+		p.EventDispatcher = dispatcher
 	}
 
-	p.startTicker(exeCtx)
 	pLogger.Debug("Batch event processor started")
+	p.startTicker(ctx)
 }
 
 // ProcessEvent takes the given user event (can be an impression or conversion event) and queues it up to be dispatched
@@ -200,31 +202,26 @@ func (p *BatchEventProcessor) remove(count int) []interface{} {
 }
 
 // StartTicker starts new ticker for flushing events
-func (p *BatchEventProcessor) startTicker(exeCtx utils.ExecutionCtx) {
+func (p *BatchEventProcessor) startTicker(ctx context.Context) {
 	if p.Ticker != nil {
 		return
 	}
 	p.Ticker = time.NewTicker(p.FlushInterval)
-	wg := exeCtx.GetWaitSync()
-	wg.Add(1)
-	go func() {
 
-		defer wg.Done()
-		for {
-			select {
-			case <-p.Ticker.C:
-				p.flushEvents()
-			case <-exeCtx.GetContext().Done():
-				pLogger.Debug("Event processor stopped, flushing events.")
-				p.flushEvents()
-				d, ok := p.EventDispatcher.(*QueueEventDispatcher)
-				if ok {
-					d.flushEvents()
-				}
-				return
+	for {
+		select {
+		case <-p.Ticker.C:
+			p.flushEvents()
+		case <-ctx.Done():
+			pLogger.Debug("Event processor stopped, flushing events.")
+			p.flushEvents()
+			d, ok := p.EventDispatcher.(*QueueEventDispatcher)
+			if ok {
+				d.flushEvents()
 			}
+			return
 		}
-	}()
+	}
 }
 
 // check if user event can be batched in the current batch

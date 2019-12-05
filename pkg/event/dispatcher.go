@@ -18,7 +18,6 @@
 package event
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"sync"
@@ -166,13 +165,10 @@ func (ed *QueueEventDispatcher) flushEvents() {
 }
 
 // NewQueueEventDispatcher creates a Dispatcher that queues in memory and then sends via go routine.
-func NewQueueEventDispatcher(ctx context.Context) Dispatcher {
-	dispatcher := &QueueEventDispatcher{eventQueue: NewInMemoryQueue(defaultQueueSize), Dispatcher: &HTTPEventDispatcher{requester: utils.NewHTTPRequester()}, metrics: &DefaultMetrics{}}
-
-	go func() {
-		<-ctx.Done()
-		dispatcher.flushEvents()
-	}()
-
-	return dispatcher
+func NewQueueEventDispatcher() *QueueEventDispatcher {
+	return &QueueEventDispatcher{
+		eventQueue: NewInMemoryQueue(defaultQueueSize),
+		Dispatcher: &HTTPEventDispatcher{requester: utils.NewHTTPRequester()},
+		metrics:    &DefaultMetrics{},
+	}
 }
