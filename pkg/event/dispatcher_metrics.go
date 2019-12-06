@@ -14,37 +14,49 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package optlyplugins
+// Package event //
+package event
 
-import (
-	"github.com/optimizely/go-sdk/pkg/event"
-)
-
-// EventReceiver returns dispatched events
-type EventReceiver interface {
-	GetEvents() []event.Batch
+// Metrics is the interface for event processor
+type Metrics interface {
+	SetQueueSize(queueSize int)
+	IncrSuccessFlushCount()
+	IncrFailFlushCount()
+	IncrRetryFlushCount()
 }
 
-// ProxyEventDispatcher represents a valid HTTP implementation of the Dispatcher interface
-type ProxyEventDispatcher struct {
-	events []event.Batch
+// DefaultMetrics stores the actual metrics
+type DefaultMetrics struct {
+	QueueSize         int
+	SuccessFlushCount int64
+	FailFlushCount    int64
+	RetryFlushCount   int64
 }
 
-// DispatchEvent dispatches event with callback
-func (d *ProxyEventDispatcher) DispatchEvent(event event.LogEvent) (bool, error) {
-	d.events = append(d.events, event.Event)
-	return true, nil
+// SetQueueSize sets the queue size
+func (m *DefaultMetrics) SetQueueSize(queueSize int) {
+	m.QueueSize = queueSize
 }
 
-// DispatchEvent dispatches event with callback
-func (d *ProxyEventDispatcher) GetMetrics() event.Metrics {
-	return nil
+// IncrSuccessFlushCount increments counter for successful flush
+func (m *DefaultMetrics) IncrSuccessFlushCount() {
+	m.SuccessFlushCount++
 }
 
-// GetEvents returns dispatched events
-func (d *ProxyEventDispatcher) GetEvents() []event.Batch {
-	if d.events == nil {
-		d.events = []event.Batch{}
-	}
-	return d.events
+// IncrFailFlushCount increments counter for failed flush
+func (m *DefaultMetrics) IncrFailFlushCount() {
+	m.FailFlushCount++
+}
+
+// IncrRetryFlushCount increments counter for retried flush
+func (m *DefaultMetrics) IncrRetryFlushCount() {
+	m.RetryFlushCount++
+}
+
+// Add a metric collection to existing metrics
+func (m *DefaultMetrics) Add(v *DefaultMetrics) {
+	m.QueueSize += v.QueueSize
+	m.FailFlushCount += v.FailFlushCount
+	m.SuccessFlushCount += v.SuccessFlushCount
+	m.RetryFlushCount += v.RetryFlushCount
 }

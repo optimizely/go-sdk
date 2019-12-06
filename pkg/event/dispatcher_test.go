@@ -57,12 +57,17 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 	// check the queue
 	assert.Equal(t, 0, qd.eventQueue.Size())
 
+	metric := qd.GetMetrics().(*DefaultMetrics)
+	assert.Equal(t, 0, metric.QueueSize)
+	assert.Equal(t, int64(1), metric.SuccessFlushCount)
+	assert.Equal(t, int64(0), metric.FailFlushCount)
+	assert.Equal(t, int64(0), metric.RetryFlushCount)
+
 }
 
 func TestQueueEventDispatcher_InvalidEvent(t *testing.T) {
 	ctx := context.TODO()
 	q := NewQueueEventDispatcher(ctx)
-
 
 	config := TestConfig{}
 
@@ -80,6 +85,12 @@ func TestQueueEventDispatcher_InvalidEvent(t *testing.T) {
 
 	// check the queue. bad event type should be removed.  but, not sent.
 	assert.Equal(t, 0, qd.eventQueue.Size())
+
+	metric := qd.GetMetrics().(*DefaultMetrics)
+	assert.Equal(t, 0, metric.QueueSize)
+	assert.Equal(t, int64(0), metric.SuccessFlushCount)
+	assert.Equal(t, int64(1), metric.FailFlushCount)
+	assert.Equal(t, int64(0), metric.RetryFlushCount)
 
 }
 
@@ -108,9 +119,13 @@ func TestQueueEventDispatcher_FailDispath(t *testing.T) {
 
 	// give the queue a chance to run
 	qd.flushEvents()
+	time.Sleep(1 * time.Second)
 
 	// check the queue. bad event type should be removed.  but, not sent.
 	assert.Equal(t, 1, qd.eventQueue.Size())
+	metric := qd.GetMetrics().(*DefaultMetrics)
+	assert.Equal(t, 1, metric.QueueSize)
+	assert.Equal(t, int64(0), metric.SuccessFlushCount)
+	assert.True(t, metric.RetryFlushCount > 1)
 
 }
-
