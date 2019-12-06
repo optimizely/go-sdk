@@ -76,3 +76,20 @@ func TestIncrRetryFlushCount(t *testing.T) {
 	assert.Equal(t, int64(1), metric.RetryFlushCount)
 
 }
+
+func TestAdd(t *testing.T) {
+
+	metric := &DefaultMetrics{}
+	metric.IncrRetryFlushCount()
+	metric.IncrSuccessFlushCount()
+	metric.IncrSuccessFlushCount()
+	metric.IncrFailFlushCount()
+	metric.SetQueueSize(24)
+
+	metric.Add(metric)
+	assert.Equal(t, 48, metric.QueueSize)
+	assert.Equal(t, int64(4), metric.SuccessFlushCount)
+	assert.Equal(t, int64(2), metric.FailFlushCount)
+	assert.Equal(t, int64(2), metric.RetryFlushCount)
+
+}

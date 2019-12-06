@@ -52,3 +52,11 @@ func (m *DefaultMetrics) IncrFailFlushCount() {
 func (m *DefaultMetrics) IncrRetryFlushCount() {
 	m.RetryFlushCount++
 }
+
+// Add a metric collection to existing metrics
+func (m *DefaultMetrics) Add(v *DefaultMetrics) {
+	m.QueueSize += v.QueueSize
+	m.FailFlushCount += v.FailFlushCount
+	m.SuccessFlushCount += v.SuccessFlushCount
+	m.RetryFlushCount += v.RetryFlushCount
+}
