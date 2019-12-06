@@ -22,6 +22,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 
 	"github.com/optimizely/go-sdk/pkg/client"
 	"github.com/optimizely/go-sdk/pkg/config"
@@ -36,6 +37,9 @@ import (
 
 // Cached instance of optly wrapper
 var clientInstance *ClientWrapper
+
+// Since notificationManager is mapped against sdkKey, we need a unique sdkKey for every scenario
+var sdkKey int
 
 // ClientWrapper - wrapper around the optimizely client that keeps track of various custom components used with the client
 type ClientWrapper struct {
@@ -58,6 +62,7 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 		return clientInstance
 	}
 
+	sdkKey++
 	datafileDir := os.Getenv("DATAFILES_DIR")
 	datafile, err := ioutil.ReadFile(filepath.Clean(path.Join(datafileDir, apiOptions.DatafileName)))
 	if err != nil {
@@ -93,7 +98,8 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 	)
 
 	// @TODO: Add sdkKey dynamically once event-batching support is implemented
-	compositeService := *decision.NewCompositeService("", decision.WithCompositeExperimentService(compositeExperimentService))
+
+	compositeService := *decision.NewCompositeService(strconv.Itoa(sdkKey), decision.WithCompositeExperimentService(compositeExperimentService))
 	decisionService := &optlyplugins.TestCompositeService{CompositeService: compositeService}
 
 	client, err := optimizelyFactory.Client(
@@ -112,13 +118,14 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 		UserProfileService: userProfileService,
 		OverrideStore:      overrideStore,
 	}
+	clientInstance.DecisionService.(*optlyplugins.TestCompositeService).AddListeners(apiOptions.Listeners)
+
 	return clientInstance
 }
 
 // InvokeAPI processes request with arguments
 func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (models.APIResponse, error) {
 
-	c.DecisionService.(*optlyplugins.TestCompositeService).AddListeners(request.Listeners)
 	var response models.APIResponse
 	var err error
 

@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/optimizely/go-sdk/pkg"
@@ -149,4 +150,17 @@ func compareStringSlice(x, y []string) bool {
 		return true
 	}
 	return false
+}
+
+// EvaluateWithTimeout evaluates given function with a timeout
+func EvaluateWithTimeout(evaluationMethod func() (result bool, errorMessage string)) (result bool, message string) {
+	result, errorMessage := evaluationMethod()
+	// Return immediately if evaluation was successfull
+	if result {
+		return result, errorMessage
+	}
+	// Retry after 200ms
+	time.Sleep(200 * time.Millisecond)
+	result, errorMessage = evaluationMethod()
+	return result, errorMessage
 }
