@@ -61,6 +61,10 @@ const (
 	Activate SDKAPI = "activate"
 	// Track - the api type is Track
 	Track SDKAPI = "track"
+	// SetForcedVariation - the api type is SetForcedVariation
+	SetForcedVariation SDKAPI = "set_forced_variation"
+	// GetForcedVariation - the api type is GetForcedVariation
+	GetForcedVariation SDKAPI = "get_forced_variation"
 )
 
 // KeyListenerCalled - Key for listener called

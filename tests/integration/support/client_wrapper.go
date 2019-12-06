@@ -22,6 +22,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 
 	"github.com/optimizely/go-sdk/pkg/client"
 	"github.com/optimizely/go-sdk/pkg/config"
@@ -34,8 +35,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Map to hold clientwrapper instances against scenarioID
+// Cached instance of optly wrapper
 var clientInstance *ClientWrapper
+
+// Since notificationManager is mapped against sdkKey, we need a unique sdkKey for every scenario
+var sdkKey int
 
 // ClientWrapper - wrapper around the optimizely client that keeps track of various custom components used with the client
 type ClientWrapper struct {
@@ -43,6 +47,7 @@ type ClientWrapper struct {
 	DecisionService    decision.Service
 	EventDispatcher    event.Dispatcher
 	UserProfileService decision.UserProfileService
+	OverrideStore      decision.ExperimentOverrideStore
 }
 
 // DeleteInstance deletes cached instance of optly wrapper
@@ -57,6 +62,7 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 		return clientInstance
 	}
 
+	sdkKey++
 	datafileDir := os.Getenv("DATAFILES_DIR")
 	datafile, err := ioutil.ReadFile(filepath.Clean(path.Join(datafileDir, apiOptions.DatafileName)))
 	if err != nil {
@@ -84,18 +90,23 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 		log.Fatal(err)
 	}
 
+	overrideStore := decision.NewMapExperimentOverridesStore()
 	userProfileService := userprofileservice.CreateUserProfileService(config, apiOptions)
 	compositeExperimentService := decision.NewCompositeExperimentService(
 		decision.WithUserProfileService(userProfileService),
+		decision.WithOverrideStore(overrideStore),
 	)
+
 	// @TODO: Add sdkKey dynamically once event-batching support is implemented
-	compositeService := *decision.NewCompositeService("", decision.WithCompositeExperimentService(compositeExperimentService))
+
+	compositeService := *decision.NewCompositeService(strconv.Itoa(sdkKey), decision.WithCompositeExperimentService(compositeExperimentService))
 	decisionService := &optlyplugins.TestCompositeService{CompositeService: compositeService}
 
 	client, err := optimizelyFactory.Client(
 		client.WithConfigManager(configManager),
 		client.WithDecisionService(decisionService),
-		client.WithEventProcessor(eventProcessor))
+		client.WithEventProcessor(eventProcessor),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -105,14 +116,16 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 		DecisionService:    decisionService,
 		EventDispatcher:    eventProcessor.EventDispatcher,
 		UserProfileService: userProfileService,
+		OverrideStore:      overrideStore,
 	}
+	clientInstance.DecisionService.(*optlyplugins.TestCompositeService).AddListeners(apiOptions.Listeners)
+
 	return clientInstance
 }
 
 // InvokeAPI processes request with arguments
 func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (models.APIResponse, error) {
 
-	c.DecisionService.(*optlyplugins.TestCompositeService).AddListeners(request.Listeners)
 	var response models.APIResponse
 	var err error
 
@@ -146,6 +159,12 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (models.APIResponse
 		break
 	case models.Track:
 		response, err = c.track(request)
+		break
+	case models.SetForcedVariation:
+		response, err = c.setForcedVariation(request)
+		break
+	case models.GetForcedVariation:
+		response, err = c.getForcedVariation(request)
 		break
 	default:
 		break
@@ -326,5 +345,36 @@ func (c *ClientWrapper) track(request models.APIOptions) (models.APIResponse, er
 		err = c.Client.Track(params.EventKey, user, params.EventTags)
 	}
 	response.Result = "NULL"
+	return response, err
+}
+
+func (c *ClientWrapper) setForcedVariation(request models.APIOptions) (models.APIResponse, error) {
+	var params models.ForcedVariationRequestParams
+	var response models.APIResponse
+	err := yaml.Unmarshal([]byte(request.Arguments), &params)
+	response.Result = "NULL"
+	if err == nil {
+		// For removeForcedVariation cases
+		if params.VariationKey == "" {
+			c.OverrideStore.(*decision.MapExperimentOverridesStore).RemoveVariation(decision.ExperimentOverrideKey{ExperimentKey: params.ExperimentKey, UserID: params.UserID})
+		} else {
+			c.OverrideStore.(*decision.MapExperimentOverridesStore).SetVariation(decision.ExperimentOverrideKey{ExperimentKey: params.ExperimentKey, UserID: params.UserID}, params.VariationKey)
+			response.Result = params.VariationKey
+		}
+	}
+	return response, err
+}
+
+func (c *ClientWrapper) getForcedVariation(request models.APIOptions) (models.APIResponse, error) {
+	var params models.ForcedVariationRequestParams
+	var response models.APIResponse
+	err := yaml.Unmarshal([]byte(request.Arguments), &params)
+	response.Result = "NULL"
+	if err == nil {
+		variation, success := c.OverrideStore.(*decision.MapExperimentOverridesStore).GetVariation(decision.ExperimentOverrideKey{ExperimentKey: params.ExperimentKey, UserID: params.UserID})
+		if success {
+			response.Result = variation
+		}
+	}
 	return response, err
 }

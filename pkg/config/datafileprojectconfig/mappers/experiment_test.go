@@ -88,6 +88,10 @@ func TestMapExperiments(t *testing.T) {
 					FeatureEnabled: false,
 				},
 			},
+			VariationKeyToIDMap: map[string]string{
+				"variation_1": "21111",
+				"variation_2": "21112",
+			},
 			TrafficAllocation: []entities.Range{
 				{
 					EntityID:   "21111",
@@ -132,12 +136,13 @@ func TestMapExperimentsWithStringAudienceCondition(t *testing.T) {
 	experiments, experimentKeyMap := MapExperiments(rawExperiments, experimentGroupMap)
 	expectedExperiments := map[string]entities.Experiment{
 		"11111": {
-			AudienceIds:       []string{"31111"},
-			ID:                "11111",
-			GroupID:           "15",
-			Key:               "test_experiment_11111",
-			Variations:        map[string]entities.Variation{},
-			TrafficAllocation: []entities.Range{},
+			AudienceIds:         []string{"31111"},
+			ID:                  "11111",
+			GroupID:             "15",
+			Key:                 "test_experiment_11111",
+			Variations:          map[string]entities.Variation{},
+			VariationKeyToIDMap: map[string]string{},
+			TrafficAllocation:   []entities.Range{},
 			AudienceConditionTree: &entities.TreeNode{
 				Operator: "or",
 				Nodes: []*entities.TreeNode{

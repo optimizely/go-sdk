@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/optimizely/go-sdk/pkg"
@@ -101,11 +102,10 @@ func parseTemplate(s string, config pkg.ProjectConfig) string {
 		if len(matches) > 1 {
 			expVarKey := strings.Split(matches[1], ".")
 			if exp, err := config.GetExperimentByKey(expVarKey[0]); err == nil {
-				for _, variation := range exp.Variations {
-					if variation.Key == expVarKey[1] {
+				if variationID, ok := exp.VariationKeyToIDMap[expVarKey[1]]; ok {
+					if variation, ok := exp.Variations[variationID]; ok {
 						parsedString = strings.Replace(parsedString, matches[0], variation.ID, -1)
 						replaceVariableID()
-						break
 					}
 				}
 			}
@@ -150,4 +150,17 @@ func compareStringSlice(x, y []string) bool {
 		return true
 	}
 	return false
+}
+
+// Evaluates given function with a timeout
+func evaluateDispatchedEventsWithTimeout(evaluationMethod func() (result bool, errorMessage string)) (result bool, message string) {
+	result, errorMessage := evaluationMethod()
+	// Return immediately if evaluation was successfull
+	if result {
+		return result, errorMessage
+	}
+	// Retry after 200ms
+	time.Sleep(200 * time.Millisecond)
+	result, errorMessage = evaluationMethod()
+	return result, errorMessage
 }
