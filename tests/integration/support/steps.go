@@ -273,7 +273,7 @@ func (c *ScenarioCtx) TheNumberOfDispatchedEventsIs(count int) error {
 		}
 		return result, "dispatchedEvents count not equal"
 	}
-	result, errorMessage := EvaluateWithTimeout(evaluationMethod)
+	result, errorMessage := evaluateDispatchedEventsWithTimeout(evaluationMethod)
 	if result {
 		return nil
 	}
@@ -290,7 +290,7 @@ func (c *ScenarioCtx) ThereAreNoDispatchedEvents() error {
 		}
 		return result, fmt.Sprintf("dispatchedEvents should be empty but received %d events", len(dispatchedEvents))
 	}
-	result, errorMessage := EvaluateWithTimeout(evaluationMethod)
+	result, errorMessage := evaluateDispatchedEventsWithTimeout(evaluationMethod)
 	if result {
 		return nil
 	}
@@ -360,7 +360,7 @@ func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) 
 		return result, "DispatchedEvents not equal"
 	}
 
-	result, errorMessage := EvaluateWithTimeout(evaluationMethod)
+	result, errorMessage := evaluateDispatchedEventsWithTimeout(evaluationMethod)
 	if result {
 		return nil
 	}
@@ -382,7 +382,7 @@ func (c *ScenarioCtx) PayloadsOfDispatchedEventsDontIncludeDecisions() error {
 		}
 		return true, ""
 	}
-	result, errorMessage := EvaluateWithTimeout(evaluationMethod)
+	result, errorMessage := evaluateDispatchedEventsWithTimeout(evaluationMethod)
 	if result {
 		return nil
 	}

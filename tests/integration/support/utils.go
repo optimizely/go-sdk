@@ -152,8 +152,8 @@ func compareStringSlice(x, y []string) bool {
 	return false
 }
 
-// EvaluateWithTimeout evaluates given function with a timeout
-func EvaluateWithTimeout(evaluationMethod func() (result bool, errorMessage string)) (result bool, message string) {
+// Evaluates given function with a timeout
+func evaluateDispatchedEventsWithTimeout(evaluationMethod func() (result bool, errorMessage string)) (result bool, message string) {
 	result, errorMessage := evaluationMethod()
 	// Return immediately if evaluation was successfull
 	if result {
