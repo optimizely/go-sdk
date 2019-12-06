@@ -104,6 +104,9 @@ var testExp1111 = entities.Experiment{
 	Variations: map[string]entities.Variation{
 		"2222": testExp1111Var2222,
 	},
+	VariationKeyToIDMap: map[string]string{
+		"2222": "2222",
+	},
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2222", EndOfRange: 10000},
 	},
@@ -140,6 +143,9 @@ var testExp1112 = entities.Experiment{
 	Variations: map[string]entities.Variation{
 		"2222": testExp1111Var2222,
 	},
+	VariationKeyToIDMap: map[string]string{
+		"2222": "2222",
+	},
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2222", EndOfRange: 10000},
 	},
@@ -172,6 +178,10 @@ var testExp1113 = entities.Experiment{
 		"2223": testExp1113Var2223,
 		"2224": testExp1113Var2224,
 	},
+	VariationKeyToIDMap: map[string]string{
+		"2223": "2223",
+		"2224": "2224",
+	},
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2223", EndOfRange: 5000},
 		entities.Range{EntityID: "2224", EndOfRange: 10000},
@@ -189,6 +199,10 @@ var testExp1114 = entities.Experiment{
 	Variations: map[string]entities.Variation{
 		"2225": testExp1114Var2225,
 		"2226": testExp1114Var2226,
+	},
+	VariationKeyToIDMap: map[string]string{
+		"2225": "2225",
+		"2226": "2226",
 	},
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2225", EndOfRange: 5000},
@@ -213,6 +227,9 @@ var testExp1115 = entities.Experiment{
 	Key: testExp1115Key,
 	Variations: map[string]entities.Variation{
 		"2227": testExp1115Var2227,
+	},
+	VariationKeyToIDMap: map[string]string{
+		"2227": "2227",
 	},
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2227", EndOfRange: 5000},
@@ -239,6 +256,9 @@ var testTargetedExp1116 = entities.Experiment{
 	Variations: map[string]entities.Variation{
 		"2228": testTargetedExp1116Var2228,
 	},
+	VariationKeyToIDMap: map[string]string{
+		"2228": "2228",
+	},
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2228", EndOfRange: 10000},
 	},
@@ -253,6 +273,9 @@ var testExpWhitelist = entities.Experiment{
 	Key: testExpWhitelistKey,
 	Variations: map[string]entities.Variation{
 		"2229": testExpWhitelistVar2229,
+	},
+	VariationKeyToIDMap: map[string]string{
+		"var_2229": "2229",
 	},
 	TrafficAllocation: []entities.Range{
 		entities.Range{EntityID: "2229", EndOfRange: 10000},

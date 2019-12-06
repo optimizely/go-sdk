@@ -85,6 +85,7 @@ func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experimen
 		LayerID:               rawExperiment.LayerID,
 		Key:                   rawExperiment.Key,
 		Variations:            make(map[string]entities.Variation),
+		VariationKeyToIDMap:   make(map[string]string),
 		TrafficAllocation:     make([]entities.Range, len(rawExperiment.TrafficAllocation)),
 		AudienceConditionTree: audienceConditionTree,
 		Whitelist:             rawExperiment.ForcedVariations,
@@ -93,6 +94,7 @@ func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experimen
 
 	for _, variation := range rawExperiment.Variations {
 		experiment.Variations[variation.ID] = mapVariation(variation)
+		experiment.VariationKeyToIDMap[variation.Key] = variation.ID
 	}
 
 	for i, allocation := range rawExperiment.TrafficAllocation {

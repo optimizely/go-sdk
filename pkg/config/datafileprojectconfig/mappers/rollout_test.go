@@ -42,8 +42,8 @@ func TestMapRollouts(t *testing.T) {
 		"21111": entities.Rollout{
 			ID: "21111",
 			Experiments: []entities.Experiment{
-				entities.Experiment{ID: "11111", Key: "exp_11111", Variations: map[string]entities.Variation{}, TrafficAllocation: []entities.Range{}},
-				entities.Experiment{ID: "11112", Key: "exp_11112", Variations: map[string]entities.Variation{}, TrafficAllocation: []entities.Range{}},
+				entities.Experiment{ID: "11111", Key: "exp_11111", Variations: map[string]entities.Variation{}, VariationKeyToIDMap: map[string]string{}, TrafficAllocation: []entities.Range{}},
+				entities.Experiment{ID: "11112", Key: "exp_11112", Variations: map[string]entities.Variation{}, VariationKeyToIDMap: map[string]string{}, TrafficAllocation: []entities.Range{}},
 			},
 		},
 	}

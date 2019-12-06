@@ -14,40 +14,11 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package entities //
-package entities
+package models
 
-// Variation represents a variation in the experiment
-type Variation struct {
-	ID             string
-	Variables      map[string]VariationVariable
-	Key            string
-	FeatureEnabled bool
-}
-
-// Experiment represents an experiment
-type Experiment struct {
-	AudienceIds           []string
-	ID                    string
-	LayerID               string
-	Key                   string
-	Variations            map[string]Variation // keyed by variation ID
-	VariationKeyToIDMap   map[string]string
-	TrafficAllocation     []Range
-	GroupID               string
-	AudienceConditionTree *TreeNode
-	Whitelist             map[string]string
-	IsFeatureExperiment   bool
-}
-
-// Range represents bucketing range that the specify entityID falls into
-type Range struct {
-	EntityID   string
-	EndOfRange int
-}
-
-// VariationVariable represents a Variable object from the Variation
-type VariationVariable struct {
-	ID    string
-	Value string
+// ForcedVariationRequestParams represents params required for Get and Set ForcedVariation API
+type ForcedVariationRequestParams struct {
+	ExperimentKey string `yaml:"experiment_key"`
+	UserID        string `yaml:"user_id"`
+	VariationKey  string `yaml:"forced_variation_key,omitempty"`
 }
