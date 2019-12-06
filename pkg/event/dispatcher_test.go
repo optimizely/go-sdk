@@ -119,6 +119,7 @@ func TestQueueEventDispatcher_FailDispath(t *testing.T) {
 
 	// give the queue a chance to run
 	qd.flushEvents()
+	time.Sleep(1 * time.Second)
 
 	// check the queue. bad event type should be removed.  but, not sent.
 	assert.Equal(t, 1, qd.eventQueue.Size())
