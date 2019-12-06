@@ -66,5 +66,5 @@ mkdir -p $GO_FEATUREFILES_PATH
 cp -r $FEATURE_FILES_PATH $GO_FEATUREFILES_PATH
 
 export DATAFILES_DIR="$DATAFILES_PATH"
-go test -v $(pwd)/tests/integration --godog.tags="$TAG_FILTER_EXPRESSION" --godog.f=progress
+go test -v $(pwd)/tests/integration --godog.tags="~@DATAFILE_MANAGER&&~@INPUT_VALIDATION&&~@EVENT_BATCHING&&~@NO_EASY_EVENT_TRACKING&&~@OASIS-3654&&~@TARGETED_ROLLOUT&&~@EXPERIMENT_STATUS&&@~UNSUPPORTED_DATAFILE_VERSION&&@~TRACK_LISTENER&&@~ACTIVATE_LISTENER&&~@OPTIMIZELY_CONFIG&&~@LOG_EVENT_LISTENER" --godog.f=progress
 echo "Ready for testing."
