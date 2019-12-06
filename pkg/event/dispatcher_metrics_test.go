@@ -25,7 +25,7 @@ import (
 
 func TestNewDefaultMetrics(t *testing.T) {
 
-	metric := NewDefaultMetrics()
+	metric := DefaultMetrics{}
 	assert.Equal(t, 0, metric.QueueSize)
 	assert.Equal(t, int64(0), metric.SuccessFlushCount)
 	assert.Equal(t, int64(0), metric.FailFlushCount)
@@ -35,7 +35,7 @@ func TestNewDefaultMetrics(t *testing.T) {
 
 func TestSetQueueSize(t *testing.T) {
 
-	metric := NewDefaultMetrics()
+	metric := DefaultMetrics{}
 	metric.SetQueueSize(24)
 	assert.Equal(t, 24, metric.QueueSize)
 	assert.Equal(t, int64(0), metric.SuccessFlushCount)
@@ -46,7 +46,7 @@ func TestSetQueueSize(t *testing.T) {
 
 func TestIncrSuccessFlushCount(t *testing.T) {
 
-	metric := NewDefaultMetrics()
+	metric := DefaultMetrics{}
 	metric.IncrSuccessFlushCount()
 	assert.Equal(t, 0, metric.QueueSize)
 	assert.Equal(t, int64(1), metric.SuccessFlushCount)
@@ -57,7 +57,7 @@ func TestIncrSuccessFlushCount(t *testing.T) {
 
 func TestIncrFailFlushCount(t *testing.T) {
 
-	metric := NewDefaultMetrics()
+	metric := DefaultMetrics{}
 	metric.IncrFailFlushCount()
 	assert.Equal(t, 0, metric.QueueSize)
 	assert.Equal(t, int64(0), metric.SuccessFlushCount)
@@ -68,7 +68,7 @@ func TestIncrFailFlushCount(t *testing.T) {
 
 func TestIncrRetryFlushCount(t *testing.T) {
 
-	metric := NewDefaultMetrics()
+	metric := DefaultMetrics{}
 	metric.IncrRetryFlushCount()
 	assert.Equal(t, 0, metric.QueueSize)
 	assert.Equal(t, int64(0), metric.SuccessFlushCount)

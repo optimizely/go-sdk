@@ -17,6 +17,8 @@
 // Package event //
 package event
 
+import "sync"
+
 // Metrics is the interface for event processor
 type Metrics interface {
 	SetQueueSize(queueSize int)
@@ -31,29 +33,34 @@ type DefaultMetrics struct {
 	SuccessFlushCount int64
 	FailFlushCount    int64
 	RetryFlushCount   int64
-}
 
-// NewDefaultMetrics initialized metrics
-func NewDefaultMetrics() *DefaultMetrics {
-	return &DefaultMetrics{}
+	metricLock sync.RWMutex
 }
 
 // SetQueueSize sets the queue size
 func (m *DefaultMetrics) SetQueueSize(queueSize int) {
+	m.metricLock.Lock()
+	defer m.metricLock.Unlock()
 	m.QueueSize = queueSize
 }
 
 // IncrSuccessFlushCount increments counter for successful flush
 func (m *DefaultMetrics) IncrSuccessFlushCount() {
+	m.metricLock.Lock()
+	defer m.metricLock.Unlock()
 	m.SuccessFlushCount++
 }
 
 // IncrFailFlushCount increments counter for failed flush
 func (m *DefaultMetrics) IncrFailFlushCount() {
+	m.metricLock.Lock()
+	defer m.metricLock.Unlock()
 	m.FailFlushCount++
 }
 
 // IncrRetryFlushCount increments counter for retried flush
 func (m *DefaultMetrics) IncrRetryFlushCount() {
+	m.metricLock.Lock()
+	defer m.metricLock.Unlock()
 	m.RetryFlushCount++
 }
