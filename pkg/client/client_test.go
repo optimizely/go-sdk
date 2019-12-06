@@ -1963,7 +1963,7 @@ func (s *ClientTestSuiteTrackEvent) SetupTest() {
 		ConfigManager:      ValidProjectConfigManager(),
 		DecisionService:    s.mockDecisionService,
 		EventProcessor:     s.mockProcessor,
-		NotificationCenter: notification.NewNotificationCenter(),
+		notificationCenter: notification.NewNotificationCenter(),
 	}
 }
 
@@ -2072,7 +2072,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenNoNotifica
 	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 		isTrackCalled = true
 	}
-	s.client.NotificationCenter = nil
+	s.client.notificationCenter = nil
 	s.client.OnTrack(onTrack)
 	err := s.client.Track("sample_conversion", userContext, map[string]interface{}{})
 
@@ -2115,7 +2115,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenSendThrows
 
 	mockNotificationCenter.On("Send", notification.Track, expectedTrackNotification).Return(fmt.Errorf(""))
 	mockNotificationCenter.On("AddHandler", notification.Track, mock.AnythingOfType("func(interface {})")).Return(1, nil)
-	s.client.NotificationCenter = mockNotificationCenter
+	s.client.notificationCenter = mockNotificationCenter
 	s.client.OnTrack(onTrack)
 	err = s.client.Track("sample_conversion", expectedUserContext, map[string]interface{}{})
 
@@ -2141,7 +2141,7 @@ func (s *ClientTestSuiteTrackNotification) SetupTest() {
 		ConfigManager:      ValidProjectConfigManager(),
 		DecisionService:    s.mockDecisionService,
 		EventProcessor:     s.mockProcessor,
-		NotificationCenter: notification.NewNotificationCenter(),
+		notificationCenter: notification.NewNotificationCenter(),
 	}
 }
 
@@ -2245,7 +2245,7 @@ func (s *ClientTestSuiteTrackNotification) TestOnTrackAfterRemoveOnTrack() {
 
 func (s *ClientTestSuiteTrackNotification) TestOnTrackThrowsErrorWithoutNotificationCenter() {
 
-	s.client.NotificationCenter = nil
+	s.client.notificationCenter = nil
 	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 	}
 	id, err := s.client.OnTrack(onTrack)
@@ -2255,7 +2255,7 @@ func (s *ClientTestSuiteTrackNotification) TestOnTrackThrowsErrorWithoutNotifica
 
 func (s *ClientTestSuiteTrackNotification) TestRemoveOnTrackThrowsErrorWithoutNotificationCenter() {
 
-	s.client.NotificationCenter = nil
+	s.client.notificationCenter = nil
 	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 	}
 	id, _ := s.client.OnTrack(onTrack)
@@ -2267,7 +2267,7 @@ func (s *ClientTestSuiteTrackNotification) TestOnTrackThrowsErrorWhenAddHandlerF
 
 	mockNotificationCenter := new(MockNotificationCenter)
 	mockNotificationCenter.On("AddHandler", notification.Track, mock.AnythingOfType("func(interface {})")).Return(-1, fmt.Errorf(""))
-	s.client.NotificationCenter = mockNotificationCenter
+	s.client.notificationCenter = mockNotificationCenter
 
 	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 	}
@@ -2282,7 +2282,7 @@ func (s *ClientTestSuiteTrackNotification) TestRemoveOnTrackThrowsErrorWhenRemov
 	mockNotificationCenter := new(MockNotificationCenter)
 	mockNotificationCenter.On("AddHandler", notification.Track, mock.AnythingOfType("func(interface {})")).Return(1, nil)
 	mockNotificationCenter.On("RemoveHandler", 1, notification.Track).Return(fmt.Errorf(""))
-	s.client.NotificationCenter = mockNotificationCenter
+	s.client.notificationCenter = mockNotificationCenter
 
 	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 	}

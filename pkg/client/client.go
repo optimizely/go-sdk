@@ -39,7 +39,7 @@ type OptimizelyClient struct {
 	ConfigManager      pkg.ProjectConfigManager
 	DecisionService    decision.Service
 	EventProcessor     event.Processor
-	NotificationCenter notification.Center
+	notificationCenter notification.Center
 	executionCtx       utils.ExecutionCtx
 }
 
@@ -333,9 +333,9 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 	}
 
 	userEvent := event.CreateConversionUserEvent(projectConfig, configEvent, userContext, eventTags)
-	if o.EventProcessor.ProcessEvent(userEvent) && o.NotificationCenter != nil {
+	if o.EventProcessor.ProcessEvent(userEvent) && o.notificationCenter != nil {
 		trackNotification := notification.TrackNotification{EventKey: eventKey, UserContext: userContext, EventTags: eventTags, ConversionEvent: *userEvent.Conversion}
-		if err = o.NotificationCenter.Send(notification.Track, trackNotification); err != nil {
+		if err = o.notificationCenter.Send(notification.Track, trackNotification); err != nil {
 			logger.Warning("Problem with sending notification")
 		}
 	}
@@ -439,7 +439,7 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 
 // OnTrack registers a handler for Track notifications
 func (o *OptimizelyClient) OnTrack(callback func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent)) (int, error) {
-	if o.NotificationCenter == nil {
+	if o.notificationCenter == nil {
 		return 0, fmt.Errorf("no notification center found")
 	}
 
@@ -455,7 +455,7 @@ func (o *OptimizelyClient) OnTrack(callback func(eventKey string, userContext en
 			logger.Warning(fmt.Sprintf("Unable to convert notification payload %v into TrackNotification", payload))
 		}
 	}
-	id, err := o.NotificationCenter.AddHandler(notification.Track, handler)
+	id, err := o.notificationCenter.AddHandler(notification.Track, handler)
 	if err != nil {
 		logger.Warning("Problem with adding notification handler")
 		return 0, err
@@ -465,10 +465,10 @@ func (o *OptimizelyClient) OnTrack(callback func(eventKey string, userContext en
 
 // RemoveOnTrack removes handler for Track notification with given id
 func (o *OptimizelyClient) RemoveOnTrack(id int) error {
-	if o.NotificationCenter == nil {
+	if o.notificationCenter == nil {
 		return fmt.Errorf("no notification center found")
 	}
-	if err := o.NotificationCenter.RemoveHandler(id, notification.Track); err != nil {
+	if err := o.notificationCenter.RemoveHandler(id, notification.Track); err != nil {
 		logger.Warning("Problem with removing notification handler")
 		return err
 	}

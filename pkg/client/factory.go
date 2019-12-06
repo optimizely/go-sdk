@@ -64,7 +64,7 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		executionCtx = utils.NewCancelableExecutionCtx()
 	}
 
-	appClient := &OptimizelyClient{executionCtx: executionCtx, NotificationCenter: registry.GetNotificationCenter(f.SDKKey)}
+	appClient := &OptimizelyClient{executionCtx: executionCtx, notificationCenter: registry.GetNotificationCenter(f.SDKKey)}
 
 	if f.configManager != nil {
 		appClient.ConfigManager = f.configManager
