@@ -263,16 +263,3 @@ func TestDatafileTemplate(t *testing.T) {
 
 	assert.Equal(t, datafileTemplate, configManager.datafileURLTemplate)
 }
-
-func TestNotificationHandlers(t *testing.T) {
-
-	projectConfigUpdateCallback := func(notification notification.ProjectConfigUpdateNotification) {
-	}
-
-	sdkKey := "test_sdk_key"
-	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(sdkKey, WithNotificationHandlers(projectConfigUpdateCallback))
-	configManager.Start(exeCtx)
-
-	assert.Equal(t, len(configManager.projectConfigUpdateHandlers), 1)
-}

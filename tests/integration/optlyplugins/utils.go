@@ -24,6 +24,10 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/optimizely/go-sdk/pkg/notification"
+
+	"github.com/optimizely/go-sdk/pkg/registry"
+
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/utils"
 	"github.com/optimizely/go-sdk/tests/integration/models"
@@ -59,8 +63,14 @@ func CreatePollingConfigManager(options models.APIOptions) *TestProjectConfigMan
 	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.WithDatafileURLTemplate(urlString))
 
 	testProjectConfigManagerInstance := &TestProjectConfigManager{}
-	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.WithNotificationHandlers(testProjectConfigManagerInstance.GetListenerCallbacks(options)...))
-
+	for _, callback := range testProjectConfigManagerInstance.GetListenerCallbacks(options) {
+		handler := func(payload interface{}) {
+			if projectConfigUpdateNotification, ok := payload.(notification.ProjectConfigUpdateNotification); ok {
+				callback(projectConfigUpdateNotification)
+			}
+		}
+		registry.GetNotificationCenter(sdkKey).AddHandler(notification.ProjectConfigUpdate, handler)
+	}
 	configManager := config.NewPollingProjectConfigManager(
 		sdkKey,
 		pollingConfigManagerOptions...,

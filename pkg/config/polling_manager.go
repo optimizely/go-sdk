@@ -50,14 +50,13 @@ var cmLogger = logging.GetLogger("PollingConfigManager")
 // PollingProjectConfigManager maintains a dynamic copy of the project config by continuously polling for the datafile
 // from the Optimizely CDN at a given (configurable) interval.
 type PollingProjectConfigManager struct {
-	datafileURLTemplate         string
-	initDatafile                []byte
-	lastModified                string
-	notificationCenter          notification.Center
-	pollingInterval             time.Duration
-	requester                   utils.Requester
-	sdkKey                      string
-	projectConfigUpdateHandlers []func(notification.ProjectConfigUpdateNotification)
+	datafileURLTemplate string
+	initDatafile        []byte
+	lastModified        string
+	notificationCenter  notification.Center
+	pollingInterval     time.Duration
+	requester           utils.Requester
+	sdkKey              string
 
 	configLock    sync.RWMutex
 	err           error
@@ -85,13 +84,6 @@ func WithDatafileURLTemplate(datafileTemplate string) OptionFunc {
 func WithPollingInterval(interval time.Duration) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.pollingInterval = interval
-	}
-}
-
-// WithNotificationHandlers is an optional function, sets passed notification handlers
-func WithNotificationHandlers(handlers ...func(notification.ProjectConfigUpdateNotification)) OptionFunc {
-	return func(p *PollingProjectConfigManager) {
-		p.projectConfigUpdateHandlers = handlers
 	}
 }
 
@@ -208,12 +200,6 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 
 	for _, opt := range pollingMangerOptions {
 		opt(&pollingProjectConfigManager)
-	}
-
-	for _, handler := range pollingProjectConfigManager.projectConfigUpdateHandlers {
-		if _, err := pollingProjectConfigManager.OnProjectConfigUpdate(handler); err != nil {
-			break
-		}
 	}
 
 	initDatafile := pollingProjectConfigManager.initDatafile
