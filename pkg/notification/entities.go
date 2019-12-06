@@ -30,6 +30,8 @@ type DecisionNotificationType string
 const (
 	// Decision notification type
 	Decision Type = "decision"
+	// Track notification type
+	Track Type = "track"
 	// ProjectConfigUpdate notification type
 	ProjectConfigUpdate Type = "project_config_update"
 
@@ -50,6 +52,14 @@ type DecisionNotification struct {
 	Type         DecisionNotificationType
 	UserContext  entities.UserContext
 	DecisionInfo map[string]interface{}
+}
+
+// TrackNotification is a notification triggered when track is called
+type TrackNotification struct {
+	EventKey        string
+	UserContext     entities.UserContext
+	EventTags       map[string]interface{}
+	ConversionEvent interface{}
 }
 
 // ProjectConfigUpdateNotification is a notification triggered when a project config is updated
