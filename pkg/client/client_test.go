@@ -65,10 +65,11 @@ type MockProcessor struct {
 }
 
 func (m *MockProcessor) ProcessEvent(event event.UserEvent) bool {
-	m.Events = append(m.Events, event)
-
-	args := m.Called(event)
-	return args.Get(0).(bool)
+	result := m.Called(event).Get(0).(bool)
+	if result {
+		m.Events = append(m.Events, event)
+	}
+	return result
 }
 
 type MockNotificationCenter struct {
@@ -145,7 +146,7 @@ func (TestConfig) GetClientVersion() string {
 func TestTrack(t *testing.T) {
 	mockProcessor := new(MockProcessor)
 	mockDecisionService := new(MockDecisionService)
-	mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
+	mockProcessor.On("ProcessEvent", mock.AnythingOfType("UserEvent")).Return(true)
 
 	client := OptimizelyClient{
 		ConfigManager:   ValidProjectConfigManager(),
@@ -1968,7 +1969,7 @@ func (s *ClientTestSuiteTrackEvent) SetupTest() {
 
 func (s *ClientTestSuiteTrackEvent) TestTrackWithNotification() {
 
-	s.mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
+	s.mockProcessor.On("ProcessEvent", mock.AnythingOfType("UserEvent")).Return(true)
 	expectedUserContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
 
 	isTrackCalled := false
@@ -1979,9 +1980,11 @@ func (s *ClientTestSuiteTrackEvent) TestTrackWithNotification() {
 		s.Equal(*s.mockProcessor.Events[0].Conversion, conversionEvent)
 	}
 
-	s.client.OnTrack(onTrack)
-	err := s.client.Track("sample_conversion", expectedUserContext, map[string]interface{}{})
+	id, err := s.client.OnTrack(onTrack)
+	s.Equal(1, id)
+	s.NoError(err)
 
+	err = s.client.Track("sample_conversion", expectedUserContext, map[string]interface{}{})
 	s.NoError(err)
 	s.True(isTrackCalled)
 	s.Equal(1, len(s.mockProcessor.Events))
@@ -1991,7 +1994,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackWithNotification() {
 
 func (s *ClientTestSuiteTrackEvent) TestTrackWithNotificationAndEventTag() {
 
-	s.mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
+	s.mockProcessor.On("ProcessEvent", mock.AnythingOfType("UserEvent")).Return(true)
 	expectedUserContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
 	expectedEvenTags := map[string]interface{}{
 		"client":  "ios",
@@ -2018,7 +2021,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackWithNotificationAndEventTag() {
 
 func (s *ClientTestSuiteTrackEvent) TestTrackWithNotificationAndUserEvent() {
 
-	s.mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
+	s.mockProcessor.On("ProcessEvent", mock.AnythingOfType("UserEvent")).Return(true)
 	expectedUserContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
 	expectedEventTags := map[string]interface{}{
 		"client":  "ios",
@@ -2045,7 +2048,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackWithNotificationAndUserEvent() {
 }
 
 func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenEventProcessorReturnsFalse() {
-	s.mockProcessor.On("ProcessEvent", mock.Anything).Return(false)
+	s.mockProcessor.On("ProcessEvent", mock.AnythingOfType("UserEvent")).Return(false)
 
 	isTrackCalled := false
 	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
@@ -2054,15 +2057,15 @@ func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenEventProce
 
 	s.client.OnTrack(onTrack)
 	err := s.client.Track("sample_conversion", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
-
 	s.NoError(err)
-	s.Equal(1, len(s.mockProcessor.Events))
+	s.Equal(0, len(s.mockProcessor.Events))
 	s.False(isTrackCalled)
+	s.mockProcessor.AssertExpectations(s.T())
 }
 
 func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenNoNotificationCenterProvided() {
 
-	s.mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
+	s.mockProcessor.On("ProcessEvent", mock.AnythingOfType("UserEvent")).Return(true)
 	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
 
 	isTrackCalled := false
@@ -2077,7 +2080,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenNoNotifica
 	s.False(isTrackCalled)
 }
 
-func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenInvalidParamsProvided() {
+func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenInvalidEventKeyProvided() {
 
 	isTrackCalled := false
 	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
@@ -2094,7 +2097,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenInvalidPar
 
 func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenSendThrowsError() {
 
-	s.mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
+	s.mockProcessor.On("ProcessEvent", mock.AnythingOfType("UserEvent")).Return(true)
 	expectedUserContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
 
 	isTrackCalled := false
@@ -2131,7 +2134,7 @@ type ClientTestSuiteTrackNotification struct {
 
 func (s *ClientTestSuiteTrackNotification) SetupTest() {
 	mockProcessor := new(MockProcessor)
-	mockProcessor.On("ProcessEvent", mock.Anything).Return(true)
+	mockProcessor.On("ProcessEvent", mock.AnythingOfType("UserEvent")).Return(true)
 	s.mockProcessor = mockProcessor
 	s.mockDecisionService = new(MockDecisionService)
 	s.client = OptimizelyClient{
@@ -2142,7 +2145,65 @@ func (s *ClientTestSuiteTrackNotification) SetupTest() {
 	}
 }
 
-func (s *ClientTestSuiteTrackNotification) TestAddandRemoveOnTrack() {
+func (s *ClientTestSuiteTrackNotification) TestMultipleOnTrack() {
+
+	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
+
+	numberOfCalls := 0
+	addOnTrack := func(count int) {
+		for i := 1; i <= count; i++ {
+			onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
+				numberOfCalls++
+			}
+			id, err := s.client.OnTrack(onTrack)
+			// To check if id's are unique and increasing
+			s.Equal(i, id)
+			s.NoError(err)
+		}
+	}
+
+	// Add 5 on track callbacks
+	addOnTrack(5)
+	err := s.client.Track("sample_conversion", userContext, map[string]interface{}{})
+	s.NoError(err)
+	s.Equal(5, numberOfCalls)
+}
+
+func (s *ClientTestSuiteTrackNotification) TestMultipleRemoveOnTrack() {
+
+	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
+
+	numberOfCalls := 0
+	callbackIds := []int{}
+
+	// Add 5 on track callbacks
+	for i := 1; i <= 5; i++ {
+		onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
+			numberOfCalls++
+		}
+		id, err := s.client.OnTrack(onTrack)
+		callbackIds = append(callbackIds, id)
+		s.Equal(i, id)
+		s.NoError(err)
+	}
+
+	err := s.client.Track("sample_conversion", userContext, map[string]interface{}{})
+	s.NoError(err)
+	s.Equal(5, numberOfCalls)
+
+	// Remove all track callbacks
+	numberOfCalls = 0
+	for i := 0; i < 5; i++ {
+		err = s.client.RemoveOnTrack(callbackIds[i])
+		s.NoError(err)
+	}
+
+	err = s.client.Track("sample_conversion", userContext, map[string]interface{}{})
+	s.NoError(err)
+	s.Equal(0, numberOfCalls)
+}
+
+func (s *ClientTestSuiteTrackNotification) TestOnTrackAfterRemoveOnTrack() {
 
 	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}
 
@@ -2165,34 +2226,21 @@ func (s *ClientTestSuiteTrackNotification) TestAddandRemoveOnTrack() {
 	s.NoError(err)
 	s.Equal(5, numberOfCalls)
 
-	// Add 2 more on track callbacks
-	numberOfCalls = 0
-	addOnTrack(2)
-	err = s.client.Track("sample_conversion", userContext, map[string]interface{}{})
-	s.NoError(err)
-	s.Equal(7, numberOfCalls)
-
-	// Remove 2 track callbacks
-	numberOfCalls = 0
-	for i := 0; i < 2; i++ {
-		err = s.client.RemoveOnTrack(callbackIds[i])
-		s.NoError(err)
-	}
-	callbackIds = callbackIds[2:]
-
-	err = s.client.Track("sample_conversion", userContext, map[string]interface{}{})
-	s.NoError(err)
-	s.Equal(5, numberOfCalls)
-
 	// Remove all track callbacks
 	numberOfCalls = 0
-	for _, id := range callbackIds {
-		err = s.client.RemoveOnTrack(id)
+	for i := 0; i < 5; i++ {
+		err = s.client.RemoveOnTrack(callbackIds[i])
 		s.NoError(err)
 	}
 	err = s.client.Track("sample_conversion", userContext, map[string]interface{}{})
 	s.NoError(err)
 	s.Equal(0, numberOfCalls)
+
+	// Add 2 on track callbacks
+	addOnTrack(2)
+	err = s.client.Track("sample_conversion", userContext, map[string]interface{}{})
+	s.NoError(err)
+	s.Equal(2, numberOfCalls)
 }
 
 func (s *ClientTestSuiteTrackNotification) TestOnTrackThrowsErrorWithoutNotificationCenter() {
@@ -2203,8 +2251,15 @@ func (s *ClientTestSuiteTrackNotification) TestOnTrackThrowsErrorWithoutNotifica
 	id, err := s.client.OnTrack(onTrack)
 	s.Equal(0, id)
 	s.Error(err)
+}
 
-	err = s.client.RemoveOnTrack(0)
+func (s *ClientTestSuiteTrackNotification) TestRemoveOnTrackThrowsErrorWithoutNotificationCenter() {
+
+	s.client.NotificationCenter = nil
+	onTrack := func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
+	}
+	id, _ := s.client.OnTrack(onTrack)
+	err := s.client.RemoveOnTrack(id)
 	s.Error(err)
 }
 
