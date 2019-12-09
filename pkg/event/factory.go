@@ -20,6 +20,7 @@ package event
 import (
 	"errors"
 	"fmt"
+	"github.com/optimizely/go-sdk/pkg/config"
 	"strings"
 	"time"
 
@@ -52,7 +53,7 @@ func makeTimestamp() int64 {
 }
 
 // CreateEventContext creates and returns EventContext
-func CreateEventContext(projectConfig pkg.ProjectConfig) Context {
+func CreateEventContext(projectConfig config.ProjectConfig) Context {
 	context := Context{}
 	context.ProjectID = projectConfig.GetProjectID()
 	context.Revision = projectConfig.GetRevision()
@@ -65,7 +66,7 @@ func CreateEventContext(projectConfig pkg.ProjectConfig) Context {
 	return context
 }
 
-func createImpressionEvent(projectConfig pkg.ProjectConfig, experiment entities.Experiment,
+func createImpressionEvent(projectConfig config.ProjectConfig, experiment entities.Experiment,
 	variation entities.Variation, attributes map[string]interface{}) ImpressionEvent {
 
 	impression := ImpressionEvent{}
@@ -80,7 +81,7 @@ func createImpressionEvent(projectConfig pkg.ProjectConfig, experiment entities.
 }
 
 // CreateImpressionUserEvent creates and returns ImpressionEvent for user
-func CreateImpressionUserEvent(projectConfig pkg.ProjectConfig, experiment entities.Experiment,
+func CreateImpressionUserEvent(projectConfig config.ProjectConfig, experiment entities.Experiment,
 	variation entities.Variation,
 	userContext entities.UserContext) UserEvent {
 
@@ -116,7 +117,7 @@ func createImpressionVisitor(userEvent UserEvent) Visitor {
 }
 
 // create a conversion event
-func createConversionEvent(projectConfig pkg.ProjectConfig, event entities.Event, attributes, eventTags map[string]interface{}) ConversionEvent {
+func createConversionEvent(projectConfig config.ProjectConfig, event entities.Event, attributes, eventTags map[string]interface{}) ConversionEvent {
 	conversion := ConversionEvent{}
 
 	conversion.Key = event.Key
@@ -128,7 +129,7 @@ func createConversionEvent(projectConfig pkg.ProjectConfig, event entities.Event
 }
 
 // CreateConversionUserEvent creates and returns ConversionEvent for user
-func CreateConversionUserEvent(projectConfig pkg.ProjectConfig, event entities.Event, userContext entities.UserContext, eventTags map[string]interface{}) UserEvent {
+func CreateConversionUserEvent(projectConfig config.ProjectConfig, event entities.Event, userContext entities.UserContext, eventTags map[string]interface{}) UserEvent {
 
 	userEvent := UserEvent{}
 	userEvent.Timestamp = makeTimestamp()
@@ -221,7 +222,7 @@ func createBatchEvent(userEvent UserEvent, visitor Visitor) Batch {
 }
 
 // get visitor attributes from user attributes
-func getEventAttributes(projectConfig pkg.ProjectConfig, attributes map[string]interface{}) []VisitorAttribute {
+func getEventAttributes(projectConfig config.ProjectConfig, attributes map[string]interface{}) []VisitorAttribute {
 	var eventAttributes = []VisitorAttribute{}
 
 	for key, value := range attributes {

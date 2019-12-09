@@ -73,5 +73,21 @@ func main() {
 		client.WithPollingConfigManager(time.Second, nil),
 		client.WithBatchEventProcessor(event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
 	)
+
+	datafilePollingInterval := 2 * time.Second
+	eventBatchSize := 20
+	eventQueueSize := 1500
+	eventFlushInterval := 10 * time.Second
+
+	// Instantiate a client with custom configuration
+	optimizelyClient, _ = optimizelyFactory.Client(
+		client.WithPollingConfigManager(datafilePollingInterval, nil),
+		client.WithBatchEventProcessor(
+			eventBatchSize,
+			eventQueueSize,
+			eventFlushInterval,
+	),
+)
+
 	optimizelyClient.Close()
 }

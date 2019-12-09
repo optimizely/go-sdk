@@ -20,10 +20,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/optimizely/go-sdk/pkg/config"
 	"sync"
 	"testing"
 
-	"github.com/optimizely/go-sdk/pkg"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
@@ -103,7 +103,7 @@ func (m *MockNotificationCenter) Send(notificationType notification.Type, notifi
 }
 
 type TestConfig struct {
-	pkg.ProjectConfig
+	config.ProjectConfig
 }
 
 func (TestConfig) GetEventByKey(key string) (entities.Event, error) {

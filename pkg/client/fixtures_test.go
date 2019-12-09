@@ -19,8 +19,8 @@ package client
 
 import (
 	"fmt"
+	"github.com/optimizely/go-sdk/pkg/config"
 
-	"github.com/optimizely/go-sdk/pkg"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
@@ -33,7 +33,7 @@ import (
  */
 
 type MockProjectConfig struct {
-	pkg.ProjectConfig
+	config.ProjectConfig
 	mock.Mock
 }
 
@@ -79,17 +79,17 @@ func (c *MockProjectConfig) GetBotFiltering() bool {
 }
 
 type MockProjectConfigManager struct {
-	projectConfig pkg.ProjectConfig
+	projectConfig config.ProjectConfig
 	mock.Mock
 }
 
-func (p *MockProjectConfigManager) GetConfig() (pkg.ProjectConfig, error) {
+func (p *MockProjectConfigManager) GetConfig() (config.ProjectConfig, error) {
 	if p.projectConfig != nil {
 		return p.projectConfig, nil
 	}
 
 	args := p.Called()
-	return args.Get(0).(pkg.ProjectConfig), args.Error(1)
+	return args.Get(0).(config.ProjectConfig), args.Error(1)
 }
 
 func (p *MockProjectConfigManager) OnProjectConfigUpdate(callback func(notification.ProjectConfigUpdateNotification)) (int, error) {
@@ -126,10 +126,10 @@ func (m *MockEventProcessor) ProcessEvent(event event.UserEvent) bool {
 }
 
 type PanickingConfigManager struct {
-	pkg.ProjectConfigManager
+	config.ProjectConfigManager
 }
 
-func (m *PanickingConfigManager) GetConfig() (pkg.ProjectConfig, error) {
+func (m *PanickingConfigManager) GetConfig() (config.ProjectConfig, error) {
 	panic("I'm panicking")
 }
 
