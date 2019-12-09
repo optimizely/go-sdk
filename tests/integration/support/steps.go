@@ -31,7 +31,6 @@ import (
 	"github.com/optimizely/go-sdk/tests/integration/optlyplugins"
 	"github.com/optimizely/go-sdk/tests/integration/optlyplugins/userprofileservice"
 	"github.com/optimizely/subset"
-	"gopkg.in/yaml.v3"
 )
 
 // ScenarioCtx holds both apiOptions and apiResponse for a scenario.
@@ -181,7 +180,7 @@ func (c *ScenarioCtx) TheResultShouldMatchList(list string) error {
 func (c *ScenarioCtx) InTheResponseKeyShouldBeObject(argumentType, value string) error {
 	switch argumentType {
 	case models.KeyListenerCalled:
-		if value == "NULL" && c.apiResponse.ListenerCalled == nil {
+		if value == "NULL" && c.apiResponse.DecisionListenerCalled == nil && c.apiResponse.TrackListenerCalled == nil {
 			return nil
 		}
 	default:
@@ -194,12 +193,15 @@ func (c *ScenarioCtx) InTheResponseKeyShouldBeObject(argumentType, value string)
 func (c *ScenarioCtx) InTheResponseShouldMatch(argumentType string, value *gherkin.DocString) error {
 	switch argumentType {
 	case models.KeyListenerCalled:
-		var requestListenersCalled []models.DecisionListener
-
-		if err := yaml.Unmarshal([]byte(value.Content), &requestListenersCalled); err != nil {
-			break
+		decisionListeners, trackListeners := getDecisionAndTrackListeners(value.Content)
+		var success = true
+		if len(decisionListeners) > 0 {
+			success = subset.Check(decisionListeners, c.apiResponse.DecisionListenerCalled)
 		}
-		if subset.Check(requestListenersCalled, c.apiResponse.ListenerCalled) {
+		if len(trackListeners) > 0 && success {
+			success = subset.Check(trackListeners, c.apiResponse.TrackListenerCalled)
+		}
+		if success {
 			return nil
 		}
 	default:
@@ -213,16 +215,25 @@ func (c *ScenarioCtx) InTheResponseShouldMatch(argumentType string, value *gherk
 func (c *ScenarioCtx) ResponseShouldHaveThisExactlyNTimes(argumentType string, count int, value *gherkin.DocString) error {
 	switch argumentType {
 	case models.KeyListenerCalled:
-		var requestListenersCalled []models.DecisionListener
-		if err := yaml.Unmarshal([]byte(value.Content), &requestListenersCalled); err != nil {
-			break
+		decisionListeners, trackListeners := getDecisionAndTrackListeners(value.Content)
+		success := true
+		if len(decisionListeners) > 0 {
+			listener := decisionListeners[0]
+			expectedListenersArray := []models.DecisionListener{}
+			for i := 0; i < count; i++ {
+				expectedListenersArray = append(expectedListenersArray, listener)
+			}
+			success = subset.Check(expectedListenersArray, c.apiResponse.DecisionListenerCalled)
 		}
-		listener := requestListenersCalled[0]
-		expectedListenersArray := []models.DecisionListener{}
-		for i := 0; i < count; i++ {
-			expectedListenersArray = append(expectedListenersArray, listener)
+		if len(trackListeners) > 0 && success {
+			listener := trackListeners[0]
+			expectedListenersArray := []models.TrackListener{}
+			for i := 0; i < count; i++ {
+				expectedListenersArray = append(expectedListenersArray, listener)
+			}
+			success = subset.Check(expectedListenersArray, c.apiResponse.TrackListenerCalled)
 		}
-		if subset.Check(expectedListenersArray, c.apiResponse.ListenerCalled) {
+		if success {
 			return nil
 		}
 	default:
@@ -235,23 +246,34 @@ func (c *ScenarioCtx) ResponseShouldHaveThisExactlyNTimes(argumentType string, c
 func (c *ScenarioCtx) InTheResponseShouldHaveEachOneOfThese(argumentType string, value *gherkin.DocString) error {
 	switch argumentType {
 	case models.KeyListenerCalled:
-		var requestListenersCalled []models.DecisionListener
-
-		if err := yaml.Unmarshal([]byte(value.Content), &requestListenersCalled); err != nil {
-			break
-		}
-
-		found := false
-		for _, expectedListener := range requestListenersCalled {
-			found = false
-			for _, actualListener := range c.apiResponse.ListenerCalled {
-				if subset.Check(expectedListener, actualListener) {
-					found = true
+		decisionListeners, trackListeners := getDecisionAndTrackListeners(value.Content)
+		found := true
+		if len(decisionListeners) > 0 {
+			for _, expectedListener := range decisionListeners {
+				found = false
+				for _, actualListener := range c.apiResponse.DecisionListenerCalled {
+					if subset.Check(expectedListener, actualListener) {
+						found = true
+						break
+					}
+				}
+				if !found {
 					break
 				}
 			}
-			if !found {
-				break
+		}
+		if len(trackListeners) > 0 && found {
+			for _, expectedListener := range trackListeners {
+				found = false
+				for _, actualListener := range c.apiResponse.TrackListenerCalled {
+					if subset.Check(expectedListener, actualListener) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					break
+				}
 			}
 		}
 		if found {
@@ -266,7 +288,7 @@ func (c *ScenarioCtx) InTheResponseShouldHaveEachOneOfThese(argumentType string,
 // TheNumberOfDispatchedEventsIs checks the count of the dispatched events to be equal to the given value.
 func (c *ScenarioCtx) TheNumberOfDispatchedEventsIs(count int) error {
 	evaluationMethod := func() (bool, string) {
-		dispatchedEvents := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
+		dispatchedEvents := c.clientWrapper.eventDispatcher.(optlyplugins.EventReceiver).GetEvents()
 		result := len(dispatchedEvents) == count
 		if result {
 			return result, ""
@@ -283,7 +305,7 @@ func (c *ScenarioCtx) TheNumberOfDispatchedEventsIs(count int) error {
 // ThereAreNoDispatchedEvents checks the dispatched events count to be empty.
 func (c *ScenarioCtx) ThereAreNoDispatchedEvents() error {
 	evaluationMethod := func() (bool, string) {
-		dispatchedEvents := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
+		dispatchedEvents := c.clientWrapper.eventDispatcher.(optlyplugins.EventReceiver).GetEvents()
 		result := len(dispatchedEvents) == 0
 		if result {
 			return result, ""
@@ -300,7 +322,7 @@ func (c *ScenarioCtx) ThereAreNoDispatchedEvents() error {
 // DispatchedEventsPayloadsInclude checks dispatched events to contain the given events.
 func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) error {
 
-	config, err := c.clientWrapper.Client.GetProjectConfig()
+	config, err := c.clientWrapper.client.GetProjectConfig()
 	if err != nil {
 		return fmt.Errorf("Invalid Project Config")
 	}
@@ -310,7 +332,7 @@ func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) 
 	}
 
 	evaluationMethod := func() (bool, string) {
-		eventsReceived := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
+		eventsReceived := c.clientWrapper.eventDispatcher.(optlyplugins.EventReceiver).GetEvents()
 		eventsReceivedJSON, err := json.Marshal(eventsReceived)
 		if err != nil {
 			return false, "Invalid response for dispatched Events"
@@ -370,7 +392,7 @@ func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) 
 // PayloadsOfDispatchedEventsDontIncludeDecisions checks dispatched events to contain no decisions.
 func (c *ScenarioCtx) PayloadsOfDispatchedEventsDontIncludeDecisions() error {
 	evaluationMethod := func() (bool, string) {
-		dispatchedEvents := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
+		dispatchedEvents := c.clientWrapper.eventDispatcher.(optlyplugins.EventReceiver).GetEvents()
 		for _, event := range dispatchedEvents {
 			for _, visitor := range event.Visitors {
 				for _, snapshot := range visitor.Snapshots {
@@ -391,7 +413,7 @@ func (c *ScenarioCtx) PayloadsOfDispatchedEventsDontIncludeDecisions() error {
 
 // TheUserProfileServiceStateShouldBe checks current state of UPS
 func (c *ScenarioCtx) TheUserProfileServiceStateShouldBe(value *gherkin.DocString) error {
-	config, err := c.clientWrapper.Client.GetProjectConfig()
+	config, err := c.clientWrapper.client.GetProjectConfig()
 	if err != nil {
 		return fmt.Errorf("Invalid Project Config")
 	}
@@ -401,7 +423,7 @@ func (c *ScenarioCtx) TheUserProfileServiceStateShouldBe(value *gherkin.DocStrin
 	}
 
 	expectedProfiles := userprofileservice.ParseUserProfiles(rawProfiles)
-	actualProfiles := c.clientWrapper.UserProfileService.(userprofileservice.UPSHelper).GetUserProfiles()
+	actualProfiles := c.clientWrapper.userProfileService.(userprofileservice.UPSHelper).GetUserProfiles()
 
 	success := false
 	for _, expectedProfile := range expectedProfiles {
@@ -425,7 +447,7 @@ func (c *ScenarioCtx) TheUserProfileServiceStateShouldBe(value *gherkin.DocStrin
 
 // ThereIsNoUserProfileState checks that UPS is empty
 func (c *ScenarioCtx) ThereIsNoUserProfileState() error {
-	actualProfiles := c.clientWrapper.UserProfileService.(userprofileservice.UPSHelper).GetUserProfiles()
+	actualProfiles := c.clientWrapper.userProfileService.(userprofileservice.UPSHelper).GetUserProfiles()
 	if len(actualProfiles) == 0 {
 		return nil
 	}
