@@ -87,7 +87,7 @@ func (c *ScenarioCtx) DatafileManagerConfigurationIs(options *gherkin.DocString)
 	if err := yaml.Unmarshal([]byte(options.Content), &datafileManagerConfiguration); err != nil {
 		return fmt.Errorf("invalid dfm configuration")
 	}
-	c.apiOptions.DFMConfiguration = datafileManagerConfiguration
+	c.apiOptions.DFMConfiguration = &datafileManagerConfiguration
 	return nil
 }
 
@@ -279,20 +279,36 @@ func (c *ScenarioCtx) InTheResponseShouldHaveEachOneOfThese(argumentType string,
 
 // TheNumberOfDispatchedEventsIs checks the count of the dispatched events to be equal to the given value.
 func (c *ScenarioCtx) TheNumberOfDispatchedEventsIs(count int) error {
-	dispatchedEvents := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
-	if len(dispatchedEvents) == count {
+	evaluationMethod := func() (bool, string) {
+		dispatchedEvents := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
+		result := len(dispatchedEvents) == count
+		if result {
+			return result, ""
+		}
+		return result, "dispatchedEvents count not equal"
+	}
+	result, errorMessage := evaluateDispatchedEventsWithTimeout(evaluationMethod)
+	if result {
 		return nil
 	}
-	return fmt.Errorf("dispatchedEvents count not equal")
+	return fmt.Errorf(errorMessage)
 }
 
 // ThereAreNoDispatchedEvents checks the dispatched events count to be empty.
 func (c *ScenarioCtx) ThereAreNoDispatchedEvents() error {
-	dispatchedEvents := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
-	if len(dispatchedEvents) == 0 {
+	evaluationMethod := func() (bool, string) {
+		dispatchedEvents := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
+		result := len(dispatchedEvents) == 0
+		if result {
+			return result, ""
+		}
+		return result, fmt.Sprintf("dispatchedEvents should be empty but received %d events", len(dispatchedEvents))
+	}
+	result, errorMessage := evaluateDispatchedEventsWithTimeout(evaluationMethod)
+	if result {
 		return nil
 	}
-	return fmt.Errorf("dispatchedEvents should be empty but received %d events", len(dispatchedEvents))
+	return fmt.Errorf(errorMessage)
 }
 
 // DispatchedEventsPayloadsInclude checks dispatched events to contain the given events.
@@ -307,70 +323,84 @@ func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) 
 		return fmt.Errorf("Invalid request for dispatched Events")
 	}
 
-	eventsReceived := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
-	eventsReceivedJSON, err := json.Marshal(eventsReceived)
-	if err != nil {
-		return fmt.Errorf("Invalid response for dispatched Events")
-	}
-	var actualBatchEvents []map[string]interface{}
+	evaluationMethod := func() (bool, string) {
+		eventsReceived := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
+		eventsReceivedJSON, err := json.Marshal(eventsReceived)
+		if err != nil {
+			return false, "Invalid response for dispatched Events"
+		}
+		var actualBatchEvents []map[string]interface{}
 
-	if err := json.Unmarshal(eventsReceivedJSON, &actualBatchEvents); err != nil {
-		return fmt.Errorf("Invalid response for dispatched Events")
-	}
+		if err := json.Unmarshal(eventsReceivedJSON, &actualBatchEvents); err != nil {
+			return false, "Invalid response for dispatched Events"
+		}
 
-	// Sort's attributes under visitors which is required for subset comparison of attributes array
-	sortAttributesForEvents := func(array []map[string]interface{}) []map[string]interface{} {
-		sortedArray := array
-		for mainIndex, event := range array {
-			if visitorsArray, ok := event["visitors"].([]interface{}); ok {
-				for vIndex, v := range visitorsArray {
-					if visitor, ok := v.(map[string]interface{}); ok {
-						// Only sort if all attributes were parsed successfuly
-						parsedSuccessfully := false
-						parsedAttributes := []map[string]interface{}{}
-						if attributesArray, ok := visitor["attributes"].([]interface{}); ok {
-							for _, tmpAttribute := range attributesArray {
-								if attribute, ok := tmpAttribute.(map[string]interface{}); ok {
-									parsedAttributes = append(parsedAttributes, attribute)
+		// Sort's attributes under visitors which is required for subset comparison of attributes array
+		sortAttributesForEvents := func(array []map[string]interface{}) []map[string]interface{} {
+			sortedArray := array
+			for mainIndex, event := range array {
+				if visitorsArray, ok := event["visitors"].([]interface{}); ok {
+					for vIndex, v := range visitorsArray {
+						if visitor, ok := v.(map[string]interface{}); ok {
+							// Only sort if all attributes were parsed successfuly
+							parsedSuccessfully := false
+							parsedAttributes := []map[string]interface{}{}
+							if attributesArray, ok := visitor["attributes"].([]interface{}); ok {
+								for _, tmpAttribute := range attributesArray {
+									if attribute, ok := tmpAttribute.(map[string]interface{}); ok {
+										parsedAttributes = append(parsedAttributes, attribute)
+									}
 								}
+								parsedSuccessfully = len(attributesArray) == len(parsedAttributes)
 							}
-							parsedSuccessfully = len(attributesArray) == len(parsedAttributes)
-						}
-						if parsedSuccessfully {
-							// Sort parsed attributes array and assign them to the original events array
-							sortedAttributes := sortArrayofMaps(parsedAttributes, "key")
-							sortedArray[mainIndex]["visitors"].([]interface{})[vIndex].(map[string]interface{})["attributes"] = sortedAttributes
+							if parsedSuccessfully {
+								// Sort parsed attributes array and assign them to the original events array
+								sortedAttributes := sortArrayofMaps(parsedAttributes, "key")
+								sortedArray[mainIndex]["visitors"].([]interface{})[vIndex].(map[string]interface{})["attributes"] = sortedAttributes
+							}
 						}
 					}
 				}
 			}
+			return sortedArray
 		}
-		return sortedArray
+
+		expectedBatchEvents = sortAttributesForEvents(expectedBatchEvents)
+		actualBatchEvents = sortAttributesForEvents(actualBatchEvents)
+		result := subset.Check(expectedBatchEvents, actualBatchEvents)
+		if result {
+			return result, ""
+		}
+		return result, "DispatchedEvents not equal"
 	}
 
-	expectedBatchEvents = sortAttributesForEvents(expectedBatchEvents)
-	actualBatchEvents = sortAttributesForEvents(actualBatchEvents)
-
-	if subset.Check(expectedBatchEvents, actualBatchEvents) {
+	result, errorMessage := evaluateDispatchedEventsWithTimeout(evaluationMethod)
+	if result {
 		return nil
 	}
-	return fmt.Errorf("DispatchedEvents not equal")
+	return fmt.Errorf(errorMessage)
 }
 
 // PayloadsOfDispatchedEventsDontIncludeDecisions checks dispatched events to contain no decisions.
 func (c *ScenarioCtx) PayloadsOfDispatchedEventsDontIncludeDecisions() error {
-	dispatchedEvents := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
-
-	for _, event := range dispatchedEvents {
-		for _, visitor := range event.Visitors {
-			for _, snapshot := range visitor.Snapshots {
-				if len(snapshot.Decisions) > 0 {
-					return fmt.Errorf("dispatched events should not include decisions")
+	evaluationMethod := func() (bool, string) {
+		dispatchedEvents := c.clientWrapper.EventDispatcher.(optlyplugins.EventReceiver).GetEvents()
+		for _, event := range dispatchedEvents {
+			for _, visitor := range event.Visitors {
+				for _, snapshot := range visitor.Snapshots {
+					if len(snapshot.Decisions) > 0 {
+						return false, "dispatched events should not include decisions"
+					}
 				}
 			}
 		}
+		return true, ""
 	}
-	return nil
+	result, errorMessage := evaluateDispatchedEventsWithTimeout(evaluationMethod)
+	if result {
+		return nil
+	}
+	return fmt.Errorf(errorMessage)
 }
 
 // TheUserProfileServiceStateShouldBe checks current state of UPS

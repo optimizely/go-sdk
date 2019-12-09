@@ -22,6 +22,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/notification"
@@ -32,6 +33,9 @@ import (
 	"github.com/optimizely/go-sdk/pkg/utils"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 )
+
+// Since notificationManager is mapped against sdkKey, we need a unique sdkKey for every scenario
+var sdkKey int
 
 const localDatafileURLTemplate = "http://localhost:3001/datafiles/%s.json?request_id="
 
@@ -81,7 +85,7 @@ func CreatePollingConfigManager(options models.APIOptions) *TestProjectConfigMan
 	exeCtx := utils.NewCancelableExecutionCtx()
 	configManager.Start(exeCtx)
 	// Verify datafile configuration tests
-	testProjectConfigManagerInstance.TestConfiguration(options.DFMConfiguration)
+	testProjectConfigManagerInstance.TestConfiguration(*options.DFMConfiguration)
 
 	return testProjectConfigManagerInstance
 }
@@ -93,10 +97,14 @@ func GetDatafile(datafileName string) ([]byte, error) {
 }
 
 // GetSDKKey returns SDKKey for configuration
-func GetSDKKey(configuration models.DataFileManagerConfiguration) (sdkKey string) {
-	sdkKey = configuration.SDKKey
-	if configuration.DatafileCondition != "" {
-		sdkKey += "_" + configuration.DatafileCondition
+func GetSDKKey(configuration *models.DataFileManagerConfiguration) string {
+	if configuration == nil {
+		sdkKey++
+		return strconv.Itoa(sdkKey)
 	}
-	return sdkKey
+	key := configuration.SDKKey
+	if configuration.DatafileCondition != "" {
+		key += "_" + configuration.DatafileCondition
+	}
+	return key
 }

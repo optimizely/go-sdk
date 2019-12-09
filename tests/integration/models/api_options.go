@@ -21,7 +21,7 @@ type APIOptions struct {
 	DatafileName           string
 	APIName                string
 	Arguments              string
-	DFMConfiguration       DataFileManagerConfiguration
+	DFMConfiguration       *DataFileManagerConfiguration
 	Listeners              map[string]int
 	UserProfileServiceType string
 	UPSMapping             map[string]map[string]string

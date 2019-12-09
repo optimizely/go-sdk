@@ -32,7 +32,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Map to hold clientwrapper instances against scenarioID
+// Cached instance of optly wrapper
 var clientInstance *ClientWrapper
 
 // ClientWrapper - wrapper around the optimizely client that keeps track of various custom components used with the client
@@ -41,6 +41,7 @@ type ClientWrapper struct {
 	DecisionService      decision.Service
 	EventDispatcher      event.Dispatcher
 	UserProfileService   decision.UserProfileService
+	OverrideStore        decision.ExperimentOverrideStore
 	PollingConfigManager pkg.ProjectConfigManager
 }
 
@@ -62,7 +63,7 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 	clientInstance = &ClientWrapper{}
 
 	// Check if DFM configuration was provided
-	if apiOptions.DFMConfiguration.SDKKey != "" {
+	if apiOptions.DFMConfiguration != nil {
 		clientInstance.PollingConfigManager = optlyplugins.CreatePollingConfigManager(apiOptions)
 	} else {
 		datafile, err := optlyplugins.GetDatafile(apiOptions.DatafileName)
@@ -79,11 +80,13 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 		}
 		optimizelyFactory.Datafile = datafile
 		clientInstance.PollingConfigManager = &optlyplugins.TestProjectConfigManager{ProjectConfigManager: configManager}
-
 		userProfileService := userprofileservice.CreateUserProfileService(config, apiOptions)
 		compositeExperimentServiceoptions = append(compositeExperimentServiceoptions, decision.WithUserProfileService(userProfileService))
 		clientInstance.UserProfileService = userProfileService
 	}
+
+	overrideStore := decision.NewMapExperimentOverridesStore()
+	compositeExperimentServiceoptions = append(compositeExperimentServiceoptions, decision.WithOverrideStore(overrideStore))
 
 	factoryClientoptions = append(factoryClientoptions, client.WithConfigManager(clientInstance.PollingConfigManager))
 	eventProcessor := event.NewBatchEventProcessor(
@@ -111,13 +114,15 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 	clientInstance.Client = client
 	clientInstance.DecisionService = decisionService
 	clientInstance.EventDispatcher = eventProcessor.EventDispatcher
+	clientInstance.OverrideStore = overrideStore
+	clientInstance.DecisionService.(*optlyplugins.TestCompositeService).AddListeners(apiOptions.Listeners)
+
 	return clientInstance
 }
 
 // InvokeAPI processes request with arguments
 func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (models.APIResponse, error) {
 
-	c.DecisionService.(*optlyplugins.TestCompositeService).AddListeners(request.Listeners)
 	var response models.APIResponse
 	var err error
 
@@ -151,6 +156,12 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (models.APIResponse
 		break
 	case models.Track:
 		response, err = c.track(request)
+		break
+	case models.SetForcedVariation:
+		response, err = c.setForcedVariation(request)
+		break
+	case models.GetForcedVariation:
+		response, err = c.getForcedVariation(request)
 		break
 	default:
 		break
@@ -331,5 +342,36 @@ func (c *ClientWrapper) track(request models.APIOptions) (models.APIResponse, er
 		err = c.Client.Track(params.EventKey, user, params.EventTags)
 	}
 	response.Result = "NULL"
+	return response, err
+}
+
+func (c *ClientWrapper) setForcedVariation(request models.APIOptions) (models.APIResponse, error) {
+	var params models.ForcedVariationRequestParams
+	var response models.APIResponse
+	err := yaml.Unmarshal([]byte(request.Arguments), &params)
+	response.Result = "NULL"
+	if err == nil {
+		// For removeForcedVariation cases
+		if params.VariationKey == "" {
+			c.OverrideStore.(*decision.MapExperimentOverridesStore).RemoveVariation(decision.ExperimentOverrideKey{ExperimentKey: params.ExperimentKey, UserID: params.UserID})
+		} else {
+			c.OverrideStore.(*decision.MapExperimentOverridesStore).SetVariation(decision.ExperimentOverrideKey{ExperimentKey: params.ExperimentKey, UserID: params.UserID}, params.VariationKey)
+			response.Result = params.VariationKey
+		}
+	}
+	return response, err
+}
+
+func (c *ClientWrapper) getForcedVariation(request models.APIOptions) (models.APIResponse, error) {
+	var params models.ForcedVariationRequestParams
+	var response models.APIResponse
+	err := yaml.Unmarshal([]byte(request.Arguments), &params)
+	response.Result = "NULL"
+	if err == nil {
+		variation, success := c.OverrideStore.(*decision.MapExperimentOverridesStore).GetVariation(decision.ExperimentOverrideKey{ExperimentKey: params.ExperimentKey, UserID: params.UserID})
+		if success {
+			response.Result = variation
+		}
+	}
 	return response, err
 }

@@ -14,40 +14,49 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package entities //
-package entities
+// Package event //
+package event
 
-// Variation represents a variation in the experiment
-type Variation struct {
-	ID             string
-	Variables      map[string]VariationVariable
-	Key            string
-	FeatureEnabled bool
+// Metrics is the interface for event processor
+type Metrics interface {
+	SetQueueSize(queueSize int)
+	IncrSuccessFlushCount()
+	IncrFailFlushCount()
+	IncrRetryFlushCount()
 }
 
-// Experiment represents an experiment
-type Experiment struct {
-	AudienceIds           []string
-	ID                    string
-	LayerID               string
-	Key                   string
-	Variations            map[string]Variation // keyed by variation ID
-	VariationKeyToIDMap   map[string]string
-	TrafficAllocation     []Range
-	GroupID               string
-	AudienceConditionTree *TreeNode
-	Whitelist             map[string]string
-	IsFeatureExperiment   bool
+// DefaultMetrics stores the actual metrics
+type DefaultMetrics struct {
+	QueueSize         int
+	SuccessFlushCount int64
+	FailFlushCount    int64
+	RetryFlushCount   int64
 }
 
-// Range represents bucketing range that the specify entityID falls into
-type Range struct {
-	EntityID   string
-	EndOfRange int
+// SetQueueSize sets the queue size
+func (m *DefaultMetrics) SetQueueSize(queueSize int) {
+	m.QueueSize = queueSize
 }
 
-// VariationVariable represents a Variable object from the Variation
-type VariationVariable struct {
-	ID    string
-	Value string
+// IncrSuccessFlushCount increments counter for successful flush
+func (m *DefaultMetrics) IncrSuccessFlushCount() {
+	m.SuccessFlushCount++
+}
+
+// IncrFailFlushCount increments counter for failed flush
+func (m *DefaultMetrics) IncrFailFlushCount() {
+	m.FailFlushCount++
+}
+
+// IncrRetryFlushCount increments counter for retried flush
+func (m *DefaultMetrics) IncrRetryFlushCount() {
+	m.RetryFlushCount++
+}
+
+// Add a metric collection to existing metrics
+func (m *DefaultMetrics) Add(v *DefaultMetrics) {
+	m.QueueSize += v.QueueSize
+	m.FailFlushCount += v.FailFlushCount
+	m.SuccessFlushCount += v.SuccessFlushCount
+	m.RetryFlushCount += v.RetryFlushCount
 }
