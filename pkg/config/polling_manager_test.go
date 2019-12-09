@@ -199,13 +199,13 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false}`)
 
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil)
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
 
 	exeCtx := utils.NewCancelableExecutionCtx()
-	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithInitialDatafile(mockDatafile1))
 	configManager.Start(exeCtx)
 
 	var numberOfCalls = 0
@@ -213,22 +213,19 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 		numberOfCalls++
 	}
 	id, _ := configManager.OnProjectConfigUpdate(callback)
-	mockRequester.AssertExpectations(t)
 
 	actual, err := configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, actual)
 
-	configManager.SyncConfig(mockDatafile2)
+	configManager.SyncConfig([]byte{})
 	actual, err = configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, actual)
+	mockRequester.AssertExpectations(t)
 
 	assert.NotEqual(t, id, 0)
 	assert.Equal(t, numberOfCalls, 1)
-
-	err = configManager.RemoveOnProjectConfigUpdate(id)
-	assert.Nil(t, err)
 
 	err = configManager.RemoveOnProjectConfigUpdate(id)
 	assert.Nil(t, err)
