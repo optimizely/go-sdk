@@ -450,7 +450,7 @@ func (c *ScenarioCtx) ThereIsNoUserProfileState() error {
 // TheListenerWasCalledNTimes checks if listener was called a given amount of time
 func (c *ScenarioCtx) TheListenerWasCalledNTimes(listenerType string, count int) error {
 	var listenersCalled []notification.ProjectConfigUpdateNotification
-	if listenerType == "Config-update" {
+	if listenerType == models.KeyConfigUpdate {
 		listenersCalled = c.clientWrapper.PollingConfigManager.(*optlyplugins.TestProjectConfigManager).GetListenersCalled()
 		if len(listenersCalled) == count {
 			return nil

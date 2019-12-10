@@ -41,11 +41,9 @@ func (c *TestProjectConfigManager) GetListenerCallbacks(apiOptions models.APIOpt
 		c.listenersCalled = append(c.listenersCalled, notification)
 	}
 
-	for listenerType, count := range apiOptions.Listeners {
-		if listenerType == "Config-update" {
-			for i := 1; i <= count; i++ {
-				listeners = append(listeners, projectConfigUpdateCallback)
-			}
+	if count, ok := apiOptions.Listeners[models.KeyConfigUpdate]; ok {
+		for i := 0; i < count; i++ {
+			listeners = append(listeners, projectConfigUpdateCallback)
 		}
 	}
 	return listeners
@@ -61,7 +59,7 @@ func (c *TestProjectConfigManager) TestConfiguration(configuration models.DataFi
 	verify := func(wg *sync.WaitGroup) {
 		start := time.Now()
 		switch configuration.Mode {
-		case "wait_for_on_ready":
+		case models.KeyWaitForOnReady:
 			for {
 				t := time.Now()
 				elapsed := t.Sub(start)
@@ -75,7 +73,7 @@ func (c *TestProjectConfigManager) TestConfiguration(configuration models.DataFi
 				}
 			}
 			break
-		case "wait_for_config_update":
+		case models.KeyWaitForConfigUpdate:
 			revision := 0
 			if configuration.Revision != nil {
 				revision = *(configuration.Revision)
