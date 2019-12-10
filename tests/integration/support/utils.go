@@ -39,7 +39,7 @@ func getDecisionAndTrackListeners(value string) (decisionListeners []models.Deci
 
 			var decisionListener = models.DecisionListener{}
 			// We have to check if decisionInfo is not nil since both decision and track listeners have some attributes
-			// such as userID and attributes in common which makes it possible for yamlString to be parsed into both of them
+			// in common such as userID and attributes which makes it possible for yamlString to be parsed into both of them
 			if err := yaml.Unmarshal(yamlString, &decisionListener); err == nil && decisionListener.DecisionInfo != nil {
 				decisionListeners = append(decisionListeners, decisionListener)
 				continue
