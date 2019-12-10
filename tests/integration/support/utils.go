@@ -18,6 +18,7 @@ package support
 
 import (
 	"fmt"
+	"gopkg.in/yaml.v2"
 	"regexp"
 	"sort"
 	"strings"
@@ -25,6 +26,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/optimizely/go-sdk/pkg/config"
+
+	"gopkg.in/yaml.v3"
 )
 
 func sortArrayofMaps(array []map[string]interface{}, sortKey string) []map[string]interface{} {
