@@ -18,13 +18,13 @@ package support
 
 import (
 	"fmt"
-	"github.com/optimizely/go-sdk/pkg/config"
 	"regexp"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/optimizely/go-sdk/pkg/config"
 )
 
 func sortArrayofMaps(array []map[string]interface{}, sortKey string) []map[string]interface{} {

@@ -20,10 +20,10 @@ package client
 import (
 	"errors"
 	"fmt"
-	"github.com/optimizely/go-sdk/pkg/config"
 	"runtime/debug"
 	"strconv"
 
+	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"

@@ -20,13 +20,11 @@ package event
 import (
 	"errors"
 	"fmt"
-	"github.com/optimizely/go-sdk/pkg/config"
 	"strings"
 	"time"
 
-	"github.com/optimizely/go-sdk/pkg"
-
 	guuid "github.com/google/uuid"
+	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/utils"
@@ -35,8 +33,6 @@ import (
 var efLogger = logging.GetLogger("EventFactory")
 
 const impressionKey string = "campaign_activated"
-const clientKey string = pkg.ClientName
-const clientVersion string = pkg.Version
 const attributeType = "custom"
 const specialPrefix = "$opt_"
 const botFilteringKey = "$opt_bot_filtering"
@@ -58,8 +54,8 @@ func CreateEventContext(projectConfig config.ProjectConfig) Context {
 	context.ProjectID = projectConfig.GetProjectID()
 	context.Revision = projectConfig.GetRevision()
 	context.AccountID = projectConfig.GetAccountID()
-	context.ClientName = clientKey
-	context.ClientVersion = clientVersion
+	context.ClientName = ClientName
+	context.ClientVersion = Version
 	context.AnonymizeIP = projectConfig.GetAnonymizeIP()
 	context.BotFiltering = projectConfig.GetBotFiltering()
 

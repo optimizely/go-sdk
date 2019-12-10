@@ -18,11 +18,11 @@
 package event
 
 import (
-	"github.com/optimizely/go-sdk/pkg/config"
 	"math/rand"
 	"testing"
 	"time"
 
+	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/utils"
 	"github.com/stretchr/testify/assert"
