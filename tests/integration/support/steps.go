@@ -194,11 +194,15 @@ func (c *ScenarioCtx) InTheResponseShouldMatch(argumentType string, value *gherk
 	switch argumentType {
 	case models.KeyListenerCalled:
 		decisionListeners, trackListeners := getDecisionAndTrackListeners(value.Content)
-		var success = true
-		if len(decisionListeners) > 0 {
+		success := false
+		shouldEvaluateDecisionListeners := len(decisionListeners) > 0
+		if shouldEvaluateDecisionListeners {
 			success = subset.Check(decisionListeners, c.apiResponse.DecisionListenerCalled)
 		}
-		if len(trackListeners) > 0 && success {
+		if shouldEvaluateDecisionListeners && !success {
+			return fmt.Errorf("response for %s not equal", argumentType)
+		}
+		if len(trackListeners) > 0 {
 			success = subset.Check(trackListeners, c.apiResponse.TrackListenerCalled)
 		}
 		if success {
@@ -216,8 +220,9 @@ func (c *ScenarioCtx) ResponseShouldHaveThisExactlyNTimes(argumentType string, c
 	switch argumentType {
 	case models.KeyListenerCalled:
 		decisionListeners, trackListeners := getDecisionAndTrackListeners(value.Content)
-		success := true
-		if len(decisionListeners) > 0 {
+		success := false
+		shouldEvaluateDecisionListeners := len(decisionListeners) > 0
+		if shouldEvaluateDecisionListeners {
 			listener := decisionListeners[0]
 			expectedListenersArray := []models.DecisionListener{}
 			for i := 0; i < count; i++ {
@@ -225,7 +230,10 @@ func (c *ScenarioCtx) ResponseShouldHaveThisExactlyNTimes(argumentType string, c
 			}
 			success = subset.Check(expectedListenersArray, c.apiResponse.DecisionListenerCalled)
 		}
-		if len(trackListeners) > 0 && success {
+		if shouldEvaluateDecisionListeners && !success {
+			return fmt.Errorf("response for %s not equal", argumentType)
+		}
+		if len(trackListeners) > 0 {
 			listener := trackListeners[0]
 			expectedListenersArray := []models.TrackListener{}
 			for i := 0; i < count; i++ {
@@ -247,8 +255,9 @@ func (c *ScenarioCtx) InTheResponseShouldHaveEachOneOfThese(argumentType string,
 	switch argumentType {
 	case models.KeyListenerCalled:
 		decisionListeners, trackListeners := getDecisionAndTrackListeners(value.Content)
-		found := true
-		if len(decisionListeners) > 0 {
+		found := false
+		shouldEvaluateDecisionListeners := len(decisionListeners) > 0
+		if shouldEvaluateDecisionListeners {
 			for _, expectedListener := range decisionListeners {
 				found = false
 				for _, actualListener := range c.apiResponse.DecisionListenerCalled {
@@ -262,7 +271,10 @@ func (c *ScenarioCtx) InTheResponseShouldHaveEachOneOfThese(argumentType string,
 				}
 			}
 		}
-		if len(trackListeners) > 0 && found {
+		if shouldEvaluateDecisionListeners && !found {
+			return fmt.Errorf("response for %s not equal", argumentType)
+		}
+		if len(trackListeners) > 0 {
 			for _, expectedListener := range trackListeners {
 				found = false
 				for _, actualListener := range c.apiResponse.TrackListenerCalled {
