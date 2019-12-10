@@ -22,14 +22,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/optimizely/go-sdk/pkg"
+	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 type TestConfig struct {
-	pkg.ProjectConfig
+	config.ProjectConfig
 }
 
 func (TestConfig) GetAttributeByKey(string) (entities.Attribute, error) {

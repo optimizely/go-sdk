@@ -18,7 +18,7 @@
 package decision
 
 import (
-	"github.com/optimizely/go-sdk/pkg"
+	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
@@ -26,13 +26,13 @@ import (
 // ExperimentDecisionContext contains the information needed to be able to make a decision for a given experiment
 type ExperimentDecisionContext struct {
 	Experiment    *entities.Experiment
-	ProjectConfig pkg.ProjectConfig
+	ProjectConfig config.ProjectConfig
 }
 
 // FeatureDecisionContext contains the information needed to be able to make a decision for a given feature
 type FeatureDecisionContext struct {
 	Feature       *entities.Feature
-	ProjectConfig pkg.ProjectConfig
+	ProjectConfig config.ProjectConfig
 	Variable      entities.Variable
 }
 

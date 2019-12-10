@@ -21,7 +21,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/optimizely/go-sdk/pkg"
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/event"
@@ -34,7 +33,7 @@ type OptimizelyFactory struct {
 	SDKKey   string
 	Datafile []byte
 
-	configManager      pkg.ProjectConfigManager
+	configManager      config.ProjectConfigManager
 	decisionService    decision.Service
 	eventDispatcher    event.Dispatcher
 	eventProcessor     event.Processor
@@ -123,7 +122,7 @@ func WithPollingConfigManager(pollingInterval time.Duration, initDataFile []byte
 }
 
 // WithConfigManager sets polling config manager on a client.
-func WithConfigManager(configManager pkg.ProjectConfigManager) OptionFunc {
+func WithConfigManager(configManager config.ProjectConfigManager) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.configManager = configManager
 	}
@@ -181,7 +180,7 @@ func WithExecutionContext(executionContext utils.ExecutionCtx) OptionFunc {
 
 // StaticClient returns a client initialized with a static project config.
 func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
-	var configManager pkg.ProjectConfigManager
+	var configManager config.ProjectConfigManager
 
 	if f.SDKKey != "" {
 		staticConfigManager, err := config.NewStaticProjectConfigManagerFromURL(f.SDKKey)

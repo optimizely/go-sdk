@@ -17,7 +17,7 @@
 package userprofileservice
 
 import (
-	"github.com/optimizely/go-sdk/pkg"
+	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 )
@@ -29,7 +29,7 @@ type UPSHelper interface {
 }
 
 // CreateUserProfileService creates a user profile service with the given parameters
-func CreateUserProfileService(config pkg.ProjectConfig, apiOptions models.APIOptions) decision.UserProfileService {
+func CreateUserProfileService(config config.ProjectConfig, apiOptions models.APIOptions) decision.UserProfileService {
 	var userProfileService decision.UserProfileService
 	switch apiOptions.UserProfileServiceType {
 	case "NormalService":

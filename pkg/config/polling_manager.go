@@ -23,7 +23,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/optimizely/go-sdk/pkg"
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
@@ -60,7 +59,7 @@ type PollingProjectConfigManager struct {
 
 	configLock    sync.RWMutex
 	err           error
-	projectConfig pkg.ProjectConfig
+	projectConfig ProjectConfig
 }
 
 // OptionFunc is used to provide custom configuration to the PollingProjectConfigManager.
@@ -208,7 +207,7 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 }
 
 // GetConfig returns the project config
-func (cm *PollingProjectConfigManager) GetConfig() (pkg.ProjectConfig, error) {
+func (cm *PollingProjectConfigManager) GetConfig() (ProjectConfig, error) {
 	cm.configLock.RLock()
 	defer cm.configLock.RUnlock()
 	if cm.projectConfig == nil {
