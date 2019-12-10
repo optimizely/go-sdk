@@ -33,24 +33,18 @@ type TrackCallback = func(eventKey string, userContext entities.UserContext, eve
 // GetListenerCallbacks - Creates and returns track callback functions
 func (c *TrackListenerManager) GetListenerCallbacks(listeners map[string]int) []TrackCallback {
 	var callbackArray []TrackCallback
-	for listenerType, count := range listeners {
+	if count, ok := listeners["Track"]; ok {
 		for i := 0; i < count; i++ {
-			switch listenerType {
-			case "Track":
-				var callbackFunc TrackCallback = func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
-					listener := models.TrackListener{
-						EventKey:   eventKey,
-						UserID:     userContext.ID,
-						Attributes: userContext.Attributes,
-						EventTags:  eventTags,
-					}
-					c.listenersCalled = append(c.listenersCalled, listener)
+			var callbackFunc TrackCallback = func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
+				listener := models.TrackListener{
+					EventKey:   eventKey,
+					UserID:     userContext.ID,
+					Attributes: userContext.Attributes,
+					EventTags:  eventTags,
 				}
-				callbackArray = append(callbackArray, callbackFunc)
-				break
-			default:
-				break
+				c.listenersCalled = append(c.listenersCalled, listener)
 			}
+			callbackArray = append(callbackArray, callbackFunc)
 		}
 	}
 	return callbackArray

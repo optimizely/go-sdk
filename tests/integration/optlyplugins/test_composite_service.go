@@ -35,15 +35,9 @@ func (c *TestCompositeService) AddListeners(listeners map[string]int) {
 	if len(listeners) < 1 {
 		return
 	}
-	for listenerType, count := range listeners {
-		for i := 1; i <= count; i++ {
-			switch listenerType {
-			case "Decision":
-				c.OnDecision(c.decisionNotificationCallback)
-				break
-			default:
-				break
-			}
+	if count, ok := listeners["Decision"]; ok {
+		for i := 0; i < count; i++ {
+			c.OnDecision(c.decisionNotificationCallback)
 		}
 	}
 }
