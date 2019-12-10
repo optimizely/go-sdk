@@ -33,7 +33,7 @@ type TrackCallback = func(eventKey string, userContext entities.UserContext, eve
 // GetListenerCallbacks - Creates and returns track callback functions
 func (c *TrackListenerManager) GetListenerCallbacks(listeners map[string]int) []TrackCallback {
 	var callbackArray []TrackCallback
-	if count, ok := listeners["Track"]; ok {
+	if count, ok := listeners[models.KeyTrack]; ok {
 		for i := 0; i < count; i++ {
 			var callbackFunc TrackCallback = func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
 				listener := models.TrackListener{

@@ -35,7 +35,7 @@ func (c *TestCompositeService) AddListeners(listeners map[string]int) {
 	if len(listeners) < 1 {
 		return
 	}
-	if count, ok := listeners["Decision"]; ok {
+	if count, ok := listeners[models.KeyDecision]; ok {
 		for i := 0; i < count; i++ {
 			c.OnDecision(c.decisionNotificationCallback)
 		}
