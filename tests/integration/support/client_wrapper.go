@@ -43,12 +43,12 @@ var sdkKey int
 
 // ClientWrapper - wrapper around the optimizely client that keeps track of various custom components used with the client
 type ClientWrapper struct {
-	client               *client.OptimizelyClient
-	decisionService      decision.Service
-	eventDispatcher      event.Dispatcher
-	userProfileService   decision.UserProfileService
-	overrideStore        decision.ExperimentOverrideStore
-	trackListenerManager *optlyplugins.TrackListenerManager
+	client                *client.OptimizelyClient
+	decisionService       decision.Service
+	eventDispatcher       event.Dispatcher
+	userProfileService    decision.UserProfileService
+	overrideStore         decision.ExperimentOverrideStore
+	notificationCallbacks *optlyplugins.NotificationCallbacks
 }
 
 // DeleteInstance deletes cached instance of optly wrapper
@@ -101,13 +101,16 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 	// @TODO: Add sdkKey dynamically once event-batching support is implemented
 
 	compositeService := *decision.NewCompositeService(strconv.Itoa(sdkKey), decision.WithCompositeExperimentService(compositeExperimentService))
-	decisionService := &optlyplugins.TestCompositeService{CompositeService: compositeService}
+	// decisionService := &optlyplugins.TestCompositeService{CompositeService: compositeService}
 
 	client, err := optimizelyFactory.Client(
 		client.WithConfigManager(configManager),
 		client.WithDecisionService(decisionService),
 		client.WithEventProcessor(eventProcessor),
 	)
+
+	notificationCallbacks := optlyplugins.NotificationCallbacks(decisionService: decisionService, client: client)
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -117,11 +120,12 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 	}
 	clientInstance = &ClientWrapper{
 		client:               client,
+		// Don't think we really needed it. just set in notificaitonCallbacks.
 		decisionService:      decisionService,
 		eventDispatcher:      eventProcessor.EventDispatcher,
 		userProfileService:   userProfileService,
 		overrideStore:        overrideStore,
-		trackListenerManager: &trackListenerManager,
+		notificationCallbacks: notificationCallbacks
 	}
 	clientInstance.decisionService.(*optlyplugins.TestCompositeService).AddListeners(apiOptions.Listeners)
 
