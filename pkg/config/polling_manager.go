@@ -18,6 +18,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"sync"
@@ -170,20 +171,18 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 }
 
 // Start starts the polling
-func (cm *PollingProjectConfigManager) Start(exeCtx utils.ExecutionCtx) {
-	go func() {
-		cmLogger.Debug("Polling Config Manager Initiated")
-		t := time.NewTicker(cm.pollingInterval)
-		for {
-			select {
-			case <-t.C:
-				cm.SyncConfig([]byte{})
-			case <-exeCtx.GetContext().Done():
-				cmLogger.Debug("Polling Config Manager Stopped")
-				return
-			}
+func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
+	cmLogger.Debug("Polling Config Manager Initiated")
+	t := time.NewTicker(cm.pollingInterval)
+	for {
+		select {
+		case <-t.C:
+			cm.SyncConfig([]byte{})
+		case <-ctx.Done():
+			cmLogger.Debug("Polling Config Manager Stopped")
+			return
 		}
-	}()
+	}
 }
 
 // NewPollingProjectConfigManager returns an instance of the polling config manager with the customized configuration

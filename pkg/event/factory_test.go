@@ -18,13 +18,13 @@
 package event
 
 import (
+	"context"
 	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/optimizely/go-sdk/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -129,7 +129,7 @@ func TestCreateAndSendImpressionEvent(t *testing.T) {
 		WithFlushInterval(10),
 		WithEventDispatcher(&MockDispatcher{Events:NewInMemoryQueue(100)}))
 
-	processor.Start(utils.NewCancelableExecutionCtx())
+	go processor.Start(context.Background())
 
 	processor.ProcessEvent(impressionUserEvent)
 
@@ -147,7 +147,7 @@ func TestCreateAndSendConversionEvent(t *testing.T) {
 	processor := NewBatchEventProcessor(WithFlushInterval(10),
 		WithEventDispatcher(&MockDispatcher{Events:NewInMemoryQueue(100)}))
 
-	processor.Start(utils.NewCancelableExecutionCtx())
+	go processor.Start(context.Background())
 
 	processor.ProcessEvent(conversionUserEvent)
 

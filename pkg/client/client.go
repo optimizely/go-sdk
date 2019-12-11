@@ -40,7 +40,7 @@ type OptimizelyClient struct {
 	DecisionService    decision.Service
 	EventProcessor     event.Processor
 	notificationCenter notification.Center
-	executionCtx       utils.ExecutionCtx
+	execGroup          *utils.ExecGroup
 }
 
 // Activate returns the key of the variation the user is bucketed into and queues up an impression event to be sent to
@@ -488,5 +488,5 @@ func (o *OptimizelyClient) GetProjectConfig() (projectConfig config.ProjectConfi
 
 // Close closes the Optimizely instance and stops any ongoing tasks from its children components.
 func (o *OptimizelyClient) Close() {
-	o.executionCtx.TerminateAndWait()
+	o.execGroup.TerminateAndWait()
 }
