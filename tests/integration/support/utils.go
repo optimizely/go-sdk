@@ -31,6 +31,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// parses the yaml string value to listeners
+// TODO: revise to avoid unmarshaling into models and directly compare interfaces
 func parseListeners(value string) (listeners []interface{}) {
 	var requestListenersCalled []interface{}
 	if err := yaml.Unmarshal([]byte(value), &requestListenersCalled); err == nil {
