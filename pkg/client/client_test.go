@@ -23,35 +23,17 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/optimizely/go-sdk/pkg"
+	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/notification"
+	"github.com/optimizely/go-sdk/pkg/utils"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
-
-var exeCtxSignalFlag bool
-
-type ExecutionCtx struct {
-	Wg  *sync.WaitGroup
-	Ctx context.Context
-}
-
-func (ctx ExecutionCtx) TerminateAndWait() {
-	exeCtxSignalFlag = true
-}
-
-func (ctx ExecutionCtx) GetContext() context.Context {
-	return ctx.Ctx
-}
-
-func (ctx ExecutionCtx) GetWaitSync() *sync.WaitGroup {
-	return ctx.Wg
-}
 
 func ValidProjectConfigManager() *MockProjectConfigManager {
 	p := new(MockProjectConfigManager)
@@ -103,7 +85,7 @@ func (m *MockNotificationCenter) Send(notificationType notification.Type, notifi
 }
 
 type TestConfig struct {
-	pkg.ProjectConfig
+	config.ProjectConfig
 }
 
 func (TestConfig) GetEventByKey(key string) (entities.Event, error) {
@@ -1934,17 +1916,24 @@ func TestClose(t *testing.T) {
 	mockProcessor := &MockProcessor{}
 	mockDecisionService := new(MockDecisionService)
 
+	eg := utils.NewExecGroup(context.Background())
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	eg.Go(func(ctx context.Context) {
+		<-ctx.Done()
+		wg.Done()
+	})
+
 	client := OptimizelyClient{
 		ConfigManager:   ValidProjectConfigManager(),
 		DecisionService: mockDecisionService,
 		EventProcessor:  mockProcessor,
-		executionCtx:    new(ExecutionCtx),
+		execGroup:       eg,
 	}
 
-	assert.False(t, exeCtxSignalFlag)
 	client.Close()
-	assert.True(t, exeCtxSignalFlag)
-
+	wg.Wait()
 }
 
 type ClientTestSuiteTrackEvent struct {

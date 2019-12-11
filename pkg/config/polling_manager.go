@@ -18,12 +18,12 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"sync"
 	"time"
 
-	"github.com/optimizely/go-sdk/pkg"
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
@@ -60,7 +60,7 @@ type PollingProjectConfigManager struct {
 
 	configLock    sync.RWMutex
 	err           error
-	projectConfig pkg.ProjectConfig
+	projectConfig ProjectConfig
 }
 
 // OptionFunc is used to provide custom configuration to the PollingProjectConfigManager.
@@ -172,20 +172,18 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 }
 
 // Start starts the polling
-func (cm *PollingProjectConfigManager) Start(exeCtx utils.ExecutionCtx) {
-	go func() {
-		cmLogger.Debug("Polling Config Manager Initiated")
-		t := time.NewTicker(cm.pollingInterval)
-		for {
-			select {
-			case <-t.C:
-				cm.SyncConfig([]byte{})
-			case <-exeCtx.GetContext().Done():
-				cmLogger.Debug("Polling Config Manager Stopped")
-				return
-			}
+func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
+	cmLogger.Debug("Polling Config Manager Initiated")
+	t := time.NewTicker(cm.pollingInterval)
+	for {
+		select {
+		case <-t.C:
+			cm.SyncConfig([]byte{})
+		case <-ctx.Done():
+			cmLogger.Debug("Polling Config Manager Stopped")
+			return
 		}
-	}()
+	}
 }
 
 // NewPollingProjectConfigManager returns an instance of the polling config manager with the customized configuration
@@ -209,7 +207,7 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 }
 
 // GetConfig returns the project config
-func (cm *PollingProjectConfigManager) GetConfig() (pkg.ProjectConfig, error) {
+func (cm *PollingProjectConfigManager) GetConfig() (ProjectConfig, error) {
 	cm.configLock.RLock()
 	defer cm.configLock.RUnlock()
 	if cm.projectConfig == nil {

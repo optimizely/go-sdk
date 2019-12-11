@@ -73,5 +73,6 @@ func main() {
 		client.WithPollingConfigManager(time.Second, nil),
 		client.WithBatchEventProcessor(event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
 	)
+
 	optimizelyClient.Close()
 }

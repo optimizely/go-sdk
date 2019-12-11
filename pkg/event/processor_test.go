@@ -18,6 +18,7 @@
 package event
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/optimizely/go-sdk/pkg/logging"
@@ -63,12 +64,15 @@ func NewMockDispatcher(queueSize int, shouldFail bool) *MockDispatcher {
 	return &MockDispatcher{Events: NewInMemoryQueue(queueSize), ShouldFail: shouldFail}
 }
 
+func newExecutionContext() *utils.ExecGroup {
+	return utils.NewExecGroup(context.Background())
+}
+
 func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtx()
+	eg := newExecutionContext()
 	processor := NewBatchEventProcessor()
 	processor.EventDispatcher = nil
-	processor.Start(exeCtx)
-	processor.Start(exeCtx)
+	eg.Go(processor.Start)
 
 	impression := BuildTestImpressionEvent()
 
@@ -76,7 +80,7 @@ func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 
 	assert.Equal(t, 1, processor.eventsCount())
 
-	exeCtx.TerminateAndWait()
+	eg.TerminateAndWait()
 
 	assert.NotNil(t, processor.Ticker)
 
@@ -84,12 +88,12 @@ func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 }
 
 func TestCustomEventProcessor_Create(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtx()
+	eg := newExecutionContext()
 	processor := NewBatchEventProcessor(
 		WithEventDispatcher(NewMockDispatcher(100, false)),
 		WithQueueSize(10),
 		WithFlushInterval(100))
-	processor.Start(exeCtx)
+	eg.Go(processor.Start)
 
 	impression := BuildTestImpressionEvent()
 
@@ -97,7 +101,7 @@ func TestCustomEventProcessor_Create(t *testing.T) {
 
 	assert.Equal(t, 1, processor.eventsCount())
 
-	exeCtx.TerminateAndWait()
+	eg.TerminateAndWait()
 
 	assert.NotNil(t, processor.Ticker)
 
@@ -105,7 +109,7 @@ func TestCustomEventProcessor_Create(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_LogEventNotification(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtx()
+	eg := newExecutionContext()
 	processor := NewBatchEventProcessor(
 		WithQueueSize(100),
 		WithQueue(NewInMemoryQueue(100)),
@@ -117,7 +121,7 @@ func TestDefaultEventProcessor_LogEventNotification(t *testing.T) {
 	id, _ := processor.OnEventDispatch(func(eventNotification LogEvent) {
 		logEvent = eventNotification
 	})
-	processor.Start(exeCtx)
+	eg.Go(processor.Start)
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -129,7 +133,7 @@ func TestDefaultEventProcessor_LogEventNotification(t *testing.T) {
 
 	assert.Equal(t, 4, processor.eventsCount())
 
-	exeCtx.TerminateAndWait()
+	eg.TerminateAndWait()
 
 	assert.NotNil(t, logEvent)
 	assert.Equal(t, 4, len(logEvent.Event.Visitors))
@@ -140,12 +144,13 @@ func TestDefaultEventProcessor_LogEventNotification(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_DefaultConfig(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtx()
+	eg := newExecutionContext()
+	dispatcher := NewMockDispatcher(100, false)
 	processor := NewBatchEventProcessor(
-		WithEventDispatcher(NewMockDispatcher(100, false)),
+		WithEventDispatcher(dispatcher),
 		// here we are setting the timing interval so that we don't have to wait the default 30 seconds
 		WithFlushInterval(500*time.Millisecond))
-	processor.Start(exeCtx)
+	eg.Go(processor.Start)
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -160,28 +165,22 @@ func TestDefaultEventProcessor_DefaultConfig(t *testing.T) {
 	// sleep for 1 second here. to allow event processor to run.
 	time.Sleep(1 * time.Second)
 
-	assert.NotNil(t, processor.Ticker)
-
 	assert.Equal(t, 0, processor.eventsCount())
-
-	result, ok := (processor.EventDispatcher).(*MockDispatcher)
-
-	if ok {
-		assert.Equal(t, 1, result.Events.Size())
-		evs := result.Events.Get(1)
-		logEvent, _ := evs[0].(LogEvent)
-		assert.Equal(t, 4, len(logEvent.Event.Visitors))
-	}
+	assert.Equal(t, 1, dispatcher.Events.Size())
+	evs := dispatcher.Events.Get(1)
+	logEvent, _ := evs[0].(LogEvent)
+	assert.Equal(t, 4, len(logEvent.Event.Visitors))
 }
 
 func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtx()
+	eg := newExecutionContext()
+	dispatcher := NewMockDispatcher(100, false)
 	processor := NewBatchEventProcessor(
 		WithFlushInterval(1*time.Second),
 		WithQueueSize(100),
 		WithQueue(NewInMemoryQueue(100)),
-		WithEventDispatcher(NewMockDispatcher(100, false)))
-	processor.Start(exeCtx)
+		WithEventDispatcher(dispatcher))
+	eg.Go(processor.Start)
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -195,28 +194,22 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 
 	time.Sleep(1500 * time.Millisecond)
 
-	assert.NotNil(t, processor.Ticker)
-
 	assert.Equal(t, 0, processor.eventsCount())
-
-	result, ok := (processor.EventDispatcher).(*MockDispatcher)
-
-	if ok {
-		assert.Equal(t, 1, result.Events.Size())
-		evs := result.Events.Get(1)
-		logEvent, _ := evs[0].(LogEvent)
-		assert.Equal(t, 4, len(logEvent.Event.Visitors))
-	}
+	assert.Equal(t, 1, dispatcher.Events.Size())
+	evs := dispatcher.Events.Get(1)
+	logEvent, _ := evs[0].(LogEvent)
+	assert.Equal(t, 4, len(logEvent.Event.Visitors))
 }
 
 func TestDefaultEventProcessor_BatchSizeMet(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtx()
+	eg := newExecutionContext()
+	dispatcher := NewMockDispatcher(100, false)
 	processor := NewBatchEventProcessor(
 		WithBatchSize(2),
 		WithFlushInterval(1000*time.Millisecond),
 		WithQueue(NewInMemoryQueue(2)),
-		WithEventDispatcher(NewMockDispatcher(100, false)))
-	processor.Start(exeCtx)
+		WithEventDispatcher(dispatcher))
+	eg.Go(processor.Start)
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -228,30 +221,22 @@ func TestDefaultEventProcessor_BatchSizeMet(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	result, ok := (processor.EventDispatcher).(*MockDispatcher)
-
-	if ok {
-		assert.Equal(t, 1, result.Events.Size())
-		evs := result.Events.Get(1)
-		logEvent, _ := evs[0].(LogEvent)
-		assert.Equal(t, 2, len(logEvent.Event.Visitors))
-
-	}
+	assert.Equal(t, 1, dispatcher.Events.Size())
+	evs := dispatcher.Events.Get(1)
+	logEvent, _ := evs[0].(LogEvent)
+	assert.Equal(t, 2, len(logEvent.Event.Visitors))
 
 	processor.ProcessEvent(conversion)
 	processor.ProcessEvent(conversion)
 
 	assert.Equal(t, 2, processor.eventsCount())
 
-	exeCtx.TerminateAndWait()
+	eg.TerminateAndWait()
 
 	assert.NotNil(t, processor.Ticker)
 
 	assert.Equal(t, 0, processor.eventsCount())
-
-	if ok {
-		assert.Equal(t, 2, result.Events.Size())
-	}
+	assert.Equal(t, 2, dispatcher.Events.Size())
 }
 
 func TestDefaultEventProcessor_BatchSizeLessThanQSize(t *testing.T) {
@@ -267,14 +252,14 @@ func TestDefaultEventProcessor_BatchSizeLessThanQSize(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_QSizeExceeded(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtx()
+	eg := newExecutionContext()
 	processor := NewBatchEventProcessor(
 		WithQueueSize(2),
 		WithBatchSize(2),
 		WithFlushInterval(1000*time.Millisecond),
 		WithQueue(NewInMemoryQueue(2)),
 		WithEventDispatcher(NewMockDispatcher(100, true)))
-	processor.Start(exeCtx)
+	eg.Go(processor.Start)
 
 	impression := BuildTestImpressionEvent()
 
@@ -291,13 +276,14 @@ func TestDefaultEventProcessor_QSizeExceeded(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_FailedDispatch(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtx()
+	eg := newExecutionContext()
+	dispatcher := &MockDispatcher{ShouldFail: true, Events: NewInMemoryQueue(100)}
 	processor := NewBatchEventProcessor(
 		WithQueueSize(100),
 		WithFlushInterval(100),
 		WithQueue(NewInMemoryQueue(100)),
-		WithEventDispatcher(&MockDispatcher{ShouldFail: true, Events: NewInMemoryQueue(100)}))
-	processor.Start(exeCtx)
+		WithEventDispatcher(dispatcher))
+	eg.Go(processor.Start)
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -309,26 +295,21 @@ func TestDefaultEventProcessor_FailedDispatch(t *testing.T) {
 
 	assert.Equal(t, 4, processor.eventsCount())
 
-	exeCtx.TerminateAndWait()
+	eg.TerminateAndWait()
 
 	assert.NotNil(t, processor.Ticker)
 
 	assert.Equal(t, 4, processor.eventsCount())
-
-	result, ok := (processor.EventDispatcher).(*MockDispatcher)
-
-	if ok {
-		assert.Equal(t, 0, result.Events.Size())
-	}
+	assert.Equal(t, 0, dispatcher.Events.Size())
 }
 
 func TestBatchEventProcessor_FlushesOnClose(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtx()
+	eg := newExecutionContext()
 	processor := NewBatchEventProcessor(
 		WithQueueSize(100),
 		WithQueue(NewInMemoryQueue(100)),
 		WithEventDispatcher(NewMockDispatcher(100, false)))
-	processor.Start(exeCtx)
+	eg.Go(processor.Start)
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -341,19 +322,20 @@ func TestBatchEventProcessor_FlushesOnClose(t *testing.T) {
 	assert.Equal(t, 4, processor.eventsCount())
 
 	// Triggers the flush in the processor
-	exeCtx.TerminateAndWait()
+	eg.TerminateAndWait()
 
 	assert.Equal(t, 0, processor.eventsCount())
 }
 
 func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtx()
+	eg := newExecutionContext()
+	dispatcher := NewMockDispatcher(100, false)
 	processor := NewBatchEventProcessor(
 		WithQueueSize(100),
 		WithQueue(NewInMemoryQueue(100)),
-		WithEventDispatcher(NewMockDispatcher(100, false)))
+		WithEventDispatcher(dispatcher))
 
-	processor.Start(exeCtx)
+	eg.Go(processor.Start)
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -366,30 +348,26 @@ func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 
 	assert.Equal(t, 4, processor.eventsCount())
 
-	exeCtx.TerminateAndWait()
+	eg.TerminateAndWait()
 
 	assert.NotNil(t, processor.Ticker)
 
 	assert.Equal(t, 0, processor.eventsCount())
-
-	result, ok := (processor.EventDispatcher).(*MockDispatcher)
-
-	if ok {
-		assert.Equal(t, 3, result.Events.Size())
-		evs := result.Events.Get(3)
-		logEvent, _ := evs[len(evs)-1].(LogEvent)
-		assert.Equal(t, 2, len(logEvent.Event.Visitors))
-	}
+	assert.Equal(t, 3, dispatcher.Events.Size())
+	evs := dispatcher.Events.Get(3)
+	logEvent, _ := evs[len(evs)-1].(LogEvent)
+	assert.Equal(t, 2, len(logEvent.Event.Visitors))
 }
 
 func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtx()
+	eg := newExecutionContext()
+	dispatcher := NewMockDispatcher(100, false)
 	processor := NewBatchEventProcessor(
 		WithQueueSize(100),
 		WithQueue(NewInMemoryQueue(100)),
-		WithEventDispatcher(NewMockDispatcher(100, false)))
+		WithEventDispatcher(dispatcher))
 
-	processor.Start(exeCtx)
+	eg.Go(processor.Start)
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -402,30 +380,25 @@ func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 
 	assert.Equal(t, 4, processor.eventsCount())
 
-	exeCtx.TerminateAndWait()
+	eg.TerminateAndWait()
 
 	assert.NotNil(t, processor.Ticker)
 
 	assert.Equal(t, 0, processor.eventsCount())
-
-	result, ok := (processor.EventDispatcher).(*MockDispatcher)
-
-	if ok {
-		assert.Equal(t, 3, result.Events.Size())
-		evs := result.Events.Get(3)
-		logEvent, _ := evs[len(evs)-1].(LogEvent)
-		assert.Equal(t, 2, len(logEvent.Event.Visitors))
-	}
+	assert.Equal(t, 3, dispatcher.Events.Size())
+	evs := dispatcher.Events.Get(3)
+	logEvent, _ := evs[len(evs)-1].(LogEvent)
+	assert.Equal(t, 2, len(logEvent.Event.Visitors))
 }
 
 func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtx()
+	eg := newExecutionContext()
 	processor := NewBatchEventProcessor(
 		WithQueueSize(100),
 		WithQueue(NewInMemoryQueue(100)),
 		WithEventDispatcher(&HTTPEventDispatcher{requester: utils.NewHTTPRequester()}))
 
-	processor.Start(exeCtx)
+	eg.Go(processor.Start)
 
 	impression := BuildTestImpressionEvent()
 
@@ -433,19 +406,20 @@ func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
 	processor.ProcessEvent(impression)
 	processor.ProcessEvent(impression)
 
-	exeCtx.TerminateAndWait()
+	eg.TerminateAndWait()
 	assert.NotNil(t, processor.Ticker)
 
 	assert.Equal(t, 0, processor.eventsCount())
 }
 
 func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtx()
+	eg := newExecutionContext()
+	dispatcher := NewMockDispatcher(100, false)
 	processor := NewBatchEventProcessor(
 		WithQueueSize(100),
 		WithQueue(NewInMemoryQueue(100)),
-		WithEventDispatcher(NewMockDispatcher(100, false)))
-	processor.Start(exeCtx)
+		WithEventDispatcher(dispatcher))
+	eg.Go(processor.Start)
 
 	impression := BuildTestImpressionEvent()
 	conversion := BuildTestConversionEvent()
@@ -455,20 +429,15 @@ func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
 	processor.ProcessEvent(conversion)
 	processor.ProcessEvent(conversion)
 
-	exeCtx.TerminateAndWait()
+	eg.TerminateAndWait()
 
 	assert.NotNil(t, processor.Ticker)
 
 	assert.Equal(t, 0, processor.eventsCount())
-
-	result, ok := (processor.EventDispatcher).(*MockDispatcher)
-
-	if ok {
-		assert.Equal(t, 1, result.Events.Size())
-		evs := result.Events.Get(1)
-		logEvent, _ := evs[0].(LogEvent)
-		assert.True(t, len(logEvent.Event.Visitors) >= 1)
-	}
+	assert.Equal(t, 1, dispatcher.Events.Size())
+	evs := dispatcher.Events.Get(1)
+	logEvent, _ := evs[0].(LogEvent)
+	assert.True(t, len(logEvent.Event.Visitors) >= 1)
 }
 
 // The NoOpLogger is used during benchmarking so that results are printed nicely.
@@ -544,13 +513,13 @@ func BenchmarkProcessor(b *testing.B) {
 }
 
 func benchmarkProcessor(q Queue, bSize int, b *testing.B) {
-	exeCtx := utils.NewCancelableExecutionCtx()
+	eg := newExecutionContext()
 	dispatcher := &CountingDispatcher{}
 	processor := NewBatchEventProcessor(
 		WithQueue(q),
 		WithBatchSize(bSize),
 		WithEventDispatcher(dispatcher))
-	processor.Start(exeCtx)
+	eg.Go(processor.Start)
 
 	conversion := BuildTestConversionEvent()
 
@@ -561,7 +530,7 @@ func benchmarkProcessor(q Queue, bSize int, b *testing.B) {
 		}
 	}
 
-	exeCtx.TerminateAndWait()
+	eg.TerminateAndWait()
 
 	if b.N != dispatcher.visitorCount {
 		println("Total sent and run ", dispatcher.visitorCount, b.N)

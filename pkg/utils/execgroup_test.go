@@ -20,51 +20,36 @@ package utils
 import (
 	"context"
 	"sync"
-
-	"github.com/optimizely/go-sdk/pkg/logging"
+	"testing"
 )
 
-var exeCtx = logging.GetLogger("ExecutionCtx")
+func TestWithContextCancelFunc(t *testing.T) {
 
-// ExecutionCtx is the interface, user can overwrite it
-type ExecutionCtx interface {
-	TerminateAndWait()
-	GetContext() context.Context
-	GetWaitSync() *sync.WaitGroup
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	eg := NewExecGroup(ctx)
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	eg.Go(func(ctx context.Context) {
+		<-ctx.Done()
+		wg.Done()
+	})
+
+	cancelFunc()
+	wg.Wait()
 }
 
-// CancelableExecutionCtx has WithCancel implementation
-type CancelableExecutionCtx struct {
-	Wg         *sync.WaitGroup
-	Ctx        context.Context
-	CancelFunc context.CancelFunc
-}
+func TestTerminateAndWait(t *testing.T) {
 
-// NewCancelableExecutionCtx returns constructed object
-func NewCancelableExecutionCtx() *CancelableExecutionCtx {
-	ctx, cancelFn := context.WithCancel(context.Background())
-	var wg sync.WaitGroup
+	eg := NewExecGroup(context.Background())
 
-	return &CancelableExecutionCtx{Wg: &wg, Ctx: ctx, CancelFunc: cancelFn}
-}
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	eg.Go(func(ctx context.Context) {
+		<-ctx.Done()
+		wg.Done()
+	})
 
-// TerminateAndWait sends termination signal and waits
-func (ctx CancelableExecutionCtx) TerminateAndWait() {
-
-	if ctx.CancelFunc == nil {
-		exeCtx.Error("failed to shut down Execution Context properly", nil)
-		return
-	}
-	ctx.CancelFunc()
-	ctx.Wg.Wait()
-}
-
-// GetContext is context getter
-func (ctx CancelableExecutionCtx) GetContext() context.Context {
-	return ctx.Ctx
-}
-
-// GetWaitSync is waitgroup getter
-func (ctx CancelableExecutionCtx) GetWaitSync() *sync.WaitGroup {
-	return ctx.Wg
+	eg.TerminateAndWait()
+	wg.Wait()
 }

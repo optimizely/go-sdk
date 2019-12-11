@@ -18,10 +18,10 @@
 package client
 
 import (
+	"context"
 	"errors"
 	"time"
 
-	"github.com/optimizely/go-sdk/pkg"
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/event"
@@ -34,11 +34,11 @@ type OptimizelyFactory struct {
 	SDKKey   string
 	Datafile []byte
 
-	configManager      pkg.ProjectConfigManager
+	configManager      config.ProjectConfigManager
+	ctx                context.Context
 	decisionService    decision.Service
 	eventDispatcher    event.Dispatcher
 	eventProcessor     event.Processor
-	executionCtx       utils.ExecutionCtx
 	userProfileService decision.UserProfileService
 	overrideStore      decision.ExperimentOverrideStore
 }
@@ -57,14 +57,15 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		return nil, errors.New("unable to instantiate client: no project config manager, SDK key, or a Datafile provided")
 	}
 
-	var executionCtx utils.ExecutionCtx
-	if f.executionCtx != nil {
-		executionCtx = f.executionCtx
+	var ctx context.Context
+	if f.ctx != nil {
+		ctx = f.ctx
 	} else {
-		executionCtx = utils.NewCancelableExecutionCtx()
+		ctx = context.Background()
 	}
 
-	appClient := &OptimizelyClient{executionCtx: executionCtx, notificationCenter: registry.GetNotificationCenter(f.SDKKey)}
+	eg := utils.NewExecGroup(ctx)
+	appClient := &OptimizelyClient{execGroup: eg, notificationCenter: registry.GetNotificationCenter(f.SDKKey)}
 
 	if f.configManager != nil {
 		appClient.ConfigManager = f.configManager
@@ -104,11 +105,11 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 
 	// Initialize the default services with the execution context
 	if pollingConfigManager, ok := appClient.ConfigManager.(*config.PollingProjectConfigManager); ok {
-		pollingConfigManager.Start(appClient.executionCtx)
+		eg.Go(pollingConfigManager.Start)
 	}
 
 	if batchProcessor, ok := appClient.EventProcessor.(*event.BatchEventProcessor); ok {
-		batchProcessor.Start(appClient.executionCtx)
+		eg.Go(batchProcessor.Start)
 	}
 
 	return appClient, nil
@@ -123,7 +124,7 @@ func WithPollingConfigManager(pollingInterval time.Duration, initDataFile []byte
 }
 
 // WithConfigManager sets polling config manager on a client.
-func WithConfigManager(configManager pkg.ProjectConfigManager) OptionFunc {
+func WithConfigManager(configManager config.ProjectConfigManager) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.configManager = configManager
 	}
@@ -172,16 +173,16 @@ func WithEventDispatcher(eventDispatcher event.Dispatcher) OptionFunc {
 	}
 }
 
-// WithExecutionContext allows user to pass in their own execution context to override the default one in the client.
-func WithExecutionContext(executionContext utils.ExecutionCtx) OptionFunc {
+// WithContext allows user to pass in their own context to override the default one in the client.
+func WithContext(ctx context.Context) OptionFunc {
 	return func(f *OptimizelyFactory) {
-		f.executionCtx = executionContext
+		f.ctx = ctx
 	}
 }
 
 // StaticClient returns a client initialized with a static project config.
 func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
-	var configManager pkg.ProjectConfigManager
+	var configManager config.ProjectConfigManager
 
 	if f.SDKKey != "" {
 		staticConfigManager, err := config.NewStaticProjectConfigManagerFromURL(f.SDKKey)

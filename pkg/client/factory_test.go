@@ -17,8 +17,10 @@
 package client
 
 import (
+	"context"
 	"errors"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -117,14 +119,23 @@ func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 
 func TestClientWithCustomCtx(t *testing.T) {
 	factory := OptimizelyFactory{}
-	testExecutionCtx := utils.NewCancelableExecutionCtx()
+	ctx, cancel := context.WithCancel(context.Background())
 	mockConfigManager := new(MockProjectConfigManager)
 	client, err := factory.Client(
 		WithConfigManager(mockConfigManager),
-		WithExecutionContext(testExecutionCtx),
+		WithContext(ctx),
 	)
 	assert.NoError(t, err)
-	assert.Equal(t, client.executionCtx, testExecutionCtx)
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	client.execGroup.Go(func(ctx context.Context) {
+		<-ctx.Done()
+		wg.Done()
+	})
+
+	cancel()
+	wg.Wait()
 }
 
 func TestStaticClient(t *testing.T) {

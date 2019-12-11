@@ -22,14 +22,14 @@
 package decision
 
 import (
-	"github.com/optimizely/go-sdk/pkg"
+	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/stretchr/testify/mock"
 )
 
 // Mock implementation of ProjectConfig
 type mockProjectConfig struct {
-	pkg.ProjectConfig
+	config.ProjectConfig
 	mock.Mock
 }
 
