@@ -22,8 +22,7 @@ import (
 
 // APIResponse represents result for a scenario
 type APIResponse struct {
-	Result                 interface{}
-	Type                   entities.VariableType
-	DecisionListenerCalled []DecisionListener
-	TrackListenerCalled    []TrackListener
+	Result         interface{}
+	Type           entities.VariableType
+	ListenerCalled []interface{}
 }

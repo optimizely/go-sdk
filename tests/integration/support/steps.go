@@ -180,7 +180,7 @@ func (c *ScenarioCtx) TheResultShouldMatchList(list string) error {
 func (c *ScenarioCtx) InTheResponseKeyShouldBeObject(argumentType, value string) error {
 	switch argumentType {
 	case models.KeyListenerCalled:
-		if value == "NULL" && c.apiResponse.DecisionListenerCalled == nil && c.apiResponse.TrackListenerCalled == nil {
+		if value == "NULL" && c.apiResponse.ListenerCalled == nil {
 			return nil
 		}
 	default:
@@ -193,18 +193,8 @@ func (c *ScenarioCtx) InTheResponseKeyShouldBeObject(argumentType, value string)
 func (c *ScenarioCtx) InTheResponseShouldMatch(argumentType string, value *gherkin.DocString) error {
 	switch argumentType {
 	case models.KeyListenerCalled:
-		decisionListeners, trackListeners := getDecisionAndTrackListeners(value.Content)
-		success := false
-		shouldEvaluateDecisionListeners := len(decisionListeners) > 0
-		if shouldEvaluateDecisionListeners {
-			success = subset.Check(decisionListeners, c.apiResponse.DecisionListenerCalled)
-		}
-		if shouldEvaluateDecisionListeners && !success {
-			return fmt.Errorf("response for %s not equal", argumentType)
-		}
-		if len(trackListeners) > 0 {
-			success = subset.Check(trackListeners, c.apiResponse.TrackListenerCalled)
-		}
+		listeners := parseListeners(value.Content)
+		success := subset.Check(listeners, c.apiResponse.ListenerCalled)
 		if success {
 			return nil
 		}
@@ -219,28 +209,14 @@ func (c *ScenarioCtx) InTheResponseShouldMatch(argumentType string, value *gherk
 func (c *ScenarioCtx) ResponseShouldHaveThisExactlyNTimes(argumentType string, count int, value *gherkin.DocString) error {
 	switch argumentType {
 	case models.KeyListenerCalled:
-		decisionListeners, trackListeners := getDecisionAndTrackListeners(value.Content)
+		listeners := parseListeners(value.Content)
 		success := false
-		shouldEvaluateDecisionListeners := len(decisionListeners) > 0
-		if shouldEvaluateDecisionListeners {
-			listener := decisionListeners[0]
-			expectedListenersArray := []models.DecisionListener{}
-			for i := 0; i < count; i++ {
-				expectedListenersArray = append(expectedListenersArray, listener)
-			}
-			success = subset.Check(expectedListenersArray, c.apiResponse.DecisionListenerCalled)
+		listener := listeners[0]
+		expectedListenersArray := []interface{}{}
+		for i := 0; i < count; i++ {
+			expectedListenersArray = append(expectedListenersArray, listener)
 		}
-		if shouldEvaluateDecisionListeners && !success {
-			return fmt.Errorf("response for %s not equal", argumentType)
-		}
-		if len(trackListeners) > 0 {
-			listener := trackListeners[0]
-			expectedListenersArray := []models.TrackListener{}
-			for i := 0; i < count; i++ {
-				expectedListenersArray = append(expectedListenersArray, listener)
-			}
-			success = subset.Check(expectedListenersArray, c.apiResponse.TrackListenerCalled)
-		}
+		success = subset.Check(expectedListenersArray, c.apiResponse.ListenerCalled)
 		if success {
 			return nil
 		}
@@ -254,38 +230,18 @@ func (c *ScenarioCtx) ResponseShouldHaveThisExactlyNTimes(argumentType string, c
 func (c *ScenarioCtx) InTheResponseShouldHaveEachOneOfThese(argumentType string, value *gherkin.DocString) error {
 	switch argumentType {
 	case models.KeyListenerCalled:
-		decisionListeners, trackListeners := getDecisionAndTrackListeners(value.Content)
+		listeners := parseListeners(value.Content)
 		found := false
-		shouldEvaluateDecisionListeners := len(decisionListeners) > 0
-		if shouldEvaluateDecisionListeners {
-			for _, expectedListener := range decisionListeners {
-				found = false
-				for _, actualListener := range c.apiResponse.DecisionListenerCalled {
-					if subset.Check(expectedListener, actualListener) {
-						found = true
-						break
-					}
-				}
-				if !found {
+		for _, expectedListener := range listeners {
+			found = false
+			for _, actualListener := range c.apiResponse.ListenerCalled {
+				if subset.Check(expectedListener, actualListener) {
+					found = true
 					break
 				}
 			}
-		}
-		if shouldEvaluateDecisionListeners && !found {
-			return fmt.Errorf("response for %s not equal", argumentType)
-		}
-		if len(trackListeners) > 0 {
-			for _, expectedListener := range trackListeners {
-				found = false
-				for _, actualListener := range c.apiResponse.TrackListenerCalled {
-					if subset.Check(expectedListener, actualListener) {
-						found = true
-						break
-					}
-				}
-				if !found {
-					break
-				}
+			if !found {
+				break
 			}
 		}
 		if found {

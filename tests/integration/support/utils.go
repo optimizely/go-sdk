@@ -31,7 +31,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func getDecisionAndTrackListeners(value string) (decisionListeners []models.DecisionListener, trackListeners []models.TrackListener) {
+func parseListeners(value string) (listeners []interface{}) {
 	var requestListenersCalled []interface{}
 	if err := yaml.Unmarshal([]byte(value), &requestListenersCalled); err == nil {
 		for _, listener := range requestListenersCalled {
@@ -41,17 +41,17 @@ func getDecisionAndTrackListeners(value string) (decisionListeners []models.Deci
 			// We have to check if decisionInfo is not nil since both decision and track listeners have some attributes
 			// in common such as userID and attributes which makes it possible for yamlString to be parsed into both of them
 			if err := yaml.Unmarshal(yamlString, &decisionListener); err == nil && decisionListener.DecisionInfo != nil {
-				decisionListeners = append(decisionListeners, decisionListener)
+				listeners = append(listeners, decisionListener)
 				continue
 			}
 
 			var trackListener = models.TrackListener{}
 			if err := yaml.Unmarshal(yamlString, &trackListener); err == nil {
-				trackListeners = append(trackListeners, trackListener)
+				listeners = append(listeners, trackListener)
 			}
 		}
 	}
-	return decisionListeners, trackListeners
+	return listeners
 }
 
 func sortArrayofMaps(array []map[string]interface{}, sortKey string) []map[string]interface{} {

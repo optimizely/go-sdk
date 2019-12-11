@@ -43,12 +43,12 @@ var sdkKey int
 
 // ClientWrapper - wrapper around the optimizely client that keeps track of various custom components used with the client
 type ClientWrapper struct {
-	client                *client.OptimizelyClient
-	decisionService       decision.Service
-	eventDispatcher       event.Dispatcher
-	userProfileService    decision.UserProfileService
-	overrideStore         decision.ExperimentOverrideStore
-	notificationCallbacks *optlyplugins.NotificationCallbacks
+	client              *client.OptimizelyClient
+	decisionService     decision.Service
+	eventDispatcher     event.Dispatcher
+	userProfileService  decision.UserProfileService
+	overrideStore       decision.ExperimentOverrideStore
+	notificationManager *optlyplugins.NotificationManager
 }
 
 // DeleteInstance deletes cached instance of optly wrapper
@@ -99,36 +99,30 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 	)
 
 	// @TODO: Add sdkKey dynamically once event-batching support is implemented
-
-	compositeService := *decision.NewCompositeService(strconv.Itoa(sdkKey), decision.WithCompositeExperimentService(compositeExperimentService))
-	// decisionService := &optlyplugins.TestCompositeService{CompositeService: compositeService}
-
+	compositeService := decision.NewCompositeService(strconv.Itoa(sdkKey), decision.WithCompositeExperimentService(compositeExperimentService))
 	client, err := optimizelyFactory.Client(
 		client.WithConfigManager(configManager),
-		client.WithDecisionService(decisionService),
+		client.WithDecisionService(compositeService),
 		client.WithEventProcessor(eventProcessor),
 	)
-
-	notificationCallbacks := optlyplugins.NotificationCallbacks(decisionService: decisionService, client: client)
-
 	if err != nil {
 		log.Fatal(err)
 	}
-	trackListenerManager := optlyplugins.TrackListenerManager{}
-	for _, callback := range trackListenerManager.GetListenerCallbacks(apiOptions.Listeners) {
-		client.OnTrack(callback)
-	}
-	clientInstance = &ClientWrapper{
-		client:               client,
-		// Don't think we really needed it. just set in notificaitonCallbacks.
-		decisionService:      decisionService,
-		eventDispatcher:      eventProcessor.EventDispatcher,
-		userProfileService:   userProfileService,
-		overrideStore:        overrideStore,
-		notificationCallbacks: notificationCallbacks
-	}
-	clientInstance.decisionService.(*optlyplugins.TestCompositeService).AddListeners(apiOptions.Listeners)
 
+	notificationManager := optlyplugins.NotificationManager{
+		DecisionService: compositeService,
+		Client:          client,
+	}
+	notificationManager.SubscribeNotifications(apiOptions.Listeners)
+	clientInstance = &ClientWrapper{
+		client: client,
+		// Don't think we really needed it. just set in notificaitonCallbacks.
+		decisionService:     compositeService,
+		eventDispatcher:     eventProcessor.EventDispatcher,
+		userProfileService:  userProfileService,
+		overrideStore:       overrideStore,
+		notificationManager: &notificationManager,
+	}
 	return clientInstance
 }
 
@@ -180,8 +174,7 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (models.APIResponse
 	}
 	// TODO: For event batching, it should be conditional.
 	c.client.Close()
-	response.DecisionListenerCalled = c.decisionService.(*optlyplugins.TestCompositeService).GetListenersCalled()
-	response.TrackListenerCalled = c.trackListenerManager.GetListenersCalled()
+	response.ListenerCalled = c.notificationManager.GetListenersCalled()
 	return response, err
 }
 
