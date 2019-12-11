@@ -26,7 +26,7 @@ import (
 	"github.com/optimizely/go-sdk/tests/integration/models"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/optimizely/go-sdk/pkg"
+	"github.com/optimizely/go-sdk/pkg/config"
 
 	"gopkg.in/yaml.v3"
 )
@@ -71,7 +71,7 @@ func sortArrayofMaps(array []map[string]interface{}, sortKey string) []map[strin
 	return array
 }
 
-func parseYamlArray(s string, config pkg.ProjectConfig) ([]map[string]interface{}, error) {
+func parseYamlArray(s string, config config.ProjectConfig) ([]map[string]interface{}, error) {
 	var array []map[string]interface{}
 	parsedString := parseTemplate(s, config)
 	if err := yaml.Unmarshal([]byte(parsedString), &array); err != nil {
@@ -80,7 +80,7 @@ func parseYamlArray(s string, config pkg.ProjectConfig) ([]map[string]interface{
 	return array, nil
 }
 
-func parseTemplate(s string, config pkg.ProjectConfig) string {
+func parseTemplate(s string, config config.ProjectConfig) string {
 
 	parsedString := strings.Replace(s, "{{datafile.projectId}}", config.GetProjectID(), -1)
 

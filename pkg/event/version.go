@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package pkg //
-package pkg
+// Package event //
+package event
 
 // Version is the current version of the client
 const Version = "1.0.0-rc1"

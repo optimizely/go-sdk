@@ -23,7 +23,7 @@ import (
 	"runtime/debug"
 	"strconv"
 
-	"github.com/optimizely/go-sdk/pkg"
+	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
@@ -36,11 +36,11 @@ var logger = logging.GetLogger("Client")
 
 // OptimizelyClient is the entry point to the Optimizely SDK
 type OptimizelyClient struct {
-	ConfigManager      pkg.ProjectConfigManager
+	ConfigManager      config.ProjectConfigManager
 	DecisionService    decision.Service
 	EventProcessor     event.Processor
 	notificationCenter notification.Center
-	executionCtx       utils.ExecutionCtx
+	execGroup          *utils.ExecGroup
 }
 
 // Activate returns the key of the variation the user is bucketed into and queues up an impression event to be sent to
@@ -476,7 +476,7 @@ func (o *OptimizelyClient) RemoveOnTrack(id int) error {
 }
 
 // GetProjectConfig returns the current ProjectConfig or nil if the instance is not valid.
-func (o *OptimizelyClient) GetProjectConfig() (projectConfig pkg.ProjectConfig, err error) {
+func (o *OptimizelyClient) GetProjectConfig() (projectConfig config.ProjectConfig, err error) {
 
 	projectConfig, err = o.ConfigManager.GetConfig()
 	if err != nil {
@@ -488,5 +488,5 @@ func (o *OptimizelyClient) GetProjectConfig() (projectConfig pkg.ProjectConfig, 
 
 // Close closes the Optimizely instance and stops any ongoing tasks from its children components.
 func (o *OptimizelyClient) Close() {
-	o.executionCtx.TerminateAndWait()
+	o.execGroup.TerminateAndWait()
 }
