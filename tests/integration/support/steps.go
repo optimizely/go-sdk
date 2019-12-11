@@ -193,9 +193,8 @@ func (c *ScenarioCtx) InTheResponseKeyShouldBeObject(argumentType, value string)
 func (c *ScenarioCtx) InTheResponseShouldMatch(argumentType string, value *gherkin.DocString) error {
 	switch argumentType {
 	case models.KeyListenerCalled:
-		listeners := parseListeners(value.Content)
-		success := subset.Check(listeners, c.apiResponse.ListenerCalled)
-		if success {
+		expectedListenersCalled := parseListeners(value.Content)
+		if subset.Check(expectedListenersCalled, c.apiResponse.ListenerCalled) {
 			return nil
 		}
 	default:
@@ -209,16 +208,15 @@ func (c *ScenarioCtx) InTheResponseShouldMatch(argumentType string, value *gherk
 func (c *ScenarioCtx) ResponseShouldHaveThisExactlyNTimes(argumentType string, count int, value *gherkin.DocString) error {
 	switch argumentType {
 	case models.KeyListenerCalled:
-		listeners := parseListeners(value.Content)
-		success := false
-		listener := listeners[0]
-		expectedListenersArray := []interface{}{}
-		for i := 0; i < count; i++ {
-			expectedListenersArray = append(expectedListenersArray, listener)
-		}
-		success = subset.Check(expectedListenersArray, c.apiResponse.ListenerCalled)
-		if success {
-			return nil
+		requestListeners := parseListeners(value.Content)
+		if len(requestListeners) > 0 {
+			expectedListenersArray := []interface{}{}
+			for i := 0; i < count; i++ {
+				expectedListenersArray = append(expectedListenersArray, requestListeners[0])
+			}
+			if subset.Check(expectedListenersArray, c.apiResponse.ListenerCalled) {
+				return nil
+			}
 		}
 	default:
 		break
@@ -230,9 +228,9 @@ func (c *ScenarioCtx) ResponseShouldHaveThisExactlyNTimes(argumentType string, c
 func (c *ScenarioCtx) InTheResponseShouldHaveEachOneOfThese(argumentType string, value *gherkin.DocString) error {
 	switch argumentType {
 	case models.KeyListenerCalled:
-		listeners := parseListeners(value.Content)
+		expectedListenersCalled := parseListeners(value.Content)
 		found := false
-		for _, expectedListener := range listeners {
+		for _, expectedListener := range expectedListenersCalled {
 			found = false
 			for _, actualListener := range c.apiResponse.ListenerCalled {
 				if subset.Check(expectedListener, actualListener) {

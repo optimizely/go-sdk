@@ -44,7 +44,6 @@ var sdkKey int
 // ClientWrapper - wrapper around the optimizely client that keeps track of various custom components used with the client
 type ClientWrapper struct {
 	client              *client.OptimizelyClient
-	decisionService     decision.Service
 	eventDispatcher     event.Dispatcher
 	userProfileService  decision.UserProfileService
 	overrideStore       decision.ExperimentOverrideStore
@@ -115,9 +114,7 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 	}
 	notificationManager.SubscribeNotifications(apiOptions.Listeners)
 	clientInstance = &ClientWrapper{
-		client: client,
-		// Don't think we really needed it. just set in notificaitonCallbacks.
-		decisionService:     compositeService,
+		client:              client,
 		eventDispatcher:     eventProcessor.EventDispatcher,
 		userProfileService:  userProfileService,
 		overrideStore:       overrideStore,
