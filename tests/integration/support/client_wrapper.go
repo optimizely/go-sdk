@@ -55,13 +55,15 @@ func GetInstance(scenarioID string, apiOptions models.APIOptions) *ClientWrapper
 	}
 	sdkKey := optlyplugins.GetSDKKey(apiOptions.DFMConfiguration)
 	optimizelyFactory := &client.OptimizelyFactory{}
-	notificationManager := optlyplugins.NotificationManager{}
+	notificationManager := optlyplugins.NotificationManager{
+		APIOptions: apiOptions,
+	}
 	var configManager config.ProjectConfigManager
 	var userProfileService decision.UserProfileService
 
 	// Check if DFM configuration was provided
 	if apiOptions.DFMConfiguration != nil {
-		configManager = optlyplugins.CreatePollingConfigManager(sdkKey, scenarioID, apiOptions, &notificationManager)
+		configManager = optlyplugins.CreatePollingConfigManager(sdkKey, scenarioID, &notificationManager)
 	} else {
 		datafile, err := optlyplugins.GetDatafile(apiOptions.DatafileName)
 		if err != nil {
@@ -97,10 +99,10 @@ func GetInstance(scenarioID string, apiOptions models.APIOptions) *ClientWrapper
 		log.Fatal(err)
 	}
 	// Subscribe to decision and track notifications
-	notificationManager.SubscribeNotifications(apiOptions.Listeners, client)
+	notificationManager.SubscribeNotifications(client)
 	if apiOptions.DFMConfiguration != nil {
 		// Verify here since factory starts polling manager while initializing client
-		notificationManager.TestDFMConfiguration(*apiOptions.DFMConfiguration, configManager)
+		notificationManager.TestDFMConfiguration(configManager)
 	}
 
 	clientInstance = &ClientWrapper{

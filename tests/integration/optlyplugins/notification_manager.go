@@ -35,12 +35,14 @@ const DefaultInitializationTimeout = time.Duration(3000) * time.Millisecond
 
 // NotificationManager manager class for notification listeners
 type NotificationManager struct {
+	APIOptions                         models.APIOptions
 	listenersCalled                    []interface{}
 	projectConfigUpdateListenersCalled []notification.ProjectConfigUpdateNotification
+	WaitGroup                          sync.WaitGroup
 }
 
 // SubscribeNotifications subscribes to the provided notification listeners
-func (n *NotificationManager) SubscribeNotifications(listeners map[string]int, client *client.OptimizelyClient) {
+func (n *NotificationManager) SubscribeNotifications(client *client.OptimizelyClient) {
 
 	addNotificationCallback := func(notificationType string) {
 		switch notificationType {
@@ -53,7 +55,7 @@ func (n *NotificationManager) SubscribeNotifications(listeners map[string]int, c
 		}
 	}
 
-	for key, count := range listeners {
+	for key, count := range n.APIOptions.Listeners {
 		for i := 0; i < count; i++ {
 			addNotificationCallback(key)
 		}
@@ -61,8 +63,8 @@ func (n *NotificationManager) SubscribeNotifications(listeners map[string]int, c
 }
 
 // SubscribeProjectConfigUpdateNotifications subscribes to the project config notification listeners
-func (n *NotificationManager) SubscribeProjectConfigUpdateNotifications(sdkKey string, listeners map[string]int) {
-	if count, ok := listeners[models.KeyConfigUpdate]; ok {
+func (n *NotificationManager) SubscribeProjectConfigUpdateNotifications(sdkKey string) {
+	if count, ok := n.APIOptions.Listeners[models.KeyConfigUpdate]; ok {
 		for i := 0; i < count; i++ {
 			registry.GetNotificationCenter(sdkKey).AddHandler(notification.ProjectConfigUpdate, n.projectConfigUpdateCallback)
 		}
@@ -90,65 +92,47 @@ func (n *NotificationManager) GetProjectConfigUpdateListenersCalled() []notifica
 }
 
 // TestDFMConfiguration - Executes DFM configuration tests
-func (n *NotificationManager) TestDFMConfiguration(configuration models.DataFileManagerConfiguration, configManager config.ProjectConfigManager) {
-	timeout := DefaultInitializationTimeout
-	if configuration.Timeout != nil {
-		timeout = time.Duration(*(configuration.Timeout)) * time.Millisecond
+func (n *NotificationManager) TestDFMConfiguration(configManager config.ProjectConfigManager) {
+
+	// https://stackoverflow.com/a/32843750/4849178
+	waitTimeout := func(wg *sync.WaitGroup, timeout time.Duration) bool {
+		c := make(chan struct{})
+		go func() {
+			defer close(c)
+			wg.Wait()
+		}()
+		select {
+		case <-c:
+			return false // completed normally
+		case <-time.After(timeout):
+			// timed out, call done and exit
+			wg.Done()
+			return true
+		}
 	}
 
-	verify := func(wg *sync.WaitGroup) {
-		start := time.Now()
-		switch configuration.Mode {
-		case models.KeyWaitForOnReady:
+	verify := func() {
+		if n.APIOptions.DFMConfiguration.Mode == models.KeyWaitForOnReady {
+			n.WaitGroup.Add(1)
 			for {
-				t := time.Now()
-				elapsed := t.Sub(start)
-				if elapsed >= timeout {
-					break
-				}
 				// Check if projectconfig is ready
 				_, err := configManager.GetConfig()
 				if err == nil {
+					n.WaitGroup.Done()
 					break
 				}
 				// wait 10ms to try again, to avoid high cpu usage
 				time.Sleep(10 * time.Millisecond)
 			}
-			break
-		case models.KeyWaitForConfigUpdate:
-			revision := 0
-			if configuration.Revision != nil {
-				revision = *(configuration.Revision)
-			}
-			for {
-				t := time.Now()
-				elapsed := t.Sub(start)
-				if elapsed >= timeout {
-					break
-				}
-				if revision > 0 {
-					// This means we want the manager to poll until we get to a specific revision
-					if revision == len(n.projectConfigUpdateListenersCalled) {
-						break
-					}
-				} else if len(n.projectConfigUpdateListenersCalled) == 1 {
-					// For cases where we are just waiting for config listener
-					break
-				}
-				// wait 10ms to try again, to avoid high cpu usage
-				time.Sleep(10 * time.Millisecond)
-			}
-			break
-		default:
-			break
 		}
-		wg.Done()
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go verify(&wg)
-	wg.Wait()
+	timeout := DefaultInitializationTimeout
+	if n.APIOptions.DFMConfiguration.Timeout != nil {
+		timeout = time.Duration(*(n.APIOptions.DFMConfiguration.Timeout)) * time.Millisecond
+	}
+	go verify()
+	_ = waitTimeout(&n.WaitGroup, timeout)
 }
 
 func (n *NotificationManager) decisionCallback(notification notification.DecisionNotification) {
@@ -178,6 +162,10 @@ func (n *NotificationManager) trackCallback(eventKey string, userContext entitie
 }
 
 func (n *NotificationManager) projectConfigUpdateCallback(payload interface{}) {
+	if n.APIOptions.DFMConfiguration.Mode == models.KeyWaitForConfigUpdate {
+		// Call done only for config update mode since calling it for every scenario will cause panic
+		n.WaitGroup.Done()
+	}
 	if notification, ok := payload.(notification.ProjectConfigUpdateNotification); ok {
 		n.projectConfigUpdateListenersCalled = append(n.projectConfigUpdateListenersCalled, notification)
 	}

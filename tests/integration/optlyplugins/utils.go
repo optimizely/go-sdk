@@ -40,11 +40,22 @@ const defaultPollingInterval = time.Duration(1000) * time.Millisecond
 var sdkKey int
 
 // CreatePollingConfigManager creates a pollingConfigManager with given configuration
-func CreatePollingConfigManager(sdkKey, scenarioID string, options models.APIOptions, notificationManager *NotificationManager) config.ProjectConfigManager {
+func CreatePollingConfigManager(sdkKey, scenarioID string, notificationManager *NotificationManager) config.ProjectConfigManager {
+
+	// Add revision as delta to waitgroup for projectConfigNotification
+	if notificationManager.APIOptions.DFMConfiguration.Mode == models.KeyWaitForConfigUpdate {
+		// default as 1 For cases where we are just waiting for a single project notification
+		revision := 1
+		if notificationManager.APIOptions.DFMConfiguration.Revision != nil {
+			revision = *(notificationManager.APIOptions.DFMConfiguration.Revision)
+		}
+		notificationManager.WaitGroup.Add(revision)
+	}
+
 	var pollingConfigManagerOptions []config.OptionFunc
 	// Setting up optional initial datafile
-	if options.DatafileName != "" {
-		datafile, err := GetDatafile(options.DatafileName)
+	if notificationManager.APIOptions.DatafileName != "" {
+		datafile, err := GetDatafile(notificationManager.APIOptions.DatafileName)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -52,15 +63,15 @@ func CreatePollingConfigManager(sdkKey, scenarioID string, options models.APIOpt
 	}
 	// Setting up polling interval
 	pollingTimeInterval := defaultPollingInterval
-	if options.DFMConfiguration.UpdateInterval != nil {
-		pollingTimeInterval = time.Duration((*options.DFMConfiguration.UpdateInterval)) * time.Millisecond
+	if notificationManager.APIOptions.DFMConfiguration.UpdateInterval != nil {
+		pollingTimeInterval = time.Duration((*notificationManager.APIOptions.DFMConfiguration.UpdateInterval)) * time.Millisecond
 	}
 	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.WithPollingInterval(pollingTimeInterval))
 	// Setting DatafileURLTemplate
 	urlString := localDatafileURLTemplate + scenarioID
 	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.WithDatafileURLTemplate(urlString))
 	// Adding callbacks and creating config manager with options
-	notificationManager.SubscribeProjectConfigUpdateNotifications(sdkKey, options.Listeners)
+	notificationManager.SubscribeProjectConfigUpdateNotifications(sdkKey)
 	configManager := config.NewPollingProjectConfigManager(
 		sdkKey,
 		pollingConfigManagerOptions...,
