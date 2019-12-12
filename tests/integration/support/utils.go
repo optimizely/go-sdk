@@ -23,11 +23,38 @@ import (
 	"strings"
 	"time"
 
+	"github.com/optimizely/go-sdk/tests/integration/models"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/optimizely/go-sdk/pkg/config"
 
 	"gopkg.in/yaml.v3"
 )
+
+// parses the yaml string value to listeners
+// TODO: revise to avoid unmarshaling into models and directly compare interfaces
+func parseListeners(value string) (listeners []interface{}) {
+	var requestListenersCalled []interface{}
+	if err := yaml.Unmarshal([]byte(value), &requestListenersCalled); err == nil {
+		for _, listener := range requestListenersCalled {
+			yamlString, _ := yaml.Marshal(listener)
+
+			var decisionListener = models.DecisionListener{}
+			// We have to check if decisionInfo is not nil since both decision and track listeners have some attributes
+			// in common such as userID and attributes which makes it possible for yamlString to be parsed into both of them
+			if err := yaml.Unmarshal(yamlString, &decisionListener); err == nil && decisionListener.DecisionInfo != nil {
+				listeners = append(listeners, decisionListener)
+				continue
+			}
+
+			var trackListener = models.TrackListener{}
+			if err := yaml.Unmarshal(yamlString, &trackListener); err == nil {
+				listeners = append(listeners, trackListener)
+			}
+		}
+	}
+	return listeners
+}
 
 func sortArrayofMaps(array []map[string]interface{}, sortKey string) []map[string]interface{} {
 	sort.Slice(array, func(i, j int) bool {

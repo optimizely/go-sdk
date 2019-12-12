@@ -16,13 +16,10 @@
 
 package models
 
-import (
-	"github.com/optimizely/go-sdk/pkg/entities"
-)
-
-// APIResponse represents result for a scenario
-type APIResponse struct {
-	Result         interface{}
-	Type           entities.VariableType
-	ListenerCalled []interface{}
+// TrackListener represents a track notification
+type TrackListener struct {
+	EventKey   string                 `yaml:"event_key"`
+	Attributes map[string]interface{} `yaml:"attributes"`
+	UserID     string                 `yaml:"user_id"`
+	EventTags  map[string]interface{} `yaml:"event_tags"`
 }

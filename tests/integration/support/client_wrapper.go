@@ -43,11 +43,11 @@ var sdkKey int
 
 // ClientWrapper - wrapper around the optimizely client that keeps track of various custom components used with the client
 type ClientWrapper struct {
-	Client             *client.OptimizelyClient
-	DecisionService    decision.Service
-	EventDispatcher    event.Dispatcher
-	UserProfileService decision.UserProfileService
-	OverrideStore      decision.ExperimentOverrideStore
+	client              *client.OptimizelyClient
+	eventDispatcher     event.Dispatcher
+	userProfileService  decision.UserProfileService
+	overrideStore       decision.ExperimentOverrideStore
+	notificationManager *optlyplugins.NotificationManager
 }
 
 // DeleteInstance deletes cached instance of optly wrapper
@@ -98,28 +98,25 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 	)
 
 	// @TODO: Add sdkKey dynamically once event-batching support is implemented
-
-	compositeService := *decision.NewCompositeService(strconv.Itoa(sdkKey), decision.WithCompositeExperimentService(compositeExperimentService))
-	decisionService := &optlyplugins.TestCompositeService{CompositeService: compositeService}
-
+	compositeService := decision.NewCompositeService(strconv.Itoa(sdkKey), decision.WithCompositeExperimentService(compositeExperimentService))
 	client, err := optimizelyFactory.Client(
 		client.WithConfigManager(configManager),
-		client.WithDecisionService(decisionService),
+		client.WithDecisionService(compositeService),
 		client.WithEventProcessor(eventProcessor),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	notificationManager := optlyplugins.NotificationManager{}
+	notificationManager.SubscribeNotifications(apiOptions.Listeners, client)
 	clientInstance = &ClientWrapper{
-		Client:             client,
-		DecisionService:    decisionService,
-		EventDispatcher:    eventProcessor.EventDispatcher,
-		UserProfileService: userProfileService,
-		OverrideStore:      overrideStore,
+		client:              client,
+		eventDispatcher:     eventProcessor.EventDispatcher,
+		userProfileService:  userProfileService,
+		overrideStore:       overrideStore,
+		notificationManager: &notificationManager,
 	}
-	clientInstance.DecisionService.(*optlyplugins.TestCompositeService).AddListeners(apiOptions.Listeners)
-
 	return clientInstance
 }
 
@@ -170,8 +167,8 @@ func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (models.APIResponse
 		break
 	}
 	// TODO: For event batching, it should be conditional.
-	c.Client.Close()
-	response.ListenerCalled = c.DecisionService.(*optlyplugins.TestCompositeService).GetListenersCalled()
+	c.client.Close()
+	response.ListenerCalled = c.notificationManager.GetListenersCalled()
 	return response, err
 }
 
@@ -185,7 +182,7 @@ func (c *ClientWrapper) isFeatureEnabled(request models.APIOptions) (models.APIR
 			Attributes: params.Attributes,
 		}
 
-		isEnabled, err := c.Client.IsFeatureEnabled(params.FeatureKey, user)
+		isEnabled, err := c.client.IsFeatureEnabled(params.FeatureKey, user)
 		result := "false"
 		if err == nil && isEnabled {
 			result = "true"
@@ -204,7 +201,7 @@ func (c *ClientWrapper) getFeatureVariable(request models.APIOptions) (models.AP
 			ID:         params.UserID,
 			Attributes: params.Attributes,
 		}
-		value, valueType, err := c.Client.GetFeatureVariable(params.FeatureKey, params.VariableKey, user)
+		value, valueType, err := c.client.GetFeatureVariable(params.FeatureKey, params.VariableKey, user)
 		if err == nil {
 			response.Result = value
 			response.Type = valueType
@@ -222,7 +219,7 @@ func (c *ClientWrapper) getFeatureVariableInteger(request models.APIOptions) (mo
 			ID:         params.UserID,
 			Attributes: params.Attributes,
 		}
-		value, err := c.Client.GetFeatureVariableInteger(params.FeatureKey, params.VariableKey, user)
+		value, err := c.client.GetFeatureVariableInteger(params.FeatureKey, params.VariableKey, user)
 		if err == nil {
 			response.Result = value
 		}
@@ -239,7 +236,7 @@ func (c *ClientWrapper) getFeatureVariableDouble(request models.APIOptions) (mod
 			ID:         params.UserID,
 			Attributes: params.Attributes,
 		}
-		value, err := c.Client.GetFeatureVariableDouble(params.FeatureKey, params.VariableKey, user)
+		value, err := c.client.GetFeatureVariableDouble(params.FeatureKey, params.VariableKey, user)
 		if err == nil {
 			response.Result = value
 		}
@@ -256,7 +253,7 @@ func (c *ClientWrapper) getFeatureVariableBoolean(request models.APIOptions) (mo
 			ID:         params.UserID,
 			Attributes: params.Attributes,
 		}
-		value, err := c.Client.GetFeatureVariableBoolean(params.FeatureKey, params.VariableKey, user)
+		value, err := c.client.GetFeatureVariableBoolean(params.FeatureKey, params.VariableKey, user)
 		if err == nil {
 			response.Result = value
 		}
@@ -273,7 +270,7 @@ func (c *ClientWrapper) getFeatureVariableString(request models.APIOptions) (mod
 			ID:         params.UserID,
 			Attributes: params.Attributes,
 		}
-		value, err := c.Client.GetFeatureVariableString(params.FeatureKey, params.VariableKey, user)
+		value, err := c.client.GetFeatureVariableString(params.FeatureKey, params.VariableKey, user)
 		if err == nil {
 			response.Result = value
 		}
@@ -291,7 +288,7 @@ func (c *ClientWrapper) getEnabledFeatures(request models.APIOptions) (models.AP
 			ID:         params.UserID,
 			Attributes: params.Attributes,
 		}
-		if values, err := c.Client.GetEnabledFeatures(user); err == nil {
+		if values, err := c.client.GetEnabledFeatures(user); err == nil {
 			enabledFeatures = values
 		}
 		response.Result = enabledFeatures
@@ -308,7 +305,7 @@ func (c *ClientWrapper) getVariation(request models.APIOptions) (models.APIRespo
 			ID:         params.UserID,
 			Attributes: params.Attributes,
 		}
-		response.Result, _ = c.Client.GetVariation(params.ExperimentKey, user)
+		response.Result, _ = c.client.GetVariation(params.ExperimentKey, user)
 		if response.Result == "" {
 			response.Result = "NULL"
 		}
@@ -325,7 +322,7 @@ func (c *ClientWrapper) activate(request models.APIOptions) (models.APIResponse,
 			ID:         params.UserID,
 			Attributes: params.Attributes,
 		}
-		response.Result, _ = c.Client.Activate(params.ExperimentKey, user)
+		response.Result, _ = c.client.Activate(params.ExperimentKey, user)
 		if response.Result == "" {
 			response.Result = "NULL"
 		}
@@ -342,7 +339,7 @@ func (c *ClientWrapper) track(request models.APIOptions) (models.APIResponse, er
 			ID:         params.UserID,
 			Attributes: params.Attributes,
 		}
-		err = c.Client.Track(params.EventKey, user, params.EventTags)
+		err = c.client.Track(params.EventKey, user, params.EventTags)
 	}
 	response.Result = "NULL"
 	return response, err
@@ -356,9 +353,9 @@ func (c *ClientWrapper) setForcedVariation(request models.APIOptions) (models.AP
 	if err == nil {
 		// For removeForcedVariation cases
 		if params.VariationKey == "" {
-			c.OverrideStore.(*decision.MapExperimentOverridesStore).RemoveVariation(decision.ExperimentOverrideKey{ExperimentKey: params.ExperimentKey, UserID: params.UserID})
+			c.overrideStore.(*decision.MapExperimentOverridesStore).RemoveVariation(decision.ExperimentOverrideKey{ExperimentKey: params.ExperimentKey, UserID: params.UserID})
 		} else {
-			c.OverrideStore.(*decision.MapExperimentOverridesStore).SetVariation(decision.ExperimentOverrideKey{ExperimentKey: params.ExperimentKey, UserID: params.UserID}, params.VariationKey)
+			c.overrideStore.(*decision.MapExperimentOverridesStore).SetVariation(decision.ExperimentOverrideKey{ExperimentKey: params.ExperimentKey, UserID: params.UserID}, params.VariationKey)
 			response.Result = params.VariationKey
 		}
 	}
@@ -371,7 +368,7 @@ func (c *ClientWrapper) getForcedVariation(request models.APIOptions) (models.AP
 	err := yaml.Unmarshal([]byte(request.Arguments), &params)
 	response.Result = "NULL"
 	if err == nil {
-		variation, success := c.OverrideStore.(*decision.MapExperimentOverridesStore).GetVariation(decision.ExperimentOverrideKey{ExperimentKey: params.ExperimentKey, UserID: params.UserID})
+		variation, success := c.overrideStore.(*decision.MapExperimentOverridesStore).GetVariation(decision.ExperimentOverrideKey{ExperimentKey: params.ExperimentKey, UserID: params.UserID})
 		if success {
 			response.Result = variation
 		}
