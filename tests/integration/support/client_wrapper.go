@@ -108,11 +108,8 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 		log.Fatal(err)
 	}
 
-	notificationManager := optlyplugins.NotificationManager{
-		DecisionService: compositeService,
-		Client:          client,
-	}
-	notificationManager.SubscribeNotifications(apiOptions.Listeners)
+	notificationManager := optlyplugins.NotificationManager{}
+	notificationManager.SubscribeNotifications(apiOptions.Listeners, client)
 	clientInstance = &ClientWrapper{
 		client:              client,
 		eventDispatcher:     eventProcessor.EventDispatcher,

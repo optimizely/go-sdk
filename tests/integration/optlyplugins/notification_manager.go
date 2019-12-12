@@ -27,21 +27,19 @@ import (
 
 // NotificationManager manager class for notification listeners
 type NotificationManager struct {
-	DecisionService *decision.CompositeService
-	Client          *client.OptimizelyClient
 	listenersCalled []interface{}
 }
 
 // SubscribeNotifications subscribes to the provided notification listeners
-func (n *NotificationManager) SubscribeNotifications(listeners map[string]int) {
+func (n *NotificationManager) SubscribeNotifications(listeners map[string]int, client *client.OptimizelyClient) {
 
 	addNotificationCallback := func(notificationType string) {
 		switch notificationType {
 		case models.KeyDecision:
-			n.DecisionService.OnDecision(n.decisionCallback)
+			client.DecisionService.OnDecision(n.decisionCallback)
 			break
 		case models.KeyTrack:
-			n.Client.OnTrack(n.trackCallback)
+			client.OnTrack(n.trackCallback)
 			break
 		}
 	}
