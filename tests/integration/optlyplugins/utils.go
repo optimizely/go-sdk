@@ -18,16 +18,55 @@ package optlyplugins
 
 import (
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
+	"time"
 
+	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 )
 
+const localDatafileURLTemplate = "http://localhost:3001/datafiles/%s.json?request_id="
+
+// SyncConfig doesn't request for new datafile if we provide a valid datafile
+// this requires us to keep defaultPollingInterval low so that the request
+// initiated from Start method is executed quickly
+const defaultPollingInterval = time.Duration(1000) * time.Millisecond
+
 // Since notificationManager is mapped against sdkKey, we need a unique sdkKey for every scenario
 var sdkKey int
+
+// CreatePollingConfigManager creates a pollingConfigManager with given configuration
+func CreatePollingConfigManager(sdkKey, scenarioID string, options models.APIOptions, notificationManager *NotificationManager) config.ProjectConfigManager {
+	var pollingConfigManagerOptions []config.OptionFunc
+	// Setting up optional initial datafile
+	if options.DatafileName != "" {
+		datafile, err := GetDatafile(options.DatafileName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.WithInitialDatafile(datafile))
+	}
+	// Setting up polling interval
+	pollingTimeInterval := defaultPollingInterval
+	if options.DFMConfiguration.UpdateInterval != nil {
+		pollingTimeInterval = time.Duration((*options.DFMConfiguration.UpdateInterval)) * time.Millisecond
+	}
+	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.WithPollingInterval(pollingTimeInterval))
+	// Setting DatafileURLTemplate
+	urlString := localDatafileURLTemplate + scenarioID
+	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.WithDatafileURLTemplate(urlString))
+	// Adding callbacks and creating config manager with options
+	notificationManager.SubscribeProjectConfigUpdateNotifications(sdkKey, options.Listeners)
+	configManager := config.NewPollingProjectConfigManager(
+		sdkKey,
+		pollingConfigManagerOptions...,
+	)
+	return configManager
+}
 
 // GetDatafile returns datafile,error for the provided datafileName
 func GetDatafile(datafileName string) ([]byte, error) {
