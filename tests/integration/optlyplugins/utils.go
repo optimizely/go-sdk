@@ -17,19 +17,23 @@
 package optlyplugins
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/config"
+	"github.com/optimizely/go-sdk/pkg/notification"
+	"github.com/optimizely/go-sdk/pkg/registry"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 )
 
-const localDatafileURLTemplate = "http://localhost:3001/datafiles/%s.json?request_id="
+const localDatafileURLTemplate = "http://localhost:3001/datafiles/%s.json?request_id=%s"
 
 // SyncConfig doesn't request for new datafile if we provide a valid datafile
 // this requires us to keep defaultPollingInterval low so that the request
@@ -39,50 +43,93 @@ const defaultPollingInterval = time.Duration(1000) * time.Millisecond
 // Since notificationManager is mapped against sdkKey, we need a unique sdkKey for every scenario
 var sdkKey int
 
+func registerNotification(sdkKey string, notificationType notification.Type, callback func(interface{})) {
+	registry.GetNotificationCenter(sdkKey).AddHandler(notificationType, callback)
+}
+
+func registerConfigUpdateBlockModeHandler(wg *sync.WaitGroup, sdkKey string, datafileOptions models.DataFileManagerConfiguration) {
+	revision := 0
+
+	switch datafileOptions.Mode {
+	case models.KeyWaitForOnReady:
+		revision = 1
+		break
+	case models.KeyWaitForConfigUpdate:
+		if datafileOptions.Revision != nil {
+			revision = *datafileOptions.Revision
+		}
+	}
+
+	wg.Add(revision)
+
+	handler := func(payload interface{}) {
+		if revision > 0 {
+			wg.Done()
+		}
+		revision = revision - 1
+	}
+
+	registerNotification(sdkKey, notification.ProjectConfigUpdate, handler)
+}
+
+func wgWaitOrTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
+	c := make(chan struct{})
+	go func() {
+		wg.Wait()
+		defer close(c)
+
+	}()
+
+	select {
+	case <-c:
+		return true // completed normally
+	case <-time.After(timeout):
+		// timed out, call done and exit
+		wg.Done()
+		return false
+	}
+}
+
 // CreatePollingConfigManager creates a pollingConfigManager with given configuration
-func CreatePollingConfigManager(sdkKey, scenarioID string, notificationManager *NotificationManager) config.ProjectConfigManager {
+func CreatePollingConfigManager(sdkKey, scenarioID string, apiOptions models.APIOptions) config.ProjectConfigManager {
+	var datafile []byte
 
-	// Add revision as delta to waitgroup for projectConfigNotification
-	if notificationManager.APIOptions.DFMConfiguration.Mode == models.KeyWaitForConfigUpdate {
-		// default as 1 For cases where we are just waiting for a single project notification
-		revision := 1
-		if notificationManager.APIOptions.DFMConfiguration.Revision != nil {
-			revision = *(notificationManager.APIOptions.DFMConfiguration.Revision)
-		}
-		notificationManager.WaitGroup.Add(revision)
+	pollingInterval := defaultPollingInterval
+
+	if apiOptions.DatafileName != "" {
+		datafile, _ = GetDatafile(apiOptions.DatafileName)
 	}
 
-	var pollingConfigManagerOptions []config.OptionFunc
-	// Setting up optional initial datafile
-	if notificationManager.APIOptions.DatafileName != "" {
-		datafile, err := GetDatafile(notificationManager.APIOptions.DatafileName)
-		if err != nil {
-			log.Fatal(err)
-		}
-		pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.WithInitialDatafile(datafile))
-	}
 	// Setting up polling interval
-	pollingTimeInterval := defaultPollingInterval
-	if notificationManager.APIOptions.DFMConfiguration.UpdateInterval != nil {
-		pollingTimeInterval = time.Duration((*notificationManager.APIOptions.DFMConfiguration.UpdateInterval)) * time.Millisecond
+	if apiOptions.DFMConfiguration.UpdateInterval != nil {
+		pollingInterval = time.Duration(*apiOptions.DFMConfiguration.UpdateInterval) * time.Millisecond
 	}
-	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.WithPollingInterval(pollingTimeInterval))
+
 	// Setting DatafileURLTemplate
-	urlString := localDatafileURLTemplate + scenarioID
-	pollingConfigManagerOptions = append(pollingConfigManagerOptions, config.WithDatafileURLTemplate(urlString))
-	// Adding callbacks and creating config manager with options
-	notificationManager.SubscribeProjectConfigUpdateNotifications(sdkKey)
+	urlString := fmt.Sprintf(localDatafileURLTemplate, sdkKey, scenarioID)
+
 	configManager := config.NewPollingProjectConfigManager(
 		sdkKey,
-		pollingConfigManagerOptions...,
+		config.WithInitialDatafile(datafile),
+		config.WithPollingInterval(pollingInterval),
+		config.WithDatafileURLTemplate(urlString),
 	)
+
 	return configManager
 }
 
 // GetDatafile returns datafile,error for the provided datafileName
 func GetDatafile(datafileName string) ([]byte, error) {
 	datafileDir := os.Getenv("DATAFILES_DIR")
-	return ioutil.ReadFile(filepath.Clean(path.Join(datafileDir, datafileName)))
+
+	datafile, err := ioutil.ReadFile(filepath.Clean(path.Join(datafileDir, datafileName)))
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// TODO: we need to bubble up err
+	return datafile, err
 }
 
 // GetSDKKey returns SDKKey for configuration

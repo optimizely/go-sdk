@@ -26,7 +26,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/notification"
-	"github.com/optimizely/go-sdk/pkg/registry"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 )
 
@@ -35,14 +34,13 @@ const DefaultInitializationTimeout = time.Duration(3000) * time.Millisecond
 
 // NotificationManager manager class for notification listeners
 type NotificationManager struct {
-	APIOptions                         models.APIOptions
 	listenersCalled                    []interface{}
 	projectConfigUpdateListenersCalled []notification.ProjectConfigUpdateNotification
 	WaitGroup                          sync.WaitGroup
 }
 
 // SubscribeNotifications subscribes to the provided notification listeners
-func (n *NotificationManager) SubscribeNotifications(client *client.OptimizelyClient) {
+func (n *NotificationManager) SubscribeNotifications(listeners map[string]int, client *client.OptimizelyClient) {
 
 	addNotificationCallback := func(notificationType string) {
 		switch notificationType {
@@ -52,21 +50,16 @@ func (n *NotificationManager) SubscribeNotifications(client *client.OptimizelyCl
 		case models.KeyTrack:
 			client.OnTrack(n.trackCallback)
 			break
+		case models.KeyConfigUpdate:
+			if configManager, ok := client.ConfigManager.(*config.PollingProjectConfigManager); ok {
+				configManager.OnProjectConfigUpdate(n.configUpdateCallback)
+			}
 		}
 	}
 
-	for key, count := range n.APIOptions.Listeners {
+	for key, count := range listeners {
 		for i := 0; i < count; i++ {
 			addNotificationCallback(key)
-		}
-	}
-}
-
-// SubscribeProjectConfigUpdateNotifications subscribes to the project config notification listeners
-func (n *NotificationManager) SubscribeProjectConfigUpdateNotifications(sdkKey string) {
-	if count, ok := n.APIOptions.Listeners[models.KeyConfigUpdate]; ok {
-		for i := 0; i < count; i++ {
-			registry.GetNotificationCenter(sdkKey).AddHandler(notification.ProjectConfigUpdate, n.projectConfigUpdateCallback)
 		}
 	}
 }
@@ -82,57 +75,13 @@ func (n *NotificationManager) GetListenersCalled() []interface{} {
 }
 
 // GetProjectConfigUpdateListenersCalled - Returns ProjectConfigUpdate listeners called
-func (n *NotificationManager) GetProjectConfigUpdateListenersCalled() []notification.ProjectConfigUpdateNotification {
+func (n *NotificationManager) getNotificationListenersCalled() []notification.ProjectConfigUpdateNotification {
 	projectConfigUpdateListenersCalled := n.projectConfigUpdateListenersCalled
 	// Since for every scenario, a new sdk instance is created, emptying listenersCalled is required for scenario's
 	// where multiple requests are executed but no session is to be maintained among them.
 	// @TODO: Make it optional once event-batching(sessioned) tests are implemented.
 	n.projectConfigUpdateListenersCalled = nil
 	return projectConfigUpdateListenersCalled
-}
-
-// TestDFMConfiguration - Executes DFM configuration tests
-func (n *NotificationManager) TestDFMConfiguration(configManager config.ProjectConfigManager) {
-
-	// https://stackoverflow.com/a/32843750/4849178
-	waitTimeout := func(wg *sync.WaitGroup, timeout time.Duration) bool {
-		c := make(chan struct{})
-		go func() {
-			defer close(c)
-			wg.Wait()
-		}()
-		select {
-		case <-c:
-			return false // completed normally
-		case <-time.After(timeout):
-			// timed out, call done and exit
-			wg.Done()
-			return true
-		}
-	}
-
-	verify := func() {
-		if n.APIOptions.DFMConfiguration.Mode == models.KeyWaitForOnReady {
-			n.WaitGroup.Add(1)
-			for {
-				// Check if projectconfig is ready
-				_, err := configManager.GetConfig()
-				if err == nil {
-					n.WaitGroup.Done()
-					break
-				}
-				// wait 10ms to try again, to avoid high cpu usage
-				time.Sleep(10 * time.Millisecond)
-			}
-		}
-	}
-
-	timeout := DefaultInitializationTimeout
-	if n.APIOptions.DFMConfiguration.Timeout != nil {
-		timeout = time.Duration(*(n.APIOptions.DFMConfiguration.Timeout)) * time.Millisecond
-	}
-	go verify()
-	_ = waitTimeout(&n.WaitGroup, timeout)
 }
 
 func (n *NotificationManager) decisionCallback(notification notification.DecisionNotification) {
@@ -161,14 +110,8 @@ func (n *NotificationManager) trackCallback(eventKey string, userContext entitie
 	n.listenersCalled = append(n.listenersCalled, listener)
 }
 
-func (n *NotificationManager) projectConfigUpdateCallback(payload interface{}) {
-	if n.APIOptions.DFMConfiguration.Mode == models.KeyWaitForConfigUpdate {
-		// Call done only for config update mode since calling it for every scenario will cause panic
-		n.WaitGroup.Done()
-	}
-	if notification, ok := payload.(notification.ProjectConfigUpdateNotification); ok {
-		n.projectConfigUpdateListenersCalled = append(n.projectConfigUpdateListenersCalled, notification)
-	}
+func (n *NotificationManager) configUpdateCallback(notification notification.ProjectConfigUpdateNotification) {
+	n.projectConfigUpdateListenersCalled = append(n.projectConfigUpdateListenersCalled, notification)
 }
 
 func getDecisionInfoForNotification(decisionNotification notification.DecisionNotification) map[string]interface{} {
