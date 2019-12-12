@@ -17,48 +17,41 @@
 package optlyplugins
 
 import (
+	"github.com/optimizely/go-sdk/pkg/client"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 )
 
-// TestCompositeService represents a CompositeService with custom implementations
-type TestCompositeService struct {
-	decision.CompositeService
-	listenersCalled []models.DecisionListener
+// NotificationManager manager class for notification listeners
+type NotificationManager struct {
+	listenersCalled []interface{}
 }
 
-// AddListeners - Adds Notification Listeners
-func (c *TestCompositeService) AddListeners(listeners map[string]int) {
+// SubscribeNotifications subscribes to the provided notification listeners
+func (n *NotificationManager) SubscribeNotifications(listeners map[string]int, client *client.OptimizelyClient) {
 
-	if len(listeners) < 1 {
-		return
+	addNotificationCallback := func(notificationType string) {
+		switch notificationType {
+		case models.KeyDecision:
+			client.DecisionService.OnDecision(n.decisionCallback)
+			break
+		case models.KeyTrack:
+			client.OnTrack(n.trackCallback)
+			break
+		}
 	}
-	for listenerType, count := range listeners {
-		for i := 1; i <= count; i++ {
-			switch listenerType {
-			case "Decision":
-				c.OnDecision(c.decisionNotificationCallback)
-				break
-			default:
-				break
-			}
+
+	for key, count := range listeners {
+		for i := 0; i < count; i++ {
+			addNotificationCallback(key)
 		}
 	}
 }
 
-// GetListenersCalled - Returns listeners called
-func (c *TestCompositeService) GetListenersCalled() []models.DecisionListener {
-	listenerCalled := c.listenersCalled
-	// Since for every scenario, a new sdk instance is created, emptying listenersCalled is required for scenario's
-	// where multiple requests are executed but no session is to be maintained among them.
-	// @TODO: Make it optional once event-batching(sessioned) tests are implemented.
-	c.listenersCalled = nil
-	return listenerCalled
-}
-
-func (c *TestCompositeService) decisionNotificationCallback(notification notification.DecisionNotification) {
+func (n *NotificationManager) decisionCallback(notification notification.DecisionNotification) {
 
 	model := models.DecisionListener{}
 	model.Type = notification.Type
@@ -71,7 +64,17 @@ func (c *TestCompositeService) decisionNotificationCallback(notification notific
 
 	decisionInfoDict := getDecisionInfoForNotification(notification)
 	model.DecisionInfo = decisionInfoDict
-	c.listenersCalled = append(c.listenersCalled, model)
+	n.listenersCalled = append(n.listenersCalled, model)
+}
+
+func (n *NotificationManager) trackCallback(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
+	listener := models.TrackListener{
+		EventKey:   eventKey,
+		UserID:     userContext.ID,
+		Attributes: userContext.Attributes,
+		EventTags:  eventTags,
+	}
+	n.listenersCalled = append(n.listenersCalled, listener)
 }
 
 func getDecisionInfoForNotification(decisionNotification notification.DecisionNotification) map[string]interface{} {
@@ -134,4 +137,14 @@ func getDecisionInfoForNotification(decisionNotification notification.DecisionNo
 	default:
 	}
 	return decisionInfoDict
+}
+
+// GetListenersCalled - Returns listeners called
+func (n *NotificationManager) GetListenersCalled() []interface{} {
+	listenerCalled := n.listenersCalled
+	// Since for every scenario, a new sdk instance is created, emptying listenersCalled is required for scenario's
+	// where multiple requests are executed but no session is to be maintained among them.
+	// @TODO: Make it optional once event-batching(sessioned) tests are implemented.
+	n.listenersCalled = nil
+	return listenerCalled
 }

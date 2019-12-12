@@ -69,3 +69,9 @@ const (
 
 // KeyListenerCalled - Key for listener called
 const KeyListenerCalled = "listener_called"
+
+// KeyDecision - Key for Decision listener
+const KeyDecision = "Decision"
+
+// KeyTrack - Key for Track listener
+const KeyTrack = "Track"
