@@ -19,6 +19,7 @@ package datafileprojectconfig
 
 import (
 	"fmt"
+
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/mappers"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
