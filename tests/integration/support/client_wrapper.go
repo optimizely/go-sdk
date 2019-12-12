@@ -17,12 +17,7 @@
 package support
 
 import (
-	"io/ioutil"
 	"log"
-	"os"
-	"path"
-	"path/filepath"
-	"strconv"
 
 	"github.com/optimizely/go-sdk/pkg/client"
 	"github.com/optimizely/go-sdk/pkg/config"
@@ -37,9 +32,6 @@ import (
 
 // Cached instance of optly wrapper
 var clientInstance *ClientWrapper
-
-// Since notificationManager is mapped against sdkKey, we need a unique sdkKey for every scenario
-var sdkKey int
 
 // ClientWrapper - wrapper around the optimizely client that keeps track of various custom components used with the client
 type ClientWrapper struct {
@@ -56,66 +48,67 @@ func DeleteInstance() {
 }
 
 // GetInstance returns a cached or new instance of the optly wrapper
-func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
+func GetInstance(scenarioID string, apiOptions models.APIOptions) *ClientWrapper {
 
 	if clientInstance != nil {
 		return clientInstance
 	}
+	sdkKey := optlyplugins.GetSDKKey(apiOptions.DFMConfiguration)
+	optimizelyFactory := &client.OptimizelyFactory{}
+	notificationManager := optlyplugins.NotificationManager{}
+	var configManager config.ProjectConfigManager
+	var userProfileService decision.UserProfileService
 
-	sdkKey++
-	datafileDir := os.Getenv("DATAFILES_DIR")
-	datafile, err := ioutil.ReadFile(filepath.Clean(path.Join(datafileDir, apiOptions.DatafileName)))
-	if err != nil {
-		log.Fatal(err)
-	}
-	configManager, err := config.NewStaticProjectConfigManagerFromPayload(datafile)
-	if err != nil {
-		log.Fatal(err)
+	// Check if DFM configuration was provided
+	if apiOptions.DFMConfiguration != nil {
+		configManager = optlyplugins.CreatePollingConfigManager(sdkKey, scenarioID, apiOptions, &notificationManager)
+	} else {
+		datafile, err := optlyplugins.GetDatafile(apiOptions.DatafileName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		configManager, err = config.NewStaticProjectConfigManagerFromPayload(datafile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		config, err := configManager.GetConfig()
+		if err != nil {
+			log.Fatal(err)
+		}
+		optimizelyFactory.Datafile = datafile
+		userProfileService = userprofileservice.CreateUserProfileService(config, apiOptions)
 	}
 
+	overrideStore := decision.NewMapExperimentOverridesStore()
 	eventProcessor := event.NewBatchEventProcessor(
 		event.WithBatchSize(models.EventProcessorDefaultBatchSize),
 		event.WithQueueSize(models.EventProcessorDefaultQueueSize),
 		event.WithFlushInterval(models.EventProcessorDefaultFlushInterval),
 	)
-
-	optimizelyFactory := &client.OptimizelyFactory{
-		Datafile: datafile,
-	}
-
 	eventProcessor.EventDispatcher = &optlyplugins.ProxyEventDispatcher{}
-
-	config, err := configManager.GetConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	overrideStore := decision.NewMapExperimentOverridesStore()
-	userProfileService := userprofileservice.CreateUserProfileService(config, apiOptions)
 	compositeExperimentService := decision.NewCompositeExperimentService(
 		decision.WithUserProfileService(userProfileService),
 		decision.WithOverrideStore(overrideStore),
 	)
 
-	// @TODO: Add sdkKey dynamically once event-batching support is implemented
-	compositeService := decision.NewCompositeService(strconv.Itoa(sdkKey), decision.WithCompositeExperimentService(compositeExperimentService))
-	client, err := optimizelyFactory.Client(
-		client.WithConfigManager(configManager),
-		client.WithDecisionService(compositeService),
-		client.WithEventProcessor(eventProcessor),
-	)
+	compositeService := *decision.NewCompositeService(sdkKey, decision.WithCompositeExperimentService(compositeExperimentService))
+	client, err := optimizelyFactory.Client(client.WithConfigManager(configManager), client.WithDecisionService(compositeService), client.WithEventProcessor(eventProcessor))
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	notificationManager := optlyplugins.NotificationManager{}
+	// Subscribe to decision and track notifications
 	notificationManager.SubscribeNotifications(apiOptions.Listeners, client)
+	if apiOptions.DFMConfiguration != nil {
+		// Verify here since factory starts polling manager while initializing client
+		notificationManager.TestDFMConfiguration(*apiOptions.DFMConfiguration)
+	}
+
 	clientInstance = &ClientWrapper{
 		client:              client,
 		eventDispatcher:     eventProcessor.EventDispatcher,
-		userProfileService:  userProfileService,
 		overrideStore:       overrideStore,
 		notificationManager: &notificationManager,
+		userProfileService:  userProfileService,
 	}
 	return clientInstance
 }

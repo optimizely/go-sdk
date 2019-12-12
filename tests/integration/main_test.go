@@ -57,6 +57,8 @@ func FeatureContext(s *godog.Suite) {
 	s.Step(`^(\d+) "([^"]*)" listener is added$`, context.ListenerIsAdded)
 	s.Step(`^the User Profile Service is "([^"]*)"$`, context.TheUserProfileServiceIs)
 	s.Step(`^user "([^"]*)" has mapping "([^"]*)": "([^"]*)" in User Profile Service$`, context.UserHasMappingInUserProfileService)
+	s.Step(`^a datafile manager with the configuration$`, context.DatafileManagerConfigurationIs)
+	s.Step(`^in the response, the "([^"]*)" listener was called (\d+) times$`, context.TheListenerWasCalledNTimes)
 	s.Step(`^([^\\\"]*) is called with arguments$`, context.IsCalledWithArguments)
 	s.Step(`^the result should be (?:string )?"([^"]*)"$`, context.TheResultShouldBeString)
 	s.Step(`^the result should be (?:integer )?(\d+)$`, context.TheResultShouldBeInteger)

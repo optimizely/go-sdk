@@ -67,6 +67,12 @@ const (
 	GetForcedVariation SDKAPI = "get_forced_variation"
 )
 
+// KeyWaitForOnReady - Key for on-ready waiting condition
+const KeyWaitForOnReady = "wait_for_on_ready"
+
+// KeyWaitForConfigUpdate - Key for config-update waiting condition
+const KeyWaitForConfigUpdate = "wait_for_config_update"
+
 // KeyListenerCalled - Key for listener called
 const KeyListenerCalled = "listener_called"
 
@@ -75,3 +81,6 @@ const KeyDecision = "Decision"
 
 // KeyTrack - Key for Track listener
 const KeyTrack = "Track"
+
+// KeyConfigUpdate - Key for Config Update listener
+const KeyConfigUpdate = "Config-update"

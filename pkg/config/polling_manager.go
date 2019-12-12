@@ -105,6 +105,7 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 		cm.configLock.Unlock()
 	}
 
+	var hardcodedDatafile = datafile
 	url := fmt.Sprintf(cm.datafileURLTemplate, cm.sdkKey)
 	if len(datafile) == 0 {
 		if cm.lastModified != "" {
@@ -159,7 +160,7 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	cm.projectConfig = projectConfig
 	closeMutex(nil)
 
-	if cm.notificationCenter != nil {
+	if cm.notificationCenter != nil && len(hardcodedDatafile) == 0 {
 		projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
 			Type:     notification.ProjectConfigUpdate,
 			Revision: cm.projectConfig.GetRevision(),

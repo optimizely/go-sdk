@@ -52,9 +52,9 @@ jobs:
 
     - stage: 'Integration tests'
       env: GIMME_GO_VERSION=1.12.x FSC_PATH="/tmp/fsc-repo"
+      language: node_js
       before_script:
-        - mkdir -p $FSC_PATH
-        - pushd $FSC_PATH && git init && git fetch --depth=1 https://$CI_USER_TOKEN@github.com/optimizely/fullstack-sdk-compatibility-suite ${FSC_BRANCH:-master} && git checkout FETCH_HEAD && popd
+        - ./scripts/setup-integration-tests.sh
       install:
         - eval "$(gimme)"
       script:

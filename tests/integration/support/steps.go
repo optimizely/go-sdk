@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/optimizely/go-sdk/pkg/decision"
+	"gopkg.in/yaml.v3"
 
 	"github.com/DATA-DOG/godog/gherkin"
 	"github.com/google/uuid"
@@ -77,6 +78,16 @@ func (c *ScenarioCtx) UserHasMappingInUserProfileService(userID, experimentKey, 
 	return nil
 }
 
+// DatafileManagerConfigurationIs provides dfm configuration
+func (c *ScenarioCtx) DatafileManagerConfigurationIs(options *gherkin.DocString) error {
+	var datafileManagerConfiguration models.DataFileManagerConfiguration
+	if err := yaml.Unmarshal([]byte(options.Content), &datafileManagerConfiguration); err != nil {
+		return fmt.Errorf("invalid dfm configuration")
+	}
+	c.apiOptions.DFMConfiguration = &datafileManagerConfiguration
+	return nil
+}
+
 // IsCalledWithArguments calls an SDK API with arguments.
 func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.DocString) error {
 	c.apiOptions.APIName = apiName
@@ -84,7 +95,7 @@ func (c *ScenarioCtx) IsCalledWithArguments(apiName string, arguments *gherkin.D
 
 	// Clearing old state of response, eventdispatcher and decision service
 	c.apiResponse = models.APIResponse{}
-	c.clientWrapper = GetInstance(c.apiOptions)
+	c.clientWrapper = GetInstance(c.scenarioID, c.apiOptions)
 	response, err := c.clientWrapper.InvokeAPI(c.apiOptions)
 	c.apiResponse = response
 	//Reset listeners so that same listener is not added twice for a scenario
@@ -419,6 +430,18 @@ func (c *ScenarioCtx) ThereIsNoUserProfileState() error {
 	}
 	// @TODO: Temporary fix, need to look into it
 	return getErrorWithDiff([]decision.UserProfile{}, actualProfiles, "User profile state not empty")
+}
+
+// TheListenerWasCalledNTimes checks if listener was called a given amount of time
+func (c *ScenarioCtx) TheListenerWasCalledNTimes(listenerType string, count int) error {
+	actualListenersCalledCount := 0
+	if listenerType == models.KeyConfigUpdate {
+		actualListenersCalledCount = len(c.clientWrapper.notificationManager.GetProjectConfigUpdateListenersCalled())
+		if actualListenersCalledCount == count {
+			return nil
+		}
+	}
+	return fmt.Errorf("Number of %s listeners called should be %d but received %d", listenerType, count, actualListenersCalledCount)
 }
 
 // Reset clears all data before each scenario, assigns new scenarioID and sets session as false

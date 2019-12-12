@@ -17,17 +17,27 @@
 package optlyplugins
 
 import (
+	"sync"
+	"time"
+
 	"github.com/optimizely/go-sdk/pkg/client"
+	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/notification"
+	"github.com/optimizely/go-sdk/pkg/registry"
 	"github.com/optimizely/go-sdk/tests/integration/models"
 )
 
+// DefaultInitializationTimeout defines default timeout for datafile sync
+const DefaultInitializationTimeout = time.Duration(3000) * time.Millisecond
+
 // NotificationManager manager class for notification listeners
 type NotificationManager struct {
-	listenersCalled []interface{}
+	listenersCalled                    []interface{}
+	projectConfigUpdateListenersCalled []notification.ProjectConfigUpdateNotification
+	configManager                      config.ProjectConfigManager
 }
 
 // SubscribeNotifications subscribes to the provided notification listeners
@@ -49,6 +59,93 @@ func (n *NotificationManager) SubscribeNotifications(listeners map[string]int, c
 			addNotificationCallback(key)
 		}
 	}
+}
+
+// SubscribeProjectConfigUpdateNotifications subscribes to the project config notification listeners
+func (n *NotificationManager) SubscribeProjectConfigUpdateNotifications(sdkKey string, listeners map[string]int) {
+	if count, ok := listeners[models.KeyConfigUpdate]; ok {
+		for i := 0; i < count; i++ {
+			registry.GetNotificationCenter(sdkKey).AddHandler(notification.ProjectConfigUpdate, n.projectConfigUpdateCallback)
+		}
+	}
+}
+
+// GetListenersCalled - Returns listeners called
+func (n *NotificationManager) GetListenersCalled() []interface{} {
+	listenerCalled := n.listenersCalled
+	// Since for every scenario, a new sdk instance is created, emptying listenersCalled is required for scenario's
+	// where multiple requests are executed but no session is to be maintained among them.
+	// @TODO: Make it optional once event-batching(sessioned) tests are implemented.
+	n.listenersCalled = nil
+	return listenerCalled
+}
+
+// GetProjectConfigUpdateListenersCalled - Returns ProjectConfigUpdate listeners called
+func (n *NotificationManager) GetProjectConfigUpdateListenersCalled() []notification.ProjectConfigUpdateNotification {
+	projectConfigUpdateListenersCalled := n.projectConfigUpdateListenersCalled
+	// Since for every scenario, a new sdk instance is created, emptying listenersCalled is required for scenario's
+	// where multiple requests are executed but no session is to be maintained among them.
+	// @TODO: Make it optional once event-batching(sessioned) tests are implemented.
+	n.projectConfigUpdateListenersCalled = nil
+	return projectConfigUpdateListenersCalled
+}
+
+// TestDFMConfiguration - Executes DFM configuration tests
+func (n *NotificationManager) TestDFMConfiguration(configuration models.DataFileManagerConfiguration) {
+	timeout := DefaultInitializationTimeout
+	if configuration.Timeout != nil {
+		timeout = time.Duration(*(configuration.Timeout)) * time.Millisecond
+	}
+
+	verify := func(wg *sync.WaitGroup) {
+		start := time.Now()
+		switch configuration.Mode {
+		case models.KeyWaitForOnReady:
+			for {
+				t := time.Now()
+				elapsed := t.Sub(start)
+				if elapsed >= timeout {
+					break
+				}
+				// Check if projectconfig is ready
+				_, err := n.configManager.GetConfig()
+				if err == nil {
+					break
+				}
+			}
+			break
+		case models.KeyWaitForConfigUpdate:
+			revision := 0
+			if configuration.Revision != nil {
+				revision = *(configuration.Revision)
+			}
+			for {
+				t := time.Now()
+				elapsed := t.Sub(start)
+				if elapsed >= timeout {
+					break
+				}
+				if revision > 0 {
+					// This means we want the manager to poll until we get to a specific revision
+					if revision == len(n.projectConfigUpdateListenersCalled) {
+						break
+					}
+				} else if len(n.projectConfigUpdateListenersCalled) == 1 {
+					// For cases where we are just waiting for config listener
+					break
+				}
+			}
+			break
+		default:
+			break
+		}
+		wg.Done()
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go verify(&wg)
+	wg.Wait()
 }
 
 func (n *NotificationManager) decisionCallback(notification notification.DecisionNotification) {
@@ -75,6 +172,12 @@ func (n *NotificationManager) trackCallback(eventKey string, userContext entitie
 		EventTags:  eventTags,
 	}
 	n.listenersCalled = append(n.listenersCalled, listener)
+}
+
+func (n *NotificationManager) projectConfigUpdateCallback(payload interface{}) {
+	if notification, ok := payload.(notification.ProjectConfigUpdateNotification); ok {
+		n.projectConfigUpdateListenersCalled = append(n.projectConfigUpdateListenersCalled, notification)
+	}
 }
 
 func getDecisionInfoForNotification(decisionNotification notification.DecisionNotification) map[string]interface{} {
@@ -137,14 +240,4 @@ func getDecisionInfoForNotification(decisionNotification notification.DecisionNo
 	default:
 	}
 	return decisionInfoDict
-}
-
-// GetListenersCalled - Returns listeners called
-func (n *NotificationManager) GetListenersCalled() []interface{} {
-	listenerCalled := n.listenersCalled
-	// Since for every scenario, a new sdk instance is created, emptying listenersCalled is required for scenario's
-	// where multiple requests are executed but no session is to be maintained among them.
-	// @TODO: Make it optional once event-batching(sessioned) tests are implemented.
-	n.listenersCalled = nil
-	return listenerCalled
 }

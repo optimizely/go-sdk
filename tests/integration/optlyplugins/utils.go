@@ -14,15 +14,36 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package models
+package optlyplugins
 
-// APIOptions represents parameters for a scenario
-type APIOptions struct {
-	DatafileName           string
-	APIName                string
-	Arguments              string
-	DFMConfiguration       *DataFileManagerConfiguration
-	Listeners              map[string]int
-	UserProfileServiceType string
-	UPSMapping             map[string]map[string]string
+import (
+	"io/ioutil"
+	"os"
+	"path"
+	"path/filepath"
+	"strconv"
+
+	"github.com/optimizely/go-sdk/tests/integration/models"
+)
+
+// Since notificationManager is mapped against sdkKey, we need a unique sdkKey for every scenario
+var sdkKey int
+
+// GetDatafile returns datafile,error for the provided datafileName
+func GetDatafile(datafileName string) ([]byte, error) {
+	datafileDir := os.Getenv("DATAFILES_DIR")
+	return ioutil.ReadFile(filepath.Clean(path.Join(datafileDir, datafileName)))
+}
+
+// GetSDKKey returns SDKKey for configuration
+func GetSDKKey(configuration *models.DataFileManagerConfiguration) string {
+	if configuration == nil {
+		sdkKey++
+		return strconv.Itoa(sdkKey)
+	}
+	key := configuration.SDKKey
+	if configuration.DatafileCondition != "" {
+		key += "_" + configuration.DatafileCondition
+	}
+	return key
 }
