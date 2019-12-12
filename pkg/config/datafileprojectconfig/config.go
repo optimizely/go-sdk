@@ -19,7 +19,6 @@ package datafileprojectconfig
 
 import (
 	"fmt"
-
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/mappers"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
@@ -167,6 +166,20 @@ func (c DatafileProjectConfig) GetGroupByID(groupID string) (entities.Group, err
 	}
 
 	return entities.Group{}, fmt.Errorf(`group with ID "%s" not found`, groupID)
+}
+
+// GetOptimizelyConfig is the main interface to get OptimizelyConfig object
+func (c DatafileProjectConfig) GetOptimizelyConfig() (*OptimizelyConfig, error) {
+	optimizelyConfig := &OptimizelyConfig{}
+
+	featuresList := c.GetFeatureList()
+	variableByIDMap := getVariableByIDMap(featuresList)
+
+	optimizelyConfig.ExperimentsMap = getExperimentMap(featuresList, c.GetExperimentList(), variableByIDMap)
+	optimizelyConfig.FeaturesMap = getFeatureMap(featuresList, optimizelyConfig.ExperimentsMap)
+	optimizelyConfig.Revision = c.GetRevision()
+
+	return optimizelyConfig, nil
 }
 
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser

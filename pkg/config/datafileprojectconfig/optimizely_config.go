@@ -14,13 +14,11 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package client //
-package client
+// Package datafileprojectconfig //
+package datafileprojectconfig
 
 import (
 	"github.com/optimizely/go-sdk/pkg/entities"
-
-	"github.com/pkg/errors"
 )
 
 // OptimizelyConfig is the top level object returned by API
@@ -93,7 +91,6 @@ func getExperimentMap(features []entities.Feature, experiments []entities.Experi
 	experimentVariablesMap := getExperimentVariablesMap(features)
 
 	for _, experiment := range experiments {
-
 		var optlyVariationsMap = map[string]OptimizelyVariation{}
 		for _, variation := range experiment.Variations {
 			var optlyVariablesMap = map[string]OptimizelyVariable{}
@@ -145,29 +142,4 @@ func getFeatureMap(features []entities.Feature, experimentsMap map[string]Optimi
 
 	}
 	return optlyFeatureMap
-}
-
-// GetOptimizelyConfig is the main interface to get OptimizelyConfig object
-func (o *OptimizelyClient) GetOptimizelyConfig() (*OptimizelyConfig, error) {
-
-	optimizelyConfig := &OptimizelyConfig{}
-	projectConfig, err := o.GetProjectConfig()
-	if projectConfig == nil {
-		e := errors.New("project config is null")
-		logger.Error("problem with project conifg", e)
-		return optimizelyConfig, e
-	}
-
-	if err != nil {
-		logger.Error("problem with project conifg", err)
-		return optimizelyConfig, err
-	}
-	featuresList := projectConfig.GetFeatureList()
-	variableByIDMap := getVariableByIDMap(featuresList)
-
-	optimizelyConfig.ExperimentsMap = getExperimentMap(featuresList, projectConfig.GetExperimentList(), variableByIDMap)
-	optimizelyConfig.FeaturesMap = getFeatureMap(featuresList, optimizelyConfig.ExperimentsMap)
-	optimizelyConfig.Revision = projectConfig.GetRevision()
-
-	return optimizelyConfig, nil
 }

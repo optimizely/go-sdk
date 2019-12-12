@@ -14,38 +14,35 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package client
+package datafileprojectconfig
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"testing"
-
-	"github.com/optimizely/go-sdk/pkg/config"
 
 	"github.com/stretchr/testify/suite"
 )
 
 type OptimizelyConfigTestSuite struct {
 	suite.Suite
-	optimizelyClient         *OptimizelyClient
+	projectConfig            *DatafileProjectConfig
 	expectedOptimizelyConfig OptimizelyConfig
 }
 
 func (s *OptimizelyConfigTestSuite) SetupTest() {
-	dataFileName := "testdata/optimizely_config_datafile.json"
+	dataFileName := "test/optimizely_config_datafile.json"
 	datafile, err := ioutil.ReadFile(dataFileName)
 	if err != nil {
 		s.Fail("error opening file:" + dataFileName)
 	}
-
-	projectConfigManager, e := config.NewStaticProjectConfigManagerFromPayload(datafile)
+	projectConfig, e := NewDatafileProjectConfig(datafile)
 	if e != nil {
-		s.Fail("error constructing config manager")
+		s.Fail("error parsing datafile")
 	}
+	s.projectConfig = projectConfig
 
 	// reading expected json file validates public access for OptimizelyConfig and its members
-	outputFileName := "testdata/optimizely_config_expected.json"
+	outputFileName := "test/optimizely_config_expected.json"
 	expectedOutput, er := ioutil.ReadFile(outputFileName)
 	if er != nil {
 		s.Fail("error opening file " + outputFileName)
@@ -56,29 +53,10 @@ func (s *OptimizelyConfigTestSuite) SetupTest() {
 		s.Fail("unable to parse expected file")
 	}
 
-	optimizelyFactory := &OptimizelyFactory{}
-	s.optimizelyClient, err = optimizelyFactory.Client(WithConfigManager(projectConfigManager))
-	if err != nil {
-		s.Fail("unable to initialize optimizely client")
-	}
-
-}
-
-func (s *OptimizelyConfigTestSuite) TestNullProjectConfig() {
-	projectConfigManager := &config.StaticProjectConfigManager{}
-	optimizelyFactory := &OptimizelyFactory{}
-	optimizelyClient, _ := optimizelyFactory.Client(WithConfigManager(projectConfigManager))
-	optimizelyConfig, err := optimizelyClient.GetOptimizelyConfig()
-
-	s.Error(err)
-	s.Equal(map[string]OptimizelyFeature(nil), optimizelyConfig.FeaturesMap)
-	s.Equal(map[string]OptimizelyExperiment(nil), optimizelyConfig.ExperimentsMap)
-	s.Equal("", optimizelyConfig.Revision)
-
 }
 
 func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
-	optimizelyConfig, err := s.optimizelyClient.GetOptimizelyConfig()
+	optimizelyConfig, err := s.projectConfig.GetOptimizelyConfig()
 
 	s.NoError(err)
 
