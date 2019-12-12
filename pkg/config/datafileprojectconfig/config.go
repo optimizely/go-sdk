@@ -127,6 +127,14 @@ func (c DatafileProjectConfig) GetFeatureList() (featureList []entities.Feature)
 	return featureList
 }
 
+// GetExperimentList returns an array of all the experiments
+func (c DatafileProjectConfig) GetExperimentList() (experimentList []entities.Experiment) {
+	for _, experiment := range c.experimentMap {
+		experimentList = append(experimentList, experiment)
+	}
+	return experimentList
+}
+
 // GetAudienceByID returns the audience with the given ID
 func (c DatafileProjectConfig) GetAudienceByID(audienceID string) (entities.Audience, error) {
 	if audience, ok := c.audienceMap[audienceID]; ok {

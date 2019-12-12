@@ -35,6 +35,7 @@ type ProjectConfig interface {
 	GetExperimentByKey(string) (entities.Experiment, error)
 	GetFeatureByKey(string) (entities.Feature, error)
 	GetVariableByKey(featureKey string, variableKey string) (entities.Variable, error)
+	GetExperimentList() []entities.Experiment
 	GetFeatureList() []entities.Feature
 	GetGroupByID(string) (entities.Group, error)
 	GetProjectID() string
