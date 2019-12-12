@@ -202,6 +202,10 @@ func TestNewPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true}`)
 	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false}`)
+	mockDatafile3 := []byte(`{"revision":"44","botFiltering":false}`)
+	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
+	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
+	projectConfig3, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile3)
 
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil)
@@ -218,18 +222,32 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 		numberOfCalls++
 	}
 	id, _ := configManager.OnProjectConfigUpdate(callback)
+	assert.NotEqual(t, id, 0)
 
+	// Verify config was updated with provided hardcoded mockDatafile1
 	actual, err := configManager.GetConfig()
 	assert.Nil(t, err)
-	assert.NotNil(t, actual)
+	assert.Equal(t, projectConfig1, actual)
+	// Verify listener was not called for harcoded mockDatafile1
+	assert.Equal(t, numberOfCalls, 0)
 
+	// Syncconfig with empty datafile to fetch remotely
 	configManager.SyncConfig([]byte{})
 	actual, err = configManager.GetConfig()
 	assert.Nil(t, err)
-	assert.NotNil(t, actual)
+	// Verify config was updated remotely with mockDatafile2
+	assert.Equal(t, projectConfig2, actual)
 	mockRequester.AssertExpectations(t)
+	// Verify listener was called for remote datafile update
+	assert.Equal(t, numberOfCalls, 1)
 
-	assert.NotEqual(t, id, 0)
+	// Syncconfig with hardcoded mockDatafile3
+	configManager.SyncConfig(mockDatafile3)
+	actual, err = configManager.GetConfig()
+	assert.Nil(t, err)
+	// Verify config was updated with provided hardcoded mockDatafile3
+	assert.Equal(t, projectConfig3, actual)
+	// Verify listener was not called for harcoded mockDatafile3
 	assert.Equal(t, numberOfCalls, 1)
 
 	err = configManager.RemoveOnProjectConfigUpdate(id)
