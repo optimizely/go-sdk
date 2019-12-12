@@ -44,6 +44,7 @@ func (s *OptimizelyConfigTestSuite) SetupTest() {
 		s.Fail("error constructing config manager")
 	}
 
+	// reading expected json file validates public access for OptimizelyConfig and its members
 	outputFileName := "testdata/optimizely_config_expected.json"
 	expectedOutput, er := ioutil.ReadFile(outputFileName)
 	if er != nil {
@@ -60,6 +61,19 @@ func (s *OptimizelyConfigTestSuite) SetupTest() {
 	if err != nil {
 		s.Fail("unable to initialize optimizely client")
 	}
+
+}
+
+func (s *OptimizelyConfigTestSuite) TestNullProjectConfig() {
+	projectConfigManager := &config.StaticProjectConfigManager{}
+	optimizelyFactory := &OptimizelyFactory{}
+	optimizelyClient, _ := optimizelyFactory.Client(WithConfigManager(projectConfigManager))
+	optimizelyConfig, err := optimizelyClient.GetOptimizelyConfig()
+
+	s.Error(err)
+	s.Equal(map[string]OptimizelyFeature(nil), optimizelyConfig.FeaturesMap)
+	s.Equal(map[string]OptimizelyExperiment(nil), optimizelyConfig.ExperimentsMap)
+	s.Equal("", optimizelyConfig.Revision)
 
 }
 

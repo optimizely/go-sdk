@@ -19,6 +19,8 @@ package client
 
 import (
 	"github.com/optimizely/go-sdk/pkg/entities"
+
+	"github.com/pkg/errors"
 )
 
 // OptimizelyConfig is the top level object returned by API
@@ -120,7 +122,7 @@ func getExperimentMap(features []entities.Feature, experiments []entities.Experi
 	return optlyExperimentMap
 }
 
-func getFeatureMap(features []entities.Feature, variableByIDMap map[string]entities.Variable) (optlyFeatureMap map[string]OptimizelyFeature) {
+func getFeatureMap(features []entities.Feature, experimentsMap map[string]OptimizelyExperiment) (optlyFeatureMap map[string]OptimizelyFeature) {
 
 	optlyFeatureMap = map[string]OptimizelyFeature{}
 
@@ -133,7 +135,10 @@ func getFeatureMap(features []entities.Feature, variableByIDMap map[string]entit
 			optlyFeatureVariablesMap[featureVarible.Key] = optlyVariable
 		}
 
-		optlyExperimentMap := getExperimentMap(features, feature.FeatureExperiments, variableByIDMap)
+		var optlyExperimentMap = map[string]OptimizelyExperiment{}
+		for _, experiment := range feature.FeatureExperiments {
+			optlyExperimentMap[experiment.Key] = experimentsMap[experiment.Key]
+		}
 
 		optlyFeature := OptimizelyFeature{ID: feature.ID, Key: feature.Key, ExperimentsMap: optlyExperimentMap, VariablesMap: optlyFeatureVariablesMap}
 		optlyFeatureMap[feature.Key] = optlyFeature
@@ -143,20 +148,25 @@ func getFeatureMap(features []entities.Feature, variableByIDMap map[string]entit
 }
 
 // GetOptimizelyConfig is the main interface to get OptimizelyConfig object
-func (o *OptimizelyClient) GetOptimizelyConfig() (optimizelyConfig *OptimizelyConfig, err error) {
+func (o *OptimizelyClient) GetOptimizelyConfig() (*OptimizelyConfig, error) {
 
-	optimizelyConfig = &OptimizelyConfig{}
+	optimizelyConfig := &OptimizelyConfig{}
 	projectConfig, err := o.GetProjectConfig()
-	if err != nil {
-		logger.Error("error retrieving ProjectConfig", err)
-		return optimizelyConfig, err
+	if projectConfig == nil {
+		e := errors.New("project config is null")
+		logger.Error("problem with project conifg", e)
+		return optimizelyConfig, e
 	}
 
+	if err != nil {
+		logger.Error("problem with project conifg", err)
+		return optimizelyConfig, err
+	}
 	featuresList := projectConfig.GetFeatureList()
 	variableByIDMap := getVariableByIDMap(featuresList)
 
 	optimizelyConfig.ExperimentsMap = getExperimentMap(featuresList, projectConfig.GetExperimentList(), variableByIDMap)
-	optimizelyConfig.FeaturesMap = getFeatureMap(featuresList, variableByIDMap)
+	optimizelyConfig.FeaturesMap = getFeatureMap(featuresList, optimizelyConfig.ExperimentsMap)
 	optimizelyConfig.Revision = projectConfig.GetRevision()
 
 	return optimizelyConfig, nil
