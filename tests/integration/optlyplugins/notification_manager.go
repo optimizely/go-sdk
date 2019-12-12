@@ -37,7 +37,6 @@ const DefaultInitializationTimeout = time.Duration(3000) * time.Millisecond
 type NotificationManager struct {
 	listenersCalled                    []interface{}
 	projectConfigUpdateListenersCalled []notification.ProjectConfigUpdateNotification
-	configManager                      config.ProjectConfigManager
 }
 
 // SubscribeNotifications subscribes to the provided notification listeners
@@ -91,7 +90,7 @@ func (n *NotificationManager) GetProjectConfigUpdateListenersCalled() []notifica
 }
 
 // TestDFMConfiguration - Executes DFM configuration tests
-func (n *NotificationManager) TestDFMConfiguration(configuration models.DataFileManagerConfiguration) {
+func (n *NotificationManager) TestDFMConfiguration(configuration models.DataFileManagerConfiguration, configManager config.ProjectConfigManager) {
 	timeout := DefaultInitializationTimeout
 	if configuration.Timeout != nil {
 		timeout = time.Duration(*(configuration.Timeout)) * time.Millisecond
@@ -108,10 +107,12 @@ func (n *NotificationManager) TestDFMConfiguration(configuration models.DataFile
 					break
 				}
 				// Check if projectconfig is ready
-				_, err := n.configManager.GetConfig()
+				_, err := configManager.GetConfig()
 				if err == nil {
 					break
 				}
+				// wait 10ms to try again, to avoid high cpu usage
+				time.Sleep(10 * time.Millisecond)
 			}
 			break
 		case models.KeyWaitForConfigUpdate:
@@ -134,6 +135,8 @@ func (n *NotificationManager) TestDFMConfiguration(configuration models.DataFile
 					// For cases where we are just waiting for config listener
 					break
 				}
+				// wait 10ms to try again, to avoid high cpu usage
+				time.Sleep(10 * time.Millisecond)
 			}
 			break
 		default:

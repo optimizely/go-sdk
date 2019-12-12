@@ -57,6 +57,5 @@ func CreatePollingConfigManager(sdkKey, scenarioID string, options models.APIOpt
 		sdkKey,
 		pollingConfigManagerOptions...,
 	)
-	notificationManager.configManager = configManager
 	return configManager
 }

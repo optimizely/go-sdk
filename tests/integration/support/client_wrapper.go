@@ -100,7 +100,7 @@ func GetInstance(scenarioID string, apiOptions models.APIOptions) *ClientWrapper
 	notificationManager.SubscribeNotifications(apiOptions.Listeners, client)
 	if apiOptions.DFMConfiguration != nil {
 		// Verify here since factory starts polling manager while initializing client
-		notificationManager.TestDFMConfiguration(*apiOptions.DFMConfiguration)
+		notificationManager.TestDFMConfiguration(*apiOptions.DFMConfiguration, configManager)
 	}
 
 	clientInstance = &ClientWrapper{
