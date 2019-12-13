@@ -19,6 +19,7 @@ package support
 import (
 	"log"
 	"sync"
+	"time"
 
 	"github.com/optimizely/go-sdk/pkg/client"
 	"github.com/optimizely/go-sdk/pkg/config"
@@ -65,9 +66,15 @@ func GetInstance(scenarioID string, apiOptions models.APIOptions) *ClientWrapper
 	// Check if DFM configuration was provided
 	if apiOptions.DFMConfiguration != nil {
 		// This is must needed before calling polling config manager
-		optlyplugins.RegisterConfigUpdateBlockModeHandler(wg, sdkKey, apOptions.DFMConfiguration)
-
+		go optlyplugins.RegisterConfigUpdateBlockModeHandler(&wg, sdkKey, *apiOptions.DFMConfiguration)
 		configManager = optlyplugins.CreatePollingConfigManager(sdkKey, scenarioID, apiOptions)
+		notificationManager.SubscribeProjectConfigUpdateNotifications(apiOptions.Listeners, configManager)
+
+		timeout := optlyplugins.DefaultInitializationTimeout
+		if apiOptions.DFMConfiguration.Timeout != nil {
+			timeout = time.Duration(*(apiOptions.DFMConfiguration.Timeout)) * time.Millisecond
+		}
+		optlyplugins.WaitOrTimeoutWG(&wg, timeout)
 	} else {
 		datafile, err := optlyplugins.GetDatafile(apiOptions.DatafileName)
 		if err != nil {
@@ -104,14 +111,7 @@ func GetInstance(scenarioID string, apiOptions models.APIOptions) *ClientWrapper
 	}
 
 	// Subscribe to decision and track notifications
-	notificationManager.SubscribeNotifications(client, apiOptions.Listeners)
-	if apiOptions.DFMConfiguration != nil {
-		// Verify here since factory starts polling manager while initializing client
-		notificationManager.TestDFMConfiguration(configManager)
-	}
-
-	// TODO: Add timeout
-	optlyplugs.WaitOrTimeoutWG(wg, 0)
+	notificationManager.SubscribeNotifications(apiOptions.Listeners, client)
 
 	clientInstance = &ClientWrapper{
 		client:              client,

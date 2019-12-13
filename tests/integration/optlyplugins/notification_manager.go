@@ -48,16 +48,21 @@ func (n *NotificationManager) SubscribeNotifications(listeners map[string]int, c
 		case models.KeyTrack:
 			client.OnTrack(n.trackCallback)
 			break
-		case models.KeyConfigUpdate:
-			if configManager, ok := client.ConfigManager.(*config.PollingProjectConfigManager); ok {
-				configManager.OnProjectConfigUpdate(n.configUpdateCallback)
-			}
 		}
 	}
 
 	for key, count := range listeners {
 		for i := 0; i < count; i++ {
 			addNotificationCallback(key)
+		}
+	}
+}
+
+// SubscribeProjectConfigUpdateNotifications subscribes to the projectConfigUpdate notification listeners
+func (n *NotificationManager) SubscribeProjectConfigUpdateNotifications(listeners map[string]int, configManager config.ProjectConfigManager) {
+	if count, ok := listeners[models.KeyConfigUpdate]; ok {
+		for i := 0; i < count; i++ {
+			configManager.OnProjectConfigUpdate(n.configUpdateCallback)
 		}
 	}
 }
@@ -72,8 +77,8 @@ func (n *NotificationManager) GetListenersCalled() []interface{} {
 	return listenerCalled
 }
 
-// GetProjectConfigUpdateListenersCalled - Returns ProjectConfigUpdate listeners called
-func (n *NotificationManager) getNotificationListenersCalled() []notification.ProjectConfigUpdateNotification {
+// GetConfigUpdateListenersCalled - Returns ProjectConfigUpdate listeners called
+func (n *NotificationManager) GetConfigUpdateListenersCalled() []notification.ProjectConfigUpdateNotification {
 	projectConfigUpdateListenersCalled := n.projectConfigUpdateListenersCalled
 	// Since for every scenario, a new sdk instance is created, emptying listenersCalled is required for scenario's
 	// where multiple requests are executed but no session is to be maintained among them.

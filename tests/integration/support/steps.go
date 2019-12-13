@@ -436,7 +436,7 @@ func (c *ScenarioCtx) ThereIsNoUserProfileState() error {
 func (c *ScenarioCtx) TheListenerWasCalledNTimes(listenerType string, count int) error {
 	actualListenersCalledCount := 0
 	if listenerType == models.KeyConfigUpdate {
-		actualListenersCalledCount = len(c.clientWrapper.notificationManager.GetProjectConfigUpdateListenersCalled())
+		actualListenersCalledCount = len(c.clientWrapper.notificationManager.GetConfigUpdateListenersCalled())
 		if actualListenersCalledCount == count {
 			return nil
 		}

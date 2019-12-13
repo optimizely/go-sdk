@@ -36,7 +36,7 @@ func (d *ProxyEventDispatcher) DispatchEvent(event event.LogEvent) (bool, error)
 	return true, nil
 }
 
-// DispatchEvent dispatches event with callback
+// GetMetrics is the metric accessor
 func (d *ProxyEventDispatcher) GetMetrics() event.Metrics {
 	return nil
 }

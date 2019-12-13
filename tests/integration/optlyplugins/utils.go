@@ -43,10 +43,11 @@ const defaultPollingInterval = time.Duration(1000) * time.Millisecond
 // Since notificationManager is mapped against sdkKey, we need a unique sdkKey for every scenario
 var sdkKey int
 
-func RegisterNotification(sdkKey string, notificationType notification.Type, callback func(interface{})) {
+func registerNotification(sdkKey string, notificationType notification.Type, callback func(interface{})) {
 	registry.GetNotificationCenter(sdkKey).AddHandler(notificationType, callback)
 }
 
+// RegisterConfigUpdateBlockModeHandler registers for config-update handler
 func RegisterConfigUpdateBlockModeHandler(wg *sync.WaitGroup, sdkKey string, datafileOptions models.DataFileManagerConfiguration) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -87,9 +88,10 @@ func RegisterConfigUpdateBlockModeHandler(wg *sync.WaitGroup, sdkKey string, dat
 		revision = revision - 1
 	}
 
-	RegisterNotification(sdkKey, notification.ProjectConfigUpdate, handler)
+	registerNotification(sdkKey, notification.ProjectConfigUpdate, handler)
 }
 
+// WaitOrTimeoutWG waits for the given timeout period
 func WaitOrTimeoutWG(wg *sync.WaitGroup, timeout time.Duration) bool {
 	c := make(chan struct{})
 	go func() {
