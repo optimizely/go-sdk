@@ -105,7 +105,10 @@ func GetInstance(scenarioID string, apiOptions models.APIOptions) *ClientWrapper
 	)
 
 	compositeService := *decision.NewCompositeService(sdkKey, decision.WithCompositeExperimentService(compositeExperimentService))
-	client, err := optimizelyFactory.Client(client.WithConfigManager(configManager), client.WithDecisionService(compositeService), client.WithEventProcessor(eventProcessor))
+	client, err := optimizelyFactory.Client(
+		client.WithConfigManager(configManager),
+		client.WithDecisionService(compositeService),
+		client.WithEventProcessor(eventProcessor))
 	if err != nil {
 		log.Fatal(err)
 	}
