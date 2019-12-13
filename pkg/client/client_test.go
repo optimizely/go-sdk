@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/config"
-	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
@@ -101,11 +100,11 @@ func (TestConfig) GetFeatureByKey(string) (entities.Feature, error) {
 	return entities.Feature{}, nil
 }
 
-func (TestConfig) GetOptimizelyConfig() (*datafileprojectconfig.OptimizelyConfig, error) {
+func (TestConfig) GetOptimizelyConfig() *entities.OptimizelyConfig {
 
-	optimizelyConfig := &datafileprojectconfig.OptimizelyConfig{}
+	optimizelyConfig := &entities.OptimizelyConfig{}
 	optimizelyConfig.Revision = "232"
-	return optimizelyConfig, nil
+	return optimizelyConfig
 }
 
 func (TestConfig) GetProjectID() string {
@@ -1200,20 +1199,33 @@ func TestGetProjectConfigIsValid(t *testing.T) {
 	assert.Equal(t, mockConfigManager.projectConfig, actual)
 }
 
-func TestGetOptimizelyConfig(t *testing.T) {
+func TestGetOptimizelyConfigValid(t *testing.T) {
 	mockConfigManager := ValidProjectConfigManager()
 
 	client := OptimizelyClient{
 		ConfigManager: mockConfigManager,
 	}
 
-	projectConfig, err := client.GetProjectConfig()
-
+	optimizelyConfig, err := client.GetOptimizelyConfig()
 	assert.Nil(t, err)
+	assert.Equal(t, &entities.OptimizelyConfig{Revision: "232"}, optimizelyConfig)
+}
 
-	optimizelyConfig, err := projectConfig.GetOptimizelyConfig()
-	assert.Nil(t, err)
-	assert.Equal(t, &datafileprojectconfig.OptimizelyConfig{Revision: "232"}, optimizelyConfig)
+func TestGetOptimizelyConfigInvalid(t *testing.T) {
+
+	mockConfig := new(MockProjectConfig)
+	mockConfigManager := new(MockProjectConfigManager)
+	mockConfigManager.On("GetConfig").Return(mockConfig, errors.New("error"))
+
+	client := OptimizelyClient{
+		ConfigManager: mockConfigManager,
+	}
+
+	optimizelyConfig, err := client.GetOptimizelyConfig()
+
+	assert.Error(t, err)
+	assert.Nil(t, optimizelyConfig)
+
 }
 
 func TestGetFeatureDecisionValid(t *testing.T) {

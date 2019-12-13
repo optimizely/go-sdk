@@ -24,7 +24,6 @@ import (
 	"strconv"
 
 	"github.com/optimizely/go-sdk/pkg/config"
-	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
@@ -488,14 +487,14 @@ func (o *OptimizelyClient) GetProjectConfig() (projectConfig config.ProjectConfi
 }
 
 // GetOptimizelyConfig returns OptimizelyConfig object
-func (o *OptimizelyClient) GetOptimizelyConfig() (optimizelyConfig *datafileprojectconfig.OptimizelyConfig, err error) {
+func (o *OptimizelyClient) GetOptimizelyConfig() (optimizelyConfig *entities.OptimizelyConfig, err error) {
 
 	projectConfig, err := o.ConfigManager.GetConfig()
 	if err != nil {
 		return nil, err
 	}
-	optimizelyConfig, err = projectConfig.GetOptimizelyConfig()
-	return optimizelyConfig, err
+	optimizelyConfig = projectConfig.GetOptimizelyConfig()
+	return optimizelyConfig, nil
 }
 
 // Close closes the Optimizely instance and stops any ongoing tasks from its children components.

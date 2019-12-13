@@ -18,7 +18,6 @@
 package config
 
 import (
-	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/notification"
 )
@@ -41,7 +40,7 @@ type ProjectConfig interface {
 	GetGroupByID(string) (entities.Group, error)
 	GetProjectID() string
 	GetRevision() string
-	GetOptimizelyConfig() (*datafileprojectconfig.OptimizelyConfig, error)
+	GetOptimizelyConfig() *entities.OptimizelyConfig
 }
 
 // ProjectConfigManager maintains an instance of the ProjectConfig
