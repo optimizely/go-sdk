@@ -63,6 +63,7 @@ func GetInstance(scenarioID string, apiOptions models.APIOptions) *ClientWrapper
 	var userProfileService decision.UserProfileService
 	var wg sync.WaitGroup
 
+	timeout := optlyplugins.DefaultInitializationTimeout
 	// Check if DFM configuration was provided
 	if apiOptions.DFMConfiguration != nil {
 		// This is must needed before calling polling config manager
@@ -70,11 +71,9 @@ func GetInstance(scenarioID string, apiOptions models.APIOptions) *ClientWrapper
 		configManager = optlyplugins.CreatePollingConfigManager(sdkKey, scenarioID, apiOptions)
 		notificationManager.SubscribeProjectConfigUpdateNotifications(apiOptions.Listeners, configManager)
 
-		timeout := optlyplugins.DefaultInitializationTimeout
 		if apiOptions.DFMConfiguration.Timeout != nil {
 			timeout = time.Duration(*(apiOptions.DFMConfiguration.Timeout)) * time.Millisecond
 		}
-		optlyplugins.WaitOrTimeoutWG(&wg, timeout)
 	} else {
 		datafile, err := optlyplugins.GetDatafile(apiOptions.DatafileName)
 		if err != nil {
@@ -115,6 +114,8 @@ func GetInstance(scenarioID string, apiOptions models.APIOptions) *ClientWrapper
 
 	// Subscribe to decision and track notifications
 	notificationManager.SubscribeNotifications(apiOptions.Listeners, client)
+
+	optlyplugins.WaitOrTimeoutWG(&wg, timeout)
 
 	clientInstance = &ClientWrapper{
 		client:              client,

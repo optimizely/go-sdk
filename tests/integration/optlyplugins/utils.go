@@ -17,7 +17,6 @@
 package optlyplugins
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -33,7 +32,7 @@ import (
 	"github.com/optimizely/go-sdk/tests/integration/models"
 )
 
-const localDatafileURLTemplate = "http://localhost:3001/datafiles/%s.json?request_id=%s"
+const localDatafileURLTemplate = "http://localhost:3001/datafiles/%s.json?request_id="
 
 // SyncConfig doesn't request for new datafile if we provide a valid datafile
 // this requires us to keep defaultPollingInterval low so that the request
@@ -116,6 +115,11 @@ func CreatePollingConfigManager(sdkKey, scenarioID string, apiOptions models.API
 
 	if apiOptions.DatafileName != "" {
 		datafile, _ = GetDatafile(apiOptions.DatafileName)
+	} else {
+		// KLUDGE:
+		// Just to get notification, we needed it.
+		// Notification is called before subscription.
+		datafile = []byte("ABC€")
 	}
 
 	// Setting up polling interval
@@ -124,13 +128,13 @@ func CreatePollingConfigManager(sdkKey, scenarioID string, apiOptions models.API
 	}
 
 	// Setting DatafileURLTemplate
-	urlString := fmt.Sprintf(localDatafileURLTemplate, sdkKey, scenarioID)
+	urlTemplate := localDatafileURLTemplate + scenarioID
 
 	configManager := config.NewPollingProjectConfigManager(
 		sdkKey,
 		config.WithInitialDatafile(datafile),
 		config.WithPollingInterval(pollingInterval),
-		config.WithDatafileURLTemplate(urlString),
+		config.WithDatafileURLTemplate(urlTemplate),
 	)
 
 	return configManager
