@@ -17,7 +17,6 @@
 package optlyplugins
 
 import (
-	"sync"
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/client"
@@ -36,7 +35,6 @@ const DefaultInitializationTimeout = time.Duration(3000) * time.Millisecond
 type NotificationManager struct {
 	listenersCalled                    []interface{}
 	projectConfigUpdateListenersCalled []notification.ProjectConfigUpdateNotification
-	WaitGroup                          sync.WaitGroup
 }
 
 // SubscribeNotifications subscribes to the provided notification listeners

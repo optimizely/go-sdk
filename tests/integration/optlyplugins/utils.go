@@ -43,11 +43,28 @@ const defaultPollingInterval = time.Duration(1000) * time.Millisecond
 // Since notificationManager is mapped against sdkKey, we need a unique sdkKey for every scenario
 var sdkKey int
 
-func registerNotification(sdkKey string, notificationType notification.Type, callback func(interface{})) {
+func RegisterNotification(sdkKey string, notificationType notification.Type, callback func(interface{})) {
 	registry.GetNotificationCenter(sdkKey).AddHandler(notificationType, callback)
 }
 
-func registerConfigUpdateBlockModeHandler(wg *sync.WaitGroup, sdkKey string, datafileOptions models.DataFileManagerConfiguration) {
+func RegisterConfigUpdateBlockModeHandler(wg *sync.WaitGroup, sdkKey string, datafileOptions models.DataFileManagerConfiguration) {
+	defer func() {
+		if r := recover(); r != nil {
+			// TODO: Need to add proper switch
+			// switch t := r.(type) {
+			// case error:
+			// 	err = t
+			// case string:
+			// 	err = errors.New(t)
+			// default:
+			// 	err = errors.New("unexpected error")
+			// }
+			// errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
+			// logger.Error(errorMessage, err)
+			// logger.Debug(string(debug.Stack()))
+		}
+	}()
+
 	revision := 0
 
 	switch datafileOptions.Mode {
@@ -63,21 +80,21 @@ func registerConfigUpdateBlockModeHandler(wg *sync.WaitGroup, sdkKey string, dat
 	wg.Add(revision)
 
 	handler := func(payload interface{}) {
+		// need to checkout
 		if revision > 0 {
 			wg.Done()
 		}
 		revision = revision - 1
 	}
 
-	registerNotification(sdkKey, notification.ProjectConfigUpdate, handler)
+	RegisterNotification(sdkKey, notification.ProjectConfigUpdate, handler)
 }
 
-func wgWaitOrTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
+func WaitOrTimeoutWG(wg *sync.WaitGroup, timeout time.Duration) bool {
 	c := make(chan struct{})
 	go func() {
-		wg.Wait()
 		defer close(c)
-
+		wg.Wait()
 	}()
 
 	select {
@@ -85,7 +102,6 @@ func wgWaitOrTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
 		return true // completed normally
 	case <-time.After(timeout):
 		// timed out, call done and exit
-		wg.Done()
 		return false
 	}
 }

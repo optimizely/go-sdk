@@ -18,6 +18,7 @@ package support
 
 import (
 	"log"
+	"sync"
 
 	"github.com/optimizely/go-sdk/pkg/client"
 	"github.com/optimizely/go-sdk/pkg/config"
@@ -55,15 +56,18 @@ func GetInstance(scenarioID string, apiOptions models.APIOptions) *ClientWrapper
 	}
 	sdkKey := optlyplugins.GetSDKKey(apiOptions.DFMConfiguration)
 	optimizelyFactory := &client.OptimizelyFactory{}
-	notificationManager := optlyplugins.NotificationManager{
-		APIOptions: apiOptions,
-	}
+	notificationManager := optlyplugins.NotificationManager{}
+
 	var configManager config.ProjectConfigManager
 	var userProfileService decision.UserProfileService
+	var wg sync.WaitGroup
 
 	// Check if DFM configuration was provided
 	if apiOptions.DFMConfiguration != nil {
-		configManager = optlyplugins.CreatePollingConfigManager(sdkKey, scenarioID, &notificationManager)
+		// This is must needed before calling polling config manager
+		optlyplugins.RegisterConfigUpdateBlockModeHandler(wg, sdkKey, apOptions.DFMConfiguration)
+
+		configManager = optlyplugins.CreatePollingConfigManager(sdkKey, scenarioID, apiOptions)
 	} else {
 		datafile, err := optlyplugins.GetDatafile(apiOptions.DatafileName)
 		if err != nil {
@@ -98,12 +102,16 @@ func GetInstance(scenarioID string, apiOptions models.APIOptions) *ClientWrapper
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	// Subscribe to decision and track notifications
-	notificationManager.SubscribeNotifications(client)
+	notificationManager.SubscribeNotifications(client, apiOptions.Listeners)
 	if apiOptions.DFMConfiguration != nil {
 		// Verify here since factory starts polling manager while initializing client
 		notificationManager.TestDFMConfiguration(configManager)
 	}
+
+	// TODO: Add timeout
+	optlyplugs.WaitOrTimeoutWG(wg, 0)
 
 	clientInstance = &ClientWrapper{
 		client:              client,
