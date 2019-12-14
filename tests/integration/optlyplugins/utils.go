@@ -74,6 +74,8 @@ func RegisterConfigUpdateBlockModeHandler(wg *sync.WaitGroup, sdkKey string, dat
 	case models.KeyWaitForConfigUpdate:
 		if datafileOptions.Revision != nil {
 			revision = *datafileOptions.Revision
+		} else {
+			revision = 1
 		}
 	}
 
@@ -119,7 +121,7 @@ func CreatePollingConfigManager(sdkKey, scenarioID string, apiOptions models.API
 		// KLUDGE:
 		// Just to get notification, we needed it.
 		// Notification is called before subscription.
-		datafile = []byte("ABC€")
+		datafile = []byte("Hardcoded text to avoid remote DF first time")
 	}
 
 	// Setting up polling interval

@@ -29,7 +29,7 @@ import (
 )
 
 // DefaultInitializationTimeout defines default timeout for datafile sync
-const DefaultInitializationTimeout = time.Duration(5000) * time.Millisecond
+const DefaultInitializationTimeout = time.Duration(3500) * time.Millisecond
 
 // NotificationManager manager class for notification listeners
 type NotificationManager struct {
