@@ -1193,7 +1193,7 @@ func TestGetProjectConfigIsValid(t *testing.T) {
 		ConfigManager: mockConfigManager,
 	}
 
-	actual, err := client.GetProjectConfig()
+	actual, err := client.getProjectConfig()
 
 	assert.Nil(t, err)
 	assert.Equal(t, mockConfigManager.projectConfig, actual)
@@ -2131,7 +2131,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenSendThrows
 	}
 
 	mockNotificationCenter := new(MockNotificationCenter)
-	config, err := s.client.GetProjectConfig()
+	config, err := s.client.getProjectConfig()
 	s.NoError(err)
 	configEvent, err := config.GetEventByKey("sample_conversion")
 	s.NoError(err)

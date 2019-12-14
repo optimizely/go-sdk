@@ -145,7 +145,7 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 		}
 	}()
 
-	projectConfig, err := o.GetProjectConfig()
+	projectConfig, err := o.getProjectConfig()
 	if err != nil {
 		logger.Error("Error retrieving ProjectConfig", err)
 		return enabledFeatures, err
@@ -318,7 +318,7 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 		}
 	}()
 
-	projectConfig, e := o.GetProjectConfig()
+	projectConfig, e := o.getProjectConfig()
 	if e != nil {
 		logger.Error("Optimizely SDK tracking error", e)
 		return e
@@ -364,7 +364,7 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 	userID := userContext.ID
 	logger.Debug(fmt.Sprintf(`Evaluating feature "%s" for user "%s".`, featureKey, userID))
 
-	projectConfig, e := o.GetProjectConfig()
+	projectConfig, e := o.getProjectConfig()
 	if e != nil {
 		logger.Error("Error calling getFeatureDecision", e)
 		return decisionContext, featureDecision, e
@@ -405,7 +405,7 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 	userID := userContext.ID
 	logger.Debug(fmt.Sprintf(`Evaluating experiment "%s" for user "%s".`, experimentKey, userID))
 
-	projectConfig, e := o.GetProjectConfig()
+	projectConfig, e := o.getProjectConfig()
 	if e != nil {
 		return decisionContext, experimentDecision, e
 	}
@@ -475,8 +475,7 @@ func (o *OptimizelyClient) RemoveOnTrack(id int) error {
 	return nil
 }
 
-// GetProjectConfig returns the current ProjectConfig or nil if the instance is not valid.
-func (o *OptimizelyClient) GetProjectConfig() (projectConfig config.ProjectConfig, err error) {
+func (o *OptimizelyClient) getProjectConfig() (projectConfig config.ProjectConfig, err error) {
 
 	projectConfig, err = o.ConfigManager.GetConfig()
 	if err != nil {
@@ -489,7 +488,7 @@ func (o *OptimizelyClient) GetProjectConfig() (projectConfig config.ProjectConfi
 // GetOptimizelyConfig returns OptimizelyConfig object
 func (o *OptimizelyClient) GetOptimizelyConfig() (optimizelyConfig *entities.OptimizelyConfig, err error) {
 
-	projectConfig, err := o.ConfigManager.GetConfig()
+	projectConfig, err := o.getProjectConfig()
 	if err != nil {
 		return nil, err
 	}
