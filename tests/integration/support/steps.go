@@ -114,7 +114,7 @@ func (c *ScenarioCtx) TheResultShouldBeString(result string) error {
 	if result == c.apiResponse.Result {
 		return nil
 	}
-	return fmt.Errorf("incorrect result")
+	return fmt.Errorf("incorrect result %s", result)
 }
 
 // TheResultShouldBeInteger checks that the result is of type integer with the given value.
