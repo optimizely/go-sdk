@@ -66,5 +66,5 @@ mkdir -p $GO_FEATUREFILES_PATH
 cp -r $FEATURE_FILES_PATH $GO_FEATUREFILES_PATH
 
 export DATAFILES_DIR="$DATAFILES_PATH"
-go test -v $(pwd)/tests/integration --godog.tags="@DFM_HARDCODED_DF_NOTIFICATION" --godog.f=progress
+go test -v $(pwd)/tests/integration --godog.tags="$TAG_FILTER_EXPRESSION" --godog.f=progress
 echo "Ready for testing."
