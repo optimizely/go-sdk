@@ -68,8 +68,8 @@ func GetInstance(scenarioID string, apiOptions models.APIOptions) *ClientWrapper
 	if apiOptions.DFMConfiguration != nil {
 		// This is must needed before calling polling config manager
 		go optlyplugins.RegisterConfigUpdateBlockModeHandler(&wg, sdkKey, *apiOptions.DFMConfiguration)
+		notificationManager.SubscribeProjectConfigUpdateNotifications(sdkKey, apiOptions.Listeners)
 		configManager = optlyplugins.CreatePollingConfigManager(sdkKey, scenarioID, apiOptions)
-		notificationManager.SubscribeProjectConfigUpdateNotifications(apiOptions.Listeners, configManager)
 
 		if apiOptions.DFMConfiguration.Timeout != nil {
 			timeout = time.Duration(*(apiOptions.DFMConfiguration.Timeout)) * time.Millisecond

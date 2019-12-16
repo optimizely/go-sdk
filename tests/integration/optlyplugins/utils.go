@@ -17,6 +17,8 @@
 package optlyplugins
 
 import (
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -48,20 +50,20 @@ func registerNotification(sdkKey string, notificationType notification.Type, cal
 
 // RegisterConfigUpdateBlockModeHandler registers for config-update handler
 func RegisterConfigUpdateBlockModeHandler(wg *sync.WaitGroup, sdkKey string, datafileOptions models.DataFileManagerConfiguration) {
+
+	// This shouldn't occur in any normal case.
 	defer func() {
+		var err error
 		if r := recover(); r != nil {
-			// TODO: Need to add proper switch
-			// switch t := r.(type) {
-			// case error:
-			// 	err = t
-			// case string:
-			// 	err = errors.New(t)
-			// default:
-			// 	err = errors.New("unexpected error")
-			// }
-			// errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
-			// logger.Error(errorMessage, err)
-			// logger.Debug(string(debug.Stack()))
+			switch t := r.(type) {
+			case error:
+				err = t
+			case string:
+				err = errors.New(t)
+			default:
+				err = errors.New("unexpected error")
+			}
+			fmt.Println(fmt.Sprintf("SDK initialization panicking in DFM listener - %s", err))
 		}
 	}()
 
@@ -117,11 +119,6 @@ func CreatePollingConfigManager(sdkKey, scenarioID string, apiOptions models.API
 
 	if apiOptions.DatafileName != "" {
 		datafile, _ = GetDatafile(apiOptions.DatafileName)
-	} else {
-		// KLUDGE:
-		// Just to get notification, we needed it.
-		// Notification is called before subscription.
-		datafile = []byte("Hardcoded text to avoid remote DF first time")
 	}
 
 	// Setting up polling interval

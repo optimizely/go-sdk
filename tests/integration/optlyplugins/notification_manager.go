@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/client"
-	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
@@ -59,10 +58,19 @@ func (n *NotificationManager) SubscribeNotifications(listeners map[string]int, c
 }
 
 // SubscribeProjectConfigUpdateNotifications subscribes to the projectConfigUpdate notification listeners
-func (n *NotificationManager) SubscribeProjectConfigUpdateNotifications(listeners map[string]int, configManager config.ProjectConfigManager) {
+func (n *NotificationManager) SubscribeProjectConfigUpdateNotifications(sdkKey string, listeners map[string]int) {
+
+	// This is handled in a way that notification for config update shouldn't be lost.
+	// OnConfigUpdate in PollingConfigManager can't be used otherwise it will trigger notification during object intiailization.
+	handler := func(payload interface{}) {
+		if notification, ok := payload.(notification.ProjectConfigUpdateNotification); ok {
+			n.projectConfigUpdateListenersCalled = append(n.projectConfigUpdateListenersCalled, notification)
+		}
+	}
+
 	if count, ok := listeners[models.KeyConfigUpdate]; ok {
 		for i := 0; i < count; i++ {
-			configManager.OnProjectConfigUpdate(n.configUpdateCallback)
+			registerNotification(sdkKey, notification.ProjectConfigUpdate, handler)
 		}
 	}
 }
