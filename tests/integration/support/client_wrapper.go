@@ -45,7 +45,6 @@ var sdkKey int
 type ClientWrapper struct {
 	client              *client.OptimizelyClient
 	eventDispatcher     event.Dispatcher
-	projectConfig       config.ProjectConfig
 	userProfileService  decision.UserProfileService
 	overrideStore       decision.ExperimentOverrideStore
 	notificationManager *optlyplugins.NotificationManager
@@ -113,7 +112,6 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 	notificationManager.SubscribeNotifications(apiOptions.Listeners, client)
 	clientInstance = &ClientWrapper{
 		client:              client,
-		projectConfig:       config,
 		eventDispatcher:     eventProcessor.EventDispatcher,
 		userProfileService:  userProfileService,
 		overrideStore:       overrideStore,
@@ -124,7 +122,11 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 
 // GetProjectConfig gets the right config project
 func (c *ClientWrapper) GetProjectConfig() config.ProjectConfig {
-	return c.projectConfig
+	projectConfig, err := c.client.ConfigManager.GetConfig()
+	if err != nil {
+		return nil
+	}
+	return projectConfig
 
 }
 
