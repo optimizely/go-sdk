@@ -100,13 +100,6 @@ func (TestConfig) GetFeatureByKey(string) (entities.Feature, error) {
 	return entities.Feature{}, nil
 }
 
-func (TestConfig) GetOptimizelyConfig() *entities.OptimizelyConfig {
-
-	optimizelyConfig := &entities.OptimizelyConfig{}
-	optimizelyConfig.Revision = "232"
-	return optimizelyConfig
-}
-
 func (TestConfig) GetProjectID() string {
 	return "15389410617"
 }
@@ -1206,9 +1199,9 @@ func TestGetOptimizelyConfigValid(t *testing.T) {
 		ConfigManager: mockConfigManager,
 	}
 
-	optimizelyConfig, err := client.GetOptimizelyConfig()
-	assert.Nil(t, err)
-	assert.Equal(t, &entities.OptimizelyConfig{Revision: "232"}, optimizelyConfig)
+	optimizelyConfig := client.GetOptimizelyConfig()
+
+	assert.Equal(t, &config.OptimizelyConfig{Revision: "232"}, optimizelyConfig)
 }
 
 func TestGetOptimizelyConfigInvalid(t *testing.T) {
@@ -1221,9 +1214,8 @@ func TestGetOptimizelyConfigInvalid(t *testing.T) {
 		ConfigManager: mockConfigManager,
 	}
 
-	optimizelyConfig, err := client.GetOptimizelyConfig()
+	optimizelyConfig := client.GetOptimizelyConfig()
 
-	assert.Error(t, err)
 	assert.Nil(t, optimizelyConfig)
 
 }

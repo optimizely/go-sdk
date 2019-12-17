@@ -63,8 +63,7 @@ func NewStaticProjectConfigManagerFromPayload(payload []byte) (*StaticProjectCon
 // NewStaticProjectConfigManager creates a new instance of the manager with the given project config
 func NewStaticProjectConfigManager(config ProjectConfig) *StaticProjectConfigManager {
 	return &StaticProjectConfigManager{
-		projectConfig:    config,
-		optimizelyConfig: NewOptimizelyConfig(config),
+		projectConfig: config,
 	}
 }
 
@@ -75,9 +74,16 @@ func (cm *StaticProjectConfigManager) GetConfig() (ProjectConfig, error) {
 	return cm.projectConfig, nil
 }
 
+// GetOptimizelyConfig returns the optimizely project config
 func (cm *StaticProjectConfigManager) GetOptimizelyConfig() *OptimizelyConfig {
 	cm.configLock.Lock()
 	defer cm.configLock.Unlock()
+	if cm.optimizelyConfig != nil {
+		return cm.optimizelyConfig
+	}
+	optimizelyConfig := NewOptimizelyConfig(cm.projectConfig)
+	cm.optimizelyConfig = optimizelyConfig
+
 	return cm.optimizelyConfig
 }
 

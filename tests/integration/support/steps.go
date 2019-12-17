@@ -288,10 +288,8 @@ func (c *ScenarioCtx) ThereAreNoDispatchedEvents() error {
 // DispatchedEventsPayloadsInclude checks dispatched events to contain the given events.
 func (c *ScenarioCtx) DispatchedEventsPayloadsInclude(value *gherkin.DocString) error {
 
-	config, err := c.clientWrapper.client.GetProjectConfig()
-	if err != nil {
-		return fmt.Errorf("Invalid Project Config")
-	}
+	config := c.clientWrapper.GetProjectConfig()
+
 	expectedBatchEvents, err := parseYamlArray(value.Content, config)
 	if err != nil {
 		return fmt.Errorf("Invalid request for dispatched Events")
@@ -379,10 +377,7 @@ func (c *ScenarioCtx) PayloadsOfDispatchedEventsDontIncludeDecisions() error {
 
 // TheUserProfileServiceStateShouldBe checks current state of UPS
 func (c *ScenarioCtx) TheUserProfileServiceStateShouldBe(value *gherkin.DocString) error {
-	config, err := c.clientWrapper.client.GetProjectConfig()
-	if err != nil {
-		return fmt.Errorf("Invalid Project Config")
-	}
+	config := c.clientWrapper.GetProjectConfig()
 	rawProfiles, err := parseYamlArray(value.Content, config)
 	if err != nil {
 		return fmt.Errorf("Invalid request for user profile service state")

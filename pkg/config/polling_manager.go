@@ -158,7 +158,9 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	}
 	cmLogger.Debug(fmt.Sprintf("New datafile set with revision: %s. Old revision: %s", projectConfig.GetRevision(), previousRevision))
 	cm.projectConfig = projectConfig
-	cm.optimizelyConfig = NewOptimizelyConfig(projectConfig)
+	if cm.optimizelyConfig != nil {
+		cm.optimizelyConfig = NewOptimizelyConfig(projectConfig)
+	}
 	closeMutex(nil)
 
 	if cm.notificationCenter != nil {
@@ -217,10 +219,15 @@ func (cm *PollingProjectConfigManager) GetConfig() (ProjectConfig, error) {
 	return cm.projectConfig, nil
 }
 
-// GetConfig returns the project config
+// GetOptimizelyConfig returns the optimizely project config
 func (cm *PollingProjectConfigManager) GetOptimizelyConfig() *OptimizelyConfig {
 	cm.configLock.RLock()
 	defer cm.configLock.RUnlock()
+	if cm.optimizelyConfig != nil {
+		return cm.optimizelyConfig
+	}
+	optimizelyConfig := NewOptimizelyConfig(cm.projectConfig)
+	cm.optimizelyConfig = optimizelyConfig
 	return cm.optimizelyConfig
 }
 

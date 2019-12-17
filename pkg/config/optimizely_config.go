@@ -14,7 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package entities //
+// Package config //
 package config
 
 import "github.com/optimizely/go-sdk/pkg/entities"
@@ -145,6 +145,9 @@ func getFeatureMap(features []entities.Feature, experimentsMap map[string]Optimi
 // NewOptimizelyConfig constructs OptimizelyConfig object
 func NewOptimizelyConfig(projConfig ProjectConfig) *OptimizelyConfig {
 
+	if projConfig == nil {
+		return nil
+	}
 	featuresList := projConfig.GetFeatureList()
 	experimentsList := projConfig.GetExperimentList()
 	revision := projConfig.GetRevision()
