@@ -1192,7 +1192,7 @@ func TestGetProjectConfigIsValid(t *testing.T) {
 	assert.Equal(t, mockConfigManager.projectConfig, actual)
 }
 
-func TestGetOptimizelyConfigValid(t *testing.T) {
+func TestGetOptimizelyConfig(t *testing.T) {
 	mockConfigManager := ValidProjectConfigManager()
 
 	client := OptimizelyClient{
@@ -1202,22 +1202,6 @@ func TestGetOptimizelyConfigValid(t *testing.T) {
 	optimizelyConfig := client.GetOptimizelyConfig()
 
 	assert.Equal(t, &config.OptimizelyConfig{Revision: "232"}, optimizelyConfig)
-}
-
-func TestGetOptimizelyConfigInvalid(t *testing.T) {
-
-	mockConfig := new(MockProjectConfig)
-	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig, errors.New("error"))
-
-	client := OptimizelyClient{
-		ConfigManager: mockConfigManager,
-	}
-
-	optimizelyConfig := client.GetOptimizelyConfig()
-
-	assert.Nil(t, optimizelyConfig)
-
 }
 
 func TestGetFeatureDecisionValid(t *testing.T) {
