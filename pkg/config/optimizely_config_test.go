@@ -14,10 +14,12 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package entities
+package config
 
 import (
 	"encoding/json"
+	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"testing"
 
@@ -26,8 +28,8 @@ import (
 
 type OptimizelyConfigTestSuite struct {
 	suite.Suite
-	featureList              []Feature
-	experimentList           []Experiment
+	featureList              []entities.Feature
+	experimentList           []entities.Experiment
 	expectedOptimizelyConfig OptimizelyConfig
 }
 
@@ -97,4 +99,37 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 
 func TestOptimizelyConfigTestSuite(t *testing.T) {
 	suite.Run(t, new(OptimizelyConfigTestSuite))
+}
+
+func TestGetOptimizelyConfig(t *testing.T) {
+	dataFileName := "test/optimizely_config_datafile.json"
+	datafile, err := ioutil.ReadFile(dataFileName)
+	if err != nil {
+		assert.Fail(t, "error opening file:"+dataFileName)
+	}
+	projectConfig, e := NewDatafileProjectConfig(datafile)
+	if e != nil {
+		assert.Fail(t, "error parsing datafile")
+	}
+
+	// reading expected json file validates public access for OptimizelyConfig and its members
+	outputFileName := "test/optimizely_config_expected.json"
+	expectedOutput, er := ioutil.ReadFile(outputFileName)
+	if er != nil {
+		assert.Fail(t, "error opening file "+outputFileName)
+	}
+
+	var expectedOptimizelyConfig = entities.OptimizelyConfig{}
+	err = json.Unmarshal(expectedOutput, &expectedOptimizelyConfig)
+	if err != nil {
+		assert.Fail(t, "unable to parse expected file")
+	}
+	optimizelyConfig := projectConfig.GetOptimizelyConfig()
+
+	assert.Equal(t, expectedOptimizelyConfig.FeaturesMap, optimizelyConfig.FeaturesMap)
+	assert.Equal(t, expectedOptimizelyConfig.ExperimentsMap, optimizelyConfig.ExperimentsMap)
+	assert.Equal(t, expectedOptimizelyConfig.Revision, optimizelyConfig.Revision)
+
+	assert.Equal(t, expectedOptimizelyConfig, *optimizelyConfig)
+
 }

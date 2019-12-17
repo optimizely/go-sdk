@@ -40,12 +40,12 @@ type ProjectConfig interface {
 	GetGroupByID(string) (entities.Group, error)
 	GetProjectID() string
 	GetRevision() string
-	GetOptimizelyConfig() *entities.OptimizelyConfig
 }
 
 // ProjectConfigManager maintains an instance of the ProjectConfig
 type ProjectConfigManager interface {
 	GetConfig() (ProjectConfig, error)
+	GetOptimizelyConfig() *OptimizelyConfig
 	RemoveOnProjectConfigUpdate(id int) error
 	OnProjectConfigUpdate(callback func(notification.ProjectConfigUpdateNotification)) (int, error)
 }

@@ -169,16 +169,6 @@ func (c DatafileProjectConfig) GetGroupByID(groupID string) (entities.Group, err
 	return entities.Group{}, fmt.Errorf(`group with ID "%s" not found`, groupID)
 }
 
-// GetOptimizelyConfig is the main interface to get OptimizelyConfig object
-func (c DatafileProjectConfig) GetOptimizelyConfig() *entities.OptimizelyConfig {
-
-	featuresList := c.GetFeatureList()
-	experimentsList := c.GetExperimentList()
-	revision := c.GetRevision()
-
-	return entities.NewOptimizelyConfig(featuresList, experimentsList, revision)
-}
-
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser
 func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, error) {
 	datafile, err := Parse(jsonDatafile)

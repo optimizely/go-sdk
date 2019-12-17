@@ -486,14 +486,10 @@ func (o *OptimizelyClient) getProjectConfig() (projectConfig config.ProjectConfi
 }
 
 // GetOptimizelyConfig returns OptimizelyConfig object
-func (o *OptimizelyClient) GetOptimizelyConfig() (optimizelyConfig *entities.OptimizelyConfig, err error) {
+func (o *OptimizelyClient) GetOptimizelyConfig() (optimizelyConfig *config.OptimizelyConfig) {
 
-	projectConfig, err := o.getProjectConfig()
-	if err != nil {
-		return nil, err
-	}
-	optimizelyConfig = projectConfig.GetOptimizelyConfig()
-	return optimizelyConfig, nil
+	return o.ConfigManager.GetOptimizelyConfig()
+
 }
 
 // Close closes the Optimizely instance and stops any ongoing tasks from its children components.

@@ -19,7 +19,6 @@ package datafileprojectconfig
 
 import (
 	"fmt"
-	"io/ioutil"
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
@@ -393,37 +392,4 @@ func TestGetGroupByIDMissingIDError(t *testing.T) {
 	if assert.Error(t, err) {
 		assert.Equal(t, fmt.Errorf(`group with ID "id" not found`), err)
 	}
-}
-
-func TestGetOptimizelyConfig(t *testing.T) {
-	dataFileName := "test/optimizely_config_datafile.json"
-	datafile, err := ioutil.ReadFile(dataFileName)
-	if err != nil {
-		assert.Fail(t, "error opening file:"+dataFileName)
-	}
-	projectConfig, e := NewDatafileProjectConfig(datafile)
-	if e != nil {
-		assert.Fail(t, "error parsing datafile")
-	}
-
-	// reading expected json file validates public access for OptimizelyConfig and its members
-	outputFileName := "test/optimizely_config_expected.json"
-	expectedOutput, er := ioutil.ReadFile(outputFileName)
-	if er != nil {
-		assert.Fail(t, "error opening file "+outputFileName)
-	}
-
-	var expectedOptimizelyConfig = entities.OptimizelyConfig{}
-	err = json.Unmarshal(expectedOutput, &expectedOptimizelyConfig)
-	if err != nil {
-		assert.Fail(t, "unable to parse expected file")
-	}
-	optimizelyConfig := projectConfig.GetOptimizelyConfig()
-
-	assert.Equal(t, expectedOptimizelyConfig.FeaturesMap, optimizelyConfig.FeaturesMap)
-	assert.Equal(t, expectedOptimizelyConfig.ExperimentsMap, optimizelyConfig.ExperimentsMap)
-	assert.Equal(t, expectedOptimizelyConfig.Revision, optimizelyConfig.Revision)
-
-	assert.Equal(t, expectedOptimizelyConfig, *optimizelyConfig)
-
 }

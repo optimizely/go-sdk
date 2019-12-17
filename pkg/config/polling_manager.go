@@ -58,9 +58,10 @@ type PollingProjectConfigManager struct {
 	requester           utils.Requester
 	sdkKey              string
 
-	configLock    sync.RWMutex
-	err           error
-	projectConfig ProjectConfig
+	configLock       sync.RWMutex
+	err              error
+	projectConfig    ProjectConfig
+	optimizelyConfig *OptimizelyConfig
 }
 
 // OptionFunc is used to provide custom configuration to the PollingProjectConfigManager.
@@ -157,6 +158,7 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	}
 	cmLogger.Debug(fmt.Sprintf("New datafile set with revision: %s. Old revision: %s", projectConfig.GetRevision(), previousRevision))
 	cm.projectConfig = projectConfig
+	cm.optimizelyConfig = NewOptimizelyConfig(projectConfig)
 	closeMutex(nil)
 
 	if cm.notificationCenter != nil {
@@ -213,6 +215,13 @@ func (cm *PollingProjectConfigManager) GetConfig() (ProjectConfig, error) {
 		return cm.projectConfig, cm.err
 	}
 	return cm.projectConfig, nil
+}
+
+// GetConfig returns the project config
+func (cm *PollingProjectConfigManager) GetOptimizelyConfig() *OptimizelyConfig {
+	cm.configLock.RLock()
+	defer cm.configLock.RUnlock()
+	return cm.optimizelyConfig
 }
 
 // OnProjectConfigUpdate registers a handler for ProjectConfigUpdate notifications

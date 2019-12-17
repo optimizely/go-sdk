@@ -15,7 +15,9 @@
  ***************************************************************************/
 
 // Package entities //
-package entities
+package config
+
+import "github.com/optimizely/go-sdk/pkg/entities"
 
 // OptimizelyConfig is a snapshot of the experiments and features in the project config
 type OptimizelyConfig struct {
@@ -55,8 +57,8 @@ type OptimizelyVariable struct {
 	Value string
 }
 
-func getVariableByIDMap(features []Feature) (variableByIDMap map[string]Variable) {
-	variableByIDMap = map[string]Variable{}
+func getVariableByIDMap(features []entities.Feature) (variableByIDMap map[string]entities.Variable) {
+	variableByIDMap = map[string]entities.Variable{}
 	for _, feature := range features {
 		for _, variable := range feature.VariableMap {
 			variableByIDMap[variable.ID] = variable
@@ -65,7 +67,7 @@ func getVariableByIDMap(features []Feature) (variableByIDMap map[string]Variable
 	return variableByIDMap
 }
 
-func getExperimentVariablesMap(features []Feature) (experimentVariableMap map[string]map[string]OptimizelyVariable) {
+func getExperimentVariablesMap(features []entities.Feature) (experimentVariableMap map[string]map[string]OptimizelyVariable) {
 	experimentVariableMap = map[string]map[string]OptimizelyVariable{}
 	for _, feature := range features {
 
@@ -81,7 +83,7 @@ func getExperimentVariablesMap(features []Feature) (experimentVariableMap map[st
 	return experimentVariableMap
 }
 
-func getExperimentMap(features []Feature, experiments []Experiment, variableByIDMap map[string]Variable) (optlyExperimentMap map[string]OptimizelyExperiment) {
+func getExperimentMap(features []entities.Feature, experiments []entities.Experiment, variableByIDMap map[string]entities.Variable) (optlyExperimentMap map[string]OptimizelyExperiment) {
 
 	optlyExperimentMap = map[string]OptimizelyExperiment{}
 	experimentVariablesMap := getExperimentVariablesMap(features)
@@ -115,7 +117,7 @@ func getExperimentMap(features []Feature, experiments []Experiment, variableByID
 	return optlyExperimentMap
 }
 
-func getFeatureMap(features []Feature, experimentsMap map[string]OptimizelyExperiment) (optlyFeatureMap map[string]OptimizelyFeature) {
+func getFeatureMap(features []entities.Feature, experimentsMap map[string]OptimizelyExperiment) (optlyFeatureMap map[string]OptimizelyFeature) {
 
 	optlyFeatureMap = map[string]OptimizelyFeature{}
 
@@ -141,7 +143,12 @@ func getFeatureMap(features []Feature, experimentsMap map[string]OptimizelyExper
 }
 
 // NewOptimizelyConfig constructs OptimizelyConfig object
-func NewOptimizelyConfig(featuresList []Feature, experimentsList []Experiment, revision string) *OptimizelyConfig {
+func NewOptimizelyConfig(projConfig ProjectConfig) *OptimizelyConfig {
+
+	featuresList := projConfig.GetFeatureList()
+	experimentsList := projConfig.GetExperimentList()
+	revision := projConfig.GetRevision()
+
 	optimizelyConfig := &OptimizelyConfig{}
 
 	variableByIDMap := getVariableByIDMap(featuresList)
