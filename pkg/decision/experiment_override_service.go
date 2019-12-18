@@ -103,10 +103,8 @@ func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisio
 		return decision, nil
 	}
 
-	// TODO(Matt): Implement and use a way to access variations by key
-	for _, variation := range decisionContext.Experiment.Variations {
-		variation := variation
-		if variation.Key == variationKey {
+	if variationID, ok := decisionContext.Experiment.VariationKeyToIDMap[variationKey]; ok {
+		if variation, ok := decisionContext.Experiment.Variations[variationID]; ok {
 			decision.Variation = &variation
 			decision.Reason = reasons.OverrideVariationAssignmentFound
 			eosLogger.Debug(fmt.Sprintf("Override variation %v found for user %v", variationKey, userContext.ID))

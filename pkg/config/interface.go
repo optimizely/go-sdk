@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package pkg //
-package pkg
+// Package config //
+package config
 
 import (
 	"github.com/optimizely/go-sdk/pkg/entities"

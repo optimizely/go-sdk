@@ -36,10 +36,12 @@ func NewNotificationCenter() *DefaultCenter {
 	decisionNotificationManager := NewAtomicManager()
 	projectConfigUpdateNotificationManager := NewAtomicManager()
 	processLogEventNotificationManager := NewAtomicManager()
+	trackNotificationManager := NewAtomicManager()
 	managerMap := make(map[Type]Manager)
 	managerMap[Decision] = decisionNotificationManager
 	managerMap[ProjectConfigUpdate] = projectConfigUpdateNotificationManager
 	managerMap[LogEvent] = processLogEventNotificationManager
+	managerMap[Track] = trackNotificationManager
 	return &DefaultCenter{
 		managerMap: managerMap,
 	}

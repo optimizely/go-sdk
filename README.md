@@ -29,14 +29,14 @@ module mymodule
 go 1.12
 
 require (
-	github.com/optimizely/go-sdk v1.0.0-beta7
+	github.com/optimizely/go-sdk v1.0.0-rc1
 )
 ```
 
 If you are already using `go.mod` in your application you can run the following:
 
 ```
-go mod edit -require github.com/optimizely/go-sdk@v1.0.0-beta7
+go mod edit -require github.com/optimizely/go-sdk@v1.0.0-rc1
 ```
 
 NOTE:
@@ -55,38 +55,36 @@ will install it as a package to pkg directory, rather than src directory. It cou
 To start using the SDK, create an instance using our factory method:
 
 ```
-import "github.com/optimizely/go-sdk/pkg/client"
+import optly "github.com/optimizely/go-sdk"
+import "github.com/optimizely/go-sdk/client"
 
-optimizelyFactory := &client.OptimizelyFactory{
-  SDKKey: "[SDK_KEY_HERE]",
-}
+// Simple one-line initialization with the SDK key
+client, err := optly.Client("SDK_KEY")
 
-client, err := optimizelyFactory.Client()
-
-// You can also instantiate with a hard-coded datafile
+// You can also instantiate with a hard-coded datafile using our client factory method
 optimizelyFactory := &client.OptimizelyFactory{
 	Datafile: []byte("datafile_string"),
 }
 
-client, err := optimizelyFactory.Client()
+client, err = optimizelyFactory.Client()
 
 ```
 
 ### Feature Rollouts
 ```
 import (
-  "github.com/optimizely/go-sdk/pkg/client"
-  "github.com/optimizely/go-sdk/pkg/entities"
+  optly "github.com/optimizely/go-sdk"
 )
 
-user := entities.UserContext{
-  ID: "optimizely end user",
-  Attributes: map[string]interface{}{
-    "state":      "California",
-    "likes_donuts": true,
-  },
-}
+// instantiate a client
+client, err := optly.Client("SDK_KEY")
 
+// User attributes are optional and used for targeting and results segmentation
+atributes := map[string]interface{}{
+     "state":      "California",
+     "likes_donuts": true,
+}, 
+user := optly.UserContext("optimizely end user", attributes)
 enabled, _ := client.IsFeatureEnabled("binary_feature", user)
 ```
 

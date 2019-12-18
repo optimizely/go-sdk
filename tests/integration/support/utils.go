@@ -21,12 +21,40 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
+
+	"github.com/optimizely/go-sdk/tests/integration/models"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/optimizely/go-sdk/pkg"
+	"github.com/optimizely/go-sdk/pkg/config"
 
 	"gopkg.in/yaml.v3"
 )
+
+// parses the yaml string value to listeners
+// TODO: revise to avoid unmarshaling into models and directly compare interfaces
+func parseListeners(value string) (listeners []interface{}) {
+	var requestListenersCalled []interface{}
+	if err := yaml.Unmarshal([]byte(value), &requestListenersCalled); err == nil {
+		for _, listener := range requestListenersCalled {
+			yamlString, _ := yaml.Marshal(listener)
+
+			var decisionListener = models.DecisionListener{}
+			// We have to check if decisionInfo is not nil since both decision and track listeners have some attributes
+			// in common such as userID and attributes which makes it possible for yamlString to be parsed into both of them
+			if err := yaml.Unmarshal(yamlString, &decisionListener); err == nil && decisionListener.DecisionInfo != nil {
+				listeners = append(listeners, decisionListener)
+				continue
+			}
+
+			var trackListener = models.TrackListener{}
+			if err := yaml.Unmarshal(yamlString, &trackListener); err == nil {
+				listeners = append(listeners, trackListener)
+			}
+		}
+	}
+	return listeners
+}
 
 func sortArrayofMaps(array []map[string]interface{}, sortKey string) []map[string]interface{} {
 	sort.Slice(array, func(i, j int) bool {
@@ -45,7 +73,7 @@ func sortArrayofMaps(array []map[string]interface{}, sortKey string) []map[strin
 	return array
 }
 
-func parseYamlArray(s string, config pkg.ProjectConfig) ([]map[string]interface{}, error) {
+func parseYamlArray(s string, config config.ProjectConfig) ([]map[string]interface{}, error) {
 	var array []map[string]interface{}
 	parsedString := parseTemplate(s, config)
 	if err := yaml.Unmarshal([]byte(parsedString), &array); err != nil {
@@ -54,7 +82,7 @@ func parseYamlArray(s string, config pkg.ProjectConfig) ([]map[string]interface{
 	return array, nil
 }
 
-func parseTemplate(s string, config pkg.ProjectConfig) string {
+func parseTemplate(s string, config config.ProjectConfig) string {
 
 	parsedString := strings.Replace(s, "{{datafile.projectId}}", config.GetProjectID(), -1)
 
@@ -101,11 +129,10 @@ func parseTemplate(s string, config pkg.ProjectConfig) string {
 		if len(matches) > 1 {
 			expVarKey := strings.Split(matches[1], ".")
 			if exp, err := config.GetExperimentByKey(expVarKey[0]); err == nil {
-				for _, variation := range exp.Variations {
-					if variation.Key == expVarKey[1] {
+				if variationID, ok := exp.VariationKeyToIDMap[expVarKey[1]]; ok {
+					if variation, ok := exp.Variations[variationID]; ok {
 						parsedString = strings.Replace(parsedString, matches[0], variation.ID, -1)
 						replaceVariableID()
-						break
 					}
 				}
 			}
@@ -150,4 +177,17 @@ func compareStringSlice(x, y []string) bool {
 		return true
 	}
 	return false
+}
+
+// Evaluates given function with a timeout
+func evaluateDispatchedEventsWithTimeout(evaluationMethod func() (result bool, errorMessage string)) (result bool, message string) {
+	result, errorMessage := evaluationMethod()
+	// Return immediately if evaluation was successfull
+	if result {
+		return result, errorMessage
+	}
+	// Retry after 200ms
+	time.Sleep(200 * time.Millisecond)
+	result, errorMessage = evaluationMethod()
+	return result, errorMessage
 }
