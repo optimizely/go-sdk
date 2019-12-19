@@ -14,11 +14,12 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package pkg //
-package pkg
+package models
 
-// Version is the current version of the client
-const Version = "1.0.0-beta7"
-
-// ClientName is the name of the client
-const ClientName = "go-sdk"
+// TrackListener represents a track notification
+type TrackListener struct {
+	EventKey   string                 `yaml:"event_key"`
+	Attributes map[string]interface{} `yaml:"attributes"`
+	UserID     string                 `yaml:"user_id"`
+	EventTags  map[string]interface{} `yaml:"event_tags"`
+}

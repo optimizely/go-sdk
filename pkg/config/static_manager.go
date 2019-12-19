@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/optimizely/go-sdk/pkg"
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/utils"
@@ -30,7 +29,7 @@ import (
 
 // StaticProjectConfigManager maintains a static copy of the project config
 type StaticProjectConfigManager struct {
-	projectConfig pkg.ProjectConfig
+	projectConfig ProjectConfig
 	configLock    sync.Mutex
 }
 
@@ -61,14 +60,14 @@ func NewStaticProjectConfigManagerFromPayload(payload []byte) (*StaticProjectCon
 }
 
 // NewStaticProjectConfigManager creates a new instance of the manager with the given project config
-func NewStaticProjectConfigManager(config pkg.ProjectConfig) *StaticProjectConfigManager {
+func NewStaticProjectConfigManager(config ProjectConfig) *StaticProjectConfigManager {
 	return &StaticProjectConfigManager{
 		projectConfig: config,
 	}
 }
 
 // GetConfig returns the project config
-func (cm *StaticProjectConfigManager) GetConfig() (pkg.ProjectConfig, error) {
+func (cm *StaticProjectConfigManager) GetConfig() (ProjectConfig, error) {
 	cm.configLock.Lock()
 	defer cm.configLock.Unlock()
 	return cm.projectConfig, nil

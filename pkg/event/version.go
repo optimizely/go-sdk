@@ -14,15 +14,11 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package models
+// Package event //
+package event
 
-import (
-	"github.com/optimizely/go-sdk/pkg/entities"
-)
+// Version is the current version of the client
+const Version = "1.0.0-rc1"
 
-// APIResponse represents result for a scenario
-type APIResponse struct {
-	Result         interface{}
-	Type           entities.VariableType
-	ListenerCalled []interface{}
-}
+// ClientName is the name of the client
+const ClientName = "go-sdk"

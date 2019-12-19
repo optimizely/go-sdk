@@ -18,18 +18,22 @@
 package event
 
 import (
+	"context"
 	"math/rand"
 	"testing"
 	"time"
 
-	"github.com/optimizely/go-sdk/pkg"
+	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/optimizely/go-sdk/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 type TestConfig struct {
-	pkg.ProjectConfig
+	config.ProjectConfig
+}
+
+func (TestConfig) GetAttributeByKey(string) (entities.Attribute, error) {
+	return entities.Attribute{ID: "100000", Key: "sample_attribute"}, nil
 }
 
 func (TestConfig) GetEventByKey(string) (entities.Event, error) {
@@ -77,7 +81,7 @@ func RandomString(len int) string {
 var userID = RandomString(10)
 var userContext = entities.UserContext{
 	ID:         userID,
-	Attributes: make(map[string]interface{}),
+	Attributes: map[string]interface{}{"test": "val"},
 }
 
 func BuildTestImpressionEvent() UserEvent {
@@ -125,7 +129,7 @@ func TestCreateAndSendImpressionEvent(t *testing.T) {
 		WithFlushInterval(10),
 		WithEventDispatcher(&MockDispatcher{Events:NewInMemoryQueue(100)}))
 
-	processor.Start(utils.NewCancelableExecutionCtx())
+	go processor.Start(context.Background())
 
 	processor.ProcessEvent(impressionUserEvent)
 
@@ -143,7 +147,7 @@ func TestCreateAndSendConversionEvent(t *testing.T) {
 	processor := NewBatchEventProcessor(WithFlushInterval(10),
 		WithEventDispatcher(&MockDispatcher{Events:NewInMemoryQueue(100)}))
 
-	processor.Start(utils.NewCancelableExecutionCtx())
+	go processor.Start(context.Background())
 
 	processor.ProcessEvent(conversionUserEvent)
 

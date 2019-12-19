@@ -17,37 +17,46 @@
 // Package event //
 package event
 
-import (
-	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
-)
+// Metrics is the interface for event processor
+type Metrics interface {
+	SetQueueSize(queueSize int)
+	IncrSuccessFlushCount()
+	IncrFailFlushCount()
+	IncrRetryFlushCount()
+}
 
-func TestChanQueue_Add_Size_Remove(t *testing.T) {
-	q := NewChanQueue(100)
+// DefaultMetrics stores the actual metrics
+type DefaultMetrics struct {
+	QueueSize         int
+	SuccessFlushCount int64
+	FailFlushCount    int64
+	RetryFlushCount   int64
+}
 
-	impression := BuildTestImpressionEvent()
-	conversion := BuildTestConversionEvent()
+// SetQueueSize sets the queue size
+func (m *DefaultMetrics) SetQueueSize(queueSize int) {
+	m.QueueSize = queueSize
+}
 
-	q.Add(impression)
-	q.Add(impression)
-	q.Add(conversion)
+// IncrSuccessFlushCount increments counter for successful flush
+func (m *DefaultMetrics) IncrSuccessFlushCount() {
+	m.SuccessFlushCount++
+}
 
-	time.Sleep(100 * time.Millisecond)
+// IncrFailFlushCount increments counter for failed flush
+func (m *DefaultMetrics) IncrFailFlushCount() {
+	m.FailFlushCount++
+}
 
-	items1 := q.Get(2)
+// IncrRetryFlushCount increments counter for retried flush
+func (m *DefaultMetrics) IncrRetryFlushCount() {
+	m.RetryFlushCount++
+}
 
-	assert.Equal(t, 2, len(items1))
-
-	q.Remove(1)
-
-	items2 := q.Get(1)
-
-	assert.True(t, len(items2) != 0)
-
-	allItems := q.Remove(3)
-
-	assert.True(t,len(allItems) > 0)
-
-	assert.Equal(t, 0, q.Size())
+// Add a metric collection to existing metrics
+func (m *DefaultMetrics) Add(v *DefaultMetrics) {
+	m.QueueSize += v.QueueSize
+	m.FailFlushCount += v.FailFlushCount
+	m.SuccessFlushCount += v.SuccessFlushCount
+	m.RetryFlushCount += v.RetryFlushCount
 }
