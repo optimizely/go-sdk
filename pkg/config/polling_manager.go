@@ -96,6 +96,7 @@ func WithInitialDatafile(datafile []byte) OptionFunc {
 
 // SyncConfig gets current datafile and updates projectConfig
 func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
+	initDatafile := datafile
 	var e error
 	var code int
 	var respHeaders http.Header
@@ -159,7 +160,7 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	cm.projectConfig = projectConfig
 	closeMutex(nil)
 
-	if cm.notificationCenter != nil {
+	if cm.notificationCenter != nil && len(initDatafile) == 0 {
 		projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
 			Type:     notification.ProjectConfigUpdate,
 			Revision: cm.projectConfig.GetRevision(),
@@ -173,6 +174,8 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 // Start starts the polling
 func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
 	cmLogger.Debug("Polling Config Manager Initiated")
+	cm.SyncConfig([]byte{})
+
 	t := time.NewTicker(cm.pollingInterval)
 	for {
 		select {
@@ -201,7 +204,10 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 	}
 
 	initDatafile := pollingProjectConfigManager.initDatafile
-	pollingProjectConfigManager.SyncConfig(initDatafile) // initial poll
+	if len(initDatafile) > 0 {
+		pollingProjectConfigManager.SyncConfig(initDatafile) // initial poll
+	}
+
 	return &pollingProjectConfigManager
 }
 
