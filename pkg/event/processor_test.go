@@ -45,7 +45,7 @@ func NewMockDispatcher(queueSize int, shouldFail bool) *MockDispatcher {
 }
 
 func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
-	exeCtx := utils.NewCancelableExecutionCtx()
+	exeCtx := newExecutionContext()
 	processor := NewBatchEventProcessor()
 	processor.EventDispatcher = nil
 	processor.Start(exeCtx)
