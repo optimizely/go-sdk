@@ -43,10 +43,25 @@ func TestNewStaticProjectConfigManagerFromPayload(t *testing.T) {
 	configManager, err = NewStaticProjectConfigManagerFromPayload(mockDatafile)
 	assert.Nil(t, err)
 
+	assert.Nil(t, configManager.optimizelyConfig)
+
 	actual, _ := configManager.GetConfig()
 	assert.NotNil(t, actual)
 }
 
+func TestStaticGetOptimizelyConfig(t *testing.T) {
+
+	mockDatafile := []byte(`{"accountId":"42","projectId":"123"}`)
+	configManager, err := NewStaticProjectConfigManagerFromPayload(mockDatafile)
+	assert.Nil(t, err)
+
+	assert.Nil(t, configManager.optimizelyConfig)
+
+	optimizelyConfig := configManager.GetOptimizelyConfig()
+	assert.NotNil(t, configManager.optimizelyConfig)
+	assert.Equal(t, &OptimizelyConfig{ExperimentsMap: map[string]OptimizelyExperiment{},
+		FeaturesMap: map[string]OptimizelyFeature{}}, optimizelyConfig)
+}
 func TestNewStaticProjectConfigManagerFromURL(t *testing.T) {
 
 	configManager, err := NewStaticProjectConfigManagerFromURL("no_key_exists")

@@ -186,6 +186,35 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 	assert.Equal(t, projectConfig2, actual)
 }
 
+func TestPollingGetOptimizelyConfig(t *testing.T) {
+	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true}`)
+	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false}`)
+	mockRequester := new(MockRequester)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil)
+
+	// Test we fetch using requester
+	sdkKey := "test_sdk_key"
+
+	eg := newExecGroup()
+	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
+	eg.Go(configManager.Start)
+	mockRequester.AssertExpectations(t)
+
+	assert.Nil(t, configManager.optimizelyConfig)
+
+	projectConfig, err := configManager.GetConfig()
+	assert.Nil(t, err)
+	assert.NotNil(t, projectConfig)
+	optimizelyConfig := configManager.GetOptimizelyConfig()
+
+	assert.Equal(t, "42", optimizelyConfig.Revision)
+
+	configManager.SyncConfig(mockDatafile2)
+	optimizelyConfig = configManager.GetOptimizelyConfig()
+	assert.Equal(t, "43", optimizelyConfig.Revision)
+
+}
+
 func TestNewPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 	mockDatafile1 := []byte("NOT-VALID")
 	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false}`)

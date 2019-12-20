@@ -120,6 +120,16 @@ func GetInstance(apiOptions models.APIOptions) *ClientWrapper {
 	return clientInstance
 }
 
+// GetProjectConfig gets the right config project
+func (c *ClientWrapper) GetProjectConfig() config.ProjectConfig {
+	projectConfig, err := c.client.ConfigManager.GetConfig()
+	if err != nil {
+		return nil
+	}
+	return projectConfig
+
+}
+
 // InvokeAPI processes request with arguments
 func (c *ClientWrapper) InvokeAPI(request models.APIOptions) (models.APIResponse, error) {
 
