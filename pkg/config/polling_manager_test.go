@@ -19,6 +19,7 @@ package config
 import (
 	"context"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -259,7 +260,7 @@ func TestNewPollingProjectConfigManagerOnConfigUpdate(t *testing.T) {
 	assert.NotNil(t, actual)
 
 	assert.NotEqual(t, id, 0)
-	assert.Equal(t, numberOfCalls, 2)
+	assert.Equal(t, numberOfCalls, 1)
 
 	err = configManager.RemoveOnProjectConfigUpdate(id)
 	assert.Nil(t, err)
@@ -286,7 +287,7 @@ func TestNewPollingProjectConfigManagerHardcodedDatafile(t *testing.T) {
 }
 
 func TestNewPollingProjectConfigManagerPullImmediatelyOnStart(t *testing.T) {
-
+	m := sync.RWMutex{}
 	mockDatafile1 := []byte(`{"revision":"44"}`) // remote
 	mockDatafile2 := []byte(`{"revision":"43"}`) // hardcoded
 
@@ -313,6 +314,8 @@ func TestNewPollingProjectConfigManagerPullImmediatelyOnStart(t *testing.T) {
 	mockRequester.AssertNotCalled(t, "Get")
 
 	callback := func(notification notification.ProjectConfigUpdateNotification) {
+		m.Lock()
+		defer m.Unlock()
 		numberOfCalls++
 	}
 
@@ -322,6 +325,8 @@ func TestNewPollingProjectConfigManagerPullImmediatelyOnStart(t *testing.T) {
 	eg.Go(configManager.Start)
 
 	assert.Eventually(t, func() bool {
+		m.Lock()
+		defer m.Unlock()
 		return numberOfCalls == 1
 	}, 1500*time.Millisecond, 10*time.Millisecond)
 
