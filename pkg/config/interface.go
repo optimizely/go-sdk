@@ -35,6 +35,7 @@ type ProjectConfig interface {
 	GetExperimentByKey(string) (entities.Experiment, error)
 	GetFeatureByKey(string) (entities.Feature, error)
 	GetVariableByKey(featureKey string, variableKey string) (entities.Variable, error)
+	GetExperimentList() []entities.Experiment
 	GetFeatureList() []entities.Feature
 	GetGroupByID(string) (entities.Group, error)
 	GetProjectID() string
@@ -44,6 +45,7 @@ type ProjectConfig interface {
 // ProjectConfigManager maintains an instance of the ProjectConfig
 type ProjectConfigManager interface {
 	GetConfig() (ProjectConfig, error)
+	GetOptimizelyConfig() *OptimizelyConfig
 	RemoveOnProjectConfigUpdate(id int) error
 	OnProjectConfigUpdate(callback func(notification.ProjectConfigUpdateNotification)) (int, error)
 }

@@ -29,8 +29,9 @@ import (
 
 // StaticProjectConfigManager maintains a static copy of the project config
 type StaticProjectConfigManager struct {
-	projectConfig ProjectConfig
-	configLock    sync.Mutex
+	projectConfig    ProjectConfig
+	optimizelyConfig *OptimizelyConfig
+	configLock       sync.Mutex
 }
 
 // NewStaticProjectConfigManagerFromURL returns new instance of StaticProjectConfigManager for URL
@@ -71,6 +72,19 @@ func (cm *StaticProjectConfigManager) GetConfig() (ProjectConfig, error) {
 	cm.configLock.Lock()
 	defer cm.configLock.Unlock()
 	return cm.projectConfig, nil
+}
+
+// GetOptimizelyConfig returns the optimizely project config
+func (cm *StaticProjectConfigManager) GetOptimizelyConfig() *OptimizelyConfig {
+	cm.configLock.Lock()
+	defer cm.configLock.Unlock()
+	if cm.optimizelyConfig != nil {
+		return cm.optimizelyConfig
+	}
+	optimizelyConfig := NewOptimizelyConfig(cm.projectConfig)
+	cm.optimizelyConfig = optimizelyConfig
+
+	return cm.optimizelyConfig
 }
 
 // RemoveOnProjectConfigUpdate here satisfies interface

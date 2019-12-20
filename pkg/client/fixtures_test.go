@@ -100,6 +100,13 @@ func (p *MockProjectConfigManager) RemoveOnProjectConfigUpdate(id int) error {
 	return nil
 }
 
+func (p *MockProjectConfigManager) GetOptimizelyConfig() *config.OptimizelyConfig {
+
+	optimizelyConfig := &config.OptimizelyConfig{}
+	optimizelyConfig.Revision = "232"
+	return optimizelyConfig
+}
+
 type MockDecisionService struct {
 	decision.Service
 	mock.Mock

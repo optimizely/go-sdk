@@ -266,6 +266,29 @@ func TestGetFeatureList(t *testing.T) {
 	assert.Equal(t, feature, features[0])
 }
 
+func TestGetExperimentList(t *testing.T) {
+	id := "id"
+	key := "key"
+	experimentKeyToIDMap := make(map[string]string)
+	experimentKeyToIDMap[key] = id
+
+	experiment := entities.Experiment{
+		Key: key,
+	}
+	experimentMap := make(map[string]entities.Experiment)
+	experimentMap[id] = experiment
+
+	config := &DatafileProjectConfig{
+		experimentKeyToIDMap: experimentKeyToIDMap,
+		experimentMap:        experimentMap,
+	}
+
+	experiments := config.GetExperimentList()
+
+	assert.Equal(t, 1, len(experiments))
+	assert.Equal(t, experiment, experiments[0])
+}
+
 func TestGetAudienceByID(t *testing.T) {
 	id := "id"
 	audience := entities.Audience{
