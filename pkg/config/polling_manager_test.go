@@ -48,12 +48,8 @@ func newExecGroup() *utils.ExecGroup {
 // assertion method to wait for config or err for a specified period of time.
 func waitForConfigOrCancelTimeout(t *testing.T, configManager ProjectConfigManager, checkError bool) {
 	assert.Eventually(t, func() bool {
-		config, err := configManager.GetConfig()
-		if checkError {
-			return err != nil
-		} else {
-			return config != nil
-		}
+		_, err := configManager.GetConfig()
+		return (err != nil) == checkError
 	}, 500*time.Millisecond, 10*time.Millisecond)
 }
 
