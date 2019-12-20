@@ -234,9 +234,11 @@ func TestNewPollingProjectConfigManagerOnConfigUpdate(t *testing.T) {
 
 	eg := newExecGroup()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
-
+	m := sync.RWMutex{}
 	var numberOfCalls = 0
 	callback := func(notification notification.ProjectConfigUpdateNotification) {
+		m.Lock()
+		defer m.Unlock()
 		numberOfCalls++
 	}
 	id, _ := configManager.OnProjectConfigUpdate(callback)
@@ -256,7 +258,10 @@ func TestNewPollingProjectConfigManagerOnConfigUpdate(t *testing.T) {
 	assert.NotNil(t, actual)
 
 	assert.NotEqual(t, id, 0)
+
+	m.Lock()
 	assert.Equal(t, numberOfCalls, 1)
+	m.Unlock()
 
 	err = configManager.RemoveOnProjectConfigUpdate(id)
 	assert.Nil(t, err)

@@ -163,7 +163,7 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	if cm.notificationCenter != nil && len(initDatafile) == 0 {
 		projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
 			Type:     notification.ProjectConfigUpdate,
-			Revision: cm.projectConfig.GetRevision(),
+			Revision: projectConfig.GetRevision(),
 		}
 		if err = cm.notificationCenter.Send(notification.ProjectConfigUpdate, projectConfigUpdateNotification); err != nil {
 			cmLogger.Warning("Problem with sending notification")

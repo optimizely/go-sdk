@@ -19,6 +19,7 @@ package notification
 
 import (
 	"fmt"
+	"sync"
 	"sync/atomic"
 
 	"github.com/optimizely/go-sdk/pkg/logging"
@@ -37,6 +38,7 @@ type Manager interface {
 type AtomicManager struct {
 	handlers map[uint32]func(interface{})
 	counter  uint32
+	lock     sync.Mutex
 }
 
 // NewAtomicManager creates a new instance of the atomic manager
@@ -49,6 +51,8 @@ func NewAtomicManager() *AtomicManager {
 // Add adds the given handler
 func (am *AtomicManager) Add(newHandler func(interface{})) (int, error) {
 	atomic.AddUint32(&am.counter, 1)
+	am.lock.Lock()
+	defer am.lock.Unlock()
 	am.handlers[am.counter] = newHandler
 	return int(am.counter), nil
 }
@@ -56,6 +60,8 @@ func (am *AtomicManager) Add(newHandler func(interface{})) (int, error) {
 // Remove removes handler with the given id
 func (am *AtomicManager) Remove(id int) {
 	handlerID := uint32(id)
+	am.lock.Lock()
+	defer am.lock.Unlock()
 	if _, ok := am.handlers[handlerID]; ok {
 		delete(am.handlers, handlerID)
 		return
@@ -66,6 +72,8 @@ func (am *AtomicManager) Remove(id int) {
 
 // Send sends the notification to the registered handlers
 func (am *AtomicManager) Send(notification interface{}) {
+	am.lock.Lock()
+	defer am.lock.Unlock()
 	for _, handler := range am.handlers {
 		handler(notification)
 	}
