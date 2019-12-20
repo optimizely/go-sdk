@@ -190,7 +190,7 @@ func TestPollingGetOptimizelyConfig(t *testing.T) {
 	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true}`)
 	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false}`)
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return([]byte{}, http.Header{}, http.StatusOK, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return([]byte(mockDatafile2), http.Header{}, http.StatusOK, nil)
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
@@ -208,11 +208,14 @@ func TestPollingGetOptimizelyConfig(t *testing.T) {
 
 	assert.Equal(t, "42", optimizelyConfig.Revision)
 
-	configManager.SyncConfig(mockDatafile2)
+	assert.Eventually(t, func() bool {
+		config, _ := configManager.GetConfig()
+		return config.GetRevision() == "43"
+	}, time.Second, 10*time.Millisecond)
+
 	optimizelyConfig = configManager.GetOptimizelyConfig()
 	assert.Equal(t, "43", optimizelyConfig.Revision)
-	//mockRequester.AssertExpectations(t)
-
+	mockRequester.AssertExpectations(t)
 }
 
 func TestNewPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
