@@ -310,7 +310,7 @@ func TestNewPollingProjectConfigManagerHardcodedDatafile(t *testing.T) {
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil)
 
-	configManager := NewPollingProjectConfigManager(sdkKey, WithInitialDatafile(mockDatafile1))
+	configManager := NewPollingProjectConfigManager(sdkKey, WithInitialDatafile(mockDatafile1), WithRequester(mockRequester))
 	config, err := configManager.GetConfig()
 
 	mockRequester.AssertNotCalled(t, "Get")
