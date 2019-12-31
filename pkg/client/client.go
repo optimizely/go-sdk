@@ -479,7 +479,7 @@ func (o *OptimizelyClient) RemoveOnTrack(id int) error {
 func (o *OptimizelyClient) getProjectConfig() (projectConfig config.ProjectConfig, err error) {
 
 	if isNil(o.ConfigManager) {
-		return nil, errors.New("project config is not initialized")
+		return nil, errors.New("project config manager is not initialized")
 	}
 	projectConfig, err = o.ConfigManager.GetConfig()
 	if err != nil {
