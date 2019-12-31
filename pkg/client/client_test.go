@@ -41,6 +41,10 @@ func ValidProjectConfigManager() *MockProjectConfigManager {
 	return p
 }
 
+func InValidProjectConfigManager() *MockProjectConfigManager {
+	return nil
+}
+
 type MockProcessor struct {
 	Events []event.UserEvent
 	mock.Mock
@@ -1190,6 +1194,18 @@ func TestGetProjectConfigIsValid(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, mockConfigManager.projectConfig, actual)
+}
+
+func TestGetProjectConfigIsInValid(t *testing.T) {
+
+	client := OptimizelyClient{
+		ConfigManager: InValidProjectConfigManager(),
+	}
+
+	actual, err := client.getProjectConfig()
+
+	assert.NotNil(t, err)
+	assert.Nil(t, actual)
 }
 
 func TestGetOptimizelyConfig(t *testing.T) {
