@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.0.0] - January 3rd, 2020
+This is the General Availability release of the Go SDK.
+
+## New Features
+- feat(onTrack): Added onTrack callback. [#198](https://github.com/optimizely/go-sdk/pull/198)
+- feat: Add observability metrics for event queue. [#211](https://github.com/optimizely/go-sdk/pull/211)
+- feat: Implement OptimizelyConfig API. [#216](https://github.com/optimizely/go-sdk/pull/216)
+
+## Bug Fixes
+- fix: Revert signature changes to PollingProjectConfigManager. [#209](https://github.com/optimizely/go-sdk/pull/209)
+
+## Breaking Changes
+- refac: Execution context. [#212](https://github.com/optimizely/go-sdk/pull/212)
+- refac(config: Move config interfaces back into config package. [#213](https://github.com/optimizely/go-sdk/pull/213)
+
 ## [1.0.0-rc1] - December 4th, 2019
 
 ## New Features
