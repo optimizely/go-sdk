@@ -20,6 +20,7 @@ package client
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"runtime/debug"
 	"strconv"
 
@@ -57,7 +58,7 @@ func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.U
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
+			errorMessage := fmt.Sprintf("Activate call, optimizely SDK is panicking with the error:")
 			logger.Error(errorMessage, err)
 			logger.Debug(string(debug.Stack()))
 		}
@@ -69,7 +70,7 @@ func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.U
 		return result, err
 	}
 
-	if experimentDecision.Variation != nil {
+	if experimentDecision.Variation != nil && decisionContext.Experiment != nil {
 		// send an impression event
 		result = experimentDecision.Variation.Key
 		impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *decisionContext.Experiment, *experimentDecision.Variation, userContext)
@@ -93,7 +94,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
+			errorMessage := fmt.Sprintf("IsFeatureEnabled call, optimizely SDK is panicking with the error:")
 			logger.Error(errorMessage, err)
 			logger.Debug(string(debug.Stack()))
 		}
@@ -117,7 +118,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 		logger.Info(fmt.Sprintf(`Feature "%s" is not enabled for user "%s".`, featureKey, userContext.ID))
 	}
 
-	if featureDecision.Source == decision.FeatureTest {
+	if featureDecision.Source == decision.FeatureTest && featureDecision.Variation != nil {
 		// send impression event for feature tests
 		impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment, *featureDecision.Variation, userContext)
 		o.EventProcessor.ProcessEvent(impressionEvent)
@@ -139,7 +140,7 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
+			errorMessage := fmt.Sprintf("GetEnabledFeatures call, optimizely SDK is panicking with the error:")
 			logger.Error(errorMessage, err)
 			logger.Debug(string(debug.Stack()))
 		}
@@ -280,7 +281,7 @@ func (o *OptimizelyClient) GetVariation(experimentKey string, userContext entiti
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
+			errorMessage := fmt.Sprintf("GetVariation call, optimizely SDK is panicking with the error:")
 			logger.Error(errorMessage, err)
 			logger.Debug(string(debug.Stack()))
 		}
@@ -312,7 +313,7 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
+			errorMessage := fmt.Sprintf("Track call, optimizely SDK is panicking with the error:")
 			logger.Error(errorMessage, err)
 			logger.Debug(string(debug.Stack()))
 		}
@@ -355,7 +356,7 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("optimizely SDK is panicking with the error:")
+			errorMessage := fmt.Sprintf("getFeatureDecision call, optimizely SDK is panicking with the error:")
 			logger.Error(errorMessage, err)
 			logger.Debug(string(debug.Stack()))
 		}
@@ -477,6 +478,9 @@ func (o *OptimizelyClient) RemoveOnTrack(id int) error {
 
 func (o *OptimizelyClient) getProjectConfig() (projectConfig config.ProjectConfig, err error) {
 
+	if isNil(o.ConfigManager) {
+		return nil, errors.New("project config is not initialized")
+	}
 	projectConfig, err = o.ConfigManager.GetConfig()
 	if err != nil {
 		return nil, err
@@ -495,4 +499,8 @@ func (o *OptimizelyClient) GetOptimizelyConfig() (optimizelyConfig *config.Optim
 // Close closes the Optimizely instance and stops any ongoing tasks from its children components.
 func (o *OptimizelyClient) Close() {
 	o.execGroup.TerminateAndWait()
+}
+
+func isNil(v interface{}) bool {
+	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
 }
