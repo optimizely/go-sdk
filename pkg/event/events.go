@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2020, Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -95,7 +95,7 @@ type VisitorAttribute struct {
 
 // Snapshot represents a snapshot of a visitor
 type Snapshot struct {
-	Decisions []Decision      `json:"decisions"`
+	Decisions []Decision      `json:"decisions,omitempty"`
 	Events    []SnapshotEvent `json:"events"`
 }
 
