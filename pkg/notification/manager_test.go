@@ -51,7 +51,7 @@ func TestAtomicManager(t *testing.T) {
 	atomicManager.Remove(55)
 }
 
-func TestSendtRaceCondition(t *testing.T) {
+func TestSendRaceCondition(t *testing.T) {
 	sync := make(chan interface{})
 	payload := map[string]interface{}{
 		"key": "test",
@@ -79,10 +79,11 @@ func TestSendtRaceCondition(t *testing.T) {
 		sync <- ""
 	}()
 
+	atomicManager.Add(listener1)
 	<-sync
 
 	assert.Equal(t, 1, result1)
-	assert.Equal(t, 2, result2)
+	assert.Equal(t, len(atomicManager.handlers), 1)
 	assert.Equal(t, true, listenerCalled)
 }
 

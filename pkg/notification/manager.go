@@ -19,6 +19,7 @@ package notification
 
 import (
 	"fmt"
+	"sync"
 	"sync/atomic"
 
 	"github.com/optimizely/go-sdk/pkg/logging"
@@ -37,6 +38,7 @@ type Manager interface {
 type AtomicManager struct {
 	handlers map[uint32]func(interface{})
 	counter  uint32
+	lock     sync.RWMutex
 }
 
 // NewAtomicManager creates a new instance of the atomic manager
@@ -48,6 +50,9 @@ func NewAtomicManager() *AtomicManager {
 
 // Add adds the given handler
 func (am *AtomicManager) Add(newHandler func(interface{})) (int, error) {
+	am.lock.Lock()
+	defer am.lock.Unlock()
+
 	atomic.AddUint32(&am.counter, 1)
 	am.handlers[am.counter] = newHandler
 	return int(am.counter), nil
@@ -55,6 +60,9 @@ func (am *AtomicManager) Add(newHandler func(interface{})) (int, error) {
 
 // Remove removes handler with the given id
 func (am *AtomicManager) Remove(id int) {
+	am.lock.Lock()
+	defer am.lock.Unlock()
+
 	handlerID := uint32(id)
 	if _, ok := am.handlers[handlerID]; ok {
 		delete(am.handlers, handlerID)
@@ -68,12 +76,15 @@ func (am *AtomicManager) Remove(id int) {
 func (am *AtomicManager) Send(notification interface{}) {
 	handlers := am.copyHandlers()
 	for _, handler := range handlers {
+		// copying handler to avoid race condition
 		handler(notification)
 	}
 }
 
 // Copy handlers and return it.
 func (am *AtomicManager) copyHandlers() map[uint32]func(interface{}) {
+	am.lock.RLock()
+	defer am.lock.RUnlock()
 	m := make(map[uint32]func(interface{}), len(am.handlers))
 	for k, v := range am.handlers {
 		m[k] = v
