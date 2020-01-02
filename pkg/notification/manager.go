@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -66,7 +66,17 @@ func (am *AtomicManager) Remove(id int) {
 
 // Send sends the notification to the registered handlers
 func (am *AtomicManager) Send(notification interface{}) {
-	for _, handler := range am.handlers {
+	handlers := am.copyHandlers()
+	for _, handler := range handlers {
 		handler(notification)
 	}
+}
+
+// Copy handlers and return it.
+func (am *AtomicManager) copyHandlers() map[uint32]func(interface{}) {
+	m := make(map[uint32]func(interface{}), len(am.handlers))
+	for k, v := range am.handlers {
+		m[k] = v
+	}
+	return m
 }
