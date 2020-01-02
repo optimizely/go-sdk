@@ -19,6 +19,7 @@ package event
 
 import (
 	"fmt"
+	"github.com/optimizely/go-sdk/pkg/metrics"
 	"net/http"
 	"sync"
 	"time"
@@ -36,17 +37,11 @@ var dispatcherLogger = logging.GetLogger("EventDispatcher")
 // Dispatcher dispatches events
 type Dispatcher interface {
 	DispatchEvent(event LogEvent) (bool, error)
-	GetMetrics() Metrics
 }
 
 // HTTPEventDispatcher is the HTTP implementation of the Dispatcher interface
 type HTTPEventDispatcher struct {
 	requester *utils.HTTPRequester
-}
-
-// GetMetrics is the metric accessor
-func (ed *HTTPEventDispatcher) GetMetrics() Metrics {
-	return nil
 }
 
 // DispatchEvent dispatches event with callback
@@ -77,7 +72,7 @@ type QueueEventDispatcher struct {
 	eventFlushLock sync.Mutex
 	Dispatcher     Dispatcher
 
-	metrics Metrics
+	stats metrics.GenericMetrics
 }
 
 // DispatchEvent queues event with callback and calls flush in a go routine.
@@ -87,17 +82,6 @@ func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 		ed.flushEvents()
 	}()
 	return true, nil
-}
-
-// GetMetrics is the metric accessor
-func (ed *QueueEventDispatcher) GetMetrics() Metrics {
-	ed.eventFlushLock.Lock()
-
-	defer func() {
-		ed.eventFlushLock.Unlock()
-	}()
-	return ed.metrics
-
 }
 
 // flush the events
@@ -111,11 +95,11 @@ func (ed *QueueEventDispatcher) flushEvents() {
 
 	retryCount := 0
 
-	ed.metrics.SetQueueSize(ed.eventQueue.Size())
+	ed.stats.Set("queueSize", int64(ed.eventQueue.Size()))
 	for ed.eventQueue.Size() > 0 {
 		if retryCount > maxRetries {
 			dispatcherLogger.Error(fmt.Sprintf("event failed to send %d times. It will retry on next event sent", maxRetries), nil)
-			ed.metrics.IncrFailFlushCount()
+			ed.stats.Inc("failFlush")
 			break
 		}
 
@@ -129,7 +113,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 			// remove it
 			dispatcherLogger.Error("invalid type passed to event Dispatcher", nil)
 			ed.eventQueue.Remove(1)
-			ed.metrics.IncrFailFlushCount()
+			ed.stats.Inc("failFlush")
 			continue
 		}
 
@@ -140,7 +124,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 				dispatcherLogger.Debug(fmt.Sprintf("Dispatched log event %+v", event))
 				ed.eventQueue.Remove(1)
 				retryCount = 0
-				ed.metrics.IncrSuccessFlushCount()
+				ed.stats.Inc("successFlush")
 			} else {
 				dispatcherLogger.Warning("dispatch event failed")
 				// we failed.  Sleep some seconds and try again.
@@ -148,8 +132,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 				// increase retryCount.  We exit if we have retried x times.
 				// we will retry again next event that is added.
 				retryCount++
-				ed.metrics.IncrRetryFlushCount()
-
+				ed.stats.Inc("retryFlush")
 			}
 		} else {
 			dispatcherLogger.Error("Error dispatching ", err)
@@ -158,17 +141,20 @@ func (ed *QueueEventDispatcher) flushEvents() {
 			// increase retryCount.  We exit if we have retried x times.
 			// we will retry again next event that is added.
 			retryCount++
-			ed.metrics.IncrRetryFlushCount()
+			ed.stats.Inc("retryFlush")
 		}
 	}
-	ed.metrics.SetQueueSize(ed.eventQueue.Size())
+	ed.stats.Set("queueSize", int64(ed.eventQueue.Size()))
 }
 
 // NewQueueEventDispatcher creates a Dispatcher that queues in memory and then sends via go routine.
-func NewQueueEventDispatcher() *QueueEventDispatcher {
-	return &QueueEventDispatcher{
-		eventQueue: NewInMemoryQueue(defaultQueueSize),
-		Dispatcher: &HTTPEventDispatcher{requester: utils.NewHTTPRequester()},
-		metrics:    &DefaultMetrics{},
+func NewQueueEventDispatcher(stats metrics.GenericMetrics) *QueueEventDispatcher {
+
+	var dispatcherStats metrics.GenericMetrics
+	if stats != nil {
+		dispatcherStats = stats
+	} else {
+		dispatcherStats = metrics.NewMetrics() // protective code to set
 	}
+	return &QueueEventDispatcher{eventQueue: NewInMemoryQueue(defaultQueueSize), Dispatcher: &HTTPEventDispatcher{requester: utils.NewHTTPRequester()}, stats: dispatcherStats}
 }

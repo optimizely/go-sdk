@@ -27,6 +27,7 @@ import (
 	"golang.org/x/sync/semaphore"
 
 	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/pkg/metrics"
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/registry"
 )
@@ -48,6 +49,8 @@ type BatchEventProcessor struct {
 	Ticker          *time.Ticker
 	EventDispatcher Dispatcher
 	processing      *semaphore.Weighted
+
+	stats metrics.GenericMetrics
 }
 
 // DefaultBatchSize holds the default value for the batch size
@@ -109,6 +112,13 @@ func WithSDKKey(sdkKey string) BPOptionConfig {
 	}
 }
 
+// WithEventDispatcherMetrics sets metrics into the NewProcessor method
+func WithEventDispatcherMetrics(m metrics.GenericMetrics) BPOptionConfig {
+	return func(qp *BatchEventProcessor) {
+		qp.stats = m
+	}
+}
+
 // NewBatchEventProcessor returns a new instance of BatchEventProcessor with queueSize and flushInterval
 func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 	p := &BatchEventProcessor{processing: semaphore.NewWeighted(int64(maxFlushWorkers))}
@@ -148,7 +158,7 @@ func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 // Start initializes the event processor
 func (p *BatchEventProcessor) Start(ctx context.Context) {
 	if p.EventDispatcher == nil {
-		dispatcher := NewQueueEventDispatcher()
+		dispatcher := NewQueueEventDispatcher(p.stats)
 		defer dispatcher.flushEvents()
 		p.EventDispatcher = dispatcher
 	}

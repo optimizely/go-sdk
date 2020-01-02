@@ -14,49 +14,5 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package event //
-package event
-
-// Metrics is the interface for event processor
-type Metrics interface {
-	SetQueueSize(queueSize int)
-	IncrSuccessFlushCount()
-	IncrFailFlushCount()
-	IncrRetryFlushCount()
-}
-
-// DefaultMetrics stores the actual metrics
-type DefaultMetrics struct {
-	QueueSize         int
-	SuccessFlushCount int64
-	FailFlushCount    int64
-	RetryFlushCount   int64
-}
-
-// SetQueueSize sets the queue size
-func (m *DefaultMetrics) SetQueueSize(queueSize int) {
-	m.QueueSize = queueSize
-}
-
-// IncrSuccessFlushCount increments counter for successful flush
-func (m *DefaultMetrics) IncrSuccessFlushCount() {
-	m.SuccessFlushCount++
-}
-
-// IncrFailFlushCount increments counter for failed flush
-func (m *DefaultMetrics) IncrFailFlushCount() {
-	m.FailFlushCount++
-}
-
-// IncrRetryFlushCount increments counter for retried flush
-func (m *DefaultMetrics) IncrRetryFlushCount() {
-	m.RetryFlushCount++
-}
-
-// Add a metric collection to existing metrics
-func (m *DefaultMetrics) Add(v *DefaultMetrics) {
-	m.QueueSize += v.QueueSize
-	m.FailFlushCount += v.FailFlushCount
-	m.SuccessFlushCount += v.SuccessFlushCount
-	m.RetryFlushCount += v.RetryFlushCount
-}
+// Package metrics //
+package metrics

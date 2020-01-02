@@ -14,32 +14,59 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package optlyplugins
+// Package metrics //
+package metrics
 
 import (
-	"github.com/optimizely/go-sdk/pkg/event"
+	"sync"
+	"time"
 )
 
-// EventReceiver returns dispatched events
-type EventReceiver interface {
-	GetEvents() []event.Batch
+// GenericMetrics provides the interface for the metrics
+type GenericMetrics interface {
+	Inc(key string)
+	Set(key string, val int64)
+	Get(key string) int64
 }
 
-// ProxyEventDispatcher represents a valid HTTP implementation of the Dispatcher interface
-type ProxyEventDispatcher struct {
-	events []event.Batch
+// Metrics contains default metrics
+type Metrics struct {
+	startTime time.Time
+
+	metricsLock sync.RWMutex
+	metricsData map[string]int64
 }
 
-// DispatchEvent dispatches event with callback
-func (d *ProxyEventDispatcher) DispatchEvent(event event.LogEvent) (bool, error) {
-	d.events = append(d.events, event.Event)
-	return true, nil
+// NewMetrics makes thread-safe map to collect any counts/metrics
+func NewMetrics() *Metrics {
+	return &Metrics{startTime: time.Now(), metricsData: map[string]int64{}}
 }
 
-// GetEvents returns dispatched events
-func (d *ProxyEventDispatcher) GetEvents() []event.Batch {
-	if d.events == nil {
-		d.events = []event.Batch{}
-	}
-	return d.events
+// Add increments value for given key and returns new value
+func (m *Metrics) add(key string, delta int64) int64 {
+
+	m.metricsLock.Lock()
+	defer m.metricsLock.Unlock()
+	m.metricsData[key] += delta
+	return m.metricsData[key]
+}
+
+// Inc increments value for given key by one
+func (m *Metrics) Inc(key string) {
+	m.add(key, 1)
+}
+
+// Set value for given key
+func (m *Metrics) Set(key string, val int64) {
+	m.metricsLock.Lock()
+	defer m.metricsLock.Unlock()
+	m.metricsData[key] = val
+}
+
+// Get returns value for given key
+func (m *Metrics) Get(key string) int64 {
+	m.metricsLock.RLock()
+	defer m.metricsLock.RUnlock()
+
+	return m.metricsData[key]
 }
