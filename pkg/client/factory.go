@@ -190,7 +190,7 @@ func WithContext(ctx context.Context) OptionFunc {
 	}
 }
 
-// WithMetrics allows user to pass in their own implementation of a metric collector
+// WithMetrics allows user to pass in their own implementation of a metrics collector
 func WithMetrics(stats metrics.GenericMetrics) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.stats = stats

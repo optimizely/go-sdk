@@ -95,11 +95,11 @@ func (ed *QueueEventDispatcher) flushEvents() {
 
 	retryCount := 0
 
-	ed.stats.Set("queueSize", int64(ed.eventQueue.Size()))
+	ed.stats.Set(metrics.DispatcherQueueSize, int64(ed.eventQueue.Size()))
 	for ed.eventQueue.Size() > 0 {
 		if retryCount > maxRetries {
 			dispatcherLogger.Error(fmt.Sprintf("event failed to send %d times. It will retry on next event sent", maxRetries), nil)
-			ed.stats.Inc("failFlush")
+			ed.stats.Inc(metrics.DispatcherFailedFlush)
 			break
 		}
 
@@ -113,7 +113,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 			// remove it
 			dispatcherLogger.Error("invalid type passed to event Dispatcher", nil)
 			ed.eventQueue.Remove(1)
-			ed.stats.Inc("failFlush")
+			ed.stats.Inc(metrics.DispatcherFailedFlush)
 			continue
 		}
 
@@ -124,7 +124,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 				dispatcherLogger.Debug(fmt.Sprintf("Dispatched log event %+v", event))
 				ed.eventQueue.Remove(1)
 				retryCount = 0
-				ed.stats.Inc("successFlush")
+				ed.stats.Inc(metrics.DispatcherSuccessFlush)
 			} else {
 				dispatcherLogger.Warning("dispatch event failed")
 				// we failed.  Sleep some seconds and try again.
@@ -132,7 +132,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 				// increase retryCount.  We exit if we have retried x times.
 				// we will retry again next event that is added.
 				retryCount++
-				ed.stats.Inc("retryFlush")
+				ed.stats.Inc(metrics.DispatcherRetryFlush)
 			}
 		} else {
 			dispatcherLogger.Error("Error dispatching ", err)
@@ -141,10 +141,10 @@ func (ed *QueueEventDispatcher) flushEvents() {
 			// increase retryCount.  We exit if we have retried x times.
 			// we will retry again next event that is added.
 			retryCount++
-			ed.stats.Inc("retryFlush")
+			ed.stats.Inc(metrics.DispatcherRetryFlush)
 		}
 	}
-	ed.stats.Set("queueSize", int64(ed.eventQueue.Size()))
+	ed.stats.Set(metrics.DispatcherQueueSize, int64(ed.eventQueue.Size()))
 }
 
 // NewQueueEventDispatcher creates a Dispatcher that queues in memory and then sends via go routine.
