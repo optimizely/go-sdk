@@ -19,6 +19,7 @@ package config
 import (
 	"context"
 	"net/http"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -359,9 +360,9 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 	sdkKey := "test_sdk_key"
 	eg := newExecGroup()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Millisecond), WithInitialDatafile(mockDatafile1))
-	var numberOfCalls = 0
+	var numberOfCalls uint64 = 0
 	callback := func(notification notification.ProjectConfigUpdateNotification) {
-		numberOfCalls++
+		atomic.AddUint64(&numberOfCalls, 1)
 	}
 	id, _ := configManager.OnProjectConfigUpdate(callback)
 	assert.NotEqual(t, 0, id)
@@ -371,7 +372,7 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 	config1, err := configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, config1)
-	assert.Equal(t, 0, numberOfCalls)
+	assert.Equal(t, uint64(0), atomic.LoadUint64(&numberOfCalls))
 
 	// poll after 100ms
 	time.Sleep(120 * time.Millisecond)
@@ -379,7 +380,7 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 	config2, err := configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, config2)
-	assert.Equal(t, 1, numberOfCalls)
+	assert.Equal(t, uint64(1), atomic.LoadUint64(&numberOfCalls))
 	assert.NotEqual(t, config1, config2)
 
 	err = configManager.RemoveOnProjectConfigUpdate(id)
@@ -397,9 +398,9 @@ func TestNewAsyncPollingProjectConfigManagerOnDecision(t *testing.T) {
 	sdkKey := "test_sdk_key"
 	eg := newExecGroup()
 	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Millisecond))
-	var numberOfCalls = 0
+	var numberOfCalls uint64 = 0
 	callback := func(notification notification.ProjectConfigUpdateNotification) {
-		numberOfCalls++
+		atomic.AddUint64(&numberOfCalls, 1)
 	}
 	id, _ := asyncConfigManager.OnProjectConfigUpdate(callback)
 	eg.Go(asyncConfigManager.Start)
@@ -410,7 +411,7 @@ func TestNewAsyncPollingProjectConfigManagerOnDecision(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, actual)
 	assert.NotEqual(t, 0, id)
-	assert.Equal(t, 1, numberOfCalls)
+	assert.Equal(t, uint64(1), atomic.LoadUint64(&numberOfCalls))
 
 	err = asyncConfigManager.RemoveOnProjectConfigUpdate(id)
 	assert.Nil(t, err)
