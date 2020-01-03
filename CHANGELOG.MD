@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
-## [1.0.0] - January 3rd, 2020
+## [1.0.0] - January 9th, 2020
 This is the General Availability release of the Go SDK.
 
 ## New Features
