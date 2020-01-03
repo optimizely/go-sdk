@@ -81,13 +81,12 @@ func (am *AtomicManager) Send(notification interface{}) {
 	}
 }
 
-// Copy handlers and return it.
-func (am *AtomicManager) copyHandlers() map[uint32]func(interface{}) {
+// Return a copy of the given handlers
+func (am *AtomicManager) copyHandlers() (handlers []func(interface{})) {
 	am.lock.RLock()
 	defer am.lock.RUnlock()
-	m := make(map[uint32]func(interface{}), len(am.handlers))
-	for k, v := range am.handlers {
-		m[k] = v
+	for _, v := range am.handlers {
+		handlers = append(handlers, v)
 	}
-	return m
+	return handlers
 }
