@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -74,9 +74,9 @@ func (am *AtomicManager) Remove(id int) {
 
 // Send sends the notification to the registered handlers
 func (am *AtomicManager) Send(notification interface{}) {
+	// copying handler to avoid race condition
 	handlers := am.copyHandlers()
 	for _, handler := range handlers {
-		// copying handler to avoid race condition
 		handler(notification)
 	}
 }
