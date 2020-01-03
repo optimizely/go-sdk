@@ -157,21 +157,8 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 		return
 	}
 	cmLogger.Debug(fmt.Sprintf("New datafile set with revision: %s. Old revision: %s", projectConfig.GetRevision(), previousRevision))
-	cm.projectConfig = projectConfig
-	if cm.optimizelyConfig != nil {
-		cm.optimizelyConfig = NewOptimizelyConfig(projectConfig)
-	}
 	closeMutex(nil)
-
-	if cm.notificationCenter != nil {
-		projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
-			Type:     notification.ProjectConfigUpdate,
-			Revision: cm.projectConfig.GetRevision(),
-		}
-		if err = cm.notificationCenter.Send(notification.ProjectConfigUpdate, projectConfigUpdateNotification); err != nil {
-			cmLogger.Warning("Problem with sending notification")
-		}
-	}
+	cm.setConfig(projectConfig)
 }
 
 // Start starts the polling
@@ -193,7 +180,6 @@ func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
 func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
 
 	pollingProjectConfigManager := PollingProjectConfigManager{
-		notificationCenter:  registry.GetNotificationCenter(sdkKey),
 		pollingInterval:     DefaultPollingInterval,
 		requester:           utils.NewHTTPRequester(),
 		datafileURLTemplate: DatafileURLTemplate,
@@ -206,6 +192,31 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 
 	initDatafile := pollingProjectConfigManager.initDatafile
 	pollingProjectConfigManager.SyncConfig(initDatafile) // initial poll
+	pollingProjectConfigManager.notificationCenter = registry.GetNotificationCenter(sdkKey)
+	return &pollingProjectConfigManager
+}
+
+// NewAsyncPollingProjectConfigManager returns an instance of the async polling config manager with the customized configuration
+func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
+
+	pollingProjectConfigManager := PollingProjectConfigManager{
+		pollingInterval:     DefaultPollingInterval,
+		requester:           utils.NewHTTPRequester(),
+		datafileURLTemplate: DatafileURLTemplate,
+		sdkKey:              sdkKey,
+	}
+
+	for _, opt := range pollingMangerOptions {
+		opt(&pollingProjectConfigManager)
+	}
+
+	initDatafile := pollingProjectConfigManager.initDatafile
+	if len(initDatafile) != 0 {
+		if projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(initDatafile); projectConfig != nil {
+			pollingProjectConfigManager.setConfig(projectConfig)
+		}
+	}
+	pollingProjectConfigManager.notificationCenter = registry.GetNotificationCenter(sdkKey)
 	return &pollingProjectConfigManager
 }
 
@@ -217,6 +228,32 @@ func (cm *PollingProjectConfigManager) GetConfig() (ProjectConfig, error) {
 		return cm.projectConfig, cm.err
 	}
 	return cm.projectConfig, nil
+}
+
+func (cm *PollingProjectConfigManager) setConfig(projectConfig ProjectConfig) error {
+	if projectConfig == nil {
+		return cm.err
+	}
+
+	cm.configLock.Lock()
+	cm.projectConfig = projectConfig
+	if cm.optimizelyConfig != nil {
+		cm.optimizelyConfig = NewOptimizelyConfig(projectConfig)
+	}
+	cm.err = nil
+	cm.configLock.Unlock()
+
+	if cm.notificationCenter != nil {
+		projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
+			Type:     notification.ProjectConfigUpdate,
+			Revision: cm.projectConfig.GetRevision(),
+		}
+		if err := cm.notificationCenter.Send(notification.ProjectConfigUpdate, projectConfigUpdateNotification); err != nil {
+			cmLogger.Warning("Problem with sending notification")
+		}
+	}
+
+	return nil
 }
 
 // GetOptimizelyConfig returns the optimizely project config
