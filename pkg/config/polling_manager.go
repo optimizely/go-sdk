@@ -158,7 +158,7 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	}
 	cmLogger.Debug(fmt.Sprintf("New datafile set with revision: %s. Old revision: %s", projectConfig.GetRevision(), previousRevision))
 	closeMutex(nil)
-	cm.setConfig(projectConfig)
+	_ = cm.setConfig(projectConfig)
 }
 
 // Start starts the polling
@@ -213,7 +213,7 @@ func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...
 	initDatafile := pollingProjectConfigManager.initDatafile
 	if len(initDatafile) != 0 {
 		if projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(initDatafile); projectConfig != nil {
-			pollingProjectConfigManager.setConfig(projectConfig)
+			_ = pollingProjectConfigManager.setConfig(projectConfig)
 		}
 	}
 	pollingProjectConfigManager.notificationCenter = registry.GetNotificationCenter(sdkKey)
