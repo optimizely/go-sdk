@@ -74,7 +74,7 @@ func TestNewAsyncPollingProjectConfigManagerWithOptions(t *testing.T) {
 	sdkKey := "test_sdk_key"
 
 	eg := newExecGroup()
-	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Millisecond))
+	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Millisecond))
 	eg.Go(configManager.Start)
 	time.Sleep(120 * time.Millisecond)
 	mockRequester.AssertExpectations(t)
@@ -84,6 +84,42 @@ func TestNewAsyncPollingProjectConfigManagerWithOptions(t *testing.T) {
 	assert.NotNil(t, actual)
 	assert.Equal(t, projectConfig, actual)
 	eg.TerminateAndWait()
+}
+
+func TestSyncConfigWithHardcodedDatafile(t *testing.T) {
+
+	mockDatafile := []byte(`{"revision":"42"}`)
+	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
+	mockRequester := new(MockRequester)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
+
+	// Test we dont fetch using requester if datafile provided
+	configManager := NewAsyncPollingProjectConfigManager("test_sdk_key", WithRequester(mockRequester))
+	configManager.SyncConfig(mockDatafile)
+	mockRequester.AssertNotCalled(t, "Get", []utils.Header(nil))
+
+	actual, err := configManager.GetConfig()
+	assert.Nil(t, err)
+	assert.NotNil(t, actual)
+	assert.Equal(t, projectConfig, actual)
+}
+
+func TestSyncConfigWithoutHardcodedDatafile(t *testing.T) {
+
+	mockDatafile := []byte(`{"revision":"42"}`)
+	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
+	mockRequester := new(MockRequester)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
+
+	// Test we fetch using requester if no datafile provided
+	configManager := NewAsyncPollingProjectConfigManager("test_sdk_key", WithRequester(mockRequester))
+	configManager.SyncConfig([]byte{})
+	mockRequester.AssertCalled(t, "Get", []utils.Header(nil))
+
+	actual, err := configManager.GetConfig()
+	assert.Nil(t, err)
+	assert.NotNil(t, actual)
+	assert.Equal(t, projectConfig, actual)
 }
 
 func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
@@ -101,7 +137,7 @@ func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestNewAsyncPollingProjectConfigManagerWithNull(t *testing.T) {
+func TestNewAsyncPollingProjectConfigManagerWithNullDatafile(t *testing.T) {
 	mockDatafile := []byte("NOT-VALID")
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
@@ -109,7 +145,7 @@ func TestNewAsyncPollingProjectConfigManagerWithNull(t *testing.T) {
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
 	eg := newExecGroup()
-	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Millisecond))
+	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Millisecond))
 	eg.Go(configManager.Start)
 	time.Sleep(120 * time.Millisecond)
 	mockRequester.AssertExpectations(t)

@@ -191,8 +191,16 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 	}
 
 	initDatafile := pollingProjectConfigManager.initDatafile
-	pollingProjectConfigManager.SyncConfig(initDatafile) // initial poll
-	pollingProjectConfigManager.notificationCenter = registry.GetNotificationCenter(sdkKey)
+	if len(initDatafile) == 0 {
+		pollingProjectConfigManager.notificationCenter = registry.GetNotificationCenter(sdkKey)
+		pollingProjectConfigManager.SyncConfig([]byte{}) // initial poll
+	} else {
+		if projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(initDatafile); projectConfig != nil {
+			_ = pollingProjectConfigManager.setConfig(projectConfig)
+		}
+		pollingProjectConfigManager.notificationCenter = registry.GetNotificationCenter(sdkKey)
+	}
+
 	return &pollingProjectConfigManager
 }
 
