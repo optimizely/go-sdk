@@ -86,34 +86,16 @@ func TestNewAsyncPollingProjectConfigManagerWithOptions(t *testing.T) {
 	eg.TerminateAndWait()
 }
 
-func TestSyncConfigWithHardcodedDatafile(t *testing.T) {
+func TestSyncConfig(t *testing.T) {
 
 	mockDatafile := []byte(`{"revision":"42"}`)
 	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
 
-	// Test we dont fetch using requester if datafile provided
+	// Test we fetch using requester
 	configManager := NewAsyncPollingProjectConfigManager("test_sdk_key", WithRequester(mockRequester))
-	configManager.SyncConfig(mockDatafile)
-	mockRequester.AssertNotCalled(t, "Get", []utils.Header(nil))
-
-	actual, err := configManager.GetConfig()
-	assert.Nil(t, err)
-	assert.NotNil(t, actual)
-	assert.Equal(t, projectConfig, actual)
-}
-
-func TestSyncConfigWithoutHardcodedDatafile(t *testing.T) {
-
-	mockDatafile := []byte(`{"revision":"42"}`)
-	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
-	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
-
-	// Test we fetch using requester if no datafile provided
-	configManager := NewAsyncPollingProjectConfigManager("test_sdk_key", WithRequester(mockRequester))
-	configManager.SyncConfig([]byte{})
+	configManager.SyncConfig()
 	mockRequester.AssertCalled(t, "Get", []utils.Header(nil))
 
 	actual, err := configManager.GetConfig()
@@ -317,7 +299,6 @@ func TestNewAsyncPollingProjectConfigManagerWithDifferentDatafileRevisions(t *te
 
 	time.Sleep(120 * time.Millisecond)
 	mockRequester.AssertExpectations(t)
-	configManager.SyncConfig(mockDatafile2)
 	actual, err = configManager.GetConfig()
 	assert.Equal(t, projectConfig2, actual)
 	eg.TerminateAndWait()
@@ -330,7 +311,7 @@ func TestNewPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
 	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil).Times(1)
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
@@ -343,12 +324,16 @@ func TestNewPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 	assert.Nil(t, actual)
 	assert.Nil(t, projectConfig1)
 
-	configManager.SyncConfig(mockDatafile2) // polling for good file
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil).Times(1)
+	configManager.SyncConfig() // polling for good file
+	mockRequester.AssertExpectations(t)
 	actual, err = configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.Equal(t, projectConfig2, actual)
 
-	configManager.SyncConfig(mockDatafile1) // polling for bad file, error not null but good project
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil).Times(1)
+	configManager.SyncConfig() // polling for bad file, error not null but good project
+	mockRequester.AssertExpectations(t)
 	actual, err = configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.Equal(t, projectConfig2, actual)
@@ -361,25 +346,30 @@ func TestNewAsyncPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
 	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil).Times(1)
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
 
 	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
 
-	asyncConfigManager.SyncConfig([]byte{}) // polling for bad file
+	asyncConfigManager.SyncConfig() // polling for bad file
+	mockRequester.AssertExpectations(t)
 	actual, err := asyncConfigManager.GetConfig()
 	assert.NotNil(t, err)
 	assert.Nil(t, actual)
 	assert.Nil(t, projectConfig1)
 
-	asyncConfigManager.SyncConfig(mockDatafile2) // polling for good file
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil).Times(1)
+	asyncConfigManager.SyncConfig() // polling for good file
+	mockRequester.AssertExpectations(t)
 	actual, err = asyncConfigManager.GetConfig()
 	assert.Nil(t, err)
 	assert.Equal(t, projectConfig2, actual)
 
-	asyncConfigManager.SyncConfig(mockDatafile1) // polling for bad file, error not null but good project
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil).Times(1)
+	asyncConfigManager.SyncConfig() // polling for bad file, error not null but good project
+	mockRequester.AssertExpectations(t)
 	actual, err = asyncConfigManager.GetConfig()
 	assert.Nil(t, err)
 	assert.Equal(t, projectConfig2, actual)
