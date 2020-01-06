@@ -308,16 +308,15 @@ func TestNewAsyncPollingProjectConfigManagerWithDifferentDatafileRevisions(t *te
 	sdkKey := "test_sdk_key"
 	eg := newExecGroup()
 	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithInitialDatafile(mockDatafile1), WithPollingInterval(100*time.Millisecond))
-	eg.Go(configManager.Start)
 
 	actual, err := configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, actual)
 	assert.Equal(t, projectConfig1, actual)
 
+	eg.Go(configManager.Start)
 	time.Sleep(120 * time.Millisecond)
 	mockRequester.AssertExpectations(t)
-	configManager.SyncConfig(mockDatafile2)
 	actual, err = configManager.GetConfig()
 	assert.Equal(t, projectConfig2, actual)
 	eg.TerminateAndWait()
