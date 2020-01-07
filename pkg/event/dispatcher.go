@@ -19,12 +19,12 @@ package event
 
 import (
 	"fmt"
-	"github.com/optimizely/go-sdk/pkg/metrics"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/pkg/metrics"
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
 

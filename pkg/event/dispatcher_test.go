@@ -23,6 +23,7 @@ import (
 
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/metrics"
+
 	"github.com/stretchr/testify/assert"
 )
 
