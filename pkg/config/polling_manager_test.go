@@ -19,6 +19,7 @@ package config
 import (
 	"context"
 	"net/http"
+	"reflect"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -49,8 +50,9 @@ func newExecGroup() *utils.ExecGroup {
 func assertPeriodically(t *testing.T, evaluationMethod func() bool) {
 	assert.Eventually(t, func() bool {
 		return evaluationMethod()
-	}, 250*time.Millisecond, 120*time.Millisecond)
+	}, 500*time.Millisecond, 110*time.Millisecond)
 }
+
 func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 
 	mockDatafile := []byte(`{"revision":"42"}`)
@@ -86,7 +88,7 @@ func TestNewAsyncPollingProjectConfigManagerWithOptions(t *testing.T) {
 	eg.Go(configManager.Start)
 	evaluationMethod := func() bool {
 		actual, _ := configManager.GetConfig()
-		return assert.Equal(t, projectConfig, actual)
+		return reflect.DeepEqual(projectConfig, actual)
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
@@ -140,7 +142,7 @@ func TestNewAsyncPollingProjectConfigManagerWithNullDatafile(t *testing.T) {
 	eg.Go(configManager.Start)
 	evaluationMethod := func() bool {
 		_, err := configManager.GetConfig()
-		return assert.NotNil(t, err)
+		return err != nil
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
@@ -168,7 +170,7 @@ func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T
 	eg.Go(configManager.Start)
 	evaluationMethod := func() bool {
 		actual, _ = configManager.GetConfig()
-		return assert.Equal(t, projectConfig1, actual)
+		return reflect.DeepEqual(projectConfig1, actual)
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
@@ -197,7 +199,7 @@ func TestNewAsyncPollingProjectConfigManagerWithSimilarDatafileRevisions(t *test
 	eg.Go(asyncConfigManager.Start)
 	evaluationMethod := func() bool {
 		actual, _ = asyncConfigManager.GetConfig()
-		return assert.Equal(t, projectConfig1, actual)
+		return reflect.DeepEqual(projectConfig1, actual)
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
@@ -229,7 +231,7 @@ func TestNewPollingProjectConfigManagerWithLastModifiedDates(t *testing.T) {
 	eg.Go(configManager.Start)
 	evaluationMethod := func() bool {
 		actual, _ = configManager.GetConfig()
-		return assert.Equal(t, projectConfig1, actual)
+		return reflect.DeepEqual(projectConfig1, actual)
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
@@ -255,14 +257,14 @@ func TestNewAsyncPollingProjectConfigManagerWithLastModifiedDates(t *testing.T) 
 	eg.Go(configManager.Start)
 	evaluationMethod := func() bool {
 		actual, _ := configManager.GetConfig()
-		return assert.Equal(t, projectConfig1, actual)
+		return reflect.DeepEqual(projectConfig1, actual)
 	}
 	assertPeriodically(t, evaluationMethod)
 
 	// poll after 100ms to check no changes were made to the previous config because of 304 error code (second poll)
 	evaluationMethod = func() bool {
 		actual, _ := configManager.GetConfig()
-		return assert.Equal(t, projectConfig1, actual)
+		return reflect.DeepEqual(projectConfig1, actual)
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
@@ -292,7 +294,7 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 	eg.Go(configManager.Start)
 	evaluationMethod := func() bool {
 		actual, _ := configManager.GetConfig()
-		return assert.Equal(t, projectConfig2, actual)
+		return reflect.DeepEqual(projectConfig2, actual)
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
@@ -322,7 +324,7 @@ func TestNewAsyncPollingProjectConfigManagerWithDifferentDatafileRevisions(t *te
 	eg.Go(configManager.Start)
 	evaluationMethod := func() bool {
 		actual, _ := configManager.GetConfig()
-		return assert.Equal(t, projectConfig2, actual)
+		return reflect.DeepEqual(projectConfig2, actual)
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
@@ -428,7 +430,7 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 	eg.Go(configManager.Start)
 	evaluationMethod := func() bool {
 		config2, _ := configManager.GetConfig()
-		return assert.NotEqual(t, config1, config2)
+		return !reflect.DeepEqual(config1, config2)
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
@@ -459,7 +461,7 @@ func TestNewAsyncPollingProjectConfigManagerOnDecision(t *testing.T) {
 	eg.Go(asyncConfigManager.Start)
 	evaluationMethod := func() bool {
 		actual, _ := asyncConfigManager.GetConfig()
-		return assert.NotNil(t, actual)
+		return actual != nil
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
@@ -493,7 +495,7 @@ func TestGetOptimizelyConfigForNewPollingProjectConfigManager(t *testing.T) {
 	eg.Go(configManager.Start)
 	evaluationMethod := func() bool {
 		optimizelyConfig = configManager.GetOptimizelyConfig()
-		return assert.Equal(t, "43", optimizelyConfig.Revision)
+		return "43" == optimizelyConfig.Revision
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
@@ -523,7 +525,7 @@ func TestGetOptimizelyConfigForNewAsyncPollingProjectConfigManager(t *testing.T)
 	eg.Go(asyncConfigManager.Start)
 	evaluationMethod := func() bool {
 		optimizelyConfig = asyncConfigManager.GetOptimizelyConfig()
-		return assert.Equal(t, "43", optimizelyConfig.Revision)
+		return "43" == optimizelyConfig.Revision
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
