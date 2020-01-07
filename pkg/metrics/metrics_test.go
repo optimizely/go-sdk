@@ -16,3 +16,29 @@
 
 // Package metrics //
 package metrics
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestGetCounter(t *testing.T) {
+	registry := NewRegistry()
+
+	assert.NotNil(t, registry)
+
+	counter := registry.GetCounter("")
+	assert.NotNil(t, counter)
+	counter.Add(1)
+}
+
+func TestGetGauge(t *testing.T) {
+	registry := NewRegistry()
+
+	assert.NotNil(t, registry)
+
+	gauge := registry.GetGauge("")
+	assert.NotNil(t, gauge)
+	gauge.Set(1)
+}

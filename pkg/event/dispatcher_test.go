@@ -27,9 +27,9 @@ import (
 )
 
 func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
-	stats := metrics.NewMetrics()
+	metricsRegistry := metrics.NewRegistry()
 
-	q := NewQueueEventDispatcher(stats)
+	q := NewQueueEventDispatcher(metricsRegistry)
 	q.Dispatcher = &MockDispatcher{Events: NewInMemoryQueue(100)}
 
 	eventTags := map[string]interface{}{"revenue": 55.0, "value": 25.1}
@@ -54,16 +54,11 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 	// check the queue
 	assert.Equal(t, 0, q.eventQueue.Size())
 
-	assert.Equal(t, int64(1), stats.Get("successFlush"))
-	assert.Equal(t, int64(0), stats.Get("retryFlush"))
-	assert.Equal(t, int64(0), stats.Get("queueSize"))
-	assert.Equal(t, int64(0), stats.Get("failFlush"))
-
 }
 
 func TestQueueEventDispatcher_InvalidEvent(t *testing.T) {
-	stats := metrics.NewMetrics()
-	q := NewQueueEventDispatcher(stats)
+	metricsRegistry := metrics.NewRegistry()
+	q := NewQueueEventDispatcher(metricsRegistry)
 	q.Dispatcher = &MockDispatcher{Events: NewInMemoryQueue(100)}
 
 	config := TestConfig{}
@@ -77,16 +72,11 @@ func TestQueueEventDispatcher_InvalidEvent(t *testing.T) {
 	// check the queue. bad event type should be removed.  but, not sent.
 	assert.Equal(t, 0, q.eventQueue.Size())
 
-	assert.Equal(t, int64(0), stats.Get("successFlush"))
-	assert.Equal(t, int64(0), stats.Get("retryFlush"))
-	assert.Equal(t, int64(0), stats.Get("queueSize"))
-	assert.Equal(t, int64(1), stats.Get("failFlush"))
-
 }
 
 func TestQueueEventDispatcher_FailDispath(t *testing.T) {
-	stats := metrics.NewMetrics()
-	q := NewQueueEventDispatcher(stats)
+	metricsRegistry := metrics.NewRegistry()
+	q := NewQueueEventDispatcher(metricsRegistry)
 	q.Dispatcher = &MockDispatcher{ShouldFail: true, Events: NewInMemoryQueue(100)}
 
 	eventTags := map[string]interface{}{"revenue": 55.0, "value": 25.1}
@@ -108,10 +98,6 @@ func TestQueueEventDispatcher_FailDispath(t *testing.T) {
 
 	// check the queue. bad event type should be removed.  but, not sent.
 	assert.Equal(t, 1, q.eventQueue.Size())
-
-	assert.Equal(t, int64(0), stats.Get("successFlush"))
-	assert.True(t, stats.Get("retryFlush") > 1)
-	assert.Equal(t, int64(1), stats.Get("queueSize"))
 
 	q.flushEvents()
 

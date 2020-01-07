@@ -50,7 +50,7 @@ type BatchEventProcessor struct {
 	EventDispatcher Dispatcher
 	processing      *semaphore.Weighted
 
-	stats metrics.GenericMetrics
+	metricsRegistry metrics.Registry
 }
 
 // DefaultBatchSize holds the default value for the batch size
@@ -113,9 +113,9 @@ func WithSDKKey(sdkKey string) BPOptionConfig {
 }
 
 // WithEventDispatcherMetrics sets metrics into the NewProcessor method
-func WithEventDispatcherMetrics(m metrics.GenericMetrics) BPOptionConfig {
+func WithEventDispatcherMetrics(metricsRegistry metrics.Registry) BPOptionConfig {
 	return func(qp *BatchEventProcessor) {
-		qp.stats = m
+		qp.metricsRegistry = metricsRegistry
 	}
 }
 
@@ -158,7 +158,7 @@ func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 // Start initializes the event processor
 func (p *BatchEventProcessor) Start(ctx context.Context) {
 	if p.EventDispatcher == nil {
-		dispatcher := NewQueueEventDispatcher(p.stats)
+		dispatcher := NewQueueEventDispatcher(p.metricsRegistry)
 		defer dispatcher.flushEvents()
 		p.EventDispatcher = dispatcher
 	}

@@ -42,7 +42,7 @@ type OptimizelyFactory struct {
 	eventProcessor     event.Processor
 	userProfileService decision.UserProfileService
 	overrideStore      decision.ExperimentOverrideStore
-	stats              metrics.GenericMetrics
+	metricsRegistry    metrics.Registry
 }
 
 // OptionFunc is used to provide custom client configuration to the OptimizelyFactory.
@@ -59,11 +59,11 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		return nil, errors.New("unable to instantiate client: no project config manager, SDK key, or a Datafile provided")
 	}
 
-	var stats metrics.GenericMetrics
-	if f.stats != nil {
-		stats = f.stats
+	var metricsRegistry metrics.Registry
+	if f.metricsRegistry != nil {
+		metricsRegistry = f.metricsRegistry
 	} else {
-		stats = metrics.NewMetrics()
+		metricsRegistry = metrics.NewRegistry()
 	}
 
 	var ctx context.Context
@@ -94,7 +94,7 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		if f.eventDispatcher != nil {
 			eventProcessorOptions = append(eventProcessorOptions, event.WithEventDispatcher(f.eventDispatcher))
 		}
-		eventProcessorOptions = append(eventProcessorOptions, event.WithEventDispatcherMetrics(stats))
+		eventProcessorOptions = append(eventProcessorOptions, event.WithEventDispatcherMetrics(metricsRegistry))
 		appClient.EventProcessor = event.NewBatchEventProcessor(eventProcessorOptions...)
 	}
 
@@ -191,9 +191,9 @@ func WithContext(ctx context.Context) OptionFunc {
 }
 
 // WithMetrics allows user to pass in their own implementation of a metrics collector
-func WithMetrics(stats metrics.GenericMetrics) OptionFunc {
+func WithMetrics(metricsRegistry metrics.Registry) OptionFunc {
 	return func(f *OptimizelyFactory) {
-		f.stats = stats
+		f.metricsRegistry = metricsRegistry
 	}
 }
 

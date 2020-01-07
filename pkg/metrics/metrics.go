@@ -17,56 +17,48 @@
 // Package metrics //
 package metrics
 
-import (
-	"sync"
-	"time"
-)
-
-// GenericMetrics provides the interface for the metrics
-type GenericMetrics interface {
-	Inc(key string)
-	Set(key string, val int64)
-	Get(key string) int64
+// Counter interface
+type Counter interface {
+	Add(delta float64)
 }
 
-// Metrics contains default metrics
-type Metrics struct {
-	startTime time.Time
-
-	metricsLock sync.RWMutex
-	metricsData map[string]int64
+// Gauge interface
+type Gauge interface {
+	Set(delta float64)
 }
 
-// NewMetrics makes thread-safe map to collect any counts/metrics
-func NewMetrics() *Metrics {
-	return &Metrics{startTime: time.Now(), metricsData: map[string]int64{}}
+// Registry provides the interface for the metric registry
+type Registry interface {
+	GetCounter(name string) Counter
+	GetGauge(name string) Gauge
 }
 
-// Add increments value for given key and returns new value
-func (m *Metrics) add(key string, delta int64) int64 {
+// BasicCounter implements Counter interface, provides minimal implementation
+type BasicCounter struct{}
 
-	m.metricsLock.Lock()
-	defer m.metricsLock.Unlock()
-	m.metricsData[key] += delta
-	return m.metricsData[key]
+// Add implements the method from Counter interface
+func (m BasicCounter) Add(value float64) {}
+
+// BasicGauge implements Gauge interface, provides minimal implementation
+type BasicGauge struct{}
+
+// Set implements the method from Gauge interface
+func (m BasicGauge) Set(value float64) {}
+
+// BasicRegistry contains default metrics registry, provides minimal implementation
+type BasicRegistry struct{}
+
+// NewRegistry returns basic registry
+func NewRegistry() *BasicRegistry {
+	return &BasicRegistry{}
 }
 
-// Inc increments value for given key by one
-func (m *Metrics) Inc(key string) {
-	m.add(key, 1)
+// GetCounter gets the Counter
+func (m *BasicRegistry) GetCounter(key string) Counter {
+	return &BasicCounter{}
 }
 
-// Set value for given key
-func (m *Metrics) Set(key string, val int64) {
-	m.metricsLock.Lock()
-	defer m.metricsLock.Unlock()
-	m.metricsData[key] = val
-}
-
-// Get returns value for given key
-func (m *Metrics) Get(key string) int64 {
-	m.metricsLock.RLock()
-	defer m.metricsLock.RUnlock()
-
-	return m.metricsData[key]
+// GetGauge gets the Gauge
+func (m *BasicRegistry) GetGauge(key string) Gauge {
+	return &BasicGauge{}
 }
