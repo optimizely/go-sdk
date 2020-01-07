@@ -55,20 +55,29 @@ func assertPeriodically(t *testing.T, evaluationMethod func() bool) {
 
 func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 
+	invalidDatafile := []byte(`INVALID`)
 	mockDatafile := []byte(`{"revision":"42"}`)
+
 	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(invalidDatafile, http.Header{}, http.StatusOK, nil).Times(1)
 
-	// Test we fetch using requester
+	// Test we fetch using requester (invalid datafile)
 	sdkKey := "test_sdk_key"
-	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
+	eg := newExecGroup()
+	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Millisecond))
 	mockRequester.AssertExpectations(t)
 
-	actual, err := configManager.GetConfig()
-	assert.Nil(t, err)
-	assert.NotNil(t, actual)
-	assert.Equal(t, projectConfig, actual)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil).Times(1)
+	// poll after 100ms
+	eg.Go(configManager.Start)
+	evaluationMethod := func() bool {
+		actual, _ := configManager.GetConfig()
+		return reflect.DeepEqual(projectConfig, actual)
+	}
+	assertPeriodically(t, evaluationMethod)
+	mockRequester.AssertExpectations(t)
+	eg.TerminateAndWait()
 }
 
 func TestNewAsyncPollingProjectConfigManagerWithOptions(t *testing.T) {
@@ -80,7 +89,6 @@ func TestNewAsyncPollingProjectConfigManagerWithOptions(t *testing.T) {
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
-
 	eg := newExecGroup()
 	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Millisecond))
 
@@ -102,8 +110,8 @@ func TestSyncConfig(t *testing.T) {
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
 
-	// Test we fetch using requester
-	configManager := NewAsyncPollingProjectConfigManager("test_sdk_key", WithRequester(mockRequester))
+	sdkKey := "test_sdk_key"
+	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
 	configManager.SyncConfig()
 	mockRequester.AssertCalled(t, "Get", []utils.Header(nil))
 
@@ -118,9 +126,7 @@ func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
 
-	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
-
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
 	mockRequester.AssertExpectations(t)
 
@@ -133,7 +139,6 @@ func TestNewAsyncPollingProjectConfigManagerWithNullDatafile(t *testing.T) {
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
 
-	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
 	eg := newExecGroup()
 	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Millisecond))
@@ -185,7 +190,6 @@ func TestNewAsyncPollingProjectConfigManagerWithSimilarDatafileRevisions(t *test
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil)
 
 	sdkKey := "test_sdk_key"
-
 	eg := newExecGroup()
 	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithInitialDatafile(mockDatafile1), WithPollingInterval(100*time.Millisecond))
 
@@ -279,7 +283,6 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil)
 
-	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
 	eg := newExecGroup()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithInitialDatafile(mockDatafile1), WithPollingInterval(100*time.Millisecond))
@@ -309,7 +312,6 @@ func TestNewAsyncPollingProjectConfigManagerWithDifferentDatafileRevisions(t *te
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil)
 
-	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
 	eg := newExecGroup()
 	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithInitialDatafile(mockDatafile1), WithPollingInterval(100*time.Millisecond))
@@ -340,9 +342,7 @@ func TestNewPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil).Times(1)
 
-	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
-
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
 	// verifying initial poll for bad file
 	mockRequester.AssertExpectations(t)
@@ -375,9 +375,7 @@ func TestNewAsyncPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil).Times(1)
 
-	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
-
 	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
 
 	asyncConfigManager.SyncConfig() // polling for bad file
@@ -409,7 +407,6 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil)
 
-	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
 	eg := newExecGroup()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Millisecond), WithInitialDatafile(mockDatafile1))
@@ -446,7 +443,6 @@ func TestNewAsyncPollingProjectConfigManagerOnDecision(t *testing.T) {
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil)
 
-	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
 	eg := newExecGroup()
 	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Millisecond))
@@ -479,7 +475,6 @@ func TestGetOptimizelyConfigForNewPollingProjectConfigManager(t *testing.T) {
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil)
 
-	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
 	eg := newExecGroup()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Millisecond), WithInitialDatafile(mockDatafile1))
@@ -508,9 +503,7 @@ func TestGetOptimizelyConfigForNewAsyncPollingProjectConfigManager(t *testing.T)
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil)
 
-	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
-
 	eg := newExecGroup()
 	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Millisecond), WithInitialDatafile(mockDatafile1))
 
