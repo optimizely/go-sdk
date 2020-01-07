@@ -96,10 +96,11 @@ func WithInitialDatafile(datafile []byte) OptionFunc {
 }
 
 // SyncConfig gets current datafile and updates projectConfig
-func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
+func (cm *PollingProjectConfigManager) SyncConfig() {
 	var e error
 	var code int
 	var respHeaders http.Header
+	var datafile []byte
 
 	closeMutex := func(e error) {
 		cm.err = e
@@ -107,40 +108,34 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	}
 
 	url := fmt.Sprintf(cm.datafileURLTemplate, cm.sdkKey)
-	if len(datafile) == 0 {
-		if cm.lastModified != "" {
-			lastModifiedHeader := utils.Header{Name: ModifiedSince, Value: cm.lastModified}
-			datafile, respHeaders, code, e = cm.requester.Get(url, lastModifiedHeader)
-		} else {
-			datafile, respHeaders, code, e = cm.requester.Get(url)
-		}
+	if cm.lastModified != "" {
+		lastModifiedHeader := utils.Header{Name: ModifiedSince, Value: cm.lastModified}
+		datafile, respHeaders, code, e = cm.requester.Get(url, lastModifiedHeader)
+	} else {
+		datafile, respHeaders, code, e = cm.requester.Get(url)
+	}
 
-		if e != nil {
-			msg := "unable to fetch fresh datafile"
-			cmLogger.Warning(msg)
-			cm.configLock.Lock()
-			closeMutex(errors.New(fmt.Sprintf("%s, reason (http status code): %s", msg, e.Error())))
-			return
-		}
+	if e != nil {
+		msg := "unable to fetch fresh datafile"
+		cmLogger.Warning(msg)
+		cm.configLock.Lock()
+		closeMutex(errors.New(fmt.Sprintf("%s, reason (http status code): %s", msg, e.Error())))
+		return
+	}
 
-		if code == http.StatusNotModified {
-			cmLogger.Debug("The datafile was not modified and won't be downloaded again")
-			return
-		}
+	if code == http.StatusNotModified {
+		cmLogger.Debug("The datafile was not modified and won't be downloaded again")
+		return
+	}
 
-		// Save last-modified date from response header
-		lastModified := respHeaders.Get(LastModified)
-		if lastModified != "" {
-			cm.configLock.Lock()
-			cm.lastModified = lastModified
-			cm.configLock.Unlock()
-		}
+	// Save last-modified date from response header
+	cm.configLock.Lock()
+	lastModified := respHeaders.Get(LastModified)
+	if lastModified != "" {
+		cm.lastModified = lastModified
 	}
 
 	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(datafile)
-
-	cm.configLock.Lock()
-
 	if err != nil {
 		cmLogger.Warning("failed to create project config")
 		closeMutex(errors.New("unable to parse datafile"))
@@ -168,7 +163,7 @@ func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
 	for {
 		select {
 		case <-t.C:
-			cm.SyncConfig([]byte{})
+			cm.SyncConfig()
 		case <-ctx.Done():
 			cmLogger.Debug("Polling Config Manager Stopped")
 			return
@@ -193,7 +188,7 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 	initDatafile := pollingProjectConfigManager.initDatafile
 	if len(initDatafile) == 0 {
 		pollingProjectConfigManager.notificationCenter = registry.GetNotificationCenter(sdkKey)
-		pollingProjectConfigManager.SyncConfig([]byte{}) // initial poll
+		pollingProjectConfigManager.SyncConfig() // initial poll
 	} else {
 		if projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(initDatafile); projectConfig != nil {
 			_ = pollingProjectConfigManager.setConfig(projectConfig)

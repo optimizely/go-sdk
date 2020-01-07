@@ -45,6 +45,12 @@ func newExecGroup() *utils.ExecGroup {
 	return utils.NewExecGroup(context.Background())
 }
 
+// assertion method to periodically check target function each tick.
+func assertPeriodically(t *testing.T, evaluationMethod func() bool) {
+	assert.Eventually(t, func() bool {
+		return evaluationMethod()
+	}, 250*time.Millisecond, 120*time.Millisecond)
+}
 func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 
 	mockDatafile := []byte(`{"revision":"42"}`)
@@ -75,45 +81,28 @@ func TestNewAsyncPollingProjectConfigManagerWithOptions(t *testing.T) {
 
 	eg := newExecGroup()
 	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Millisecond))
-	eg.Go(configManager.Start)
-	time.Sleep(120 * time.Millisecond)
-	mockRequester.AssertExpectations(t)
 
-	actual, err := configManager.GetConfig()
-	assert.Nil(t, err)
-	assert.NotNil(t, actual)
-	assert.Equal(t, projectConfig, actual)
+	// poll after 100ms
+	eg.Go(configManager.Start)
+	evaluationMethod := func() bool {
+		actual, _ := configManager.GetConfig()
+		return assert.Equal(t, projectConfig, actual)
+	}
+	assertPeriodically(t, evaluationMethod)
+	mockRequester.AssertExpectations(t)
 	eg.TerminateAndWait()
 }
 
-func TestSyncConfigWithHardcodedDatafile(t *testing.T) {
+func TestSyncConfig(t *testing.T) {
 
 	mockDatafile := []byte(`{"revision":"42"}`)
 	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
 
-	// Test we dont fetch using requester if datafile provided
+	// Test we fetch using requester
 	configManager := NewAsyncPollingProjectConfigManager("test_sdk_key", WithRequester(mockRequester))
-	configManager.SyncConfig(mockDatafile)
-	mockRequester.AssertNotCalled(t, "Get", []utils.Header(nil))
-
-	actual, err := configManager.GetConfig()
-	assert.Nil(t, err)
-	assert.NotNil(t, actual)
-	assert.Equal(t, projectConfig, actual)
-}
-
-func TestSyncConfigWithoutHardcodedDatafile(t *testing.T) {
-
-	mockDatafile := []byte(`{"revision":"42"}`)
-	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
-	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
-
-	// Test we fetch using requester if no datafile provided
-	configManager := NewAsyncPollingProjectConfigManager("test_sdk_key", WithRequester(mockRequester))
-	configManager.SyncConfig([]byte{})
+	configManager.SyncConfig()
 	mockRequester.AssertCalled(t, "Get", []utils.Header(nil))
 
 	actual, err := configManager.GetConfig()
@@ -146,12 +135,15 @@ func TestNewAsyncPollingProjectConfigManagerWithNullDatafile(t *testing.T) {
 	sdkKey := "test_sdk_key"
 	eg := newExecGroup()
 	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Millisecond))
-	eg.Go(configManager.Start)
-	time.Sleep(120 * time.Millisecond)
-	mockRequester.AssertExpectations(t)
 
-	_, err := configManager.GetConfig()
-	assert.NotNil(t, err)
+	// poll after 100ms
+	eg.Go(configManager.Start)
+	evaluationMethod := func() bool {
+		_, err := configManager.GetConfig()
+		return assert.NotNil(t, err)
+	}
+	assertPeriodically(t, evaluationMethod)
+	mockRequester.AssertExpectations(t)
 	eg.TerminateAndWait()
 }
 
@@ -165,18 +157,21 @@ func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T
 	sdkKey := "test_sdk_key"
 	eg := newExecGroup()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithInitialDatafile(mockDatafile1), WithPollingInterval(100*time.Millisecond))
-	// initial poll
+
+	// initialized with hardcoded datafile
 	actual, err := configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, actual)
 	assert.Equal(t, projectConfig1, actual)
 
+	// poll after 100ms
 	eg.Go(configManager.Start)
-	// first poll
-	time.Sleep(120 * time.Millisecond)
+	evaluationMethod := func() bool {
+		actual, _ = configManager.GetConfig()
+		return assert.Equal(t, projectConfig1, actual)
+	}
+	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
-	actual, err = configManager.GetConfig()
-	assert.Equal(t, projectConfig1, actual)
 	eg.TerminateAndWait()
 }
 
@@ -191,17 +186,21 @@ func TestNewAsyncPollingProjectConfigManagerWithSimilarDatafileRevisions(t *test
 
 	eg := newExecGroup()
 	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithInitialDatafile(mockDatafile1), WithPollingInterval(100*time.Millisecond))
+
+	// initialized with hardcoded datafile
 	actual, err := asyncConfigManager.GetConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, actual)
 	assert.Equal(t, projectConfig1, actual)
 
+	// poll after 100ms
 	eg.Go(asyncConfigManager.Start)
-	// first poll
-	time.Sleep(120 * time.Millisecond)
+	evaluationMethod := func() bool {
+		actual, _ = asyncConfigManager.GetConfig()
+		return assert.Equal(t, projectConfig1, actual)
+	}
+	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
-	actual, err = asyncConfigManager.GetConfig()
-	assert.Equal(t, projectConfig1, actual)
 	eg.TerminateAndWait()
 }
 
@@ -226,13 +225,13 @@ func TestNewPollingProjectConfigManagerWithLastModifiedDates(t *testing.T) {
 	assert.NotNil(t, actual)
 	assert.Equal(t, projectConfig1, actual)
 
-	// Sync and check no changes were made to the previous config because of 304 error code (first poll)
+	// poll after 100ms to check no changes were made to the previous config because of 304 error code (first poll)
 	eg.Go(configManager.Start)
-	time.Sleep(120 * time.Millisecond)
-	actual, err = configManager.GetConfig()
-	assert.Nil(t, err)
-	assert.NotNil(t, actual)
-	assert.Equal(t, projectConfig1, actual)
+	evaluationMethod := func() bool {
+		actual, _ = configManager.GetConfig()
+		return assert.Equal(t, projectConfig1, actual)
+	}
+	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
 	eg.TerminateAndWait()
 }
@@ -252,20 +251,20 @@ func TestNewAsyncPollingProjectConfigManagerWithLastModifiedDates(t *testing.T) 
 	eg := newExecGroup()
 	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Millisecond))
 
-	// Fetch valid config (first poll)
+	// poll after 100ms to fetch valid config (first poll)
 	eg.Go(configManager.Start)
-	time.Sleep(120 * time.Millisecond)
-	actual, err := configManager.GetConfig()
-	assert.Nil(t, err)
-	assert.NotNil(t, actual)
-	assert.Equal(t, projectConfig1, actual)
+	evaluationMethod := func() bool {
+		actual, _ := configManager.GetConfig()
+		return assert.Equal(t, projectConfig1, actual)
+	}
+	assertPeriodically(t, evaluationMethod)
 
-	// Sync and check no changes were made to the previous config because of 304 error code (second poll)
-	time.Sleep(120 * time.Millisecond)
-	actual, err = configManager.GetConfig()
-	assert.Nil(t, err)
-	assert.NotNil(t, actual)
-	assert.Equal(t, projectConfig1, actual)
+	// poll after 100ms to check no changes were made to the previous config because of 304 error code (second poll)
+	evaluationMethod = func() bool {
+		actual, _ := configManager.GetConfig()
+		return assert.Equal(t, projectConfig1, actual)
+	}
+	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
 	eg.TerminateAndWait()
 }
@@ -282,17 +281,21 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 	sdkKey := "test_sdk_key"
 	eg := newExecGroup()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithInitialDatafile(mockDatafile1), WithPollingInterval(100*time.Millisecond))
-	eg.Go(configManager.Start)
 
+	// initialized with hardcoded datafile
 	actual, err := configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, actual)
 	assert.Equal(t, projectConfig1, actual)
 
-	time.Sleep(120 * time.Millisecond)
+	// poll after 100ms
+	eg.Go(configManager.Start)
+	evaluationMethod := func() bool {
+		actual, _ := configManager.GetConfig()
+		return assert.Equal(t, projectConfig2, actual)
+	}
+	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
-	actual, err = configManager.GetConfig()
-	assert.Equal(t, projectConfig2, actual)
 	eg.TerminateAndWait()
 }
 
@@ -309,16 +312,20 @@ func TestNewAsyncPollingProjectConfigManagerWithDifferentDatafileRevisions(t *te
 	eg := newExecGroup()
 	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithInitialDatafile(mockDatafile1), WithPollingInterval(100*time.Millisecond))
 
+	// initialized with hardcoded datafile
 	actual, err := configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, actual)
 	assert.Equal(t, projectConfig1, actual)
 
+	// poll after 100ms
 	eg.Go(configManager.Start)
-	time.Sleep(120 * time.Millisecond)
+	evaluationMethod := func() bool {
+		actual, _ := configManager.GetConfig()
+		return assert.Equal(t, projectConfig2, actual)
+	}
+	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
-	actual, err = configManager.GetConfig()
-	assert.Equal(t, projectConfig2, actual)
 	eg.TerminateAndWait()
 }
 
@@ -329,7 +336,7 @@ func TestNewPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
 	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil).Times(1)
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
@@ -342,12 +349,16 @@ func TestNewPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 	assert.Nil(t, actual)
 	assert.Nil(t, projectConfig1)
 
-	configManager.SyncConfig(mockDatafile2) // polling for good file
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil).Times(1)
+	configManager.SyncConfig() // polling for good file
+	mockRequester.AssertExpectations(t)
 	actual, err = configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.Equal(t, projectConfig2, actual)
 
-	configManager.SyncConfig(mockDatafile1) // polling for bad file, error not null but good project
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil).Times(1)
+	configManager.SyncConfig() // polling for bad file, error not null but good project
+	mockRequester.AssertExpectations(t)
 	actual, err = configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.Equal(t, projectConfig2, actual)
@@ -360,25 +371,30 @@ func TestNewAsyncPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
 	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
 	mockRequester := new(MockRequester)
-	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil).Times(1)
 
 	// Test we fetch using requester
 	sdkKey := "test_sdk_key"
 
 	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
 
-	asyncConfigManager.SyncConfig([]byte{}) // polling for bad file
+	asyncConfigManager.SyncConfig() // polling for bad file
+	mockRequester.AssertExpectations(t)
 	actual, err := asyncConfigManager.GetConfig()
 	assert.NotNil(t, err)
 	assert.Nil(t, actual)
 	assert.Nil(t, projectConfig1)
 
-	asyncConfigManager.SyncConfig(mockDatafile2) // polling for good file
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil).Times(1)
+	asyncConfigManager.SyncConfig() // polling for good file
+	mockRequester.AssertExpectations(t)
 	actual, err = asyncConfigManager.GetConfig()
 	assert.Nil(t, err)
 	assert.Equal(t, projectConfig2, actual)
 
-	asyncConfigManager.SyncConfig(mockDatafile1) // polling for bad file, error not null but good project
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil).Times(1)
+	asyncConfigManager.SyncConfig() // polling for bad file, error not null but good project
+	mockRequester.AssertExpectations(t)
 	actual, err = asyncConfigManager.GetConfig()
 	assert.Nil(t, err)
 	assert.Equal(t, projectConfig2, actual)
@@ -401,23 +417,22 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 	}
 	id, _ := configManager.OnProjectConfigUpdate(callback)
 	assert.NotEqual(t, 0, id)
-	eg.Go(configManager.Start)
 
-	// initial poll
+	// initialized with hardcoded datafile
 	config1, err := configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, config1)
 	assert.Equal(t, uint64(0), atomic.LoadUint64(&numberOfCalls))
 
 	// poll after 100ms
-	time.Sleep(120 * time.Millisecond)
+	eg.Go(configManager.Start)
+	evaluationMethod := func() bool {
+		config2, _ := configManager.GetConfig()
+		return assert.NotEqual(t, config1, config2)
+	}
+	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
-	config2, err := configManager.GetConfig()
-	assert.Nil(t, err)
-	assert.NotNil(t, config2)
 	assert.Equal(t, uint64(1), atomic.LoadUint64(&numberOfCalls))
-	assert.NotEqual(t, config1, config2)
-
 	err = configManager.RemoveOnProjectConfigUpdate(id)
 	assert.Nil(t, err)
 	eg.TerminateAndWait()
@@ -438,17 +453,18 @@ func TestNewAsyncPollingProjectConfigManagerOnDecision(t *testing.T) {
 		atomic.AddUint64(&numberOfCalls, 1)
 	}
 	id, _ := asyncConfigManager.OnProjectConfigUpdate(callback)
-	eg.Go(asyncConfigManager.Start)
-
-	time.Sleep(120 * time.Millisecond)
-	mockRequester.AssertExpectations(t)
-	actual, err := asyncConfigManager.GetConfig()
-	assert.Nil(t, err)
-	assert.NotNil(t, actual)
 	assert.NotEqual(t, 0, id)
-	assert.Equal(t, uint64(1), atomic.LoadUint64(&numberOfCalls))
 
-	err = asyncConfigManager.RemoveOnProjectConfigUpdate(id)
+	// poll after 100ms
+	eg.Go(asyncConfigManager.Start)
+	evaluationMethod := func() bool {
+		actual, _ := asyncConfigManager.GetConfig()
+		return assert.NotNil(t, actual)
+	}
+	assertPeriodically(t, evaluationMethod)
+	mockRequester.AssertExpectations(t)
+	assert.Equal(t, uint64(1), atomic.LoadUint64(&numberOfCalls))
+	err := asyncConfigManager.RemoveOnProjectConfigUpdate(id)
 	assert.Nil(t, err)
 	eg.TerminateAndWait()
 }
@@ -465,9 +481,8 @@ func TestGetOptimizelyConfigForNewPollingProjectConfigManager(t *testing.T) {
 	sdkKey := "test_sdk_key"
 	eg := newExecGroup()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Millisecond), WithInitialDatafile(mockDatafile1))
-	eg.Go(configManager.Start)
 
-	// initial poll
+	// initialized with hardcoded datafile
 	projectConfig, err := configManager.GetConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, projectConfig)
@@ -475,10 +490,13 @@ func TestGetOptimizelyConfigForNewPollingProjectConfigManager(t *testing.T) {
 	assert.Equal(t, "42", optimizelyConfig.Revision)
 
 	// poll after 100ms
-	time.Sleep(120 * time.Millisecond)
+	eg.Go(configManager.Start)
+	evaluationMethod := func() bool {
+		optimizelyConfig = configManager.GetOptimizelyConfig()
+		return assert.Equal(t, "43", optimizelyConfig.Revision)
+	}
+	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
-	optimizelyConfig = configManager.GetOptimizelyConfig()
-	assert.Equal(t, "43", optimizelyConfig.Revision)
 	eg.TerminateAndWait()
 }
 
@@ -493,8 +511,8 @@ func TestGetOptimizelyConfigForNewAsyncPollingProjectConfigManager(t *testing.T)
 
 	eg := newExecGroup()
 	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Millisecond), WithInitialDatafile(mockDatafile1))
-	eg.Go(asyncConfigManager.Start)
 
+	// initialized with hardcoded datafile
 	projectConfig, err := asyncConfigManager.GetConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, projectConfig)
@@ -502,10 +520,13 @@ func TestGetOptimizelyConfigForNewAsyncPollingProjectConfigManager(t *testing.T)
 	assert.Equal(t, "42", optimizelyConfig.Revision)
 
 	// poll after 100ms
-	time.Sleep(120 * time.Millisecond)
+	eg.Go(asyncConfigManager.Start)
+	evaluationMethod := func() bool {
+		optimizelyConfig = asyncConfigManager.GetOptimizelyConfig()
+		return assert.Equal(t, "43", optimizelyConfig.Revision)
+	}
+	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
-	optimizelyConfig = asyncConfigManager.GetOptimizelyConfig()
-	assert.Equal(t, "43", optimizelyConfig.Revision)
 	eg.TerminateAndWait()
 }
 
