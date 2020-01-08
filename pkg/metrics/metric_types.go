@@ -19,8 +19,8 @@ package metrics
 
 // DispatcherFailedFlush stores failFlush string
 const (
-	DispatcherFailedFlush  = "failFlush"
-	DispatcherSuccessFlush = "successFlush"
-	DispatcherRetryFlush   = "retryFlush"
-	DispatcherQueueSize    = "queueSize"
+	DispatcherFailedFlush  = "dispatcher.failFlush"
+	DispatcherSuccessFlush = "dispatcher.successFlush"
+	DispatcherRetryFlush   = "dispatcher.retryFlush"
+	DispatcherQueueSize    = "dispatcher.queueSize"
 )

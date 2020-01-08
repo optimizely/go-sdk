@@ -33,32 +33,32 @@ type Registry interface {
 	GetGauge(name string) Gauge
 }
 
-// BasicCounter implements Counter interface, provides minimal implementation
-type BasicCounter struct{}
+// NoopCounter implements Counter interface, provides minimal implementation
+type NoopCounter struct{}
 
 // Add implements the method from Counter interface
-func (m BasicCounter) Add(value float64) {}
+func (m NoopCounter) Add(value float64) {}
 
-// BasicGauge implements Gauge interface, provides minimal implementation
-type BasicGauge struct{}
+// NoopGauge implements Gauge interface, provides minimal implementation
+type NoopGauge struct{}
 
 // Set implements the method from Gauge interface
-func (m BasicGauge) Set(value float64) {}
+func (m NoopGauge) Set(value float64) {}
 
-// BasicRegistry contains default metrics registry, provides minimal implementation
-type BasicRegistry struct{}
+// NoopRegistry contains default metrics registry, provides minimal implementation
+type NoopRegistry struct{}
 
-// NewRegistry returns basic registry
-func NewRegistry() *BasicRegistry {
-	return &BasicRegistry{}
+// NewNoopRegistry returns noop registry
+func NewNoopRegistry() *NoopRegistry {
+	return &NoopRegistry{}
 }
 
 // GetCounter gets the Counter
-func (m *BasicRegistry) GetCounter(key string) Counter {
-	return &BasicCounter{}
+func (m *NoopRegistry) GetCounter(key string) Counter {
+	return &NoopCounter{}
 }
 
 // GetGauge gets the Gauge
-func (m *BasicRegistry) GetGauge(key string) Gauge {
-	return &BasicGauge{}
+func (m *NoopRegistry) GetGauge(key string) Gauge {
+	return &NoopGauge{}
 }

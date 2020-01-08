@@ -157,7 +157,7 @@ func NewQueueEventDispatcher(metricsRegistry metrics.Registry) *QueueEventDispat
 	if metricsRegistry != nil {
 		dispatcherMetricsRegistry = metricsRegistry
 	} else {
-		dispatcherMetricsRegistry = metrics.NewRegistry() // protective code to set
+		dispatcherMetricsRegistry = metrics.NewNoopRegistry() // protective code to set
 	}
 
 	return &QueueEventDispatcher{

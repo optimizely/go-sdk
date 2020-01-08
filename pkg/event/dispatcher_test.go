@@ -18,6 +18,7 @@
 package event
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -27,8 +28,80 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type MetricsRegistry struct {
+	metricsCounterVars map[string]*MetricsCounter
+	metricsGaugeVars   map[string]*MetricsGauge
+
+	gaugeLock   sync.Mutex
+	counterLock sync.Mutex
+}
+
+func (m *MetricsRegistry) GetCounter(key string) metrics.Counter {
+	m.counterLock.Lock()
+	defer m.counterLock.Unlock()
+	if counter, ok := m.metricsCounterVars[key]; ok {
+		return counter
+	}
+
+	counter := &MetricsCounter{}
+	m.metricsCounterVars[key] = counter
+	return counter
+}
+
+func (m *MetricsRegistry) GetGauge(key string) metrics.Gauge {
+	m.gaugeLock.Lock()
+	defer m.gaugeLock.Unlock()
+	if gauge, ok := m.metricsGaugeVars[key]; ok {
+		return gauge
+	}
+	gauge := &MetricsGauge{}
+	m.metricsGaugeVars[key] = gauge
+	return gauge
+}
+
+type MetricsCounter struct {
+	f    float64
+	lock sync.Mutex
+}
+
+func (m *MetricsCounter) Add(value float64) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.f += value
+}
+
+func (m *MetricsCounter) Get() float64 {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	return m.f
+}
+
+type MetricsGauge struct {
+	f    float64
+	lock sync.Mutex
+}
+
+func (m *MetricsGauge) Set(value float64) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.f = value
+}
+
+func (m *MetricsGauge) Get() float64 {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	return m.f
+}
+func NewMetricsRegistry() *MetricsRegistry {
+
+	return &MetricsRegistry{
+		metricsCounterVars: map[string]*MetricsCounter{},
+		metricsGaugeVars:   map[string]*MetricsGauge{},
+	}
+}
+
 func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
-	metricsRegistry := metrics.NewRegistry()
+	metricsRegistry := NewMetricsRegistry()
 
 	q := NewQueueEventDispatcher(metricsRegistry)
 	q.Dispatcher = &MockDispatcher{Events: NewInMemoryQueue(100)}
@@ -55,10 +128,15 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 	// check the queue
 	assert.Equal(t, 0, q.eventQueue.Size())
 
+	assert.Equal(t, float64(0), metricsRegistry.GetGauge(metrics.DispatcherQueueSize).(*MetricsGauge).Get())
+	assert.Equal(t, float64(1), metricsRegistry.GetCounter(metrics.DispatcherSuccessFlush).(*MetricsCounter).Get())
+	assert.Equal(t, float64(0), metricsRegistry.GetCounter(metrics.DispatcherFailedFlush).(*MetricsCounter).Get())
+	assert.Equal(t, float64(0), metricsRegistry.GetCounter(metrics.DispatcherRetryFlush).(*MetricsCounter).Get())
+
 }
 
 func TestQueueEventDispatcher_InvalidEvent(t *testing.T) {
-	metricsRegistry := metrics.NewRegistry()
+	metricsRegistry := NewMetricsRegistry()
 	q := NewQueueEventDispatcher(metricsRegistry)
 	q.Dispatcher = &MockDispatcher{Events: NewInMemoryQueue(100)}
 
@@ -73,10 +151,15 @@ func TestQueueEventDispatcher_InvalidEvent(t *testing.T) {
 	// check the queue. bad event type should be removed.  but, not sent.
 	assert.Equal(t, 0, q.eventQueue.Size())
 
+	assert.Equal(t, float64(0), metricsRegistry.GetGauge(metrics.DispatcherQueueSize).(*MetricsGauge).Get())
+	assert.Equal(t, float64(0), metricsRegistry.GetCounter(metrics.DispatcherSuccessFlush).(*MetricsCounter).Get())
+	assert.Equal(t, float64(1), metricsRegistry.GetCounter(metrics.DispatcherFailedFlush).(*MetricsCounter).Get())
+	assert.Equal(t, float64(0), metricsRegistry.GetCounter(metrics.DispatcherRetryFlush).(*MetricsCounter).Get())
+
 }
 
 func TestQueueEventDispatcher_FailDispath(t *testing.T) {
-	metricsRegistry := metrics.NewRegistry()
+	metricsRegistry := NewMetricsRegistry()
 	q := NewQueueEventDispatcher(metricsRegistry)
 	q.Dispatcher = &MockDispatcher{ShouldFail: true, Events: NewInMemoryQueue(100)}
 
@@ -99,6 +182,10 @@ func TestQueueEventDispatcher_FailDispath(t *testing.T) {
 
 	// check the queue. bad event type should be removed.  but, not sent.
 	assert.Equal(t, 1, q.eventQueue.Size())
+
+	assert.Equal(t, float64(1), metricsRegistry.GetGauge(metrics.DispatcherQueueSize).(*MetricsGauge).Get())
+	assert.Equal(t, float64(0), metricsRegistry.GetCounter(metrics.DispatcherSuccessFlush).(*MetricsCounter).Get())
+	assert.True(t, metricsRegistry.GetCounter(metrics.DispatcherRetryFlush).(*MetricsCounter).Get() > 1)
 
 	q.flushEvents()
 

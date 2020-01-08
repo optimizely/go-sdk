@@ -176,10 +176,10 @@ func TestClientWithEventDispatcher(t *testing.T) {
 func TestClientMetrics(t *testing.T) {
 	factory := OptimizelyFactory{SDKKey: "1212"}
 
-	metricsRegistry := metrics.NewRegistry()
+	metricsRegistry := metrics.NewNoopRegistry()
 
 	mockEventDispatcher := new(MockDispatcher)
-	optimizelyClient, err := factory.Client(WithEventDispatcher(mockEventDispatcher), WithMetrics(metricsRegistry))
+	optimizelyClient, err := factory.Client(WithEventDispatcher(mockEventDispatcher), WithMetricsRegistry(metricsRegistry))
 	assert.NoError(t, err)
 
 	eventProcessor := optimizelyClient.EventProcessor.(*event.BatchEventProcessor)

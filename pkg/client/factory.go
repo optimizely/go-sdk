@@ -63,7 +63,7 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 	if f.metricsRegistry != nil {
 		metricsRegistry = f.metricsRegistry
 	} else {
-		metricsRegistry = metrics.NewRegistry()
+		metricsRegistry = metrics.NewNoopRegistry()
 	}
 
 	var ctx context.Context
@@ -190,8 +190,8 @@ func WithContext(ctx context.Context) OptionFunc {
 	}
 }
 
-// WithMetrics allows user to pass in their own implementation of a metrics collector
-func WithMetrics(metricsRegistry metrics.Registry) OptionFunc {
+// WithMetricsRegistry allows user to pass in their own implementation of a metrics collector
+func WithMetricsRegistry(metricsRegistry metrics.Registry) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.metricsRegistry = metricsRegistry
 	}

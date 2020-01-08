@@ -24,7 +24,7 @@ import (
 )
 
 func TestGetCounter(t *testing.T) {
-	registry := NewRegistry()
+	registry := NewNoopRegistry()
 
 	assert.NotNil(t, registry)
 
@@ -34,7 +34,7 @@ func TestGetCounter(t *testing.T) {
 }
 
 func TestGetGauge(t *testing.T) {
-	registry := NewRegistry()
+	registry := NewNoopRegistry()
 
 	assert.NotNil(t, registry)
 
