@@ -24,7 +24,7 @@ jobs:
         email: false
 
     - stage: 'Lint'
-      env: GIMME_GO_VERSION=1.12.x GIMME_OS=linux GIMME_ARCH=amd64
+      env: GIMME_GO_VERSION=1.13.x GIMME_OS=linux GIMME_ARCH=amd64
       script:
         - make install lint
 
@@ -50,7 +50,7 @@ jobs:
 
     - <<: *test
       stage: 'Unit test'
-      env: GIMME_GO_VERSION=1.12.x
+      env: GIMME_GO_VERSION=1.13.x
       before_script:
         - go get github.com/mattn/goveralls
       after_success:
@@ -62,7 +62,7 @@ jobs:
         - make benchmark
 
     - stage: 'Integration tests'
-      env: GIMME_GO_VERSION=1.12.x FSC_PATH="/tmp/fsc-repo"
+      env: GIMME_GO_VERSION=1.13.x FSC_PATH="/tmp/fsc-repo"
       before_script:
         - mkdir -p $FSC_PATH
         - pushd $FSC_PATH && git init && git fetch --depth=1 https://$CI_USER_TOKEN@github.com/optimizely/fullstack-sdk-compatibility-suite ${FSC_BRANCH:-master} && git checkout FETCH_HEAD && popd
