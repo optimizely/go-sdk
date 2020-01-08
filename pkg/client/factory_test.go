@@ -28,6 +28,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/event"
+	"github.com/optimizely/go-sdk/pkg/metrics"
 	"github.com/optimizely/go-sdk/pkg/utils"
 
 	"github.com/stretchr/testify/assert"
@@ -51,10 +52,6 @@ type MockDispatcher struct {
 func (f *MockDispatcher) DispatchEvent(event event.LogEvent) (bool, error) {
 	f.Events = append(f.Events, event)
 	return true, nil
-}
-
-func (f *MockDispatcher) GetMetrics() event.Metrics {
-	return nil
 }
 
 func TestFactoryClientReturnsDefaultClient(t *testing.T) {
@@ -174,4 +171,17 @@ func TestClientWithEventDispatcher(t *testing.T) {
 
 	dispatcher := optimizelyClient.EventProcessor.(*event.BatchEventProcessor).EventDispatcher
 	assert.Equal(t, dispatcher, mockEventDispatcher)
+}
+
+func TestClientMetrics(t *testing.T) {
+	factory := OptimizelyFactory{SDKKey: "1212"}
+
+	metricsRegistry := metrics.NewNoopRegistry()
+
+	mockEventDispatcher := new(MockDispatcher)
+	optimizelyClient, err := factory.Client(WithEventDispatcher(mockEventDispatcher), WithMetricsRegistry(metricsRegistry))
+	assert.NoError(t, err)
+
+	eventProcessor := optimizelyClient.EventProcessor.(*event.BatchEventProcessor)
+	assert.NotNil(t, eventProcessor)
 }

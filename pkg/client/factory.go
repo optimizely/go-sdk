@@ -25,6 +25,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/event"
+	"github.com/optimizely/go-sdk/pkg/metrics"
 	"github.com/optimizely/go-sdk/pkg/registry"
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
@@ -41,6 +42,7 @@ type OptimizelyFactory struct {
 	eventProcessor     event.Processor
 	userProfileService decision.UserProfileService
 	overrideStore      decision.ExperimentOverrideStore
+	metricsRegistry    metrics.Registry
 }
 
 // OptionFunc is used to provide custom client configuration to the OptimizelyFactory.
@@ -55,6 +57,13 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 
 	if f.SDKKey == "" && f.Datafile == nil && f.configManager == nil {
 		return nil, errors.New("unable to instantiate client: no project config manager, SDK key, or a Datafile provided")
+	}
+
+	var metricsRegistry metrics.Registry
+	if f.metricsRegistry != nil {
+		metricsRegistry = f.metricsRegistry
+	} else {
+		metricsRegistry = metrics.NewNoopRegistry()
 	}
 
 	var ctx context.Context
@@ -85,6 +94,7 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		if f.eventDispatcher != nil {
 			eventProcessorOptions = append(eventProcessorOptions, event.WithEventDispatcher(f.eventDispatcher))
 		}
+		eventProcessorOptions = append(eventProcessorOptions, event.WithEventDispatcherMetrics(metricsRegistry))
 		appClient.EventProcessor = event.NewBatchEventProcessor(eventProcessorOptions...)
 	}
 
@@ -177,6 +187,13 @@ func WithEventDispatcher(eventDispatcher event.Dispatcher) OptionFunc {
 func WithContext(ctx context.Context) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.ctx = ctx
+	}
+}
+
+// WithMetricsRegistry allows user to pass in their own implementation of a metrics collector
+func WithMetricsRegistry(metricsRegistry metrics.Registry) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.metricsRegistry = metricsRegistry
 	}
 }
 

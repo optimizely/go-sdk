@@ -14,32 +14,31 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-package optlyplugins
+// Package metrics //
+package metrics
 
 import (
-	"github.com/optimizely/go-sdk/pkg/event"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-// EventReceiver returns dispatched events
-type EventReceiver interface {
-	GetEvents() []event.Batch
+func TestGetCounter(t *testing.T) {
+	registry := NewNoopRegistry()
+
+	assert.NotNil(t, registry)
+
+	counter := registry.GetCounter("")
+	assert.NotNil(t, counter)
+	counter.Add(1)
 }
 
-// ProxyEventDispatcher represents a valid HTTP implementation of the Dispatcher interface
-type ProxyEventDispatcher struct {
-	events []event.Batch
-}
+func TestGetGauge(t *testing.T) {
+	registry := NewNoopRegistry()
 
-// DispatchEvent dispatches event with callback
-func (d *ProxyEventDispatcher) DispatchEvent(event event.LogEvent) (bool, error) {
-	d.events = append(d.events, event.Event)
-	return true, nil
-}
+	assert.NotNil(t, registry)
 
-// GetEvents returns dispatched events
-func (d *ProxyEventDispatcher) GetEvents() []event.Batch {
-	if d.events == nil {
-		d.events = []event.Batch{}
-	}
-	return d.events
+	gauge := registry.GetGauge("")
+	assert.NotNil(t, gauge)
+	gauge.Set(1)
 }
