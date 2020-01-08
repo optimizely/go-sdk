@@ -58,7 +58,6 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 	invalidDatafile := []byte(`INVALID`)
 	mockDatafile := []byte(`{"revision":"42"}`)
 
-	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(invalidDatafile, http.Header{}, http.StatusOK, nil).Times(1)
 
@@ -73,7 +72,7 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 	eg.Go(configManager.Start)
 	evaluationMethod := func() bool {
 		actual, _ := configManager.GetConfig()
-		return reflect.DeepEqual(projectConfig, actual)
+		return actual.GetRevision() == "42"
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
@@ -83,7 +82,6 @@ func TestNewPollingProjectConfigManagerWithOptions(t *testing.T) {
 func TestNewAsyncPollingProjectConfigManagerWithOptions(t *testing.T) {
 
 	mockDatafile := []byte(`{"revision":"42"}`)
-	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
 
@@ -96,14 +94,14 @@ func TestNewAsyncPollingProjectConfigManagerWithOptions(t *testing.T) {
 	eg.Go(configManager.Start)
 	evaluationMethod := func() bool {
 		actual, _ := configManager.GetConfig()
-		return reflect.DeepEqual(projectConfig, actual)
+		return actual.GetRevision() == "42"
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
 	eg.TerminateAndWait()
 }
 
-func TestSyncConfig(t *testing.T) {
+func TestSyncConfigFetchesDatafileUsingRequester(t *testing.T) {
 
 	mockDatafile := []byte(`{"revision":"42"}`)
 	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
@@ -165,6 +163,13 @@ func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T
 	eg := newExecGroup()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithInitialDatafile(mockDatafile1), WithPollingInterval(100*time.Millisecond))
 
+	var numberOfCalls uint64 = 0
+	callback := func(notification notification.ProjectConfigUpdateNotification) {
+		atomic.AddUint64(&numberOfCalls, 1)
+	}
+	id, _ := configManager.OnProjectConfigUpdate(callback)
+	assert.NotEqual(t, 0, id)
+
 	// initialized with hardcoded datafile
 	actual, err := configManager.GetConfig()
 	assert.Nil(t, err)
@@ -179,6 +184,8 @@ func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
+	// Check no notification was sent for similar datafile revision
+	assert.Equal(t, uint64(0), atomic.LoadUint64(&numberOfCalls))
 	eg.TerminateAndWait()
 }
 
@@ -192,6 +199,13 @@ func TestNewAsyncPollingProjectConfigManagerWithSimilarDatafileRevisions(t *test
 	sdkKey := "test_sdk_key"
 	eg := newExecGroup()
 	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithInitialDatafile(mockDatafile1), WithPollingInterval(100*time.Millisecond))
+
+	var numberOfCalls uint64 = 0
+	callback := func(notification notification.ProjectConfigUpdateNotification) {
+		atomic.AddUint64(&numberOfCalls, 1)
+	}
+	id, _ := asyncConfigManager.OnProjectConfigUpdate(callback)
+	assert.NotEqual(t, 0, id)
 
 	// initialized with hardcoded datafile
 	actual, err := asyncConfigManager.GetConfig()
@@ -207,6 +221,8 @@ func TestNewAsyncPollingProjectConfigManagerWithSimilarDatafileRevisions(t *test
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
+	// Check no notification was sent for similar datafile revision
+	assert.Equal(t, uint64(0), atomic.LoadUint64(&numberOfCalls))
 	eg.TerminateAndWait()
 }
 
@@ -235,7 +251,7 @@ func TestNewPollingProjectConfigManagerWithLastModifiedDates(t *testing.T) {
 	eg.Go(configManager.Start)
 	evaluationMethod := func() bool {
 		actual, _ = configManager.GetConfig()
-		return reflect.DeepEqual(projectConfig1, actual)
+		return actual.GetRevision() == "42"
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
@@ -244,7 +260,6 @@ func TestNewPollingProjectConfigManagerWithLastModifiedDates(t *testing.T) {
 
 func TestNewAsyncPollingProjectConfigManagerWithLastModifiedDates(t *testing.T) {
 	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true}`)
-	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
 	mockRequester := new(MockRequester)
 	modifiedDate := "Wed, 16 Oct 2019 20:16:45 GMT"
 	responseHeaders := http.Header{}
@@ -261,14 +276,14 @@ func TestNewAsyncPollingProjectConfigManagerWithLastModifiedDates(t *testing.T) 
 	eg.Go(configManager.Start)
 	evaluationMethod := func() bool {
 		actual, _ := configManager.GetConfig()
-		return reflect.DeepEqual(projectConfig1, actual)
+		return actual.GetRevision() == "42"
 	}
 	assertPeriodically(t, evaluationMethod)
 
 	// poll after 100ms to check no changes were made to the previous config because of 304 error code (second poll)
 	evaluationMethod = func() bool {
 		actual, _ := configManager.GetConfig()
-		return reflect.DeepEqual(projectConfig1, actual)
+		return actual.GetRevision() == "42"
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
@@ -279,7 +294,6 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true}`)
 	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false}`)
 	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
-	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil)
 
@@ -287,6 +301,13 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 	eg := newExecGroup()
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithInitialDatafile(mockDatafile1), WithPollingInterval(100*time.Millisecond))
 
+	var numberOfCalls uint64 = 0
+	callback := func(notification notification.ProjectConfigUpdateNotification) {
+		atomic.AddUint64(&numberOfCalls, 1)
+	}
+	id, _ := configManager.OnProjectConfigUpdate(callback)
+	assert.NotEqual(t, 0, id)
+
 	// initialized with hardcoded datafile
 	actual, err := configManager.GetConfig()
 	assert.Nil(t, err)
@@ -297,10 +318,12 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 	eg.Go(configManager.Start)
 	evaluationMethod := func() bool {
 		actual, _ := configManager.GetConfig()
-		return reflect.DeepEqual(projectConfig2, actual)
+		return actual.GetRevision() == "43"
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
+	// Check notification was sent for different datafile revision
+	assert.Equal(t, uint64(1), atomic.LoadUint64(&numberOfCalls))
 	eg.TerminateAndWait()
 }
 
@@ -308,28 +331,36 @@ func TestNewAsyncPollingProjectConfigManagerWithDifferentDatafileRevisions(t *te
 	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true}`)
 	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false}`)
 	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
-	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil)
 
 	sdkKey := "test_sdk_key"
 	eg := newExecGroup()
-	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithInitialDatafile(mockDatafile1), WithPollingInterval(100*time.Millisecond))
+	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithInitialDatafile(mockDatafile1), WithPollingInterval(100*time.Millisecond))
+
+	var numberOfCalls uint64 = 0
+	callback := func(notification notification.ProjectConfigUpdateNotification) {
+		atomic.AddUint64(&numberOfCalls, 1)
+	}
+	id, _ := asyncConfigManager.OnProjectConfigUpdate(callback)
+	assert.NotEqual(t, 0, id)
 
 	// initialized with hardcoded datafile
-	actual, err := configManager.GetConfig()
+	actual, err := asyncConfigManager.GetConfig()
 	assert.Nil(t, err)
 	assert.NotNil(t, actual)
 	assert.Equal(t, projectConfig1, actual)
 
 	// poll after 100ms
-	eg.Go(configManager.Start)
+	eg.Go(asyncConfigManager.Start)
 	evaluationMethod := func() bool {
-		actual, _ := configManager.GetConfig()
-		return reflect.DeepEqual(projectConfig2, actual)
+		actual, _ := asyncConfigManager.GetConfig()
+		return actual.GetRevision() == "43"
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)
+	// Check notification was sent for different datafile revision
+	assert.Equal(t, uint64(1), atomic.LoadUint64(&numberOfCalls))
 	eg.TerminateAndWait()
 }
 
@@ -427,7 +458,7 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 	eg.Go(configManager.Start)
 	evaluationMethod := func() bool {
 		config2, _ := configManager.GetConfig()
-		return !reflect.DeepEqual(config1, config2)
+		return config1.GetRevision() != config2.GetRevision()
 	}
 	assertPeriodically(t, evaluationMethod)
 	mockRequester.AssertExpectations(t)

@@ -95,7 +95,7 @@ func WithInitialDatafile(datafile []byte) OptionFunc {
 	}
 }
 
-// SyncConfig gets current datafile and updates projectConfig
+// SyncConfig downloads datafile and updates projectConfig
 func (cm *PollingProjectConfigManager) SyncConfig() {
 	var e error
 	var code int
@@ -193,6 +193,7 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 		if projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(initDatafile); projectConfig != nil {
 			_ = pollingProjectConfigManager.setConfig(projectConfig)
 		}
+		// notificationcenter is set later to avoid hard-coded config update notification
 		pollingProjectConfigManager.notificationCenter = registry.GetNotificationCenter(sdkKey)
 	}
 
@@ -245,7 +246,12 @@ func (cm *PollingProjectConfigManager) setConfig(projectConfig ProjectConfig) er
 	}
 	cm.err = nil
 	cm.configLock.Unlock()
+	cm.sendConfigUpdateNotification()
 
+	return nil
+}
+
+func (cm *PollingProjectConfigManager) sendConfigUpdateNotification() {
 	if cm.notificationCenter != nil {
 		projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
 			Type:     notification.ProjectConfigUpdate,
@@ -255,8 +261,6 @@ func (cm *PollingProjectConfigManager) setConfig(projectConfig ProjectConfig) er
 			cmLogger.Warning("Problem with sending notification")
 		}
 	}
-
-	return nil
 }
 
 // GetOptimizelyConfig returns the optimizely project config
