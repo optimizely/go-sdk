@@ -23,7 +23,7 @@ import (
 	"testing"
 )
 
-func TestSnapshotHasOptionalDecisions(t *testing.T) {
+func TestSnapshotHasOptionalDecisionsAndNonOptionalEvents(t *testing.T) {
 	snapshot := Snapshot{
 		Decisions: []Decision{
 			Decision{
@@ -37,7 +37,7 @@ func TestSnapshotHasOptionalDecisions(t *testing.T) {
 		},
 	}
 
-	// Check with decisions
+	// Check with decisions and events
 	jsonValue, err := json.Marshal(snapshot)
 	assert.Nil(t, err)
 
@@ -46,9 +46,12 @@ func TestSnapshotHasOptionalDecisions(t *testing.T) {
 	assert.Nil(t, err)
 	_, ok := dict["decisions"]
 	assert.True(t, ok)
+	_, ok = dict["events"]
+	assert.True(t, ok)
 
-	// Check without decisions
+	// Check without decisions and events
 	snapshot.Decisions = nil
+	snapshot.Events = nil
 	jsonValue, err = json.Marshal(snapshot)
 	assert.Nil(t, err)
 
@@ -57,4 +60,6 @@ func TestSnapshotHasOptionalDecisions(t *testing.T) {
 	assert.Nil(t, err)
 	_, ok = dict2["decisions"]
 	assert.False(t, ok)
+	_, ok = dict2["events"]
+	assert.True(t, ok)
 }
