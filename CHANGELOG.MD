@@ -14,9 +14,11 @@ This is the General Availability release of the Go SDK.
 - feat(onTrack): Added onTrack callback. [#198](https://github.com/optimizely/go-sdk/pull/198)
 - feat: Add observability metrics for event queue. [#211](https://github.com/optimizely/go-sdk/pull/211)
 - feat: Implement OptimizelyConfig API. [#216](https://github.com/optimizely/go-sdk/pull/216)
+- feat: Add observability metrics for event queue. [#223](https://github.com/optimizely/go-sdk/pull/223)
 
 ## Bug Fixes
 - fix: Revert signature changes to PollingProjectConfigManager. [#209](https://github.com/optimizely/go-sdk/pull/209)
+- fix(notification): race detected send notification issue. [#222](https://github.com/optimizely/go-sdk/pull/222)
 
 ## Breaking Changes
 - refac: Execution context. [#212](https://github.com/optimizely/go-sdk/pull/212)
