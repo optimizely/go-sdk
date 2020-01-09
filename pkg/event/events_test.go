@@ -23,21 +23,16 @@ import (
 	"testing"
 )
 
-func TestSnapshotHasOptionalDecisionsAndNonOptionalEvents(t *testing.T) {
+func TestSnapshotHasOptionalDecisions(t *testing.T) {
 	snapshot := Snapshot{
 		Decisions: []Decision{
 			Decision{
 				VariationID: "1",
 			},
 		},
-		Events: []SnapshotEvent{
-			SnapshotEvent{
-				EntityID: "1",
-			},
-		},
 	}
 
-	// Check with decisions and events
+	// Check with decisions
 	jsonValue, err := json.Marshal(snapshot)
 	assert.Nil(t, err)
 
@@ -46,12 +41,9 @@ func TestSnapshotHasOptionalDecisionsAndNonOptionalEvents(t *testing.T) {
 	assert.Nil(t, err)
 	_, ok := dict["decisions"]
 	assert.True(t, ok)
-	_, ok = dict["events"]
-	assert.True(t, ok)
 
-	// Check without decisions and events
+	// Check without decisions
 	snapshot.Decisions = nil
-	snapshot.Events = nil
 	jsonValue, err = json.Marshal(snapshot)
 	assert.Nil(t, err)
 
@@ -60,6 +52,35 @@ func TestSnapshotHasOptionalDecisionsAndNonOptionalEvents(t *testing.T) {
 	assert.Nil(t, err)
 	_, ok = dict2["decisions"]
 	assert.False(t, ok)
+}
+
+func TestSnapshotHasNonOptionalEvents(t *testing.T) {
+	snapshot := Snapshot{
+		Events: []SnapshotEvent{
+			SnapshotEvent{
+				EntityID: "1",
+			},
+		},
+	}
+
+	// Check with events
+	jsonValue, err := json.Marshal(snapshot)
+	assert.Nil(t, err)
+
+	dict := map[string]interface{}{}
+	err = json.Unmarshal(jsonValue, &dict)
+	assert.Nil(t, err)
+	_, ok := dict["events"]
+	assert.True(t, ok)
+
+	// Check without events
+	snapshot.Events = nil
+	jsonValue, err = json.Marshal(snapshot)
+	assert.Nil(t, err)
+
+	dict2 := map[string]interface{}{}
+	err = json.Unmarshal(jsonValue, &dict2)
+	assert.Nil(t, err)
 	_, ok = dict2["events"]
 	assert.True(t, ok)
 }
