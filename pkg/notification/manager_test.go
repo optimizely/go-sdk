@@ -50,3 +50,56 @@ func TestAtomicManager(t *testing.T) {
 	// Sanity check by calling remove with a incorrect handler id
 	atomicManager.Remove(55)
 }
+
+func TestSendRaceCondition(t *testing.T) {
+	sync := make(chan interface{})
+	payload := map[string]interface{}{
+		"key": "test",
+	}
+	atomicManager := NewAtomicManager()
+	result1, result2 := 0, 0
+	listenerCalled := false
+
+	listener1 := func(interface{}) {
+	}
+
+	listener2 := func(interface{}) {
+		// Add listener2 internally to assert deadlock
+		result2, _ = atomicManager.Add(listener1)
+		// Remove all added listeners
+		atomicManager.Remove(result1)
+		atomicManager.Remove(result2)
+		listenerCalled = true
+	}
+	result1, _ = atomicManager.Add(listener2)
+
+	go func() {
+		atomicManager.Send(payload)
+		// notifying that notification is sent.
+		sync <- ""
+	}()
+
+	atomicManager.Add(listener1)
+	<-sync
+
+	assert.Equal(t, 1, result1)
+	assert.Equal(t, len(atomicManager.handlers), 1)
+	assert.Equal(t, true, listenerCalled)
+}
+
+func TestAddRaceCondition(t *testing.T) {
+	sync := make(chan interface{})
+	atomicManager := NewAtomicManager()
+
+	listener1 := func(interface{}) {
+
+	}
+	result1, _ := atomicManager.Add(listener1)
+	go func() {
+		atomicManager.Remove(result1)
+		sync <- ""
+	}()
+
+	<-sync
+	assert.Equal(t, len(atomicManager.handlers), 0)
+}
