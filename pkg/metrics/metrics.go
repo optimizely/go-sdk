@@ -14,49 +14,51 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package event //
-package event
+// Package metrics //
+package metrics
 
-// Metrics is the interface for event processor
-type Metrics interface {
-	SetQueueSize(queueSize int)
-	IncrSuccessFlushCount()
-	IncrFailFlushCount()
-	IncrRetryFlushCount()
+// Counter interface
+type Counter interface {
+	Add(delta float64)
 }
 
-// DefaultMetrics stores the actual metrics
-type DefaultMetrics struct {
-	QueueSize         int
-	SuccessFlushCount int64
-	FailFlushCount    int64
-	RetryFlushCount   int64
+// Gauge interface
+type Gauge interface {
+	Set(delta float64)
 }
 
-// SetQueueSize sets the queue size
-func (m *DefaultMetrics) SetQueueSize(queueSize int) {
-	m.QueueSize = queueSize
+// Registry provides the interface for the metric registry
+type Registry interface {
+	GetCounter(name string) Counter
+	GetGauge(name string) Gauge
 }
 
-// IncrSuccessFlushCount increments counter for successful flush
-func (m *DefaultMetrics) IncrSuccessFlushCount() {
-	m.SuccessFlushCount++
+// NoopCounter implements Counter interface, provides minimal implementation
+type NoopCounter struct{}
+
+// Add implements the method from Counter interface
+func (m NoopCounter) Add(value float64) {}
+
+// NoopGauge implements Gauge interface, provides minimal implementation
+type NoopGauge struct{}
+
+// Set implements the method from Gauge interface
+func (m NoopGauge) Set(value float64) {}
+
+// NoopRegistry contains default metrics registry, provides minimal implementation
+type NoopRegistry struct{}
+
+// NewNoopRegistry returns noop registry
+func NewNoopRegistry() *NoopRegistry {
+	return &NoopRegistry{}
 }
 
-// IncrFailFlushCount increments counter for failed flush
-func (m *DefaultMetrics) IncrFailFlushCount() {
-	m.FailFlushCount++
+// GetCounter gets the Counter
+func (m *NoopRegistry) GetCounter(key string) Counter {
+	return &NoopCounter{}
 }
 
-// IncrRetryFlushCount increments counter for retried flush
-func (m *DefaultMetrics) IncrRetryFlushCount() {
-	m.RetryFlushCount++
-}
-
-// Add a metric collection to existing metrics
-func (m *DefaultMetrics) Add(v *DefaultMetrics) {
-	m.QueueSize += v.QueueSize
-	m.FailFlushCount += v.FailFlushCount
-	m.SuccessFlushCount += v.SuccessFlushCount
-	m.RetryFlushCount += v.RetryFlushCount
+// GetGauge gets the Gauge
+func (m *NoopRegistry) GetGauge(key string) Gauge {
+	return &NoopGauge{}
 }

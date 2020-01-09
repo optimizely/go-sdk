@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/pkg/metrics"
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
@@ -36,17 +37,11 @@ var dispatcherLogger = logging.GetLogger("EventDispatcher")
 // Dispatcher dispatches events
 type Dispatcher interface {
 	DispatchEvent(event LogEvent) (bool, error)
-	GetMetrics() Metrics
 }
 
 // HTTPEventDispatcher is the HTTP implementation of the Dispatcher interface
 type HTTPEventDispatcher struct {
 	requester *utils.HTTPRequester
-}
-
-// GetMetrics is the metric accessor
-func (ed *HTTPEventDispatcher) GetMetrics() Metrics {
-	return nil
 }
 
 // DispatchEvent dispatches event with callback
@@ -77,7 +72,11 @@ type QueueEventDispatcher struct {
 	eventFlushLock sync.Mutex
 	Dispatcher     Dispatcher
 
-	metrics Metrics
+	// metrics
+	queueSize         metrics.Gauge
+	sucessFlush       metrics.Counter
+	failFlushCounter  metrics.Counter
+	retryFlushCounter metrics.Counter
 }
 
 // DispatchEvent queues event with callback and calls flush in a go routine.
@@ -87,17 +86,6 @@ func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 		ed.flushEvents()
 	}()
 	return true, nil
-}
-
-// GetMetrics is the metric accessor
-func (ed *QueueEventDispatcher) GetMetrics() Metrics {
-	ed.eventFlushLock.Lock()
-
-	defer func() {
-		ed.eventFlushLock.Unlock()
-	}()
-	return ed.metrics
-
 }
 
 // flush the events
@@ -110,12 +98,11 @@ func (ed *QueueEventDispatcher) flushEvents() {
 	}()
 
 	retryCount := 0
-
-	ed.metrics.SetQueueSize(ed.eventQueue.Size())
+	ed.queueSize.Set(float64(ed.eventQueue.Size()))
 	for ed.eventQueue.Size() > 0 {
 		if retryCount > maxRetries {
 			dispatcherLogger.Error(fmt.Sprintf("event failed to send %d times. It will retry on next event sent", maxRetries), nil)
-			ed.metrics.IncrFailFlushCount()
+			ed.failFlushCounter.Add(1)
 			break
 		}
 
@@ -129,7 +116,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 			// remove it
 			dispatcherLogger.Error("invalid type passed to event Dispatcher", nil)
 			ed.eventQueue.Remove(1)
-			ed.metrics.IncrFailFlushCount()
+			ed.failFlushCounter.Add(1)
 			continue
 		}
 
@@ -140,7 +127,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 				dispatcherLogger.Debug(fmt.Sprintf("Dispatched log event %+v", event))
 				ed.eventQueue.Remove(1)
 				retryCount = 0
-				ed.metrics.IncrSuccessFlushCount()
+				ed.sucessFlush.Add(1)
 			} else {
 				dispatcherLogger.Warning("dispatch event failed")
 				// we failed.  Sleep some seconds and try again.
@@ -148,8 +135,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 				// increase retryCount.  We exit if we have retried x times.
 				// we will retry again next event that is added.
 				retryCount++
-				ed.metrics.IncrRetryFlushCount()
-
+				ed.retryFlushCounter.Add(1)
 			}
 		} else {
 			dispatcherLogger.Error("Error dispatching ", err)
@@ -158,17 +144,29 @@ func (ed *QueueEventDispatcher) flushEvents() {
 			// increase retryCount.  We exit if we have retried x times.
 			// we will retry again next event that is added.
 			retryCount++
-			ed.metrics.IncrRetryFlushCount()
+			ed.retryFlushCounter.Add(1)
 		}
 	}
-	ed.metrics.SetQueueSize(ed.eventQueue.Size())
+	ed.queueSize.Set(float64(ed.eventQueue.Size()))
 }
 
 // NewQueueEventDispatcher creates a Dispatcher that queues in memory and then sends via go routine.
-func NewQueueEventDispatcher() *QueueEventDispatcher {
+func NewQueueEventDispatcher(metricsRegistry metrics.Registry) *QueueEventDispatcher {
+
+	var dispatcherMetricsRegistry metrics.Registry
+	if metricsRegistry != nil {
+		dispatcherMetricsRegistry = metricsRegistry
+	} else {
+		dispatcherMetricsRegistry = metrics.NewNoopRegistry() // protective code to set
+	}
+
 	return &QueueEventDispatcher{
 		eventQueue: NewInMemoryQueue(defaultQueueSize),
 		Dispatcher: &HTTPEventDispatcher{requester: utils.NewHTTPRequester()},
-		metrics:    &DefaultMetrics{},
+
+		queueSize:         dispatcherMetricsRegistry.GetGauge(metrics.DispatcherQueueSize),
+		retryFlushCounter: dispatcherMetricsRegistry.GetCounter(metrics.DispatcherRetryFlush),
+		failFlushCounter:  dispatcherMetricsRegistry.GetCounter(metrics.DispatcherFailedFlush),
+		sucessFlush:       dispatcherMetricsRegistry.GetCounter(metrics.DispatcherSuccessFlush),
 	}
 }
