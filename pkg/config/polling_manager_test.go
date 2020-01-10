@@ -236,7 +236,7 @@ func TestNewPollingProjectConfigManagerWithLastModifiedDates(t *testing.T) {
 	assert.NotNil(t, actual)
 	assert.Equal(t, projectConfig1, actual)
 
-	// check no changes were made to the previous config because of 304 error code (first poll)
+	// Sync and check no changes were made to the previous config because of 304 error code (second poll)
 	configManager.SyncConfig()
 	actual, _ = configManager.GetConfig()
 	assert.Equal(t, "42", actual.GetRevision())
@@ -261,7 +261,7 @@ func TestNewAsyncPollingProjectConfigManagerWithLastModifiedDates(t *testing.T) 
 	actual, _ := configManager.GetConfig()
 	assert.Equal(t, "42", actual.GetRevision())
 
-	// check no changes were made to the previous config because of 304 error code (second poll)
+	// Sync and check no changes were made to the previous config because of 304 error code (second poll)
 	configManager.SyncConfig()
 	actual, _ = configManager.GetConfig()
 	assert.Equal(t, "42", actual.GetRevision())
@@ -280,7 +280,7 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 	sdkKey := "test_sdk_key"
 	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithInitialDatafile(mockDatafile1))
 
-	// Verify ConfigUpdate notification was sent
+	// To verify ConfigUpdate notification was sent
 	var numberOfCalls uint64 = 0
 	callback := func(notification notification.ProjectConfigUpdateNotification) {
 		atomic.AddUint64(&numberOfCalls, 1)
@@ -316,7 +316,7 @@ func TestNewAsyncPollingProjectConfigManagerWithDifferentDatafileRevisions(t *te
 	sdkKey := "test_sdk_key"
 	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithInitialDatafile(mockDatafile1))
 
-	// Verify ConfigUpdate notification was sent
+	// To verify ConfigUpdate notification was sent
 	var numberOfCalls uint64 = 0
 	callback := func(notification notification.ProjectConfigUpdateNotification) {
 		atomic.AddUint64(&numberOfCalls, 1)
