@@ -14,11 +14,31 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package event //
-package event
+// Package metrics //
+package metrics
 
-// Version is the current version of the client
-const Version = "1.0.0"
+import (
+	"testing"
 
-// ClientName is the name of the client
-const ClientName = "go-sdk"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestGetCounter(t *testing.T) {
+	registry := NewNoopRegistry()
+
+	assert.NotNil(t, registry)
+
+	counter := registry.GetCounter("")
+	assert.NotNil(t, counter)
+	counter.Add(1)
+}
+
+func TestGetGauge(t *testing.T) {
+	registry := NewNoopRegistry()
+
+	assert.NotNil(t, registry)
+
+	gauge := registry.GetGauge("")
+	assert.NotNil(t, gauge)
+	gauge.Set(1)
+}

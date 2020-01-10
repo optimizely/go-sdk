@@ -36,11 +36,6 @@ func (d *ProxyEventDispatcher) DispatchEvent(event event.LogEvent) (bool, error)
 	return true, nil
 }
 
-// DispatchEvent dispatches event with callback
-func (d *ProxyEventDispatcher) GetMetrics() event.Metrics {
-	return nil
-}
-
 // GetEvents returns dispatched events
 func (d *ProxyEventDispatcher) GetEvents() []event.Batch {
 	if d.events == nil {

@@ -39,9 +39,6 @@ func (c *CountingDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	c.visitorCount += len(event.Event.Visitors)
 	return true, nil
 }
-func (c *CountingDispatcher) GetMetrics() Metrics {
-	return nil
-}
 
 type MockDispatcher struct {
 	ShouldFail bool
@@ -57,9 +54,6 @@ func (m *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	return true, nil
 }
 
-func (f *MockDispatcher) GetMetrics() Metrics {
-	return nil
-}
 func NewMockDispatcher(queueSize int, shouldFail bool) *MockDispatcher {
 	return &MockDispatcher{Events: NewInMemoryQueue(queueSize), ShouldFail: shouldFail}
 }
