@@ -152,8 +152,9 @@ func (cm *PollingProjectConfigManager) SyncConfig() {
 		return
 	}
 	cmLogger.Debug(fmt.Sprintf("New datafile set with revision: %s. Old revision: %s", projectConfig.GetRevision(), previousRevision))
+	cm.setConfig(projectConfig)
 	closeMutex(nil)
-	_ = cm.setConfig(projectConfig)
+	cm.sendConfigUpdateNotification()
 }
 
 // Start starts the polling
@@ -185,18 +186,9 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 		opt(&pollingProjectConfigManager)
 	}
 
-	initDatafile := pollingProjectConfigManager.initDatafile
-	if len(initDatafile) == 0 {
-		pollingProjectConfigManager.notificationCenter = registry.GetNotificationCenter(sdkKey)
+	if !pollingProjectConfigManager.setInitialConfigAndNotificationCenter() {
 		pollingProjectConfigManager.SyncConfig() // initial poll
-	} else {
-		if projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(initDatafile); projectConfig != nil {
-			_ = pollingProjectConfigManager.setConfig(projectConfig)
-		}
-		// notificationcenter is set later to avoid hard-coded config update notification
-		pollingProjectConfigManager.notificationCenter = registry.GetNotificationCenter(sdkKey)
 	}
-
 	return &pollingProjectConfigManager
 }
 
@@ -213,14 +205,7 @@ func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...
 	for _, opt := range pollingMangerOptions {
 		opt(&pollingProjectConfigManager)
 	}
-
-	initDatafile := pollingProjectConfigManager.initDatafile
-	if len(initDatafile) != 0 {
-		if projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(initDatafile); projectConfig != nil {
-			_ = pollingProjectConfigManager.setConfig(projectConfig)
-		}
-	}
-	pollingProjectConfigManager.notificationCenter = registry.GetNotificationCenter(sdkKey)
+	_ = pollingProjectConfigManager.setInitialConfigAndNotificationCenter()
 	return &pollingProjectConfigManager
 }
 
@@ -232,35 +217,6 @@ func (cm *PollingProjectConfigManager) GetConfig() (ProjectConfig, error) {
 		return cm.projectConfig, cm.err
 	}
 	return cm.projectConfig, nil
-}
-
-func (cm *PollingProjectConfigManager) setConfig(projectConfig ProjectConfig) error {
-	if projectConfig == nil {
-		return cm.err
-	}
-
-	cm.configLock.Lock()
-	cm.projectConfig = projectConfig
-	if cm.optimizelyConfig != nil {
-		cm.optimizelyConfig = NewOptimizelyConfig(projectConfig)
-	}
-	cm.err = nil
-	cm.configLock.Unlock()
-	cm.sendConfigUpdateNotification()
-
-	return nil
-}
-
-func (cm *PollingProjectConfigManager) sendConfigUpdateNotification() {
-	if cm.notificationCenter != nil {
-		projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
-			Type:     notification.ProjectConfigUpdate,
-			Revision: cm.projectConfig.GetRevision(),
-		}
-		if err := cm.notificationCenter.Send(notification.ProjectConfigUpdate, projectConfigUpdateNotification); err != nil {
-			cmLogger.Warning("Problem with sending notification")
-		}
-	}
 }
 
 // GetOptimizelyConfig returns the optimizely project config
@@ -299,4 +255,38 @@ func (cm *PollingProjectConfigManager) RemoveOnProjectConfigUpdate(id int) error
 		return err
 	}
 	return nil
+}
+
+func (cm *PollingProjectConfigManager) setConfig(projectConfig ProjectConfig) {
+	cm.projectConfig = projectConfig
+	if cm.optimizelyConfig != nil {
+		cm.optimizelyConfig = NewOptimizelyConfig(projectConfig)
+	}
+}
+
+func (cm *PollingProjectConfigManager) setInitialConfigAndNotificationCenter() (wasConfigSet bool) {
+	dafafile := cm.initDatafile
+	cm.notificationCenter = registry.GetNotificationCenter(cm.sdkKey)
+	if len(dafafile) != 0 {
+		if projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(dafafile); projectConfig != nil {
+			cm.configLock.Lock()
+			cm.setConfig(projectConfig)
+			cm.err = nil
+			cm.configLock.Unlock()
+			return true
+		}
+	}
+	return false
+}
+
+func (cm *PollingProjectConfigManager) sendConfigUpdateNotification() {
+	if cm.notificationCenter != nil {
+		projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
+			Type:     notification.ProjectConfigUpdate,
+			Revision: cm.projectConfig.GetRevision(),
+		}
+		if err := cm.notificationCenter.Send(notification.ProjectConfigUpdate, projectConfigUpdateNotification); err != nil {
+			cmLogger.Warning("Problem with sending notification")
+		}
+	}
 }
