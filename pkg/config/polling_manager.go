@@ -176,6 +176,7 @@ func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
 func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
 
 	pollingProjectConfigManager := PollingProjectConfigManager{
+		notificationCenter:  registry.GetNotificationCenter(sdkKey),
 		pollingInterval:     DefaultPollingInterval,
 		requester:           utils.NewHTTPRequester(),
 		datafileURLTemplate: DatafileURLTemplate,
@@ -186,7 +187,9 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 		opt(&pollingProjectConfigManager)
 	}
 
-	if !pollingProjectConfigManager.setInitialConfigAndNotificationCenter() {
+	if len(pollingProjectConfigManager.initDatafile) > 0 {
+		pollingProjectConfigManager.setInitialDatafile(pollingProjectConfigManager.initDatafile)
+	} else {
 		pollingProjectConfigManager.SyncConfig() // initial poll
 	}
 	return &pollingProjectConfigManager
@@ -196,6 +199,7 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
 
 	pollingProjectConfigManager := PollingProjectConfigManager{
+		notificationCenter:  registry.GetNotificationCenter(sdkKey),
 		pollingInterval:     DefaultPollingInterval,
 		requester:           utils.NewHTTPRequester(),
 		datafileURLTemplate: DatafileURLTemplate,
@@ -205,7 +209,8 @@ func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...
 	for _, opt := range pollingMangerOptions {
 		opt(&pollingProjectConfigManager)
 	}
-	_ = pollingProjectConfigManager.setInitialConfigAndNotificationCenter()
+
+	pollingProjectConfigManager.setInitialDatafile(pollingProjectConfigManager.initDatafile)
 	return &pollingProjectConfigManager
 }
 
@@ -264,19 +269,17 @@ func (cm *PollingProjectConfigManager) setConfig(projectConfig ProjectConfig) {
 	}
 }
 
-func (cm *PollingProjectConfigManager) setInitialConfigAndNotificationCenter() (wasConfigSet bool) {
-	dafafile := cm.initDatafile
-	cm.notificationCenter = registry.GetNotificationCenter(cm.sdkKey)
-	if len(dafafile) != 0 {
-		if projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(dafafile); projectConfig != nil {
+func (cm *PollingProjectConfigManager) setInitialDatafile(datafile []byte) {
+	if len(datafile) != 0 {
+		if projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(datafile); projectConfig != nil {
 			cm.configLock.Lock()
+			defer cm.configLock.Unlock()
 			cm.setConfig(projectConfig)
 			cm.err = nil
-			cm.configLock.Unlock()
-			return true
+		} else {
+			cm.err = err
 		}
 	}
-	return false
 }
 
 func (cm *PollingProjectConfigManager) sendConfigUpdateNotification() {
