@@ -18,7 +18,7 @@
 package event
 
 // Version is the current version of the client
-const Version = "1.0.0"
+var Version = "1.0.0"
 
 // ClientName is the name of the client
-const ClientName = "go-sdk"
+var ClientName = "go-sdk"
