@@ -9,6 +9,7 @@ stages:
   - 'Lint'
   - 'Unit test'
   - 'Benchmark test'
+  - 'Local Gherkin tests'
   - 'Integration tests'
   - 'Source clear'
 jobs:
@@ -61,7 +62,7 @@ jobs:
       script:
         - make benchmark
 
-    - stage: 'Integration tests'
+    - stage: 'Local Gherkin tests'
       env: GIMME_GO_VERSION=1.13.x FSC_PATH="/tmp/fsc-repo"
       before_script:
         - mkdir -p $FSC_PATH
@@ -71,6 +72,18 @@ jobs:
       script:
         - ./scripts/run-fsc-tests.sh -f "$FSC_PATH/features/" -d "$FSC_PATH/features/support/datafiles/" -t "$TAGS"
 
+    - stage: 'Integration tests'
+      merge_mode: replace
+      env: SDK=go SDK_BRANCH=$TRAVIS_PULL_REQUEST_BRANCH
+      cache: false
+      language: minimal
+      install: skip
+      before_script:
+        - mkdir $HOME/travisci-tools && pushd $HOME/travisci-tools && git init && git pull https://$CI_USER_TOKEN@github.com/optimizely/travisci-tools.git && popd
+      script:
+        - $HOME/travisci-tools/trigger-script-with-status-update.sh oakbani-run-go-master
+      after_success: travis_terminate 0
+    
     - stage: 'Source clear'
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
       language: go
