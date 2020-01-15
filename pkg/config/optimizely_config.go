@@ -21,40 +21,40 @@ import "github.com/optimizely/go-sdk/pkg/entities"
 
 // OptimizelyConfig is a snapshot of the experiments and features in the project config
 type OptimizelyConfig struct {
-	Revision       string
-	ExperimentsMap map[string]OptimizelyExperiment
-	FeaturesMap    map[string]OptimizelyFeature
+	Revision       string                          `json:"revision"`
+	ExperimentsMap map[string]OptimizelyExperiment `json:"experimentsMap"`
+	FeaturesMap    map[string]OptimizelyFeature    `json:"featuresMap"`
 }
 
 // OptimizelyExperiment has experiment info
 type OptimizelyExperiment struct {
-	ID            string
-	Key           string
-	VariationsMap map[string]OptimizelyVariation
+	ID            string                         `json:"id"`
+	Key           string                         `json:"key"`
+	VariationsMap map[string]OptimizelyVariation `json:"variationsMap"`
 }
 
 // OptimizelyFeature has feature info
 type OptimizelyFeature struct {
-	ID             string
-	Key            string
-	ExperimentsMap map[string]OptimizelyExperiment
-	VariablesMap   map[string]OptimizelyVariable
+	ID             string                          `json:"id"`
+	Key            string                          `json:"key"`
+	ExperimentsMap map[string]OptimizelyExperiment `json:"experimentsMap"`
+	VariablesMap   map[string]OptimizelyVariable   `json:"variablesMap"`
 }
 
 // OptimizelyVariation has variation info
 type OptimizelyVariation struct {
-	ID             string
-	Key            string
-	FeatureEnabled bool
-	VariablesMap   map[string]OptimizelyVariable
+	ID             string                        `json:"id"`
+	Key            string                        `json:"key"`
+	FeatureEnabled bool                          `json:"featureEnabled"`
+	VariablesMap   map[string]OptimizelyVariable `json:"variablesMap"`
 }
 
 // OptimizelyVariable has variable info
 type OptimizelyVariable struct {
-	ID    string
-	Key   string
-	Type  string
-	Value string
+	ID    string `json:"id"`
+	Key   string `json:"key"`
+	Type  string `json:"type"`
+	Value string `json:"value"`
 }
 
 func getVariableByIDMap(features []entities.Feature) (variableByIDMap map[string]entities.Variable) {
