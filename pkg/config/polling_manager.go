@@ -152,11 +152,11 @@ func (cm *PollingProjectConfigManager) SyncConfig() {
 		return
 	}
 	err = cm.setConfig(projectConfig)
+	closeMutex(err)
 	if err == nil {
 		cmLogger.Debug(fmt.Sprintf("New datafile set with revision: %s. Old revision: %s", projectConfig.GetRevision(), previousRevision))
 		cm.sendConfigUpdateNotification()
 	}
-	closeMutex(err)
 }
 
 // Start starts the polling
