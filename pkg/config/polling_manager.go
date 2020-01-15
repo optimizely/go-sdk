@@ -151,10 +151,12 @@ func (cm *PollingProjectConfigManager) SyncConfig() {
 		closeMutex(nil)
 		return
 	}
-	cmLogger.Debug(fmt.Sprintf("New datafile set with revision: %s. Old revision: %s", projectConfig.GetRevision(), previousRevision))
-	cm.setConfig(projectConfig)
-	closeMutex(nil)
-	cm.sendConfigUpdateNotification()
+	err = cm.setConfig(projectConfig)
+	if err == nil {
+		cmLogger.Debug(fmt.Sprintf("New datafile set with revision: %s. Old revision: %s", projectConfig.GetRevision(), previousRevision))
+		cm.sendConfigUpdateNotification()
+	}
+	closeMutex(err)
 }
 
 // Start starts the polling
@@ -262,23 +264,26 @@ func (cm *PollingProjectConfigManager) RemoveOnProjectConfigUpdate(id int) error
 	return nil
 }
 
-func (cm *PollingProjectConfigManager) setConfig(projectConfig ProjectConfig) {
+func (cm *PollingProjectConfigManager) setConfig(projectConfig ProjectConfig) error {
+	if projectConfig == nil {
+		return errors.New("unable to set nil config")
+	}
 	cm.projectConfig = projectConfig
 	if cm.optimizelyConfig != nil {
 		cm.optimizelyConfig = NewOptimizelyConfig(projectConfig)
 	}
+	return nil
 }
 
 func (cm *PollingProjectConfigManager) setInitialDatafile(datafile []byte) {
 	if len(datafile) != 0 {
-		if projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(datafile); projectConfig != nil {
-			cm.configLock.Lock()
-			defer cm.configLock.Unlock()
-			cm.setConfig(projectConfig)
-			cm.err = nil
-		} else {
-			cm.err = err
+		cm.configLock.Lock()
+		defer cm.configLock.Unlock()
+		projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(datafile)
+		if projectConfig != nil {
+			err = cm.setConfig(projectConfig)
 		}
+		cm.err = err
 	}
 }
 
