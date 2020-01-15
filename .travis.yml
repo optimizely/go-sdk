@@ -5,72 +5,72 @@ git:
 install:
   - eval "$(gimme)"
 stages:
-  # - name: 'Lint markdown files'
-  # - 'Lint'
-  # - 'Unit test'
-  # - 'Benchmark test'
-  # - 'Local Gherkin tests'
+  - name: 'Lint markdown files'
+  - 'Lint'
+  - 'Unit test'
+  - 'Benchmark test'
+  - 'Local Gherkin tests'
   - 'Integration tests'
-  # - 'Source clear'
+  - 'Source clear'
 jobs:
   include:
-    - stage: 'Lint markdown files'
-      language: ruby
-      rvm: 2.4.1
-      os: linux
-      install: gem install awesome_bot
-      script:
-        - find . -type f -name '*.md' -exec awesome_bot {} \;
-      notifications:
-        email: false
+    # - stage: 'Lint markdown files'
+    #   language: ruby
+    #   rvm: 2.4.1
+    #   os: linux
+    #   install: gem install awesome_bot
+    #   script:
+    #     - find . -type f -name '*.md' -exec awesome_bot {} \;
+    #   notifications:
+    #     email: false
 
-    - stage: 'Lint'
-      env: GIMME_GO_VERSION=1.13.x GIMME_OS=linux GIMME_ARCH=amd64
-      script:
-        - make install lint
+    # - stage: 'Lint'
+    #   env: GIMME_GO_VERSION=1.13.x GIMME_OS=linux GIMME_ARCH=amd64
+    #   script:
+    #     - make install lint
 
-    - &test
-      stage: 'Unit test'
-      env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
-      script:
-        - make cover
+    # - &test
+    #   stage: 'Unit test'
+    #   env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
+    #   script:
+    #     - make cover
 
-    - <<: *test
-      stage: 'Unit test'
-      env: GIMME_GO_VERSION=1.8.x
-      before_script:
-        # GO module was not introduced earlier. need symlink to search in GOPATH
-        - mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely optimizely && popd
-      script:
-        # Need to download packages explicitly
-        - go get -v -d ./...
-        # This pkg not in go 1.8
-        - go get github.com/stretchr/testify
-        # -coverprofile was not introduced in 1.8
-        - make test
+    # - <<: *test
+    #   stage: 'Unit test'
+    #   env: GIMME_GO_VERSION=1.8.x
+    #   before_script:
+    #     # GO module was not introduced earlier. need symlink to search in GOPATH
+    #     - mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely optimizely && popd
+    #   script:
+    #     # Need to download packages explicitly
+    #     - go get -v -d ./...
+    #     # This pkg not in go 1.8
+    #     - go get github.com/stretchr/testify
+    #     # -coverprofile was not introduced in 1.8
+    #     - make test
 
-    - <<: *test
-      stage: 'Unit test'
-      env: GIMME_GO_VERSION=1.13.x
-      before_script:
-        - go get github.com/mattn/goveralls
-      after_success:
-        - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
+    # - <<: *test
+    #   stage: 'Unit test'
+    #   env: GIMME_GO_VERSION=1.13.x
+    #   before_script:
+    #     - go get github.com/mattn/goveralls
+    #   after_success:
+    #     - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
 
-    - stage: 'Benchmark test'
-      env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
-      script:
-        - make benchmark
+    # - stage: 'Benchmark test'
+    #   env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
+    #   script:
+    #     - make benchmark
 
-    - stage: 'Local Gherkin tests'
-      env: GIMME_GO_VERSION=1.13.x FSC_PATH="/tmp/fsc-repo"
-      before_script:
-        - mkdir -p $FSC_PATH
-        - pushd $FSC_PATH && git init && git fetch --depth=1 https://$CI_USER_TOKEN@github.com/optimizely/fullstack-sdk-compatibility-suite ${FSC_BRANCH:-master} && git checkout FETCH_HEAD && popd
-      install:
-        - eval "$(gimme)"
-      script:
-        - ./scripts/run-fsc-tests.sh -f "$FSC_PATH/features/" -d "$FSC_PATH/features/support/datafiles/" -t "$TAGS"
+    # - stage: 'Local Gherkin tests'
+    #   env: GIMME_GO_VERSION=1.13.x FSC_PATH="/tmp/fsc-repo"
+    #   before_script:
+    #     - mkdir -p $FSC_PATH
+    #     - pushd $FSC_PATH && git init && git fetch --depth=1 https://$CI_USER_TOKEN@github.com/optimizely/fullstack-sdk-compatibility-suite ${FSC_BRANCH:-master} && git checkout FETCH_HEAD && popd
+    #   install:
+    #     - eval "$(gimme)"
+    #   script:
+    #     - ./scripts/run-fsc-tests.sh -f "$FSC_PATH/features/" -d "$FSC_PATH/features/support/datafiles/" -t "$TAGS"
 
     - stage: 'Integration tests'
       merge_mode: replace
@@ -84,9 +84,9 @@ jobs:
         - $HOME/travisci-tools/trigger-script-with-status-update.sh oakbani/run-go-master
       after_success: travis_terminate 0
     
-    - stage: 'Source clear'
-      env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
-      language: go
-      addons:
-        srcclr: true
-      script: go get -v -d ./...
+    # - stage: 'Source clear'
+    #   env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
+    #   language: go
+    #   addons:
+    #     srcclr: true
+    #   script: go get -v -d ./...
