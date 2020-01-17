@@ -95,11 +95,12 @@ func WithInitialDatafile(datafile []byte) OptionFunc {
 	}
 }
 
-// SyncConfig gets current datafile and updates projectConfig
-func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
+// SyncConfig downloads datafile and updates projectConfig
+func (cm *PollingProjectConfigManager) SyncConfig() {
 	var e error
 	var code int
 	var respHeaders http.Header
+	var datafile []byte
 
 	closeMutex := func(e error) {
 		cm.err = e
@@ -107,40 +108,34 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 	}
 
 	url := fmt.Sprintf(cm.datafileURLTemplate, cm.sdkKey)
-	if len(datafile) == 0 {
-		if cm.lastModified != "" {
-			lastModifiedHeader := utils.Header{Name: ModifiedSince, Value: cm.lastModified}
-			datafile, respHeaders, code, e = cm.requester.Get(url, lastModifiedHeader)
-		} else {
-			datafile, respHeaders, code, e = cm.requester.Get(url)
-		}
+	if cm.lastModified != "" {
+		lastModifiedHeader := utils.Header{Name: ModifiedSince, Value: cm.lastModified}
+		datafile, respHeaders, code, e = cm.requester.Get(url, lastModifiedHeader)
+	} else {
+		datafile, respHeaders, code, e = cm.requester.Get(url)
+	}
 
-		if e != nil {
-			msg := "unable to fetch fresh datafile"
-			cmLogger.Warning(msg)
-			cm.configLock.Lock()
-			closeMutex(errors.New(fmt.Sprintf("%s, reason (http status code): %s", msg, e.Error())))
-			return
-		}
+	if e != nil {
+		msg := "unable to fetch fresh datafile"
+		cmLogger.Warning(msg)
+		cm.configLock.Lock()
+		closeMutex(errors.New(fmt.Sprintf("%s, reason (http status code): %s", msg, e.Error())))
+		return
+	}
 
-		if code == http.StatusNotModified {
-			cmLogger.Debug("The datafile was not modified and won't be downloaded again")
-			return
-		}
+	if code == http.StatusNotModified {
+		cmLogger.Debug("The datafile was not modified and won't be downloaded again")
+		return
+	}
 
-		// Save last-modified date from response header
-		lastModified := respHeaders.Get(LastModified)
-		if lastModified != "" {
-			cm.configLock.Lock()
-			cm.lastModified = lastModified
-			cm.configLock.Unlock()
-		}
+	// Save last-modified date from response header
+	cm.configLock.Lock()
+	lastModified := respHeaders.Get(LastModified)
+	if lastModified != "" {
+		cm.lastModified = lastModified
 	}
 
 	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(datafile)
-
-	cm.configLock.Lock()
-
 	if err != nil {
 		cmLogger.Warning("failed to create project config")
 		closeMutex(errors.New("unable to parse datafile"))
@@ -156,21 +151,11 @@ func (cm *PollingProjectConfigManager) SyncConfig(datafile []byte) {
 		closeMutex(nil)
 		return
 	}
-	cmLogger.Debug(fmt.Sprintf("New datafile set with revision: %s. Old revision: %s", projectConfig.GetRevision(), previousRevision))
-	cm.projectConfig = projectConfig
-	if cm.optimizelyConfig != nil {
-		cm.optimizelyConfig = NewOptimizelyConfig(projectConfig)
-	}
-	closeMutex(nil)
-
-	if cm.notificationCenter != nil {
-		projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
-			Type:     notification.ProjectConfigUpdate,
-			Revision: cm.projectConfig.GetRevision(),
-		}
-		if err = cm.notificationCenter.Send(notification.ProjectConfigUpdate, projectConfigUpdateNotification); err != nil {
-			cmLogger.Warning("Problem with sending notification")
-		}
+	err = cm.setConfig(projectConfig)
+	closeMutex(err)
+	if err == nil {
+		cmLogger.Debug(fmt.Sprintf("New datafile set with revision: %s. Old revision: %s", projectConfig.GetRevision(), previousRevision))
+		cm.sendConfigUpdateNotification()
 	}
 }
 
@@ -181,7 +166,7 @@ func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
 	for {
 		select {
 		case <-t.C:
-			cm.SyncConfig([]byte{})
+			cm.SyncConfig()
 		case <-ctx.Done():
 			cmLogger.Debug("Polling Config Manager Stopped")
 			return
@@ -204,8 +189,30 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 		opt(&pollingProjectConfigManager)
 	}
 
-	initDatafile := pollingProjectConfigManager.initDatafile
-	pollingProjectConfigManager.SyncConfig(initDatafile) // initial poll
+	if len(pollingProjectConfigManager.initDatafile) > 0 {
+		pollingProjectConfigManager.setInitialDatafile(pollingProjectConfigManager.initDatafile)
+	} else {
+		pollingProjectConfigManager.SyncConfig() // initial poll
+	}
+	return &pollingProjectConfigManager
+}
+
+// NewAsyncPollingProjectConfigManager returns an instance of the async polling config manager with the customized configuration
+func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
+
+	pollingProjectConfigManager := PollingProjectConfigManager{
+		notificationCenter:  registry.GetNotificationCenter(sdkKey),
+		pollingInterval:     DefaultPollingInterval,
+		requester:           utils.NewHTTPRequester(),
+		datafileURLTemplate: DatafileURLTemplate,
+		sdkKey:              sdkKey,
+	}
+
+	for _, opt := range pollingMangerOptions {
+		opt(&pollingProjectConfigManager)
+	}
+
+	pollingProjectConfigManager.setInitialDatafile(pollingProjectConfigManager.initDatafile)
 	return &pollingProjectConfigManager
 }
 
@@ -255,4 +262,39 @@ func (cm *PollingProjectConfigManager) RemoveOnProjectConfigUpdate(id int) error
 		return err
 	}
 	return nil
+}
+
+func (cm *PollingProjectConfigManager) setConfig(projectConfig ProjectConfig) error {
+	if projectConfig == nil {
+		return errors.New("unable to set nil config")
+	}
+	cm.projectConfig = projectConfig
+	if cm.optimizelyConfig != nil {
+		cm.optimizelyConfig = NewOptimizelyConfig(projectConfig)
+	}
+	return nil
+}
+
+func (cm *PollingProjectConfigManager) setInitialDatafile(datafile []byte) {
+	if len(datafile) != 0 {
+		cm.configLock.Lock()
+		defer cm.configLock.Unlock()
+		projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(datafile)
+		if projectConfig != nil {
+			err = cm.setConfig(projectConfig)
+		}
+		cm.err = err
+	}
+}
+
+func (cm *PollingProjectConfigManager) sendConfigUpdateNotification() {
+	if cm.notificationCenter != nil {
+		projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
+			Type:     notification.ProjectConfigUpdate,
+			Revision: cm.projectConfig.GetRevision(),
+		}
+		if err := cm.notificationCenter.Send(notification.ProjectConfigUpdate, projectConfigUpdateNotification); err != nil {
+			cmLogger.Warning("Problem with sending notification")
+		}
+	}
 }
