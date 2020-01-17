@@ -104,7 +104,8 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 	metricsRegistry := NewMetricsRegistry()
 
 	q := NewQueueEventDispatcher(metricsRegistry)
-	q.Dispatcher = &MockDispatcher{Events: NewInMemoryQueue(100)}
+	sender := &MockDispatcher{Events: NewInMemoryQueue(100)}
+	q.Dispatcher = sender
 
 	eventTags := map[string]interface{}{"revenue": 55.0, "value": 25.1}
 	config := TestConfig{}
@@ -120,13 +121,14 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 	assert.True(t, success)
 
 	// its been queued
-	assert.Equal(t, 1, q.eventQueue.Size())
+	assert.True(t, (q.eventQueue.Size() == 1 && sender.Events.Size() == 0) || (q.eventQueue.Size() == 0 && sender.Events.Size() == 1))
 
 	// give the queue a chance to run
 	time.Sleep(1 * time.Second)
 
 	// check the queue
 	assert.Equal(t, 0, q.eventQueue.Size())
+	assert.Equal(t, 1, sender.Events.Size())
 
 	assert.Equal(t, float64(0), metricsRegistry.GetGauge(metrics.DispatcherQueueSize).(*MetricsGauge).Get())
 	assert.Equal(t, float64(1), metricsRegistry.GetCounter(metrics.DispatcherSuccessFlush).(*MetricsCounter).Get())
