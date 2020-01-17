@@ -45,6 +45,9 @@ const LastModified = "Last-Modified"
 // DatafileURLTemplate is used to construct the endpoint for retrieving the datafile from the CDN
 const DatafileURLTemplate = "https://cdn.optimizely.com/datafiles/%s.json"
 
+// Err403Forbidden is 403Forbidden specific error
+var Err403Forbidden = errors.New("unable to fetch fresh datafile, reason (http status code): 403 Forbidden")
+
 var cmLogger = logging.GetLogger("PollingConfigManager")
 
 // PollingProjectConfigManager maintains a dynamic copy of the project config by continuously polling for the datafile
@@ -119,6 +122,12 @@ func (cm *PollingProjectConfigManager) SyncConfig() {
 		msg := "unable to fetch fresh datafile"
 		cmLogger.Warning(msg)
 		cm.configLock.Lock()
+
+		if code == http.StatusForbidden {
+			closeMutex(Err403Forbidden)
+			return
+		}
+
 		closeMutex(errors.New(fmt.Sprintf("%s, reason (http status code): %s", msg, e.Error())))
 		return
 	}
