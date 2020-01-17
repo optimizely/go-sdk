@@ -9,6 +9,7 @@ import (
 
 	"github.com/optimizely/go-sdk"
 	"github.com/optimizely/go-sdk/pkg/client"
+	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
@@ -17,8 +18,6 @@ func main() {
 	sdkKey := "4SLpaJA1r1pgE6T2CoMs9q"
 	logging.SetLogLevel(logging.LogLevelDebug)
 
-	/************* Simple usage ********************/
-
 	user := optimizely.UserContext(
 		"mike ng",
 		map[string]interface{}{
@@ -26,8 +25,20 @@ func main() {
 			"likes_donuts": true,
 		},
 	)
-	optimizelyClient, err := optimizely.Client(sdkKey)
-	enabled, _ := optimizelyClient.IsFeatureEnabled("mutext_feat", user)
+
+	/************* Bad SDK Key  ********************/
+
+	optimizelyClient, err := optimizely.Client("some_key")
+	enabled, err := optimizelyClient.IsFeatureEnabled("mutext_feat", user)
+	if err == config.Err403Forbidden {
+		fmt.Println("A Valid 403 error received:", config.Err403Forbidden)
+	}
+
+	/************* Simple usage ********************/
+
+	optimizelyClient, err = optimizely.Client(sdkKey)
+	enabled, _ = optimizelyClient.IsFeatureEnabled("mutext_feat", user)
+
 	fmt.Printf("Is feature enabled? %v\n", enabled)
 
 	/************* StaticClient ********************/
