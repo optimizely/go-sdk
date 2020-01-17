@@ -35,6 +35,8 @@ import (
 // Processor processes events
 type Processor interface {
 	ProcessEvent(event UserEvent) bool
+	OnEventDispatch(callback func(logEvent LogEvent)) (int, error)
+	RemoveOnEventDispatch(id int) error
 }
 
 // BatchEventProcessor is used out of the box by the SDK to queue up and batch events to be sent to the Optimizely
