@@ -46,7 +46,7 @@ const LastModified = "Last-Modified"
 const DatafileURLTemplate = "https://cdn.optimizely.com/datafiles/%s.json"
 
 // Err403Forbidden is 403Forbidden specific error
-var Err403Forbidden = errors.New("unable to fetch fresh datafile, reason (http status code): 403 Forbidden")
+var Err403Forbidden = errors.New("unable to fetch fresh datafile (consider rechecking SDK key), status code: 403 Forbidden")
 
 var cmLogger = logging.GetLogger("PollingConfigManager")
 
