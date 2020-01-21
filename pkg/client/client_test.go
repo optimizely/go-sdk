@@ -58,6 +58,14 @@ func (m *MockProcessor) ProcessEvent(event event.UserEvent) bool {
 	return result
 }
 
+func (m *MockProcessor) OnEventDispatch(callback func(logEvent event.LogEvent)) (int, error) {
+	return 0, nil
+}
+
+func (m *MockProcessor) RemoveOnEventDispatch(id int) error {
+	return nil
+}
+
 type MockNotificationCenter struct {
 	notification.Center
 	mock.Mock
