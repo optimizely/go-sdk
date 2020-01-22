@@ -42,7 +42,7 @@ Your contributions should also include the following header:
 
 ```
 
-The YEAR above should be the year of the contribution. If work on the file has been done over multiple years, list each year in the section above. Example: Optimizely writes the file and releases it in 2014. No changes are made in 2015. Change made in 2016. YEAR should be “2014, 2016”.
+The YEAR above should be the year of the contribution. If work on the file has been done over multiple years, list each year in the section above. Example: Optimizely writes the file and releases it in 2018. No changes are made in 2019. Change made in 2020. YEAR should be “2018, 2020”.
 
 ## Contact
 
