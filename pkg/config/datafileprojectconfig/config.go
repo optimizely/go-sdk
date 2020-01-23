@@ -185,13 +185,13 @@ func (c DatafileProjectConfig) GetGroupByID(groupID string) (entities.Group, err
 func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, error) {
 	datafile, err := Parse(jsonDatafile)
 	if err != nil {
-		logger.Error("error parsing datafile", err)
+		logger.Error("Error parsing datafile", err)
 		return nil, err
 	}
 
 	if !inSlice(datafileVersions, datafile.Version) {
 		err = errors.New("unsupported datafile version")
-		logger.Error(fmt.Sprintf("version %s of datafile not supported", datafile.Version), err)
+		logger.Error(fmt.Sprintf("Version %s of datafile not supported", datafile.Version), err)
 		return nil, err
 	}
 
