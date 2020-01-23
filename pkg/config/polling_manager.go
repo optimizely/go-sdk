@@ -36,6 +36,9 @@ import (
 // DefaultPollingInterval sets default interval for polling manager
 const DefaultPollingInterval = 5 * time.Minute // default to 5 minutes for polling
 
+// DefaultBlockingTimeout sets timeout to block the config call until config has been initialized
+const DefaultBlockingTimeout = 10 * time.Second // default to 10 seconds
+
 // ModifiedSince header key for request
 const ModifiedSince = "If-Modified-Since"
 
@@ -65,6 +68,10 @@ type PollingProjectConfigManager struct {
 	err              error
 	projectConfig    ProjectConfig
 	optimizelyConfig *OptimizelyConfig
+
+	blockingTimeout           time.Duration
+	configAvailabilityChannel chan bool
+	isConfigAvailable         bool
 }
 
 // OptionFunc is used to provide custom configuration to the PollingProjectConfigManager.
@@ -88,6 +95,13 @@ func WithDatafileURLTemplate(datafileTemplate string) OptionFunc {
 func WithPollingInterval(interval time.Duration) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.pollingInterval = interval
+	}
+}
+
+// WithBlockingTimeout is an optional function, sets a passed blocking timeout
+func WithBlockingTimeout(timeout time.Duration) OptionFunc {
+	return func(p *PollingProjectConfigManager) {
+		p.blockingTimeout = timeout
 	}
 }
 
@@ -187,11 +201,13 @@ func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
 func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
 
 	pollingProjectConfigManager := PollingProjectConfigManager{
-		notificationCenter:  registry.GetNotificationCenter(sdkKey),
-		pollingInterval:     DefaultPollingInterval,
-		requester:           utils.NewHTTPRequester(),
-		datafileURLTemplate: DatafileURLTemplate,
-		sdkKey:              sdkKey,
+		notificationCenter:        registry.GetNotificationCenter(sdkKey),
+		pollingInterval:           DefaultPollingInterval,
+		blockingTimeout:           DefaultBlockingTimeout,
+		configAvailabilityChannel: make(chan bool),
+		requester:                 utils.NewHTTPRequester(),
+		datafileURLTemplate:       DatafileURLTemplate,
+		sdkKey:                    sdkKey,
 	}
 
 	for _, opt := range pollingMangerOptions {
@@ -210,11 +226,13 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
 
 	pollingProjectConfigManager := PollingProjectConfigManager{
-		notificationCenter:  registry.GetNotificationCenter(sdkKey),
-		pollingInterval:     DefaultPollingInterval,
-		requester:           utils.NewHTTPRequester(),
-		datafileURLTemplate: DatafileURLTemplate,
-		sdkKey:              sdkKey,
+		notificationCenter:        registry.GetNotificationCenter(sdkKey),
+		pollingInterval:           DefaultPollingInterval,
+		blockingTimeout:           DefaultBlockingTimeout,
+		configAvailabilityChannel: make(chan bool),
+		requester:                 utils.NewHTTPRequester(),
+		datafileURLTemplate:       DatafileURLTemplate,
+		sdkKey:                    sdkKey,
 	}
 
 	for _, opt := range pollingMangerOptions {
@@ -229,6 +247,7 @@ func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...
 func (cm *PollingProjectConfigManager) GetConfig() (ProjectConfig, error) {
 	cm.configLock.RLock()
 	defer cm.configLock.RUnlock()
+	cm.waitForConfigAvailability()
 	if cm.projectConfig == nil {
 		return cm.projectConfig, cm.err
 	}
@@ -281,6 +300,7 @@ func (cm *PollingProjectConfigManager) setConfig(projectConfig ProjectConfig) er
 	if cm.optimizelyConfig != nil {
 		cm.optimizelyConfig = NewOptimizelyConfig(projectConfig)
 	}
+	cm.setConfigAvailability()
 	return nil
 }
 
@@ -306,4 +326,22 @@ func (cm *PollingProjectConfigManager) sendConfigUpdateNotification() {
 			cmLogger.Warning("Problem with sending notification")
 		}
 	}
+}
+
+// waitForConfigAvailability waits till blocking timeout for config availability
+func (cm *PollingProjectConfigManager) waitForConfigAvailability() {
+	// Only wait if config not available
+	if !cm.isConfigAvailable {
+		select {
+		case <-cm.configAvailabilityChannel: // Config was made available
+		case <-time.After(cm.blockingTimeout): // Timed out
+		}
+	}
+}
+
+// setConfigAvailability updates config availability status to true
+func (cm *PollingProjectConfigManager) setConfigAvailability() {
+	cm.isConfigAvailable = true
+	// notifying channel about availability
+	cm.configAvailabilityChannel <- true
 }
