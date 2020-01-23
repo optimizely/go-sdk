@@ -28,15 +28,8 @@ import (
 
 var logger = logging.GetLogger("DatafileProjectConfig")
 
-var datafileVersions = []string{"4"}
-
-func inSlice(a []string, x string) bool {
-	for _, n := range a {
-		if x == n {
-			return true
-		}
-	}
-	return false
+var datafileVersions = map[string]struct{}{
+	"4": {},
 }
 
 // DatafileProjectConfig is a project config backed by a datafile
@@ -189,7 +182,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, erro
 		return nil, err
 	}
 
-	if !inSlice(datafileVersions, datafile.Version) {
+	if _, ok := datafileVersions[datafile.Version]; !ok {
 		err = errors.New("unsupported datafile version")
 		logger.Error(fmt.Sprintf("Version %s of datafile not supported", datafile.Version), err)
 		return nil, err

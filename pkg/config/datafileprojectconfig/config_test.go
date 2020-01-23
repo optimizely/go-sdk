@@ -28,12 +28,12 @@ import (
 
 func TestNewDatafileProjectConfigNil(t *testing.T) {
 	projectConfig, err := NewDatafileProjectConfig(nil)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, projectConfig)
 
 	jsonDatafileStr := `{"accountID": "123", "revision": "1", "projectId": "12345", "version": "2"}`
 	projectConfig, err = NewDatafileProjectConfig([]byte(jsonDatafileStr))
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, projectConfig)
 }
 
