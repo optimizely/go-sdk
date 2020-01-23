@@ -39,7 +39,11 @@ func TestNewStaticProjectConfigManagerFromPayload(t *testing.T) {
 	configManager, err := NewStaticProjectConfigManagerFromPayload(mockDatafile)
 	assert.NotNil(t, err)
 
-	mockDatafile = []byte(`{"accountId":"42","projectId":"123"}`)
+	mockDatafile = []byte(`{"accountId":"42","projectId":"123",}`)
+	configManager, err = NewStaticProjectConfigManagerFromPayload(mockDatafile)
+	assert.NotNil(t, err)
+
+	mockDatafile = []byte(`{"accountId":"42","projectId":"123","version":"4"}`)
 	configManager, err = NewStaticProjectConfigManagerFromPayload(mockDatafile)
 	assert.Nil(t, err)
 
@@ -51,7 +55,7 @@ func TestNewStaticProjectConfigManagerFromPayload(t *testing.T) {
 
 func TestStaticGetOptimizelyConfig(t *testing.T) {
 
-	mockDatafile := []byte(`{"accountId":"42","projectId":"123"}`)
+	mockDatafile := []byte(`{"accountId":"42","projectId":"123","version":"4"}`)
 	configManager, err := NewStaticProjectConfigManagerFromPayload(mockDatafile)
 	assert.Nil(t, err)
 
@@ -70,7 +74,7 @@ func TestNewStaticProjectConfigManagerFromURL(t *testing.T) {
 }
 
 func TestNewStaticProjectConfigManagerOnDecision(t *testing.T) {
-	mockDatafile := []byte(`{"accountId":"42","projectId":"123"}`)
+	mockDatafile := []byte(`{"accountId":"42","projectId":"123","version":"4"}`)
 	configManager, err := NewStaticProjectConfigManagerFromPayload(mockDatafile)
 	assert.Nil(t, err)
 

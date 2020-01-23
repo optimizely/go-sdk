@@ -18,6 +18,7 @@
 package datafileprojectconfig
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/mappers"
@@ -26,6 +27,17 @@ import (
 )
 
 var logger = logging.GetLogger("DatafileProjectConfig")
+
+var datafileVersions = []string{"4"}
+
+func inSlice(a []string, x string) bool {
+	for _, n := range a {
+		if x == n {
+			return true
+		}
+	}
+	return false
+}
 
 // DatafileProjectConfig is a project config backed by a datafile
 type DatafileProjectConfig struct {
@@ -173,7 +185,13 @@ func (c DatafileProjectConfig) GetGroupByID(groupID string) (entities.Group, err
 func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, error) {
 	datafile, err := Parse(jsonDatafile)
 	if err != nil {
-		logger.Error("Error parsing datafile.", err)
+		logger.Error("error parsing datafile", err)
+		return nil, err
+	}
+
+	if !inSlice(datafileVersions, datafile.Version) {
+		err = errors.New("unsupported datafile version")
+		logger.Error(fmt.Sprintf("version %s of datafile not supported", datafile.Version), err)
 		return nil, err
 	}
 
