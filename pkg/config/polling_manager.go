@@ -247,6 +247,10 @@ func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...
 
 // GetConfig returns the project config
 func (cm *PollingProjectConfigManager) GetConfig() (ProjectConfig, error) {
+
+	cm.setWaitingStatus(1)       // update waiting status to true
+	defer cm.setWaitingStatus(0) // end waiting
+
 	cm.configLock.RLock()
 	defer cm.configLock.RUnlock()
 	cm.waitForConfigAvailability()
@@ -332,13 +336,8 @@ func (cm *PollingProjectConfigManager) sendConfigUpdateNotification() {
 
 // waitForConfigAvailability waits till blocking timeout for config availability
 func (cm *PollingProjectConfigManager) waitForConfigAvailability() {
-	updateWaitingStatus := func(status int32) {
-		atomic.StoreInt32(&cm.waitingForConfigAvailability, status)
-	}
 	// Only wait if config not available
 	if !cm.isConfigAvailable {
-		updateWaitingStatus(1)       // start waiting for config availability
-		defer updateWaitingStatus(0) // end waiting
 		select {
 		case <-cm.configAvailabilityChannel: // Config was made available
 		case <-time.After(cm.blockingTimeout): // Timed out
@@ -350,10 +349,18 @@ func (cm *PollingProjectConfigManager) waitForConfigAvailability() {
 func (cm *PollingProjectConfigManager) setConfigAvailability() {
 	cm.isConfigAvailable = true
 	// Check if waiting for config availability status
-	if atomic.LoadInt32(&cm.waitingForConfigAvailability) == 1 {
+	if cm.isWaitingForConfigAvailability() {
 		// notifying channel about availability
 		cm.configAvailabilityChannel <- true
 		// end waiting
-		atomic.StoreInt32(&cm.waitingForConfigAvailability, 0)
+		cm.setWaitingStatus(0)
 	}
+}
+
+func (cm *PollingProjectConfigManager) setWaitingStatus(status int32) {
+	atomic.StoreInt32(&cm.waitingForConfigAvailability, status)
+}
+
+func (cm *PollingProjectConfigManager) isWaitingForConfigAvailability() bool {
+	return atomic.LoadInt32(&cm.waitingForConfigAvailability) == 1
 }
