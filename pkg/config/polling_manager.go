@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
@@ -70,10 +69,8 @@ type PollingProjectConfigManager struct {
 	projectConfig    ProjectConfig
 	optimizelyConfig *OptimizelyConfig
 
-	blockingTimeout              time.Duration
-	configAvailabilityChannel    chan bool
-	isConfigAvailable            bool
-	waitingForConfigAvailability int32
+	blockingTimeout time.Duration
+	configAvailable chan struct{}
 }
 
 // OptionFunc is used to provide custom configuration to the PollingProjectConfigManager.
@@ -203,13 +200,13 @@ func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
 func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
 
 	pollingProjectConfigManager := PollingProjectConfigManager{
-		notificationCenter:        registry.GetNotificationCenter(sdkKey),
-		pollingInterval:           DefaultPollingInterval,
-		blockingTimeout:           DefaultBlockingTimeout,
-		configAvailabilityChannel: make(chan bool),
-		requester:                 utils.NewHTTPRequester(),
-		datafileURLTemplate:       DatafileURLTemplate,
-		sdkKey:                    sdkKey,
+		notificationCenter:  registry.GetNotificationCenter(sdkKey),
+		pollingInterval:     DefaultPollingInterval,
+		blockingTimeout:     DefaultBlockingTimeout,
+		configAvailable:     make(chan struct{}),
+		requester:           utils.NewHTTPRequester(),
+		datafileURLTemplate: DatafileURLTemplate,
+		sdkKey:              sdkKey,
 	}
 
 	for _, opt := range pollingMangerOptions {
@@ -228,13 +225,13 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
 
 	pollingProjectConfigManager := PollingProjectConfigManager{
-		notificationCenter:        registry.GetNotificationCenter(sdkKey),
-		pollingInterval:           DefaultPollingInterval,
-		blockingTimeout:           DefaultBlockingTimeout,
-		configAvailabilityChannel: make(chan bool),
-		requester:                 utils.NewHTTPRequester(),
-		datafileURLTemplate:       DatafileURLTemplate,
-		sdkKey:                    sdkKey,
+		notificationCenter:  registry.GetNotificationCenter(sdkKey),
+		pollingInterval:     DefaultPollingInterval,
+		blockingTimeout:     DefaultBlockingTimeout,
+		configAvailable:     make(chan struct{}),
+		requester:           utils.NewHTTPRequester(),
+		datafileURLTemplate: DatafileURLTemplate,
+		sdkKey:              sdkKey,
 	}
 
 	for _, opt := range pollingMangerOptions {
@@ -247,13 +244,10 @@ func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...
 
 // GetConfig returns the project config
 func (cm *PollingProjectConfigManager) GetConfig() (ProjectConfig, error) {
-
-	cm.setWaitingStatus(1)       // update waiting status to true
-	defer cm.setWaitingStatus(0) // end waiting
-
 	cm.configLock.RLock()
 	defer cm.configLock.RUnlock()
-	cm.waitForConfigAvailability()
+
+	receiveDataorTimeout(cm.configAvailable, cm.blockingTimeout)
 	if cm.projectConfig == nil {
 		return cm.projectConfig, cm.err
 	}
@@ -303,10 +297,15 @@ func (cm *PollingProjectConfigManager) setConfig(projectConfig ProjectConfig) er
 		return errors.New("unable to set nil config")
 	}
 	cm.projectConfig = projectConfig
+
+	if !isOpened(cm.configAvailable) {
+		close(cm.configAvailable)
+	}
+
 	if cm.optimizelyConfig != nil {
 		cm.optimizelyConfig = NewOptimizelyConfig(projectConfig)
 	}
-	cm.setConfigAvailability()
+
 	return nil
 }
 
@@ -334,33 +333,54 @@ func (cm *PollingProjectConfigManager) sendConfigUpdateNotification() {
 	}
 }
 
-// waitForConfigAvailability waits till blocking timeout for config availability
-func (cm *PollingProjectConfigManager) waitForConfigAvailability() {
-	// Only wait if config not available
-	if !cm.isConfigAvailable {
-		select {
-		case <-cm.configAvailabilityChannel: // Config was made available
-		case <-time.After(cm.blockingTimeout): // Timed out
-		}
+// Move this code to utils.
+func isOpened(ch chan struct{}) bool {
+	select {
+	case <-ch:
+		return true
+	default:
+		return false
 	}
 }
 
-// setConfigAvailability updates config availability status to true
-func (cm *PollingProjectConfigManager) setConfigAvailability() {
-	cm.isConfigAvailable = true
-	// Check if waiting for config availability status
-	if cm.isWaitingForConfigAvailability() {
-		// notifying channel about availability
-		cm.configAvailabilityChannel <- true
-		// end waiting
-		cm.setWaitingStatus(0)
+// Move this code to utils.
+func receiveDataorTimeout(ch chan struct{}, blockingTimeout time.Duration) {
+	select {
+	case <-ch:
+		break
+	case <-time.After(blockingTimeout):
+		break
 	}
+
 }
 
-func (cm *PollingProjectConfigManager) setWaitingStatus(status int32) {
-	atomic.StoreInt32(&cm.waitingForConfigAvailability, status)
-}
+// // waitForConfigAvailability waits till blocking timeout for config availability
+// func (cm *PollingProjectConfigManager) waitForConfigAvailability() {
+// 	// Only wait if config not available
+// 	if !cm.isConfigAvailable {
+// 		select {
+// 		case <-cm.configAvailabilityChannel: // Config was made available
+// 		case <-time.After(cm.blockingTimeout): // Timed out
+// 		}
+// 	}
+// }
 
-func (cm *PollingProjectConfigManager) isWaitingForConfigAvailability() bool {
-	return atomic.LoadInt32(&cm.waitingForConfigAvailability) == 1
-}
+// // setConfigAvailability updates config availability status to true
+// func (cm *PollingProjectConfigManager) setConfigAvailability() {
+// 	cm.isConfigAvailable = true
+// 	// Check if waiting for config availability status
+// 	if cm.isWaitingForConfigAvailability() {
+// 		// notifying channel about availability
+// 		cm.configAvailabilityChannel <- true
+// 		// end waiting
+// 		cm.setWaitingStatus(0)
+// 	}
+// }
+
+// func (cm *PollingProjectConfigManager) setWaitingStatus(status int32) {
+// 	atomic.StoreInt32(&cm.waitingForConfigAvailability, status)
+// }
+
+// func (cm *PollingProjectConfigManager) isWaitingForConfigAvailability() bool {
+// 	return atomic.LoadInt32(&cm.waitingForConfigAvailability) == 1
+// }
