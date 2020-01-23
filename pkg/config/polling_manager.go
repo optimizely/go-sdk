@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
@@ -69,9 +70,10 @@ type PollingProjectConfigManager struct {
 	projectConfig    ProjectConfig
 	optimizelyConfig *OptimizelyConfig
 
-	blockingTimeout           time.Duration
-	configAvailabilityChannel chan bool
-	isConfigAvailable         bool
+	blockingTimeout              time.Duration
+	configAvailabilityChannel    chan bool
+	isConfigAvailable            bool
+	waitingForConfigAvailability int32
 }
 
 // OptionFunc is used to provide custom configuration to the PollingProjectConfigManager.
@@ -330,8 +332,13 @@ func (cm *PollingProjectConfigManager) sendConfigUpdateNotification() {
 
 // waitForConfigAvailability waits till blocking timeout for config availability
 func (cm *PollingProjectConfigManager) waitForConfigAvailability() {
+	updateWaitingStatus := func(status int32) {
+		atomic.StoreInt32(&cm.waitingForConfigAvailability, status)
+	}
 	// Only wait if config not available
 	if !cm.isConfigAvailable {
+		updateWaitingStatus(1)       // start waiting for config availability
+		defer updateWaitingStatus(0) // end waiting
 		select {
 		case <-cm.configAvailabilityChannel: // Config was made available
 		case <-time.After(cm.blockingTimeout): // Timed out
@@ -342,6 +349,11 @@ func (cm *PollingProjectConfigManager) waitForConfigAvailability() {
 // setConfigAvailability updates config availability status to true
 func (cm *PollingProjectConfigManager) setConfigAvailability() {
 	cm.isConfigAvailable = true
-	// notifying channel about availability
-	cm.configAvailabilityChannel <- true
+	// Check if waiting for config availability status
+	if atomic.LoadInt32(&cm.waitingForConfigAvailability) == 1 {
+		// notifying channel about availability
+		cm.configAvailabilityChannel <- true
+		// end waiting
+		atomic.StoreInt32(&cm.waitingForConfigAvailability, 0)
+	}
 }
