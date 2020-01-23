@@ -268,6 +268,55 @@ func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext
 	return enabled, variableMap, err
 }
 
+// GetAllFeatureVariablesWithType returns all the variables for a given feature along with the enabled state.
+func (o *OptimizelyClient) GetAllFeatureVariablesWithType(featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]interface{}, err error) {
+
+	variableMap = make(map[string]interface{})
+	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, "", userContext)
+	if err != nil {
+		logger.Error("Optimizely SDK tracking error", err)
+		return enabled, variableMap, err
+	}
+
+	if featureDecision.Variation != nil {
+		enabled = featureDecision.Variation.FeatureEnabled
+	}
+
+	feature := decisionContext.Feature
+	if feature == nil {
+		logger.Warning(fmt.Sprintf(`feature "%s" does not exist`, featureKey))
+		return enabled, variableMap, nil
+	}
+
+	for _, v := range feature.VariableMap {
+		val := v.DefaultValue
+
+		if enabled {
+			if variable, ok := featureDecision.Variation.Variables[v.ID]; ok {
+				val = variable.Value
+			}
+		}
+
+		var out interface{}
+		out = val
+		switch varType := v.Type; varType {
+		case entities.Boolean:
+			out, err = strconv.ParseBool(val)
+		case entities.Double:
+			out, err = strconv.ParseFloat(val, 64)
+		case entities.Integer:
+			out, err = strconv.Atoi(val)
+		case entities.String:
+		default:
+			logger.Warning(fmt.Sprintf(`type "%s" is unknown, returning string`, varType))
+		}
+
+		variableMap[v.Key] = out
+	}
+
+	return enabled, variableMap, err
+}
+
 // GetVariation returns the key of the variation the user is bucketed into. Does not generate impression events.
 func (o *OptimizelyClient) GetVariation(experimentKey string, userContext entities.UserContext) (result string, err error) {
 
