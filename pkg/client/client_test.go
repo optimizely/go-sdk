@@ -1462,11 +1462,11 @@ func TestGetAllFeatureVariables(t *testing.T) {
 
 	mockConfig := new(MockProjectConfig)
 	variableMap := make(map[string]entities.Variable)
-	varitionMap := make(map[string]entities.VariationVariable)
+	varVariableMap := make(map[string]entities.VariationVariable)
 
 	for i, v := range variables {
 		id := strconv.Itoa(i)
-		varitionMap[id] = entities.VariationVariable{
+		varVariableMap[id] = entities.VariationVariable{
 			ID:    id,
 			Value: v.varVal,
 		}
@@ -1485,7 +1485,7 @@ func TestGetAllFeatureVariables(t *testing.T) {
 		ID:             "22222",
 		Key:            "22222",
 		FeatureEnabled: true,
-		Variables:      varitionMap,
+		Variables:      varVariableMap,
 	}
 
 	testVariation.FeatureEnabled = true
