@@ -119,12 +119,13 @@ func TestSyncConfigFetchesDatafileUsingRequester(t *testing.T) {
 }
 
 func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
+	blockingTimeout := 5 * time.Millisecond
 	mockDatafile := []byte("NOT-VALID")
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
 
 	sdkKey := "test_sdk_key"
-	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithBlockingTimeout(blockingTimeout))
 	mockRequester.AssertExpectations(t)
 
 	_, err := configManager.GetConfig()
@@ -132,18 +133,140 @@ func TestNewPollingProjectConfigManagerWithNull(t *testing.T) {
 }
 
 func TestNewAsyncPollingProjectConfigManagerWithNullDatafile(t *testing.T) {
+	blockingTimeout := 5 * time.Millisecond
 	mockDatafile := []byte("NOT-VALID")
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
 
 	sdkKey := "test_sdk_key"
-	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
+	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithBlockingTimeout(blockingTimeout))
 
 	// Sync with null datafile
 	configManager.SyncConfig()
 	_, err := configManager.GetConfig()
 	assert.NotNil(t, err)
 	mockRequester.AssertExpectations(t)
+}
+
+func TestGetConfigForPollingProjectConfigManagerWaitsForBlockingTimeoutForInvalidDatafile(t *testing.T) {
+	blockingTimeout := 50 * time.Millisecond
+	mockDatafile := []byte("NOT-VALID")
+	mockRequester := new(MockRequester)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
+
+	sdkKey := "test_sdk_key"
+
+	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithBlockingTimeout(blockingTimeout))
+	mockRequester.AssertExpectations(t)
+
+	start := time.Now()
+	expectedExecutionTime := start.Add(blockingTimeout)
+	_, _ = configManager.GetConfig()
+	actualExecutionTime := start.Add(time.Since(start))
+	assert.WithinDuration(t, expectedExecutionTime, actualExecutionTime, 10*time.Millisecond)
+}
+
+func TestGetConfigForAsyncPollingProjectConfigManagerWaitsForBlockingTimeoutForInvalidDatafile(t *testing.T) {
+	blockingTimeout := 50 * time.Millisecond
+	mockDatafile := []byte("NOT-VALID")
+	mockRequester := new(MockRequester)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
+
+	sdkKey := "test_sdk_key"
+	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithBlockingTimeout(blockingTimeout))
+
+	// Sync with null datafile
+	configManager.SyncConfig()
+	start := time.Now()
+	expectedExecutionTime := start.Add(blockingTimeout)
+	_, _ = configManager.GetConfig()
+	actualExecutionTime := start.Add(time.Since(start))
+	assert.WithinDuration(t, expectedExecutionTime, actualExecutionTime, 10*time.Millisecond)
+	mockRequester.AssertExpectations(t)
+}
+
+func TestGetConfigForPollingProjectConfigManagerDoesNotWaitWhenConfigIsAvailable(t *testing.T) {
+	blockingTimeout := 50 * time.Millisecond
+	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true}`)
+
+	sdkKey := "test_sdk_key"
+	configManager := NewPollingProjectConfigManager(sdkKey, WithInitialDatafile(mockDatafile1), WithBlockingTimeout(blockingTimeout))
+
+	start := time.Now()
+	expectedExecutionTimeWithBlockingTimeout := start.Add(blockingTimeout)
+	_, _ = configManager.GetConfig()
+	actualExecutionTime := start.Add(time.Since(start))
+	assert.True(t, actualExecutionTime.Before(expectedExecutionTimeWithBlockingTimeout))
+}
+
+func TestGetConfigForAsyncPollingProjectConfigManagerDoesNotWaitWhenConfigIsAvailable(t *testing.T) {
+	blockingTimeout := 50 * time.Millisecond
+	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true}`)
+
+	sdkKey := "test_sdk_key"
+	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithInitialDatafile(mockDatafile1), WithBlockingTimeout(blockingTimeout))
+
+	start := time.Now()
+	expectedExecutionTimeWithBlockingTimeout := start.Add(blockingTimeout)
+	_, _ = configManager.GetConfig()
+	actualExecutionTime := start.Add(time.Since(start))
+	assert.True(t, actualExecutionTime.Before(expectedExecutionTimeWithBlockingTimeout))
+}
+
+func TestGetConfigForPollingProjectConfigManagerStopsWaitingWhenConfigIsJustSet(t *testing.T) {
+	invalidDatafile := []byte(`INVALID`)
+	mockDatafile := []byte(`{"revision":"42"}`)
+	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
+	downloadDelay := 20 * time.Millisecond
+	blockingTimeout := 50 * time.Millisecond
+	mockRequester := new(MockRequester)
+	// Add delay before request
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil).Times(1).After(downloadDelay)
+
+	sdkKey := "test_sdk_key"
+	configManager := NewPollingProjectConfigManager(sdkKey, WithInitialDatafile(invalidDatafile), WithRequester(mockRequester), WithBlockingTimeout(blockingTimeout))
+	// Trying to sync config after delay on another thread while waiting for getConfig
+	go configManager.SyncConfig()
+
+	start := time.Now()
+	expectedExecutionTimeWithDownloadDelay := start.Add(downloadDelay)
+	// Waiting for getConfig to return after downloadDelay
+	actual, err := configManager.GetConfig()
+	actualExecutionTime := start.Add(time.Since(start))
+	// Verify GetConfig returns when config is set after downloadDelay
+	assert.WithinDuration(t, expectedExecutionTimeWithDownloadDelay, actualExecutionTime, 10*time.Millisecond)
+	mockRequester.AssertExpectations(t)
+	assert.Nil(t, err)
+	assert.NotNil(t, actual)
+	assert.Equal(t, projectConfig, actual)
+}
+
+func TestGetConfigForAsyncPollingProjectConfigManagerStopsWaitingWhenConfigIsJustSet(t *testing.T) {
+	mockDatafile := []byte(`{"revision":"42"}`)
+	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
+	downloadDelay := 20 * time.Millisecond
+	blockingTimeout := 50 * time.Millisecond
+	mockRequester := new(MockRequester)
+	// Add delay before request
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil).After(downloadDelay)
+
+	// Test we fetch using requester
+	sdkKey := "test_sdk_key"
+	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithBlockingTimeout(blockingTimeout))
+	// Trying to sync config after delay on another thread while waiting for getConfig
+	go configManager.SyncConfig()
+
+	start := time.Now()
+	expectedExecutionTimeWithDownloadDelay := start.Add(downloadDelay)
+	// Waiting for getConfig to return after downloadDelay
+	actual, err := configManager.GetConfig()
+	actualExecutionTime := start.Add(time.Since(start))
+	// Verify GetConfig returns when config is set after downloadDelay
+	assert.WithinDuration(t, expectedExecutionTimeWithDownloadDelay, actualExecutionTime, 10*time.Millisecond)
+	mockRequester.AssertExpectations(t)
+	assert.Nil(t, err)
+	assert.NotNil(t, actual)
+	assert.Equal(t, projectConfig, actual)
 }
 
 func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T) {
@@ -341,6 +464,7 @@ func TestNewAsyncPollingProjectConfigManagerWithDifferentDatafileRevisions(t *te
 }
 
 func TestNewPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
+	blockingTimeout := 5 * time.Millisecond
 	mockDatafile1 := []byte("NOT-VALID")
 	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false}`)
 
@@ -350,7 +474,7 @@ func TestNewPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil).Times(1)
 
 	sdkKey := "test_sdk_key"
-	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
+	configManager := NewPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithBlockingTimeout(blockingTimeout))
 	// verifying initial poll for bad file
 	mockRequester.AssertExpectations(t)
 	actual, err := configManager.GetConfig()
@@ -374,6 +498,7 @@ func TestNewPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 }
 
 func TestNewAsyncPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
+	blockingTimeout := 5 * time.Millisecond
 	mockDatafile1 := []byte("NOT-VALID")
 	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false}`)
 
@@ -383,7 +508,7 @@ func TestNewAsyncPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil).Times(1)
 
 	sdkKey := "test_sdk_key"
-	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
+	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithBlockingTimeout(blockingTimeout))
 
 	asyncConfigManager.SyncConfig() // polling for bad file
 	mockRequester.AssertExpectations(t)
@@ -566,13 +691,14 @@ func TestNewPollingProjectConfigManagerPullsImmediately(t *testing.T) {
 }
 
 func TestNewAsyncPollingProjectConfigManagerDoesNotPullImmediately(t *testing.T) {
+	blockingTimeout := 5 * time.Millisecond
 	mockDatafile1 := []byte(`{"revision":"42"}`)
 	sdkKey := "test_sdk_key"
 
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil)
 
-	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester))
+	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithBlockingTimeout(blockingTimeout))
 	config, _ := asyncConfigManager.GetConfig()
 	assert.Nil(t, config)
 }
@@ -622,4 +748,14 @@ func TestWithRequester(t *testing.T) {
 
 	assert.Equal(t, mockRequester, configManager.requester)
 	assert.Equal(t, mockRequester, asyncConfigManager.requester)
+}
+
+func TestWithBlockingTimeout(t *testing.T) {
+	blockingTimeout := 5 * time.Millisecond
+	sdkKey := "test_sdk_key"
+	configManager := NewPollingProjectConfigManager(sdkKey, WithBlockingTimeout(blockingTimeout))
+	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithBlockingTimeout(blockingTimeout))
+
+	assert.Equal(t, configManager.blockingTimeout, blockingTimeout)
+	assert.Equal(t, asyncConfigManager.blockingTimeout, blockingTimeout)
 }

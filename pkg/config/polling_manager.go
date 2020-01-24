@@ -246,8 +246,7 @@ func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...
 func (cm *PollingProjectConfigManager) GetConfig() (ProjectConfig, error) {
 	cm.configLock.RLock()
 	defer cm.configLock.RUnlock()
-
-	receiveDataorTimeout(cm.configAvailable, cm.blockingTimeout)
+	utils.WaitForChannelToCloseOrTimeout(cm.configAvailable, cm.blockingTimeout)
 	if cm.projectConfig == nil {
 		return cm.projectConfig, cm.err
 	}
@@ -298,7 +297,7 @@ func (cm *PollingProjectConfigManager) setConfig(projectConfig ProjectConfig) er
 	}
 	cm.projectConfig = projectConfig
 
-	if !isOpened(cm.configAvailable) {
+	if !utils.IsChannelClosed(cm.configAvailable) { // Close opened channel to notify config is available
 		close(cm.configAvailable)
 	}
 
@@ -331,27 +330,6 @@ func (cm *PollingProjectConfigManager) sendConfigUpdateNotification() {
 			cmLogger.Warning("Problem with sending notification")
 		}
 	}
-}
-
-// Move this code to utils.
-func isOpened(ch chan struct{}) bool {
-	select {
-	case <-ch:
-		return true
-	default:
-		return false
-	}
-}
-
-// Move this code to utils.
-func receiveDataorTimeout(ch chan struct{}, blockingTimeout time.Duration) {
-	select {
-	case <-ch:
-		break
-	case <-time.After(blockingTimeout):
-		break
-	}
-
 }
 
 // // waitForConfigAvailability waits till blocking timeout for config availability
