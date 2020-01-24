@@ -235,7 +235,7 @@ func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, us
 	return variable.DefaultValue, variable.Type, err
 }
 
-// GetAllFeatureVariablesWithType returns all the variables for a given feature along with the enabled state.
+// GetAllFeatureVariables returns all the variables for a given feature along with the enabled state.
 func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]interface{}, err error) {
 
 	variableMap = make(map[string]interface{})
