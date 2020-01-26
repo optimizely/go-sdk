@@ -17,34 +17,40 @@
 package utils
 
 import (
-	"testing"
+	"sync/atomic"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestIsChannelClosed(t *testing.T) {
-	var ch = make(chan struct{})
-	assert.Equal(t, false, IsChannelClosed(ch))
-	close(ch)
-	assert.Equal(t, true, IsChannelClosed(ch))
+type ChannelUtilsTestSuite struct {
+	suite.Suite
+	channel chan struct{}
 }
 
-func TestWaitForChannelToCloseOrTimeoutStopsWaitingWhenChannelIsClosed(t *testing.T) {
-	var ch = make(chan struct{})
-	var finishedWaiting bool
+func (s *ChannelUtilsTestSuite) SetupTest() {
+	s.channel = make(chan struct{})
+}
+
+func (s *ChannelUtilsTestSuite) TestIsChannelClosed() {
+	s.Equal(false, IsChannelClosed(s.channel))
+	close(s.channel)
+	s.Equal(true, IsChannelClosed(s.channel))
+}
+
+func (s *ChannelUtilsTestSuite) TestWaitForChannelToCloseOrTimeoutStopsWaitingWhenChannelIsClosed() {
+	var finishedWaiting int32
 	go func() {
-		WaitForChannelToCloseOrTimeout(ch, 10*time.Second)
-		finishedWaiting = true
+		WaitForChannelToCloseOrTimeout(s.channel, 10*time.Second)
+		atomic.StoreInt32(&finishedWaiting, 1)
 	}()
-	close(ch)
+	close(s.channel)
 	time.Sleep(5 * time.Millisecond)
 	// Check WaitForChannelToCloseOrTimeout finishes waiting when channel is closed
-	assert.Equal(t, true, finishedWaiting)
+	s.Equal(true, atomic.LoadInt32(&finishedWaiting) == 1)
 }
 
-func TestWaitForChannelToCloseOrTimeoutWaitsForTimeoutWhenChannelIsNotClosed(t *testing.T) {
-	var ch = make(chan struct{})
+func (s *ChannelUtilsTestSuite) TestWaitForChannelToCloseOrTimeoutWaitsForTimeoutWhenChannelIsNotClosed() {
 	blockingTimeOut := 1 * time.Second
 	var expectedExecutionTime time.Time
 	var actualExecutionTime time.Time
@@ -52,11 +58,11 @@ func TestWaitForChannelToCloseOrTimeoutWaitsForTimeoutWhenChannelIsNotClosed(t *
 		// Keep track of execution time
 		start := time.Now()
 		expectedExecutionTime = start.Add(blockingTimeOut)
-		WaitForChannelToCloseOrTimeout(ch, blockingTimeOut)
+		WaitForChannelToCloseOrTimeout(s.channel, blockingTimeOut)
 		actualExecutionTime = start.Add(time.Since(start))
 	}()
 	// Wait for execution to finish
-	time.Sleep(1005 * time.Millisecond)
+	time.Sleep(1050 * time.Millisecond)
 	// Verify method timed out
-	assert.WithinDuration(t, expectedExecutionTime, actualExecutionTime, 10*time.Millisecond)
+	s.WithinDuration(expectedExecutionTime, actualExecutionTime, 10*time.Millisecond)
 }
