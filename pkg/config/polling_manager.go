@@ -332,34 +332,3 @@ func (cm *PollingProjectConfigManager) sendConfigUpdateNotification() {
 		}
 	}
 }
-
-// // waitForConfigAvailability waits till blocking timeout for config availability
-// func (cm *PollingProjectConfigManager) waitForConfigAvailability() {
-// 	// Only wait if config not available
-// 	if !cm.isConfigAvailable {
-// 		select {
-// 		case <-cm.configAvailabilityChannel: // Config was made available
-// 		case <-time.After(cm.blockingTimeout): // Timed out
-// 		}
-// 	}
-// }
-
-// // setConfigAvailability updates config availability status to true
-// func (cm *PollingProjectConfigManager) setConfigAvailability() {
-// 	cm.isConfigAvailable = true
-// 	// Check if waiting for config availability status
-// 	if cm.isWaitingForConfigAvailability() {
-// 		// notifying channel about availability
-// 		cm.configAvailabilityChannel <- true
-// 		// end waiting
-// 		cm.setWaitingStatus(0)
-// 	}
-// }
-
-// func (cm *PollingProjectConfigManager) setWaitingStatus(status int32) {
-// 	atomic.StoreInt32(&cm.waitingForConfigAvailability, status)
-// }
-
-// func (cm *PollingProjectConfigManager) isWaitingForConfigAvailability() bool {
-// 	return atomic.LoadInt32(&cm.waitingForConfigAvailability) == 1
-// }
