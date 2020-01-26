@@ -244,9 +244,10 @@ func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...
 
 // GetConfig returns the project config
 func (cm *PollingProjectConfigManager) GetConfig() (ProjectConfig, error) {
+	// since syncconfig is also inside a lock, we have to wait outside rlock.
+	utils.WaitForChannelToCloseOrTimeout(cm.configAvailable, cm.blockingTimeout)
 	cm.configLock.RLock()
 	defer cm.configLock.RUnlock()
-	utils.WaitForChannelToCloseOrTimeout(cm.configAvailable, cm.blockingTimeout)
 	if cm.projectConfig == nil {
 		return cm.projectConfig, cm.err
 	}
