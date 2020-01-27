@@ -136,7 +136,7 @@ func TestClientWithCustomCtx(t *testing.T) {
 }
 
 func TestStaticClient(t *testing.T) {
-	factory := OptimizelyFactory{Datafile: []byte(`{"revision": "42"}`)}
+	factory := OptimizelyFactory{Datafile: []byte(`{"revision": "42", "version": "4"}`)}
 	optlyClient, err := factory.StaticClient()
 	assert.NoError(t, err)
 

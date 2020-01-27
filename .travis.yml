@@ -8,7 +8,7 @@ stages:
   - name: 'Lint markdown files'
   - 'Lint'
   - 'Unit test'
-  - 'Benchmark test'
+  - 'Benchmark test'  
   - 'Integration tests'
   - 'Source clear'
 jobs:
@@ -62,15 +62,16 @@ jobs:
         - make benchmark
 
     - stage: 'Integration tests'
-      env: GIMME_GO_VERSION=1.13.x FSC_PATH="/tmp/fsc-repo"
+      env: SDK=go SDK_BRANCH=$TRAVIS_PULL_REQUEST_BRANCH
+      cache: false
+      language: minimal
+      install: skip
       before_script:
-        - mkdir -p $FSC_PATH
-        - pushd $FSC_PATH && git init && git fetch --depth=1 https://$CI_USER_TOKEN@github.com/optimizely/fullstack-sdk-compatibility-suite ${FSC_BRANCH:-master} && git checkout FETCH_HEAD && popd
-      install:
-        - eval "$(gimme)"
+        - mkdir $HOME/travisci-tools && pushd $HOME/travisci-tools && git init && git pull https://$CI_USER_TOKEN@github.com/optimizely/travisci-tools.git && popd
       script:
-        - ./scripts/run-fsc-tests.sh -f "$FSC_PATH/features/" -d "$FSC_PATH/features/support/datafiles/" -t "$TAGS"
-
+        - $HOME/travisci-tools/trigger-script-with-status-update.sh
+      after_success: travis_terminate 0
+    
     - stage: 'Source clear'
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
       language: go
