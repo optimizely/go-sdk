@@ -236,9 +236,9 @@ func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, us
 }
 
 // GetAllFeatureVariables returns all the variables for a given feature along with the enabled state.
-func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]string, err error) {
+func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]interface{}, err error) {
 
-	variableMap = make(map[string]string)
+	variableMap = make(map[string]interface{})
 	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, "", userContext)
 	if err != nil {
 		logger.Error("Optimizely SDK tracking error", err)
@@ -256,13 +256,29 @@ func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext
 	}
 
 	for _, v := range feature.VariableMap {
-		variableMap[v.Key] = v.DefaultValue
+		val := v.DefaultValue
 
 		if enabled {
 			if variable, ok := featureDecision.Variation.Variables[v.ID]; ok {
-				variableMap[v.Key] = variable.Value
+				val = variable.Value
 			}
 		}
+
+		var out interface{}
+		out = val
+		switch varType := v.Type; varType {
+		case entities.Boolean:
+			out, err = strconv.ParseBool(val)
+		case entities.Double:
+			out, err = strconv.ParseFloat(val, 64)
+		case entities.Integer:
+			out, err = strconv.Atoi(val)
+		case entities.String:
+		default:
+			logger.Warning(fmt.Sprintf(`type "%s" is unknown, returning string`, varType))
+		}
+
+		variableMap[v.Key] = out
 	}
 
 	return enabled, variableMap, err
