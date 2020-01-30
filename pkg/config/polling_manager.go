@@ -36,7 +36,7 @@ import (
 // DefaultPollingInterval sets default interval for polling manager
 const DefaultPollingInterval = 5 * time.Minute // default to 5 minutes for polling
 
-// DefaultBlockingTimeout sets timeout to block the config call until config has been initialized
+// DefaultBlockingTimeout is the default timeout for blocking in the GetConfig method until a config has been initialized
 const DefaultBlockingTimeout = 10 * time.Second // default to 10 seconds
 
 // ModifiedSince header key for request

@@ -163,6 +163,7 @@ func TestGetConfigForPollingConfigManagerWaitsForTimeoutForInvalidDatafile(t *te
 
 	start := time.Now()
 	expectedExecutionTime := start.Add(blockingTimeout)
+	// blocking api for specified time.
 	_, _ = configManager.GetConfig()
 	actualExecutionTime := start.Add(time.Since(start))
 	assert.WithinDuration(t, expectedExecutionTime, actualExecutionTime, 10*time.Millisecond)
@@ -181,6 +182,7 @@ func TestGetConfigForAsyncPollingConfigManagerWaitsForTimeoutForInvalidDatafile(
 	configManager.SyncConfig()
 	start := time.Now()
 	expectedExecutionTime := start.Add(blockingTimeout)
+	// blocking api for specified time.
 	_, _ = configManager.GetConfig()
 	actualExecutionTime := start.Add(time.Since(start))
 	assert.WithinDuration(t, expectedExecutionTime, actualExecutionTime, 10*time.Millisecond)

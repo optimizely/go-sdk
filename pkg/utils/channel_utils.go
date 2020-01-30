@@ -20,7 +20,7 @@ package utils
 import "time"
 
 // IsChannelClosed will check if the given channel is closed
-func IsChannelClosed(ch chan struct{}) bool {
+func IsChannelClosed(ch <-chan struct{}) bool {
 	select {
 	case <-ch:
 		return true
@@ -30,7 +30,7 @@ func IsChannelClosed(ch chan struct{}) bool {
 }
 
 // WaitForChannelToCloseOrTimeout will wait for the channel to close or timeout
-func WaitForChannelToCloseOrTimeout(ch chan struct{}, blockingTimeout time.Duration) {
+func WaitForChannelToCloseOrTimeout(ch <-chan struct{}, blockingTimeout time.Duration) {
 	select {
 	case <-ch:
 		break
