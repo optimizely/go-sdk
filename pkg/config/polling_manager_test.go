@@ -100,6 +100,54 @@ func TestNewAsyncPollingProjectConfigManagerWithOptions(t *testing.T) {
 	eg.TerminateAndWait()
 }
 
+func TestNewAsyncPollingConfigManagerSyncImmediatelyOnStart(t *testing.T) {
+	mockDatafile := []byte(`{"revision":"42", "version": "4"}`)
+	mockRequester := new(MockRequester)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
+
+	// Test we fetch using requester
+	sdkKey := "test_sdk_key"
+	eg := newExecGroup()
+	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Second))
+	config, _ := configManager.GetConfig()
+	assert.Nil(t, config)
+	// poll after 100ms
+	eg.Go(configManager.Start)
+	evaluationMethod := func() bool {
+		actual, _ := configManager.GetConfig()
+		return actual.GetRevision() == "42"
+	}
+	assertPeriodically(t, evaluationMethod)
+	mockRequester.AssertExpectations(t)
+	eg.TerminateAndWait()
+}
+
+func TestNewAsyncPollingConfigManagerSyncPeriodically(t *testing.T) {
+	mockDatafile1 := []byte(`{"revision":"42", "version": "4"}`)
+	mockDatafile2 := []byte(`{"revision":"43", "version": "4"}`)
+	mockRequester := new(MockRequester)
+	modifiedDate := "Wed, 16 Oct 2019 20:16:45 GMT"
+	responseHeaders := http.Header{}
+	responseHeaders.Set(LastModified, modifiedDate)
+	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, responseHeaders, http.StatusOK, nil)
+	mockRequester.On("Get", []utils.Header{utils.Header{Name: ModifiedSince, Value: modifiedDate}}).Return(mockDatafile2, responseHeaders, http.StatusOK, nil)
+
+	// Test we fetch using requester
+	sdkKey := "test_sdk_key"
+	eg := newExecGroup()
+	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithRequester(mockRequester), WithPollingInterval(100*time.Second))
+	config, _ := configManager.GetConfig()
+	assert.Nil(t, config)
+	// poll after 100ms
+	eg.Go(configManager.Start)
+	evaluationMethod := func() bool {
+		actual, _ := configManager.GetConfig()
+		return actual.GetRevision() == "43"
+	}
+	assertPeriodically(t, evaluationMethod)
+	mockRequester.AssertExpectations(t)
+	eg.TerminateAndWait()
+}
 func TestSyncConfigFetchesDatafileUsingRequester(t *testing.T) {
 
 	mockDatafile := []byte(`{"revision":"42","version": "4"}`)

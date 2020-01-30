@@ -171,6 +171,7 @@ func (cm *PollingProjectConfigManager) SyncConfig() {
 // Start starts the polling
 func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
 	cmLogger.Debug("Polling Config Manager Initiated")
+	cm.SyncConfig()
 	t := time.NewTicker(cm.pollingInterval)
 	for {
 		select {
