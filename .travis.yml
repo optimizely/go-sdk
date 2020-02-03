@@ -44,7 +44,7 @@ jobs:
         # Need to download packages explicitly
         - go get -v -d ./...
         # This pkg not in go 1.8
-        - go get github.com/stretchr/testify
+        - go get github.com/stretchr/testify@v1.4.0
         # -coverprofile was not introduced in 1.8
         - make test
 
