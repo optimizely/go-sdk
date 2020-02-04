@@ -105,19 +105,20 @@ type Rollout struct {
 
 // Datafile represents the datafile we get from Optimizely
 type Datafile struct {
-	Attributes     []Attribute   `json:"attributes"`
-	Audiences      []Audience    `json:"audiences"`
-	Experiments    []Experiment  `json:"experiments"`
-	Groups         []Group       `json:"groups"`
-	FeatureFlags   []FeatureFlag `json:"featureFlags"`
-	Events         []Event       `json:"events"`
-	Rollouts       []Rollout     `json:"rollouts"`
-	TypedAudiences []Audience    `json:"typedAudiences"`
-	Variables      []string      `json:"variables"`
-	AccountID      string        `json:"accountId"`
-	ProjectID      string        `json:"projectId"`
-	Revision       string        `json:"revision"`
-	Version        string        `json:"version"`
-	AnonymizeIP    bool          `json:"anonymizeIP"`
-	BotFiltering   bool          `json:"botFiltering"`
+	Attributes     		[]Attribute   `json:"attributes"`
+	Audiences      		[]Audience    `json:"audiences"`
+	Experiments    		[]Experiment  `json:"experiments"`
+	Groups         		[]Group       `json:"groups"`
+	FeatureFlags   		[]FeatureFlag `json:"featureFlags"`
+	Events         		[]Event       `json:"events"`
+	Rollouts       		[]Rollout     `json:"rollouts"`
+	TypedAudiences	    []Audience    `json:"typedAudiences"`
+	Variables      		[]string      `json:"variables"`
+	EnabledIntegrations []string	  `json:"enabledIntegrations"`
+	AccountID      		string        `json:"accountId"`
+	ProjectID      		string        `json:"projectId"`
+	Revision       		string        `json:"revision"`
+	Version        		string        `json:"version"`
+	AnonymizeIP    		bool          `json:"anonymizeIP"`
+	BotFiltering   		bool          `json:"botFiltering"`
 }

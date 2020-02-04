@@ -48,6 +48,7 @@ type DatafileProjectConfig struct {
 	rolloutMap           map[string]entities.Rollout
 	anonymizeIP          bool
 	botFiltering         bool
+	enabledIntegrations  []string
 }
 
 // GetProjectID returns projectID
@@ -172,6 +173,11 @@ func (c DatafileProjectConfig) GetGroupByID(groupID string) (entities.Group, err
 	}
 
 	return entities.Group{}, fmt.Errorf(`group with ID "%s" not found`, groupID)
+}
+
+// GetEnabledIntegrations returns the list of enabled integrations
+func (c DatafileProjectConfig) GetEnabledIntegrations() (enabledIntegrations []string) {
+	return enabledIntegrations
 }
 
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser
