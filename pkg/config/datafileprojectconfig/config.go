@@ -210,6 +210,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, erro
 		audienceMap:          mappers.MapAudiences(mergedAudiences),
 		attributeMap:         attributeMap,
 		botFiltering:         datafile.BotFiltering,
+		enabledIntegrations:  datafile.EnabledIntegrations,
 		experimentKeyToIDMap: experimentKeyMap,
 		experimentMap:        experimentMap,
 		groupMap:             groupMap,
