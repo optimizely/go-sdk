@@ -176,8 +176,8 @@ func (c DatafileProjectConfig) GetGroupByID(groupID string) (entities.Group, err
 }
 
 // GetEnabledIntegrations returns the list of enabled integrations
-func (c DatafileProjectConfig) GetEnabledIntegrations() (enabledIntegrations []string) {
-	return enabledIntegrations
+func (c DatafileProjectConfig) GetEnabledIntegrations() []string {
+	return c.enabledIntegrations
 }
 
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser
