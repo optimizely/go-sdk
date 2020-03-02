@@ -65,7 +65,7 @@ func newExecutionContext() *utils.ExecGroup {
 func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 	eg := newExecutionContext()
 	processor := NewBatchEventProcessor()
-	processor.EventDispatcher = nil
+	processor.EventDispatcher = NewQueueEventDispatcher(processor.metricsRegistry)
 	eg.Go(processor.Start)
 
 	impression := BuildTestImpressionEvent()
