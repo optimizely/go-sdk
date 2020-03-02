@@ -57,6 +57,8 @@ jobs:
         # This pkg not in go 1.8
         - go get github.com/stretchr/testify
         - pushd $GOPATH/src/github.com/stretchr/testify && git checkout v1.4.0 && popd
+        - go get github.com/twmb/murmur3 
+        - pushd $GOPATH/src/github.com/twmb/murmur3 && git checkout v1.0.0 && popd
         # -coverprofile was not introduced in 1.8
         - make test
 
