@@ -53,12 +53,12 @@ jobs:
         - mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely optimizely && popd
       script:
         # Need to download packages explicitly
+        - go get github.com/twmb/murmur3 
+        - pushd $GOPATH/src/github.com/twmb/murmur3 && git checkout v1.0.0 && popd
         - go get -v -d ./...
         # This pkg not in go 1.8
         - go get github.com/stretchr/testify
         - pushd $GOPATH/src/github.com/stretchr/testify && git checkout v1.4.0 && popd
-        - go get github.com/twmb/murmur3 
-        - pushd $GOPATH/src/github.com/twmb/murmur3 && git checkout v1.0.0 && popd
         # -coverprofile was not introduced in 1.8
         - make test
 
