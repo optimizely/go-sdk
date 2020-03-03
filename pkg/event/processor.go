@@ -154,18 +154,18 @@ func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 		p.Q = NewInMemoryQueue(p.MaxQueueSize)
 	}
 
-	return p
-}
-
-// Start initializes the event processor
-func (p *BatchEventProcessor) Start(ctx context.Context) {
 	if p.EventDispatcher == nil {
 		dispatcher := NewQueueEventDispatcher(p.metricsRegistry)
-		defer dispatcher.flushEvents()
 		p.EventDispatcher = dispatcher
 	}
 
-	pLogger.Debug("Batch event processor started")
+	return p
+}
+
+// Start does not do any initialization, just starts the ticker
+func (p *BatchEventProcessor) Start(ctx context.Context) {
+
+	pLogger.Info("Batch event processor started")
 	p.startTicker(ctx)
 }
 
