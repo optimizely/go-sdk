@@ -53,7 +53,7 @@ jobs:
         - mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely optimizely && popd
       script:
         # Need to download packages explicitly
-        - mkdir $GOPATH/src/github.com/twmb && cd $GOPATH/src/github.com/twmb && git clone https://github.com/twmb/murmur3.git 
+        - mkdir $GOPATH/src/github.com/twmb && cd $GOPATH/src/github.com/twmb && git clone https://github.com/twmb/murmur3.git && cd $TRAVIS_BUILD_DIR
         - pushd $GOPATH/src/github.com/twmb/murmur3 && git checkout v1.0.0 && popd
         - go get -v -d ./...
         # This pkg not in go 1.8
