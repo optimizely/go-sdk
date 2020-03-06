@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.0.1] - March 6th, 2020
+## Bug Fixes
+- fix: Properly instantiate event processor with dispatcher. [#239](https://github.com/optimizely/go-sdk/pull/239)
+
 ## [1.0.0] - January 9th, 2020
 This is the General Availability release of the Go SDK.
 
