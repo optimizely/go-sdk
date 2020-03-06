@@ -7,12 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
-## [1.0.1] - March 6th, 2020
+## [1.1.0] - March 6th, 2020
 ## New Features
 - feat: Allow ClientName and Version to be set at compile time. [#227](https://github.com/optimizely/go-sdk/pull/227)
 - feat: Add explicit json mappings.  [#228](https://github.com/optimizely/go-sdk/pull/228)
 - refact(snapshot): Made decisions optional for snapshot entity. [#226](https://github.com/optimizely/go-sdk/pull/226)
-- refact: Updated polling_manager implementation and unit tests. [#224](https://github.com/optimizely/go-sdk/pull/224)
 - feat: set specific error from default project config manager when CDN returns 403 response  [#232](https://github.com/optimizely/go-sdk/pull/232)
 - feat: OnEvent should be part of the event processor interface [#233](https://github.com/optimizely/go-sdk/pull/233)
 - feat: add valid datafile version check [#234](https://github.com/optimizely/go-sdk/pull/234)
