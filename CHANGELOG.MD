@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.1.0] - March 6th, 2020
+## New Features
+- feat: Allow ClientName and Version to be set at compile time. [#227](https://github.com/optimizely/go-sdk/pull/227)
+- feat: Add explicit json mappings.  [#228](https://github.com/optimizely/go-sdk/pull/228)
+- refact(snapshot): Made decisions optional for snapshot entity. [#226](https://github.com/optimizely/go-sdk/pull/226)
+- feat: set specific error from default project config manager when CDN returns 403 response  [#232](https://github.com/optimizely/go-sdk/pull/232)
+- feat: OnEvent should be part of the event processor interface [#233](https://github.com/optimizely/go-sdk/pull/233)
+- feat: add valid datafile version check [#234](https://github.com/optimizely/go-sdk/pull/234)
+
+## Bug Fixes
+- fix: Properly instantiate event processor with dispatcher. [#239](https://github.com/optimizely/go-sdk/pull/239)
+
+## Breaking Changes
+- feat: Return variables as an interface{} from GetAllFeatureVariables. [#235](https://github.com/optimizely/go-sdk/pull/235)
+
+
 ## [1.0.0] - January 9th, 2020
 This is the General Availability release of the Go SDK.
 
