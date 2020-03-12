@@ -18,20 +18,44 @@
 package logging
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sync"
 )
 
+const SdkKey string = "OptimizelySdkKey"
+
+func GetSdkKey(ctx context.Context) string {
+	if val := ctx.Value(SdkKey); val != nil {
+		if v, ok := val.(string);ok {
+			return v
+		}
+	}
+	return ""
+}
+
 // LogLevel represents the level of the log (i.e. Debug, Info, Warning, Error)
 type LogLevel int
+
+var loggersCache = sync.Map{}
+
+func setLogger(sdkKey string, logger OptimizelyLogConsumer) {
+	loggersCache.Store(sdkKey, logger)
+}
+
+func getLogger(sdkKey string) OptimizelyLogConsumer {
+	if val, ok := loggersCache.Load(sdkKey);ok && val != nil {
+		if lp, ok := val.(OptimizelyLogConsumer); ok {
+			return lp
+		}
+	}
+	return nil
+}
 
 func (l LogLevel) String() string {
 	return [...]string{"", "Debug", "Info", "Warning", "Error"}[l]
 }
-
-var defaultLogConsumer OptimizelyLogConsumer
-var mutex = &sync.Mutex{}
 
 const (
 	// LogLevelDebug log level
@@ -47,35 +71,31 @@ const (
 	LogLevelError
 )
 
-func init() {
-	mutex.Lock()
-	defaultLogConsumer = NewFilteredLevelLogConsumer(LogLevelInfo, os.Stdout)
-	mutex.Unlock()
-}
-
 // SetLogger replaces the default logger with the given logger
-func SetLogger(logger OptimizelyLogConsumer) {
-	mutex.Lock()
-	defaultLogConsumer = logger
-	mutex.Unlock()
+func SetLogger(ctx context.Context, logger OptimizelyLogConsumer) {
+		setLogger(GetSdkKey(ctx), logger)
 }
 
 // SetLogLevel sets the log level to the given level
-func SetLogLevel(logLevel LogLevel) {
-	mutex.Lock()
-	defaultLogConsumer.SetLogLevel(logLevel)
-	mutex.Unlock()
+func SetLogLevel(ctx context.Context, logLevel LogLevel) {
+	if key := GetSdkKey(ctx); key != "" {
+		if logger := getLogger(key); logger != nil {
+			logger.SetLogLevel(logLevel)
+		}
+	}
 }
 
 // GetLogger returns a log producer with the given name
-func GetLogger(name string) OptimizelyLogProducer {
+func GetLogger(ctx context.Context, name string) OptimizelyLogProducer {
 	return NamedLogProducer{
+		ctx: ctx,
 		fields: map[string]interface{}{"name": name},
 	}
 }
 
 // NamedLogProducer produces logs prefixed with its name
 type NamedLogProducer struct {
+	ctx context.Context
 	fields map[string]interface{}
 }
 
@@ -102,8 +122,17 @@ func (p NamedLogProducer) Error(message string, err interface{}) {
 	p.log(LogLevelError, message)
 }
 
+var defaultLogConsumer = NewFilteredLevelLogConsumer(LogLevelInfo, os.Stdout)
+var loggerLock = &sync.Mutex{}
+
 func (p NamedLogProducer) log(logLevel LogLevel, message string) {
-	mutex.Lock()
-	defaultLogConsumer.Log(logLevel, message, p.fields)
-	mutex.Unlock()
+	if logger := getLogger(GetSdkKey(p.ctx)); logger != nil {
+		loggerLock.Lock()
+		logger.Log(logLevel, message, p.fields)
+		loggerLock.Unlock()
+	} else {
+		loggerLock.Lock()
+		defaultLogConsumer.Log(logLevel, message, p.fields)
+		loggerLock.Unlock()
+	}
 }

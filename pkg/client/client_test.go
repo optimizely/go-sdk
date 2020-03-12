@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"strconv"
 	"sync"
 	"testing"
@@ -2024,7 +2025,7 @@ func (s *ClientTestSuiteTrackEvent) SetupTest() {
 		ConfigManager:      ValidProjectConfigManager(),
 		DecisionService:    s.mockDecisionService,
 		EventProcessor:     s.mockProcessor,
-		notificationCenter: notification.NewNotificationCenter(),
+		notificationCenter: notification.NewNotificationCenter(logging.GetLogger(context.TODO(), "NotificationCenter")),
 	}
 }
 
@@ -2202,7 +2203,7 @@ func (s *ClientTestSuiteTrackNotification) SetupTest() {
 		ConfigManager:      ValidProjectConfigManager(),
 		DecisionService:    s.mockDecisionService,
 		EventProcessor:     s.mockProcessor,
-		notificationCenter: notification.NewNotificationCenter(),
+		notificationCenter: notification.NewNotificationCenter(logging.GetLogger(context.TODO(), "NotificationCenter")),
 	}
 }
 

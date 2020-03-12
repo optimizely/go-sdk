@@ -18,6 +18,7 @@
 package bucketer
 
 import (
+	"context"
 	"fmt"
 	"math"
 
@@ -26,7 +27,6 @@ import (
 	"github.com/twmb/murmur3"
 )
 
-var logger = logging.GetLogger("MurmurhashBucketer")
 var maxHashValue = float32(math.Pow(2, 32))
 
 // DefaultHashSeed is the hash seed to use for murmurhash
@@ -42,12 +42,14 @@ type Bucketer interface {
 // MurmurhashBucketer generates the bucketing value using the mmh3 algorightm
 type MurmurhashBucketer struct {
 	hashSeed uint32
+	logger   logging.OptimizelyLogProducer
 }
 
 // NewMurmurhashBucketer returns a new instance of the murmurhash bucketer
-func NewMurmurhashBucketer(hashSeed uint32) *MurmurhashBucketer {
+func NewMurmurhashBucketer(ctx context.Context, hashSeed uint32) *MurmurhashBucketer {
 	return &MurmurhashBucketer{
 		hashSeed: hashSeed,
+		logger: logging.GetLogger(ctx, "MurmurhashBucketer"),
 	}
 }
 
@@ -55,7 +57,7 @@ func NewMurmurhashBucketer(hashSeed uint32) *MurmurhashBucketer {
 func (b MurmurhashBucketer) Generate(bucketingKey string) int {
 	hasher := murmur3.SeedNew32(b.hashSeed)
 	if _, err := hasher.Write([]byte(bucketingKey)); err != nil {
-		logger.Error(fmt.Sprintf("Unable to generate a hash for the bucketing key=%s", bucketingKey), err)
+		b.logger.Error(fmt.Sprintf("Unable to generate a hash for the bucketing key=%s", bucketingKey), err)
 	}
 	hashCode := hasher.Sum32()
 	ratio := float32(hashCode) / maxHashValue

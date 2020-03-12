@@ -17,7 +17,10 @@
 // Package notification //
 package notification
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/optimizely/go-sdk/pkg/logging"
+)
 
 // Center handles all notification listeners. It keeps track of the Manager for each type of notification.
 type Center interface {
@@ -32,11 +35,11 @@ type DefaultCenter struct {
 }
 
 // NewNotificationCenter returns a new notification center
-func NewNotificationCenter() *DefaultCenter {
-	decisionNotificationManager := NewAtomicManager()
-	projectConfigUpdateNotificationManager := NewAtomicManager()
-	processLogEventNotificationManager := NewAtomicManager()
-	trackNotificationManager := NewAtomicManager()
+func NewNotificationCenter(logger logging.OptimizelyLogProducer) *DefaultCenter {
+	decisionNotificationManager := NewAtomicManager(logger)
+	projectConfigUpdateNotificationManager := NewAtomicManager(logger)
+	processLogEventNotificationManager := NewAtomicManager(logger)
+	trackNotificationManager := NewAtomicManager(logger)
 	managerMap := make(map[Type]Manager)
 	managerMap[Decision] = decisionNotificationManager
 	managerMap[ProjectConfigUpdate] = projectConfigUpdateNotificationManager

@@ -20,6 +20,7 @@ package client
 import (
 	"context"
 	"errors"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/config"
@@ -73,14 +74,16 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		ctx = context.Background()
 	}
 
+	ctx = context.WithValue(ctx, logging.SdkKey, f.SDKKey)
+
 	eg := utils.NewExecGroup(ctx)
-	appClient := &OptimizelyClient{execGroup: eg, notificationCenter: registry.GetNotificationCenter(f.SDKKey)}
+	appClient := &OptimizelyClient{execGroup: eg, notificationCenter: registry.GetNotificationCenter(f.SDKKey), logger:logging.GetLogger(ctx, "OptimizelyClient")}
 
 	if f.configManager != nil {
 		appClient.ConfigManager = f.configManager
 	} else {
 		appClient.ConfigManager = config.NewPollingProjectConfigManager(
-			f.SDKKey,
+			ctx,
 			config.WithInitialDatafile(f.Datafile),
 		)
 	}
@@ -88,14 +91,12 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 	if f.eventProcessor != nil {
 		appClient.EventProcessor = f.eventProcessor
 	} else {
-		var eventProcessorOptions = []event.BPOptionConfig{
-			event.WithSDKKey(f.SDKKey),
-		}
+		var eventProcessorOptions = []event.BPOptionConfig{}
 		if f.eventDispatcher != nil {
 			eventProcessorOptions = append(eventProcessorOptions, event.WithEventDispatcher(f.eventDispatcher))
 		}
 		eventProcessorOptions = append(eventProcessorOptions, event.WithEventDispatcherMetrics(metricsRegistry))
-		appClient.EventProcessor = event.NewBatchEventProcessor(eventProcessorOptions...)
+		appClient.EventProcessor = event.NewBatchEventProcessor(ctx, eventProcessorOptions...)
 	}
 
 	if f.decisionService != nil {
@@ -108,8 +109,8 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		if f.overrideStore != nil {
 			experimentServiceOptions = append(experimentServiceOptions, decision.WithOverrideStore(f.overrideStore))
 		}
-		compositeExperimentService := decision.NewCompositeExperimentService(experimentServiceOptions...)
-		compositeService := decision.NewCompositeService(f.SDKKey, decision.WithCompositeExperimentService(compositeExperimentService))
+		compositeExperimentService := decision.NewCompositeExperimentService(ctx, experimentServiceOptions...)
+		compositeService := decision.NewCompositeService(ctx, decision.WithCompositeExperimentService(compositeExperimentService))
 		appClient.DecisionService = compositeService
 	}
 
@@ -128,7 +129,7 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 // WithPollingConfigManager sets polling config manager on a client.
 func WithPollingConfigManager(pollingInterval time.Duration, initDataFile []byte) OptionFunc {
 	return func(f *OptimizelyFactory) {
-		f.configManager = config.NewPollingProjectConfigManager(f.SDKKey, config.WithInitialDatafile(initDataFile),
+		f.configManager = config.NewPollingProjectConfigManager(f.ctx, config.WithInitialDatafile(initDataFile),
 			config.WithPollingInterval(pollingInterval))
 	}
 }
@@ -164,7 +165,7 @@ func WithExperimentOverrides(overrideStore decision.ExperimentOverrideStore) Opt
 // WithBatchEventProcessor sets event processor on a client.
 func WithBatchEventProcessor(batchSize, queueSize int, flushInterval time.Duration) OptionFunc {
 	return func(f *OptimizelyFactory) {
-		f.eventProcessor = event.NewBatchEventProcessor(event.WithBatchSize(batchSize),
+		f.eventProcessor = event.NewBatchEventProcessor(f.ctx, event.WithBatchSize(batchSize),
 			event.WithQueueSize(queueSize), event.WithFlushInterval(flushInterval))
 	}
 }
@@ -201,8 +202,9 @@ func WithMetricsRegistry(metricsRegistry metrics.Registry) OptionFunc {
 func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 	var configManager config.ProjectConfigManager
 
+	ctx := context.WithValue(context.TODO(), logging.SdkKey, f.SDKKey)
 	if f.SDKKey != "" {
-		staticConfigManager, err := config.NewStaticProjectConfigManagerFromURL(f.SDKKey)
+		staticConfigManager, err := config.NewStaticProjectConfigManagerFromURL(ctx)
 
 		if err != nil {
 			return nil, err
@@ -211,7 +213,7 @@ func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 		configManager = staticConfigManager
 
 	} else if f.Datafile != nil {
-		staticConfigManager, err := config.NewStaticProjectConfigManagerFromPayload(f.Datafile)
+		staticConfigManager, err := config.NewStaticProjectConfigManagerFromPayload(ctx, f.Datafile)
 
 		if err != nil {
 			return nil, err

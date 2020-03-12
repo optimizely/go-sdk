@@ -58,14 +58,15 @@ func NewMockDispatcher(queueSize int, shouldFail bool) *MockDispatcher {
 	return &MockDispatcher{Events: NewInMemoryQueue(queueSize), ShouldFail: shouldFail}
 }
 
-func newExecutionContext() *utils.ExecGroup {
-	return utils.NewExecGroup(context.Background())
+func newExecutionContext(ctx context.Context) *utils.ExecGroup {
+	return utils.NewExecGroup(ctx)
 }
 
 func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
-	eg := newExecutionContext()
-	processor := NewBatchEventProcessor()
-	processor.EventDispatcher = NewQueueEventDispatcher(processor.metricsRegistry)
+	ctx := context.Background()
+	eg := newExecutionContext(ctx)
+	processor := NewBatchEventProcessor(ctx)
+	processor.EventDispatcher = NewQueueEventDispatcher(ctx, processor.metricsRegistry)
 	eg.Go(processor.Start)
 
 	impression := BuildTestImpressionEvent()
@@ -82,8 +83,9 @@ func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 }
 
 func TestCustomEventProcessor_Create(t *testing.T) {
-	eg := newExecutionContext()
-	processor := NewBatchEventProcessor(
+	ctx := context.Background()
+	eg := newExecutionContext(ctx)
+	processor := NewBatchEventProcessor(ctx,
 		WithEventDispatcher(NewMockDispatcher(100, false)),
 		WithQueueSize(10),
 		WithFlushInterval(100))
@@ -103,12 +105,13 @@ func TestCustomEventProcessor_Create(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_LogEventNotification(t *testing.T) {
-	eg := newExecutionContext()
-	processor := NewBatchEventProcessor(
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, logging.SdkKey, "fakeSDKKey")
+	eg := newExecutionContext(ctx)
+	processor := NewBatchEventProcessor(ctx,
 		WithQueueSize(100),
 		WithQueue(NewInMemoryQueue(100)),
-		WithEventDispatcher(NewMockDispatcher(100, false)),
-		WithSDKKey("fakeSDKKey"))
+		WithEventDispatcher(NewMockDispatcher(100, false)))
 
 	var logEvent LogEvent
 
@@ -138,8 +141,9 @@ func TestDefaultEventProcessor_LogEventNotification(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_BatchSizes(t *testing.T) {
-	eg := newExecutionContext()
-	processor := NewBatchEventProcessor(
+	ctx := context.Background()
+	eg := newExecutionContext(ctx)
+	processor := NewBatchEventProcessor(ctx,
 		WithEventDispatcher(NewMockDispatcher(100, false)),
 		// here we are setting the timing interval so that we don't have to wait the default 30 seconds
 		WithFlushInterval(500*time.Minute),
@@ -173,9 +177,10 @@ func TestDefaultEventProcessor_BatchSizes(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_DefaultConfig(t *testing.T) {
-	eg := newExecutionContext()
+	ctx := context.Background()
+	eg := newExecutionContext(ctx)
 	dispatcher := NewMockDispatcher(100, false)
-	processor := NewBatchEventProcessor(
+	processor := NewBatchEventProcessor(ctx,
 		WithEventDispatcher(dispatcher),
 		// here we are setting the timing interval so that we don't have to wait the default 30 seconds
 		WithFlushInterval(500*time.Millisecond))
@@ -202,9 +207,10 @@ func TestDefaultEventProcessor_DefaultConfig(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
-	eg := newExecutionContext()
+	ctx := context.Background()
+	eg := newExecutionContext(ctx)
 	dispatcher := NewMockDispatcher(100, false)
-	processor := NewBatchEventProcessor(
+	processor := NewBatchEventProcessor(ctx,
 		WithFlushInterval(1*time.Second),
 		WithQueueSize(100),
 		WithQueue(NewInMemoryQueue(100)),
@@ -231,9 +237,10 @@ func TestDefaultEventProcessor_ProcessBatch(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_BatchSizeMet(t *testing.T) {
-	eg := newExecutionContext()
+	ctx := context.Background()
+	eg := newExecutionContext(ctx)
 	dispatcher := NewMockDispatcher(100, false)
-	processor := NewBatchEventProcessor(
+	processor := NewBatchEventProcessor(ctx,
 		WithBatchSize(2),
 		WithFlushInterval(1000*time.Millisecond),
 		WithQueue(NewInMemoryQueue(2)),
@@ -269,7 +276,8 @@ func TestDefaultEventProcessor_BatchSizeMet(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_BatchSizeLessThanQSize(t *testing.T) {
-	processor := NewBatchEventProcessor(
+	ctx := context.Background()
+	processor := NewBatchEventProcessor(ctx,
 		WithQueueSize(2),
 		WithFlushInterval(1000*time.Millisecond),
 		WithQueue(NewInMemoryQueue(100)),
@@ -281,8 +289,9 @@ func TestDefaultEventProcessor_BatchSizeLessThanQSize(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_QSizeExceeded(t *testing.T) {
-	eg := newExecutionContext()
-	processor := NewBatchEventProcessor(
+	ctx := context.Background()
+	eg := newExecutionContext(ctx)
+	processor := NewBatchEventProcessor(ctx,
 		WithQueueSize(2),
 		WithBatchSize(2),
 		WithFlushInterval(1000*time.Millisecond),
@@ -305,9 +314,10 @@ func TestDefaultEventProcessor_QSizeExceeded(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_FailedDispatch(t *testing.T) {
-	eg := newExecutionContext()
+	ctx := context.Background()
+	eg := newExecutionContext(ctx)
 	dispatcher := &MockDispatcher{ShouldFail: true, Events: NewInMemoryQueue(100)}
-	processor := NewBatchEventProcessor(
+	processor := NewBatchEventProcessor(ctx,
 		WithQueueSize(100),
 		WithFlushInterval(100),
 		WithQueue(NewInMemoryQueue(100)),
@@ -333,8 +343,9 @@ func TestDefaultEventProcessor_FailedDispatch(t *testing.T) {
 }
 
 func TestBatchEventProcessor_FlushesOnClose(t *testing.T) {
-	eg := newExecutionContext()
-	processor := NewBatchEventProcessor(
+	ctx := context.Background()
+	eg := newExecutionContext(ctx)
+	processor := NewBatchEventProcessor(ctx,
 		WithQueueSize(100),
 		WithQueue(NewInMemoryQueue(100)),
 		WithEventDispatcher(NewMockDispatcher(100, false)))
@@ -357,9 +368,10 @@ func TestBatchEventProcessor_FlushesOnClose(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
-	eg := newExecutionContext()
+	ctx := context.Background()
+	eg := newExecutionContext(ctx)
 	dispatcher := NewMockDispatcher(100, false)
-	processor := NewBatchEventProcessor(
+	processor := NewBatchEventProcessor(ctx,
 		WithQueueSize(100),
 		WithQueue(NewInMemoryQueue(100)),
 		WithEventDispatcher(dispatcher))
@@ -389,9 +401,10 @@ func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 }
 
 func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
-	eg := newExecutionContext()
+	ctx := context.Background()
+	eg := newExecutionContext(ctx)
 	dispatcher := NewMockDispatcher(100, false)
-	processor := NewBatchEventProcessor(
+	processor := NewBatchEventProcessor(ctx,
 		WithQueueSize(100),
 		WithQueue(NewInMemoryQueue(100)),
 		WithEventDispatcher(dispatcher))
@@ -421,8 +434,9 @@ func TestDefaultEventProcessor_ProcessBatchProjectMismatch(t *testing.T) {
 }
 
 func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
-	eg := newExecutionContext()
-	processor := NewBatchEventProcessor(
+	ctx := context.Background()
+	eg := newExecutionContext(ctx)
+	processor := NewBatchEventProcessor(ctx,
 		WithQueueSize(100),
 		WithQueue(NewInMemoryQueue(100)),
 		WithEventDispatcher(&HTTPEventDispatcher{requester: utils.NewHTTPRequester()}))
@@ -442,9 +456,10 @@ func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
 }
 
 func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
-	eg := newExecutionContext()
+	ctx := context.Background()
+	eg := newExecutionContext(ctx)
 	dispatcher := NewMockDispatcher(100, false)
-	processor := NewBatchEventProcessor(
+	processor := NewBatchEventProcessor(ctx,
 		WithQueueSize(100),
 		WithQueue(NewInMemoryQueue(100)),
 		WithEventDispatcher(dispatcher))
@@ -517,7 +532,8 @@ BenchmarkProcessor/InMemory/BatchSize-60/QueueSize-100000-8     	 3429447	      
 */
 func BenchmarkProcessor(b *testing.B) {
 	// no op logger added to keep out extra discarded events
-	logging.SetLogger(&NoOpLogger{})
+	ctx := context.Background()
+	logging.SetLogger(ctx, &NoOpLogger{})
 
 	merges := []struct {
 		name string
@@ -542,9 +558,10 @@ func BenchmarkProcessor(b *testing.B) {
 }
 
 func benchmarkProcessor(q Queue, bSize int, b *testing.B) {
-	eg := newExecutionContext()
+	ctx := context.Background()
+	eg := newExecutionContext(ctx)
 	dispatcher := &CountingDispatcher{}
-	processor := NewBatchEventProcessor(
+	processor := NewBatchEventProcessor(ctx,
 		WithQueue(q),
 		WithBatchSize(bSize),
 		WithEventDispatcher(dispatcher))

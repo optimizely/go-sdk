@@ -18,6 +18,7 @@
 package event
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"sync"
@@ -32,8 +33,6 @@ const maxRetries = 3
 const defaultQueueSize = 1000
 const sleepTime = 1 * time.Second
 
-var dispatcherLogger = logging.GetLogger("EventDispatcher")
-
 // Dispatcher dispatches events
 type Dispatcher interface {
 	DispatchEvent(event LogEvent) (bool, error)
@@ -42,6 +41,7 @@ type Dispatcher interface {
 // HTTPEventDispatcher is the HTTP implementation of the Dispatcher interface
 type HTTPEventDispatcher struct {
 	requester *utils.HTTPRequester
+	logger logging.OptimizelyLogProducer
 }
 
 // DispatchEvent dispatches event with callback
@@ -53,13 +53,13 @@ func (ed *HTTPEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	// resp.StatusCode == 400 is an error
 	var success bool
 	if err != nil {
-		dispatcherLogger.Error("http.Post failed:", err)
+		ed.logger.Error("http.Post failed:", err)
 		success = false
 	} else {
 		if code == http.StatusNoContent {
 			success = true
 		} else {
-			dispatcherLogger.Error(fmt.Sprintf("http.Post invalid response %d", code), nil)
+			ed.logger.Error(fmt.Sprintf("http.Post invalid response %d", code), nil)
 			success = false
 		}
 	}
@@ -72,9 +72,10 @@ type QueueEventDispatcher struct {
 	eventFlushLock sync.Mutex
 	Dispatcher     Dispatcher
 
+	logger 	       logging.OptimizelyLogProducer
 	// metrics
 	queueSize         metrics.Gauge
-	sucessFlush       metrics.Counter
+	successFlush      metrics.Counter
 	failFlushCounter  metrics.Counter
 	retryFlushCounter metrics.Counter
 }
@@ -101,7 +102,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 	ed.queueSize.Set(float64(ed.eventQueue.Size()))
 	for ed.eventQueue.Size() > 0 {
 		if retryCount > maxRetries {
-			dispatcherLogger.Error(fmt.Sprintf("event failed to send %d times. It will retry on next event sent", maxRetries), nil)
+			ed.logger.Error(fmt.Sprintf("event failed to send %d times. It will retry on next event sent", maxRetries), nil)
 			ed.failFlushCounter.Add(1)
 			break
 		}
@@ -114,7 +115,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 		event, ok := items[0].(LogEvent)
 		if !ok {
 			// remove it
-			dispatcherLogger.Error("invalid type passed to event Dispatcher", nil)
+			ed.logger.Error("invalid type passed to event Dispatcher", nil)
 			ed.eventQueue.Remove(1)
 			ed.failFlushCounter.Add(1)
 			continue
@@ -124,12 +125,12 @@ func (ed *QueueEventDispatcher) flushEvents() {
 
 		if err == nil {
 			if success {
-				dispatcherLogger.Debug(fmt.Sprintf("Dispatched log event %+v", event))
+				ed.logger.Debug(fmt.Sprintf("Dispatched log event %+v", event))
 				ed.eventQueue.Remove(1)
 				retryCount = 0
-				ed.sucessFlush.Add(1)
+				ed.successFlush.Add(1)
 			} else {
-				dispatcherLogger.Warning("dispatch event failed")
+				ed.logger.Warning("dispatch event failed")
 				// we failed.  Sleep some seconds and try again.
 				time.Sleep(sleepTime)
 				// increase retryCount.  We exit if we have retried x times.
@@ -138,7 +139,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 				ed.retryFlushCounter.Add(1)
 			}
 		} else {
-			dispatcherLogger.Error("Error dispatching ", err)
+			ed.logger.Error("Error dispatching ", err)
 			// we failed.  Sleep some seconds and try again.
 			time.Sleep(sleepTime)
 			// increase retryCount.  We exit if we have retried x times.
@@ -151,7 +152,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 }
 
 // NewQueueEventDispatcher creates a Dispatcher that queues in memory and then sends via go routine.
-func NewQueueEventDispatcher(metricsRegistry metrics.Registry) *QueueEventDispatcher {
+func NewQueueEventDispatcher(ctx context.Context, metricsRegistry metrics.Registry) *QueueEventDispatcher {
 
 	var dispatcherMetricsRegistry metrics.Registry
 	if metricsRegistry != nil {
@@ -162,11 +163,11 @@ func NewQueueEventDispatcher(metricsRegistry metrics.Registry) *QueueEventDispat
 
 	return &QueueEventDispatcher{
 		eventQueue: NewInMemoryQueue(defaultQueueSize),
-		Dispatcher: &HTTPEventDispatcher{requester: utils.NewHTTPRequester()},
-
+		Dispatcher: &HTTPEventDispatcher{requester: utils.NewHTTPRequester(ctx),logger:logging.GetLogger(ctx, "HttpDispatch")},
+		logger: logging.GetLogger(ctx, "QueueEventDispatch"),
 		queueSize:         dispatcherMetricsRegistry.GetGauge(metrics.DispatcherQueueSize),
 		retryFlushCounter: dispatcherMetricsRegistry.GetCounter(metrics.DispatcherRetryFlush),
 		failFlushCounter:  dispatcherMetricsRegistry.GetCounter(metrics.DispatcherFailedFlush),
-		sucessFlush:       dispatcherMetricsRegistry.GetCounter(metrics.DispatcherSuccessFlush),
+		successFlush:      dispatcherMetricsRegistry.GetCounter(metrics.DispatcherSuccessFlush),
 	}
 }

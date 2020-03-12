@@ -24,17 +24,17 @@ import (
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
-var fesLogger = logging.GetLogger("FeatureExperimentService")
-
 // FeatureExperimentService helps evaluate feature test associated with the feature
 type FeatureExperimentService struct {
 	compositeExperimentService ExperimentService
+	logger                     logging.OptimizelyLogProducer
 }
 
 // NewFeatureExperimentService returns a new instance of the FeatureExperimentService
-func NewFeatureExperimentService(compositeExperimentService ExperimentService) *FeatureExperimentService {
+func NewFeatureExperimentService(logger logging.OptimizelyLogProducer, compositeExperimentService ExperimentService) *FeatureExperimentService {
 	return &FeatureExperimentService{
 		compositeExperimentService: compositeExperimentService,
+		logger: logger,
 	}
 }
 
@@ -50,7 +50,7 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 		}
 
 		experimentDecision, err := f.compositeExperimentService.GetDecision(experimentDecisionContext, userContext)
-		fesLogger.Debug(fmt.Sprintf(
+		f.logger.Debug(fmt.Sprintf(
 			`Decision made for feature test with key "%s" for user "%s" with the following reason: "%s".`,
 			feature.Key,
 			userContext.ID,

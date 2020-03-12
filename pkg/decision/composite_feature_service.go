@@ -18,26 +18,27 @@
 package decision
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
-var cfLogger = logging.GetLogger("CompositeFeatureService")
-
 // CompositeFeatureService is the default out-of-the-box feature decision service
 type CompositeFeatureService struct {
 	featureServices []FeatureService
+	context context.Context
 }
 
 // NewCompositeFeatureService returns a new instance of the CompositeFeatureService
-func NewCompositeFeatureService(compositeExperimentService ExperimentService) *CompositeFeatureService {
+func NewCompositeFeatureService(ctx context.Context, compositeExperimentService ExperimentService) *CompositeFeatureService {
 	return &CompositeFeatureService{
 		featureServices: []FeatureService{
-			NewFeatureExperimentService(compositeExperimentService),
-			NewRolloutService(),
+			NewFeatureExperimentService(logging.GetLogger(ctx, "FeatureExperimentService" ), compositeExperimentService),
+			NewRolloutService(ctx),
 		},
+		context:ctx,
 	}
 }
 
@@ -48,7 +49,7 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 	for _, featureDecisionService := range f.featureServices {
 		featureDecision, err = featureDecisionService.GetDecision(decisionContext, userContext)
 		if err != nil {
-			cfLogger.Debug(fmt.Sprintf("%v", err))
+			logging.GetLogger(f.context, "CompositeFeatureService").Debug(fmt.Sprintf("%v", err))
 		}
 
 		if featureDecision.Variation != nil && err == nil {

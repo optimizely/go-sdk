@@ -42,7 +42,7 @@ type Processor interface {
 // BatchEventProcessor is used out of the box by the SDK to queue up and batch events to be sent to the Optimizely
 // log endpoint for results processing.
 type BatchEventProcessor struct {
-	sdkKey          string
+	context         context.Context
 	MaxQueueSize    int           // max size of the queue before flush
 	FlushInterval   time.Duration // in milliseconds
 	BatchSize       int
@@ -66,7 +66,9 @@ const DefaultEventFlushInterval = 30 * time.Second
 
 const maxFlushWorkers = 1
 
-var pLogger = logging.GetLogger("EventProcessor")
+func pLogger(c context.Context) logging.OptimizelyLogProducer {
+	return logging.GetLogger(c, "EventProcessor")
+}
 
 // BPOptionConfig is the BatchProcessor options that give you the ability to add one more more options before the processor is initialized.
 type BPOptionConfig func(qp *BatchEventProcessor)
@@ -106,14 +108,6 @@ func WithEventDispatcher(d Dispatcher) BPOptionConfig {
 	}
 }
 
-// WithSDKKey sets the SDKKey used to register for notifications.  This should be removed when the project
-// config supports sdk key.
-func WithSDKKey(sdkKey string) BPOptionConfig {
-	return func(qp *BatchEventProcessor) {
-		qp.sdkKey = sdkKey
-	}
-}
-
 // WithEventDispatcherMetrics sets metrics into the NewProcessor method
 func WithEventDispatcherMetrics(metricsRegistry metrics.Registry) BPOptionConfig {
 	return func(qp *BatchEventProcessor) {
@@ -122,7 +116,7 @@ func WithEventDispatcherMetrics(metricsRegistry metrics.Registry) BPOptionConfig
 }
 
 // NewBatchEventProcessor returns a new instance of BatchEventProcessor with queueSize and flushInterval
-func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
+func NewBatchEventProcessor(ctx context.Context, options ...BPOptionConfig) *BatchEventProcessor {
 	p := &BatchEventProcessor{processing: semaphore.NewWeighted(int64(maxFlushWorkers))}
 
 	for _, opt := range options {
@@ -142,7 +136,7 @@ func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 	}
 
 	if p.BatchSize > p.MaxQueueSize {
-		pLogger.Warning(
+		pLogger(p.context).Warning(
 			fmt.Sprintf("Batch size %d is larger than queue size %d.  Setting to defaults",
 				p.BatchSize, p.MaxQueueSize))
 
@@ -155,7 +149,7 @@ func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 	}
 
 	if p.EventDispatcher == nil {
-		dispatcher := NewQueueEventDispatcher(p.metricsRegistry)
+		dispatcher := NewQueueEventDispatcher(ctx, p.metricsRegistry)
 		p.EventDispatcher = dispatcher
 	}
 
@@ -165,7 +159,7 @@ func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 // Start does not do any initialization, just starts the ticker
 func (p *BatchEventProcessor) Start(ctx context.Context) {
 
-	pLogger.Info("Batch event processor started")
+	pLogger(ctx).Info("Batch event processor started")
 	p.startTicker(ctx)
 }
 
@@ -175,7 +169,7 @@ func (p *BatchEventProcessor) Start(ctx context.Context) {
 func (p *BatchEventProcessor) ProcessEvent(event UserEvent) bool {
 
 	if p.Q.Size() >= p.MaxQueueSize {
-		pLogger.Warning("MaxQueueSize has been met. Discarding event")
+		pLogger(p.context).Warning("MaxQueueSize has been met. Discarding event")
 		return false
 	}
 
@@ -188,7 +182,7 @@ func (p *BatchEventProcessor) ProcessEvent(event UserEvent) bool {
 	if p.processing.TryAcquire(1) {
 		// it doesn't matter if the timer has kicked in here.
 		// we just want to start one go routine when the batch size is met.
-		pLogger.Debug("batch size reached.  Flushing routine being called")
+		pLogger(p.context).Debug("batch size reached.  Flushing routine being called")
 		go func() {
 			p.flushEvents()
 			p.processing.Release(1)
@@ -225,7 +219,7 @@ func (p *BatchEventProcessor) startTicker(ctx context.Context) {
 		case <-p.Ticker.C:
 			p.flushEvents()
 		case <-ctx.Done():
-			pLogger.Debug("Event processor stopped, flushing events.")
+			pLogger(p.context).Debug("Event processor stopped, flushing events.")
 			p.flushEvents()
 			d, ok := p.EventDispatcher.(*QueueEventDispatcher)
 			if ok {
@@ -265,7 +259,7 @@ func (p *BatchEventProcessor) flushEvents() {
 
 	for p.eventsCount() > 0 {
 		if failedToSend {
-			pLogger.Error("last Event Batch failed to send; retry on next flush", errors.New("dispatcher failed"))
+			pLogger(p.context).Error("last Event Batch failed to send; retry on next flush", errors.New("dispatcher failed"))
 			break
 		}
 		events := p.getEvents(p.BatchSize)
@@ -280,7 +274,7 @@ func (p *BatchEventProcessor) flushEvents() {
 					} else {
 						if !p.canBatch(&batchEvent, userEvent) {
 							// this could happen if the project config was updated for instance.
-							pLogger.Info("Can't batch last event. Sending current batch.")
+							pLogger(p.context).Info("Can't batch last event. Sending current batch.")
 							break
 						} else {
 							p.addToBatch(&batchEvent, createVisitorFromUserEvent(userEvent))
@@ -298,20 +292,20 @@ func (p *BatchEventProcessor) flushEvents() {
 		if batchEventCount > 0 {
 			// TODO: figure out what to do with the error
 			logEvent := createLogEvent(batchEvent)
-			notificationCenter := registry.GetNotificationCenter(p.sdkKey)
+			notificationCenter := registry.GetNotificationCenter(logging.GetSdkKey(p.context))
 
 			err := notificationCenter.Send(notification.LogEvent, logEvent)
 
 			if err != nil {
-				pLogger.Error("Send Log Event notification failed.", err)
+				pLogger(p.context).Error("Send Log Event notification failed.", err)
 			}
 			if success, _ := p.EventDispatcher.DispatchEvent(logEvent); success {
-				pLogger.Debug("Dispatched event successfully")
+				pLogger(p.context).Debug("Dispatched event successfully")
 				p.remove(batchEventCount)
 				batchEventCount = 0
 				batchEvent = Batch{}
 			} else {
-				pLogger.Warning("Failed to dispatch event successfully")
+				pLogger(p.context).Warning("Failed to dispatch event successfully")
 				failedToSend = true
 			}
 		}
@@ -320,18 +314,18 @@ func (p *BatchEventProcessor) flushEvents() {
 
 // OnEventDispatch registers a handler for LogEvent notifications
 func (p *BatchEventProcessor) OnEventDispatch(callback func(logEvent LogEvent)) (int, error) {
-	notificationCenter := registry.GetNotificationCenter(p.sdkKey)
+	notificationCenter := registry.GetNotificationCenter(logging.GetSdkKey(p.context))
 
 	handler := func(payload interface{}) {
 		if ev, ok := payload.(LogEvent); ok {
 			callback(ev)
 		} else {
-			pLogger.Warning(fmt.Sprintf("Unable to convert notification payload %v into LogEventNotification", payload))
+			pLogger(p.context).Warning(fmt.Sprintf("Unable to convert notification payload %v into LogEventNotification", payload))
 		}
 	}
 	id, err := notificationCenter.AddHandler(notification.LogEvent, handler)
 	if err != nil {
-		pLogger.Error("Problem with adding notification handler.", err)
+		pLogger(p.context).Error("Problem with adding notification handler.", err)
 		return 0, err
 	}
 	return id, nil
@@ -339,10 +333,10 @@ func (p *BatchEventProcessor) OnEventDispatch(callback func(logEvent LogEvent)) 
 
 // RemoveOnEventDispatch removes handler for LogEvent notification with given id
 func (p *BatchEventProcessor) RemoveOnEventDispatch(id int) error {
-	notificationCenter := registry.GetNotificationCenter(p.sdkKey)
+	notificationCenter := registry.GetNotificationCenter(logging.GetSdkKey(p.context))
 
 	if err := notificationCenter.RemoveHandler(id, notification.LogEvent); err != nil {
-		pLogger.Warning("Problem with removing notification handler.")
+		pLogger(p.context).Warning("Problem with removing notification handler.")
 		return err
 	}
 	return nil

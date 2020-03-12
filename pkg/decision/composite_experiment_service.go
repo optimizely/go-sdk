@@ -18,13 +18,12 @@
 package decision
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
-
-var ceLogger = logging.GetLogger("CompositeExperimentService")
 
 // CESOptionFunc is used to assign optional configuration options
 type CESOptionFunc func(*CompositeExperimentService)
@@ -48,15 +47,21 @@ type CompositeExperimentService struct {
 	experimentServices []ExperimentService
 	overrideStore      ExperimentOverrideStore
 	userProfileService UserProfileService
+	context			   context.Context
+}
+
+func ceLogger(ctx context.Context) logging.OptimizelyLogProducer {
+	return logging.GetLogger(ctx, "CompositeExperimentService")
 }
 
 // NewCompositeExperimentService creates a new instance of the CompositeExperimentService
-func NewCompositeExperimentService(options ...CESOptionFunc) *CompositeExperimentService {
+func NewCompositeExperimentService(ctx context.Context, options ...CESOptionFunc) *CompositeExperimentService {
 	// These decision services are applied in order:
 	// 1. Overrides (if supplied)
 	// 2. Whitelist
 	// 3. Bucketing (with User profile integration if supplied)
-	compositeExperimentService := &CompositeExperimentService{}
+
+	compositeExperimentService := &CompositeExperimentService{context:ctx}
 	for _, opt := range options {
 		opt(compositeExperimentService)
 	}
@@ -66,13 +71,13 @@ func NewCompositeExperimentService(options ...CESOptionFunc) *CompositeExperimen
 
 	// Prepend overrides if supplied
 	if compositeExperimentService.overrideStore != nil {
-		overrideService := NewExperimentOverrideService(compositeExperimentService.overrideStore)
+		overrideService := NewExperimentOverrideService(logging.GetLogger(ctx, "ExperimentOverrideService"), compositeExperimentService.overrideStore)
 		experimentServices = append([]ExperimentService{overrideService}, experimentServices...)
 	}
 
-	experimentBucketerService := NewExperimentBucketerService()
+	experimentBucketerService := NewExperimentBucketerService(logging.GetLogger(ctx, "ExperimentBucketerService"))
 	if compositeExperimentService.userProfileService != nil {
-		persistingExperimentService := NewPersistingExperimentService(experimentBucketerService, compositeExperimentService.userProfileService)
+		persistingExperimentService := NewPersistingExperimentService(logging.GetLogger(ctx, "PersistingExperimentService"), experimentBucketerService, compositeExperimentService.userProfileService)
 		experimentServices = append(experimentServices, persistingExperimentService)
 	} else {
 		experimentServices = append(experimentServices, experimentBucketerService)
@@ -89,7 +94,7 @@ func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisi
 	for _, experimentService := range s.experimentServices {
 		decision, err = experimentService.GetDecision(decisionContext, userContext)
 		if err != nil {
-			ceLogger.Debug(fmt.Sprintf("%v", err))
+			ceLogger(s.context).Debug(fmt.Sprintf("%v", err))
 		}
 		if decision.Variation != nil && err == nil {
 			return decision, err

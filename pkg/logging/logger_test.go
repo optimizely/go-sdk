@@ -17,6 +17,7 @@
 package logging
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -44,9 +45,11 @@ func TestNamedLoggerDebug(t *testing.T) {
 	testLogger := new(MockOptimizelyLogger)
 	testLogger.On("Log", LogLevelDebug, testLogMessage, testLogName)
 
-	SetLogger(testLogger)
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, SdkKey, "SdkKey")
+	SetLogger(ctx, testLogger)
 
-	logProducer := GetLogger(testLogName)
+	logProducer := GetLogger(ctx, testLogName)
 	logProducer.Debug(testLogMessage)
 	testLogger.AssertExpectations(t)
 	assert.Equal(t, []string{testLogMessage}, testLogger.loggedMessages)
@@ -58,9 +61,11 @@ func TestNamedLoggerInfo(t *testing.T) {
 	testLogger := new(MockOptimizelyLogger)
 	testLogger.On("Log", LogLevelInfo, testLogMessage, testLogName)
 
-	SetLogger(testLogger)
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, SdkKey, "SdkKey")
+	SetLogger(ctx, testLogger)
 
-	logProducer := GetLogger(testLogName)
+	logProducer := GetLogger(ctx, testLogName)
 	logProducer.Info(testLogMessage)
 	testLogger.AssertExpectations(t)
 	assert.Equal(t, []string{testLogMessage}, testLogger.loggedMessages)
@@ -72,9 +77,11 @@ func TestNamedLoggerWarning(t *testing.T) {
 	testLogger := new(MockOptimizelyLogger)
 	testLogger.On("Log", LogLevelWarning, testLogMessage, testLogName)
 
-	SetLogger(testLogger)
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, SdkKey, "SdkKey")
+	SetLogger(ctx, testLogger)
 
-	logProducer := GetLogger(testLogName)
+	logProducer := GetLogger(ctx, testLogName)
 	logProducer.Warning(testLogMessage)
 	testLogger.AssertExpectations(t)
 	assert.Equal(t, []string{testLogMessage}, testLogger.loggedMessages)
@@ -86,10 +93,12 @@ func TestNamedLoggerError(t *testing.T) {
 	expectedLogMessage := "Test error message: I am an error object"
 	testLogger := new(MockOptimizelyLogger)
 	testLogger.On("Log", LogLevelError, expectedLogMessage, testLogName)
-	SetLogger(testLogger)
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, SdkKey, "SdkKey")
+	SetLogger(ctx, testLogger)
 
 	err := errors.New("I am an error object")
-	logProducer := GetLogger(testLogName)
+	logProducer := GetLogger(ctx, testLogName)
 	logProducer.Error(testLogMessage, err)
 	testLogger.AssertExpectations(t)
 	assert.Equal(t, []string{expectedLogMessage}, testLogger.loggedMessages)
@@ -98,9 +107,12 @@ func TestNamedLoggerError(t *testing.T) {
 func TestSetLogLevel(t *testing.T) {
 	testLogger := new(MockOptimizelyLogger)
 	testLogger.On("SetLogLevel", LogLevelError)
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, SdkKey, "SdkKey")
+	SetLogger(ctx, testLogger)
 
-	SetLogger(testLogger)
-	SetLogLevel(LogLevelError)
+	SetLogger(ctx, testLogger)
+	SetLogLevel(ctx, LogLevelError)
 
 	testLogger.AssertExpectations(t)
 }

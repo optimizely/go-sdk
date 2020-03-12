@@ -18,8 +18,10 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"sync"
 
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
@@ -35,23 +37,23 @@ type StaticProjectConfigManager struct {
 }
 
 // NewStaticProjectConfigManagerFromURL returns new instance of StaticProjectConfigManager for URL
-func NewStaticProjectConfigManagerFromURL(sdkKey string) (*StaticProjectConfigManager, error) {
+func NewStaticProjectConfigManagerFromURL(ctx context.Context) (*StaticProjectConfigManager, error) {
 
-	requester := utils.NewHTTPRequester()
+	requester := utils.NewHTTPRequester(ctx)
 
-	url := fmt.Sprintf(DatafileURLTemplate, sdkKey)
+	url := fmt.Sprintf(DatafileURLTemplate, logging.GetSdkKey(ctx))
 	datafile, _, code, e := requester.Get(url)
 	if e != nil {
-		cmLogger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
+		logging.GetLogger(ctx, "NewStaticProjectConfigManagerFromURL").Error(fmt.Sprintf("request returned with http code=%d", code), e)
 		return nil, e
 	}
 
-	return NewStaticProjectConfigManagerFromPayload(datafile)
+	return NewStaticProjectConfigManagerFromPayload(ctx, datafile)
 }
 
 // NewStaticProjectConfigManagerFromPayload returns new instance of StaticProjectConfigManager for payload
-func NewStaticProjectConfigManagerFromPayload(payload []byte) (*StaticProjectConfigManager, error) {
-	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(payload)
+func NewStaticProjectConfigManagerFromPayload(ctx context.Context, payload []byte) (*StaticProjectConfigManager, error) {
+	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(logging.GetLogger(ctx, "DatafileProjectConfig"), payload)
 
 	if err != nil {
 		return nil, err

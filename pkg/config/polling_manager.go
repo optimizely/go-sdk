@@ -48,7 +48,9 @@ const DatafileURLTemplate = "https://cdn.optimizely.com/datafiles/%s.json"
 // Err403Forbidden is 403Forbidden specific error
 var Err403Forbidden = errors.New("unable to fetch fresh datafile (consider rechecking SDK key), status code: 403 Forbidden")
 
-var cmLogger = logging.GetLogger("PollingConfigManager")
+func cmLogger(ctx context.Context) logging.OptimizelyLogProducer {
+	return logging.GetLogger(ctx, "PollingConfigManager")
+}
 
 // PollingProjectConfigManager maintains a dynamic copy of the project config by continuously polling for the datafile
 // from the Optimizely CDN at a given (configurable) interval.
@@ -59,7 +61,7 @@ type PollingProjectConfigManager struct {
 	notificationCenter  notification.Center
 	pollingInterval     time.Duration
 	requester           utils.Requester
-	sdkKey              string
+	context             context.Context
 
 	configLock       sync.RWMutex
 	err              error
@@ -110,7 +112,7 @@ func (cm *PollingProjectConfigManager) SyncConfig() {
 		cm.configLock.Unlock()
 	}
 
-	url := fmt.Sprintf(cm.datafileURLTemplate, cm.sdkKey)
+	url := fmt.Sprintf(cm.datafileURLTemplate, logging.GetSdkKey(cm.context))
 	if cm.lastModified != "" {
 		lastModifiedHeader := utils.Header{Name: ModifiedSince, Value: cm.lastModified}
 		datafile, respHeaders, code, e = cm.requester.Get(url, lastModifiedHeader)
@@ -120,7 +122,7 @@ func (cm *PollingProjectConfigManager) SyncConfig() {
 
 	if e != nil {
 		msg := "unable to fetch fresh datafile"
-		cmLogger.Warning(msg)
+		cmLogger(cm.context).Warning(msg)
 		cm.configLock.Lock()
 
 		if code == http.StatusForbidden {
@@ -133,7 +135,7 @@ func (cm *PollingProjectConfigManager) SyncConfig() {
 	}
 
 	if code == http.StatusNotModified {
-		cmLogger.Debug("The datafile was not modified and won't be downloaded again")
+		cmLogger(cm.context).Debug("The datafile was not modified and won't be downloaded again")
 		return
 	}
 
@@ -144,9 +146,12 @@ func (cm *PollingProjectConfigManager) SyncConfig() {
 		cm.lastModified = lastModified
 	}
 
-	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(datafile)
+	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(
+		logging.GetLogger(cm.context, "DatafileProjectConfig"),
+		datafile)
+
 	if err != nil {
-		cmLogger.Warning("failed to create project config")
+		cmLogger(cm.context).Warning("failed to create project config")
 		closeMutex(errors.New("unable to parse datafile"))
 		return
 	}
@@ -156,42 +161,42 @@ func (cm *PollingProjectConfigManager) SyncConfig() {
 		previousRevision = cm.projectConfig.GetRevision()
 	}
 	if projectConfig.GetRevision() == previousRevision {
-		cmLogger.Debug(fmt.Sprintf("No datafile updates. Current revision number: %s", cm.projectConfig.GetRevision()))
+		cmLogger(cm.context).Debug(fmt.Sprintf("No datafile updates. Current revision number: %s", cm.projectConfig.GetRevision()))
 		closeMutex(nil)
 		return
 	}
 	err = cm.setConfig(projectConfig)
 	closeMutex(err)
 	if err == nil {
-		cmLogger.Debug(fmt.Sprintf("New datafile set with revision: %s. Old revision: %s", projectConfig.GetRevision(), previousRevision))
+		cmLogger(cm.context).Debug(fmt.Sprintf("New datafile set with revision: %s. Old revision: %s", projectConfig.GetRevision(), previousRevision))
 		cm.sendConfigUpdateNotification()
 	}
 }
 
 // Start starts the polling
 func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
-	cmLogger.Debug("Polling Config Manager Initiated")
+	cmLogger(cm.context).Debug("Polling Config Manager Initiated")
 	t := time.NewTicker(cm.pollingInterval)
 	for {
 		select {
 		case <-t.C:
 			cm.SyncConfig()
 		case <-ctx.Done():
-			cmLogger.Debug("Polling Config Manager Stopped")
+			cmLogger(cm.context).Debug("Polling Config Manager Stopped")
 			return
 		}
 	}
 }
 
 // NewPollingProjectConfigManager returns an instance of the polling config manager with the customized configuration
-func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
+func NewPollingProjectConfigManager(ctx context.Context, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
 
 	pollingProjectConfigManager := PollingProjectConfigManager{
-		notificationCenter:  registry.GetNotificationCenter(sdkKey),
+		notificationCenter:  registry.GetNotificationCenter(logging.GetSdkKey(ctx)),
 		pollingInterval:     DefaultPollingInterval,
-		requester:           utils.NewHTTPRequester(),
+		requester:           utils.NewHTTPRequester(ctx),
 		datafileURLTemplate: DatafileURLTemplate,
-		sdkKey:              sdkKey,
+		context:              ctx,
 	}
 
 	for _, opt := range pollingMangerOptions {
@@ -207,14 +212,14 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 }
 
 // NewAsyncPollingProjectConfigManager returns an instance of the async polling config manager with the customized configuration
-func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
+func NewAsyncPollingProjectConfigManager(ctx context.Context, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
 
 	pollingProjectConfigManager := PollingProjectConfigManager{
-		notificationCenter:  registry.GetNotificationCenter(sdkKey),
+		notificationCenter:  registry.GetNotificationCenter(logging.GetSdkKey(ctx)),
 		pollingInterval:     DefaultPollingInterval,
-		requester:           utils.NewHTTPRequester(),
+		requester:           utils.NewHTTPRequester(ctx),
 		datafileURLTemplate: DatafileURLTemplate,
-		sdkKey:              sdkKey,
+		context:              ctx,
 	}
 
 	for _, opt := range pollingMangerOptions {
@@ -253,12 +258,12 @@ func (cm *PollingProjectConfigManager) OnProjectConfigUpdate(callback func(notif
 		if projectConfigUpdateNotification, ok := payload.(notification.ProjectConfigUpdateNotification); ok {
 			callback(projectConfigUpdateNotification)
 		} else {
-			cmLogger.Warning(fmt.Sprintf("Unable to convert notification payload %v into ProjectConfigUpdateNotification", payload))
+			cmLogger(cm.context).Warning(fmt.Sprintf("Unable to convert notification payload %v into ProjectConfigUpdateNotification", payload))
 		}
 	}
 	id, err := cm.notificationCenter.AddHandler(notification.ProjectConfigUpdate, handler)
 	if err != nil {
-		cmLogger.Warning("Problem with adding notification handler")
+		cmLogger(cm.context).Warning("Problem with adding notification handler")
 		return 0, err
 	}
 	return id, nil
@@ -267,7 +272,7 @@ func (cm *PollingProjectConfigManager) OnProjectConfigUpdate(callback func(notif
 // RemoveOnProjectConfigUpdate removes handler for ProjectConfigUpdate notification with given id
 func (cm *PollingProjectConfigManager) RemoveOnProjectConfigUpdate(id int) error {
 	if err := cm.notificationCenter.RemoveHandler(id, notification.ProjectConfigUpdate); err != nil {
-		cmLogger.Warning("Problem with removing notification handler")
+		cmLogger(cm.context).Warning("Problem with removing notification handler")
 		return err
 	}
 	return nil
@@ -288,7 +293,7 @@ func (cm *PollingProjectConfigManager) setInitialDatafile(datafile []byte) {
 	if len(datafile) != 0 {
 		cm.configLock.Lock()
 		defer cm.configLock.Unlock()
-		projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(datafile)
+		projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(logging.GetLogger(cm.context, "DatafileProjectConfig"), datafile)
 		if projectConfig != nil {
 			err = cm.setConfig(projectConfig)
 		}
@@ -303,7 +308,7 @@ func (cm *PollingProjectConfigManager) sendConfigUpdateNotification() {
 			Revision: cm.projectConfig.GetRevision(),
 		}
 		if err := cm.notificationCenter.Send(notification.ProjectConfigUpdate, projectConfigUpdateNotification); err != nil {
-			cmLogger.Warning("Problem with sending notification")
+			cmLogger(cm.context).Warning("Problem with sending notification")
 		}
 	}
 }

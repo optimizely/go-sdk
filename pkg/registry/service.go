@@ -18,19 +18,23 @@
 package registry
 
 import (
+	"context"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
 )
 
 var notificationCenterCache = make(map[string]notification.Center)
-
 // GetNotificationCenter returns the notification center instance associated with the given SDK Key or creates a new one if not found
 func GetNotificationCenter(sdkKey string) notification.Center {
 	var notificationCenter notification.Center
 	var ok bool
 	if notificationCenter, ok = notificationCenterCache[sdkKey]; !ok {
-		notificationCenter = notification.NewNotificationCenter()
+		ctx := context.WithValue(context.TODO(), logging.SdkKey, sdkKey);
+
+		notificationCenter = notification.NewNotificationCenter(logging.GetLogger(ctx, "NotificationCenter:" + sdkKey))
 		notificationCenterCache[sdkKey] = notificationCenter
 	}
 
 	return notificationCenter
 }
+
