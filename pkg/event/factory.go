@@ -230,7 +230,7 @@ func getEventAttributes(projectConfig config.ProjectConfig, attributes map[strin
 		case strings.HasPrefix(key, specialPrefix):
 			visitorAttribute.EntityID = key
 		default:
-			//.Debug(fmt.Sprintf("Unrecognized attribute %s provided. Pruning before sending event to Optimizely.", key))
+			// .Debug(fmt.Sprintf("Unrecognized attribute %s provided. Pruning before sending event to Optimizely.", key))
 			continue
 		}
 		visitorAttribute.Key = key
