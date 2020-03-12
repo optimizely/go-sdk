@@ -24,8 +24,10 @@ import (
 	"sync"
 )
 
+// SdkKey key used to get and set the sdk key on the context passed in for creation.
 const SdkKey string = "OptimizelySdkKey"
 
+// GetSdkKey get the sdk key from the "activation context"
 func GetSdkKey(ctx context.Context) string {
 	if val := ctx.Value(SdkKey); val != nil {
 		if v, ok := val.(string);ok {
