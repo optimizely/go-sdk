@@ -19,27 +19,26 @@ package decision
 
 import (
 	"fmt"
+	"github.com/optimizely/go-sdk/pkg/logging"
 
 	"github.com/optimizely/go-sdk/pkg/decision/bucketer"
 	"github.com/optimizely/go-sdk/pkg/decision/evaluator"
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/optimizely/go-sdk/pkg/logging"
 )
-
-// These variables are package-scoped, meaning that they can be accessed within the same package so we need unique names.
-var bLogger = logging.GetLogger("ExperimentBucketerService")
 
 // ExperimentBucketerService makes a decision using the experiment bucketer
 type ExperimentBucketerService struct {
 	audienceTreeEvaluator evaluator.TreeEvaluator
 	bucketer              bucketer.ExperimentBucketer
+	logger                logging.OptimizelyLogProducer
 }
 
 // NewExperimentBucketerService returns a new instance of the ExperimentBucketerService
-func NewExperimentBucketerService() *ExperimentBucketerService {
+func NewExperimentBucketerService(logger logging.OptimizelyLogProducer) *ExperimentBucketerService {
 	// @TODO(mng): add experiment override service
 	return &ExperimentBucketerService{
+		logger:logger,
 		audienceTreeEvaluator: evaluator.NewMixedTreeEvaluator(),
 		bucketer:              *bucketer.NewMurmurhashExperimentBucketer(bucketer.DefaultHashSeed),
 	}
@@ -68,11 +67,11 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	// bucket user into a variation
 	bucketingID, err := userContext.GetBucketingID()
 	if err != nil {
-		bLogger.Debug(fmt.Sprintf(`Error computing bucketing ID for experiment "%s": "%s"`, experiment.Key, err.Error()))
+		s.logger.Debug(fmt.Sprintf(`Error computing bucketing ID for experiment "%s": "%s"`, experiment.Key, err.Error()))
 	}
 
 	if bucketingID != userContext.ID {
-		bLogger.Debug(fmt.Sprintf(`Using bucketing ID: "%s" for user "%s"`, bucketingID, userContext.ID))
+		s.logger.Debug(fmt.Sprintf(`Using bucketing ID: "%s" for user "%s"`, bucketingID, userContext.ID))
 	}
 	// @TODO: handle error from bucketer
 	variation, reason, _ := s.bucketer.Bucket(bucketingID, *experiment, group)

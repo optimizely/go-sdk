@@ -20,6 +20,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"sync"
 
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
@@ -32,38 +33,42 @@ type StaticProjectConfigManager struct {
 	projectConfig    ProjectConfig
 	optimizelyConfig *OptimizelyConfig
 	configLock       sync.Mutex
+	logger           logging.OptimizelyLogProducer
 }
 
 // NewStaticProjectConfigManagerFromURL returns new instance of StaticProjectConfigManager for URL
 func NewStaticProjectConfigManagerFromURL(sdkKey string) (*StaticProjectConfigManager, error) {
 
-	requester := utils.NewHTTPRequester()
+	requester := utils.NewHTTPRequester(logging.GetLogger(sdkKey, "HTTPRequester"))
+
+	logger := logging.GetLogger(sdkKey, "StaticProjectConfigManager")
 
 	url := fmt.Sprintf(DatafileURLTemplate, sdkKey)
 	datafile, _, code, e := requester.Get(url)
 	if e != nil {
-		cmLogger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
+		logger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
 		return nil, e
 	}
 
-	return NewStaticProjectConfigManagerFromPayload(datafile)
+	return NewStaticProjectConfigManagerFromPayload(logger, datafile)
 }
 
 // NewStaticProjectConfigManagerFromPayload returns new instance of StaticProjectConfigManager for payload
-func NewStaticProjectConfigManagerFromPayload(payload []byte) (*StaticProjectConfigManager, error) {
-	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(payload)
+func NewStaticProjectConfigManagerFromPayload(logger logging.OptimizelyLogProducer, payload []byte) (*StaticProjectConfigManager, error) {
+	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(logger, payload)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return NewStaticProjectConfigManager(projectConfig), nil
+	return NewStaticProjectConfigManager(projectConfig, logger), nil
 }
 
 // NewStaticProjectConfigManager creates a new instance of the manager with the given project config
-func NewStaticProjectConfigManager(config ProjectConfig) *StaticProjectConfigManager {
+func NewStaticProjectConfigManager(config ProjectConfig, logger logging.OptimizelyLogProducer) *StaticProjectConfigManager {
 	return &StaticProjectConfigManager{
 		projectConfig: config,
+		logger: logger,
 	}
 }
 

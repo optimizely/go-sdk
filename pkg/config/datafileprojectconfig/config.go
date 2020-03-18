@@ -20,13 +20,11 @@ package datafileprojectconfig
 import (
 	"errors"
 	"fmt"
+	"github.com/optimizely/go-sdk/pkg/logging"
 
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/mappers"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/optimizely/go-sdk/pkg/logging"
 )
-
-var logger = logging.GetLogger("DatafileProjectConfig")
 
 var datafileVersions = map[string]struct{}{
 	"4": {},
@@ -175,7 +173,7 @@ func (c DatafileProjectConfig) GetGroupByID(groupID string) (entities.Group, err
 }
 
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser
-func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, error) {
+func NewDatafileProjectConfig(logger logging.OptimizelyLogProducer, jsonDatafile []byte) (*DatafileProjectConfig, error) {
 	datafile, err := Parse(jsonDatafile)
 	if err != nil {
 		logger.Error("Error parsing datafile", err)

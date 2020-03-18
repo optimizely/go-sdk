@@ -23,17 +23,16 @@ import (
 	"sync"
 )
 
-var logger = logging.GetLogger("ExecGroup")
-
 // ExecGroup is a utility for managing graceful, blocking cancellation of goroutines.
 type ExecGroup struct {
 	wg         *sync.WaitGroup
 	ctx        context.Context
 	cancelFunc context.CancelFunc
+	logger     logging.OptimizelyLogProducer
 }
 
 // NewExecGroup returns constructed object
-func NewExecGroup(ctx context.Context) *ExecGroup {
+func NewExecGroup(logger logging.OptimizelyLogProducer, ctx context.Context) *ExecGroup {
 	nctx, cancelFn := context.WithCancel(ctx)
 	wg := sync.WaitGroup{}
 
@@ -55,7 +54,7 @@ func (c ExecGroup) Go(f func(ctx context.Context)) {
 func (c ExecGroup) TerminateAndWait() {
 
 	if c.cancelFunc == nil {
-		logger.Error("failed to shut down Execution Context properly", nil)
+		c.logger.Error("failed to shut down Execution Context properly", nil)
 		return
 	}
 	c.cancelFunc()

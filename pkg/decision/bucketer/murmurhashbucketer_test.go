@@ -9,7 +9,7 @@ import (
 )
 
 func TestBucketToEntity(t *testing.T) {
-	bucketer := NewMurmurhashBucketer(DefaultHashSeed)
+	bucketer := NewMurmurhashBucketer("", DefaultHashSeed)
 
 	experimentID := "1886780721"
 	experimentID2 := "1886780722"

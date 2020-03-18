@@ -20,6 +20,7 @@ package client
 import (
 	"context"
 	"errors"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/config"
@@ -73,8 +74,10 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		ctx = context.Background()
 	}
 
-	eg := utils.NewExecGroup(ctx)
-	appClient := &OptimizelyClient{execGroup: eg, notificationCenter: registry.GetNotificationCenter(f.SDKKey)}
+	eg := utils.NewExecGroup(logging.GetLogger(f.SDKKey, "ExecGroup"), ctx)
+	appClient := &OptimizelyClient{execGroup: eg,
+		notificationCenter: registry.GetNotificationCenter(f.SDKKey),
+		logger: logging.GetLogger(f.SDKKey, "OptimizelyClient")}
 
 	if f.configManager != nil {
 		appClient.ConfigManager = f.configManager
@@ -108,7 +111,7 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		if f.overrideStore != nil {
 			experimentServiceOptions = append(experimentServiceOptions, decision.WithOverrideStore(f.overrideStore))
 		}
-		compositeExperimentService := decision.NewCompositeExperimentService(experimentServiceOptions...)
+		compositeExperimentService := decision.NewCompositeExperimentService(f.SDKKey, experimentServiceOptions...)
 		compositeService := decision.NewCompositeService(f.SDKKey, decision.WithCompositeExperimentService(compositeExperimentService))
 		appClient.DecisionService = compositeService
 	}
@@ -211,7 +214,7 @@ func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 		configManager = staticConfigManager
 
 	} else if f.Datafile != nil {
-		staticConfigManager, err := config.NewStaticProjectConfigManagerFromPayload(f.Datafile)
+		staticConfigManager, err := config.NewStaticProjectConfigManagerFromPayload(logging.GetLogger(f.SDKKey, "StaticProjectConfigManagerFromPayload"), f.Datafile)
 
 		if err != nil {
 			return nil, err

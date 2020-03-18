@@ -68,9 +68,9 @@ func SetLogLevel(logLevel LogLevel) {
 }
 
 // GetLogger returns a log producer with the given name
-func GetLogger(name string) OptimizelyLogProducer {
+func GetLogger(sdkKey string, name string) OptimizelyLogProducer {
 	return NamedLogProducer{
-		fields: map[string]interface{}{"name": name},
+		fields: map[string]interface{}{"name": name, "sdkKey":sdkKey},
 	}
 }
 
