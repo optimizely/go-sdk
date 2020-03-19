@@ -20,10 +20,10 @@ package datafileprojectconfig
 import (
 	"errors"
 	"fmt"
-	"github.com/optimizely/go-sdk/pkg/logging"
 
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/mappers"
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 var datafileVersions = map[string]struct{}{

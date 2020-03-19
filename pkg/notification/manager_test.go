@@ -1,8 +1,9 @@
 package notification
 
 import (
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"testing"
+
+	"github.com/optimizely/go-sdk/pkg/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

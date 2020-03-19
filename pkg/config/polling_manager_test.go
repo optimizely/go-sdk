@@ -18,13 +18,13 @@ package config
 
 import (
 	"context"
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"net/http"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/utils"
 

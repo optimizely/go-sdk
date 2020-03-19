@@ -19,9 +19,8 @@ package decision
 
 import (
 	"fmt"
-	"github.com/optimizely/go-sdk/pkg/logging"
-
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 // CESOptionFunc is used to assign optional configuration options

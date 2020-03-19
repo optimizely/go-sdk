@@ -18,12 +18,13 @@
 package decision
 
 import (
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"sync"
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
+
 	"github.com/stretchr/testify/suite"
 )
 

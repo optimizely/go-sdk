@@ -19,10 +19,11 @@ package bucketer
 
 import (
 	"fmt"
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"math"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
+
 	"github.com/twmb/murmur3"
 )
 

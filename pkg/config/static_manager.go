@@ -20,10 +20,10 @@ package config
 import (
 	"errors"
 	"fmt"
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"sync"
 
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/utils"
 )

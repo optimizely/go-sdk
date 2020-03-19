@@ -18,11 +18,12 @@ package config
 
 import (
 	"errors"
-	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/notification"
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
+	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/pkg/notification"
+
 	"github.com/stretchr/testify/assert"
 )
 

@@ -19,7 +19,6 @@ package client
 import (
 	"context"
 	"errors"
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"net/http"
 	"sync"
 	"testing"
@@ -29,6 +28,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/event"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/metrics"
 	"github.com/optimizely/go-sdk/pkg/utils"
 

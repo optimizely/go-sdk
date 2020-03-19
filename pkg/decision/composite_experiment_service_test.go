@@ -18,12 +18,12 @@ package decision
 
 import (
 	"errors"
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 type CompositeExperimentTestSuite struct {
