@@ -58,6 +58,7 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecision() {
 
 	featureExperimentService := &FeatureExperimentService{
 		compositeExperimentService: s.mockExperimentService,
+		logger:logging.GetLogger("sdkKey", "FeatureExperimentService"),
 	}
 
 	expectedFeatureDecision := FeatureDecision{
@@ -102,6 +103,7 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionMutex() {
 	}
 	featureExperimentService := &FeatureExperimentService{
 		compositeExperimentService: s.mockExperimentService,
+		logger:logging.GetLogger("sdkKey", "FeatureExperimentService"),
 	}
 	decision, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext)
 	s.Equal(expectedFeatureDecision, decision)
@@ -110,7 +112,7 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionMutex() {
 }
 
 func (s *FeatureExperimentServiceTestSuite) TestNewFeatureExperimentService() {
-	compositeExperimentService := &CompositeExperimentService{}
+	compositeExperimentService := &CompositeExperimentService{logger:logging.GetLogger("sdkKey", "CompositeExperimentService")}
 	featureExperimentService := NewFeatureExperimentService(logging.GetLogger("", ""), compositeExperimentService)
 	s.IsType(compositeExperimentService, featureExperimentService.compositeExperimentService)
 }

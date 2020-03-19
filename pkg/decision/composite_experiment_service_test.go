@@ -18,6 +18,7 @@ package decision
 
 import (
 	"errors"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -58,7 +59,8 @@ func (s *CompositeExperimentTestSuite) TestGetDecision() {
 	s.mockExperimentService.On("GetDecision", s.testDecisionContext, testUserContext).Return(expectedExperimentDecision, nil)
 
 	compositeExperimentService := &CompositeExperimentService{
-		experimentServices: []ExperimentService{s.mockExperimentService, s.mockExperimentService2},
+		experimentServices: []ExperimentService{s.mockExperimentService, s.mockExperimentService2,},
+		logger:logging.GetLogger("sdkKey", "ExperimentService"),
 	}
 	decision, err := compositeExperimentService.GetDecision(s.testDecisionContext, testUserContext)
 	s.Equal(expectedExperimentDecision, decision)
@@ -85,6 +87,7 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionFallthrough() {
 
 	compositeExperimentService := &CompositeExperimentService{
 		experimentServices: []ExperimentService{s.mockExperimentService, s.mockExperimentService2},
+		logger:logging.GetLogger("sdkKey", "CompositeExperimentService"),
 	}
 	decision, err := compositeExperimentService.GetDecision(s.testDecisionContext, testUserContext)
 
@@ -107,6 +110,7 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionNoDecisionsMade() {
 
 	compositeExperimentService := &CompositeExperimentService{
 		experimentServices: []ExperimentService{s.mockExperimentService, s.mockExperimentService2},
+		logger:logging.GetLogger("sdkKey", "CompositeExperimentService"),
 	}
 	decision, err := compositeExperimentService.GetDecision(s.testDecisionContext, testUserContext)
 
@@ -142,6 +146,7 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionReturnsError() {
 			s.mockExperimentService,
 			s.mockExperimentService2,
 		},
+		logger:logging.GetLogger("sdkKey", "CompositeExperimentService"),
 	}
 	decision, err := compositeExperimentService.GetDecision(testDecisionContext, testUserContext)
 	s.Equal(expectedDecision, decision)

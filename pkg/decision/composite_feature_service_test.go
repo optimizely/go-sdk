@@ -18,6 +18,7 @@ package decision
 
 import (
 	"errors"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
@@ -64,6 +65,7 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecision() {
 			s.mockFeatureService,
 			s.mockFeatureService2,
 		},
+		logger:logging.GetLogger("sdkKey", "CompositeFeatureService"),
 	}
 	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext)
 	s.Equal(expectedDecision, decision)
@@ -91,6 +93,7 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionFallthrough() {
 			s.mockFeatureService,
 			s.mockFeatureService2,
 		},
+		logger:logging.GetLogger("sdkKey", "CompositeFeatureService"),
 	}
 	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext)
 	s.Equal(expectedDecision, decision)
@@ -120,6 +123,8 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsError() {
 			s.mockFeatureService,
 			s.mockFeatureService2,
 		},
+		logger:logging.GetLogger("sdkKey", "CompositeFeatureService"),
+
 	}
 	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext)
 	s.Equal(expectedDecision, decision)
@@ -146,6 +151,7 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsLastDecisionWit
 			s.mockFeatureService,
 			s.mockFeatureService2,
 		},
+		logger:logging.GetLogger("sdkKey", "CompositeFeatureService"),
 	}
 	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext)
 	s.Equal(expectedDecision, decision)

@@ -17,6 +17,7 @@
 package decision
 
 import (
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/decision/evaluator"
@@ -75,6 +76,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionHappyPath() {
 	testRolloutService := RolloutService{
 		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
 		experimentBucketerService: s.mockExperimentService,
+		logger:logging.GetLogger("sdkKey", "RolloutService"),
 	}
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1112,
@@ -101,6 +103,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionFailsBucketing() {
 	testRolloutService := RolloutService{
 		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
 		experimentBucketerService: s.mockExperimentService,
+		logger:logging.GetLogger("sdkKey", "RolloutService"),
 	}
 	expectedFeatureDecision := FeatureDecision{
 		Decision: Decision{
@@ -120,6 +123,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionFailsTargeting() {
 	testRolloutService := RolloutService{
 		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
 		experimentBucketerService: s.mockExperimentService,
+		logger:logging.GetLogger("sdkKey", "RolloutService"),
 	}
 	expectedFeatureDecision := FeatureDecision{
 		Decision: Decision{
@@ -136,7 +140,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionFailsTargeting() {
 func TestNewRolloutService(t *testing.T) {
 	rolloutService := NewRolloutService("")
 	assert.IsType(t, &evaluator.MixedTreeEvaluator{}, rolloutService.audienceTreeEvaluator)
-	assert.IsType(t, &ExperimentBucketerService{}, rolloutService.experimentBucketerService)
+	assert.IsType(t, &ExperimentBucketerService{logger:logging.GetLogger("sdkKey", "ExperimentBucketerService")}, rolloutService.experimentBucketerService)
 }
 
 func TestRolloutServiceTestSuite(t *testing.T) {

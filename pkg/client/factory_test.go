@@ -102,12 +102,8 @@ func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 	projectConfig := datafileprojectconfig.DatafileProjectConfig{}
 	configManager := config.NewStaticProjectConfigManager(projectConfig, logging.GetLogger("", "StaticProjectConfigManager"))
 	decisionService := new(MockDecisionService)
-	processor := &event.BatchEventProcessor{
-		MaxQueueSize:    100,
-		FlushInterval:   100,
-		Q:               event.NewInMemoryQueue(100),
-		EventDispatcher: &MockDispatcher{Events: []event.LogEvent{}},
-	}
+	processor := event.NewBatchEventProcessor(event.WithQueueSize(100),event.WithFlushInterval(100),
+		event.WithQueue(event.NewInMemoryQueue(100)), event.WithEventDispatcher(&MockDispatcher{Events: []event.LogEvent{}}))
 
 	optimizelyClient, err := factory.Client(WithConfigManager(configManager), WithDecisionService(decisionService), WithEventProcessor(processor))
 	assert.NoError(t, err)
