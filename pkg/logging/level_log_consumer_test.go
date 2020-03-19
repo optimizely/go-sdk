@@ -46,9 +46,10 @@ func TestLogFormatting(t *testing.T) {
 	out := &bytes.Buffer{}
 	newLogger := NewFilteredLevelLogConsumer(LogLevelInfo, out)
 
-	newLogger.Log(LogLevelInfo, "test message", map[string]interface{}{"name": "test-name"})
+	newLogger.Log(LogLevelInfo, "test message", map[string]interface{}{"name": "test-name", "sdkKey": "test-sdkKey"})
 	assert.Contains(t, out.String(), "test message")
 	assert.Contains(t, out.String(), "[Info]")
 	assert.Contains(t, out.String(), "[test-name]")
+	assert.Contains(t, out.String(), "[test-sdkKey]")
 	assert.Contains(t, out.String(), "[Optimizely]")
 }
