@@ -51,7 +51,7 @@ func TestBucketToEntity(t *testing.T) {
 }
 
 func TestGenerateBucketValue(t *testing.T) {
-	bucketer := NewMurmurhashBucketer(DefaultHashSeed)
+	bucketer := NewMurmurhashBucketer("", DefaultHashSeed)
 
 	// copied from unit tests in the other SDKs
 	experimentID := "1886780721"

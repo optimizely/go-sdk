@@ -19,6 +19,7 @@ package utils
 
 import (
 	"context"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"sync"
 	"testing"
 )
@@ -26,7 +27,7 @@ import (
 func TestWithContextCancelFunc(t *testing.T) {
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	eg := NewExecGroup(ctx)
+	eg := NewExecGroup(logging.GetLogger("", ""), ctx)
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
@@ -41,7 +42,7 @@ func TestWithContextCancelFunc(t *testing.T) {
 
 func TestTerminateAndWait(t *testing.T) {
 
-	eg := NewExecGroup(context.Background())
+	eg := NewExecGroup(logging.GetLogger("", ""), context.Background())
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)

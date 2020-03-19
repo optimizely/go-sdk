@@ -34,6 +34,9 @@ func (l *FilteredLevelLogConsumer) Log(level LogLevel, message string, fields ma
 	if l.level <= level {
 		// prepends the name and log level to the message
 		messBuilder := strings.Builder{}
+		messBuilder.WriteString("[")
+		messBuilder.WriteString(level.String())
+		messBuilder.WriteString("]")
 		for _, v := range fields {
 			if s, ok := v.(string); ok {
 				messBuilder.WriteString("[")
