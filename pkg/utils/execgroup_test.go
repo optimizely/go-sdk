@@ -27,7 +27,7 @@ import (
 func TestWithContextCancelFunc(t *testing.T) {
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	eg := NewExecGroup(logging.GetLogger("", ""), ctx)
+	eg := NewExecGroup(ctx, logging.GetLogger("", ""))
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
@@ -42,7 +42,7 @@ func TestWithContextCancelFunc(t *testing.T) {
 
 func TestTerminateAndWait(t *testing.T) {
 
-	eg := NewExecGroup(logging.GetLogger("", ""), context.Background())
+	eg := NewExecGroup(context.Background(), logging.GetLogger("", ""))
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)

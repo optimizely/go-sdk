@@ -45,7 +45,7 @@ func (m *MockRequester) Get(uri string, headers ...utils.Header) (response []byt
 var logger = logging.GetLogger("polling_manager_test", "PollingManager")
 
 func newExecGroup() *utils.ExecGroup {
-	return utils.NewExecGroup(logger, context.Background())
+	return utils.NewExecGroup(context.Background(), logger)
 }
 
 // assertion method to periodically check target function each tick.

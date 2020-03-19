@@ -74,7 +74,7 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		ctx = context.Background()
 	}
 
-	eg := utils.NewExecGroup(logging.GetLogger(f.SDKKey, "ExecGroup"), ctx)
+	eg := utils.NewExecGroup(ctx, logging.GetLogger(f.SDKKey, "ExecGroup"))
 	appClient := &OptimizelyClient{execGroup: eg,
 		notificationCenter: registry.GetNotificationCenter(f.SDKKey),
 		logger: logging.GetLogger(f.SDKKey, "OptimizelyClient")}

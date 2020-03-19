@@ -59,7 +59,7 @@ func NewMockDispatcher(queueSize int, shouldFail bool) *MockDispatcher {
 }
 
 func newExecutionContext() *utils.ExecGroup {
-	return utils.NewExecGroup(logging.GetLogger("", "NewExecGroup"), context.Background())
+	return utils.NewExecGroup(context.Background(), logging.GetLogger("", "NewExecGroup"))
 }
 
 func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {

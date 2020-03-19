@@ -32,11 +32,11 @@ type ExecGroup struct {
 }
 
 // NewExecGroup returns constructed object
-func NewExecGroup(logger logging.OptimizelyLogProducer, ctx context.Context) *ExecGroup {
+func NewExecGroup(ctx context.Context, logger logging.OptimizelyLogProducer) *ExecGroup {
 	nctx, cancelFn := context.WithCancel(ctx)
 	wg := sync.WaitGroup{}
 
-	return &ExecGroup{wg: &wg, ctx: nctx, cancelFunc: cancelFn}
+	return &ExecGroup{wg: &wg, ctx: nctx, cancelFunc: cancelFn, logger:logger}
 }
 
 // Go initiates a goroutine with the inputted function. Each invocation increments a shared WaitGroup

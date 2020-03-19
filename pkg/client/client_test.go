@@ -2043,7 +2043,7 @@ func TestClose(t *testing.T) {
 	mockProcessor := &MockProcessor{}
 	mockDecisionService := new(MockDecisionService)
 
-	eg := utils.NewExecGroup(logging.GetLogger("", "ExecGroup"), context.Background())
+	eg := utils.NewExecGroup(context.Background(), logging.GetLogger("", "ExecGroup"))
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
