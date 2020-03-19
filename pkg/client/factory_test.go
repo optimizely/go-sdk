@@ -19,6 +19,7 @@ package client
 import (
 	"context"
 	"errors"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"net/http"
 	"sync"
 	"testing"
@@ -87,7 +88,7 @@ func TestClientWithPollingConfigManager(t *testing.T) {
 func TestClientWithProjectConfigManagerInOptions(t *testing.T) {
 	factory := OptimizelyFactory{}
 	projectConfig := datafileprojectconfig.DatafileProjectConfig{}
-	configManager := config.NewStaticProjectConfigManager(projectConfig)
+	configManager := config.NewStaticProjectConfigManager(projectConfig, logging.GetLogger("", ""))
 
 	optimizelyClient, err := factory.Client(WithConfigManager(configManager))
 	assert.NoError(t, err)
@@ -99,7 +100,7 @@ func TestClientWithProjectConfigManagerInOptions(t *testing.T) {
 func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 	factory := OptimizelyFactory{}
 	projectConfig := datafileprojectconfig.DatafileProjectConfig{}
-	configManager := config.NewStaticProjectConfigManager(projectConfig)
+	configManager := config.NewStaticProjectConfigManager(projectConfig, logging.GetLogger("", "StaticProjectConfigManager"))
 	decisionService := new(MockDecisionService)
 	processor := &event.BatchEventProcessor{
 		MaxQueueSize:    100,

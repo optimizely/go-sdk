@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"strconv"
 	"sync"
 	"testing"
@@ -1988,7 +1989,7 @@ func TestClose(t *testing.T) {
 	mockProcessor := &MockProcessor{}
 	mockDecisionService := new(MockDecisionService)
 
-	eg := utils.NewExecGroup(context.Background())
+	eg := utils.NewExecGroup(logging.GetLogger("", "ExecGroup"), context.Background())
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)

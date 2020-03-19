@@ -17,6 +17,7 @@
 package decision
 
 import (
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
@@ -110,7 +111,7 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionMutex() {
 
 func (s *FeatureExperimentServiceTestSuite) TestNewFeatureExperimentService() {
 	compositeExperimentService := &CompositeExperimentService{}
-	featureExperimentService := NewFeatureExperimentService(compositeExperimentService)
+	featureExperimentService := NewFeatureExperimentService(logging.GetLogger("", ""), compositeExperimentService)
 	s.IsType(compositeExperimentService, featureExperimentService.compositeExperimentService)
 }
 

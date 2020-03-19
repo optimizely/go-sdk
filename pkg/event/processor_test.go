@@ -59,13 +59,13 @@ func NewMockDispatcher(queueSize int, shouldFail bool) *MockDispatcher {
 }
 
 func newExecutionContext() *utils.ExecGroup {
-	return utils.NewExecGroup(context.Background())
+	return utils.NewExecGroup(logging.GetLogger("", "NewExecGroup"), context.Background())
 }
 
 func TestDefaultEventProcessor_ProcessImpression(t *testing.T) {
 	eg := newExecutionContext()
 	processor := NewBatchEventProcessor()
-	processor.EventDispatcher = NewQueueEventDispatcher(processor.metricsRegistry)
+	processor.EventDispatcher = NewQueueEventDispatcher("", processor.metricsRegistry)
 	eg.Go(processor.Start)
 
 	impression := BuildTestImpressionEvent()
@@ -425,7 +425,7 @@ func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
 	processor := NewBatchEventProcessor(
 		WithQueueSize(100),
 		WithQueue(NewInMemoryQueue(100)),
-		WithEventDispatcher(&HTTPEventDispatcher{requester: utils.NewHTTPRequester()}))
+		WithEventDispatcher(&HTTPEventDispatcher{requester: utils.NewHTTPRequester(logging.GetLogger("", "NewHTTPRequester"))}))
 
 	eg.Go(processor.Start)
 

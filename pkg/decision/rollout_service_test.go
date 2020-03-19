@@ -134,7 +134,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionFailsTargeting() {
 }
 
 func TestNewRolloutService(t *testing.T) {
-	rolloutService := NewRolloutService()
+	rolloutService := NewRolloutService("")
 	assert.IsType(t, &evaluator.MixedTreeEvaluator{}, rolloutService.audienceTreeEvaluator)
 	assert.IsType(t, &ExperimentBucketerService{}, rolloutService.experimentBucketerService)
 }

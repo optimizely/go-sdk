@@ -18,9 +18,9 @@
 package logging
 
 import (
-	"fmt"
 	"io"
 	"log"
+	"strings"
 )
 
 // FilteredLevelLogConsumer is an implementation of the OptimizelyLogConsumer that filters by log level
@@ -33,8 +33,17 @@ type FilteredLevelLogConsumer struct {
 func (l *FilteredLevelLogConsumer) Log(level LogLevel, message string, fields map[string]interface{}) {
 	if l.level <= level {
 		// prepends the name and log level to the message
-		message = fmt.Sprintf("[%s][%s] %s", level, fields["name"], message)
-		l.logger.Println(message)
+		messBuilder := strings.Builder{}
+		for _, v := range fields {
+			if s, ok := v.(string); ok {
+				messBuilder.WriteString("[")
+				messBuilder.WriteString(s)
+				messBuilder.WriteString("]")
+			}
+		}
+		messBuilder.WriteString(" ")
+		messBuilder.WriteString(message)
+		l.logger.Println(messBuilder.String())
 	}
 }
 

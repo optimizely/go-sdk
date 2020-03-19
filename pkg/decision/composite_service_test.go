@@ -94,8 +94,8 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListeners() {
 
 func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWithFloatVariable() {
 
-	compositeExperimentService := NewCompositeExperimentService()
-	compositeFeatureDecisionService := NewCompositeFeatureService(compositeExperimentService)
+	compositeExperimentService := NewCompositeExperimentService("")
+	compositeFeatureDecisionService := NewCompositeFeatureService("", compositeExperimentService)
 	s.decisionContext.Variable = entities.Variable{
 		DefaultValue: "23.34",
 		ID:           "1",
@@ -132,8 +132,8 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWith
 
 func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWithIntegerVariable() {
 
-	compositeExperimentService := NewCompositeExperimentService()
-	compositeFeatureDecisionService := NewCompositeFeatureService(compositeExperimentService)
+	compositeExperimentService := NewCompositeExperimentService("")
+	compositeFeatureDecisionService := NewCompositeFeatureService("", compositeExperimentService)
 	s.decisionContext.Variable = entities.Variable{
 		DefaultValue: "23",
 		ID:           "1",
@@ -170,8 +170,8 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWith
 
 func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWithBoolVariable() {
 
-	compositeExperimentService := NewCompositeExperimentService()
-	compositeFeatureDecisionService := NewCompositeFeatureService(compositeExperimentService)
+	compositeExperimentService := NewCompositeExperimentService("")
+	compositeFeatureDecisionService := NewCompositeFeatureService("", compositeExperimentService)
 	s.decisionContext.Variable = entities.Variable{
 		DefaultValue: "true",
 		ID:           "1",
@@ -208,8 +208,8 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWith
 
 func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWithWrongTypelVariable() {
 
-	compositeExperimentService := NewCompositeExperimentService()
-	compositeFeatureDecisionService := NewCompositeFeatureService(compositeExperimentService)
+	compositeExperimentService := NewCompositeExperimentService("")
+	compositeFeatureDecisionService := NewCompositeFeatureService("", compositeExperimentService)
 	s.decisionContext.Variable = entities.Variable{
 		DefaultValue: "string",
 		ID:           "1",
@@ -246,8 +246,8 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWith
 
 func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWithNoVariable() {
 
-	compositeExperimentService := NewCompositeExperimentService()
-	compositeFeatureDecisionService := NewCompositeFeatureService(compositeExperimentService)
+	compositeExperimentService := NewCompositeExperimentService("")
+	compositeFeatureDecisionService := NewCompositeFeatureService("", compositeExperimentService)
 	s.decisionContext.Variable = entities.Variable{} //no variable
 
 	decisionService := &CompositeService{
@@ -284,7 +284,7 @@ func (s *CompositeServiceFeatureTestSuite) TestNewCompositeService() {
 }
 
 func (s *CompositeServiceFeatureTestSuite) TestNewCompositeServiceWithCustomOptions() {
-	compositeExperimentService := NewCompositeExperimentService()
+	compositeExperimentService := NewCompositeExperimentService("")
 	compositeService := NewCompositeService("sdk_key", WithCompositeExperimentService(compositeExperimentService))
 	s.IsType(compositeExperimentService, compositeService.compositeExperimentService)
 	s.IsType(&CompositeFeatureService{}, compositeService.compositeFeatureService)

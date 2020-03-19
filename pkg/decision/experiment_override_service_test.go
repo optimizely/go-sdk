@@ -18,6 +18,7 @@
 package decision
 
 import (
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"sync"
 	"testing"
 
@@ -36,7 +37,7 @@ type ExperimentOverrideServiceTestSuite struct {
 func (s *ExperimentOverrideServiceTestSuite) SetupTest() {
 	s.mockConfig = new(mockProjectConfig)
 	s.overrides = NewMapExperimentOverridesStore()
-	s.overrideService = NewExperimentOverrideService(s.overrides)
+	s.overrideService = NewExperimentOverrideService(logging.GetLogger("", ""), s.overrides)
 }
 
 func (s *ExperimentOverrideServiceTestSuite) TestOverridesIncludeVariation() {

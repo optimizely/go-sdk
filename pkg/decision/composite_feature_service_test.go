@@ -157,8 +157,8 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsLastDecisionWit
 
 func (s *CompositeFeatureServiceTestSuite) TestNewCompositeFeatureService() {
 	// Assert that the service is instantiated with the correct child services in the right order
-	compositeExperimentService := NewCompositeExperimentService()
-	compositeFeatureService := NewCompositeFeatureService(compositeExperimentService)
+	compositeExperimentService := NewCompositeExperimentService("")
+	compositeFeatureService := NewCompositeFeatureService("", compositeExperimentService)
 	s.Equal(2, len(compositeFeatureService.featureServices))
 	s.IsType(&FeatureExperimentService{compositeExperimentService: compositeExperimentService}, compositeFeatureService.featureServices[0])
 	s.IsType(&RolloutService{}, compositeFeatureService.featureServices[1])

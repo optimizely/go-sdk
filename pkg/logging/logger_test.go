@@ -46,7 +46,7 @@ func TestNamedLoggerDebug(t *testing.T) {
 
 	SetLogger(testLogger)
 
-	logProducer := GetLogger(testLogName)
+	logProducer := GetLogger("", testLogName)
 	logProducer.Debug(testLogMessage)
 	testLogger.AssertExpectations(t)
 	assert.Equal(t, []string{testLogMessage}, testLogger.loggedMessages)
@@ -60,7 +60,7 @@ func TestNamedLoggerInfo(t *testing.T) {
 
 	SetLogger(testLogger)
 
-	logProducer := GetLogger(testLogName)
+	logProducer := GetLogger("testSdkKey", testLogName)
 	logProducer.Info(testLogMessage)
 	testLogger.AssertExpectations(t)
 	assert.Equal(t, []string{testLogMessage}, testLogger.loggedMessages)
@@ -74,7 +74,7 @@ func TestNamedLoggerWarning(t *testing.T) {
 
 	SetLogger(testLogger)
 
-	logProducer := GetLogger(testLogName)
+	logProducer := GetLogger("testSdkKey", testLogName)
 	logProducer.Warning(testLogMessage)
 	testLogger.AssertExpectations(t)
 	assert.Equal(t, []string{testLogMessage}, testLogger.loggedMessages)
@@ -89,7 +89,7 @@ func TestNamedLoggerError(t *testing.T) {
 	SetLogger(testLogger)
 
 	err := errors.New("I am an error object")
-	logProducer := GetLogger(testLogName)
+	logProducer := GetLogger("", testLogName)
 	logProducer.Error(testLogMessage, err)
 	testLogger.AssertExpectations(t)
 	assert.Equal(t, []string{expectedLogMessage}, testLogger.loggedMessages)

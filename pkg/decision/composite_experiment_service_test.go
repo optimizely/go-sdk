@@ -152,7 +152,7 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionReturnsError() {
 
 func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentService() {
 	// Assert that the service is instantiated with the correct child services in the right order
-	compositeExperimentService := NewCompositeExperimentService()
+	compositeExperimentService := NewCompositeExperimentService("")
 	s.Equal(2, len(compositeExperimentService.experimentServices))
 	s.IsType(&ExperimentWhitelistService{}, compositeExperimentService.experimentServices[0])
 	s.IsType(&ExperimentBucketerService{}, compositeExperimentService.experimentServices[1])
@@ -161,7 +161,7 @@ func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentService() {
 func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithCustomOptions() {
 	mockUserProfileService := new(MockUserProfileService)
 	mockExperimentOverrideStore := new(MapExperimentOverridesStore)
-	compositeExperimentService := NewCompositeExperimentService(
+	compositeExperimentService := NewCompositeExperimentService("",
 		WithUserProfileService(mockUserProfileService),
 		WithOverrideStore(mockExperimentOverrideStore),
 	)

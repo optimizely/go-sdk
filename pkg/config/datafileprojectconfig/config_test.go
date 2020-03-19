@@ -19,6 +19,7 @@ package datafileprojectconfig
 
 import (
 	"fmt"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
@@ -27,12 +28,12 @@ import (
 )
 
 func TestNewDatafileProjectConfigNil(t *testing.T) {
-	projectConfig, err := NewDatafileProjectConfig(nil)
+	projectConfig, err := NewDatafileProjectConfig(logging.GetLogger("", "DatafileProjectConfig"), nil)
 	assert.Error(t, err)
 	assert.Nil(t, projectConfig)
 
 	jsonDatafileStr := `{"accountID": "123", "revision": "1", "projectId": "12345", "version": "2"}`
-	projectConfig, err = NewDatafileProjectConfig([]byte(jsonDatafileStr))
+	projectConfig, err = NewDatafileProjectConfig(logging.GetLogger("", "DatafileProjectConfig"), []byte(jsonDatafileStr))
 	assert.Error(t, err)
 	assert.Nil(t, projectConfig)
 }
@@ -41,7 +42,7 @@ func TestNewDatafileProjectConfigNotNil(t *testing.T) {
 	dpc := DatafileProjectConfig{accountID: "123", revision: "1", projectID: "12345"}
 	jsonDatafileStr := `{"accountID": "123", "revision": "1", "projectId": "12345", "version": "4"}`
 	jsonDatafile := []byte(jsonDatafileStr)
-	projectConfig, err := NewDatafileProjectConfig(jsonDatafile)
+	projectConfig, err := NewDatafileProjectConfig(logging.GetLogger("", "DatafileProjectConfig"), jsonDatafile)
 	assert.Nil(t, err)
 	assert.NotNil(t, projectConfig)
 	assert.Equal(t, dpc.accountID, projectConfig.accountID)
