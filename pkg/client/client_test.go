@@ -1870,6 +1870,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabled() {
 	client := OptimizelyClient{
 		ConfigManager:   s.mockConfigManager,
 		DecisionService: s.mockDecisionService,
+		EventProcessor: s.mockEventProcessor,
 		logger:logging.GetLogger("", ""),
 	}
 	result, _ := client.IsFeatureEnabled(testFeature.Key, testUserContext)
