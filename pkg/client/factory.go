@@ -77,7 +77,7 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 	eg := utils.NewExecGroup(ctx, logging.GetLogger(f.SDKKey, "ExecGroup"))
 	appClient := &OptimizelyClient{execGroup: eg,
 		notificationCenter: registry.GetNotificationCenter(f.SDKKey),
-		logger: logging.GetLogger(f.SDKKey, "OptimizelyClient")}
+		logger:             logging.GetLogger(f.SDKKey, "OptimizelyClient")}
 
 	if f.configManager != nil {
 		appClient.ConfigManager = f.configManager

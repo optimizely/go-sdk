@@ -19,9 +19,10 @@ package notification
 
 import (
 	"fmt"
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"sync"
 	"sync/atomic"
+
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 // Manager is a generic interface for managing notifications of a particular type
