@@ -47,7 +47,7 @@ jobs:
 
     - <<: *test
       stage: 'Unit test'
-      env: GIMME_GO_VERSION=1.10.x
+      env: GIMME_GO_VERSION=1.11.x
       before_script:
         # GO module was not introduced earlier. need symlink to search in GOPATH
         - mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely optimizely && popd
@@ -56,10 +56,10 @@ jobs:
         - mkdir $GOPATH/src/github.com/twmb && cd $GOPATH/src/github.com/twmb && git clone https://github.com/twmb/murmur3.git && cd $TRAVIS_BUILD_DIR
         - pushd $GOPATH/src/github.com/twmb/murmur3 && git checkout v1.0.0 && popd
         - go get -v -d ./...
-        # This pkg not in go 1.10
+        # This pkg not in go 1.11
         - go get github.com/stretchr/testify
         - pushd $GOPATH/src/github.com/stretchr/testify && git checkout v1.4.0 && popd
-        # -coverprofile was not introduced in 1.10
+        # -coverprofile was not introduced in 1.11
         - make test
 
     - <<: *test
