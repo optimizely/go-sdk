@@ -115,6 +115,46 @@ func TestNamedLoggerFields(t *testing.T) {
 
 }
 
+func TestLogSdkKeyOverride(t *testing.T) {
+	out := &bytes.Buffer{}
+	newLogger := NewFilteredLevelLogConsumer(LogLevelDebug, out)
+
+	SetLogger(newLogger)
+
+	key := "test-test-test"
+	SetSdkKeyLogMapping("TestLogOverride-sdkKey", key)
+
+	logger := GetLogger("TestLogOverride-sdkKey", "TestLogSdkKeyOverride")
+	logger.Debug("test message")
+
+	assert.Contains(t, out.String(), "test message")
+	assert.Contains(t, out.String(), "[Debug]")
+	assert.Contains(t, out.String(), "[TestLogSdkKeyOverride]")
+	assert.Contains(t, out.String(), key)
+	assert.NotContains(t, out.String(), "TestNamedLoggerFields-sdkKey")
+	assert.Contains(t, out.String(), "[Optimizely]")
+}
+
+func TestLogSdkKey(t *testing.T) {
+	out := &bytes.Buffer{}
+	newLogger := NewFilteredLevelLogConsumer(LogLevelDebug, out)
+
+	SetLogger(newLogger)
+
+	key := "TestLogSdkKey-sdkKey"
+
+	UseSdkKeyForLogging(key)
+
+	logger := GetLogger(key, "TestLogSdkKeyOverride")
+	logger.Debug("test message")
+
+	assert.Contains(t, out.String(), "test message")
+	assert.Contains(t, out.String(), "[Debug]")
+	assert.Contains(t, out.String(), "[TestLogSdkKeyOverride]")
+	assert.Contains(t, out.String(), key)
+	assert.Contains(t, out.String(), "[Optimizely]")
+}
+
 func TestSetLogLevel(t *testing.T) {
 	testLogger := new(MockOptimizelyLogger)
 	testLogger.On("SetLogLevel", LogLevelError)

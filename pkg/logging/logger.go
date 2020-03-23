@@ -90,6 +90,19 @@ func GetSdkKeyLogMapping(sdkKey string) string {
 	return ""
 }
 
+// UseSdkKeyForLogging by default the sdk key is masked for logging.
+// This sets it to use the SDK Key and should be set before the creating your client factory.
+func UseSdkKeyForLogging(sdkKey string) {
+	SetSdkKeyLogMapping(sdkKey, sdkKey)
+}
+
+// SetSdkKeyLogMapping sets the logging key to use for the Optimizely sdk key.
+// By default, the sdk key has masking.  This can override the default of optimizely-1,2,3,4,etc..
+// This should be set before creating your Optimizely client factory.
+func SetSdkKeyLogMapping(sdkKey string, logMapping string) {
+	sdkKeyMappings.Store(sdkKey, logMapping)
+}
+
 // NamedLogProducer produces logs prefixed with its name
 type NamedLogProducer struct {
 	fields map[string]interface{}
