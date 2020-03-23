@@ -17,6 +17,7 @@
 package logging
 
 import (
+	"bytes"
 	"errors"
 	"testing"
 
@@ -93,6 +94,25 @@ func TestNamedLoggerError(t *testing.T) {
 	logProducer.Error(testLogMessage, err)
 	testLogger.AssertExpectations(t)
 	assert.Equal(t, []string{expectedLogMessage}, testLogger.loggedMessages)
+}
+
+func TestNamedLoggerFields(t *testing.T) {
+	out := &bytes.Buffer{}
+	newLogger := NewFilteredLevelLogConsumer(LogLevelDebug, out)
+
+	SetLogger(newLogger)
+
+	logger := GetLogger("TestNamedLoggerFields-sdkKey", "TestNamedLoggerFields")
+	logger.Debug("test message")
+
+	key := GetSdkKeyLogMapping("TestNamedLoggerFields-sdkKey")
+	assert.Contains(t, out.String(), "test message")
+	assert.Contains(t, out.String(), "[Debug]")
+	assert.Contains(t, out.String(), "[TestNamedLoggerFields]")
+	assert.Contains(t, out.String(), key)
+	assert.NotContains(t, out.String(), "TestNamedLoggerFields-sdkKey")
+	assert.Contains(t, out.String(), "[Optimizely]")
+
 }
 
 func TestSetLogLevel(t *testing.T) {

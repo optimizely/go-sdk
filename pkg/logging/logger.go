@@ -20,7 +20,9 @@ package logging
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
+	"sync/atomic"
 )
 
 // LogLevel represents the level of the log (i.e. Debug, Info, Warning, Error)
@@ -32,6 +34,8 @@ func (l LogLevel) String() string {
 
 var defaultLogConsumer OptimizelyLogConsumer
 var mutex = &sync.Mutex{}
+var sdkKeyMappings = sync.Map{}
+var count int32 = 0
 
 const (
 	// LogLevelDebug log level
@@ -70,8 +74,19 @@ func SetLogLevel(logLevel LogLevel) {
 // GetLogger returns a log producer with the given name
 func GetLogger(sdkKey, name string) OptimizelyLogProducer {
 	return NamedLogProducer{
-		fields: map[string]interface{}{"sdkKey":sdkKey, "name": name},
+		fields: map[string]interface{}{"sdkKeyLogMapping":GetSdkKeyLogMapping(sdkKey), "name": name},
 	}
+}
+
+func GetSdkKeyLogMapping(sdkKey string) string {
+	if logMapping, _ := sdkKeyMappings.LoadOrStore(sdkKey, "optimizely-" +
+		strconv.Itoa(int(atomic.AddInt32(&count, 1)))); logMapping != nil {
+		if lm, ok := logMapping.(string);ok {
+			return lm
+		}
+	}
+
+	return ""
 }
 
 // NamedLogProducer produces logs prefixed with its name
