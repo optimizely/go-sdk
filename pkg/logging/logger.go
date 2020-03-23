@@ -35,7 +35,7 @@ func (l LogLevel) String() string {
 var defaultLogConsumer OptimizelyLogConsumer
 var mutex = &sync.Mutex{}
 var sdkKeyMappings = sync.Map{}
-var count int32 = 0
+var count int32
 
 const (
 	// LogLevelDebug log level
