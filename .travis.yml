@@ -55,7 +55,7 @@ jobs:
         # Need to download packages explicitly
         - mkdir $GOPATH/src/github.com/twmb && cd $GOPATH/src/github.com/twmb && git clone https://github.com/twmb/murmur3.git && cd $TRAVIS_BUILD_DIR
         - pushd $GOPATH/src/github.com/twmb/murmur3 && git checkout v1.0.0 && popd
-        - go get -v -d ./...
+        # - go get -v -d ./...
         # This pkg not in go 1.10
         - go get github.com/stretchr/testify
         - pushd $GOPATH/src/github.com/stretchr/testify && git checkout v1.4.0 && popd
