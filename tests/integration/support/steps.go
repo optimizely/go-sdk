@@ -24,7 +24,8 @@ import (
 
 	"github.com/optimizely/go-sdk/pkg/decision"
 
-	"github.com/DATA-DOG/godog/gherkin"
+	"github.com/cucumber/gherkin-go"
+	"github.com/cucumber/messages-go"
 	"github.com/google/uuid"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/tests/integration/models"

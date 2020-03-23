@@ -21,8 +21,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/DATA-DOG/godog"
-	"github.com/DATA-DOG/godog/colors"
+	"github.com/cucumber/godog"
+	"github.com/cucumber/godog/colors"
 	"github.com/optimizely/go-sdk/tests/integration/support"
 )
 
