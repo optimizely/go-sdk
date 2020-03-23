@@ -78,6 +78,7 @@ func GetLogger(sdkKey, name string) OptimizelyLogProducer {
 	}
 }
 
+// GetSdkKeyLogMapping returns a string that maps to the sdk key that is used for logging (hiding the sdk key)
 func GetSdkKeyLogMapping(sdkKey string) string {
 	if logMapping, _ := sdkKeyMappings.LoadOrStore(sdkKey, "optimizely-" +
 		strconv.Itoa(int(atomic.AddInt32(&count, 1)))); logMapping != nil {
