@@ -99,7 +99,7 @@ func UseSdkKeyForLogging(sdkKey string) {
 // SetSdkKeyLogMapping sets the logging key to use for the Optimizely sdk key.
 // By default, the sdk key has masking.  This can override the default of optimizely-1,2,3,4,etc..
 // This should be set before creating your Optimizely client factory.
-func SetSdkKeyLogMapping(sdkKey string, logMapping string) {
+func SetSdkKeyLogMapping(sdkKey, logMapping string) {
 	sdkKeyMappings.Store(sdkKey, logMapping)
 }
 
