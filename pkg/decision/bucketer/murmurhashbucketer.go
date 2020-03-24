@@ -46,10 +46,10 @@ type MurmurhashBucketer struct {
 }
 
 // NewMurmurhashBucketer returns a new instance of the murmurhash bucketer
-func NewMurmurhashBucketer(sdkKey string, hashSeed uint32) *MurmurhashBucketer {
+func NewMurmurhashBucketer(logger logging.OptimizelyLogProducer, hashSeed uint32) *MurmurhashBucketer {
 	return &MurmurhashBucketer{
 		hashSeed: hashSeed,
-		logger: logging.GetLogger(sdkKey, "MurmurhashBucketer"),
+		logger: logger,
 	}
 }
 

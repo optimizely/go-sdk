@@ -40,7 +40,7 @@ func NewExperimentBucketerService(logger logging.OptimizelyLogProducer) *Experim
 	return &ExperimentBucketerService{
 		logger:logger,
 		audienceTreeEvaluator: evaluator.NewMixedTreeEvaluator(),
-		bucketer:              *bucketer.NewMurmurhashExperimentBucketer(bucketer.DefaultHashSeed),
+		bucketer:              *bucketer.NewMurmurhashExperimentBucketer(logger, bucketer.DefaultHashSeed),
 	}
 }
 

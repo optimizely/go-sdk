@@ -20,6 +20,7 @@ package bucketer
 import (
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 // ExperimentBucketer is used to bucket the user into a particular entity in the experiment's traffic alloc range
@@ -33,9 +34,9 @@ type MurmurhashExperimentBucketer struct {
 }
 
 // NewMurmurhashExperimentBucketer returns a new instance of the murmurhash experiment bucketer
-func NewMurmurhashExperimentBucketer(hashSeed uint32) *MurmurhashExperimentBucketer {
+func NewMurmurhashExperimentBucketer(logger logging.OptimizelyLogProducer, hashSeed uint32) *MurmurhashExperimentBucketer {
 	return &MurmurhashExperimentBucketer{
-		bucketer: MurmurhashBucketer{hashSeed: hashSeed},
+		bucketer: MurmurhashBucketer{hashSeed: hashSeed, logger:logger},
 	}
 }
 
