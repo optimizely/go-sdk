@@ -19,6 +19,7 @@ package logging
 import (
 	"bytes"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -153,6 +154,48 @@ func TestLogSdkKey(t *testing.T) {
 	assert.Contains(t, out.String(), "[TestLogSdkKeyOverride]")
 	assert.Contains(t, out.String(), key)
 	assert.Contains(t, out.String(), "[Optimizely]")
+}
+
+func TestLoggingOrder(t *testing.T) {
+	out := &bytes.Buffer{}
+	newLogger := NewFilteredLevelLogConsumer(LogLevelDebug, out)
+
+	SetLogger(newLogger)
+
+	key := "TestLoggingOrder-sdkKey"
+
+	logger := GetLogger(key, "TestLoggingOrder")
+	logger.Debug("test message")
+
+	key = GetSdkKeyLogMapping(key)
+
+	response := out.String()
+
+	assert.Contains(t, response, "test message")
+	assert.Contains(t, response, "[Debug][" + key +"][TestLoggingOrder] test message" )
+	assert.True(t, strings.HasPrefix(response, "[Optimizely]"))
+
+}
+
+func TestLoggingOrderEmpty(t *testing.T) {
+	out := &bytes.Buffer{}
+	newLogger := NewFilteredLevelLogConsumer(LogLevelDebug, out)
+
+	SetLogger(newLogger)
+
+	key := ""
+
+	logger := GetLogger(key, "TestLoggingOrder")
+	logger.Debug("test message")
+
+	key = GetSdkKeyLogMapping(key)
+
+	response := out.String()
+
+	assert.Contains(t, response, "test message")
+	assert.Contains(t, response, "[Debug][TestLoggingOrder] test message" )
+	assert.True(t, strings.HasPrefix(response, "[Optimizely]"))
+
 }
 
 func TestSetLogLevel(t *testing.T) {

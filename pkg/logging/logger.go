@@ -74,17 +74,20 @@ func SetLogLevel(logLevel LogLevel) {
 // GetLogger returns a log producer with the given name
 func GetLogger(sdkKey, name string) OptimizelyLogProducer {
 	return NamedLogProducer{
-		fields: map[string]interface{}{"sdkKeyLogMapping":GetSdkKeyLogMapping(sdkKey), "name": name},
+		fields: map[string]interface{}{"aSdkKeyLogMapping":GetSdkKeyLogMapping(sdkKey), "name": name},
 	}
 }
 
 // GetSdkKeyLogMapping returns a string that maps to the sdk key that is used for logging (hiding the sdk key)
 func GetSdkKeyLogMapping(sdkKey string) string {
-	if logMapping, _ := sdkKeyMappings.LoadOrStore(sdkKey, "optimizely-" +
-		strconv.Itoa(int(atomic.AddInt32(&count, 1)))); logMapping != nil {
+	if logMapping, _ := sdkKeyMappings.Load(sdkKey); logMapping != nil {
 		if lm, ok := logMapping.(string);ok {
 			return lm
 		}
+	} else if sdkKey != "" {
+		mapping := "optimizely-" + strconv.Itoa(int(atomic.AddInt32(&count, 1)))
+		sdkKeyMappings.Store(sdkKey, mapping)
+		return mapping
 	}
 
 	return ""
