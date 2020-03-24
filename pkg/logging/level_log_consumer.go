@@ -40,7 +40,7 @@ func (l *FilteredLevelLogConsumer) Log(level LogLevel, message string, fields ma
 		_, _ = messBuilder.WriteString(level.String())
 		_, _ = messBuilder.WriteString("]")
 		keys := make([]string, len(fields))
-		for k,_ := range fields {
+		for k := range fields {
 			keys = append(keys, k)
 		}
 		sort.Strings(keys)
