@@ -18,6 +18,7 @@
 package logging
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"sort"
@@ -45,13 +46,8 @@ func (l *FilteredLevelLogConsumer) Log(level LogLevel, message string, fields ma
 		}
 		sort.Strings(keys)
 		for _, k := range keys {
-			if s, ok := fields[k].(string);ok {
-				if s == "" {
-					continue
-				}
-				_, _ = messBuilder.WriteString("[")
-				_, _ = messBuilder.WriteString(s)
-				_, _ = messBuilder.WriteString("]")
+			if s, ok := fields[k].(string);ok && s != "" {
+				fmt.Fprintf(&messBuilder, "[%s]", s)
 			}
 		}
 		_, _ = messBuilder.WriteString(" ")
