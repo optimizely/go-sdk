@@ -61,38 +61,43 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		return featureDecision, nil
 	}
 
-	// For now, Rollouts is just a single experiment layer
-	experiment := rollout.Experiments[0]
-	experimentDecisionContext := ExperimentDecisionContext{
-		Experiment:    &experiment,
-		ProjectConfig: decisionContext.ProjectConfig,
-	}
-
-	// if user fails rollout targeting rule we return out of it
-	if experiment.AudienceConditionTree != nil {
-		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
-		evalResult, _ := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
-		if !evalResult {
-			featureDecision.Reason = reasons.FailedRolloutTargeting
-			rsLogger.Debug(fmt.Sprintf(`User "%s" failed targeting for feature rollout with key "%s".`, userContext.ID, feature.Key))
-			return featureDecision, nil
+	index := 0
+	for index < numberOfExperiments {
+		experiment := rollout.Experiments[index]
+		experimentDecisionContext := ExperimentDecisionContext{
+			Experiment:    &experiment,
+			ProjectConfig: decisionContext.ProjectConfig,
 		}
+		if experiment.AudienceConditionTree != nil {
+			condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
+			evalResult, _ := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
+			if !evalResult { // Evaluate this user for the next rule
+				featureDecision.Reason = reasons.FailedRolloutTargeting
+				rsLogger.Debug(fmt.Sprintf(`User "%s" failed targeting for feature rollout with key "%s".`, userContext.ID, feature.Key))
+				index++
+				continue
+			}
+		}
+		decision, _ := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext)
+		if decision.Variation == nil && index < numberOfExperiments-1 {
+			// Evaluate fall back rule / last rule now
+			index = numberOfExperiments - 1
+			continue
+		}
+		// translate the experiment reason into a more rollouts-appropriate reason
+		switch decision.Reason {
+		case reasons.NotBucketedIntoVariation:
+			featureDecision.Decision = Decision{Reason: reasons.FailedRolloutBucketing}
+		case reasons.BucketedIntoVariation:
+			featureDecision.Decision = Decision{Reason: reasons.BucketedIntoRollout}
+		default:
+			featureDecision.Decision = decision.Decision
+		}
+
+		featureDecision.Experiment = experiment
+		featureDecision.Variation = decision.Variation
+		rsLogger.Debug(fmt.Sprintf(`Decision made for user "%s" for feature rollout with key "%s": %s.`, userContext.ID, feature.Key, featureDecision.Reason))
+		break
 	}
-
-	decision, _ := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext)
-	// translate the experiment reason into a more rollouts-appropriate reason
-	switch decision.Reason {
-	case reasons.NotBucketedIntoVariation:
-		featureDecision.Decision = Decision{Reason: reasons.FailedRolloutBucketing}
-	case reasons.BucketedIntoVariation:
-		featureDecision.Decision = Decision{Reason: reasons.BucketedIntoRollout}
-	default:
-		featureDecision.Decision = decision.Decision
-	}
-
-	featureDecision.Experiment = experiment
-	featureDecision.Variation = decision.Variation
-	rsLogger.Debug(fmt.Sprintf(`Decision made for user "%s" for feature rollout with key "%s": %s.`, userContext.ID, feature.Key, featureDecision.Reason))
-
 	return featureDecision, nil
 }
