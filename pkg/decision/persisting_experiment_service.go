@@ -34,7 +34,7 @@ type PersistingExperimentService struct {
 }
 
 // NewPersistingExperimentService returns a new instance of the PersistingExperimentService
-func NewPersistingExperimentService(logger logging.OptimizelyLogProducer, experimentBucketerService ExperimentService, userProfileService UserProfileService) *PersistingExperimentService {
+func NewPersistingExperimentService(userProfileService UserProfileService, experimentBucketerService ExperimentService, logger logging.OptimizelyLogProducer) *PersistingExperimentService {
 	persistingExperimentService := &PersistingExperimentService{
 		logger: logger,
 		experimentBucketedService: experimentBucketerService,

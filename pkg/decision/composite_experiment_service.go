@@ -64,15 +64,13 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 
 	// Prepend overrides if supplied
 	if compositeExperimentService.overrideStore != nil {
-		overrideService := NewExperimentOverrideService(logging.GetLogger(sdkKey, "ExperimentOverrideService"),
-			compositeExperimentService.overrideStore)
+		overrideService := NewExperimentOverrideService(compositeExperimentService.overrideStore, logging.GetLogger(sdkKey, "ExperimentOverrideService"))
 		experimentServices = append([]ExperimentService{overrideService}, experimentServices...)
 	}
 
 	experimentBucketerService := NewExperimentBucketerService(logging.GetLogger(sdkKey, "ExperimentBucketerService"))
 	if compositeExperimentService.userProfileService != nil {
-		persistingExperimentService := NewPersistingExperimentService(logging.GetLogger(sdkKey, "PersistingExperimentService"),
-			experimentBucketerService, compositeExperimentService.userProfileService)
+		persistingExperimentService := NewPersistingExperimentService(compositeExperimentService.userProfileService, experimentBucketerService, logging.GetLogger(sdkKey, "PersistingExperimentService"))
 		experimentServices = append(experimentServices, persistingExperimentService)
 	} else {
 		experimentServices = append(experimentServices, experimentBucketerService)

@@ -51,7 +51,7 @@ func (s *OptimizelyConfigTestSuite) SetupTest() {
 		s.Fail("error opening file " + dataFileName)
 	}
 
-	projectMgr, err := NewStaticProjectConfigManagerFromPayload(logging.GetLogger("", "NewStaticProjectConfigManagerFromPayload"), dataFile)
+	projectMgr, err := NewStaticProjectConfigManagerFromPayload(dataFile, logging.GetLogger("", "NewStaticProjectConfigManagerFromPayload"))
 	if err != nil {
 		s.Fail("error creating project manager")
 	}

@@ -38,7 +38,7 @@ type ExperimentOverrideServiceTestSuite struct {
 func (s *ExperimentOverrideServiceTestSuite) SetupTest() {
 	s.mockConfig = new(mockProjectConfig)
 	s.overrides = NewMapExperimentOverridesStore()
-	s.overrideService = NewExperimentOverrideService(logging.GetLogger("", ""), s.overrides)
+	s.overrideService = NewExperimentOverrideService(s.overrides, logging.GetLogger("", ""))
 }
 
 func (s *ExperimentOverrideServiceTestSuite) TestOverridesIncludeVariation() {

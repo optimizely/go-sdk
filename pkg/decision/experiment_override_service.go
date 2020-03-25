@@ -82,7 +82,7 @@ type ExperimentOverrideService struct {
 }
 
 // NewExperimentOverrideService returns a pointer to an initialized ExperimentOverrideService
-func NewExperimentOverrideService(logger logging.OptimizelyLogProducer, overrides ExperimentOverrideStore) *ExperimentOverrideService {
+func NewExperimentOverrideService(overrides ExperimentOverrideStore, logger logging.OptimizelyLogProducer) *ExperimentOverrideService {
 	return &ExperimentOverrideService{
 		logger: logger,
 		Overrides: overrides,

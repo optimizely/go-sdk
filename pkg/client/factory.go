@@ -214,7 +214,7 @@ func (f OptimizelyFactory) StaticClient() (*OptimizelyClient, error) {
 		configManager = staticConfigManager
 
 	} else if f.Datafile != nil {
-		staticConfigManager, err := config.NewStaticProjectConfigManagerFromPayload(logging.GetLogger(f.SDKKey, "StaticProjectConfigManagerFromPayload"), f.Datafile)
+		staticConfigManager, err := config.NewStaticProjectConfigManagerFromPayload(f.Datafile, logging.GetLogger(f.SDKKey, "StaticProjectConfigManagerFromPayload"))
 
 		if err != nil {
 			return nil, err

@@ -50,12 +50,12 @@ func NewStaticProjectConfigManagerFromURL(sdkKey string) (*StaticProjectConfigMa
 		return nil, e
 	}
 
-	return NewStaticProjectConfigManagerFromPayload(logger, datafile)
+	return NewStaticProjectConfigManagerFromPayload(datafile, logger)
 }
 
 // NewStaticProjectConfigManagerFromPayload returns new instance of StaticProjectConfigManager for payload
-func NewStaticProjectConfigManagerFromPayload(logger logging.OptimizelyLogProducer, payload []byte) (*StaticProjectConfigManager, error) {
-	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(logger, payload)
+func NewStaticProjectConfigManagerFromPayload(payload []byte, logger logging.OptimizelyLogProducer) (*StaticProjectConfigManager, error) {
+	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(payload, logger)
 
 	if err != nil {
 		return nil, err

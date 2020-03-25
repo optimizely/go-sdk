@@ -44,7 +44,7 @@ func (l *FilteredLevelLogConsumer) Log(level LogLevel, message string, fields ma
 			keys = append(keys, k)
 		}
 		sort.Strings(keys)
-		
+
 		for _, k := range keys {
 			if s, ok := fields[k].(string);ok && s != "" {
 				fmt.Fprintf(&messBuilder, "[%s]", s)

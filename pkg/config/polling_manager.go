@@ -143,7 +143,7 @@ func (cm *PollingProjectConfigManager) SyncConfig() {
 		cm.lastModified = lastModified
 	}
 
-	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(logging.GetLogger(cm.sdkKey, "NewDatafileProjectConfig"), datafile)
+	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(datafile, logging.GetLogger(cm.sdkKey, "NewDatafileProjectConfig"))
 	if err != nil {
 		cm.logger.Warning("failed to create project config")
 		closeMutex(errors.New("unable to parse datafile"))
@@ -289,8 +289,7 @@ func (cm *PollingProjectConfigManager) setInitialDatafile(datafile []byte) {
 	if len(datafile) != 0 {
 		cm.configLock.Lock()
 		defer cm.configLock.Unlock()
-		projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(logging.GetLogger(cm.sdkKey, "DatafileProjectConfig"),
-			datafile)
+		projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(datafile, logging.GetLogger(cm.sdkKey, "DatafileProjectConfig"))
 		if projectConfig != nil {
 			err = cm.setConfig(projectConfig)
 		}
