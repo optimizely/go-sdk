@@ -25,8 +25,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
-var managerLogger = logging.GetLogger("NotificationManager")
-
 // Manager is a generic interface for managing notifications of a particular type
 type Manager interface {
 	Add(func(interface{})) (int, error)
@@ -39,11 +37,13 @@ type AtomicManager struct {
 	handlers map[uint32]func(interface{})
 	counter  uint32
 	lock     sync.RWMutex
+	logger   logging.OptimizelyLogProducer
 }
 
 // NewAtomicManager creates a new instance of the atomic manager
-func NewAtomicManager() *AtomicManager {
+func NewAtomicManager(logger logging.OptimizelyLogProducer) *AtomicManager {
 	return &AtomicManager{
+		logger: logger,
 		handlers: make(map[uint32]func(interface{})),
 	}
 }
@@ -68,7 +68,7 @@ func (am *AtomicManager) Remove(id int) {
 		delete(am.handlers, handlerID)
 		return
 	}
-	managerLogger.Debug(fmt.Sprintf("Handler for id:%d not found", id))
+	am.logger.Debug(fmt.Sprintf("Handler for id:%d not found", id))
 
 }
 

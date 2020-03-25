@@ -20,13 +20,13 @@ import (
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/decision/evaluator"
-
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
+	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
 type RolloutServiceTestSuite struct {
@@ -75,6 +75,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionHappyPath() {
 	testRolloutService := RolloutService{
 		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
 		experimentBucketerService: s.mockExperimentService,
+		logger:logging.GetLogger("sdkKey", "RolloutService"),
 	}
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1112,
@@ -101,6 +102,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionFailsBucketing() {
 	testRolloutService := RolloutService{
 		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
 		experimentBucketerService: s.mockExperimentService,
+		logger:logging.GetLogger("sdkKey", "RolloutService"),
 	}
 	expectedFeatureDecision := FeatureDecision{
 		Decision: Decision{
@@ -120,6 +122,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionFailsTargeting() {
 	testRolloutService := RolloutService{
 		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
 		experimentBucketerService: s.mockExperimentService,
+		logger:logging.GetLogger("sdkKey", "RolloutService"),
 	}
 	expectedFeatureDecision := FeatureDecision{
 		Decision: Decision{
@@ -134,9 +137,9 @@ func (s *RolloutServiceTestSuite) TestGetDecisionFailsTargeting() {
 }
 
 func TestNewRolloutService(t *testing.T) {
-	rolloutService := NewRolloutService()
+	rolloutService := NewRolloutService("")
 	assert.IsType(t, &evaluator.MixedTreeEvaluator{}, rolloutService.audienceTreeEvaluator)
-	assert.IsType(t, &ExperimentBucketerService{}, rolloutService.experimentBucketerService)
+	assert.IsType(t, &ExperimentBucketerService{logger:logging.GetLogger("sdkKey", "ExperimentBucketerService")}, rolloutService.experimentBucketerService)
 }
 
 func TestRolloutServiceTestSuite(t *testing.T) {

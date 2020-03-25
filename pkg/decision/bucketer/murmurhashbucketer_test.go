@@ -2,6 +2,7 @@ package bucketer
 
 import (
 	"fmt"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestBucketToEntity(t *testing.T) {
-	bucketer := NewMurmurhashBucketer(DefaultHashSeed)
+	bucketer := NewMurmurhashBucketer(logging.GetLogger("", "TestBucketToEntity"), DefaultHashSeed)
 
 	experimentID := "1886780721"
 	experimentID2 := "1886780722"
@@ -51,7 +52,7 @@ func TestBucketToEntity(t *testing.T) {
 }
 
 func TestGenerateBucketValue(t *testing.T) {
-	bucketer := NewMurmurhashBucketer(DefaultHashSeed)
+	bucketer := NewMurmurhashBucketer(logging.GetLogger("", "TestGenerateBucketValue"), DefaultHashSeed)
 
 	// copied from unit tests in the other SDKs
 	experimentID := "1886780721"

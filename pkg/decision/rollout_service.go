@@ -22,24 +22,23 @@ import (
 
 	"github.com/optimizely/go-sdk/pkg/decision/evaluator"
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
-	"github.com/optimizely/go-sdk/pkg/logging"
-
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
-
-var rsLogger = logging.GetLogger("RolloutService")
 
 // RolloutService makes a feature decision for a given feature rollout
 type RolloutService struct {
 	audienceTreeEvaluator     evaluator.TreeEvaluator
 	experimentBucketerService ExperimentService
+	logger logging.OptimizelyLogProducer
 }
 
 // NewRolloutService returns a new instance of the Rollout service
-func NewRolloutService() *RolloutService {
+func NewRolloutService(sdkKey string) *RolloutService {
 	return &RolloutService{
+		logger:logging.GetLogger(sdkKey, "RolloutService"),
 		audienceTreeEvaluator:     evaluator.NewMixedTreeEvaluator(),
-		experimentBucketerService: NewExperimentBucketerService(),
+		experimentBucketerService: NewExperimentBucketerService(logging.GetLogger(sdkKey, "ExperimentBucketerService")),
 	}
 }
 
@@ -74,7 +73,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		evalResult, _ := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
 		if !evalResult {
 			featureDecision.Reason = reasons.FailedRolloutTargeting
-			rsLogger.Debug(fmt.Sprintf(`User "%s" failed targeting for feature rollout with key "%s".`, userContext.ID, feature.Key))
+			r.logger.Debug(fmt.Sprintf(`User "%s" failed targeting for feature rollout with key "%s".`, userContext.ID, feature.Key))
 			return featureDecision, nil
 		}
 	}
@@ -92,7 +91,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 
 	featureDecision.Experiment = experiment
 	featureDecision.Variation = decision.Variation
-	rsLogger.Debug(fmt.Sprintf(`Decision made for user "%s" for feature rollout with key "%s": %s.`, userContext.ID, feature.Key, featureDecision.Reason))
+	r.logger.Debug(fmt.Sprintf(`Decision made for user "%s" for feature rollout with key "%s": %s.`, userContext.ID, feature.Key, featureDecision.Reason))
 
 	return featureDecision, nil
 }

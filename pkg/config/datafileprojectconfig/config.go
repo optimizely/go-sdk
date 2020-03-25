@@ -26,8 +26,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
-var logger = logging.GetLogger("DatafileProjectConfig")
-
 var datafileVersions = map[string]struct{}{
 	"4": {},
 }
@@ -175,7 +173,7 @@ func (c DatafileProjectConfig) GetGroupByID(groupID string) (entities.Group, err
 }
 
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser
-func NewDatafileProjectConfig(jsonDatafile []byte) (*DatafileProjectConfig, error) {
+func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogProducer) (*DatafileProjectConfig, error) {
 	datafile, err := Parse(jsonDatafile)
 	if err != nil {
 		logger.Error("Error parsing datafile", err)

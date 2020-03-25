@@ -20,7 +20,9 @@ package logging
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
+	"sync/atomic"
 )
 
 // LogLevel represents the level of the log (i.e. Debug, Info, Warning, Error)
@@ -32,6 +34,8 @@ func (l LogLevel) String() string {
 
 var defaultLogConsumer OptimizelyLogConsumer
 var mutex = &sync.Mutex{}
+var sdkKeyMappings = sync.Map{}
+var count int32
 
 const (
 	// LogLevelDebug log level
@@ -68,10 +72,38 @@ func SetLogLevel(logLevel LogLevel) {
 }
 
 // GetLogger returns a log producer with the given name
-func GetLogger(name string) OptimizelyLogProducer {
+func GetLogger(sdkKey, name string) OptimizelyLogProducer {
 	return NamedLogProducer{
-		fields: map[string]interface{}{"name": name},
+		fields: map[string]interface{}{"aSdkKeyLogMapping":GetSdkKeyLogMapping(sdkKey), "name": name},
 	}
+}
+
+// GetSdkKeyLogMapping returns a string that maps to the sdk key that is used for logging (hiding the sdk key)
+func GetSdkKeyLogMapping(sdkKey string) string {
+	if logMapping, _ := sdkKeyMappings.Load(sdkKey); logMapping != nil {
+		if lm, ok := logMapping.(string);ok {
+			return lm
+		}
+	} else if sdkKey != "" {
+		mapping := "optimizely-" + strconv.Itoa(int(atomic.AddInt32(&count, 1)))
+		sdkKeyMappings.Store(sdkKey, mapping)
+		return mapping
+	}
+
+	return ""
+}
+
+// UseSdkKeyForLogging by default the sdk key is masked for logging.
+// This sets it to use the SDK Key and should be set before the creating your client factory.
+func UseSdkKeyForLogging(sdkKey string) {
+	SetSdkKeyLogMapping(sdkKey, sdkKey)
+}
+
+// SetSdkKeyLogMapping sets the logging key to use for the Optimizely sdk key.
+// By default, the sdk key has masking.  This can override the default of optimizely-1,2,3,4,etc..
+// This should be set before creating your Optimizely client factory.
+func SetSdkKeyLogMapping(sdkKey, logMapping string) {
+	sdkKeyMappings.Store(sdkKey, logMapping)
 }
 
 // NamedLogProducer produces logs prefixed with its name

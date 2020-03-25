@@ -22,6 +22,8 @@ import (
 
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
+
 	"github.com/stretchr/testify/suite"
 )
 
@@ -64,6 +66,7 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecision() {
 			s.mockFeatureService,
 			s.mockFeatureService2,
 		},
+		logger:logging.GetLogger("sdkKey", "CompositeFeatureService"),
 	}
 	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext)
 	s.Equal(expectedDecision, decision)
@@ -91,6 +94,7 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionFallthrough() {
 			s.mockFeatureService,
 			s.mockFeatureService2,
 		},
+		logger:logging.GetLogger("sdkKey", "CompositeFeatureService"),
 	}
 	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext)
 	s.Equal(expectedDecision, decision)
@@ -120,6 +124,8 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsError() {
 			s.mockFeatureService,
 			s.mockFeatureService2,
 		},
+		logger:logging.GetLogger("sdkKey", "CompositeFeatureService"),
+
 	}
 	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext)
 	s.Equal(expectedDecision, decision)
@@ -146,6 +152,7 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsLastDecisionWit
 			s.mockFeatureService,
 			s.mockFeatureService2,
 		},
+		logger:logging.GetLogger("sdkKey", "CompositeFeatureService"),
 	}
 	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext)
 	s.Equal(expectedDecision, decision)
@@ -157,8 +164,8 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsLastDecisionWit
 
 func (s *CompositeFeatureServiceTestSuite) TestNewCompositeFeatureService() {
 	// Assert that the service is instantiated with the correct child services in the right order
-	compositeExperimentService := NewCompositeExperimentService()
-	compositeFeatureService := NewCompositeFeatureService(compositeExperimentService)
+	compositeExperimentService := NewCompositeExperimentService("")
+	compositeFeatureService := NewCompositeFeatureService("", compositeExperimentService)
 	s.Equal(2, len(compositeFeatureService.featureServices))
 	s.IsType(&FeatureExperimentService{compositeExperimentService: compositeExperimentService}, compositeFeatureService.featureServices[0])
 	s.IsType(&RolloutService{}, compositeFeatureService.featureServices[1])

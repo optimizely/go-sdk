@@ -24,19 +24,19 @@ import (
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
-var cfLogger = logging.GetLogger("CompositeFeatureService")
-
 // CompositeFeatureService is the default out-of-the-box feature decision service
 type CompositeFeatureService struct {
 	featureServices []FeatureService
+	logger logging.OptimizelyLogProducer
 }
 
 // NewCompositeFeatureService returns a new instance of the CompositeFeatureService
-func NewCompositeFeatureService(compositeExperimentService ExperimentService) *CompositeFeatureService {
+func NewCompositeFeatureService(sdkKey string, compositeExperimentService ExperimentService) *CompositeFeatureService {
 	return &CompositeFeatureService{
+		logger:logging.GetLogger(sdkKey, "CompositeFeatureService"),
 		featureServices: []FeatureService{
-			NewFeatureExperimentService(compositeExperimentService),
-			NewRolloutService(),
+			NewFeatureExperimentService(logging.GetLogger(sdkKey, "FeatureExperimentService"), compositeExperimentService),
+			NewRolloutService(sdkKey),
 		},
 	}
 }
@@ -48,7 +48,7 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 	for _, featureDecisionService := range f.featureServices {
 		featureDecision, err = featureDecisionService.GetDecision(decisionContext, userContext)
 		if err != nil {
-			cfLogger.Debug(fmt.Sprintf("%v", err))
+			f.logger.Debug(fmt.Sprintf("%v", err))
 		}
 
 		if featureDecision.Variation != nil && err == nil {

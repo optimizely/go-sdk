@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 type CompositeExperimentTestSuite struct {
@@ -58,7 +59,8 @@ func (s *CompositeExperimentTestSuite) TestGetDecision() {
 	s.mockExperimentService.On("GetDecision", s.testDecisionContext, testUserContext).Return(expectedExperimentDecision, nil)
 
 	compositeExperimentService := &CompositeExperimentService{
-		experimentServices: []ExperimentService{s.mockExperimentService, s.mockExperimentService2},
+		experimentServices: []ExperimentService{s.mockExperimentService, s.mockExperimentService2,},
+		logger:logging.GetLogger("sdkKey", "ExperimentService"),
 	}
 	decision, err := compositeExperimentService.GetDecision(s.testDecisionContext, testUserContext)
 	s.Equal(expectedExperimentDecision, decision)
@@ -85,6 +87,7 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionFallthrough() {
 
 	compositeExperimentService := &CompositeExperimentService{
 		experimentServices: []ExperimentService{s.mockExperimentService, s.mockExperimentService2},
+		logger:logging.GetLogger("sdkKey", "CompositeExperimentService"),
 	}
 	decision, err := compositeExperimentService.GetDecision(s.testDecisionContext, testUserContext)
 
@@ -107,6 +110,7 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionNoDecisionsMade() {
 
 	compositeExperimentService := &CompositeExperimentService{
 		experimentServices: []ExperimentService{s.mockExperimentService, s.mockExperimentService2},
+		logger:logging.GetLogger("sdkKey", "CompositeExperimentService"),
 	}
 	decision, err := compositeExperimentService.GetDecision(s.testDecisionContext, testUserContext)
 
@@ -142,6 +146,7 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionReturnsError() {
 			s.mockExperimentService,
 			s.mockExperimentService2,
 		},
+		logger:logging.GetLogger("sdkKey", "CompositeExperimentService"),
 	}
 	decision, err := compositeExperimentService.GetDecision(testDecisionContext, testUserContext)
 	s.Equal(expectedDecision, decision)
@@ -152,7 +157,7 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionReturnsError() {
 
 func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentService() {
 	// Assert that the service is instantiated with the correct child services in the right order
-	compositeExperimentService := NewCompositeExperimentService()
+	compositeExperimentService := NewCompositeExperimentService("")
 	s.Equal(2, len(compositeExperimentService.experimentServices))
 	s.IsType(&ExperimentWhitelistService{}, compositeExperimentService.experimentServices[0])
 	s.IsType(&ExperimentBucketerService{}, compositeExperimentService.experimentServices[1])
@@ -161,7 +166,7 @@ func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentService() {
 func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithCustomOptions() {
 	mockUserProfileService := new(MockUserProfileService)
 	mockExperimentOverrideStore := new(MapExperimentOverridesStore)
-	compositeExperimentService := NewCompositeExperimentService(
+	compositeExperimentService := NewCompositeExperimentService("",
 		WithUserProfileService(mockUserProfileService),
 		WithOverrideStore(mockExperimentOverrideStore),
 	)

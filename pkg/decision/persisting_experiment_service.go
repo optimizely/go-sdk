@@ -24,19 +24,19 @@ import (
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
-var pesLogger = logging.GetLogger("PersistingExperimentService")
-
 // PersistingExperimentService attempts to retrieve a saved decision from the user profile service
 // for the user before having the ExperimentBucketerService compute it.
 // If computed, the decision is saved back to the user profile service if provided.
 type PersistingExperimentService struct {
 	experimentBucketedService ExperimentService
 	userProfileService        UserProfileService
+	logger 					  logging.OptimizelyLogProducer
 }
 
 // NewPersistingExperimentService returns a new instance of the PersistingExperimentService
-func NewPersistingExperimentService(experimentBucketerService ExperimentService, userProfileService UserProfileService) *PersistingExperimentService {
+func NewPersistingExperimentService(userProfileService UserProfileService, experimentBucketerService ExperimentService, logger logging.OptimizelyLogProducer) *PersistingExperimentService {
 	persistingExperimentService := &PersistingExperimentService{
+		logger: logger,
 		experimentBucketedService: experimentBucketerService,
 		userProfileService:        userProfileService,
 	}
@@ -80,9 +80,9 @@ func (p PersistingExperimentService) getSavedDecision(decisionContext Experiment
 	if savedVariationID, ok := userProfile.ExperimentBucketMap[decisionKey]; ok {
 		if variation, ok := decisionContext.Experiment.Variations[savedVariationID]; ok {
 			experimentDecision.Variation = &variation
-			pesLogger.Debug(fmt.Sprintf(`User "%s" was previously bucketed into variation "%s" of experiment "%s".`, userContext.ID, variation.Key, decisionContext.Experiment.Key))
+			p.logger.Debug(fmt.Sprintf(`User "%s" was previously bucketed into variation "%s" of experiment "%s".`, userContext.ID, variation.Key, decisionContext.Experiment.Key))
 		} else {
-			pesLogger.Warning(fmt.Sprintf(`User "%s" was previously bucketed into variation with ID "%s" for experiment "%s", but no matching variation was found.`, userContext.ID, savedVariationID, decisionContext.Experiment.Key))
+			p.logger.Warning(fmt.Sprintf(`User "%s" was previously bucketed into variation with ID "%s" for experiment "%s", but no matching variation was found.`, userContext.ID, savedVariationID, decisionContext.Experiment.Key))
 		}
 	}
 
@@ -97,6 +97,6 @@ func (p PersistingExperimentService) saveDecision(userProfile UserProfile, exper
 		}
 		userProfile.ExperimentBucketMap[decisionKey] = decision.Variation.ID
 		p.userProfileService.Save(userProfile)
-		pesLogger.Debug(fmt.Sprintf(`Decision saved for user "%s".`, userProfile.ID))
+		p.logger.Debug(fmt.Sprintf(`Decision saved for user "%s".`, userProfile.ID))
 	}
 }

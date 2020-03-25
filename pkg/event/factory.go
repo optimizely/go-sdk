@@ -19,18 +19,14 @@ package event
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
 	guuid "github.com/google/uuid"
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
-
-var efLogger = logging.GetLogger("EventFactory")
 
 const impressionKey string = "campaign_activated"
 const attributeType = "custom"
@@ -234,7 +230,6 @@ func getEventAttributes(projectConfig config.ProjectConfig, attributes map[strin
 		case strings.HasPrefix(key, specialPrefix):
 			visitorAttribute.EntityID = key
 		default:
-			efLogger.Debug(fmt.Sprintf("Unrecognized attribute %s provided. Pruning before sending event to Optimizely.", key))
 			continue
 		}
 		visitorAttribute.Key = key
