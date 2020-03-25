@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.1.1] - March 25th, 2020
+## New Features
+- feat: Logging sdk key masked value with every log message.  The masking is by default and can be disabled or set to a custom mapping. [#242](https://github.com/optimizely/go-sdk/pull/242)
+
 ## [1.1.0] - March 6th, 2020
 ## New Features
 - feat: Allow ClientName and Version to be set at compile time. [#227](https://github.com/optimizely/go-sdk/pull/227)
