@@ -73,19 +73,29 @@ func SetLogLevel(logLevel LogLevel) {
 
 // GetLogger returns a log producer with the given name
 func GetLogger(sdkKey, name string) OptimizelyLogProducer {
+
+	fields := map[string]interface{}{
+		"instance": GetSdkKeyLogMapping(sdkKey),
+		"name":     name,
+	}
+
+	if shouldIncludeSDKKey {
+		fields["sdkKey"] = sdkKey
+	}
+
 	return NamedLogProducer{
-		fields: map[string]interface{}{"aSdkKeyLogMapping":GetSdkKeyLogMapping(sdkKey), "name": name},
+		fields: fields,
 	}
 }
 
 // GetSdkKeyLogMapping returns a string that maps to the sdk key that is used for logging (hiding the sdk key)
 func GetSdkKeyLogMapping(sdkKey string) string {
 	if logMapping, _ := sdkKeyMappings.Load(sdkKey); logMapping != nil {
-		if lm, ok := logMapping.(string);ok {
+		if lm, ok := logMapping.(string); ok {
 			return lm
 		}
 	} else if sdkKey != "" {
-		mapping := "optimizely-" + strconv.Itoa(int(atomic.AddInt32(&count, 1)))
+		mapping := "Instance-" + strconv.Itoa(int(atomic.AddInt32(&count, 1)))
 		sdkKeyMappings.Store(sdkKey, mapping)
 		return mapping
 	}
@@ -93,17 +103,12 @@ func GetSdkKeyLogMapping(sdkKey string) string {
 	return ""
 }
 
-// UseSdkKeyForLogging by default the sdk key is masked for logging.
-// This sets it to use the SDK Key and should be set before the creating your client factory.
-func UseSdkKeyForLogging(sdkKey string) {
-	SetSdkKeyLogMapping(sdkKey, sdkKey)
-}
+// Default to NOT include the SDK in log fields
+var shouldIncludeSDKKey = false
 
-// SetSdkKeyLogMapping sets the logging key to use for the Optimizely sdk key.
-// By default, the sdk key has masking.  This can override the default of optimizely-1,2,3,4,etc..
-// This should be set before creating your Optimizely client factory.
-func SetSdkKeyLogMapping(sdkKey, logMapping string) {
-	sdkKeyMappings.Store(sdkKey, logMapping)
+// IncludeSDKKeyInLogFields to set whether or not the SDK key is included in the logging output.
+func IncludeSDKKeyInLogFields(include bool) {
+	shouldIncludeSDKKey = include
 }
 
 // NamedLogProducer produces logs prefixed with its name
