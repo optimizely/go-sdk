@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/utils"
 
@@ -41,8 +42,10 @@ func (m *MockRequester) Get(uri string, headers ...utils.Header) (response []byt
 	return args.Get(0).([]byte), args.Get(1).(http.Header), args.Int(2), args.Error(3)
 }
 
+var logger = logging.GetLogger("polling_manager_test", "PollingManager")
+
 func newExecGroup() *utils.ExecGroup {
-	return utils.NewExecGroup(context.Background())
+	return utils.NewExecGroup(context.Background(), logger)
 }
 
 // assertion method to periodically check target function each tick.
@@ -103,7 +106,7 @@ func TestNewAsyncPollingProjectConfigManagerWithOptions(t *testing.T) {
 func TestSyncConfigFetchesDatafileUsingRequester(t *testing.T) {
 
 	mockDatafile := []byte(`{"revision":"42","version": "4"}`)
-	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile)
+	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile, logger)
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile, http.Header{}, http.StatusOK, nil)
 
@@ -150,7 +153,7 @@ func TestNewPollingProjectConfigManagerWithSimilarDatafileRevisions(t *testing.T
 	// Test newer datafile should not replace the older one if revisions are the same
 	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true,"version": "4"}`)
 	mockDatafile2 := []byte(`{"revision":"42","botFiltering":false,"version": "4"}`)
-	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
+	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1, logger)
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil)
 
@@ -185,7 +188,7 @@ func TestNewAsyncPollingProjectConfigManagerWithSimilarDatafileRevisions(t *test
 	// Test newer datafile should not replace the older one if revisions are the same
 	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true,"version": "4"}`)
 	mockDatafile2 := []byte(`{"revision":"42","botFiltering":false,"version": "4"}`)
-	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
+	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1, logger)
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil)
 
@@ -218,7 +221,7 @@ func TestNewAsyncPollingProjectConfigManagerWithSimilarDatafileRevisions(t *test
 
 func TestNewPollingProjectConfigManagerWithLastModifiedDates(t *testing.T) {
 	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true,"version": "4"}`)
-	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
+	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1, logger)
 	mockRequester := new(MockRequester)
 	modifiedDate := "Wed, 16 Oct 2019 20:16:45 GMT"
 	responseHeaders := http.Header{}
@@ -272,8 +275,8 @@ func TestNewPollingProjectConfigManagerWithDifferentDatafileRevisions(t *testing
 	// Test newer datafile should replace the older one if revisions are different
 	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true,"version": "4"}`)
 	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false,"version": "4"}`)
-	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
-	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
+	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1, logger)
+	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2, logger)
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil)
 
@@ -308,8 +311,8 @@ func TestNewAsyncPollingProjectConfigManagerWithDifferentDatafileRevisions(t *te
 	// Test newer datafile should replace the older one if revisions are different
 	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true,"version": "4"}`)
 	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false,"version": "4"}`)
-	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
-	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
+	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1, logger)
+	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2, logger)
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile2, http.Header{}, http.StatusOK, nil)
 
@@ -344,8 +347,8 @@ func TestNewPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 	mockDatafile1 := []byte("NOT-VALID")
 	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false,"version": "4"}`)
 
-	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
-	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
+	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1, logger)
+	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2, logger)
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil).Times(1)
 
@@ -377,8 +380,8 @@ func TestNewAsyncPollingProjectConfigManagerWithErrorHandling(t *testing.T) {
 	mockDatafile1 := []byte("NOT-VALID")
 	mockDatafile2 := []byte(`{"revision":"43","botFiltering":false,"version": "4"}`)
 
-	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
-	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2)
+	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1, logger)
+	projectConfig2, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile2, logger)
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil).Times(1)
 
@@ -442,7 +445,7 @@ func TestNewPollingProjectConfigManagerOnDecision(t *testing.T) {
 
 func TestNewAsyncPollingProjectConfigManagerOnDecision(t *testing.T) {
 	mockDatafile1 := []byte(`{"revision":"42","botFiltering":true,"version": "4"}`)
-	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1)
+	projectConfig1, _ := datafileprojectconfig.NewDatafileProjectConfig(mockDatafile1, logger)
 	mockRequester := new(MockRequester)
 	mockRequester.On("Get", []utils.Header(nil)).Return(mockDatafile1, http.Header{}, http.StatusOK, nil)
 

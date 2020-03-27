@@ -19,6 +19,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -39,7 +40,7 @@ func TestHeaders(t *testing.T) {
 func TestAddHeaders(t *testing.T) {
 
 	req, _ := http.NewRequest("GET", "", nil)
-	requester := &HTTPRequester{}
+	requester := &HTTPRequester{logger:logging.GetLogger("", "")}
 	headers := []Header{{"one", "1"}}
 
 	fn := Headers(Header{"two", "2"})
@@ -62,13 +63,13 @@ func TestGet(t *testing.T) {
 	defer ts.Close()
 
 	var httpreq Requester
-	httpreq = NewHTTPRequester()
+	httpreq = NewHTTPRequester(logging.GetLogger("", ""))
 	resp, headers, code, err := httpreq.Get(ts.URL + "/good")
 	assert.NotEqual(t, headers.Get("Content-Type"), "")
 	assert.Nil(t, err)
 	assert.Equal(t, "Hello, client\n", string(resp))
 
-	httpreq = NewHTTPRequester()
+	httpreq = NewHTTPRequester(logging.GetLogger("", ""))
 	_, headers, code, err = httpreq.Get(ts.URL + "/bad")
 	assert.Equal(t, errors.New("400 Bad Request"), err)
 	assert.Equal(t, code, http.StatusBadRequest)
@@ -94,13 +95,13 @@ func TestGetObj(t *testing.T) {
 	defer ts.Close()
 
 	var httpreq Requester
-	httpreq = NewHTTPRequester()
+	httpreq = NewHTTPRequester(logging.GetLogger("", ""))
 	r := resp{}
 	err := httpreq.GetObj(ts.URL+"/good", &r)
 	assert.Nil(t, err)
 	assert.Equal(t, resp{Fld1: "Hello, client", Fld2: 123}, r)
 
-	httpreq = NewHTTPRequester()
+	httpreq = NewHTTPRequester(logging.GetLogger("", ""))
 	err = httpreq.GetObj(ts.URL+"/bad", &r)
 	assert.NotNil(t, err)
 }
@@ -124,7 +125,7 @@ func TestPost(t *testing.T) {
 	defer ts.Close()
 	b := body{"one", 1}
 	var httpreq Requester
-	httpreq = NewHTTPRequester()
+	httpreq = NewHTTPRequester(logging.GetLogger("", ""))
 	resp, headers, code, err := httpreq.Post(ts.URL+"/good", b)
 
 	assert.Nil(t, err)
@@ -132,7 +133,7 @@ func TestPost(t *testing.T) {
 	assert.Equal(t, "Hello, client\n", string(resp))
 	assert.Equal(t, code, http.StatusOK)
 
-	httpreq = NewHTTPRequester()
+	httpreq = NewHTTPRequester(logging.GetLogger("", ""))
 	_, _, code, err = httpreq.Post(ts.URL+"/bad", nil)
 	assert.Equal(t, errors.New("400 Bad Request"), err)
 	assert.Equal(t, code, http.StatusBadRequest)
@@ -158,21 +159,21 @@ func TestPostObj(t *testing.T) {
 	defer ts.Close()
 
 	var httpreq Requester
-	httpreq = NewHTTPRequester()
+	httpreq = NewHTTPRequester(logging.GetLogger("", ""))
 	b := body{"one", 1}
 	r := body{}
 	err := httpreq.PostObj(ts.URL+"/good", b, &r)
 	assert.Nil(t, err)
 	assert.Equal(t, body{Fld1: "Hello, client", Fld2: 123}, r)
 
-	httpreq = NewHTTPRequester()
+	httpreq = NewHTTPRequester(logging.GetLogger("", ""))
 	err = httpreq.PostObj(ts.URL+"/bad", b, &r)
 	assert.NotNil(t, err)
 }
 
 func TestGetBad(t *testing.T) {
 
-	httpreq := NewHTTPRequester()
+	httpreq := NewHTTPRequester(logging.GetLogger("", ""))
 	_, _, _, err := httpreq.Get("blah12345/good")
 	_, ok := err.(*url.Error)
 	assert.True(t, ok, "url error")
@@ -192,7 +193,7 @@ func TestGetBadWithResponse(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	httpreq := NewHTTPRequester(Retries(1))
+	httpreq := NewHTTPRequester(logging.GetLogger("", ""), Retries(1))
 	data, _, _, err := httpreq.Get(ts.URL + "/bad")
 	assert.Equal(t, "400 Bad Request", err.Error())
 	assert.Equal(t, "bad bad response\n", string(data))
@@ -221,7 +222,7 @@ func TestGetRetry(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	httpreq := NewHTTPRequester(Retries(10))
+	httpreq := NewHTTPRequester(logging.GetLogger("", ""), Retries(10))
 
 	st := time.Now()
 	resp, _, _, err := httpreq.Get(ts.URL + "/test")
@@ -232,19 +233,19 @@ func TestGetRetry(t *testing.T) {
 
 	assert.True(t, elapsed >= 400*5*time.Millisecond && elapsed <= 510*5*time.Second, "took %s", elapsed)
 
-	httpreq = NewHTTPRequester(Retries(3))
+	httpreq = NewHTTPRequester(logging.GetLogger("", ""), Retries(3))
 	called = 0
 	_, _, _, err = httpreq.Get(ts.URL + "/test")
 	assert.Equal(t, errors.New("400 Bad Request"), err)
 	assert.Equal(t, 3, called, "called 3 retries")
 
-	httpreq = NewHTTPRequester(Retries(1))
+	httpreq = NewHTTPRequester(logging.GetLogger("", ""), Retries(1))
 	called = 0
 	_, _, _, err = httpreq.Get(ts.URL + "/test")
 	assert.Equal(t, errors.New("400 Bad Request"), err)
 	assert.Equal(t, 1, called, "called 1 retries")
 
-	httpreq = NewHTTPRequester()
+	httpreq = NewHTTPRequester(logging.GetLogger("", ""))
 	called = 0
 	_, _, _, err = httpreq.Get(ts.URL + "/test")
 	assert.Equal(t, errors.New("400 Bad Request"), err)
@@ -252,8 +253,8 @@ func TestGetRetry(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
-	assert.Equal(t, "{timeout: 5s, retries: 1}", NewHTTPRequester().String())
+	assert.Equal(t, "{timeout: 5s, retries: 1}", NewHTTPRequester(logging.GetLogger("", "")).String())
 	assert.Equal(t, "{timeout: 19s, retries: 10}",
-		NewHTTPRequester(Retries(10), Timeout(time.Duration(19)*time.Second)).String())
+		NewHTTPRequester(logging.GetLogger("", ""), Retries(10), Timeout(time.Duration(19)*time.Second)).String())
 
 }

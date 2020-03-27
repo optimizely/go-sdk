@@ -20,13 +20,12 @@ import (
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/decision/evaluator"
-
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
+	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-
-	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
 type RolloutServiceTestSuite struct {
@@ -68,10 +67,10 @@ func (s *RolloutServiceTestSuite) SetupTest() {
 func (s *RolloutServiceTestSuite) TestGetDecisionWithEmptyRolloutID() {
 
 	testRolloutService := RolloutService{}
-	feature := &testFeatRollout3334
+	feature := testFeatRollout3334
 	feature.Rollout.ID = ""
 	featureDecisionContext := FeatureDecisionContext{
-		Feature:       feature,
+		Feature:       &feature,
 		ProjectConfig: s.mockConfig,
 	}
 	expectedFeatureDecision := FeatureDecision{
@@ -85,10 +84,10 @@ func (s *RolloutServiceTestSuite) TestGetDecisionWithEmptyRolloutID() {
 func (s *RolloutServiceTestSuite) TestGetDecisionWithNoExperiments() {
 
 	testRolloutService := RolloutService{}
-	feature := &testFeatRollout3334
+	feature := testFeatRollout3334
 	feature.Rollout.Experiments = []entities.Experiment{}
 	featureDecisionContext := FeatureDecisionContext{
-		Feature:       feature,
+		Feature:       &feature,
 		ProjectConfig: s.mockConfig,
 	}
 	expectedFeatureDecision := FeatureDecision{
@@ -111,6 +110,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionHappyPath() {
 	testRolloutService := RolloutService{
 		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
 		experimentBucketerService: s.mockExperimentService,
+		logger:                    logging.GetLogger("sdkKey", "RolloutService"),
 	}
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1112,
@@ -147,6 +147,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionFallbacksToLastWhenFailsBucketi
 	testRolloutService := RolloutService{
 		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
 		experimentBucketerService: s.mockExperimentService,
+		logger:                    logging.GetLogger("sdkKey", "RolloutService"),
 	}
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1118,
@@ -179,6 +180,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionWhenFallbackBucketingFails() {
 	testRolloutService := RolloutService{
 		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
 		experimentBucketerService: s.mockExperimentService,
+		logger:                    logging.GetLogger("sdkKey", "RolloutService"),
 	}
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1118,
@@ -207,6 +209,7 @@ func (s *RolloutServiceTestSuite) TestEvaluatesNextIfPreviousTargetingFails() {
 	testRolloutService := RolloutService{
 		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
 		experimentBucketerService: s.mockExperimentService,
+		logger:                    logging.GetLogger("sdkKey", "RolloutService"),
 	}
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: testExp1117,
@@ -227,6 +230,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionFailsTargeting() {
 	testRolloutService := RolloutService{
 		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
 		experimentBucketerService: s.mockExperimentService,
+		logger:                    logging.GetLogger("sdkKey", "RolloutService"),
 	}
 	expectedFeatureDecision := FeatureDecision{
 		Decision: Decision{
@@ -241,9 +245,9 @@ func (s *RolloutServiceTestSuite) TestGetDecisionFailsTargeting() {
 }
 
 func TestNewRolloutService(t *testing.T) {
-	rolloutService := NewRolloutService()
+	rolloutService := NewRolloutService("")
 	assert.IsType(t, &evaluator.MixedTreeEvaluator{}, rolloutService.audienceTreeEvaluator)
-	assert.IsType(t, &ExperimentBucketerService{}, rolloutService.experimentBucketerService)
+	assert.IsType(t, &ExperimentBucketerService{logger: logging.GetLogger("sdkKey", "ExperimentBucketerService")}, rolloutService.experimentBucketerService)
 }
 
 func TestRolloutServiceTestSuite(t *testing.T) {

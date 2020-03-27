@@ -20,7 +20,9 @@ package logging
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
+	"sync/atomic"
 )
 
 // LogLevel represents the level of the log (i.e. Debug, Info, Warning, Error)
@@ -32,6 +34,8 @@ func (l LogLevel) String() string {
 
 var defaultLogConsumer OptimizelyLogConsumer
 var mutex = &sync.Mutex{}
+var sdkKeyMappings = sync.Map{}
+var count int32
 
 const (
 	// LogLevelDebug log level
@@ -68,10 +72,43 @@ func SetLogLevel(logLevel LogLevel) {
 }
 
 // GetLogger returns a log producer with the given name
-func GetLogger(name string) OptimizelyLogProducer {
-	return NamedLogProducer{
-		fields: map[string]interface{}{"name": name},
+func GetLogger(sdkKey, name string) OptimizelyLogProducer {
+
+	fields := map[string]interface{}{
+		"instance": GetSdkKeyLogMapping(sdkKey),
+		"name":     name,
 	}
+
+	if shouldIncludeSDKKey {
+		fields["sdkKey"] = sdkKey
+	}
+
+	return NamedLogProducer{
+		fields: fields,
+	}
+}
+
+// GetSdkKeyLogMapping returns a string that maps to the sdk key that is used for logging (hiding the sdk key)
+func GetSdkKeyLogMapping(sdkKey string) string {
+	if logMapping, _ := sdkKeyMappings.Load(sdkKey); logMapping != nil {
+		if lm, ok := logMapping.(string); ok {
+			return lm
+		}
+	} else if sdkKey != "" {
+		mapping := "Instance-" + strconv.Itoa(int(atomic.AddInt32(&count, 1)))
+		sdkKeyMappings.Store(sdkKey, mapping)
+		return mapping
+	}
+
+	return ""
+}
+
+// Default to NOT include the SDK in log fields
+var shouldIncludeSDKKey = false
+
+// IncludeSDKKeyInLogFields to set whether or not the SDK key is included in the logging output.
+func IncludeSDKKeyInLogFields(include bool) {
+	shouldIncludeSDKKey = include
 }
 
 // NamedLogProducer produces logs prefixed with its name

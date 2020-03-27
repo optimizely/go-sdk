@@ -103,7 +103,7 @@ func NewMetricsRegistry() *MetricsRegistry {
 func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 	metricsRegistry := NewMetricsRegistry()
 
-	q := NewQueueEventDispatcher(metricsRegistry)
+	q := NewQueueEventDispatcher("", metricsRegistry)
 	sender := &MockDispatcher{Events: NewInMemoryQueue(100)}
 	q.Dispatcher = sender
 
@@ -139,7 +139,7 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 
 func TestQueueEventDispatcher_InvalidEvent(t *testing.T) {
 	metricsRegistry := NewMetricsRegistry()
-	q := NewQueueEventDispatcher(metricsRegistry)
+	q := NewQueueEventDispatcher("", metricsRegistry)
 	q.Dispatcher = &MockDispatcher{Events: NewInMemoryQueue(100)}
 
 	config := TestConfig{}
@@ -162,7 +162,7 @@ func TestQueueEventDispatcher_InvalidEvent(t *testing.T) {
 
 func TestQueueEventDispatcher_FailDispath(t *testing.T) {
 	metricsRegistry := NewMetricsRegistry()
-	q := NewQueueEventDispatcher(metricsRegistry)
+	q := NewQueueEventDispatcher("", metricsRegistry)
 	q.Dispatcher = &MockDispatcher{ShouldFail: true, Events: NewInMemoryQueue(100)}
 
 	eventTags := map[string]interface{}{"revenue": 55.0, "value": 25.1}

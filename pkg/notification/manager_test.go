@@ -3,6 +3,8 @@ package notification
 import (
 	"testing"
 
+	"github.com/optimizely/go-sdk/pkg/logging"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -28,7 +30,7 @@ func TestAtomicManager(t *testing.T) {
 	mockReceiver.On("handle", payload)
 	mockReceiver.On("handleBetter", payload)
 
-	atomicManager := NewAtomicManager()
+	atomicManager := NewAtomicManager(logging.GetLogger("", ""))
 	result1, _ := atomicManager.Add(mockReceiver.handle)
 	assert.Equal(t, 1, result1)
 
@@ -56,7 +58,7 @@ func TestSendRaceCondition(t *testing.T) {
 	payload := map[string]interface{}{
 		"key": "test",
 	}
-	atomicManager := NewAtomicManager()
+	atomicManager := NewAtomicManager(logging.GetLogger("", ""))
 	result1, result2 := 0, 0
 	listenerCalled := false
 
@@ -89,7 +91,7 @@ func TestSendRaceCondition(t *testing.T) {
 
 func TestAddRaceCondition(t *testing.T) {
 	sync := make(chan interface{})
-	atomicManager := NewAtomicManager()
+	atomicManager := NewAtomicManager(logging.GetLogger("", ""))
 
 	listener1 := func(interface{}) {
 

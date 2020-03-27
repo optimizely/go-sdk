@@ -23,6 +23,8 @@ import (
 
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
+
 	"github.com/stretchr/testify/suite"
 )
 
@@ -36,7 +38,7 @@ type ExperimentOverrideServiceTestSuite struct {
 func (s *ExperimentOverrideServiceTestSuite) SetupTest() {
 	s.mockConfig = new(mockProjectConfig)
 	s.overrides = NewMapExperimentOverridesStore()
-	s.overrideService = NewExperimentOverrideService(s.overrides)
+	s.overrideService = NewExperimentOverrideService(s.overrides, logging.GetLogger("", ""))
 }
 
 func (s *ExperimentOverrideServiceTestSuite) TestOverridesIncludeVariation() {

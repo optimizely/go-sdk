@@ -27,13 +27,12 @@ import (
 	"github.com/optimizely/go-sdk/pkg/registry"
 )
 
-var csLogger = logging.GetLogger("CompositeDecisionService")
-
 // CompositeService is the entry-point into the decision service. It provides out of the box decision making for Features and Experiments.
 type CompositeService struct {
 	compositeExperimentService ExperimentService
 	compositeFeatureService    FeatureService
 	notificationCenter         notification.Center
+	logger                     logging.OptimizelyLogProducer
 }
 
 // CSOptionFunc is used to pass custom config options into the CompositeService.
@@ -49,6 +48,7 @@ func WithCompositeExperimentService(compositeExperimentService ExperimentService
 // NewCompositeService returns a new instance of the CompositeService with the defaults
 func NewCompositeService(sdkKey string, options ...CSOptionFunc) *CompositeService {
 	compositeService := &CompositeService{
+		logger:logging.GetLogger(sdkKey, "CompositeService"),
 		notificationCenter: registry.GetNotificationCenter(sdkKey),
 	}
 
@@ -57,9 +57,9 @@ func NewCompositeService(sdkKey string, options ...CSOptionFunc) *CompositeServi
 	}
 
 	if compositeService.compositeExperimentService == nil {
-		compositeService.compositeExperimentService = NewCompositeExperimentService()
+		compositeService.compositeExperimentService = NewCompositeExperimentService(sdkKey)
 	}
-	compositeService.compositeFeatureService = NewCompositeFeatureService(compositeService.compositeExperimentService)
+	compositeService.compositeFeatureService = NewCompositeFeatureService(sdkKey, compositeService.compositeExperimentService)
 
 	return compositeService
 }
@@ -132,7 +132,7 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 			UserContext:  userContext,
 		}
 		if err = s.notificationCenter.Send(notification.Decision, decisionNotification); err != nil {
-			csLogger.Warning("Problem with sending notification")
+			s.logger.Warning("Problem with sending notification")
 		}
 	}
 	return featureDecision, err
@@ -163,7 +163,7 @@ func (s CompositeService) GetExperimentDecision(experimentDecisionContext Experi
 		}
 
 		if err = s.notificationCenter.Send(notification.Decision, decisionNotification); err != nil {
-			csLogger.Warning("Error sending sending notification")
+			s.logger.Warning("Error sending sending notification")
 		}
 	}
 
@@ -176,12 +176,12 @@ func (s CompositeService) OnDecision(callback func(notification.DecisionNotifica
 		if decisionNotification, ok := payload.(notification.DecisionNotification); ok {
 			callback(decisionNotification)
 		} else {
-			csLogger.Warning(fmt.Sprintf("Unable to convert notification payload %v into DecisionNotification", payload))
+			s.logger.Warning(fmt.Sprintf("Unable to convert notification payload %v into DecisionNotification", payload))
 		}
 	}
 	id, err := s.notificationCenter.AddHandler(notification.Decision, handler)
 	if err != nil {
-		csLogger.Warning("Problem with adding notification handler")
+		s.logger.Warning("Problem with adding notification handler")
 		return 0, err
 	}
 	return id, nil
@@ -190,7 +190,7 @@ func (s CompositeService) OnDecision(callback func(notification.DecisionNotifica
 // RemoveOnDecision removes handler for Decision notification with given id
 func (s CompositeService) RemoveOnDecision(id int) error {
 	if err := s.notificationCenter.RemoveHandler(id, notification.Decision); err != nil {
-		csLogger.Warning("Problem with removing notification handler")
+		s.logger.Warning("Problem with removing notification handler")
 		return err
 	}
 	return nil

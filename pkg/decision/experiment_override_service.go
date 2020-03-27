@@ -27,8 +27,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
-var eosLogger = logging.GetLogger("ExperimentOverrideService")
-
 // ExperimentOverrideKey represents the user ID and experiment associated with an override variation
 type ExperimentOverrideKey struct {
 	ExperimentKey, UserID string
@@ -80,11 +78,13 @@ func (m *MapExperimentOverridesStore) RemoveVariation(overrideKey ExperimentOver
 // Implements the ExperimentService interface
 type ExperimentOverrideService struct {
 	Overrides ExperimentOverrideStore
+	logger    logging.OptimizelyLogProducer
 }
 
 // NewExperimentOverrideService returns a pointer to an initialized ExperimentOverrideService
-func NewExperimentOverrideService(overrides ExperimentOverrideStore) *ExperimentOverrideService {
+func NewExperimentOverrideService(overrides ExperimentOverrideStore, logger logging.OptimizelyLogProducer) *ExperimentOverrideService {
 	return &ExperimentOverrideService{
+		logger: logger,
 		Overrides: overrides,
 	}
 }
@@ -107,7 +107,7 @@ func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisio
 		if variation, ok := decisionContext.Experiment.Variations[variationID]; ok {
 			decision.Variation = &variation
 			decision.Reason = reasons.OverrideVariationAssignmentFound
-			eosLogger.Debug(fmt.Sprintf("Override variation %v found for user %v", variationKey, userContext.ID))
+			s.logger.Debug(fmt.Sprintf("Override variation %v found for user %v", variationKey, userContext.ID))
 			return decision, nil
 		}
 	}
