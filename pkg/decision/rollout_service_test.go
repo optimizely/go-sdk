@@ -65,6 +65,40 @@ func (s *RolloutServiceTestSuite) SetupTest() {
 	s.mockConfig.On("GetAudienceMap").Return(testAudienceMap)
 }
 
+func (s *RolloutServiceTestSuite) TestGetDecisionWithEmptyRolloutID() {
+
+	testRolloutService := RolloutService{}
+	feature := &testFeatRollout3334
+	feature.Rollout.ID = ""
+	featureDecisionContext := FeatureDecisionContext{
+		Feature:       feature,
+		ProjectConfig: s.mockConfig,
+	}
+	expectedFeatureDecision := FeatureDecision{
+		Source:   Rollout,
+		Decision: Decision{Reason: reasons.NoRolloutForFeature},
+	}
+	decision, _ := testRolloutService.GetDecision(featureDecisionContext, s.testUserContext)
+	s.Equal(expectedFeatureDecision, decision)
+}
+
+func (s *RolloutServiceTestSuite) TestGetDecisionWithNoExperiments() {
+
+	testRolloutService := RolloutService{}
+	feature := &testFeatRollout3334
+	feature.Rollout.Experiments = []entities.Experiment{}
+	featureDecisionContext := FeatureDecisionContext{
+		Feature:       feature,
+		ProjectConfig: s.mockConfig,
+	}
+	expectedFeatureDecision := FeatureDecision{
+		Source:   Rollout,
+		Decision: Decision{Reason: reasons.RolloutHasNoExperiments},
+	}
+	decision, _ := testRolloutService.GetDecision(featureDecisionContext, s.testUserContext)
+	s.Equal(expectedFeatureDecision, decision)
+}
+
 func (s *RolloutServiceTestSuite) TestGetDecisionHappyPath() {
 	// Test experiment passes targeting and bucketing
 	testExperimentBucketerDecision := ExperimentDecision{
