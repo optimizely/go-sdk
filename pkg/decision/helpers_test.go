@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -150,6 +150,48 @@ var testExp1112 = entities.Experiment{
 		entities.Range{EntityID: "2222", EndOfRange: 10000},
 	},
 }
+var testExp1117Var2223 = entities.Variation{ID: "2223", Key: "2223"}
+var testAudience5556 = entities.Audience{ID: "5556"}
+var testExp1117 = entities.Experiment{
+	AudienceConditionTree: &entities.TreeNode{
+		Operator: "and",
+		Nodes: []*entities.TreeNode{
+			&entities.TreeNode{Item: "test_audience_5556"},
+		},
+	},
+	ID:  "1117",
+	Key: testExp1111Key,
+	Variations: map[string]entities.Variation{
+		"2223": testExp1117Var2223,
+	},
+	VariationKeyToIDMap: map[string]string{
+		"2223": "2223",
+	},
+	TrafficAllocation: []entities.Range{
+		entities.Range{EntityID: "2223", EndOfRange: 10000},
+	},
+}
+var testExp1118Var2224 = entities.Variation{ID: "2224", Key: "2224"}
+var testAudience5557 = entities.Audience{ID: "5557"}
+var testExp1118 = entities.Experiment{
+	AudienceConditionTree: &entities.TreeNode{
+		Operator: "and",
+		Nodes: []*entities.TreeNode{
+			&entities.TreeNode{Item: "test_audience_5557"},
+		},
+	},
+	ID:  "1118",
+	Key: testExp1111Key,
+	Variations: map[string]entities.Variation{
+		"2224": testExp1118Var2224,
+	},
+	VariationKeyToIDMap: map[string]string{
+		"2224": "2224",
+	},
+	TrafficAllocation: []entities.Range{
+		entities.Range{EntityID: "2224", EndOfRange: 10000},
+	},
+}
 
 const testFeatRollout3334Key = "test_feature_rollout_3334_key"
 
@@ -158,7 +200,7 @@ var testFeatRollout3334 = entities.Feature{
 	Key: testFeatRollout3334Key,
 	Rollout: entities.Rollout{
 		ID:          "4444",
-		Experiments: []entities.Experiment{testExp1112},
+		Experiments: []entities.Experiment{testExp1112, testExp1117, testExp1118},
 	},
 }
 
