@@ -44,45 +44,24 @@ func NewRolloutService(sdkKey string) *RolloutService {
 
 // GetDecision returns a decision for the given feature and user context
 func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
+
 	featureDecision := FeatureDecision{
 		Source: Rollout,
 	}
 	feature := decisionContext.Feature
 	rollout := feature.Rollout
-	if rollout.ID == "" {
-		featureDecision.Reason = reasons.NoRolloutForFeature
-		return featureDecision, nil
+
+	evaluateConditionTree := func(experiment entities.Experiment) bool {
+		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
+		evalResult, _ := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
+		if !evalResult {
+			featureDecision.Reason = reasons.FailedRolloutTargeting
+			r.logger.Debug(fmt.Sprintf(`User "%s" failed targeting for feature rollout with key "%s".`, userContext.ID, feature.Key))
+		}
+		return evalResult
 	}
 
-	numberOfExperiments := len(rollout.Experiments)
-	if numberOfExperiments == 0 {
-		featureDecision.Reason = reasons.RolloutHasNoExperiments
-		return featureDecision, nil
-	}
-
-	index := 0
-	for index < numberOfExperiments {
-		experiment := rollout.Experiments[index]
-		experimentDecisionContext := ExperimentDecisionContext{
-			Experiment:    &experiment,
-			ProjectConfig: decisionContext.ProjectConfig,
-		}
-		if experiment.AudienceConditionTree != nil {
-			condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
-			evalResult, _ := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
-			if !evalResult { // Evaluate this user for the next rule
-				featureDecision.Reason = reasons.FailedRolloutTargeting
-				r.logger.Debug(fmt.Sprintf(`User "%s" failed targeting for feature rollout with key "%s".`, userContext.ID, feature.Key))
-				index++
-				continue
-			}
-		}
-		decision, _ := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext)
-		if decision.Variation == nil && index < numberOfExperiments-1 {
-			// Evaluate fall back rule / last rule now
-			index = numberOfExperiments - 1
-			continue
-		}
+	getFeatureDecision := func(experiment entities.Experiment, decision ExperimentDecision) (FeatureDecision, error) {
 		// translate the experiment reason into a more rollouts-appropriate reason
 		switch decision.Reason {
 		case reasons.NotBucketedIntoVariation:
@@ -96,7 +75,51 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		featureDecision.Experiment = experiment
 		featureDecision.Variation = decision.Variation
 		r.logger.Debug(fmt.Sprintf(`Decision made for user "%s" for feature rollout with key "%s": %s.`, userContext.ID, feature.Key, featureDecision.Reason))
-		break
+		return featureDecision, nil
 	}
+
+	getExperimentDecisionContext := func(experiment entities.Experiment) ExperimentDecisionContext {
+		return ExperimentDecisionContext{
+			Experiment:    &experiment,
+			ProjectConfig: decisionContext.ProjectConfig,
+		}
+	}
+
+	if rollout.ID == "" {
+		featureDecision.Reason = reasons.NoRolloutForFeature
+		return featureDecision, nil
+	}
+
+	numberOfExperiments := len(rollout.Experiments)
+	if numberOfExperiments == 0 {
+		featureDecision.Reason = reasons.RolloutHasNoExperiments
+		return featureDecision, nil
+	}
+
+	for index := 0; index < numberOfExperiments-1; index++ {
+		experiment := rollout.Experiments[index]
+		experimentDecisionContext := getExperimentDecisionContext(experiment)
+		// Move to next evaluation if condition tree is available and evaluation fails
+		if experiment.AudienceConditionTree != nil && !evaluateConditionTree(experiment) {
+			// Evaluate this user for the next rule
+			continue
+		}
+		decision, _ := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext)
+		if decision.Variation == nil {
+			// Evaluate fall back rule / last rule now
+			break
+		}
+		return getFeatureDecision(experiment, decision)
+	}
+
+	// fall back rule / last rule
+	experiment := rollout.Experiments[numberOfExperiments-1]
+	experimentDecisionContext := getExperimentDecisionContext(experiment)
+	// Move to bucketing if conditionTree is unavailable or evaluation passes
+	if experiment.AudienceConditionTree == nil || evaluateConditionTree(experiment) {
+		decision, _ := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext)
+		return getFeatureDecision(experiment, decision)
+	}
+
 	return featureDecision, nil
 }

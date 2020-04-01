@@ -125,7 +125,6 @@ func (s *RolloutServiceTestSuite) TestGetDecisionHappyPath() {
 }
 
 func (s *RolloutServiceTestSuite) TestGetDecisionFallbacksToLastWhenFailsBucketing() {
-	// Test experiment passes targeting but not bucketing
 	testExperiment1112BucketerDecision := ExperimentDecision{
 		Decision: Decision{
 			Reason: reasons.NotBucketedIntoVariation,
@@ -162,7 +161,6 @@ func (s *RolloutServiceTestSuite) TestGetDecisionFallbacksToLastWhenFailsBucketi
 }
 
 func (s *RolloutServiceTestSuite) TestGetDecisionWhenFallbackBucketingFails() {
-	// Test experiment passes targeting but not bucketing
 	testExperiment1112BucketerDecision := ExperimentDecision{
 		Decision: Decision{
 			Reason: reasons.NotBucketedIntoVariation,
