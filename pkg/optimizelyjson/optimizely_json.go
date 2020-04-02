@@ -26,31 +26,32 @@ import (
 
 // OptimizelyJSON holds the underlying structure of the object
 type OptimizelyJSON struct {
-	data map[string]interface{}
+	payload string
+
+	data map[string]interface{} // used only for memoization
 }
 
 // NewOptimizelyJSON constructs the object
-func NewOptimizelyJSON(data map[string]interface{}) *OptimizelyJSON {
-	return &OptimizelyJSON{data: data}
+func NewOptimizelyJSON(payload string) *OptimizelyJSON {
+	return &OptimizelyJSON{payload: payload}
 }
 
 // ToString returns the string representation of json
-func (optlyJson OptimizelyJSON) ToString() (string, error) {
-	jsonBytes, err := json.Marshal(optlyJson.data)
-	if err != nil {
-		return "", err
-	}
-
-	return string(jsonBytes), nil
+func (optlyJson OptimizelyJSON) ToString() string {
+	return optlyJson.payload
 }
 
 // ToMap returns the native representation of json (map of interface)
-func (optlyJson OptimizelyJSON) ToMap() map[string]interface{} {
-	return optlyJson.data
+func (optlyJson *OptimizelyJSON) ToMap() (map[string]interface{}, error) {
+	var err error
+	if optlyJson.data == nil {
+		err = json.Unmarshal([]byte(optlyJson.payload), &optlyJson.data)
+	}
+	return optlyJson.data, err
 }
 
 // GetValue populates the schema passed by the user - it takes primitive types and complex struct type
-func (optlyJson OptimizelyJSON) GetValue(jsonPath string, schema interface{}) error {
+func (optlyJson *OptimizelyJSON) GetValue(jsonPath string, schema interface{}) error {
 
 	populateSchema := func(v interface{}) error {
 		jsonBytes, err := json.Marshal(v)
@@ -62,12 +63,19 @@ func (optlyJson OptimizelyJSON) GetValue(jsonPath string, schema interface{}) er
 	}
 
 	if jsonPath == "" { // populate the whole schema
-		return populateSchema(optlyJson.data)
+		return json.Unmarshal([]byte(optlyJson.payload), schema)
 	}
 
+	if optlyJson.data == nil {
+		err := json.Unmarshal([]byte(optlyJson.payload), &optlyJson.data)
+		if err != nil {
+			return err
+		}
+	}
 	splitJSONPath := strings.Split(jsonPath, ".")
-	internalMap := optlyJson.data
 	lastIndex := len(splitJSONPath) - 1
+
+	internalMap := optlyJson.data
 
 	for i := 0; i < len(splitJSONPath); i++ {
 

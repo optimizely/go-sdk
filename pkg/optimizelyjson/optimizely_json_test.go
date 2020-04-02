@@ -7,35 +7,38 @@ import (
 
 type OptimizelyJsonTestSuite struct {
 	suite.Suite
-	jsonRepr       map[string]interface{}
+	data           map[string]interface{}
 	dynamicList    []interface{}
 	optimizelyJson *OptimizelyJSON
+	payload        string
 }
 
 func (suite *OptimizelyJsonTestSuite) SetupTest() {
 
 	suite.dynamicList = []interface{}{"1", "2", 3.01, 4.23, true}
-	suite.jsonRepr = map[string]interface{}{
-		"field1": 1,
+	suite.payload = `{"field1":1,"field2":2.5,"field3":"three","field4":{"inner_field1":3,"inner_field2":["1","2",3.01,4.23,true]},"field5":true,"field6":null}`
+
+	suite.data = map[string]interface{}{
+		"field1": 1.0,
 		"field2": 2.5,
 		"field3": "three",
-		"field4": map[string]interface{}{"inner_field1": 3, "inner_field2": suite.dynamicList},
+		"field4": map[string]interface{}{"inner_field1": 3.0, "inner_field2": suite.dynamicList},
 		"field5": true,
 		"field6": nil,
 	}
-	suite.optimizelyJson = NewOptimizelyJSON(suite.jsonRepr)
+	suite.optimizelyJson = NewOptimizelyJSON(suite.payload)
 }
 
-func (suite *OptimizelyJsonTestSuite) TestToDict() {
+func (suite *OptimizelyJsonTestSuite) TestToMap() {
 
-	returnValue := suite.optimizelyJson.ToMap()
-	suite.Equal(suite.jsonRepr, returnValue)
+	returnValue, err := suite.optimizelyJson.ToMap()
+	suite.NoError(err)
+	suite.Equal(suite.data, returnValue)
 }
 
 func (suite *OptimizelyJsonTestSuite) TestToString() {
 
-	returnValue, err := suite.optimizelyJson.ToString()
-	suite.NoError(err)
+	returnValue := suite.optimizelyJson.ToString()
 	expected := `{"field1":1,"field2":2.5,"field3":"three","field4":{"inner_field1":3,"inner_field2":["1","2",3.01,4.23,true]},"field5":true,"field6":null}`
 	suite.Equal(expected, returnValue)
 }
