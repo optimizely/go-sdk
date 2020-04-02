@@ -28,7 +28,7 @@ func (suite *OptimizelyJsonTestSuite) SetupTest() {
 
 func (suite *OptimizelyJsonTestSuite) TestToDict() {
 
-	returnValue := suite.optimizelyJson.ToDict()
+	returnValue := suite.optimizelyJson.ToMap()
 	suite.Equal(suite.jsonRepr, returnValue)
 }
 
@@ -191,6 +191,20 @@ func (suite *OptimizelyJsonTestSuite) TestGetValueValidJsonKeyPartialSchema() {
 	err = suite.optimizelyJson.GetValue("field4", &sc)
 	suite.NoError(err)
 	suite.Equal(expected, sc)
+}
+
+func (suite *OptimizelyJsonTestSuite) TestGetValueValidJsonKeyArraySchema() {
+
+	var array []interface{}
+
+	err := suite.optimizelyJson.GetValue("field4.inner_field2", &array)
+	suite.NoError(err)
+
+	suite.Equal("1", array[0])
+	suite.Equal("2", array[1])
+	suite.Equal(3.01, array[2])
+	suite.Equal(4.23, array[3])
+
 }
 
 func TestOptimizelyJsonTestSuite(t *testing.T) {

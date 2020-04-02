@@ -26,17 +26,17 @@ import (
 
 // OptimizelyJSON holds the underlying structure of the object
 type OptimizelyJSON struct {
-	jsonRepr map[string]interface{}
+	data map[string]interface{}
 }
 
 // NewOptimizelyJSON constructs the object
-func NewOptimizelyJSON(jsonRepr map[string]interface{}) *OptimizelyJSON {
-	return &OptimizelyJSON{jsonRepr: jsonRepr}
+func NewOptimizelyJSON(data map[string]interface{}) *OptimizelyJSON {
+	return &OptimizelyJSON{data: data}
 }
 
 // ToString returns the string representation of json
 func (optlyJson OptimizelyJSON) ToString() (string, error) {
-	jsonBytes, err := json.Marshal(optlyJson.jsonRepr)
+	jsonBytes, err := json.Marshal(optlyJson.data)
 	if err != nil {
 		return "", err
 	}
@@ -44,13 +44,13 @@ func (optlyJson OptimizelyJSON) ToString() (string, error) {
 	return string(jsonBytes), nil
 }
 
-// ToDict returns the native representation of json (map of interface)
-func (optlyJson OptimizelyJSON) ToDict() map[string]interface{} {
-	return optlyJson.jsonRepr
+// ToMap returns the native representation of json (map of interface)
+func (optlyJson OptimizelyJSON) ToMap() map[string]interface{} {
+	return optlyJson.data
 }
 
 // GetValue populates the schema passed by the user - it takes primitive types and complex struct type
-func (optlyJson OptimizelyJSON) GetValue(jsonKey string, schema interface{}) error {
+func (optlyJson OptimizelyJSON) GetValue(jsonPath string, schema interface{}) error {
 
 	populateSchema := func(v interface{}) error {
 		jsonBytes, err := json.Marshal(v)
@@ -61,21 +61,21 @@ func (optlyJson OptimizelyJSON) GetValue(jsonKey string, schema interface{}) err
 		return err
 	}
 
-	if jsonKey == "" { // populate the whole schema
-		return populateSchema(optlyJson.jsonRepr)
+	if jsonPath == "" { // populate the whole schema
+		return populateSchema(optlyJson.data)
 	}
 
-	splitJSONKey := strings.Split(jsonKey, ".")
-	internalMap := optlyJson.jsonRepr
-	lastIndex := len(splitJSONKey) - 1
+	splitJSONPath := strings.Split(jsonPath, ".")
+	internalMap := optlyJson.data
+	lastIndex := len(splitJSONPath) - 1
 
-	for i := 0; i < len(splitJSONKey); i++ {
+	for i := 0; i < len(splitJSONPath); i++ {
 
-		if splitJSONKey[i] == "" {
+		if splitJSONPath[i] == "" {
 			return errors.New("json key cannot be empty")
 		}
 
-		if item, ok := internalMap[splitJSONKey[i]]; ok {
+		if item, ok := internalMap[splitJSONPath[i]]; ok {
 			switch v := item.(type) {
 
 			case map[string]interface{}:
@@ -90,7 +90,7 @@ func (optlyJson OptimizelyJSON) GetValue(jsonKey string, schema interface{}) err
 				}
 			}
 		} else {
-			return fmt.Errorf(`json key "%s" not found`, splitJSONKey[i])
+			return fmt.Errorf(`json key "%s" not found`, splitJSONPath[i])
 		}
 	}
 
