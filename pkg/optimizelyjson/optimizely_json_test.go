@@ -26,7 +26,23 @@ func (suite *OptimizelyJsonTestSuite) SetupTest() {
 		"field5": true,
 		"field6": nil,
 	}
-	suite.optimizelyJson = NewOptimizelyJSON(suite.payload)
+	suite.optimizelyJson = NewOptimizelyJSONfromString(suite.payload)
+}
+
+func (suite *OptimizelyJsonTestSuite) TestConstructors() {
+
+	object1 := NewOptimizelyJSONfromString(suite.payload)
+	object2 := NewOptimizelyJSONfromMap(suite.data)
+
+	object1ToString, _ := object1.ToString()
+	object2ToString, _ := object2.ToString()
+	suite.Equal(object1ToString, object2ToString)
+
+	object1ToMap, _ := object1.ToMap()
+	object2ToMap, _ := object2.ToMap()
+
+	suite.Equal(object1ToMap, object2ToMap)
+
 }
 
 func (suite *OptimizelyJsonTestSuite) TestToMap() {
@@ -38,7 +54,8 @@ func (suite *OptimizelyJsonTestSuite) TestToMap() {
 
 func (suite *OptimizelyJsonTestSuite) TestToString() {
 
-	returnValue := suite.optimizelyJson.ToString()
+	returnValue, err := suite.optimizelyJson.ToString()
+	suite.NoError(err)
 	expected := `{"field1":1,"field2":2.5,"field3":"three","field4":{"inner_field1":3,"inner_field2":["1","2",3.01,4.23,true]},"field5":true,"field6":null}`
 	suite.Equal(expected, returnValue)
 }

@@ -28,17 +28,30 @@ import (
 type OptimizelyJSON struct {
 	payload string
 
-	data map[string]interface{} // used only for memoization
+	data map[string]interface{}
 }
 
-// NewOptimizelyJSON constructs the object
-func NewOptimizelyJSON(payload string) *OptimizelyJSON {
+// NewOptimizelyJSONfromString constructs the object out of string payload
+func NewOptimizelyJSONfromString(payload string) *OptimizelyJSON {
 	return &OptimizelyJSON{payload: payload}
 }
 
+// NewOptimizelyJSONfromMap constructs the object
+func NewOptimizelyJSONfromMap(data map[string]interface{}) *OptimizelyJSON {
+	return &OptimizelyJSON{data: data}
+}
+
 // ToString returns the string representation of json
-func (optlyJson OptimizelyJSON) ToString() string {
-	return optlyJson.payload
+func (optlyJson *OptimizelyJSON) ToString() (string, error) {
+	if optlyJson.payload == "" {
+		jsonBytes, err := json.Marshal(optlyJson.data)
+		if err != nil {
+			return "", err
+		}
+		optlyJson.payload = string(jsonBytes)
+
+	}
+	return optlyJson.payload, nil
 }
 
 // ToMap returns the native representation of json (map of interface)
