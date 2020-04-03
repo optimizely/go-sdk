@@ -34,13 +34,16 @@ func (suite *OptimizelyJsonTestSuite) TestConstructors() {
 	object1 := NewOptimizelyJSONfromString(suite.payload)
 	object2 := NewOptimizelyJSONfromMap(suite.data)
 
-	object1ToString, _ := object1.ToString()
-	object2ToString, _ := object2.ToString()
+	object1ToString, err1Str := object1.ToString()
+	object2ToString, err2Str := object2.ToString()
+	suite.NoError(err1Str)
+	suite.NoError(err2Str)
 	suite.Equal(object1ToString, object2ToString)
 
-	object1ToMap, _ := object1.ToMap()
-	object2ToMap, _ := object2.ToMap()
-
+	object1ToMap, err1Map := object1.ToMap()
+	object2ToMap, err2Map := object2.ToMap()
+	suite.NoError(err1Map)
+	suite.NoError(err2Map)
 	suite.Equal(object1ToMap, object2ToMap)
 
 }
