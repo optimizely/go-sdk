@@ -18,6 +18,7 @@
 package client
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -30,7 +31,10 @@ import (
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
+	"github.com/optimizely/go-sdk/pkg/optimizelyjson"
 	"github.com/optimizely/go-sdk/pkg/utils"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 // OptimizelyClient is the entry point to the Optimizely SDK
@@ -215,6 +219,23 @@ func (o *OptimizelyClient) GetFeatureVariableString(featureKey, variableKey stri
 	return value, err
 }
 
+// GetFeatureVariableJSON returns the feature variable value of type json associated with the given feature and variable keys.
+func (o *OptimizelyClient) GetFeatureVariableJSON(featureKey, variableKey string, userContext entities.UserContext) (value *optimizelyjson.OptimizelyJSON, err error) {
+
+	val, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
+	if err != nil {
+		return value, err
+	}
+
+	var convertedValue map[string]interface{}
+	err = json.Unmarshal([]byte(val), &convertedValue)
+	if err != nil || valueType != entities.JSON {
+		return value, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
+	}
+	value = optimizelyjson.NewOptimizelyJSONfromMap(convertedValue)
+	return value, err
+}
+
 // GetFeatureVariable returns feature variable as a string along with it's associated type.
 func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, userContext entities.UserContext) (value string, valueType entities.VariableType, err error) {
 
@@ -234,8 +255,8 @@ func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, us
 	return variable.DefaultValue, variable.Type, err
 }
 
-// GetAllFeatureVariables returns all the variables for a given feature along with the enabled state.
-func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]interface{}, err error) {
+// GetAllFeatureVariablesWithDecision returns all the variables for a given feature along with the enabled state.
+func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]interface{}, err error) {
 
 	variableMap = make(map[string]interface{})
 	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, "", userContext)
@@ -254,6 +275,8 @@ func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext
 		return enabled, variableMap, nil
 	}
 
+	errs := new(multierror.Error)
+
 	for _, v := range feature.VariableMap {
 		val := v.DefaultValue
 
@@ -268,10 +291,18 @@ func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext
 		switch varType := v.Type; varType {
 		case entities.Boolean:
 			out, err = strconv.ParseBool(val)
+			errs = multierror.Append(errs, err)
 		case entities.Double:
 			out, err = strconv.ParseFloat(val, 64)
+			errs = multierror.Append(errs, err)
 		case entities.Integer:
 			out, err = strconv.Atoi(val)
+			errs = multierror.Append(errs, err)
+		case entities.JSON:
+			var intf map[string]interface{}
+			err = json.Unmarshal([]byte(val), &intf)
+			out = intf
+			errs = multierror.Append(errs, err)
 		case entities.String:
 		default:
 			o.logger.Warning(fmt.Sprintf(`type "%s" is unknown, returning string`, varType))
@@ -280,7 +311,17 @@ func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext
 		variableMap[v.Key] = out
 	}
 
-	return enabled, variableMap, err
+	return enabled, variableMap, errs.ErrorOrNil()
+}
+
+// GetAllFeatureVariables returns all the variables as OptimizelyJSON object for a given feature.
+func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext entities.UserContext) (optlyJSON *optimizelyjson.OptimizelyJSON, err error) {
+	_, variableMap, err := o.GetAllFeatureVariablesWithDecision(featureKey, userContext)
+	if err != nil {
+		return optlyJSON, err
+	}
+	optlyJSON = optimizelyjson.NewOptimizelyJSONfromMap(variableMap)
+	return optlyJSON, nil
 }
 
 // GetVariation returns the key of the variation the user is bucketed into. Does not generate impression events.
