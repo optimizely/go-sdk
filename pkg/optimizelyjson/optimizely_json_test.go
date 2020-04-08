@@ -26,7 +26,10 @@ func (suite *OptimizelyJsonTestSuite) SetupTest() {
 		"field5": true,
 		"field6": nil,
 	}
-	suite.optimizelyJson, _ = NewOptimizelyJSONfromString(suite.payload)
+	var err error
+	suite.optimizelyJson, err = NewOptimizelyJSONfromString(suite.payload)
+	suite.NoError(err)
+
 }
 
 func (suite *OptimizelyJsonTestSuite) TestConstructors() {
