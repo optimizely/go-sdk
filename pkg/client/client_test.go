@@ -1196,260 +1196,90 @@ func TestGetFeatureVariableStringPanic(t *testing.T) {
 	assert.True(t, assert.Error(t, err))
 }
 
-func TestGetFeatureVariableJSONWithValidValue(t *testing.T) {
+func TestGetFeatureVariableJSON(t *testing.T) {
+
+	type test struct {
+		name              string
+		testVariableValue string
+		stringRepr        string
+		varType           entities.VariableType
+		featureEnabled    bool
+		validJson         bool
+		mapRepr           map[string]interface{}
+	}
+
+	testSuite := []test{
+		{name: "ValidValue", testVariableValue: "{\"test\":12}", varType: entities.JSON, validJson: true,
+			featureEnabled: true, mapRepr: map[string]interface{}{"test": 12.0}, stringRepr: "{\"test\":12}"},
+		{name: "InvalidValue", testVariableValue: "{\"test\": }", varType: entities.JSON, validJson: false,
+			featureEnabled: true},
+		{name: "InvalidVariableType", testVariableValue: "{}", varType: entities.Integer, validJson: false,
+			featureEnabled: true},
+		{name: "EmptyVariableType", testVariableValue: "{}", varType: "", validJson: false,
+			featureEnabled: true},
+		{name: "DefaultValueIfFeatureNotEnabled", testVariableValue: "{\"test\":12}", varType: entities.JSON, validJson: true,
+			featureEnabled: false, mapRepr: map[string]interface{}{}, stringRepr: "{}"},
+	}
+
 	testFeatureKey := "test_feature_key"
 	testVariableKey := "test_feature_flag_key"
-	testVariableValue := "{\"test\":12}"
 	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testVariationVariable := entities.VariationVariable{
-		ID:    "1",
-		Value: testVariableValue,
-	}
-	testVariable := entities.Variable{
-		DefaultValue: "{}",
-		ID:           "1",
-		Key:          "test_feature_flag_key",
-		Type:         entities.JSON,
-	}
-	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
-	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
-	}
-	testFeature := getTestFeature(testFeatureKey, testExperiment)
-	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
-	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
 
-	testDecisionContext := decision.FeatureDecisionContext{
-		Feature:       &testFeature,
-		ProjectConfig: mockConfig,
-		Variable:      testVariable,
-	}
+	for _, ts := range testSuite {
+		testVariationVariable := entities.VariationVariable{
+			ID:    "1",
+			Value: ts.testVariableValue,
+		}
+		testVariable := entities.Variable{
+			DefaultValue: "{}",
+			ID:           "1",
+			Key:          "test_feature_flag_key",
+			Type:         ts.varType,
+		}
+		testVariation := getTestVariationWithFeatureVariable(ts.featureEnabled, testVariationVariable)
+		testExperiment := entities.Experiment{
+			ID:         "111111",
+			Variations: map[string]entities.Variation{"22222": testVariation},
+		}
+		testFeature := getTestFeature(testFeatureKey, testExperiment)
+		mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
+		mockConfigManager := new(MockProjectConfigManager)
+		mockConfigManager.On("GetConfig").Return(mockConfig, nil)
 
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
-	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+		testDecisionContext := decision.FeatureDecisionContext{
+			Feature:       &testFeature,
+			ProjectConfig: mockConfig,
+			Variable:      testVariable,
+		}
 
-	client := OptimizelyClient{
-		ConfigManager:   mockConfigManager,
-		DecisionService: mockDecisionService,
-		logger:          logging.GetLogger("", ""),
-	}
-	result, err := client.GetFeatureVariableJSON(testFeatureKey, testVariableKey, testUserContext)
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
+		expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
+		mockDecisionService := new(MockDecisionService)
+		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
 
-	resultStr, err := result.ToString()
-	assert.NoError(t, err)
-	resultMap, err := result.ToMap()
-	assert.NoError(t, err)
-	assert.Equal(t, testVariableValue, resultStr)
-	assert.Equal(t, map[string]interface{}{"test": 12.0}, resultMap)
-	mockConfig.AssertExpectations(t)
-	mockConfigManager.AssertExpectations(t)
-	mockDecisionService.AssertExpectations(t)
-}
+		client := OptimizelyClient{
+			ConfigManager:   mockConfigManager,
+			DecisionService: mockDecisionService,
+			logger:          logging.GetLogger("", ""),
+		}
+		result, err := client.GetFeatureVariableJSON(testFeatureKey, testVariableKey, testUserContext)
+		if ts.validJson {
+			assert.NoError(t, err)
+			assert.NotNil(t, result)
 
-func TestGetFeatureVariableJSONWithInvalidValue(t *testing.T) {
-	testFeatureKey := "test_feature_key"
-	testVariableKey := "test_feature_flag_key"
-	testVariableValue := "{\"test\": }"
-	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testVariationVariable := entities.VariationVariable{
-		ID:    "1",
-		Value: testVariableValue,
-	}
-	testVariable := entities.Variable{
-		DefaultValue: "{}",
-		ID:           "1",
-		Key:          "test_feature_flag_key",
-		Type:         entities.JSON,
-	}
-	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
-	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
-	}
-	testFeature := getTestFeature(testFeatureKey, testExperiment)
-	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
-	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
+			resultStr, err := result.ToString()
+			assert.NoError(t, err)
+			assert.Equal(t, ts.stringRepr, resultStr)
 
-	testDecisionContext := decision.FeatureDecisionContext{
-		Feature:       &testFeature,
-		ProjectConfig: mockConfig,
-		Variable:      testVariable,
+			resultMap := result.ToMap()
+			assert.Equal(t, ts.mapRepr, resultMap)
+		} else {
+			assert.Error(t, err)
+			assert.Nil(t, result)
+		}
+		mockConfig.AssertExpectations(t)
+		mockConfigManager.AssertExpectations(t)
+		mockDecisionService.AssertExpectations(t)
 	}
-
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
-	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
-
-	client := OptimizelyClient{
-		ConfigManager:   mockConfigManager,
-		DecisionService: mockDecisionService,
-		logger:          logging.GetLogger("", ""),
-	}
-	result, err := client.GetFeatureVariableJSON(testFeatureKey, testVariableKey, testUserContext)
-	assert.Nil(t, result)
-	assert.Error(t, err)
-	mockConfig.AssertExpectations(t)
-	mockConfigManager.AssertExpectations(t)
-	mockDecisionService.AssertExpectations(t)
-}
-
-func TestGetFeatureVariableJSONWithInvalidValueType(t *testing.T) {
-	testFeatureKey := "test_feature_key"
-	testVariableKey := "test_feature_flag_key"
-	testVariableValue := "{}"
-	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testVariationVariable := entities.VariationVariable{
-		ID:    "1",
-		Value: testVariableValue,
-	}
-	testVariable := entities.Variable{
-		DefaultValue: "{}",
-		ID:           "1",
-		Key:          "test_feature_flag_key",
-		Type:         entities.Integer,
-	}
-	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
-	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
-	}
-	testFeature := getTestFeature(testFeatureKey, testExperiment)
-	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
-	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
-
-	testDecisionContext := decision.FeatureDecisionContext{
-		Feature:       &testFeature,
-		ProjectConfig: mockConfig,
-		Variable:      testVariable,
-	}
-
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
-	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
-
-	client := OptimizelyClient{
-		ConfigManager:   mockConfigManager,
-		DecisionService: mockDecisionService,
-		logger:          logging.GetLogger("", ""),
-	}
-	result, err := client.GetFeatureVariableJSON(testFeatureKey, testVariableKey, testUserContext)
-	assert.Nil(t, result)
-	assert.Error(t, err)
-	mockConfig.AssertExpectations(t)
-	mockConfigManager.AssertExpectations(t)
-	mockDecisionService.AssertExpectations(t)
-}
-
-func TestGetFeatureVariableJSONWithEmptyValueType(t *testing.T) {
-	testFeatureKey := "test_feature_key"
-	testVariableKey := "test_feature_flag_key"
-	testVariableValue := "{}"
-	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testVariationVariable := entities.VariationVariable{
-		ID:    "1",
-		Value: testVariableValue,
-	}
-	testVariable := entities.Variable{
-		DefaultValue: "{}",
-		ID:           "1",
-		Key:          "test_feature_flag_key",
-		Type:         "",
-	}
-	testVariation := getTestVariationWithFeatureVariable(true, testVariationVariable)
-	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
-	}
-	testFeature := getTestFeature(testFeatureKey, testExperiment)
-	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
-	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
-
-	testDecisionContext := decision.FeatureDecisionContext{
-		Feature:       &testFeature,
-		ProjectConfig: mockConfig,
-		Variable:      testVariable,
-	}
-
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
-	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
-
-	client := OptimizelyClient{
-		ConfigManager:   mockConfigManager,
-		DecisionService: mockDecisionService,
-		logger:          logging.GetLogger("", ""),
-	}
-	result, err := client.GetFeatureVariableJSON(testFeatureKey, testVariableKey, testUserContext)
-	assert.Nil(t, result)
-	assert.Error(t, err)
-	mockConfig.AssertExpectations(t)
-	mockConfigManager.AssertExpectations(t)
-	mockDecisionService.AssertExpectations(t)
-}
-
-func TestGetFeatureVariableJSONReturnsDefaultValueIfFeatureNotEnabled(t *testing.T) {
-	testFeatureKey := "test_feature_key"
-	testVariableKey := "test_feature_flag_key"
-	testVariableValue := "{\"test\":12}"
-	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testVariationVariable := entities.VariationVariable{
-		ID:    "1",
-		Value: testVariableValue,
-	}
-	testVariable := entities.Variable{
-		DefaultValue: "{}",
-		ID:           "1",
-		Key:          "test_feature_flag_key",
-		Type:         entities.JSON,
-	}
-	testVariation := getTestVariationWithFeatureVariable(false, testVariationVariable)
-	testExperiment := entities.Experiment{
-		ID:         "111111",
-		Variations: map[string]entities.Variation{"22222": testVariation},
-	}
-	testFeature := getTestFeature(testFeatureKey, testExperiment)
-	mockConfig := getMockConfig(testFeatureKey, testVariableKey, testFeature, testVariable)
-	mockConfigManager := new(MockProjectConfigManager)
-	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
-
-	testDecisionContext := decision.FeatureDecisionContext{
-		Feature:       &testFeature,
-		ProjectConfig: mockConfig,
-		Variable:      testVariable,
-	}
-
-	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
-	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
-
-	client := OptimizelyClient{
-		ConfigManager:   mockConfigManager,
-		DecisionService: mockDecisionService,
-		logger:          logging.GetLogger("", ""),
-	}
-	result, err := client.GetFeatureVariableJSON(testFeatureKey, testVariableKey, testUserContext)
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
-
-	resultStr, err := result.ToString()
-	assert.NoError(t, err)
-	resultMap, err := result.ToMap()
-	assert.NoError(t, err)
-
-	assert.Equal(t, "{}", resultStr)
-	assert.Equal(t, map[string]interface{}{}, resultMap)
-
-	mockConfig.AssertExpectations(t)
-	mockConfigManager.AssertExpectations(t)
-	mockDecisionService.AssertExpectations(t)
 }
 
 func TestGetFeatureVariableJSONPanic(t *testing.T) {
@@ -1992,7 +1822,7 @@ func TestGetAllFeatureVariables(t *testing.T) {
 	optlyJson, err := client.GetAllFeatureVariables(testFeatureKey, testUserContext)
 	assert.NoError(t, err)
 	assert.NotNil(t, optlyJson)
-	variationMap, err := optlyJson.ToMap()
+	variationMap := optlyJson.ToMap()
 	assert.NoError(t, err)
 
 	for _, v := range variables {
@@ -2026,7 +1856,7 @@ func TestGetAllFeatureVariablesWithoutFeature(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, optlyJson)
 
-	variationMap, err := optlyJson.ToMap()
+	variationMap := optlyJson.ToMap()
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(variationMap))
 

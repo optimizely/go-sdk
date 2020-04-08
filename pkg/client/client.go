@@ -18,7 +18,6 @@
 package client
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -227,12 +226,11 @@ func (o *OptimizelyClient) GetFeatureVariableJSON(featureKey, variableKey string
 		return value, err
 	}
 
-	var convertedValue map[string]interface{}
-	err = json.Unmarshal([]byte(val), &convertedValue)
+	value, err = optimizelyjson.NewOptimizelyJSONfromString(val)
 	if err != nil || valueType != entities.JSON {
-		return value, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
+		return nil, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
 	}
-	value = optimizelyjson.NewOptimizelyJSONfromMap(convertedValue)
+
 	return value, err
 }
 
@@ -299,9 +297,8 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string,
 			out, err = strconv.Atoi(val)
 			errs = multierror.Append(errs, err)
 		case entities.JSON:
-			var intf map[string]interface{}
-			err = json.Unmarshal([]byte(val), &intf)
-			out = intf
+			var optlyJSON, err = optimizelyjson.NewOptimizelyJSONfromString(val)
+			out = optlyJSON.ToMap()
 			errs = multierror.Append(errs, err)
 		case entities.String:
 		default:

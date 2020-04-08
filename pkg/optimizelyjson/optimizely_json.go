@@ -32,8 +32,15 @@ type OptimizelyJSON struct {
 }
 
 // NewOptimizelyJSONfromString constructs the object out of string payload
-func NewOptimizelyJSONfromString(payload string) *OptimizelyJSON {
-	return &OptimizelyJSON{payload: payload}
+func NewOptimizelyJSONfromString(payload string) (*OptimizelyJSON, error) {
+
+	var data map[string]interface{}
+	err := json.Unmarshal([]byte(payload), &data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &OptimizelyJSON{payload: payload, data: data}, err
 }
 
 // NewOptimizelyJSONfromMap constructs the object
@@ -55,12 +62,8 @@ func (optlyJson *OptimizelyJSON) ToString() (string, error) {
 }
 
 // ToMap returns the native representation of json (map of interface)
-func (optlyJson *OptimizelyJSON) ToMap() (map[string]interface{}, error) {
-	var err error
-	if optlyJson.data == nil {
-		err = json.Unmarshal([]byte(optlyJson.payload), &optlyJson.data)
-	}
-	return optlyJson.data, err
+func (optlyJson *OptimizelyJSON) ToMap() map[string]interface{} {
+	return optlyJson.data
 }
 
 // GetValue populates the schema passed by the user - it takes primitive types and complex struct type
@@ -79,12 +82,6 @@ func (optlyJson *OptimizelyJSON) GetValue(jsonPath string, schema interface{}) e
 		return json.Unmarshal([]byte(optlyJson.payload), schema)
 	}
 
-	if optlyJson.data == nil {
-		err := json.Unmarshal([]byte(optlyJson.payload), &optlyJson.data)
-		if err != nil {
-			return err
-		}
-	}
 	splitJSONPath := strings.Split(jsonPath, ".")
 	lastIndex := len(splitJSONPath) - 1
 
