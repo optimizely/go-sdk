@@ -52,4 +52,6 @@ const (
 	Double VariableType = "double"
 	// Boolean - the feature-variable type is boolean
 	Boolean VariableType = "boolean"
+	// JSON - the feature-variable type is json
+	JSON VariableType = "json"
 )
