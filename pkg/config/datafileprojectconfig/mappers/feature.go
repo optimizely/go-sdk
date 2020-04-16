@@ -46,12 +46,17 @@ func MapFeatures(featureFlags []datafileEntities.FeatureFlag, rolloutMap map[str
 
 		variableMap := map[string]entities.Variable{}
 		for _, variable := range featureFlag.Variables {
+
+			realType := variable.Type
+			if variable.Type == entities.String && variable.SubType == entities.JSON {
+				realType = entities.JSON
+			}
 			variableMap[variable.Key] = entities.Variable{
 				DefaultValue: variable.DefaultValue,
 				ID:           variable.ID,
 				Key:          variable.Key,
-				Type:         variable.Type,
-				SubType:      variable.SubType}
+				Type:         realType}
+
 		}
 
 		feature.FeatureExperiments = featureExperiments

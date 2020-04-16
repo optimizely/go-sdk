@@ -166,7 +166,7 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 // GetFeatureVariableBoolean returns the feature variable value of type bool associated with the given feature and variable keys.
 func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey, variableKey string, userContext entities.UserContext) (value bool, err error) {
 
-	val, valueType, _, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
+	val, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
 	if err != nil {
 		return false, err
 	}
@@ -180,7 +180,7 @@ func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey, variableKey str
 // GetFeatureVariableDouble returns the feature variable value of type double associated with the given feature and variable keys.
 func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey, variableKey string, userContext entities.UserContext) (value float64, err error) {
 
-	val, valueType, _, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
+	val, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
 	if err != nil {
 		return 0, err
 	}
@@ -194,7 +194,7 @@ func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey, variableKey stri
 // GetFeatureVariableInteger returns the feature variable value of type int associated with the given feature and variable keys.
 func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey, variableKey string, userContext entities.UserContext) (value int, err error) {
 
-	val, valueType, _, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
+	val, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
 	if err != nil {
 		return 0, err
 	}
@@ -208,7 +208,7 @@ func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey, variableKey str
 // GetFeatureVariableString returns the feature variable value of type string associated with the given feature and variable keys.
 func (o *OptimizelyClient) GetFeatureVariableString(featureKey, variableKey string, userContext entities.UserContext) (value string, err error) {
 
-	value, valueType, _, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
+	value, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
 	if err != nil {
 		return "", err
 	}
@@ -221,13 +221,13 @@ func (o *OptimizelyClient) GetFeatureVariableString(featureKey, variableKey stri
 // GetFeatureVariableJSON returns the feature variable value of type json associated with the given feature and variable keys.
 func (o *OptimizelyClient) GetFeatureVariableJSON(featureKey, variableKey string, userContext entities.UserContext) (value *optimizelyjson.OptimizelyJSON, err error) {
 
-	val, valueType, valueSubType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
+	val, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
 	if err != nil {
 		return value, err
 	}
 
 	value, err = optimizelyjson.NewOptimizelyJSONfromString(val)
-	if err != nil || valueType != entities.String || valueSubType != entities.JSON {
+	if err != nil || valueType != entities.JSON {
 		return nil, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
 	}
 
@@ -235,22 +235,22 @@ func (o *OptimizelyClient) GetFeatureVariableJSON(featureKey, variableKey string
 }
 
 // GetFeatureVariable returns feature variable as a string along with it's associated type.
-func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, userContext entities.UserContext) (string, entities.VariableType, entities.VariableSubType, error) {
+func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, userContext entities.UserContext) (value string, valueType entities.VariableType, err error) {
 
 	featureDecisionContext, featureDecision, err := o.getFeatureDecision(featureKey, variableKey, userContext)
 	if err != nil {
-		return "", "", "", err
+		return "", "", err
 	}
 
 	variable := featureDecisionContext.Variable
 
 	if featureDecision.Variation != nil {
 		if v, ok := featureDecision.Variation.Variables[variable.ID]; ok && featureDecision.Variation.FeatureEnabled {
-			return v.Value, variable.Type, variable.SubType, err
+			return v.Value, variable.Type, err
 		}
 	}
 
-	return variable.DefaultValue, variable.Type, variable.SubType, err
+	return variable.DefaultValue, variable.Type, err
 }
 
 // GetAllFeatureVariablesWithDecision returns all the variables for a given feature along with the enabled state.
@@ -296,12 +296,11 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string,
 		case entities.Integer:
 			out, err = strconv.Atoi(val)
 			errs = multierror.Append(errs, err)
+		case entities.JSON:
+			var optlyJSON, err = optimizelyjson.NewOptimizelyJSONfromString(val)
+			out = optlyJSON.ToMap()
+			errs = multierror.Append(errs, err)
 		case entities.String:
-			if v.SubType == entities.JSON {
-				var optlyJSON, err = optimizelyjson.NewOptimizelyJSONfromString(val)
-				out = optlyJSON.ToMap()
-				errs = multierror.Append(errs, err)
-			}
 		default:
 			o.logger.Warning(fmt.Sprintf(`type "%s" is unknown, returning string`, varType))
 		}
