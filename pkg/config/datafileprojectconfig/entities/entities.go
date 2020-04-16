@@ -68,6 +68,7 @@ type Variable struct {
 	ID           string                `json:"id"`
 	Key          string                `json:"key"`
 	Type         entities.VariableType `json:"type"`
+	SubType      entities.VariableType `json:"subType"`
 }
 
 // TrafficAllocation represents a traffic allocation range from the Optimizely datafile
