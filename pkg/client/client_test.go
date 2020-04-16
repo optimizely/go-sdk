@@ -1203,22 +1203,25 @@ func TestGetFeatureVariableJSON(t *testing.T) {
 		testVariableValue string
 		stringRepr        string
 		varType           entities.VariableType
+		varSubType        entities.VariableSubType
 		featureEnabled    bool
 		validJson         bool
 		mapRepr           map[string]interface{}
 	}
 
 	testSuite := []test{
-		{name: "ValidValue", testVariableValue: "{\"test\":12}", varType: entities.JSON, validJson: true,
+		{name: "ValidValue", testVariableValue: "{\"test\":12}", varType: entities.String, varSubType: entities.JSON, validJson: true,
 			featureEnabled: true, mapRepr: map[string]interface{}{"test": 12.0}, stringRepr: "{\"test\":12}"},
-		{name: "InvalidValue", testVariableValue: "{\"test\": }", varType: entities.JSON, validJson: false,
+		{name: "InvalidValue", testVariableValue: "{\"test\": }", varSubType: entities.JSON, validJson: false,
 			featureEnabled: true},
 		{name: "InvalidVariableType", testVariableValue: "{}", varType: entities.Integer, validJson: false,
 			featureEnabled: true},
+		{name: "InvalidSubVariableType", testVariableValue: "{}", varType: entities.String, validJson: false,
+			varSubType: "non_json", featureEnabled: true},
 		{name: "EmptyVariableType", testVariableValue: "{}", varType: "", validJson: false,
 			featureEnabled: true},
-		{name: "DefaultValueIfFeatureNotEnabled", testVariableValue: "{\"test\":12}", varType: entities.JSON, validJson: true,
-			featureEnabled: false, mapRepr: map[string]interface{}{}, stringRepr: "{}"},
+		{name: "DefaultValueIfFeatureNotEnabled", testVariableValue: "{\"test\":12}", varSubType: entities.JSON, validJson: true,
+			varType: entities.String, featureEnabled: false, mapRepr: map[string]interface{}{}, stringRepr: "{}"},
 	}
 
 	testFeatureKey := "test_feature_key"
@@ -1235,6 +1238,7 @@ func TestGetFeatureVariableJSON(t *testing.T) {
 			ID:           "1",
 			Key:          "test_feature_flag_key",
 			Type:         ts.varType,
+			SubType:      ts.varSubType,
 		}
 		testVariation := getTestVariationWithFeatureVariable(ts.featureEnabled, testVariationVariable)
 		testExperiment := entities.Experiment{
@@ -1594,6 +1598,7 @@ func TestGetAllFeatureVariablesWithDecision(t *testing.T) {
 		defaultVal string
 		varVal     string
 		varType    entities.VariableType
+		varSubType entities.VariableSubType
 		expected   interface{}
 	}
 
@@ -1602,8 +1607,8 @@ func TestGetAllFeatureVariablesWithDecision(t *testing.T) {
 		{key: "var_bool", defaultVal: "false", varVal: "true", varType: entities.Boolean, expected: true},
 		{key: "var_int", defaultVal: "10", varVal: "20", varType: entities.Integer, expected: 20},
 		{key: "var_double", defaultVal: "1.0", varVal: "2.0", varType: entities.Double, expected: 2.0},
-		{key: "var_json", defaultVal: "{}", varVal: "{\"field1\":12.0, \"field2\": \"some_value\"}", varType: entities.JSON,
-			expected: map[string]interface{}{"field1": 12.0, "field2": "some_value"}},
+		{key: "var_json", defaultVal: "{}", varVal: "{\"field1\":12.0, \"field2\": \"some_value\"}", varSubType: entities.JSON,
+			varType: entities.String, expected: map[string]interface{}{"field1": 12.0, "field2": "some_value"}},
 	}
 
 	mockConfig := new(MockProjectConfig)
@@ -1622,6 +1627,7 @@ func TestGetAllFeatureVariablesWithDecision(t *testing.T) {
 			ID:           id,
 			Key:          v.key,
 			Type:         v.varType,
+			SubType:      v.varSubType,
 		}
 
 		mockConfig.On("GetVariableByKey", testFeatureKey, v.key).Return(v.varVal, nil)
@@ -1752,6 +1758,7 @@ func TestGetAllFeatureVariables(t *testing.T) {
 		defaultVal string
 		varVal     string
 		varType    entities.VariableType
+		varSubType entities.VariableSubType
 		expected   interface{}
 	}
 
@@ -1760,8 +1767,8 @@ func TestGetAllFeatureVariables(t *testing.T) {
 		{key: "var_bool", defaultVal: "false", varVal: "true", varType: entities.Boolean, expected: true},
 		{key: "var_int", defaultVal: "10", varVal: "20", varType: entities.Integer, expected: 20},
 		{key: "var_double", defaultVal: "1.0", varVal: "2.0", varType: entities.Double, expected: 2.0},
-		{key: "var_json", defaultVal: "{}", varVal: "{\"field1\":12.0, \"field2\": \"some_value\"}", varType: entities.JSON,
-			expected: map[string]interface{}{"field1": 12.0, "field2": "some_value"}},
+		{key: "var_json", defaultVal: "{}", varVal: "{\"field1\":12.0, \"field2\": \"some_value\"}", varSubType: entities.JSON,
+			varType: entities.String, expected: map[string]interface{}{"field1": 12.0, "field2": "some_value"}},
 	}
 
 	mockConfig := new(MockProjectConfig)
@@ -1780,6 +1787,7 @@ func TestGetAllFeatureVariables(t *testing.T) {
 			ID:           id,
 			Key:          v.key,
 			Type:         v.varType,
+			SubType:      v.varSubType,
 		}
 
 		mockConfig.On("GetVariableByKey", testFeatureKey, v.key).Return(v.varVal, nil)

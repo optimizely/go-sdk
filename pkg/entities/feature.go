@@ -38,6 +38,7 @@ type Variable struct {
 	ID           string
 	Key          string
 	Type         VariableType
+	SubType      VariableSubType
 }
 
 // VariableType is the type of feature variable
@@ -52,6 +53,10 @@ const (
 	Double VariableType = "double"
 	// Boolean - the feature-variable type is boolean
 	Boolean VariableType = "boolean"
-	// JSON - the feature-variable type is json
-	JSON VariableType = "json"
 )
+
+// VariableSubType is the subtype of feature variable
+type VariableSubType string
+
+// JSON - the feature-variable subtype is json
+const JSON VariableSubType = "json"
