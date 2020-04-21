@@ -18,6 +18,7 @@
 package decision
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -48,7 +49,7 @@ func WithCompositeExperimentService(compositeExperimentService ExperimentService
 // NewCompositeService returns a new instance of the CompositeService with the defaults
 func NewCompositeService(sdkKey string, options ...CSOptionFunc) *CompositeService {
 	compositeService := &CompositeService{
-		logger:logging.GetLogger(sdkKey, "CompositeService"),
+		logger:             logging.GetLogger(sdkKey, "CompositeService"),
 		notificationCenter: registry.GetNotificationCenter(sdkKey),
 	}
 
@@ -113,6 +114,9 @@ func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecis
 				convertedValue, e = strconv.ParseFloat(variableValue, 64)
 			case entities.Boolean:
 				convertedValue, e = strconv.ParseBool(variableValue)
+			case entities.JSON:
+				convertedValue = map[string]string{}
+				e = json.Unmarshal([]byte(variableValue), &convertedValue)
 			}
 
 			if e != nil {
