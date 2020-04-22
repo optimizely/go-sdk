@@ -425,7 +425,7 @@ func TestChanQueueEventProcessor_ProcessImpression(t *testing.T) {
 	processor := NewBatchEventProcessor(
 		WithQueueSize(100),
 		WithQueue(NewInMemoryQueue(100)),
-		WithEventDispatcher(&HTTPEventDispatcher{requester: utils.NewHTTPRequester(logging.GetLogger("", "NewHTTPRequester"))}))
+		WithEventDispatcher(NewHTTPEventDispatcher("", nil, nil)))
 
 	eg.Go(processor.Start)
 
