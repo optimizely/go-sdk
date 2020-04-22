@@ -65,6 +65,7 @@ func (ed *httpEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	return success, err
 }
 
+// NewHttpEventDispatcher creates a full http dispatcher. The requester and logger parameters can be nil.
 func NewHttpEventDispatcher(sdkKey string, requester *utils.HTTPRequester, logger logging.OptimizelyLogProducer) Dispatcher {
 	if requester == nil {
 		requester = utils.NewHTTPRequester(logging.GetLogger(sdkKey, "HTTPRequester"))
