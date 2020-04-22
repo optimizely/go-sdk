@@ -65,8 +65,8 @@ func (ed *httpEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	return success, err
 }
 
-// NewHttpEventDispatcher creates a full http dispatcher. The requester and logger parameters can be nil.
-func NewHttpEventDispatcher(sdkKey string, requester *utils.HTTPRequester, logger logging.OptimizelyLogProducer) Dispatcher {
+// NewHTTPEventDispatcher creates a full http dispatcher. The requester and logger parameters can be nil.
+func NewHTTPEventDispatcher(sdkKey string, requester *utils.HTTPRequester, logger logging.OptimizelyLogProducer) Dispatcher {
 	if requester == nil {
 		requester = utils.NewHTTPRequester(logging.GetLogger(sdkKey, "HTTPRequester"))
 	}
@@ -173,8 +173,8 @@ func NewQueueEventDispatcher(sdkKey string, metricsRegistry metrics.Registry) *Q
 	}
 
 	return &QueueEventDispatcher{
-		eventQueue: NewInMemoryQueue(defaultQueueSize),
-		Dispatcher: NewHttpEventDispatcher(sdkKey, nil, nil),
+		eventQueue:        NewInMemoryQueue(defaultQueueSize),
+		Dispatcher:        NewHTTPEventDispatcher(sdkKey, nil, nil),
 		queueSize:         dispatcherMetricsRegistry.GetGauge(metrics.DispatcherQueueSize),
 		retryFlushCounter: dispatcherMetricsRegistry.GetCounter(metrics.DispatcherRetryFlush),
 		failFlushCounter:  dispatcherMetricsRegistry.GetCounter(metrics.DispatcherFailedFlush),
