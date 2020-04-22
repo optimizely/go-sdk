@@ -104,6 +104,13 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 	metricsRegistry := NewMetricsRegistry()
 
 	q := NewQueueEventDispatcher("", metricsRegistry)
+
+	assert.True(t, q.Dispatcher != nil)
+	if d,ok := q.Dispatcher.(*httpEventDispatcher); ok {
+		assert.True(t, d.requester != nil && d.logger != nil)
+	} else {
+		assert.True(t, false)
+	}
 	sender := &MockDispatcher{Events: NewInMemoryQueue(100)}
 	q.Dispatcher = sender
 
