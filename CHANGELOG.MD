@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.1.3] - April 22th, 2020
+## Bug Fix
+- logger not set for httpDispatcher [#254](https://github.com/optimizely/go-sdk/pull/254)
+
 ## [1.1.2] - March 26th, 2020
 ## New Features
 - refact: Update logging field keys to be consumable in structured logs [#246](https://github.com/optimizely/go-sdk/pull/246)
