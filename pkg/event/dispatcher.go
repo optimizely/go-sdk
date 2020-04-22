@@ -37,14 +37,14 @@ type Dispatcher interface {
 	DispatchEvent(event LogEvent) (bool, error)
 }
 
-// HTTPEventDispatcher is the HTTP implementation of the Dispatcher interface
-type HTTPEventDispatcher struct {
+// httpEventDispatcher is the HTTP implementation of the Dispatcher interface
+type httpEventDispatcher struct {
 	requester *utils.HTTPRequester
 	logger logging.OptimizelyLogProducer
 }
 
 // DispatchEvent dispatches event with callback
-func (ed *HTTPEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
+func (ed *httpEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 
 	_, _, code, err := ed.requester.Post(event.EndPoint, event.Event)
 
@@ -63,6 +63,18 @@ func (ed *HTTPEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 		}
 	}
 	return success, err
+}
+
+// NewHTTPEventDispatcher creates a full http dispatcher. The requester and logger parameters can be nil.
+func NewHTTPEventDispatcher(sdkKey string, requester *utils.HTTPRequester, logger logging.OptimizelyLogProducer) Dispatcher {
+	if requester == nil {
+		requester = utils.NewHTTPRequester(logging.GetLogger(sdkKey, "HTTPRequester"))
+	}
+	if logger == nil {
+		logger = logging.GetLogger(sdkKey, "httpEventDispatcher")
+	}
+
+	return &httpEventDispatcher{requester: requester, logger: logger}
 }
 
 // QueueEventDispatcher is a queued version of the event Dispatcher that queues, returns success, and dispatches events in the background
@@ -161,9 +173,8 @@ func NewQueueEventDispatcher(sdkKey string, metricsRegistry metrics.Registry) *Q
 	}
 
 	return &QueueEventDispatcher{
-		eventQueue: NewInMemoryQueue(defaultQueueSize),
-		Dispatcher: &HTTPEventDispatcher{requester: utils.NewHTTPRequester(logging.GetLogger(sdkKey, "HTTPRequester"))},
-
+		eventQueue:        NewInMemoryQueue(defaultQueueSize),
+		Dispatcher:        NewHTTPEventDispatcher(sdkKey, nil, nil),
 		queueSize:         dispatcherMetricsRegistry.GetGauge(metrics.DispatcherQueueSize),
 		retryFlushCounter: dispatcherMetricsRegistry.GetCounter(metrics.DispatcherRetryFlush),
 		failFlushCounter:  dispatcherMetricsRegistry.GetCounter(metrics.DispatcherFailedFlush),
