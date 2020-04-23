@@ -62,61 +62,10 @@ func NewCompositeService(sdkKey string, options ...CSOptionFunc) *CompositeServi
 	return compositeService
 }
 
-func (s CompositeService) DecisionNotificationWithVariables(featureKey string, featureDecision *FeatureDecision, userContext *entities.UserContext,
-	variables map[string]interface{}) *notification.DecisionNotification {
-
-	decisionNotification := s.createDecisionNotification(featureKey, featureDecision, userContext)
-
-	if featureInfo, ok := decisionNotification.DecisionInfo["feature"].(map[string]interface{}); ok {
-		for key, val := range variables {
-			featureInfo[key] = val
-		}
-	}
-	return decisionNotification
-}
-func (s CompositeService) createDecisionNotification(featureKey string, featureDecision *FeatureDecision, userContext *entities.UserContext) *notification.DecisionNotification {
-	sourceInfo := map[string]string{}
-
-	if featureDecision.Source == FeatureTest {
-		sourceInfo["experimentKey"] = featureDecision.Experiment.Key
-		sourceInfo["variationKey"] = featureDecision.Variation.Key
-	}
-
-	featureInfo := map[string]interface{}{
-		"featureKey":     featureKey,
-		"featureEnabled": false,
-		"source":         featureDecision.Source,
-		"sourceInfo":     sourceInfo,
-	}
-	if featureDecision.Variation != nil {
-		featureInfo["featureEnabled"] = featureDecision.Variation.FeatureEnabled
-	}
-
-	notificationType := notification.Feature
-
-	decisionInfo := map[string]interface{}{
-		"feature": featureInfo,
-	}
-
-	decisionNotification := &notification.DecisionNotification{
-		DecisionInfo: decisionInfo,
-		Type:         notificationType,
-		UserContext:  *userContext,
-	}
-	return decisionNotification
-}
-
 // GetFeatureDecision returns a decision for the given feature key
 func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
 	featureDecision, err := s.compositeFeatureService.GetDecision(featureDecisionContext, userContext)
 
-	// @TODO: add errors
-	if s.notificationCenter != nil && !featureDecisionContext.DeferNotification {
-		decisionNotification := s.createDecisionNotification(featureDecisionContext.Feature.Key, &featureDecision, &userContext)
-		if err = s.notificationCenter.Send(notification.Decision, *decisionNotification); err != nil {
-			s.logger.Warning("Problem with sending notification")
-		}
-	}
 	return featureDecision, err
 }
 

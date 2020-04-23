@@ -26,7 +26,6 @@ import (
 type Service interface {
 	GetFeatureDecision(FeatureDecisionContext, entities.UserContext) (FeatureDecision, error)
 	GetExperimentDecision(ExperimentDecisionContext, entities.UserContext) (ExperimentDecision, error)
-	DecisionNotificationWithVariables(string, *FeatureDecision, *entities.UserContext, map[string]interface{}) *notification.DecisionNotification
 	OnDecision(func(notification.DecisionNotification)) (int, error)
 	RemoveOnDecision(id int) error
 }
