@@ -43,6 +43,8 @@ const (
 	FeatureTest DecisionNotificationType = "feature-test"
 	// FeatureVariable is used when the decision is returned as part of evaluating a feature with a variable
 	FeatureVariable DecisionNotificationType = "feature-variable"
+	// AllFeatureVariables is used when the decision is returned as part of evaluating a feature with all variables
+	AllFeatureVariables DecisionNotificationType = "all-feature-variables"
 	// LogEvent notification type
 	LogEvent Type = "log_event_notification"
 )

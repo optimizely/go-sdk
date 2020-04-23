@@ -18,6 +18,7 @@
 package client
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -102,7 +103,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 		}
 	}()
 
-	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, "", userContext)
+	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, "", false, userContext)
 	if err != nil {
 		o.logger.Error("received an error while computing feature decision", err)
 		return result, err
@@ -166,13 +167,28 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 // GetFeatureVariableBoolean returns the feature variable value of type bool associated with the given feature and variable keys.
 func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey, variableKey string, userContext entities.UserContext) (value bool, err error) {
 
-	val, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
+	var convertedValue bool
+	val, valueType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+	defer func() {
+		variableMap := map[string]interface{}{
+			"variableKey":   variableKey,
+			"variableType":  valueType,
+			"variableValue": convertedValue,
+		}
+		decisionNotification := o.DecisionService.DecisionNotificationWithVariables(featureKey, featureDecision, &userContext, variableMap)
+		decisionNotification.Type = notification.FeatureVariable
+
+		if err = o.notificationCenter.Send(notification.Decision, *decisionNotification); err != nil {
+			o.logger.Warning("Problem with sending notification")
+		}
+	}()
+
 	if err != nil {
-		return false, err
+		return convertedValue, err
 	}
-	convertedValue, err := strconv.ParseBool(val)
+	convertedValue, err = strconv.ParseBool(val)
 	if err != nil || valueType != entities.Boolean {
-		return false, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
+		convertedValue, err = false, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
 	}
 	return convertedValue, err
 }
@@ -180,84 +196,185 @@ func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey, variableKey str
 // GetFeatureVariableDouble returns the feature variable value of type double associated with the given feature and variable keys.
 func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey, variableKey string, userContext entities.UserContext) (value float64, err error) {
 
-	val, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
+	val, valueType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+	var convertedValue float64
+	defer func() {
+		variableMap := map[string]interface{}{
+			"variableKey":   variableKey,
+			"variableType":  valueType,
+			"variableValue": convertedValue,
+		}
+		decisionNotification := o.DecisionService.DecisionNotificationWithVariables(featureKey, featureDecision, &userContext, variableMap)
+		decisionNotification.Type = notification.FeatureVariable
+
+		if err = o.notificationCenter.Send(notification.Decision, *decisionNotification); err != nil {
+			o.logger.Warning("Problem with sending notification")
+		}
+	}()
 	if err != nil {
-		return 0, err
+		return convertedValue, err
 	}
-	convertedValue, err := strconv.ParseFloat(val, 64)
+	convertedValue, err = strconv.ParseFloat(val, 64)
 	if err != nil || valueType != entities.Double {
-		return 0, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
+		convertedValue, err = 0, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
 	}
+
 	return convertedValue, err
 }
 
 // GetFeatureVariableInteger returns the feature variable value of type int associated with the given feature and variable keys.
 func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey, variableKey string, userContext entities.UserContext) (value int, err error) {
 
-	val, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
+	val, valueType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+	var convertedValue int
+	defer func() {
+		variableMap := map[string]interface{}{
+			"variableKey":   variableKey,
+			"variableType":  valueType,
+			"variableValue": convertedValue,
+		}
+		decisionNotification := o.DecisionService.DecisionNotificationWithVariables(featureKey, featureDecision, &userContext, variableMap)
+		decisionNotification.Type = notification.FeatureVariable
+
+		if err = o.notificationCenter.Send(notification.Decision, *decisionNotification); err != nil {
+			o.logger.Warning("Problem with sending notification")
+		}
+	}()
 	if err != nil {
-		return 0, err
+		return convertedValue, err
 	}
-	convertedValue, err := strconv.Atoi(val)
+	convertedValue, err = strconv.Atoi(val)
 	if err != nil || valueType != entities.Integer {
-		return 0, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
+		convertedValue, err = 0, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
 	}
+
 	return convertedValue, err
 }
 
 // GetFeatureVariableString returns the feature variable value of type string associated with the given feature and variable keys.
 func (o *OptimizelyClient) GetFeatureVariableString(featureKey, variableKey string, userContext entities.UserContext) (value string, err error) {
 
-	value, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
+	value, valueType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+
+	defer func() {
+		variableMap := map[string]interface{}{
+			"variableKey":   variableKey,
+			"variableType":  valueType,
+			"variableValue": value,
+		}
+		decisionNotification := o.DecisionService.DecisionNotificationWithVariables(featureKey, featureDecision, &userContext, variableMap)
+		decisionNotification.Type = notification.FeatureVariable
+
+		if err = o.notificationCenter.Send(notification.Decision, *decisionNotification); err != nil {
+			o.logger.Warning("Problem with sending notification")
+		}
+	}()
 	if err != nil {
-		return "", err
+		return value, err
 	}
 	if valueType != entities.String {
-		return "", fmt.Errorf("variable value for key %s is wrong type", variableKey)
+		value, err = "", fmt.Errorf("variable value for key %s is wrong type", variableKey)
 	}
+
 	return value, err
 }
 
 // GetFeatureVariableJSON returns the feature variable value of type json associated with the given feature and variable keys.
 func (o *OptimizelyClient) GetFeatureVariableJSON(featureKey, variableKey string, userContext entities.UserContext) (value *optimizelyjson.OptimizelyJSON, err error) {
 
-	val, valueType, err := o.GetFeatureVariable(featureKey, variableKey, userContext)
+	val, valueType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+	defer func() {
+
+		var variableValue interface{}
+		if value != nil {
+			variableValue = value.ToMap()
+		}
+		variableMap := map[string]interface{}{
+			"variableKey":   variableKey,
+			"variableType":  valueType,
+			"variableValue": variableValue,
+		}
+		decisionNotification := o.DecisionService.DecisionNotificationWithVariables(featureKey, featureDecision, &userContext, variableMap)
+		decisionNotification.Type = notification.FeatureVariable
+
+		if err = o.notificationCenter.Send(notification.Decision, *decisionNotification); err != nil {
+			o.logger.Warning("Problem with sending notification")
+		}
+	}()
 	if err != nil {
 		return value, err
 	}
 
 	value, err = optimizelyjson.NewOptimizelyJSONfromString(val)
 	if err != nil || valueType != entities.JSON {
-		return nil, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
+		value, err = nil, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
 	}
 
 	return value, err
 }
 
 // GetFeatureVariable returns feature variable as a string along with it's associated type.
-func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, userContext entities.UserContext) (value string, valueType entities.VariableType, err error) {
+func (o *OptimizelyClient) getFeatureVariable(featureKey, variableKey string, userContext entities.UserContext) (string, entities.VariableType, *decision.FeatureDecision, error) {
 
-	featureDecisionContext, featureDecision, err := o.getFeatureDecision(featureKey, variableKey, userContext)
+	featureDecisionContext, featureDecision, err := o.getFeatureDecision(featureKey, variableKey, true, userContext)
 	if err != nil {
-		return "", "", err
+		return "", "", &featureDecision, err
 	}
 
 	variable := featureDecisionContext.Variable
 
 	if featureDecision.Variation != nil {
 		if v, ok := featureDecision.Variation.Variables[variable.ID]; ok && featureDecision.Variation.FeatureEnabled {
-			return v.Value, variable.Type, err
+			return v.Value, variable.Type, &featureDecision, nil
 		}
 	}
 
-	return variable.DefaultValue, variable.Type, err
+	return variable.DefaultValue, variable.Type, &featureDecision, nil
+}
+
+// GetFeatureVariable returns feature variable as a string along with it's associated type.
+func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, userContext entities.UserContext) (string, entities.VariableType, error) {
+
+	val, valueType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+	var convertedValue interface{}
+	var e error
+	switch valueType {
+	case entities.Integer:
+		convertedValue, e = strconv.Atoi(val)
+	case entities.Double:
+		convertedValue, e = strconv.ParseFloat(val, 64)
+	case entities.Boolean:
+		convertedValue, e = strconv.ParseBool(val)
+	case entities.JSON:
+		convertedValue = map[string]string{}
+		e = json.Unmarshal([]byte(val), &convertedValue)
+	}
+
+	if e != nil {
+		convertedValue = val
+	}
+	defer func() {
+		variableMap := map[string]interface{}{
+			"variableKey":   variableKey,
+			"variableType":  valueType,
+			"variableValue": convertedValue,
+		}
+		decisionNotification := o.DecisionService.DecisionNotificationWithVariables(featureKey, featureDecision, &userContext, variableMap)
+		decisionNotification.Type = notification.FeatureVariable
+
+		if err = o.notificationCenter.Send(notification.Decision, *decisionNotification); err != nil {
+			o.logger.Warning("Problem with sending notification")
+		}
+	}()
+
+	return val, valueType, err
 }
 
 // GetAllFeatureVariablesWithDecision returns all the variables for a given feature along with the enabled state.
 func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]interface{}, err error) {
 
 	variableMap = make(map[string]interface{})
-	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, "", userContext)
+	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, "", true, userContext)
 	if err != nil {
 		o.logger.Error("Optimizely SDK tracking error", err)
 		return enabled, variableMap, err
@@ -306,6 +423,14 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string,
 		}
 
 		variableMap[v.Key] = out
+	}
+
+	decisionNotification := o.DecisionService.DecisionNotificationWithVariables(featureKey, &featureDecision, &userContext,
+		map[string]interface{}{"variableValues": variableMap})
+	decisionNotification.Type = notification.AllFeatureVariables
+
+	if err = o.notificationCenter.Send(notification.Decision, *decisionNotification); err != nil {
+		o.logger.Warning("Problem with sending notification")
 	}
 
 	return enabled, variableMap, errs.ErrorOrNil()
@@ -397,7 +522,7 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 	return nil
 }
 
-func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, userContext entities.UserContext) (decisionContext decision.FeatureDecisionContext, featureDecision decision.FeatureDecision, err error) {
+func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, deferNotification bool, userContext entities.UserContext) (decisionContext decision.FeatureDecisionContext, featureDecision decision.FeatureDecision, err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -440,9 +565,10 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 	}
 
 	decisionContext = decision.FeatureDecisionContext{
-		Feature:       &feature,
-		ProjectConfig: projectConfig,
-		Variable:      variable,
+		Feature:           &feature,
+		ProjectConfig:     projectConfig,
+		Variable:          variable,
+		DeferNotification: deferNotification,
 	}
 
 	featureDecision, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext)

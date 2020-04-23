@@ -31,9 +31,10 @@ type ExperimentDecisionContext struct {
 
 // FeatureDecisionContext contains the information needed to be able to make a decision for a given feature
 type FeatureDecisionContext struct {
-	Feature       *entities.Feature
-	ProjectConfig config.ProjectConfig
-	Variable      entities.Variable
+	Feature           *entities.Feature
+	ProjectConfig     config.ProjectConfig
+	Variable          entities.Variable
+	DeferNotification bool
 }
 
 // Source is where the decision came from
