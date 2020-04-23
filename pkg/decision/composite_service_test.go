@@ -206,6 +206,75 @@ func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWith
 
 }
 
+func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWithJSONVariable() {
+
+	compositeExperimentService := NewCompositeExperimentService("")
+	compositeFeatureDecisionService := NewCompositeFeatureService("", compositeExperimentService)
+	s.decisionContext.Variable = entities.Variable{
+		DefaultValue: "{\"field\": 12.01}",
+		ID:           "1",
+		Key:          "Key",
+		Type:         entities.JSON,
+	}
+
+	decisionService := &CompositeService{
+		compositeFeatureService: compositeFeatureDecisionService,
+		notificationCenter:      registry.GetNotificationCenter("some_key"),
+	}
+	decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
+
+	var numberOfCalls = 0
+	note := notification.DecisionNotification{}
+	callback := func(notification notification.DecisionNotification) {
+		note = notification
+		numberOfCalls++
+	}
+	id, _ := decisionService.OnDecision(callback)
+
+	s.NotEqual(id, 0)
+
+	decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
+	s.Equal(numberOfCalls, 1)
+
+	expectedDecisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": false, "featureKey": "my_test_feature_3333", "source": FeatureTest,
+		"sourceInfo":  map[string]string{"experimentKey": "test_experiment_1111", "variationKey": "2222"},
+		"variableKey": "Key", "variableType": entities.JSON, "variableValue": map[string]interface{}{"field": 12.01}}}
+
+	s.Equal(expectedDecisionInfo, note.DecisionInfo)
+
+}
+
+func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWithAllVariables() {
+
+	compositeExperimentService := NewCompositeExperimentService("")
+	compositeFeatureDecisionService := NewCompositeFeatureService("", compositeExperimentService)
+
+	decisionService := &CompositeService{
+		compositeFeatureService: compositeFeatureDecisionService,
+		notificationCenter:      registry.GetNotificationCenter("some_key"),
+	}
+	decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
+
+	var numberOfCalls = 0
+	note := notification.DecisionNotification{}
+	callback := func(notification notification.DecisionNotification) {
+		note = notification
+		numberOfCalls++
+	}
+	id, _ := decisionService.OnDecision(callback)
+
+	s.NotEqual(id, 0)
+
+	decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
+	s.Equal(numberOfCalls, 1)
+
+	expectedDecisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": false, "featureKey": "my_test_feature_3333", "source": FeatureTest,
+		"sourceInfo": map[string]string{"experimentKey": "test_experiment_1111", "variationKey": "2222"}}}
+
+	s.Equal(expectedDecisionInfo, note.DecisionInfo)
+
+}
+
 func (s *CompositeServiceFeatureTestSuite) TestDecisionListenersNotificationWithWrongTypelVariable() {
 
 	compositeExperimentService := NewCompositeExperimentService("")
