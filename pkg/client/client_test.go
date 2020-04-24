@@ -1441,6 +1441,8 @@ func TestGetAllFeatureVariablesWithDecision(t *testing.T) {
 		{key: "var_double", defaultVal: "1.0", varVal: "2.0", varType: entities.Double, expected: 2.0},
 		{key: "var_json", defaultVal: "{}", varVal: "{\"field1\":12.0, \"field2\": \"some_value\"}", varType: entities.JSON,
 			expected: map[string]interface{}{"field1": 12.0, "field2": "some_value"}},
+		{key: "var_unknown", defaultVal: "{}", varVal: "{\"field1\":12.0, \"field2\": \"some_value\"}", varType: "",
+			expected: "{\"field1\":12.0, \"field2\": \"some_value\"}"},
 	}
 
 	mockConfig := new(MockProjectConfig)
