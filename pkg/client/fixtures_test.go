@@ -109,6 +109,7 @@ func (p *MockProjectConfigManager) GetOptimizelyConfig() *config.OptimizelyConfi
 
 type MockDecisionService struct {
 	decision.Service
+	notificationCenter notification.Center
 	mock.Mock
 }
 
@@ -120,6 +121,18 @@ func (m *MockDecisionService) GetFeatureDecision(decisionContext decision.Featur
 func (m *MockDecisionService) GetExperimentDecision(decisionContext decision.ExperimentDecisionContext, userContext entities.UserContext) (decision.ExperimentDecision, error) {
 	args := m.Called(decisionContext, userContext)
 	return args.Get(0).(decision.ExperimentDecision), args.Error(1)
+}
+
+func (m *MockDecisionService) OnDecision(callback func(note notification.DecisionNotification)) (int, error) {
+	m.Called(callback)
+	handler := func(payload interface{}) {
+		if decisionNotification, ok := payload.(notification.DecisionNotification); ok {
+			callback(decisionNotification)
+		}
+	}
+	id, err := m.notificationCenter.AddHandler(notification.Decision, handler)
+
+	return id, err
 }
 
 type MockEventProcessor struct {
