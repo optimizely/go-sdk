@@ -193,6 +193,12 @@ func (suite *OptimizelyJsonTestSuite) TestGetValueEmptyJsonKeyWholeSchema() {
 		Field6: nil,
 	}
 	suite.Equal(expected, sc)
+
+	sc = schema{}
+	optimizelyJsonFromMap := NewOptimizelyJSONfromMap(suite.data)
+	err = optimizelyJsonFromMap.GetValue("", &sc)
+	suite.NoError(err)
+	suite.Equal(expected, sc)
 }
 
 func (suite *OptimizelyJsonTestSuite) TestGetValueValidJsonKeyPartialSchema() {
@@ -213,7 +219,14 @@ func (suite *OptimizelyJsonTestSuite) TestGetValueValidJsonKeyPartialSchema() {
 	suite.Equal(expected, sc)
 
 	// check if it does not destroy original object
+	sc = schema{}
 	err = suite.optimizelyJson.GetValue("field4", &sc)
+	suite.NoError(err)
+	suite.Equal(expected, sc)
+
+	sc = schema{}
+	optimizelyJsonFromMap := NewOptimizelyJSONfromMap(suite.data)
+	err = optimizelyJsonFromMap.GetValue("field4", &sc)
 	suite.NoError(err)
 	suite.Equal(expected, sc)
 }

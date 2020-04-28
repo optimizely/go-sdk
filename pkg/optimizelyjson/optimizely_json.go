@@ -79,7 +79,10 @@ func (optlyJson *OptimizelyJSON) GetValue(jsonPath string, schema interface{}) e
 	}
 
 	if jsonPath == "" { // populate the whole schema
-		return json.Unmarshal([]byte(optlyJson.payload), schema)
+		if optlyJson.payload != "" {
+			return json.Unmarshal([]byte(optlyJson.payload), schema)
+		}
+		return populateSchema(optlyJson.data)
 	}
 
 	splitJSONPath := strings.Split(jsonPath, ".")
