@@ -18,10 +18,7 @@
 package decision
 
 import (
-	"encoding/json"
 	"fmt"
-	"strconv"
-
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
@@ -69,76 +66,6 @@ func NewCompositeService(sdkKey string, options ...CSOptionFunc) *CompositeServi
 func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
 	featureDecision, err := s.compositeFeatureService.GetDecision(featureDecisionContext, userContext)
 
-	// @TODO: add errors
-	if s.notificationCenter != nil {
-		sourceInfo := map[string]string{}
-
-		if featureDecision.Source == FeatureTest {
-			sourceInfo["experimentKey"] = featureDecision.Experiment.Key
-			sourceInfo["variationKey"] = featureDecision.Variation.Key
-		}
-
-		featureInfo := map[string]interface{}{
-			"featureKey":     featureDecisionContext.Feature.Key,
-			"featureEnabled": false,
-			"source":         featureDecision.Source,
-			"sourceInfo":     sourceInfo,
-		}
-		if featureDecision.Variation != nil {
-			featureInfo["featureEnabled"] = featureDecision.Variation.FeatureEnabled
-		}
-
-		notificationType := notification.Feature
-		variable := featureDecisionContext.Variable
-		if variable.ID != "" && variable.Key != "" {
-			featureInfo["variableKey"] = variable.Key
-			featureInfo["variableType"] = variable.Type
-
-			notificationType = notification.FeatureVariable
-			variableValue := variable.DefaultValue
-
-			if featureDecision.Variation != nil {
-				if v, ok := featureDecision.Variation.Variables[variable.ID]; ok && featureDecision.Variation.FeatureEnabled {
-					variableValue = v.Value
-				}
-			}
-			var convertedValue interface{}
-			var e error
-
-			convertedValue = variableValue // default for String
-
-			switch variable.Type {
-			case entities.Integer:
-				convertedValue, e = strconv.Atoi(variableValue)
-			case entities.Double:
-				convertedValue, e = strconv.ParseFloat(variableValue, 64)
-			case entities.Boolean:
-				convertedValue, e = strconv.ParseBool(variableValue)
-			case entities.JSON:
-				convertedValue = map[string]string{}
-				e = json.Unmarshal([]byte(variableValue), &convertedValue)
-			}
-
-			if e != nil {
-				featureInfo["variableValue"] = variableValue
-			} else {
-				featureInfo["variableValue"] = convertedValue
-			}
-		}
-
-		decisionInfo := map[string]interface{}{
-			"feature": featureInfo,
-		}
-
-		decisionNotification := notification.DecisionNotification{
-			DecisionInfo: decisionInfo,
-			Type:         notificationType,
-			UserContext:  userContext,
-		}
-		if err = s.notificationCenter.Send(notification.Decision, decisionNotification); err != nil {
-			s.logger.Warning("Problem with sending notification")
-		}
-	}
 	return featureDecision, err
 }
 

@@ -34,6 +34,8 @@ const (
 	Track Type = "track"
 	// ProjectConfigUpdate notification type
 	ProjectConfigUpdate Type = "project_config_update"
+	// LogEvent notification type
+	LogEvent Type = "log_event_notification"
 
 	// ABTest is used when the decision is returned as part of evaluating an ab test
 	ABTest DecisionNotificationType = "ab-test"
@@ -43,8 +45,8 @@ const (
 	FeatureTest DecisionNotificationType = "feature-test"
 	// FeatureVariable is used when the decision is returned as part of evaluating a feature with a variable
 	FeatureVariable DecisionNotificationType = "feature-variable"
-	// LogEvent notification type
-	LogEvent Type = "log_event_notification"
+	// AllFeatureVariables is used when the decision is returned as part of evaluating a feature with all variables
+	AllFeatureVariables DecisionNotificationType = "all-feature-variables"
 )
 
 // DecisionNotification is a notification triggered when a decision is made for either a feature or an experiment
