@@ -58,7 +58,7 @@ jobs:
         - mkdir $GOPATH/src/github.com/hashicorp && cd $GOPATH/src/github.com/hashicorp && git clone https://github.com/hashicorp/go-multierror.git && cd $TRAVIS_BUILD_DIR
         - pushd $GOPATH/src/github.com/hashicorp/go-multierror && git checkout v1.0.0 && popd
         - mkdir $GOPATH/src/gopkg.in && cd $GOPATH/src/gopkg.in && git clone https://github.com/go-yaml/yaml.git && cd $TRAVIS_BUILD_DIR
-        - pushd $GOPATH/src/gopkg.in/yaml.v2  && git checkout v2.2.2 && popd
+        - mv $GOPATH/src/gopkg.in/yaml $GOPATH/src/gopkg.in/yaml.v2 && pushd $GOPATH/src/gopkg.in/yaml.v2  && git checkout v2.2.2 && popd
         - go get -v -d ./...
         # This pkg not in go 1.10
         - go get github.com/stretchr/testify
