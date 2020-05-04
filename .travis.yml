@@ -1,11 +1,12 @@
 language: minimal
 env: GO111MODULE=on
 git:
-  depth: 1
+  depth: false
 install:
   - eval "$(gimme)"
 stages:
-  - name: 'Lint markdown files'
+  - 'Readme-sync'
+  - 'Lint markdown files'
   - 'Lint'
   - 'Unit test'
   - 'Benchmark test'  
@@ -19,8 +20,6 @@ jobs:
       install: gem install awesome_bot
       script:
         - find . -type f -name '*.md' -exec awesome_bot {} \;
-      notifications:
-        email: false
 
 #    - stage: 'Lint markdown files'
 #      os: linux
@@ -96,3 +95,23 @@ jobs:
       addons:
         srcclr: true
       script: go get -v -d ./...
+
+    - stage: 'Readme-sync'
+      name: 'run script if changes are detected in docs/'
+      cache: false
+
+      # translation: if we're merging into master branch...
+      if: type = push AND branch = master
+
+      language: node_js
+      install:
+        - mkdir $HOME/readme-sync2 && pushd $HOME/readme-sync2 && git init && git pull https://$CI_USER_TOKEN@github.com/optimizely/readme-sync2.git && popd
+        - source ~/.nvm/nvm.sh && cd $HOME/readme-sync2 && nvm install && npm install
+        # this preps the input directory for readme-sync script
+        - mkdir -p $HOME/readme-sync2/docs/sdk-reference-guides
+        # ${TRAVIS_REPO_SLUG#optimizely/} translates to go-sdk
+        - ln -s $TRAVIS_BUILD_DIR/docs $HOME/readme-sync2/docs/sdk-reference-guides/${TRAVIS_REPO_SLUG#optimizely/}
+      script:
+        # we need to be in $TRAVIS_BUILD_DIR in order to run the following git diff properly
+        - cd $TRAVIS_BUILD_DIR
+        - git diff --quiet $TRAVIS_COMMIT_RANGE -- docs/ || ( cd $HOME/readme-sync2 && npx ts-node sync/index.ts --apiKey $README_SYNC_API_KEY --version 4.0 --docs docs/ )
