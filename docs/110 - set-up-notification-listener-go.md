@@ -1,5 +1,6 @@
 ---
 title: "Set up notification listener"
+excerpt: ""
 slug: "set-up-notification-listener-go"
 hidden: false
 createdAt: "2019-08-21T21:15:54.277Z"

@@ -1,5 +1,6 @@
 ---
 title: "Example usage"
+excerpt: ""
 slug: "example-usage-go"
 hidden: true
 createdAt: "2019-09-11T22:26:55.008Z"
@@ -15,13 +16,33 @@ This example shows how to:
 2. Run an A/B test called `app_redesign`. This experiment has two variations, `control` and `treatment`. It uses the `activate` method to assign the user to a variation, returning its key. As a side effect, the activate function also sends an impression event to Optimizely to record that the current user has been exposed to the experiment. 
 
 3. Use event tracking to track an event called `purchased`. This conversion event measures the impact of an experiment. Using the track method, the purchase is automatically attributed back to the running A/B and feature tests we've activated, and the SDK sends a network request to Optimizely via the customizable event dispatcher so we can count it in your results page.
-[block:code]
-{
-  "codes": [
-    {
-      "code": "import (\n\toptly \"github.com/optimizely/go-sdk\"\n)\n\nattributes := map[string]interface{}{\n  \"DEVICE\": \"iPhone\",\n  \"hey\":    2,\n}\n\nuser := optly.UserContext(\"userId\", attributes)\n\n// Instantiate an Optimizely client\nif client, err := optly.Client(\"SDK_KEY_HERE\"); err == nil {\n  client.IsFeatureEnabled(\"price_filter\", user)\n  minPrice, _ := client.GetFeatureVariableInteger(\"price_filter\", \"min_price\", user)\n\n  // Activate an A/B test\n  variation, _ := client.Activate(\"app_redesign\", user)\n  if variation == \"control\" {\n    // Execute code for variation A\n  } else if variation == \"treatment\" {\n    // Execute code for variation B\n  } else {\n    // Execute code for users who don't qualify for the experiment\n  }\n  client.Track(\"purchased\", user, map[string]interface{}{})\n}\n",
-      "language": "go"
-    }
-  ]
+
+```go
+import (
+	optly "github.com/optimizely/go-sdk"
+)
+
+attributes := map[string]interface{}{
+  "DEVICE": "iPhone",
+  "hey":    2,
 }
-[/block]
+
+user := optly.UserContext("userId", attributes)
+
+// Instantiate an Optimizely client
+if client, err := optly.Client("SDK_KEY_HERE"); err == nil {
+  client.IsFeatureEnabled("price_filter", user)
+  minPrice, _ := client.GetFeatureVariableInteger("price_filter", "min_price", user)
+
+  // Activate an A/B test
+  variation, _ := client.Activate("app_redesign", user)
+  if variation == "control" {
+    // Execute code for variation A
+  } else if variation == "treatment" {
+    // Execute code for variation B
+  } else {
+    // Execute code for users who don't qualify for the experiment
+  }
+  client.Track("purchased", user, map[string]interface{}{})
+}
+```
