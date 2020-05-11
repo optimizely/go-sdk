@@ -422,8 +422,8 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string,
 	errs := new(multierror.Error)
 
 	for _, v := range feature.VariableMap {
-		value, err := o.GetTypedFeatureVariableValue(enabled, featureDecision, v)
-		errs = multierror.Append(errs, err)
+		value, e := o.GetTypedFeatureVariableValue(enabled, featureDecision, v)
+		errs = multierror.Append(errs, e)
 		variableMap[v.Key] = value
 	}
 
