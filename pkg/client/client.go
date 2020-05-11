@@ -422,37 +422,9 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string,
 	errs := new(multierror.Error)
 
 	for _, v := range feature.VariableMap {
-		val := v.DefaultValue
-
-		if enabled {
-			if variable, ok := featureDecision.Variation.Variables[v.ID]; ok {
-				val = variable.Value
-			}
-		}
-
-		var out interface{}
-		out = val
-		switch varType := v.Type; varType {
-		case entities.Boolean:
-			out, err = strconv.ParseBool(val)
-			errs = multierror.Append(errs, err)
-		case entities.Double:
-			out, err = strconv.ParseFloat(val, 64)
-			errs = multierror.Append(errs, err)
-		case entities.Integer:
-			out, err = strconv.Atoi(val)
-			errs = multierror.Append(errs, err)
-		case entities.JSON:
-			var optlyJSON *optimizelyjson.OptimizelyJSON
-			optlyJSON, err = optimizelyjson.NewOptimizelyJSONfromString(val)
-			out = optlyJSON.ToMap()
-			errs = multierror.Append(errs, err)
-		case entities.String:
-		default:
-			o.logger.Warning(fmt.Sprintf(`type "%s" is unknown, returning string`, varType))
-		}
-
-		variableMap[v.Key] = out
+		value, err := o.GetTypedFeatureVariableValue(enabled, featureDecision, v)
+		errs = multierror.Append(errs, err)
+		variableMap[v.Key] = value
 	}
 
 	if o.notificationCenter != nil {
@@ -465,6 +437,37 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string,
 		}
 	}
 	return enabled, variableMap, errs.ErrorOrNil()
+}
+
+// GetTypedFeatureVariableValue returns type converted value for feature variable.
+func (o *OptimizelyClient) GetTypedFeatureVariableValue(enabled bool, featureDecision decision.FeatureDecision, v entities.Variable) (value interface{}, err error) {
+	val := v.DefaultValue
+
+	if enabled {
+		if variable, ok := featureDecision.Variation.Variables[v.ID]; ok {
+			val = variable.Value
+		}
+	}
+
+	var out interface{}
+	out = val
+	switch varType := v.Type; varType {
+	case entities.Boolean:
+		out, err = strconv.ParseBool(val)
+	case entities.Double:
+		out, err = strconv.ParseFloat(val, 64)
+	case entities.Integer:
+		out, err = strconv.Atoi(val)
+	case entities.JSON:
+		var optlyJSON *optimizelyjson.OptimizelyJSON
+		optlyJSON, err = optimizelyjson.NewOptimizelyJSONfromString(val)
+		out = optlyJSON.ToMap()
+	case entities.String:
+	default:
+		o.logger.Warning(fmt.Sprintf(`type "%s" is unknown, returning string`, varType))
+	}
+
+	return out, err
 }
 
 // GetAllFeatureVariables returns all the variables as OptimizelyJSON object for a given feature.
