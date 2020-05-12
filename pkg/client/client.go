@@ -422,9 +422,17 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string,
 	errs := new(multierror.Error)
 
 	for _, v := range feature.VariableMap {
-		value, e := o.GetTypedFeatureVariableValue(enabled, featureDecision, v)
-		errs = multierror.Append(errs, e)
-		variableMap[v.Key] = value
+		val := v.DefaultValue
+		if enabled {
+			if variable, ok := featureDecision.Variation.Variables[v.ID]; ok {
+				val = variable.Value
+			}
+		}
+
+		var out interface{}
+		out, err = o.GetTypedFeatureVariableValue(val, v)
+		errs = multierror.Append(errs, err)
+		variableMap[v.Key] = out
 	}
 
 	if o.notificationCenter != nil {
@@ -440,18 +448,10 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string,
 }
 
 // GetTypedFeatureVariableValue returns type converted value for feature variable.
-func (o *OptimizelyClient) GetTypedFeatureVariableValue(enabled bool, featureDecision decision.FeatureDecision, v entities.Variable) (value interface{}, err error) {
-	val := v.DefaultValue
-
-	if enabled {
-		if variable, ok := featureDecision.Variation.Variables[v.ID]; ok {
-			val = variable.Value
-		}
-	}
-
+func (o *OptimizelyClient) GetTypedFeatureVariableValue(val string, variable entities.Variable) (value interface{}, err error) {
 	var out interface{}
 	out = val
-	switch varType := v.Type; varType {
+	switch varType := variable.Type; varType {
 	case entities.Boolean:
 		out, err = strconv.ParseBool(val)
 	case entities.Double:
