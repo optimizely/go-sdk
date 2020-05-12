@@ -429,10 +429,9 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string,
 			}
 		}
 
-		var out interface{}
-		out, err = o.GetTypedFeatureVariableValue(val, v)
-		errs = multierror.Append(errs, err)
-		variableMap[v.Key] = out
+		value, e := o.GetTypedFeatureVariableValue(val, v)
+		errs = multierror.Append(errs, e)
+		variableMap[v.Key] = value
 	}
 
 	if o.notificationCenter != nil {
