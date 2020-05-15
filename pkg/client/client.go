@@ -399,24 +399,27 @@ func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, us
 	return stringValue, variableType, err
 }
 
-// GetAllFeatureVariablesWithDecision returns all the variables for a given feature along with the enabled state.
-func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]interface{}, err error) {
+// GetAllFeatureVariablesWithDecisionAndTracking returns all the variables for a given feature along with the enabled state
+// and triggers impression event if disableTracking is false.
+func (o *OptimizelyClient) GetAllFeatureVariablesWithDecisionAndTracking(featureKey string, userContext entities.UserContext, disableTracking bool) (experimentKey, variationKey string, enabled bool, variableMap map[string]interface{}, err error) {
 
 	variableMap = make(map[string]interface{})
 	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, "", userContext)
 	if err != nil {
 		o.logger.Error("Optimizely SDK tracking error", err)
-		return enabled, variableMap, err
+		return experimentKey, variationKey, enabled, variableMap, err
 	}
 
 	if featureDecision.Variation != nil {
 		enabled = featureDecision.Variation.FeatureEnabled
+		experimentKey = featureDecision.Experiment.Key
+		variationKey = featureDecision.Variation.Key
 	}
 
 	feature := decisionContext.Feature
 	if feature == nil {
 		o.logger.Warning(fmt.Sprintf(`feature "%s" does not exist`, featureKey))
-		return enabled, variableMap, nil
+		return experimentKey, variationKey, enabled, variableMap, nil
 	}
 
 	errs := new(multierror.Error)
@@ -429,9 +432,29 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string,
 			}
 		}
 
-		value, e := o.GetTypedFeatureVariableValue(val, v)
-		errs = multierror.Append(errs, e)
-		variableMap[v.Key] = value
+		var out interface{}
+		out = val
+		switch varType := v.Type; varType {
+		case entities.Boolean:
+			out, err = strconv.ParseBool(val)
+			errs = multierror.Append(errs, err)
+		case entities.Double:
+			out, err = strconv.ParseFloat(val, 64)
+			errs = multierror.Append(errs, err)
+		case entities.Integer:
+			out, err = strconv.Atoi(val)
+			errs = multierror.Append(errs, err)
+		case entities.JSON:
+			var optlyJSON *optimizelyjson.OptimizelyJSON
+			optlyJSON, err = optimizelyjson.NewOptimizelyJSONfromString(val)
+			out = optlyJSON.ToMap()
+			errs = multierror.Append(errs, err)
+		case entities.String:
+		default:
+			o.logger.Warning(fmt.Sprintf(`type "%s" is unknown, returning string`, varType))
+		}
+
+		variableMap[v.Key] = out
 	}
 
 	if o.notificationCenter != nil {
@@ -443,30 +466,22 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string,
 			o.logger.Warning("Problem with sending notification")
 		}
 	}
-	return enabled, variableMap, errs.ErrorOrNil()
+
+	err = errs.ErrorOrNil()
+	if err == nil {
+		if featureDecision.Source == decision.FeatureTest && !disableTracking {
+			// send impression event for feature tests
+			impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment, *featureDecision.Variation, userContext)
+			o.EventProcessor.ProcessEvent(impressionEvent)
+		}
+	}
+	return experimentKey, variationKey, enabled, variableMap, err
 }
 
-// GetTypedFeatureVariableValue returns type converted value for feature variable.
-func (o *OptimizelyClient) GetTypedFeatureVariableValue(val string, variable entities.Variable) (value interface{}, err error) {
-	var out interface{}
-	out = val
-	switch varType := variable.Type; varType {
-	case entities.Boolean:
-		out, err = strconv.ParseBool(val)
-	case entities.Double:
-		out, err = strconv.ParseFloat(val, 64)
-	case entities.Integer:
-		out, err = strconv.Atoi(val)
-	case entities.JSON:
-		var optlyJSON *optimizelyjson.OptimizelyJSON
-		optlyJSON, err = optimizelyjson.NewOptimizelyJSONfromString(val)
-		out = optlyJSON.ToMap()
-	case entities.String:
-	default:
-		o.logger.Warning(fmt.Sprintf(`type "%s" is unknown, returning string`, varType))
-	}
-
-	return out, err
+// GetAllFeatureVariablesWithDecision returns all the variables for a given feature along with the enabled state.
+func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]interface{}, err error) {
+	_, _, enabled, variableMap, err = o.GetAllFeatureVariablesWithDecisionAndTracking(featureKey, userContext, true)
+	return enabled, variableMap, err
 }
 
 // GetAllFeatureVariables returns all the variables as OptimizelyJSON object for a given feature.
