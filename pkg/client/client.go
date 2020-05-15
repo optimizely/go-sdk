@@ -468,12 +468,10 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecisionAndTracking(feature
 	}
 
 	err = errs.ErrorOrNil()
-	if err == nil {
-		if featureDecision.Source == decision.FeatureTest && !disableTracking {
-			// send impression event for feature tests
-			impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment, *featureDecision.Variation, userContext)
-			o.EventProcessor.ProcessEvent(impressionEvent)
-		}
+	if err == nil && featureDecision.Source == decision.FeatureTest && !disableTracking {
+		// send impression event for feature tests
+		impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment, *featureDecision.Variation, userContext)
+		o.EventProcessor.ProcessEvent(impressionEvent)
 	}
 	return experimentKey, variationKey, enabled, variableMap, err
 }
