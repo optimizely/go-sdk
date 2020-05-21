@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.2.0] - May 21st, 2020
+## New Features
+- feat: support for multi-rule rollouts [#247](https://github.com/optimizely/go-sdk/pull/247)
+
 ## [1.1.3] - April 22th, 2020
 ## Bug Fix
 - logger not set for httpDispatcher [#254](https://github.com/optimizely/go-sdk/pull/254)
