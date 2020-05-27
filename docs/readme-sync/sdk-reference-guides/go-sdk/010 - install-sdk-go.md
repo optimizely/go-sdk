@@ -1,5 +1,5 @@
 ---
-title: "aInstall SDK"
+title: "Install SDK"
 excerpt: ""
 slug: "install-sdk-go"
 hidden: false
