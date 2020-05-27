@@ -116,7 +116,7 @@ jobs:
         #
         # first we list all possible sdks and inside the for loop, remove the one we are updating
         - export ALL_SDK_REPOS="android-sdk csharp-sdk go-sdk java-sdk javascript-sdk objective-c-sdk python-sdk react-sdk ruby-sdk swift-sdk"
-        - mkdir $HOME/sdks && pushd $HOME/sdks && for i in ${ALL_SDKS//${TRAVIS_REPO_SLUG#optimizely/}}; do git clone https://github.com/optimizely/$i; [ -d "$i/docs/readme-sync" ] && ln -s $i/docs/readme-sync/sdk-reference-guides/$i $HOME/readme-sync2/docs/readme-sync/sdk-reference-guides/$i; done && popd
+        - mkdir $HOME/sdks && pushd $HOME/sdks && for i in ${ALL_SDK_REPOS//${TRAVIS_REPO_SLUG#optimizely/}}; do git clone https://github.com/optimizely/$i; [ -d "$i/docs/readme-sync" ] && ln -s $i/docs/readme-sync/sdk-reference-guides/$i $HOME/readme-sync2/docs/readme-sync/sdk-reference-guides/$i; done && popd
         # check our work
         - ls -al $HOME/sdks
         - ls -al $HOME/readme-sync2/docs/readme-sync/sdk-reference-guides
