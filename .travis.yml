@@ -5,13 +5,13 @@ git:
 install:
   - eval "$(gimme)"
 stages:
-  - 'Readme-sync'
   - 'Lint markdown files'
   - 'Lint'
   - 'Unit test'
   - 'Benchmark test'  
   - 'Integration tests'
   - 'Source clear'
+  - 'Readme-sync'
 jobs:
   include:
     - stage: 'Lint markdown files'
@@ -101,7 +101,7 @@ jobs:
       cache: false
 
       # translation: if we're merging into master branch...
-      #if: type = push AND branch = master
+      if: type = push AND branch = master
 
       language: node_js
       install:
