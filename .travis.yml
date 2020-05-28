@@ -13,88 +13,88 @@ stages:
   - 'Integration tests'
   - 'Source clear'
 jobs:
-#  include:
+  include:
+    - stage: 'Lint markdown files'
+      os: linux
+      language: generic
+      install: gem install awesome_bot
+      script:
+        - find . -type f -name '*.md' -exec awesome_bot {} \;
+
 #    - stage: 'Lint markdown files'
 #      os: linux
 #      language: generic
-#      install: gem install awesome_bot
-#      script:
-#        - find . -type f -name '*.md' -exec awesome_bot {} \;
-#
-##    - stage: 'Lint markdown files'
-##      os: linux
-##      language: generic
-##      before_install: skip
-##      install:
-##        - npm i -g markdown-spellcheck
-##      before_script:
-##        - wget --quiet https://raw.githubusercontent.com/optimizely/mdspell-config/master/.spelling
-##      script:
-##        - mdspell -a -n -r --en-us '**/*.md'
-##      after_success: skip
-#
-#    - stage: 'Lint'
-#      env: GIMME_GO_VERSION=1.13.x GIMME_OS=linux GIMME_ARCH=amd64
-#      script:
-#        - make install lint
-#
-#    - &test
-#      stage: 'Unit test'
-#      env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
-#      script:
-#        - make cover
-#
-#    - <<: *test
-#      stage: 'Unit test'
-#      env: GIMME_GO_VERSION=1.10.x
+#      before_install: skip
+#      install:
+#        - npm i -g markdown-spellcheck
 #      before_script:
-#        # GO module was not introduced earlier. need symlink to search in GOPATH
-#        - mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely optimizely && popd
+#        - wget --quiet https://raw.githubusercontent.com/optimizely/mdspell-config/master/.spelling
 #      script:
-#        # Need to download packages explicitly
-#        - mkdir $GOPATH/src/github.com/twmb && cd $GOPATH/src/github.com/twmb && git clone https://github.com/twmb/murmur3.git && cd $TRAVIS_BUILD_DIR
-#        - pushd $GOPATH/src/github.com/twmb/murmur3 && git checkout v1.0.0 && popd
-#        - mkdir $GOPATH/src/github.com/hashicorp && cd $GOPATH/src/github.com/hashicorp && git clone https://github.com/hashicorp/go-multierror.git && cd $TRAVIS_BUILD_DIR
-#        - pushd $GOPATH/src/github.com/hashicorp/go-multierror && git checkout v1.0.0 && popd
-#        - mkdir $GOPATH/src/gopkg.in && cd $GOPATH/src/gopkg.in && git clone https://github.com/go-yaml/yaml.git && cd $TRAVIS_BUILD_DIR
-#        - mv $GOPATH/src/gopkg.in/yaml $GOPATH/src/gopkg.in/yaml.v2 && pushd $GOPATH/src/gopkg.in/yaml.v2  && git checkout v2.2.2 && popd
-#        - go get -v -d ./...
-#        # This pkg not in go 1.10
-#        - go get github.com/stretchr/testify
-#        - pushd $GOPATH/src/github.com/stretchr/testify && git checkout v1.4.0 && popd
-#        # -coverprofile was not introduced in 1.10
-#        - make test
-#
-#    - <<: *test
-#      stage: 'Unit test'
-#      env: GIMME_GO_VERSION=1.14.x
-#      before_script:
-#        - go get github.com/mattn/goveralls
-#      after_success:
-#        - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
-#
-#    - stage: 'Benchmark test'
-#      env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
-#      script:
-#        - make benchmark
-#
-#    - stage: 'Integration tests'
-#      env: SDK=go SDK_BRANCH=$TRAVIS_PULL_REQUEST_BRANCH
-#      cache: false
-#      language: minimal
-#      install: skip
-#      before_script:
-#        - mkdir $HOME/travisci-tools && pushd $HOME/travisci-tools && git init && git pull https://$CI_USER_TOKEN@github.com/optimizely/travisci-tools.git && popd
-#      script:
-#        - $HOME/travisci-tools/trigger-script-with-status-update.sh
-#      after_success: travis_terminate 0
-#    
-#    - stage: 'Source clear'
-#      env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
-#      language: go
-#      addons:
-#        srcclr: true
-#      script: go get -v -d ./...
+#        - mdspell -a -n -r --en-us '**/*.md'
+#      after_success: skip
+
+    - stage: 'Lint'
+      env: GIMME_GO_VERSION=1.13.x GIMME_OS=linux GIMME_ARCH=amd64
+      script:
+        - make install lint
+
+    - &test
+      stage: 'Unit test'
+      env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
+      script:
+        - make cover
+
+    - <<: *test
+      stage: 'Unit test'
+      env: GIMME_GO_VERSION=1.10.x
+      before_script:
+        # GO module was not introduced earlier. need symlink to search in GOPATH
+        - mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely optimizely && popd
+      script:
+        # Need to download packages explicitly
+        - mkdir $GOPATH/src/github.com/twmb && cd $GOPATH/src/github.com/twmb && git clone https://github.com/twmb/murmur3.git && cd $TRAVIS_BUILD_DIR
+        - pushd $GOPATH/src/github.com/twmb/murmur3 && git checkout v1.0.0 && popd
+        - mkdir $GOPATH/src/github.com/hashicorp && cd $GOPATH/src/github.com/hashicorp && git clone https://github.com/hashicorp/go-multierror.git && cd $TRAVIS_BUILD_DIR
+        - pushd $GOPATH/src/github.com/hashicorp/go-multierror && git checkout v1.0.0 && popd
+        - mkdir $GOPATH/src/gopkg.in && cd $GOPATH/src/gopkg.in && git clone https://github.com/go-yaml/yaml.git && cd $TRAVIS_BUILD_DIR
+        - mv $GOPATH/src/gopkg.in/yaml $GOPATH/src/gopkg.in/yaml.v2 && pushd $GOPATH/src/gopkg.in/yaml.v2  && git checkout v2.2.2 && popd
+        - go get -v -d ./...
+        # This pkg not in go 1.10
+        - go get github.com/stretchr/testify
+        - pushd $GOPATH/src/github.com/stretchr/testify && git checkout v1.4.0 && popd
+        # -coverprofile was not introduced in 1.10
+        - make test
+
+    - <<: *test
+      stage: 'Unit test'
+      env: GIMME_GO_VERSION=1.14.x
+      before_script:
+        - go get github.com/mattn/goveralls
+      after_success:
+        - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
+
+    - stage: 'Benchmark test'
+      env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
+      script:
+        - make benchmark
+
+    - stage: 'Integration tests'
+      env: SDK=go SDK_BRANCH=$TRAVIS_PULL_REQUEST_BRANCH
+      cache: false
+      language: minimal
+      install: skip
+      before_script:
+        - mkdir $HOME/travisci-tools && pushd $HOME/travisci-tools && git init && git pull https://$CI_USER_TOKEN@github.com/optimizely/travisci-tools.git && popd
+      script:
+        - $HOME/travisci-tools/trigger-script-with-status-update.sh
+      after_success: travis_terminate 0
+    
+    - stage: 'Source clear'
+      env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
+      language: go
+      addons:
+        srcclr: true
+      script: go get -v -d ./...
 
     - stage: 'Readme-sync'
       name: 'run script if changes are detected in docs/'
