@@ -63,7 +63,6 @@ type PollingProjectConfigManager struct {
 	sdkKey              string
 	logger              logging.OptimizelyLogProducer
 	authDatafileToken   string
-	UUID                string
 
 	configLock       sync.RWMutex
 	err              error
