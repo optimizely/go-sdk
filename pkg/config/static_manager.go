@@ -53,6 +53,29 @@ func NewStaticProjectConfigManagerFromURL(sdkKey string) (*StaticProjectConfigMa
 	return NewStaticProjectConfigManagerFromPayload(datafile, logger)
 }
 
+// NewAuthDatafileStaticProjectConfigManagerFromURL returns new instance of StaticProjectConfigManager for URL with auth datafile token
+func NewAuthDatafileStaticProjectConfigManagerFromURL(sdkKey, authDatafiletoken string) (*StaticProjectConfigManager, error) {
+
+	headers := []utils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: "Accept", Value: "application/json"}}
+	dataFileTemplate := DatafileURLTemplate
+	if authDatafiletoken != "" {
+		headers = append(headers, utils.Header{Name: "Authorization", Value: "Bearer " + authDatafiletoken})
+		dataFileTemplate = AuthDatafileURLTemplate
+	}
+	requester := utils.NewHTTPRequester(logging.GetLogger(sdkKey, "HTTPRequester"), utils.Headers(headers...))
+
+	logger := logging.GetLogger(sdkKey, "StaticProjectConfigManager")
+
+	url := fmt.Sprintf(dataFileTemplate, sdkKey)
+	datafile, _, code, e := requester.Get(url)
+	if e != nil {
+		logger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
+		return nil, e
+	}
+
+	return NewStaticProjectConfigManagerFromPayload(datafile, logger)
+}
+
 // NewStaticProjectConfigManagerFromPayload returns new instance of StaticProjectConfigManager for payload
 func NewStaticProjectConfigManagerFromPayload(payload []byte, logger logging.OptimizelyLogProducer) (*StaticProjectConfigManager, error) {
 	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(payload, logger)
@@ -68,7 +91,7 @@ func NewStaticProjectConfigManagerFromPayload(payload []byte, logger logging.Opt
 func NewStaticProjectConfigManager(config ProjectConfig, logger logging.OptimizelyLogProducer) *StaticProjectConfigManager {
 	return &StaticProjectConfigManager{
 		projectConfig: config,
-		logger: logger,
+		logger:        logger,
 	}
 }
 

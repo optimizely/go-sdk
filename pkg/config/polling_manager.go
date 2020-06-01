@@ -42,8 +42,11 @@ const ModifiedSince = "If-Modified-Since"
 // LastModified header key for response
 const LastModified = "Last-Modified"
 
-// DatafileURLTemplate is used to construct the endpoint for retrieving the datafile from the CDN
+// DatafileURLTemplate is used to construct the endpoint for retrieving regular datafile from the CDN
 const DatafileURLTemplate = "https://cdn.optimizely.com/datafiles/%s.json"
+
+// AuthDatafileURLTemplate is used to construct the endpoint for retrieving authenticated datafile from the CDN
+const AuthDatafileURLTemplate = "https://www.optimizely-cdn.com/datafiles/auth/%s.json"
 
 // Err403Forbidden is 403Forbidden specific error
 var Err403Forbidden = errors.New("unable to fetch fresh datafile (consider rechecking SDK key), status code: 403 Forbidden")
@@ -58,7 +61,9 @@ type PollingProjectConfigManager struct {
 	pollingInterval     time.Duration
 	requester           utils.Requester
 	sdkKey              string
-	logger               logging.OptimizelyLogProducer
+	logger              logging.OptimizelyLogProducer
+	authDatafileToken   string
+	UUID                string
 
 	configLock       sync.RWMutex
 	err              error
@@ -94,6 +99,14 @@ func WithPollingInterval(interval time.Duration) OptionFunc {
 func WithInitialDatafile(datafile []byte) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.initDatafile = datafile
+	}
+}
+
+// WithAuthDatafileToken is an optional function, sets a passed datafile
+func WithAuthDatafileToken(authDatafileToken string) OptionFunc {
+	return func(p *PollingProjectConfigManager) {
+		p.authDatafileToken = authDatafileToken
+		p.datafileURLTemplate = AuthDatafileURLTemplate
 	}
 }
 
@@ -182,6 +195,14 @@ func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
 	}
 }
 
+func (cm *PollingProjectConfigManager) setADRequest() {
+	if cm.authDatafileToken != "" {
+		headers := []utils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: "Accept", Value: "application/json"}}
+		headers = append(headers, utils.Header{Name: "Authorization", Value: "Bearer " + cm.authDatafileToken})
+		cm.requester = utils.NewHTTPRequester(logging.GetLogger(cm.sdkKey, "HTTPRequester"), utils.Headers(headers...))
+	}
+}
+
 // NewPollingProjectConfigManager returns an instance of the polling config manager with the customized configuration
 func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
 
@@ -197,7 +218,7 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 	for _, opt := range pollingMangerOptions {
 		opt(&pollingProjectConfigManager)
 	}
-
+	pollingProjectConfigManager.setADRequest()
 	if len(pollingProjectConfigManager.initDatafile) > 0 {
 		pollingProjectConfigManager.setInitialDatafile(pollingProjectConfigManager.initDatafile)
 	} else {
@@ -222,6 +243,7 @@ func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...
 		opt(&pollingProjectConfigManager)
 	}
 
+	pollingProjectConfigManager.setADRequest()
 	pollingProjectConfigManager.setInitialDatafile(pollingProjectConfigManager.initDatafile)
 	return &pollingProjectConfigManager
 }
