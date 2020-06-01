@@ -194,7 +194,7 @@ func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
 	}
 }
 
-func (cm *PollingProjectConfigManager) setADRequest() {
+func (cm *PollingProjectConfigManager) setAuthDatafileRequest() {
 	if cm.authDatafileToken != "" {
 		headers := []utils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: "Accept", Value: "application/json"}}
 		headers = append(headers, utils.Header{Name: "Authorization", Value: "Bearer " + cm.authDatafileToken})
@@ -217,7 +217,7 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 	for _, opt := range pollingMangerOptions {
 		opt(&pollingProjectConfigManager)
 	}
-	pollingProjectConfigManager.setADRequest()
+	pollingProjectConfigManager.setAuthDatafileRequest()
 	if len(pollingProjectConfigManager.initDatafile) > 0 {
 		pollingProjectConfigManager.setInitialDatafile(pollingProjectConfigManager.initDatafile)
 	} else {
@@ -242,7 +242,7 @@ func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...
 		opt(&pollingProjectConfigManager)
 	}
 
-	pollingProjectConfigManager.setADRequest()
+	pollingProjectConfigManager.setAuthDatafileRequest()
 	pollingProjectConfigManager.setInitialDatafile(pollingProjectConfigManager.initDatafile)
 	return &pollingProjectConfigManager
 }
