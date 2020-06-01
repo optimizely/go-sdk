@@ -430,28 +430,8 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string,
 			}
 		}
 
-		var out interface{}
-		out = val
-		switch varType := v.Type; varType {
-		case entities.Boolean:
-			out, err = strconv.ParseBool(val)
-			errs = multierror.Append(errs, err)
-		case entities.Double:
-			out, err = strconv.ParseFloat(val, 64)
-			errs = multierror.Append(errs, err)
-		case entities.Integer:
-			out, err = strconv.Atoi(val)
-			errs = multierror.Append(errs, err)
-		case entities.JSON:
-			var optlyJSON *optimizelyjson.OptimizelyJSON
-			optlyJSON, err = optimizelyjson.NewOptimizelyJSONfromString(val)
-			out = optlyJSON.ToMap()
-			errs = multierror.Append(errs, err)
-		case entities.String:
-		default:
-			o.logger.Warning(fmt.Sprintf(`type "%s" is unknown, returning string`, varType))
-		}
-
+		out, typedError := o.getTypedValue(val, v)
+		errs = multierror.Append(errs, typedError)
 		variableMap[v.Key] = out
 	}
 
@@ -510,28 +490,8 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 			}
 		}
 
-		var out interface{}
-		out = val
-		switch varType := v.Type; varType {
-		case entities.Boolean:
-			out, err = strconv.ParseBool(val)
-			errs = multierror.Append(errs, err)
-		case entities.Double:
-			out, err = strconv.ParseFloat(val, 64)
-			errs = multierror.Append(errs, err)
-		case entities.Integer:
-			out, err = strconv.Atoi(val)
-			errs = multierror.Append(errs, err)
-		case entities.JSON:
-			var optlyJSON *optimizelyjson.OptimizelyJSON
-			optlyJSON, err = optimizelyjson.NewOptimizelyJSONfromString(val)
-			out = optlyJSON.ToMap()
-			errs = multierror.Append(errs, err)
-		case entities.String:
-		default:
-			o.logger.Warning(fmt.Sprintf(`type "%s" is unknown, returning string`, varType))
-		}
-
+		out, typedError := o.getTypedValue(val, v)
+		errs = multierror.Append(errs, typedError)
 		decisionInfo.VariableMap[v.Key] = out
 	}
 
@@ -763,6 +723,26 @@ func (o *OptimizelyClient) RemoveOnTrack(id int) error {
 		return err
 	}
 	return nil
+}
+
+func (o *OptimizelyClient) getTypedValue(value string, variable entities.Variable) (out interface{}, err error) {
+	out = value
+	switch varType := variable.Type; varType {
+	case entities.Boolean:
+		out, err = strconv.ParseBool(value)
+	case entities.Double:
+		out, err = strconv.ParseFloat(value, 64)
+	case entities.Integer:
+		out, err = strconv.Atoi(value)
+	case entities.JSON:
+		var optlyJSON *optimizelyjson.OptimizelyJSON
+		optlyJSON, err = optimizelyjson.NewOptimizelyJSONfromString(value)
+		out = optlyJSON.ToMap()
+	case entities.String:
+	default:
+		o.logger.Warning(fmt.Sprintf(`type "%s" is unknown, returning string`, varType))
+	}
+	return out, err
 }
 
 func (o *OptimizelyClient) getProjectConfig() (projectConfig config.ProjectConfig, err error) {
