@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -465,6 +465,86 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string,
 		}
 	}
 	return enabled, variableMap, errs.ErrorOrNil()
+}
+
+// GetDetailedFeatureDecisionUnsafe triggers an impression event and returns all the variables
+// for a given feature along with the experiment key, variation key and the enabled state.
+// Usage of this method is unsafe and not recommended since it can be removed in any of the next releases.
+func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, userContext entities.UserContext, disableTracking bool) (decisionInfo decision.UnsafeFeatureDecisionInfo, err error) {
+
+	decisionInfo = decision.UnsafeFeatureDecisionInfo{}
+	decisionInfo.VariableMap = make(map[string]interface{})
+	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, "", userContext)
+	if err != nil {
+		o.logger.Error("Optimizely SDK tracking error", err)
+		return decisionInfo, err
+	}
+
+	if featureDecision.Variation != nil {
+		decisionInfo.Enabled = featureDecision.Variation.FeatureEnabled
+		decisionInfo.VariationKey = featureDecision.Variation.Key
+		decisionInfo.ExperimentKey = featureDecision.Experiment.Key
+
+		// Triggers impression events when applicable
+		if !disableTracking && featureDecision.Source == decision.FeatureTest {
+			// send impression event for feature tests
+			impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment, *featureDecision.Variation, userContext)
+			o.EventProcessor.ProcessEvent(impressionEvent)
+		}
+	}
+
+	feature := decisionContext.Feature
+	if feature == nil {
+		o.logger.Warning(fmt.Sprintf(`feature "%s" does not exist`, featureKey))
+		return decisionInfo, nil
+	}
+
+	errs := new(multierror.Error)
+
+	for _, v := range feature.VariableMap {
+		val := v.DefaultValue
+
+		if decisionInfo.Enabled {
+			if variable, ok := featureDecision.Variation.Variables[v.ID]; ok {
+				val = variable.Value
+			}
+		}
+
+		var out interface{}
+		out = val
+		switch varType := v.Type; varType {
+		case entities.Boolean:
+			out, err = strconv.ParseBool(val)
+			errs = multierror.Append(errs, err)
+		case entities.Double:
+			out, err = strconv.ParseFloat(val, 64)
+			errs = multierror.Append(errs, err)
+		case entities.Integer:
+			out, err = strconv.Atoi(val)
+			errs = multierror.Append(errs, err)
+		case entities.JSON:
+			var optlyJSON *optimizelyjson.OptimizelyJSON
+			optlyJSON, err = optimizelyjson.NewOptimizelyJSONfromString(val)
+			out = optlyJSON.ToMap()
+			errs = multierror.Append(errs, err)
+		case entities.String:
+		default:
+			o.logger.Warning(fmt.Sprintf(`type "%s" is unknown, returning string`, varType))
+		}
+
+		decisionInfo.VariableMap[v.Key] = out
+	}
+
+	if o.notificationCenter != nil {
+		decisionNotification := decision.FeatureNotificationWithVariables(featureKey, &featureDecision, &userContext,
+			map[string]interface{}{"variableValues": decisionInfo.VariableMap})
+		decisionNotification.Type = notification.AllFeatureVariables
+
+		if err = o.notificationCenter.Send(notification.Decision, *decisionNotification); err != nil {
+			o.logger.Warning("Problem with sending notification")
+		}
+	}
+	return decisionInfo, errs.ErrorOrNil()
 }
 
 // GetAllFeatureVariables returns all the variables as OptimizelyJSON object for a given feature.
