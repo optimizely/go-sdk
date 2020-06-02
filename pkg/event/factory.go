@@ -32,12 +32,14 @@ const impressionKey string = "campaign_activated"
 const attributeType = "custom"
 const specialPrefix = "$opt_"
 const botFilteringKey = "$opt_bot_filtering"
-const eventEndPoint = "https://logx.optimizely.com/v1/events"
 const revenueKey = "revenue"
 const valueKey = "value"
 
+// EventEndPoint is used as the default endpoint for sending events.
+var EventEndPoint = "https://logx.optimizely.com/v1/events"
+
 func createLogEvent(event Batch) LogEvent {
-	return LogEvent{EndPoint: eventEndPoint, Event: event}
+	return LogEvent{EndPoint: EventEndPoint, Event: event}
 }
 
 func makeTimestamp() int64 {
