@@ -105,7 +105,6 @@ func WithInitialDatafile(datafile []byte) OptionFunc {
 func WithAuthDatafileToken(authDatafileToken string) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.authDatafileToken = authDatafileToken
-		p.datafileURLTemplate = AuthDatafileURLTemplate
 	}
 }
 
@@ -206,17 +205,25 @@ func (cm *PollingProjectConfigManager) setAuthDatafileRequest() {
 func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
 
 	pollingProjectConfigManager := PollingProjectConfigManager{
-		notificationCenter:  registry.GetNotificationCenter(sdkKey),
-		pollingInterval:     DefaultPollingInterval,
-		requester:           utils.NewHTTPRequester(logging.GetLogger(sdkKey, "HTTPRequester")),
-		datafileURLTemplate: DatafileURLTemplate,
-		sdkKey:              sdkKey,
-		logger:              logging.GetLogger(sdkKey, "PollingProjectConfigManager"),
+		notificationCenter: registry.GetNotificationCenter(sdkKey),
+		pollingInterval:    DefaultPollingInterval,
+		requester:          utils.NewHTTPRequester(logging.GetLogger(sdkKey, "HTTPRequester")),
+		sdkKey:             sdkKey,
+		logger:             logging.GetLogger(sdkKey, "PollingProjectConfigManager"),
 	}
 
 	for _, opt := range pollingMangerOptions {
 		opt(&pollingProjectConfigManager)
 	}
+
+	if pollingProjectConfigManager.datafileURLTemplate == "" {
+		if pollingProjectConfigManager.authDatafileToken != "" {
+			pollingProjectConfigManager.datafileURLTemplate = AuthDatafileURLTemplate
+		} else {
+			pollingProjectConfigManager.datafileURLTemplate = DatafileURLTemplate
+		}
+	}
+
 	pollingProjectConfigManager.setAuthDatafileRequest()
 	if len(pollingProjectConfigManager.initDatafile) > 0 {
 		pollingProjectConfigManager.setInitialDatafile(pollingProjectConfigManager.initDatafile)
@@ -230,16 +237,23 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
 
 	pollingProjectConfigManager := PollingProjectConfigManager{
-		notificationCenter:  registry.GetNotificationCenter(sdkKey),
-		pollingInterval:     DefaultPollingInterval,
-		requester:           utils.NewHTTPRequester(logging.GetLogger(sdkKey, "HTTPRequester")),
-		datafileURLTemplate: DatafileURLTemplate,
-		sdkKey:              sdkKey,
-		logger:              logging.GetLogger(sdkKey, "PollingProjectConfigManager"),
+		notificationCenter: registry.GetNotificationCenter(sdkKey),
+		pollingInterval:    DefaultPollingInterval,
+		requester:          utils.NewHTTPRequester(logging.GetLogger(sdkKey, "HTTPRequester")),
+		sdkKey:             sdkKey,
+		logger:             logging.GetLogger(sdkKey, "PollingProjectConfigManager"),
 	}
 
 	for _, opt := range pollingMangerOptions {
 		opt(&pollingProjectConfigManager)
+	}
+
+	if pollingProjectConfigManager.datafileURLTemplate == "" {
+		if pollingProjectConfigManager.authDatafileToken != "" {
+			pollingProjectConfigManager.datafileURLTemplate = AuthDatafileURLTemplate
+		} else {
+			pollingProjectConfigManager.datafileURLTemplate = DatafileURLTemplate
+		}
 	}
 
 	pollingProjectConfigManager.setAuthDatafileRequest()
