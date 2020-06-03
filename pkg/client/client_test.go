@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -1863,6 +1863,60 @@ func TestGetDetailedFeatureDecisionUnsafeWithTrackingDisabled(t *testing.T) {
 	}
 	assert.Equal(t, decision.ExperimentKey, "")
 	assert.Equal(t, decision.VariationKey, "")
+}
+
+func TestGetDetailedFeatureDecisionUnsafeWithoutFeature(t *testing.T) {
+	invalidFeatureKey := "non-existent-feature"
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+
+	mockConfig := new(MockProjectConfig)
+	mockConfig.On("GetFeatureByKey", invalidFeatureKey).Return(entities.Feature{}, errors.New(""))
+	mockConfigManager := new(MockProjectConfigManager)
+	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
+	mockDecisionService := new(MockDecisionService)
+
+	client := OptimizelyClient{
+		ConfigManager:   mockConfigManager,
+		DecisionService: mockDecisionService,
+		logger:          logging.GetLogger("", ""),
+	}
+
+	decision, err := client.GetDetailedFeatureDecisionUnsafe(invalidFeatureKey, testUserContext, true)
+
+	// if we have a decision, but also a non-fatal error, we should return the decision
+	assert.False(t, decision.Enabled)
+	assert.Equal(t, 0, len(decision.VariableMap))
+	assert.NoError(t, err)
+}
+
+func TestGetDetailedFeatureDecisionUnsafeWithError(t *testing.T) {
+	testFeatureKey := "test_feature_key"
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	testVariation := getTestVariationWithFeatureVariable(true, entities.VariationVariable{})
+	testExperiment := entities.Experiment{}
+	testFeature := getTestFeature(testFeatureKey, testExperiment)
+	mockConfig := getMockConfig(testFeatureKey, "", testFeature, entities.Variable{})
+	mockConfigManager := new(MockProjectConfigManager)
+	mockConfigManager.On("GetConfig").Return(mockConfig, errors.New(""))
+
+	testDecisionContext := decision.FeatureDecisionContext{
+		Feature:       &testFeature,
+		ProjectConfig: mockConfig,
+	}
+
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
+	mockDecisionService := new(MockDecisionService)
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, errors.New(""))
+
+	client := OptimizelyClient{
+		ConfigManager:   mockConfigManager,
+		DecisionService: mockDecisionService,
+		logger:          logging.GetLogger("", ""),
+	}
+
+	decision, err := client.GetDetailedFeatureDecisionUnsafe(testFeatureKey, testUserContext, true)
+	assert.False(t, decision.Enabled)
+	assert.Error(t, err)
 }
 
 func TestGetDetailedFeatureDecisionUnsafeWithFeatureTestAndTrackingEnabled(t *testing.T) {
