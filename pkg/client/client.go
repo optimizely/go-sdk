@@ -430,9 +430,9 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string,
 			}
 		}
 
-		out, typedError := o.getTypedValue(val, v)
+		typedValue, typedError := o.getTypedValue(val, v.Type)
 		errs = multierror.Append(errs, typedError)
-		variableMap[v.Key] = out
+		variableMap[v.Key] = typedValue
 	}
 
 	if o.notificationCenter != nil {
@@ -462,14 +462,16 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 
 	if featureDecision.Variation != nil {
 		decisionInfo.Enabled = featureDecision.Variation.FeatureEnabled
-		decisionInfo.VariationKey = featureDecision.Variation.Key
-		decisionInfo.ExperimentKey = featureDecision.Experiment.Key
 
-		// Triggers impression events when applicable
-		if !disableTracking && featureDecision.Source == decision.FeatureTest {
-			// send impression event for feature tests
-			impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment, *featureDecision.Variation, userContext)
-			o.EventProcessor.ProcessEvent(impressionEvent)
+		if featureDecision.Source == decision.FeatureTest {
+			decisionInfo.VariationKey = featureDecision.Variation.Key
+			decisionInfo.ExperimentKey = featureDecision.Experiment.Key
+			// Triggers impression events when applicable
+			if !disableTracking {
+				// send impression event for feature tests
+				impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment, *featureDecision.Variation, userContext)
+				o.EventProcessor.ProcessEvent(impressionEvent)
+			}
 		}
 	}
 
@@ -487,12 +489,14 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 		if decisionInfo.Enabled {
 			if variable, ok := featureDecision.Variation.Variables[v.ID]; ok {
 				val = variable.Value
+			} else {
+				o.logger.Warning(fmt.Sprintf(`variable with id "%s" does not exist`, v.ID))
 			}
 		}
 
-		out, typedError := o.getTypedValue(val, v)
+		typedValue, typedError := o.getTypedValue(val, v.Type)
 		errs = multierror.Append(errs, typedError)
-		decisionInfo.VariableMap[v.Key] = out
+		decisionInfo.VariableMap[v.Key] = typedValue
 	}
 
 	if o.notificationCenter != nil {
@@ -501,7 +505,7 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 		decisionNotification.Type = notification.AllFeatureVariables
 
 		if err = o.notificationCenter.Send(notification.Decision, *decisionNotification); err != nil {
-			o.logger.Warning("Problem with sending notification")
+			o.logger.Warning(fmt.Sprintf("Problem with sending notification: %v", err))
 		}
 	}
 	return decisionInfo, errs.ErrorOrNil()
@@ -725,24 +729,24 @@ func (o *OptimizelyClient) RemoveOnTrack(id int) error {
 	return nil
 }
 
-func (o *OptimizelyClient) getTypedValue(value string, variable entities.Variable) (out interface{}, err error) {
-	out = value
-	switch varType := variable.Type; varType {
+func (o *OptimizelyClient) getTypedValue(value string, variableType entities.VariableType) (convertedValue interface{}, err error) {
+	convertedValue = value
+	switch variableType {
 	case entities.Boolean:
-		out, err = strconv.ParseBool(value)
+		convertedValue, err = strconv.ParseBool(value)
 	case entities.Double:
-		out, err = strconv.ParseFloat(value, 64)
+		convertedValue, err = strconv.ParseFloat(value, 64)
 	case entities.Integer:
-		out, err = strconv.Atoi(value)
+		convertedValue, err = strconv.Atoi(value)
 	case entities.JSON:
 		var optlyJSON *optimizelyjson.OptimizelyJSON
 		optlyJSON, err = optimizelyjson.NewOptimizelyJSONfromString(value)
-		out = optlyJSON.ToMap()
+		convertedValue = optlyJSON.ToMap()
 	case entities.String:
 	default:
-		o.logger.Warning(fmt.Sprintf(`type "%s" is unknown, returning string`, varType))
+		o.logger.Warning(fmt.Sprintf(`type "%s" is unknown, returning string`, variableType))
 	}
-	return out, err
+	return convertedValue, err
 }
 
 func (o *OptimizelyClient) getProjectConfig() (projectConfig config.ProjectConfig, err error) {

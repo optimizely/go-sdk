@@ -1679,6 +1679,240 @@ func TestGetAllFeatureVariablesWithDecisionWithoutFeature(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestGetDetailedFeatureDecisionUnsafeWithNotification(t *testing.T) {
+	testFeatureKey := "test_feature_key"
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+
+	type variable struct {
+		key        string
+		defaultVal string
+		varVal     string
+		varType    entities.VariableType
+		expected   interface{}
+	}
+
+	variables := []variable{
+		{key: "var_str", defaultVal: "default", varVal: "var", varType: entities.String, expected: "var"},
+		{key: "var_bool", defaultVal: "false", varVal: "true", varType: entities.Boolean, expected: true},
+		{key: "var_int", defaultVal: "10", varVal: "20", varType: entities.Integer, expected: 20},
+		{key: "var_double", defaultVal: "1.0", varVal: "2.0", varType: entities.Double, expected: 2.0},
+		{key: "var_json", defaultVal: "{}", varVal: "{\"field1\":12.0, \"field2\": \"some_value\"}", varType: entities.JSON,
+			expected: map[string]interface{}{"field1": 12.0, "field2": "some_value"}},
+	}
+
+	mockConfig := new(MockProjectConfig)
+	variableMap := make(map[string]entities.Variable)
+	varVariableMap := make(map[string]entities.VariationVariable)
+
+	for i, v := range variables {
+		id := strconv.Itoa(i)
+		varVariableMap[id] = entities.VariationVariable{
+			ID:    id,
+			Value: v.varVal,
+		}
+
+		variableMap[id] = entities.Variable{
+			DefaultValue: v.defaultVal,
+			ID:           id,
+			Key:          v.key,
+			Type:         v.varType,
+		}
+
+		mockConfig.On("GetVariableByKey", testFeatureKey, v.key).Return(v.varVal, nil)
+	}
+
+	testVariation := entities.Variation{
+		ID:             "22222",
+		Key:            "22222",
+		FeatureEnabled: true,
+		Variables:      varVariableMap,
+	}
+
+	testVariation.FeatureEnabled = true
+	testExperiment := entities.Experiment{
+		ID:         "111111",
+		Variations: map[string]entities.Variation{"22222": testVariation},
+	}
+	testFeature := getTestFeature(testFeatureKey, testExperiment)
+	testFeature.VariableMap = variableMap
+	mockConfig.On("GetFeatureByKey", testFeatureKey).Return(testFeature, nil)
+
+	mockConfigManager := new(MockProjectConfigManager)
+	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
+
+	testDecisionContext := decision.FeatureDecisionContext{
+		Feature:       &testFeature,
+		ProjectConfig: mockConfig,
+	}
+
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
+	mockDecisionService := new(MockDecisionService)
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+
+	notificationCenter := notification.NewNotificationCenter()
+	client := OptimizelyClient{
+		ConfigManager:      mockConfigManager,
+		DecisionService:    mockDecisionService,
+		logger:             logging.GetLogger("", ""),
+		notificationCenter: notificationCenter,
+	}
+	var numberOfCalls = 0
+	note := notification.DecisionNotification{}
+	callback := func(notification notification.DecisionNotification) {
+		note = notification
+		numberOfCalls++
+	}
+	mockDecisionService.On("OnDecision", mock.AnythingOfType("func(notification.DecisionNotification)")).Return(1, nil)
+	mockDecisionService.notificationCenter = notificationCenter
+	id, _ := mockDecisionService.OnDecision(callback)
+
+	assert.NotEqual(t, id, 0)
+	client.GetDetailedFeatureDecisionUnsafe(testFeatureKey, testUserContext, true)
+
+	decisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": true, "featureKey": "test_feature_key", "source": decision.Source(""),
+		"sourceInfo": map[string]string{}, "variableValues": map[string]interface{}{"var_bool": true, "var_double": 2.0, "var_int": 20,
+			"var_json": map[string]interface{}{"field1": 12.0, "field2": "some_value"}, "var_str": "var"}}}
+	assert.Equal(t, numberOfCalls, 1)
+	assert.Equal(t, decisionInfo, note.DecisionInfo)
+}
+
+func TestGetDetailedFeatureDecisionUnsafeWithTrackingDisabled(t *testing.T) {
+	testFeatureKey := "test_feature_key"
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+
+	type variable struct {
+		key        string
+		defaultVal string
+		varVal     string
+		varType    entities.VariableType
+		expected   interface{}
+	}
+
+	variables := []variable{
+		{key: "var_str", defaultVal: "default", varVal: "var", varType: entities.String, expected: "var"},
+		{key: "var_bool", defaultVal: "false", varVal: "true", varType: entities.Boolean, expected: true},
+		{key: "var_int", defaultVal: "10", varVal: "20", varType: entities.Integer, expected: 20},
+		{key: "var_double", defaultVal: "1.0", varVal: "2.0", varType: entities.Double, expected: 2.0},
+		{key: "var_json", defaultVal: "{}", varVal: "{\"field1\":12.0, \"field2\": \"some_value\"}", varType: entities.JSON,
+			expected: map[string]interface{}{"field1": 12.0, "field2": "some_value"}},
+		{key: "var_unknown", defaultVal: "{}", varVal: "{\"field1\":12.0, \"field2\": \"some_value\"}", varType: "",
+			expected: "{\"field1\":12.0, \"field2\": \"some_value\"}"},
+	}
+
+	mockConfig := new(MockProjectConfig)
+	variableMap := make(map[string]entities.Variable)
+	varVariableMap := make(map[string]entities.VariationVariable)
+
+	for i, v := range variables {
+		id := strconv.Itoa(i)
+		varVariableMap[id] = entities.VariationVariable{
+			ID:    id,
+			Value: v.varVal,
+		}
+
+		variableMap[id] = entities.Variable{
+			DefaultValue: v.defaultVal,
+			ID:           id,
+			Key:          v.key,
+			Type:         v.varType,
+		}
+
+		mockConfig.On("GetVariableByKey", testFeatureKey, v.key).Return(v.varVal, nil)
+	}
+
+	testVariation := entities.Variation{
+		ID:             "22222",
+		Key:            "22222",
+		FeatureEnabled: true,
+		Variables:      varVariableMap,
+	}
+
+	testVariation.FeatureEnabled = true
+	testExperiment := entities.Experiment{
+		ID:         "111111",
+		Variations: map[string]entities.Variation{"22222": testVariation},
+	}
+	testFeature := getTestFeature(testFeatureKey, testExperiment)
+	testFeature.VariableMap = variableMap
+	mockConfig.On("GetFeatureByKey", testFeatureKey).Return(testFeature, nil)
+
+	mockConfigManager := new(MockProjectConfigManager)
+	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
+
+	testDecisionContext := decision.FeatureDecisionContext{
+		Feature:       &testFeature,
+		ProjectConfig: mockConfig,
+	}
+
+	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
+	mockDecisionService := new(MockDecisionService)
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+
+	client := OptimizelyClient{
+		ConfigManager:   mockConfigManager,
+		DecisionService: mockDecisionService,
+		logger:          logging.GetLogger("", ""),
+	}
+
+	decision, err := client.GetDetailedFeatureDecisionUnsafe(testFeatureKey, testUserContext, true)
+	assert.NoError(t, err)
+	assert.True(t, decision.Enabled)
+
+	for _, v := range variables {
+		assert.Equal(t, v.expected, decision.VariableMap[v.key])
+	}
+	assert.Equal(t, decision.ExperimentKey, "")
+	assert.Equal(t, decision.VariationKey, "")
+}
+
+func TestGetDetailedFeatureDecisionUnsafeWithFeatureTestAndTrackingEnabled(t *testing.T) {
+	mockConfig := new(MockProjectConfig)
+	mockConfigManager := new(MockProjectConfigManager)
+	mockDecisionService := new(MockDecisionService)
+	mockEventProcessor := new(MockEventProcessor)
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+
+	// Test happy path
+	testVariation := makeTestVariation("green", true)
+	testExperiment := makeTestExperimentWithVariations("number_1", []entities.Variation{testVariation})
+	testFeature := makeTestFeatureWithExperiment("feature_1", testExperiment)
+	mockConfig.On("GetFeatureByKey", testFeature.Key).Return(testFeature, nil)
+	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
+	mockEventProcessor.On("ProcessEvent", mock.AnythingOfType("event.UserEvent"))
+
+	// Set up the mock decision service and its return value
+	testDecisionContext := decision.FeatureDecisionContext{
+		Feature:       &testFeature,
+		ProjectConfig: mockConfig,
+	}
+
+	expectedFeatureDecision := decision.FeatureDecision{
+		Experiment: testExperiment,
+		Variation:  &testVariation,
+		Source:     decision.FeatureTest,
+	}
+
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+
+	client := OptimizelyClient{
+		ConfigManager:   mockConfigManager,
+		DecisionService: mockDecisionService,
+		EventProcessor:  mockEventProcessor,
+		logger:          logging.GetLogger("", ""),
+	}
+
+	decision, err := client.GetDetailedFeatureDecisionUnsafe(testFeature.Key, testUserContext, false)
+	assert.NoError(t, err)
+	assert.True(t, decision.Enabled)
+	assert.Equal(t, decision.ExperimentKey, "number_1")
+	assert.Equal(t, decision.VariationKey, "green")
+
+	mockConfig.AssertExpectations(t)
+	mockConfigManager.AssertExpectations(t)
+	mockDecisionService.AssertExpectations(t)
+	mockEventProcessor.AssertExpectations(t)
+}
+
 func TestGetAllFeatureVariables(t *testing.T) {
 	testFeatureKey := "test_feature_key"
 	testUserContext := entities.UserContext{ID: "test_user_1"}
