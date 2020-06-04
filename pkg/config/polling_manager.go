@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -101,7 +101,7 @@ func WithInitialDatafile(datafile []byte) OptionFunc {
 	}
 }
 
-// WithDatafileAccessToken is an optional function, sets a passed datafile
+// WithDatafileAccessToken is an optional function, sets a passed datafile access token
 func WithDatafileAccessToken(datafileAccessToken string) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.datafileAccessToken = datafileAccessToken

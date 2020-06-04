@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -25,14 +25,14 @@ import (
 	"github.com/optimizely/go-sdk/pkg/notification"
 )
 
-// StaticProjectConfigManager maintains a static copy of the project configs
+// StaticProjectConfigManager maintains a static copy of the project config
 type StaticProjectConfigManager struct {
 	projectConfig    ProjectConfig
 	optimizelyConfig *OptimizelyConfig
 	configLock       sync.Mutex
 }
 
-// NewStaticProjectConfigManager creates a new instance of the manager with the given project config
+// NewStaticProjectConfigManager creates a new instance of the manager with the given sdk key and some options
 func NewStaticProjectConfigManager(sdkKey string, configMangerOptions ...OptionFunc) *StaticProjectConfigManager {
 
 	logger := logging.GetLogger(sdkKey, "StaticProjectConfigManager")
