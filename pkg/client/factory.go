@@ -33,9 +33,9 @@ import (
 
 // OptimizelyFactory is used to customize and construct an instance of the OptimizelyClient.
 type OptimizelyFactory struct {
-	SDKKey            string
-	Datafile          []byte
-	AuthDatafileToken string
+	SDKKey              string
+	Datafile            []byte
+	DatafileAccessToken string
 
 	configManager      config.ProjectConfigManager
 	ctx                context.Context
@@ -86,7 +86,7 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 		appClient.ConfigManager = config.NewPollingProjectConfigManager(
 			f.SDKKey,
 			config.WithInitialDatafile(f.Datafile),
-			config.WithAuthDatafileToken(f.AuthDatafileToken),
+			config.WithDatafileAccessToken(f.DatafileAccessToken),
 		)
 	}
 
@@ -130,10 +130,10 @@ func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClien
 	return appClient, nil
 }
 
-// WithAuthDatafileToken sets authenticated datafile token
-func WithAuthDatafileToken(authDatafileToken string) OptionFunc {
+// WithDatafileAccessToken sets authenticated datafile token
+func WithDatafileAccessToken(datafileAccessToken string) OptionFunc {
 	return func(f *OptimizelyFactory) {
-		f.AuthDatafileToken = authDatafileToken
+		f.DatafileAccessToken = datafileAccessToken
 	}
 }
 
@@ -145,11 +145,11 @@ func WithPollingConfigManager(pollingInterval time.Duration, initDataFile []byte
 	}
 }
 
-// WithAuthDatafilePollingConfigManager sets polling config manager with auth datafile token on a client
-func WithAuthDatafilePollingConfigManager(pollingInterval time.Duration, initDataFile []byte, authDatafileToken string) OptionFunc {
+// WithPollingConfigManagerDatafileAccessToken sets polling config manager with auth datafile token on a client
+func WithPollingConfigManagerDatafileAccessToken(pollingInterval time.Duration, initDataFile []byte, datafileAccessToken string) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.configManager = config.NewPollingProjectConfigManager(f.SDKKey, config.WithInitialDatafile(initDataFile),
-			config.WithPollingInterval(pollingInterval), config.WithAuthDatafileToken(authDatafileToken))
+			config.WithPollingInterval(pollingInterval), config.WithDatafileAccessToken(datafileAccessToken))
 	}
 }
 
@@ -219,31 +219,15 @@ func WithMetricsRegistry(metricsRegistry metrics.Registry) OptionFunc {
 
 // StaticClient returns a client initialized with a static project config.
 func (f OptimizelyFactory) StaticClient() (optlyClient *OptimizelyClient, err error) {
-	var configManager config.ProjectConfigManager
-	var staticConfigManager *config.StaticProjectConfigManager
 
-	if f.SDKKey != "" {
+	staticManager := config.NewStaticProjectConfigManager(f.SDKKey, config.WithInitialDatafile(f.Datafile), config.WithDatafileAccessToken(f.DatafileAccessToken))
 
-		staticConfigManager, err = config.NewAuthDatafileStaticProjectConfigManagerFromURL(f.SDKKey, f.AuthDatafileToken)
-
-		if err != nil {
-			return nil, err
-		}
-
-		configManager = staticConfigManager
-
-	} else if f.Datafile != nil {
-		staticConfigManager, err = config.NewStaticProjectConfigManagerFromPayload(f.Datafile, logging.GetLogger(f.SDKKey, "StaticProjectConfigManagerFromPayload"))
-
-		if err != nil {
-			return nil, err
-		}
-
-		configManager = staticConfigManager
+	if staticManager == nil {
+		return nil, errors.New("unable to initiate config manager")
 	}
 
 	optlyClient, err = f.Client(
-		WithConfigManager(configManager),
+		WithConfigManager(staticManager),
 		WithBatchEventProcessor(event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
 	)
 

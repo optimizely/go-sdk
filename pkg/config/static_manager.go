@@ -19,79 +19,37 @@ package config
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 
-	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
-	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
-// StaticProjectConfigManager maintains a static copy of the project config
+// StaticProjectConfigManager maintains a static copy of the project configs
 type StaticProjectConfigManager struct {
 	projectConfig    ProjectConfig
 	optimizelyConfig *OptimizelyConfig
 	configLock       sync.Mutex
-	logger           logging.OptimizelyLogProducer
-}
-
-// NewStaticProjectConfigManagerFromURL returns new instance of StaticProjectConfigManager for URL
-func NewStaticProjectConfigManagerFromURL(sdkKey string) (*StaticProjectConfigManager, error) {
-
-	requester := utils.NewHTTPRequester(logging.GetLogger(sdkKey, "HTTPRequester"))
-
-	logger := logging.GetLogger(sdkKey, "StaticProjectConfigManager")
-
-	url := fmt.Sprintf(DatafileURLTemplate, sdkKey)
-	datafile, _, code, e := requester.Get(url)
-	if e != nil {
-		logger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
-		return nil, e
-	}
-
-	return NewStaticProjectConfigManagerFromPayload(datafile, logger)
-}
-
-// NewAuthDatafileStaticProjectConfigManagerFromURL returns new instance of StaticProjectConfigManager for URL with auth datafile token
-func NewAuthDatafileStaticProjectConfigManagerFromURL(sdkKey, authDatafiletoken string) (*StaticProjectConfigManager, error) {
-
-	headers := []utils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: "Accept", Value: "application/json"}}
-	dataFileTemplate := DatafileURLTemplate
-	if authDatafiletoken != "" {
-		headers = append(headers, utils.Header{Name: "Authorization", Value: "Bearer " + authDatafiletoken})
-		dataFileTemplate = AuthDatafileURLTemplate
-	}
-	requester := utils.NewHTTPRequester(logging.GetLogger(sdkKey, "HTTPRequester"), utils.Headers(headers...))
-
-	logger := logging.GetLogger(sdkKey, "StaticProjectConfigManager")
-
-	url := fmt.Sprintf(dataFileTemplate, sdkKey)
-	datafile, _, code, e := requester.Get(url)
-	if e != nil {
-		logger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
-		return nil, e
-	}
-
-	return NewStaticProjectConfigManagerFromPayload(datafile, logger)
-}
-
-// NewStaticProjectConfigManagerFromPayload returns new instance of StaticProjectConfigManager for payload
-func NewStaticProjectConfigManagerFromPayload(payload []byte, logger logging.OptimizelyLogProducer) (*StaticProjectConfigManager, error) {
-	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(payload, logger)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return NewStaticProjectConfigManager(projectConfig, logger), nil
 }
 
 // NewStaticProjectConfigManager creates a new instance of the manager with the given project config
-func NewStaticProjectConfigManager(config ProjectConfig, logger logging.OptimizelyLogProducer) *StaticProjectConfigManager {
+func NewStaticProjectConfigManager(sdkKey string, configMangerOptions ...OptionFunc) *StaticProjectConfigManager {
+
+	logger := logging.GetLogger(sdkKey, "StaticProjectConfigManager")
+	staticProjectConfigManager := newConfigManager(sdkKey, logger, configMangerOptions...)
+	if sdkKey != "" {
+		staticProjectConfigManager.SyncConfig()
+	} else if len(staticProjectConfigManager.initDatafile) > 0 {
+		staticProjectConfigManager.setInitialDatafile(staticProjectConfigManager.initDatafile)
+	}
+	projectConfig, err := staticProjectConfigManager.GetConfig()
+	if err != nil {
+		logger.Error("unable to get project config, error returned:", err)
+		return nil
+	}
+
 	return &StaticProjectConfigManager{
-		projectConfig: config,
-		logger:        logger,
+		projectConfig: projectConfig,
 	}
 }
 

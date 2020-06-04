@@ -626,3 +626,54 @@ func TestWithRequester(t *testing.T) {
 	assert.Equal(t, mockRequester, configManager.requester)
 	assert.Equal(t, mockRequester, asyncConfigManager.requester)
 }
+
+func TestWithDatafileAccessToken(t *testing.T) {
+
+	sdkKey := "test_sdk_key"
+	datafileAccessToken := "some_token"
+	configManager := NewPollingProjectConfigManager(sdkKey, WithDatafileAccessToken(datafileAccessToken))
+	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithDatafileAccessToken(datafileAccessToken))
+
+	assert.Equal(t, datafileAccessToken, configManager.datafileAccessToken)
+	assert.Equal(t, datafileAccessToken, asyncConfigManager.datafileAccessToken)
+	assert.Equal(t, AuthDatafileURLTemplate, configManager.datafileURLTemplate)
+	assert.Equal(t, AuthDatafileURLTemplate, asyncConfigManager.datafileURLTemplate)
+}
+
+func TestWithDatafileAccessTokenCustomURLTemplate(t *testing.T) {
+
+	sdkKey := "test_sdk_key"
+	datafileAccessToken := "some_token"
+	datafileTemplate := "https://localhost/v1/%s.json"
+	configManager := NewPollingProjectConfigManager(sdkKey, WithDatafileURLTemplate(datafileTemplate), WithDatafileAccessToken(datafileAccessToken))
+	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey, WithDatafileURLTemplate(datafileTemplate), WithDatafileAccessToken(datafileAccessToken))
+
+	assert.Equal(t, datafileAccessToken, configManager.datafileAccessToken)
+	assert.Equal(t, datafileAccessToken, asyncConfigManager.datafileAccessToken)
+	assert.Equal(t, datafileTemplate, configManager.datafileURLTemplate)
+	assert.Equal(t, datafileTemplate, asyncConfigManager.datafileURLTemplate)
+}
+
+func TestSetDatafileAccessTokenRequest(t *testing.T) {
+
+	sdkKey := "test_sdk_key"
+	datafileAccessToken := "some_token"
+	configManager := NewPollingProjectConfigManager(sdkKey)
+	asyncConfigManager := NewAsyncPollingProjectConfigManager(sdkKey)
+
+	configManagerRequester := configManager.requester
+	asyncConfigManagerRequester := asyncConfigManager.requester
+
+	configManager.datafileAccessToken = datafileAccessToken
+	asyncConfigManager.datafileAccessToken = datafileAccessToken
+
+	assert.Equal(t, configManagerRequester, configManager.requester)
+	assert.Equal(t, asyncConfigManagerRequester, asyncConfigManager.requester)
+
+	configManager.setDatafileAccessTokenRequest()
+	asyncConfigManager.setDatafileAccessTokenRequest()
+
+	// modified requester check
+	assert.NotEqual(t, configManagerRequester, configManager.requester)
+	assert.NotEqual(t, asyncConfigManagerRequester, asyncConfigManager.requester)
+}
