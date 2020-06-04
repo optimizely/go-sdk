@@ -47,6 +47,38 @@ func InValidProjectConfigManager() *MockProjectConfigManager {
 	return nil
 }
 
+func getMockConfigAndMapsForVariables(featureKey string, variables []variable) (mockConfig *MockProjectConfig, variableMap map[string]entities.Variable, varVariableMap map[string]entities.VariationVariable) {
+	mockConfig = new(MockProjectConfig)
+	variableMap = make(map[string]entities.Variable)
+	varVariableMap = make(map[string]entities.VariationVariable)
+
+	for i, v := range variables {
+		id := strconv.Itoa(i)
+		varVariableMap[id] = entities.VariationVariable{
+			ID:    id,
+			Value: v.varVal,
+		}
+
+		variableMap[id] = entities.Variable{
+			DefaultValue: v.defaultVal,
+			ID:           id,
+			Key:          v.key,
+			Type:         v.varType,
+		}
+
+		mockConfig.On("GetVariableByKey", featureKey, v.key).Return(v.varVal, nil)
+	}
+	return
+}
+
+type variable struct {
+	key        string
+	defaultVal string
+	varVal     string
+	varType    entities.VariableType
+	expected   interface{}
+}
+
 type MockProcessor struct {
 	Events []event.UserEvent
 	mock.Mock
@@ -1426,14 +1458,6 @@ func TestGetAllFeatureVariablesWithDecision(t *testing.T) {
 	testFeatureKey := "test_feature_key"
 	testUserContext := entities.UserContext{ID: "test_user_1"}
 
-	type variable struct {
-		key        string
-		defaultVal string
-		varVal     string
-		varType    entities.VariableType
-		expected   interface{}
-	}
-
 	variables := []variable{
 		{key: "var_str", defaultVal: "default", varVal: "var", varType: entities.String, expected: "var"},
 		{key: "var_bool", defaultVal: "false", varVal: "true", varType: entities.Boolean, expected: true},
@@ -1445,27 +1469,7 @@ func TestGetAllFeatureVariablesWithDecision(t *testing.T) {
 			expected: "{\"field1\":12.0, \"field2\": \"some_value\"}"},
 	}
 
-	mockConfig := new(MockProjectConfig)
-	variableMap := make(map[string]entities.Variable)
-	varVariableMap := make(map[string]entities.VariationVariable)
-
-	for i, v := range variables {
-		id := strconv.Itoa(i)
-		varVariableMap[id] = entities.VariationVariable{
-			ID:    id,
-			Value: v.varVal,
-		}
-
-		variableMap[id] = entities.Variable{
-			DefaultValue: v.defaultVal,
-			ID:           id,
-			Key:          v.key,
-			Type:         v.varType,
-		}
-
-		mockConfig.On("GetVariableByKey", testFeatureKey, v.key).Return(v.varVal, nil)
-	}
-
+	mockConfig, variableMap, varVariableMap := getMockConfigAndMapsForVariables(testFeatureKey, variables)
 	testVariation := entities.Variation{
 		ID:             "22222",
 		Key:            "22222",
@@ -1513,14 +1517,6 @@ func TestGetAllFeatureVariablesWithDecisionWithNotification(t *testing.T) {
 	testFeatureKey := "test_feature_key"
 	testUserContext := entities.UserContext{ID: "test_user_1"}
 
-	type variable struct {
-		key        string
-		defaultVal string
-		varVal     string
-		varType    entities.VariableType
-		expected   interface{}
-	}
-
 	variables := []variable{
 		{key: "var_str", defaultVal: "default", varVal: "var", varType: entities.String, expected: "var"},
 		{key: "var_bool", defaultVal: "false", varVal: "true", varType: entities.Boolean, expected: true},
@@ -1530,27 +1526,7 @@ func TestGetAllFeatureVariablesWithDecisionWithNotification(t *testing.T) {
 			expected: map[string]interface{}{"field1": 12.0, "field2": "some_value"}},
 	}
 
-	mockConfig := new(MockProjectConfig)
-	variableMap := make(map[string]entities.Variable)
-	varVariableMap := make(map[string]entities.VariationVariable)
-
-	for i, v := range variables {
-		id := strconv.Itoa(i)
-		varVariableMap[id] = entities.VariationVariable{
-			ID:    id,
-			Value: v.varVal,
-		}
-
-		variableMap[id] = entities.Variable{
-			DefaultValue: v.defaultVal,
-			ID:           id,
-			Key:          v.key,
-			Type:         v.varType,
-		}
-
-		mockConfig.On("GetVariableByKey", testFeatureKey, v.key).Return(v.varVal, nil)
-	}
-
+	mockConfig, variableMap, varVariableMap := getMockConfigAndMapsForVariables(testFeatureKey, variables)
 	testVariation := entities.Variation{
 		ID:             "22222",
 		Key:            "22222",
@@ -1683,14 +1659,6 @@ func TestGetDetailedFeatureDecisionUnsafeWithNotification(t *testing.T) {
 	testFeatureKey := "test_feature_key"
 	testUserContext := entities.UserContext{ID: "test_user_1"}
 
-	type variable struct {
-		key        string
-		defaultVal string
-		varVal     string
-		varType    entities.VariableType
-		expected   interface{}
-	}
-
 	variables := []variable{
 		{key: "var_str", defaultVal: "default", varVal: "var", varType: entities.String, expected: "var"},
 		{key: "var_bool", defaultVal: "false", varVal: "true", varType: entities.Boolean, expected: true},
@@ -1700,27 +1668,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithNotification(t *testing.T) {
 			expected: map[string]interface{}{"field1": 12.0, "field2": "some_value"}},
 	}
 
-	mockConfig := new(MockProjectConfig)
-	variableMap := make(map[string]entities.Variable)
-	varVariableMap := make(map[string]entities.VariationVariable)
-
-	for i, v := range variables {
-		id := strconv.Itoa(i)
-		varVariableMap[id] = entities.VariationVariable{
-			ID:    id,
-			Value: v.varVal,
-		}
-
-		variableMap[id] = entities.Variable{
-			DefaultValue: v.defaultVal,
-			ID:           id,
-			Key:          v.key,
-			Type:         v.varType,
-		}
-
-		mockConfig.On("GetVariableByKey", testFeatureKey, v.key).Return(v.varVal, nil)
-	}
-
+	mockConfig, variableMap, varVariableMap := getMockConfigAndMapsForVariables(testFeatureKey, variables)
 	testVariation := entities.Variation{
 		ID:             "22222",
 		Key:            "22222",
@@ -1780,14 +1728,6 @@ func TestGetDetailedFeatureDecisionUnsafeWithTrackingDisabled(t *testing.T) {
 	testFeatureKey := "test_feature_key"
 	testUserContext := entities.UserContext{ID: "test_user_1"}
 
-	type variable struct {
-		key        string
-		defaultVal string
-		varVal     string
-		varType    entities.VariableType
-		expected   interface{}
-	}
-
 	variables := []variable{
 		{key: "var_str", defaultVal: "default", varVal: "var", varType: entities.String, expected: "var"},
 		{key: "var_bool", defaultVal: "false", varVal: "true", varType: entities.Boolean, expected: true},
@@ -1799,27 +1739,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithTrackingDisabled(t *testing.T) {
 			expected: "{\"field1\":12.0, \"field2\": \"some_value\"}"},
 	}
 
-	mockConfig := new(MockProjectConfig)
-	variableMap := make(map[string]entities.Variable)
-	varVariableMap := make(map[string]entities.VariationVariable)
-
-	for i, v := range variables {
-		id := strconv.Itoa(i)
-		varVariableMap[id] = entities.VariationVariable{
-			ID:    id,
-			Value: v.varVal,
-		}
-
-		variableMap[id] = entities.Variable{
-			DefaultValue: v.defaultVal,
-			ID:           id,
-			Key:          v.key,
-			Type:         v.varType,
-		}
-
-		mockConfig.On("GetVariableByKey", testFeatureKey, v.key).Return(v.varVal, nil)
-	}
-
+	mockConfig, variableMap, varVariableMap := getMockConfigAndMapsForVariables(testFeatureKey, variables)
 	testVariation := entities.Variation{
 		ID:             "22222",
 		Key:            "22222",
@@ -1971,14 +1891,6 @@ func TestGetAllFeatureVariables(t *testing.T) {
 	testFeatureKey := "test_feature_key"
 	testUserContext := entities.UserContext{ID: "test_user_1"}
 
-	type variable struct {
-		key        string
-		defaultVal string
-		varVal     string
-		varType    entities.VariableType
-		expected   interface{}
-	}
-
 	variables := []variable{
 		{key: "var_str", defaultVal: "default", varVal: "var", varType: entities.String, expected: "var"},
 		{key: "var_bool", defaultVal: "false", varVal: "true", varType: entities.Boolean, expected: true},
@@ -1988,27 +1900,7 @@ func TestGetAllFeatureVariables(t *testing.T) {
 			expected: map[string]interface{}{"field1": 12.0, "field2": "some_value"}},
 	}
 
-	mockConfig := new(MockProjectConfig)
-	variableMap := make(map[string]entities.Variable)
-	varVariableMap := make(map[string]entities.VariationVariable)
-
-	for i, v := range variables {
-		id := strconv.Itoa(i)
-		varVariableMap[id] = entities.VariationVariable{
-			ID:    id,
-			Value: v.varVal,
-		}
-
-		variableMap[id] = entities.Variable{
-			DefaultValue: v.defaultVal,
-			ID:           id,
-			Key:          v.key,
-			Type:         v.varType,
-		}
-
-		mockConfig.On("GetVariableByKey", testFeatureKey, v.key).Return(v.varVal, nil)
-	}
-
+	mockConfig, variableMap, varVariableMap := getMockConfigAndMapsForVariables(testFeatureKey, variables)
 	testVariation := entities.Variation{
 		ID:             "22222",
 		Key:            "22222",
