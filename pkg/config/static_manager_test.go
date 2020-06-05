@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -20,36 +20,22 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
-
 	"github.com/stretchr/testify/assert"
 )
-
-var tlogger = logging.GetLogger("", "staticManager")
-
-func TestNewStaticProjectConfigManager(t *testing.T) {
-	projectConfig := datafileprojectconfig.DatafileProjectConfig{}
-	configManager := NewStaticProjectConfigManager(projectConfig, tlogger)
-
-	actual, _ := configManager.GetConfig()
-	assert.Equal(t, projectConfig, actual)
-}
 
 func TestNewStaticProjectConfigManagerFromPayload(t *testing.T) {
 
 	mockDatafile := []byte(`{"accountId":"42","projectId":"123""}`)
-	configManager, err := NewStaticProjectConfigManagerFromPayload(mockDatafile, tlogger)
-	assert.Error(t, err)
-
+	configManager := NewStaticProjectConfigManager("", WithInitialDatafile(mockDatafile))
+	assert.Nil(t, configManager)
 	mockDatafile = []byte(`{"accountId":"42","projectId":"123",}`)
-	configManager, err = NewStaticProjectConfigManagerFromPayload(mockDatafile, tlogger)
-	assert.Error(t, err)
+	configManager = NewStaticProjectConfigManager("", WithInitialDatafile(mockDatafile))
+	assert.Nil(t, configManager)
 
 	mockDatafile = []byte(`{"accountId":"42","projectId":"123","version":"4"}`)
-	configManager, err = NewStaticProjectConfigManagerFromPayload(mockDatafile, tlogger)
-	assert.Nil(t, err)
+	configManager = NewStaticProjectConfigManager("", WithInitialDatafile(mockDatafile))
+	assert.NotNil(t, configManager)
 
 	assert.Nil(t, configManager.optimizelyConfig)
 
@@ -60,8 +46,7 @@ func TestNewStaticProjectConfigManagerFromPayload(t *testing.T) {
 func TestStaticGetOptimizelyConfig(t *testing.T) {
 
 	mockDatafile := []byte(`{"accountId":"42","projectId":"123","version":"4"}`)
-	configManager, err := NewStaticProjectConfigManagerFromPayload(mockDatafile, tlogger)
-	assert.Nil(t, err)
+	configManager := NewStaticProjectConfigManager("", WithInitialDatafile(mockDatafile))
 
 	assert.Nil(t, configManager.optimizelyConfig)
 
@@ -72,15 +57,14 @@ func TestStaticGetOptimizelyConfig(t *testing.T) {
 }
 func TestNewStaticProjectConfigManagerFromURL(t *testing.T) {
 
-	configManager, err := NewStaticProjectConfigManagerFromURL("no_key_exists")
-	assert.Error(t, err)
+	configManager := NewStaticProjectConfigManager("no_key_exists")
 	assert.Nil(t, configManager)
 }
 
 func TestNewStaticProjectConfigManagerOnDecision(t *testing.T) {
 	mockDatafile := []byte(`{"accountId":"42","projectId":"123","version":"4"}`)
-	configManager, err := NewStaticProjectConfigManagerFromPayload(mockDatafile, tlogger)
-	assert.Nil(t, err)
+	configManager := NewStaticProjectConfigManager("", WithInitialDatafile(mockDatafile))
+	assert.NotNil(t, configManager)
 
 	callback := func(notification notification.ProjectConfigUpdateNotification) {
 

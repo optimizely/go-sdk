@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -25,10 +25,8 @@ import (
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/config"
-	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/event"
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/metrics"
 	"github.com/optimizely/go-sdk/pkg/utils"
 
@@ -85,10 +83,19 @@ func TestClientWithPollingConfigManager(t *testing.T) {
 	assert.NotNil(t, optimizelyClient.EventProcessor)
 }
 
+func TestClientWithPollingConfigManagerDatafileAccessToken(t *testing.T) {
+	factory := OptimizelyFactory{}
+
+	optimizelyClient, err := factory.Client(WithPollingConfigManagerDatafileAccessToken(time.Hour, nil, "some_token"))
+	assert.NoError(t, err)
+	assert.NotNil(t, optimizelyClient.ConfigManager)
+	assert.NotNil(t, optimizelyClient.DecisionService)
+	assert.NotNil(t, optimizelyClient.EventProcessor)
+}
 func TestClientWithProjectConfigManagerInOptions(t *testing.T) {
 	factory := OptimizelyFactory{}
-	projectConfig := datafileprojectconfig.DatafileProjectConfig{}
-	configManager := config.NewStaticProjectConfigManager(projectConfig, logging.GetLogger("", ""))
+	mockDatafile := []byte(`{"version":"4"}`)
+	configManager := config.NewStaticProjectConfigManager("", config.WithInitialDatafile(mockDatafile))
 
 	optimizelyClient, err := factory.Client(WithConfigManager(configManager))
 	assert.NoError(t, err)
@@ -99,10 +106,10 @@ func TestClientWithProjectConfigManagerInOptions(t *testing.T) {
 
 func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 	factory := OptimizelyFactory{}
-	projectConfig := datafileprojectconfig.DatafileProjectConfig{}
-	configManager := config.NewStaticProjectConfigManager(projectConfig, logging.GetLogger("", "StaticProjectConfigManager"))
+	mockDatafile := []byte(`{"version":"4"}`)
+	configManager := config.NewStaticProjectConfigManager("", config.WithInitialDatafile(mockDatafile))
 	decisionService := new(MockDecisionService)
-	processor := event.NewBatchEventProcessor(event.WithQueueSize(100),event.WithFlushInterval(100),
+	processor := event.NewBatchEventProcessor(event.WithQueueSize(100), event.WithFlushInterval(100),
 		event.WithQueue(event.NewInMemoryQueue(100)), event.WithEventDispatcher(&MockDispatcher{Events: []event.LogEvent{}}))
 
 	optimizelyClient, err := factory.Client(WithConfigManager(configManager), WithDecisionService(decisionService), WithEventProcessor(processor))
@@ -181,4 +188,16 @@ func TestClientMetrics(t *testing.T) {
 
 	eventProcessor := optimizelyClient.EventProcessor.(*event.BatchEventProcessor)
 	assert.NotNil(t, eventProcessor)
+}
+
+func TestClientWithDatafileAccessToken(t *testing.T) {
+	factory := OptimizelyFactory{SDKKey: "1212"}
+	accessToken := "some_token"
+	optimizelyClient, err := factory.Client(WithDatafileAccessToken(accessToken))
+	assert.NoError(t, err)
+	assert.NotNil(t, optimizelyClient.ConfigManager)
+	assert.NotNil(t, optimizelyClient.DecisionService)
+	assert.NotNil(t, optimizelyClient.EventProcessor)
+
+	assert.Equal(t, accessToken, factory.DatafileAccessToken)
 }
