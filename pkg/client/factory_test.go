@@ -192,10 +192,12 @@ func TestClientMetrics(t *testing.T) {
 
 func TestClientWithDatafileAccessToken(t *testing.T) {
 	factory := OptimizelyFactory{SDKKey: "1212"}
-
-	optimizelyClient, err := factory.Client(WithDatafileAccessToken("some_token"))
+	accessToken := "some_token"
+	optimizelyClient, err := factory.Client(WithDatafileAccessToken(accessToken))
 	assert.NoError(t, err)
 	assert.NotNil(t, optimizelyClient.ConfigManager)
 	assert.NotNil(t, optimizelyClient.DecisionService)
 	assert.NotNil(t, optimizelyClient.EventProcessor)
+
+	assert.Equal(t, accessToken, factory.DatafileAccessToken)
 }

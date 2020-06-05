@@ -51,10 +51,10 @@ type OptimizelyFactory struct {
 type OptionFunc func(*OptimizelyFactory)
 
 // Client instantiates a new OptimizelyClient with the given options.
-func (f OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClient, error) {
+func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClient, error) {
 	// extract options
 	for _, opt := range clientOptions {
-		opt(&f)
+		opt(f)
 	}
 
 	if f.SDKKey == "" && f.Datafile == nil && f.configManager == nil {
@@ -218,7 +218,7 @@ func WithMetricsRegistry(metricsRegistry metrics.Registry) OptionFunc {
 }
 
 // StaticClient returns a client initialized with a static project config.
-func (f OptimizelyFactory) StaticClient() (optlyClient *OptimizelyClient, err error) {
+func (f *OptimizelyFactory) StaticClient() (optlyClient *OptimizelyClient, err error) {
 
 	staticManager := config.NewStaticProjectConfigManager(f.SDKKey, config.WithInitialDatafile(f.Datafile), config.WithDatafileAccessToken(f.DatafileAccessToken))
 

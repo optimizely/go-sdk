@@ -670,8 +670,8 @@ func TestSetDatafileAccessTokenRequest(t *testing.T) {
 	assert.Equal(t, configManagerRequester, configManager.requester)
 	assert.Equal(t, asyncConfigManagerRequester, asyncConfigManager.requester)
 
-	configManager.setDatafileAccessTokenRequest()
-	asyncConfigManager.setDatafileAccessTokenRequest()
+	configManager.setAuthHeaderIfDatafileAccessTokenPresent()
+	asyncConfigManager.setAuthHeaderIfDatafileAccessTokenPresent()
 
 	// modified requester check
 	assert.NotEqual(t, configManagerRequester, configManager.requester)

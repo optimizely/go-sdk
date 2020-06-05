@@ -46,7 +46,7 @@ const LastModified = "Last-Modified"
 const DatafileURLTemplate = "https://cdn.optimizely.com/datafiles/%s.json"
 
 // AuthDatafileURLTemplate is used to construct the endpoint for retrieving authenticated datafile from the CDN
-const AuthDatafileURLTemplate = "https://www.optimizely-cdn.com/datafiles/auth/%s.json"
+const AuthDatafileURLTemplate = "https://config.optimizely.com/datafiles/auth/%s.json"
 
 // Err403Forbidden is 403Forbidden specific error
 var Err403Forbidden = errors.New("unable to fetch fresh datafile (consider rechecking SDK key), status code: 403 Forbidden")
@@ -197,7 +197,7 @@ func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
 	}
 }
 
-func (cm *PollingProjectConfigManager) setDatafileAccessTokenRequest() {
+func (cm *PollingProjectConfigManager) setAuthHeaderIfDatafileAccessTokenPresent() {
 	if cm.datafileAccessToken != "" {
 		headers := []utils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: "Accept", Value: "application/json"}}
 		headers = append(headers, utils.Header{Name: "Authorization", Value: "Bearer " + cm.datafileAccessToken})
@@ -225,7 +225,7 @@ func newConfigManager(sdkKey string, logger logging.OptimizelyLogProducer, confi
 			pollingProjectConfigManager.datafileURLTemplate = DatafileURLTemplate
 		}
 	}
-	pollingProjectConfigManager.setDatafileAccessTokenRequest()
+	pollingProjectConfigManager.setAuthHeaderIfDatafileAccessTokenPresent()
 	return &pollingProjectConfigManager
 }
 
@@ -246,8 +246,9 @@ func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...Optio
 func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
 
 	pollingProjectConfigManager := newConfigManager(sdkKey, logging.GetLogger(sdkKey, "PollingProjectConfigManager"), pollingMangerOptions...)
-	pollingProjectConfigManager.setInitialDatafile(pollingProjectConfigManager.initDatafile)
-
+	if len(pollingProjectConfigManager.initDatafile) > 0 {
+		pollingProjectConfigManager.setInitialDatafile(pollingProjectConfigManager.initDatafile)
+	}
 	return pollingProjectConfigManager
 }
 
