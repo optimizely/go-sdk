@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -19,13 +19,10 @@ package config
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 
-	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
-	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
 // StaticProjectConfigManager maintains a static copy of the project config
@@ -33,42 +30,26 @@ type StaticProjectConfigManager struct {
 	projectConfig    ProjectConfig
 	optimizelyConfig *OptimizelyConfig
 	configLock       sync.Mutex
-	logger           logging.OptimizelyLogProducer
 }
 
-// NewStaticProjectConfigManagerFromURL returns new instance of StaticProjectConfigManager for URL
-func NewStaticProjectConfigManagerFromURL(sdkKey string) (*StaticProjectConfigManager, error) {
-
-	requester := utils.NewHTTPRequester(logging.GetLogger(sdkKey, "HTTPRequester"))
+// NewStaticProjectConfigManager creates a new instance of the manager with the given sdk key and some options
+func NewStaticProjectConfigManager(sdkKey string, configMangerOptions ...OptionFunc) *StaticProjectConfigManager {
 
 	logger := logging.GetLogger(sdkKey, "StaticProjectConfigManager")
-
-	url := fmt.Sprintf(DatafileURLTemplate, sdkKey)
-	datafile, _, code, e := requester.Get(url)
-	if e != nil {
-		logger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
-		return nil, e
+	staticProjectConfigManager := newConfigManager(sdkKey, logger, configMangerOptions...)
+	if sdkKey != "" {
+		staticProjectConfigManager.SyncConfig()
+	} else if len(staticProjectConfigManager.initDatafile) > 0 {
+		staticProjectConfigManager.setInitialDatafile(staticProjectConfigManager.initDatafile)
 	}
-
-	return NewStaticProjectConfigManagerFromPayload(datafile, logger)
-}
-
-// NewStaticProjectConfigManagerFromPayload returns new instance of StaticProjectConfigManager for payload
-func NewStaticProjectConfigManagerFromPayload(payload []byte, logger logging.OptimizelyLogProducer) (*StaticProjectConfigManager, error) {
-	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(payload, logger)
-
+	projectConfig, err := staticProjectConfigManager.GetConfig()
 	if err != nil {
-		return nil, err
+		logger.Error("unable to get project config, error returned:", err)
+		return nil
 	}
 
-	return NewStaticProjectConfigManager(projectConfig, logger), nil
-}
-
-// NewStaticProjectConfigManager creates a new instance of the manager with the given project config
-func NewStaticProjectConfigManager(config ProjectConfig, logger logging.OptimizelyLogProducer) *StaticProjectConfigManager {
 	return &StaticProjectConfigManager{
-		projectConfig: config,
-		logger: logger,
+		projectConfig: projectConfig,
 	}
 }
 

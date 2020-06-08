@@ -18,7 +18,6 @@ package config
 
 import (
 	"encoding/json"
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"io/ioutil"
 	"testing"
 
@@ -51,10 +50,7 @@ func (s *OptimizelyConfigTestSuite) SetupTest() {
 		s.Fail("error opening file " + dataFileName)
 	}
 
-	projectMgr, err := NewStaticProjectConfigManagerFromPayload(dataFile, logging.GetLogger("", "NewStaticProjectConfigManagerFromPayload"))
-	if err != nil {
-		s.Fail("error creating project manager")
-	}
+	projectMgr := NewStaticProjectConfigManager("", WithInitialDatafile(dataFile))
 
 	s.projectConfig = projectMgr.projectConfig
 

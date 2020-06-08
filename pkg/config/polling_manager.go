@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -42,8 +42,11 @@ const ModifiedSince = "If-Modified-Since"
 // LastModified header key for response
 const LastModified = "Last-Modified"
 
-// DatafileURLTemplate is used to construct the endpoint for retrieving the datafile from the CDN
+// DatafileURLTemplate is used to construct the endpoint for retrieving regular datafile from the CDN
 const DatafileURLTemplate = "https://cdn.optimizely.com/datafiles/%s.json"
+
+// AuthDatafileURLTemplate is used to construct the endpoint for retrieving authenticated datafile from the CDN
+const AuthDatafileURLTemplate = "https://config.optimizely.com/datafiles/auth/%s.json"
 
 // Err403Forbidden is 403Forbidden specific error
 var Err403Forbidden = errors.New("unable to fetch fresh datafile (consider rechecking SDK key), status code: 403 Forbidden")
@@ -58,7 +61,8 @@ type PollingProjectConfigManager struct {
 	pollingInterval     time.Duration
 	requester           utils.Requester
 	sdkKey              string
-	logger               logging.OptimizelyLogProducer
+	logger              logging.OptimizelyLogProducer
+	datafileAccessToken string
 
 	configLock       sync.RWMutex
 	err              error
@@ -94,6 +98,13 @@ func WithPollingInterval(interval time.Duration) OptionFunc {
 func WithInitialDatafile(datafile []byte) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.initDatafile = datafile
+	}
+}
+
+// WithDatafileAccessToken is an optional function, sets a passed datafile access token
+func WithDatafileAccessToken(datafileAccessToken string) OptionFunc {
+	return func(p *PollingProjectConfigManager) {
+		p.datafileAccessToken = datafileAccessToken
 	}
 }
 
@@ -169,6 +180,10 @@ func (cm *PollingProjectConfigManager) SyncConfig() {
 
 // Start starts the polling
 func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
+	if cm.pollingInterval <= 0 {
+		cm.logger.Info("Polling Config Manager Disabled")
+		return
+	}
 	cm.logger.Debug("Polling Config Manager Initiated")
 	t := time.NewTicker(cm.pollingInterval)
 	for {
@@ -182,48 +197,59 @@ func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
 	}
 }
 
+func (cm *PollingProjectConfigManager) setAuthHeaderIfDatafileAccessTokenPresent() {
+	if cm.datafileAccessToken != "" {
+		headers := []utils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: "Accept", Value: "application/json"}}
+		headers = append(headers, utils.Header{Name: "Authorization", Value: "Bearer " + cm.datafileAccessToken})
+		cm.requester = utils.NewHTTPRequester(logging.GetLogger(cm.sdkKey, "HTTPRequester"), utils.Headers(headers...))
+	}
+}
+
+func newConfigManager(sdkKey string, logger logging.OptimizelyLogProducer, configOptions ...OptionFunc) *PollingProjectConfigManager {
+	pollingProjectConfigManager := PollingProjectConfigManager{
+		notificationCenter: registry.GetNotificationCenter(sdkKey),
+		pollingInterval:    DefaultPollingInterval,
+		requester:          utils.NewHTTPRequester(logging.GetLogger(sdkKey, "HTTPRequester")),
+		sdkKey:             sdkKey,
+		logger:             logger,
+	}
+
+	for _, opt := range configOptions {
+		opt(&pollingProjectConfigManager)
+	}
+
+	if pollingProjectConfigManager.datafileURLTemplate == "" {
+		if pollingProjectConfigManager.datafileAccessToken != "" {
+			pollingProjectConfigManager.datafileURLTemplate = AuthDatafileURLTemplate
+		} else {
+			pollingProjectConfigManager.datafileURLTemplate = DatafileURLTemplate
+		}
+	}
+	pollingProjectConfigManager.setAuthHeaderIfDatafileAccessTokenPresent()
+	return &pollingProjectConfigManager
+}
+
 // NewPollingProjectConfigManager returns an instance of the polling config manager with the customized configuration
 func NewPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
 
-	pollingProjectConfigManager := PollingProjectConfigManager{
-		notificationCenter:  registry.GetNotificationCenter(sdkKey),
-		pollingInterval:     DefaultPollingInterval,
-		requester:           utils.NewHTTPRequester(logging.GetLogger(sdkKey, "HTTPRequester")),
-		datafileURLTemplate: DatafileURLTemplate,
-		sdkKey:              sdkKey,
-		logger:              logging.GetLogger(sdkKey, "PollingProjectConfigManager"),
-	}
-
-	for _, opt := range pollingMangerOptions {
-		opt(&pollingProjectConfigManager)
-	}
+	pollingProjectConfigManager := newConfigManager(sdkKey, logging.GetLogger(sdkKey, "PollingProjectConfigManager"), pollingMangerOptions...)
 
 	if len(pollingProjectConfigManager.initDatafile) > 0 {
 		pollingProjectConfigManager.setInitialDatafile(pollingProjectConfigManager.initDatafile)
 	} else {
 		pollingProjectConfigManager.SyncConfig() // initial poll
 	}
-	return &pollingProjectConfigManager
+	return pollingProjectConfigManager
 }
 
 // NewAsyncPollingProjectConfigManager returns an instance of the async polling config manager with the customized configuration
 func NewAsyncPollingProjectConfigManager(sdkKey string, pollingMangerOptions ...OptionFunc) *PollingProjectConfigManager {
 
-	pollingProjectConfigManager := PollingProjectConfigManager{
-		notificationCenter:  registry.GetNotificationCenter(sdkKey),
-		pollingInterval:     DefaultPollingInterval,
-		requester:           utils.NewHTTPRequester(logging.GetLogger(sdkKey, "HTTPRequester")),
-		datafileURLTemplate: DatafileURLTemplate,
-		sdkKey:              sdkKey,
-		logger:              logging.GetLogger(sdkKey, "PollingProjectConfigManager"),
+	pollingProjectConfigManager := newConfigManager(sdkKey, logging.GetLogger(sdkKey, "PollingProjectConfigManager"), pollingMangerOptions...)
+	if len(pollingProjectConfigManager.initDatafile) > 0 {
+		pollingProjectConfigManager.setInitialDatafile(pollingProjectConfigManager.initDatafile)
 	}
-
-	for _, opt := range pollingMangerOptions {
-		opt(&pollingProjectConfigManager)
-	}
-
-	pollingProjectConfigManager.setInitialDatafile(pollingProjectConfigManager.initDatafile)
-	return &pollingProjectConfigManager
+	return pollingProjectConfigManager
 }
 
 // GetConfig returns the project config
