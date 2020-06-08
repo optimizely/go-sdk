@@ -102,6 +102,17 @@ func TestCustomEventProcessor_Create(t *testing.T) {
 	assert.Equal(t, 0, processor.eventsCount())
 }
 
+func TestEndPointOptionEventProcessor(t *testing.T) {
+	// Default end point
+	processor := NewBatchEventProcessor()
+	assert.Equal(t, DefaultEventEndPoint, processor.EventEndPoint)
+
+	customEndPoint := "https://logx.optimizely.com"
+	processor = NewBatchEventProcessor(
+		WithEventEndPoint(customEndPoint))
+	assert.Equal(t, customEndPoint, processor.EventEndPoint)
+}
+
 func TestDefaultEventProcessor_LogEventNotification(t *testing.T) {
 	eg := newExecutionContext()
 	processor := NewBatchEventProcessor(
