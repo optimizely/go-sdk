@@ -35,11 +35,8 @@ const botFilteringKey = "$opt_bot_filtering"
 const revenueKey = "revenue"
 const valueKey = "value"
 
-// EventEndPoint is used as the default endpoint for sending events.
-var EventEndPoint = "https://logx.optimizely.com/v1/events"
-
-func createLogEvent(event Batch) LogEvent {
-	return LogEvent{EndPoint: EventEndPoint, Event: event}
+func createLogEvent(event Batch, eventEndPoint string) LogEvent {
+	return LogEvent{EndPoint: eventEndPoint, Event: event}
 }
 
 func makeTimestamp() int64 {

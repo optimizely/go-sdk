@@ -46,6 +46,7 @@ type BatchEventProcessor struct {
 	MaxQueueSize    int           // max size of the queue before flush
 	FlushInterval   time.Duration // in milliseconds
 	BatchSize       int
+	EventEndPoint   string
 	Q               Queue
 	flushLock       sync.Mutex
 	Ticker          *time.Ticker
@@ -64,6 +65,9 @@ const DefaultEventQueueSize = 2000
 // DefaultEventFlushInterval holds the default value for the event flush interval
 const DefaultEventFlushInterval = 30 * time.Second
 
+// DefaultEventEndPoint is used as the default endpoint for sending events.
+const DefaultEventEndPoint = "https://logx.optimizely.com/v1/events"
+
 const maxFlushWorkers = 1
 
 // BPOptionConfig is the BatchProcessor options that give you the ability to add one more more options before the processor is initialized.
@@ -73,6 +77,13 @@ type BPOptionConfig func(qp *BatchEventProcessor)
 func WithBatchSize(bsize int) BPOptionConfig {
 	return func(qp *BatchEventProcessor) {
 		qp.BatchSize = bsize
+	}
+}
+
+// WithEventEndPoint sets the end point as a config option to be passed into the NewProcessor method
+func WithEventEndPoint(endPoint string) BPOptionConfig {
+	return func(qp *BatchEventProcessor) {
+		qp.EventEndPoint = endPoint
 	}
 }
 
@@ -139,6 +150,10 @@ func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 
 	if p.BatchSize == 0 {
 		p.BatchSize = DefaultBatchSize
+	}
+
+	if p.EventEndPoint == "" {
+		p.EventEndPoint = DefaultEventEndPoint
 	}
 
 	if p.BatchSize > p.MaxQueueSize {
@@ -297,7 +312,7 @@ func (p *BatchEventProcessor) flushEvents() {
 		}
 		if batchEventCount > 0 {
 			// TODO: figure out what to do with the error
-			logEvent := createLogEvent(batchEvent)
+			logEvent := createLogEvent(batchEvent, p.EventEndPoint)
 			notificationCenter := registry.GetNotificationCenter(p.sdkKey)
 
 			err := notificationCenter.Send(notification.LogEvent, logEvent)
