@@ -100,8 +100,8 @@ jobs:
       name: 'run script if changes are detected in docs/'
       cache: false
 
-      # translation: if we're merging into master branch...
-      if: type = push AND branch = master
+      # translation: if we're merging into a test branch...
+      if: type = push AND branch = fscelliott-patch-1
 
       language: node_js
       install:
