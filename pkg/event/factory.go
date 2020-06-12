@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -32,11 +32,10 @@ const impressionKey string = "campaign_activated"
 const attributeType = "custom"
 const specialPrefix = "$opt_"
 const botFilteringKey = "$opt_bot_filtering"
-const eventEndPoint = "https://logx.optimizely.com/v1/events"
 const revenueKey = "revenue"
 const valueKey = "value"
 
-func createLogEvent(event Batch) LogEvent {
+func createLogEvent(event Batch, eventEndPoint string) LogEvent {
 	return LogEvent{EndPoint: eventEndPoint, Event: event}
 }
 

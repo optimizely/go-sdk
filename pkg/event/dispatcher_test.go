@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -106,7 +106,7 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 	q := NewQueueEventDispatcher("", metricsRegistry)
 
 	assert.True(t, q.Dispatcher != nil)
-	if d,ok := q.Dispatcher.(*httpEventDispatcher); ok {
+	if d, ok := q.Dispatcher.(*httpEventDispatcher); ok {
 		assert.True(t, d.requester != nil && d.logger != nil)
 	} else {
 		assert.True(t, false)
@@ -121,7 +121,7 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 
 	batch := createBatchEvent(conversionUserEvent, createVisitorFromUserEvent(conversionUserEvent))
 
-	logEvent := createLogEvent(batch)
+	logEvent := createLogEvent(batch, DefaultEventEndPoint)
 
 	success, _ := q.DispatchEvent(logEvent)
 
@@ -179,7 +179,7 @@ func TestQueueEventDispatcher_FailDispath(t *testing.T) {
 
 	batch := createBatchEvent(conversionUserEvent, createVisitorFromUserEvent(conversionUserEvent))
 
-	logEvent := createLogEvent(batch)
+	logEvent := createLogEvent(batch, DefaultEventEndPoint)
 
 	q.DispatchEvent(logEvent)
 

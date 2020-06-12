@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -100,6 +100,17 @@ func TestCustomEventProcessor_Create(t *testing.T) {
 	assert.NotNil(t, processor.Ticker)
 
 	assert.Equal(t, 0, processor.eventsCount())
+}
+
+func TestEndPointOptionEventProcessor(t *testing.T) {
+	// Default end point
+	processor := NewBatchEventProcessor()
+	assert.Equal(t, DefaultEventEndPoint, processor.EventEndPoint)
+
+	customEndPoint := "https://logx.optimizely.com"
+	processor = NewBatchEventProcessor(
+		WithEventEndPoint(customEndPoint))
+	assert.Equal(t, customEndPoint, processor.EventEndPoint)
 }
 
 func TestDefaultEventProcessor_LogEventNotification(t *testing.T) {
