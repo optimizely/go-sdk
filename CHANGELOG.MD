@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.3.0-beta1] - June 16th, 2020
+## New Features
+- Add support for JSON feature variables ([#250](https://github.com/optimizely/go-sdk/pull/250), [#251](https://github.com/optimizely/go-sdk/pull/251), [#253](https://github.com/optimizely/go-sdk/pull/253))
+- Add support for authenticated datafiles ([#267](https://github.com/optimizely/go-sdk/pull/267))
+- Expose ability to customize URL for event dispatcher. ([#268](https://github.com/optimizely/go-sdk/pull/268))
+
 ## [1.2.0] - May 21st, 2020
 ## New Features
 - feat: support for multi-rule rollouts [#247](https://github.com/optimizely/go-sdk/pull/247)
