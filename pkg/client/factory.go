@@ -220,7 +220,7 @@ func WithMetricsRegistry(metricsRegistry metrics.Registry) OptionFunc {
 // StaticClient returns a client initialized with a static project config.
 func (f *OptimizelyFactory) StaticClient() (optlyClient *OptimizelyClient, err error) {
 
-	staticManager := config.NewStaticProjectConfigManager(f.SDKKey, config.WithInitialDatafile(f.Datafile), config.WithDatafileAccessToken(f.DatafileAccessToken))
+	staticManager := config.NewStaticProjectConfigManagerWithOptions(f.SDKKey, config.WithInitialDatafile(f.Datafile), config.WithDatafileAccessToken(f.DatafileAccessToken))
 
 	if staticManager == nil {
 		return nil, errors.New("unable to initiate config manager")
