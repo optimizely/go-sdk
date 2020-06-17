@@ -95,7 +95,7 @@ func TestClientWithPollingConfigManagerDatafileAccessToken(t *testing.T) {
 func TestClientWithProjectConfigManagerInOptions(t *testing.T) {
 	factory := OptimizelyFactory{}
 	mockDatafile := []byte(`{"version":"4"}`)
-	configManager := config.NewStaticProjectConfigManager("", config.WithInitialDatafile(mockDatafile))
+	configManager := config.NewStaticProjectConfigManagerWithOptions("", config.WithInitialDatafile(mockDatafile))
 
 	optimizelyClient, err := factory.Client(WithConfigManager(configManager))
 	assert.NoError(t, err)
@@ -107,7 +107,7 @@ func TestClientWithProjectConfigManagerInOptions(t *testing.T) {
 func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 	factory := OptimizelyFactory{}
 	mockDatafile := []byte(`{"version":"4"}`)
-	configManager := config.NewStaticProjectConfigManager("", config.WithInitialDatafile(mockDatafile))
+	configManager := config.NewStaticProjectConfigManagerWithOptions("", config.WithInitialDatafile(mockDatafile))
 	decisionService := new(MockDecisionService)
 	processor := event.NewBatchEventProcessor(event.WithQueueSize(100), event.WithFlushInterval(100),
 		event.WithQueue(event.NewInMemoryQueue(100)), event.WithEventDispatcher(&MockDispatcher{Events: []event.LogEvent{}}))

@@ -50,7 +50,7 @@ func (s *OptimizelyConfigTestSuite) SetupTest() {
 		s.Fail("error opening file " + dataFileName)
 	}
 
-	projectMgr := NewStaticProjectConfigManager("", WithInitialDatafile(dataFile))
+	projectMgr := NewStaticProjectConfigManagerWithOptions("", WithInitialDatafile(dataFile))
 
 	s.projectConfig = projectMgr.projectConfig
 

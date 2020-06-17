@@ -30,10 +30,11 @@ type StaticProjectConfigManager struct {
 	projectConfig    ProjectConfig
 	optimizelyConfig *OptimizelyConfig
 	configLock       sync.Mutex
+	logger           logging.OptimizelyLogProducer
 }
 
-// NewStaticProjectConfigManager creates a new instance of the manager with the given sdk key and some options
-func NewStaticProjectConfigManager(sdkKey string, configMangerOptions ...OptionFunc) *StaticProjectConfigManager {
+// NewStaticProjectConfigManagerWithOptions creates a new instance of the manager with the given sdk key and some options
+func NewStaticProjectConfigManagerWithOptions(sdkKey string, configMangerOptions ...OptionFunc) *StaticProjectConfigManager {
 
 	logger := logging.GetLogger(sdkKey, "StaticProjectConfigManager")
 	staticProjectConfigManager := newConfigManager(sdkKey, logger, configMangerOptions...)
@@ -50,6 +51,15 @@ func NewStaticProjectConfigManager(sdkKey string, configMangerOptions ...OptionF
 
 	return &StaticProjectConfigManager{
 		projectConfig: projectConfig,
+		logger:        logger,
+	}
+}
+
+// NewStaticProjectConfigManager creates a new instance of the manager with the given project config
+func NewStaticProjectConfigManager(config ProjectConfig, logger logging.OptimizelyLogProducer) *StaticProjectConfigManager {
+	return &StaticProjectConfigManager{
+		projectConfig: config,
+		logger:        logger,
 	}
 }
 
