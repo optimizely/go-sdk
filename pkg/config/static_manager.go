@@ -19,10 +19,13 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
+	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
+	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
 // StaticProjectConfigManager maintains a static copy of the project config
@@ -62,6 +65,38 @@ func NewStaticProjectConfigManager(config ProjectConfig, logger logging.Optimize
 		logger:        logger,
 	}
 }
+
+/********************* Old Constructors not used in go-sdk, kept for backward compatibility **********/
+
+// NewStaticProjectConfigManagerFromURL returns new instance of StaticProjectConfigManager for URL
+func NewStaticProjectConfigManagerFromURL(sdkKey string) (*StaticProjectConfigManager, error) {
+
+	requester := utils.NewHTTPRequester(logging.GetLogger(sdkKey, "HTTPRequester"))
+
+	logger := logging.GetLogger(sdkKey, "StaticProjectConfigManager")
+
+	url := fmt.Sprintf(DatafileURLTemplate, sdkKey)
+	datafile, _, code, e := requester.Get(url)
+	if e != nil {
+		logger.Error(fmt.Sprintf("request returned with http code=%d", code), e)
+		return nil, e
+	}
+
+	return NewStaticProjectConfigManagerFromPayload(datafile, logger)
+}
+
+// NewStaticProjectConfigManagerFromPayload returns new instance of StaticProjectConfigManager for payload
+func NewStaticProjectConfigManagerFromPayload(payload []byte, logger logging.OptimizelyLogProducer) (*StaticProjectConfigManager, error) {
+	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(payload, logger)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return NewStaticProjectConfigManager(projectConfig, logger), nil
+}
+
+/********************* End of Old Constructors **********/
 
 // GetConfig returns the project config
 func (cm *StaticProjectConfigManager) GetConfig() (ProjectConfig, error) {
