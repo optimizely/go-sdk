@@ -18,16 +18,21 @@
 package registry
 
 import (
+	"sync"
+
 	"github.com/optimizely/go-sdk/pkg/notification"
 )
 
 var notificationCenterCache = make(map[string]notification.Center)
+var notificationLock sync.RWMutex
 
 // GetNotificationCenter returns the notification center instance associated with the given SDK Key or creates a new one if not found
 func GetNotificationCenter(sdkKey string) notification.Center {
-	var notificationCenter notification.Center
-	var ok bool
-	if notificationCenter, ok = notificationCenterCache[sdkKey]; !ok {
+	notificationLock.RLock()
+	defer notificationLock.RUnlock()
+
+	notificationCenter, ok := notificationCenterCache[sdkKey]
+	if !ok {
 		notificationCenter = notification.NewNotificationCenter()
 		notificationCenterCache[sdkKey] = notificationCenter
 	}
