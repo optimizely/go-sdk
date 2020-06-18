@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.3.0-beta2] - June 17th, 2020
+## New Features
+- Bring back old constructors for static manager ([#271](https://github.com/optimizely/go-sdk/pull/271))
+
 ## [1.3.0-beta1] - June 16th, 2020
 ## New Features
 - Add support for JSON feature variables ([#250](https://github.com/optimizely/go-sdk/pull/250), [#251](https://github.com/optimizely/go-sdk/pull/251), [#253](https://github.com/optimizely/go-sdk/pull/253))
