@@ -24,12 +24,12 @@ import (
 )
 
 var notificationCenterCache = make(map[string]notification.Center)
-var notificationLock sync.RWMutex
+var notificationLock sync.Mutex
 
 // GetNotificationCenter returns the notification center instance associated with the given SDK Key or creates a new one if not found
 func GetNotificationCenter(sdkKey string) notification.Center {
-	notificationLock.RLock()
-	defer notificationLock.RUnlock()
+	notificationLock.Lock()
+	defer notificationLock.Unlock()
 
 	notificationCenter, ok := notificationCenterCache[sdkKey]
 	if !ok {
