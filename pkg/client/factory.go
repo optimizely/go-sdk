@@ -25,6 +25,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/event"
+	"github.com/optimizely/go-sdk/pkg/listeners"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/metrics"
 	"github.com/optimizely/go-sdk/pkg/registry"
@@ -42,6 +43,7 @@ type OptimizelyFactory struct {
 	decisionService    decision.Service
 	eventDispatcher    event.Dispatcher
 	eventProcessor     event.Processor
+	listener           listeners.Listener
 	userProfileService decision.UserProfileService
 	overrideStore      decision.ExperimentOverrideStore
 	metricsRegistry    metrics.Registry
@@ -103,6 +105,15 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		appClient.EventProcessor = event.NewBatchEventProcessor(eventProcessorOptions...)
 	}
 
+	if f.listener != nil {
+		appClient.Listener = f.listener
+	} else {
+		var listenerConfig = []listeners.ListenerConfig{
+			listeners.WithLatency(*listeners.DefaultLatency),
+		}
+		appClient.Listener = listeners.NewAgentListener(listenerConfig...)
+	}
+
 	if f.decisionService != nil {
 		appClient.DecisionService = f.decisionService
 	} else {
@@ -125,6 +136,10 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 
 	if batchProcessor, ok := appClient.EventProcessor.(*event.BatchEventProcessor); ok {
 		eg.Go(batchProcessor.Start)
+	}
+
+	if listener, ok := appClient.Listener.(*listeners.AgentListener); ok {
+		eg.Go(listener.Start)
 	}
 
 	return appClient, nil
@@ -189,6 +204,13 @@ func WithBatchEventProcessor(batchSize, queueSize int, flushInterval time.Durati
 	}
 }
 
+// WithAgentListener sets event processor on a client.
+func WithAgentListener() OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.listener = listeners.NewAgentListener()
+	}
+}
+
 // WithEventProcessor sets event processor on a client
 func WithEventProcessor(eventProcessor event.Processor) OptionFunc {
 	return func(f *OptimizelyFactory) {
@@ -229,6 +251,7 @@ func (f *OptimizelyFactory) StaticClient() (optlyClient *OptimizelyClient, err e
 	optlyClient, err = f.Client(
 		WithConfigManager(staticManager),
 		WithBatchEventProcessor(event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
+		WithAgentListener(),
 	)
 
 	return optlyClient, err

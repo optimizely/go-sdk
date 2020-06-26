@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/optimizely/go-sdk"
+	optimizely "github.com/optimizely/go-sdk"
 	"github.com/optimizely/go-sdk/pkg/client"
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/event"
@@ -83,6 +83,7 @@ func main() {
 	optimizelyClient, _ = optimizelyFactory.Client(
 		client.WithPollingConfigManager(time.Second, nil),
 		client.WithBatchEventProcessor(event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
+		client.WithAgentListener(),
 	)
 
 	optimizelyClient.Close()

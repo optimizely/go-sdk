@@ -29,6 +29,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
+	"github.com/optimizely/go-sdk/pkg/listeners"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/optimizelyjson"
@@ -43,6 +44,7 @@ type OptimizelyClient struct {
 	DecisionService    decision.Service
 	EventProcessor     event.Processor
 	notificationCenter notification.Center
+	Listener           listeners.Listener
 	execGroup          *utils.ExecGroup
 	logger             logging.OptimizelyLogProducer
 }
