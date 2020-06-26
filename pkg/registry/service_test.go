@@ -28,11 +28,19 @@ type ServiceRegistryTestSuite struct {
 
 func (s *ServiceRegistryTestSuite) TestGetNotificationCenter() {
 	// empty state, make sure we get a new notification center
-	sdkKey := "sdk_key_1"
-	notificationCenter := GetNotificationCenter(sdkKey)
+	sdkKey1 := "sdk_key_1"
+	sdkKey2 := "sdk_key_2"
+	notificationCenter := GetNotificationCenter(sdkKey1)
 	s.NotNil(notificationCenter)
 
-	notificationCenter2 := GetNotificationCenter(sdkKey)
+	notificationCenter2 := GetNotificationCenter(sdkKey1)
+	s.Equal(notificationCenter, notificationCenter2)
+
+	// make sure sdkKey2 does not cause race condition
+	notificationCenter = GetNotificationCenter(sdkKey2)
+	s.NotNil(notificationCenter)
+
+	notificationCenter2 = GetNotificationCenter(sdkKey2)
 	s.Equal(notificationCenter, notificationCenter2)
 }
 
