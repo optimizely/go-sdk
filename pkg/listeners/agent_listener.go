@@ -33,6 +33,7 @@ type AgentListener struct {
 	natsCount int // max size of the queue before flush
 	natsURL   string
 	subject   string
+	sdkKey    string
 	logger    logging.OptimizelyLogProducer
 }
 
@@ -75,6 +76,7 @@ func NewAgentListener(config ...ListenerConfig) *AgentListener {
 		opt(p)
 	}
 
+	p.logger = logging.GetLogger(p.sdkKey, "AgentListener")
 	flag.Parse()
 
 	if p.latency == 0 {
