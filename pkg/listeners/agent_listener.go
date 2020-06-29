@@ -118,7 +118,7 @@ func (a *AgentListener) Start(ctx context.Context) {
 		a.logger.Error("failed to connect to nats: %s", a.natsURL)
 	}
 
-	a.addSubs(NewNatsConsumer(nc, a.subject), a.natsCount)
+	a.addSubs(NewNatsConsumer(nc, a.subject, a.sdkKey), a.natsCount)
 
 	wg.Wait()
 
@@ -151,10 +151,11 @@ type natsConsumer struct {
 }
 
 // NewNatsConsumer is a nats listener
-func NewNatsConsumer(nc *nats.Conn, subject string) *natsConsumer {
+func NewNatsConsumer(nc *nats.Conn, subject string, sdkKey string) *natsConsumer {
 	return &natsConsumer{
 		nc:      nc,
 		subject: subject,
+		logger:  logging.GetLogger(sdkKey, "NatsConsumer"),
 	}
 }
 
