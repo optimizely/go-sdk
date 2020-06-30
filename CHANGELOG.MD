@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.3.0-beta3] - June 30th, 2020
+## New Features
+- Provide syncronization for Notification Center Cache ([#273](https://github.com/optimizely/go-sdk/pull/273))
+
+
 ## [1.3.0-beta2] - June 17th, 2020
 ## New Features
 - Bring back old constructors for static manager ([#271](https://github.com/optimizely/go-sdk/pull/271))
