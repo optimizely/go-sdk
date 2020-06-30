@@ -40,7 +40,7 @@ type Dispatcher interface {
 // httpEventDispatcher is the HTTP implementation of the Dispatcher interface
 type httpEventDispatcher struct {
 	requester *utils.HTTPRequester
-	logger logging.OptimizelyLogProducer
+	logger    logging.OptimizelyLogProducer
 }
 
 // DispatchEvent dispatches event with callback
@@ -94,9 +94,7 @@ type QueueEventDispatcher struct {
 // DispatchEvent queues event with callback and calls flush in a go routine.
 func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	ed.eventQueue.Add(event)
-	go func() {
-		ed.flushEvents()
-	}()
+	go ed.flushEvents()
 	return true, nil
 }
 
@@ -104,14 +102,12 @@ func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 func (ed *QueueEventDispatcher) flushEvents() {
 
 	ed.eventFlushLock.Lock()
-
-	defer func() {
-		ed.eventFlushLock.Unlock()
-	}()
+	defer ed.eventFlushLock.Unlock()
 
 	retryCount := 0
-	ed.queueSize.Set(float64(ed.eventQueue.Size()))
-	for ed.eventQueue.Size() > 0 {
+	queueSize := ed.eventQueue.Size()
+	for ; queueSize > 0; queueSize = ed.eventQueue.Size() {
+		ed.queueSize.Set(float64(queueSize))
 		if retryCount > maxRetries {
 			ed.logger.Error(fmt.Sprintf("event failed to send %d times. It will retry on next event sent", maxRetries), nil)
 			ed.failFlushCounter.Add(1)
@@ -136,7 +132,6 @@ func (ed *QueueEventDispatcher) flushEvents() {
 
 		if err == nil {
 			if success {
-				ed.logger.Debug(fmt.Sprintf("Dispatched log event %+v", event))
 				ed.eventQueue.Remove(1)
 				retryCount = 0
 				ed.sucessFlush.Add(1)
@@ -159,7 +154,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 			ed.retryFlushCounter.Add(1)
 		}
 	}
-	ed.queueSize.Set(float64(ed.eventQueue.Size()))
+	ed.queueSize.Set(float64(queueSize))
 }
 
 // NewQueueEventDispatcher creates a Dispatcher that queues in memory and then sends via go routine.
@@ -172,13 +167,14 @@ func NewQueueEventDispatcher(sdkKey string, metricsRegistry metrics.Registry) *Q
 		dispatcherMetricsRegistry = metrics.NewNoopRegistry() // protective code to set
 	}
 
+	logger := logging.GetLogger(sdkKey, "QueueEventDispatcher")
 	return &QueueEventDispatcher{
-		eventQueue:        NewInMemoryQueue(defaultQueueSize),
+		eventQueue:        NewInMemoryQueueWithLogger(defaultQueueSize, logger),
 		Dispatcher:        NewHTTPEventDispatcher(sdkKey, nil, nil),
 		queueSize:         dispatcherMetricsRegistry.GetGauge(metrics.DispatcherQueueSize),
 		retryFlushCounter: dispatcherMetricsRegistry.GetCounter(metrics.DispatcherRetryFlush),
 		failFlushCounter:  dispatcherMetricsRegistry.GetCounter(metrics.DispatcherFailedFlush),
 		sucessFlush:       dispatcherMetricsRegistry.GetCounter(metrics.DispatcherSuccessFlush),
-		logger:            logging.GetLogger(sdkKey, "QueueEventDispatcher"),
+		logger:            logger,
 	}
 }

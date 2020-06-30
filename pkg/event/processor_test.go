@@ -21,12 +21,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/utils"
-	"github.com/stretchr/testify/assert"
 	"math"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
 type CountingDispatcher struct {

@@ -22,6 +22,17 @@ import (
 	"testing"
 )
 
+func TestInMemoryQueue_Add(t *testing.T) {
+	maxSize := 10
+	q := NewInMemoryQueue(maxSize)
+
+	for i := 0; i < maxSize+maxSize; i++ {
+		q.Add(i)
+	}
+
+	assert.Equal(t, maxSize, q.Size())
+}
+
 func TestInMemoryQueue_Add_Size_Remove(t *testing.T) {
 	q := NewInMemoryQueue(5)
 
@@ -29,7 +40,7 @@ func TestInMemoryQueue_Add_Size_Remove(t *testing.T) {
 	q.Add(2)
 	q.Add(3)
 
-	assert.Equal(t,3, q.Size())
+	assert.Equal(t, 3, q.Size())
 
 	items1 := q.Get(1)
 
@@ -53,13 +64,13 @@ func TestInMemoryQueue_Add_Size_Remove(t *testing.T) {
 
 func TestInMemoryQueue_Concurrent(t *testing.T) {
 
-	q := NewInMemoryQueue(5)
+	q := NewInMemoryQueue(10)
 
 	quit := make(chan int)
 
 	go func() {
 		i := 5
-		for  i > 0 {
+		for i > 0 {
 			q.Add(i)
 			i--
 		}
@@ -69,7 +80,7 @@ func TestInMemoryQueue_Concurrent(t *testing.T) {
 
 	go func() {
 		i := 5
-		for  i > 0 {
+		for i > 0 {
 			q.Add(i)
 			i--
 		}
@@ -77,12 +88,12 @@ func TestInMemoryQueue_Concurrent(t *testing.T) {
 		quit <- 0
 	}()
 
-	<- quit
+	<-quit
 
 	q.Remove(1)
 	q.Remove(1)
 
-	<- quit
+	<-quit
 
 	assert.Equal(t, 8, q.Size())
 }
