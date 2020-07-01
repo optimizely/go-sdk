@@ -93,7 +93,7 @@ func NewInMemoryQueue(queueSize int) Queue {
 	return NewInMemoryQueueWithLogger(queueSize, logger)
 }
 
-// NewInMemoryQueue returns new InMemoryQueue with given queueSize
+// NewInMemoryQueueWithLogger returns new InMemoryQueue with given queueSize and logger
 func NewInMemoryQueueWithLogger(queueSize int, logger logging.OptimizelyLogProducer) Queue {
 	return &InMemoryQueue{
 		logger:  logger,
