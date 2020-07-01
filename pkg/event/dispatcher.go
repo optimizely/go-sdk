@@ -20,8 +20,9 @@ package event
 import (
 	"fmt"
 	"net/http"
-	"sync"
 	"time"
+
+	"golang.org/x/sync/semaphore"
 
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/metrics"
@@ -79,10 +80,10 @@ func NewHTTPEventDispatcher(sdkKey string, requester *utils.HTTPRequester, logge
 
 // QueueEventDispatcher is a queued version of the event Dispatcher that queues, returns success, and dispatches events in the background
 type QueueEventDispatcher struct {
-	eventQueue     Queue
-	eventFlushLock sync.Mutex
-	Dispatcher     Dispatcher
-	logger         logging.OptimizelyLogProducer
+	eventQueue Queue
+	processing *semaphore.Weighted
+	Dispatcher Dispatcher
+	logger     logging.OptimizelyLogProducer
 
 	// metrics
 	queueSize         metrics.Gauge
@@ -101,8 +102,11 @@ func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 // flush the events
 func (ed *QueueEventDispatcher) flushEvents() {
 
-	ed.eventFlushLock.Lock()
-	defer ed.eventFlushLock.Unlock()
+	// Limit flushing to a single worker
+	if !ed.processing.TryAcquire(1) {
+		return
+	}
+	defer ed.processing.Release(1)
 
 	retryCount := 0
 	queueSize := ed.eventQueue.Size()
@@ -176,5 +180,6 @@ func NewQueueEventDispatcher(sdkKey string, metricsRegistry metrics.Registry) *Q
 		failFlushCounter:  dispatcherMetricsRegistry.GetCounter(metrics.DispatcherFailedFlush),
 		sucessFlush:       dispatcherMetricsRegistry.GetCounter(metrics.DispatcherSuccessFlush),
 		logger:            logger,
+		processing:        semaphore.NewWeighted(int64(1)),
 	}
 }
