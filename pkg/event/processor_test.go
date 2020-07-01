@@ -540,7 +540,7 @@ func BenchmarkProcessor(b *testing.B) {
 	}
 
 	for _, merge := range merges {
-		for i := 1.; i <= 5; i++ {
+		for i := 4.; i <= 7; i++ {
 			qs := int(math.Pow(10, i))
 			for j := 1; j <= 6; j++ {
 				bs := 10 * j
