@@ -25,7 +25,7 @@ import (
 
 // Queue represents a queue
 type Queue interface {
-	Add(item interface{}) // Should return a bool
+	Add(item interface{}) // TODO Should return a bool
 	Remove(count int) []interface{}
 	Get(count int) []interface{}
 	Size() int

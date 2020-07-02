@@ -22,7 +22,7 @@ import (
 	"testing"
 )
 
-func TestInMemoryQueue_Add(t *testing.T) {
+func TestInMemoryQueue_Add_Max_Size(t *testing.T) {
 	maxSize := 10
 	q := NewInMemoryQueue(maxSize)
 

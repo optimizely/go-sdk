@@ -29,6 +29,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
+const maxWorkers = int64(1)
 const maxRetries = 3
 const defaultQueueSize = 1000
 const sleepTime = 1 * time.Second
@@ -86,10 +87,10 @@ type QueueEventDispatcher struct {
 	logger     logging.OptimizelyLogProducer
 
 	// metrics
-	queueSize         metrics.Gauge
-	sucessFlush       metrics.Counter
-	failFlushCounter  metrics.Counter
-	retryFlushCounter metrics.Counter
+	queueSizeGauge     metrics.Gauge
+	sucessFlushCounter metrics.Counter
+	failFlushCounter   metrics.Counter
+	retryFlushCounter  metrics.Counter
 }
 
 // DispatchEvent queues event with callback and calls flush in a go routine.
@@ -111,7 +112,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 	retryCount := 0
 	queueSize := ed.eventQueue.Size()
 	for ; queueSize > 0; queueSize = ed.eventQueue.Size() {
-		ed.queueSize.Set(float64(queueSize))
+		ed.queueSizeGauge.Set(float64(queueSize))
 		if retryCount > maxRetries {
 			ed.logger.Error(fmt.Sprintf("event failed to send %d times. It will retry on next event sent", maxRetries), nil)
 			ed.failFlushCounter.Add(1)
@@ -138,7 +139,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 			if success {
 				ed.eventQueue.Remove(1)
 				retryCount = 0
-				ed.sucessFlush.Add(1)
+				ed.sucessFlushCounter.Add(1)
 			} else {
 				ed.logger.Warning("dispatch event failed")
 				// we failed.  Sleep some seconds and try again.
@@ -158,7 +159,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 			ed.retryFlushCounter.Add(1)
 		}
 	}
-	ed.queueSize.Set(float64(queueSize))
+	ed.queueSizeGauge.Set(float64(queueSize))
 }
 
 // NewQueueEventDispatcher creates a Dispatcher that queues in memory and then sends via go routine.
@@ -173,13 +174,13 @@ func NewQueueEventDispatcher(sdkKey string, metricsRegistry metrics.Registry) *Q
 
 	logger := logging.GetLogger(sdkKey, "QueueEventDispatcher")
 	return &QueueEventDispatcher{
-		eventQueue:        NewInMemoryQueueWithLogger(defaultQueueSize, logger),
-		Dispatcher:        NewHTTPEventDispatcher(sdkKey, nil, nil),
-		queueSize:         dispatcherMetricsRegistry.GetGauge(metrics.DispatcherQueueSize),
-		retryFlushCounter: dispatcherMetricsRegistry.GetCounter(metrics.DispatcherRetryFlush),
-		failFlushCounter:  dispatcherMetricsRegistry.GetCounter(metrics.DispatcherFailedFlush),
-		sucessFlush:       dispatcherMetricsRegistry.GetCounter(metrics.DispatcherSuccessFlush),
-		logger:            logger,
-		processing:        semaphore.NewWeighted(int64(1)),
+		eventQueue:         NewInMemoryQueueWithLogger(defaultQueueSize, logger),
+		Dispatcher:         NewHTTPEventDispatcher(sdkKey, nil, nil),
+		queueSizeGauge:     dispatcherMetricsRegistry.GetGauge(metrics.DispatcherQueueSize),
+		retryFlushCounter:  dispatcherMetricsRegistry.GetCounter(metrics.DispatcherRetryFlush),
+		failFlushCounter:   dispatcherMetricsRegistry.GetCounter(metrics.DispatcherFailedFlush),
+		sucessFlushCounter: dispatcherMetricsRegistry.GetCounter(metrics.DispatcherSuccessFlush),
+		logger:             logger,
+		processing:         semaphore.NewWeighted(maxWorkers),
 	}
 }
