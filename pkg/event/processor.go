@@ -166,7 +166,7 @@ func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 	}
 
 	if p.Q == nil {
-		p.Q = NewInMemoryQueue(p.MaxQueueSize)
+		p.Q = NewInMemoryQueueWithLogger(p.MaxQueueSize, p.logger)
 	}
 
 	if p.EventDispatcher == nil {

@@ -21,12 +21,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/utils"
-	"github.com/stretchr/testify/assert"
 	"math"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
 type CountingDispatcher struct {
@@ -538,7 +540,7 @@ func BenchmarkProcessor(b *testing.B) {
 	}
 
 	for _, merge := range merges {
-		for i := 1.; i <= 5; i++ {
+		for i := 4.; i <= 7; i++ {
 			qs := int(math.Pow(10, i))
 			for j := 1; j <= 6; j++ {
 				bs := 10 * j
