@@ -137,6 +137,7 @@ func (ed *QueueEventDispatcher) flushEvents() {
 
 		if err == nil {
 			if success {
+				ed.logger.Debug("dispatch log event succeeded")
 				ed.eventQueue.Remove(1)
 				retryCount = 0
 				ed.sucessFlushCounter.Add(1)
