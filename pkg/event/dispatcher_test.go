@@ -185,9 +185,8 @@ func TestQueueEventDispatcher_FailDispath(t *testing.T) {
 
 	assert.Equal(t, 1, q.eventQueue.Size())
 
-	// give the queue a chance to run
-	q.flushEvents()
-	time.Sleep(1 * time.Second)
+	// give the queue a chance to run the queue is drained asynchronously
+	time.Sleep(2 * time.Second)
 
 	// check the queue. bad event type should be removed.  but, not sent.
 	assert.Equal(t, 1, q.eventQueue.Size())
@@ -197,7 +196,6 @@ func TestQueueEventDispatcher_FailDispath(t *testing.T) {
 	assert.True(t, metricsRegistry.GetCounter(metrics.DispatcherRetryFlush).(*MetricsCounter).Get() > 1)
 
 	q.flushEvents()
-
 	// check the queue. bad event type should be removed.  but, not sent.
 	assert.Equal(t, 1, q.eventQueue.Size())
 }
