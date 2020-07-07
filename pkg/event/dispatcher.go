@@ -144,11 +144,11 @@ func (ed *QueueEventDispatcher) flushEvents() {
 			} else {
 				ed.logger.Warning("dispatch event failed")
 				// we failed.  Sleep some seconds and try again.
-				time.Sleep(sleepTime)
 				// increase retryCount.  We exit if we have retried x times.
 				// we will retry again next event that is added.
 				retryCount++
 				ed.retryFlushCounter.Add(1)
+				time.Sleep(sleepTime)
 			}
 		} else {
 			ed.logger.Error("Error dispatching ", err)
