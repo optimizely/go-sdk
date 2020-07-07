@@ -10,6 +10,7 @@ stages:
   - 'Unit test'
   - 'Benchmark test'  
   - 'Integration tests'
+  - 'Production tests'
   - 'Source clear'
   - 'Readme-sync'
 jobs:
@@ -78,7 +79,8 @@ jobs:
       script:
         - make benchmark
 
-    - stage: 'Integration tests'
+    - &integrationtest
+      stage: 'Integration tests'
       env: SDK=go SDK_BRANCH=$TRAVIS_PULL_REQUEST_BRANCH
       cache: false
       language: minimal
@@ -88,6 +90,13 @@ jobs:
       script:
         - $HOME/travisci-tools/trigger-script-with-status-update.sh
       after_success: travis_terminate 0
+
+    - <<: *integrationtest
+      stage: 'Production tests'
+      env:
+        SDK=go
+        SDK_BRANCH=$TRAVIS_PULL_REQUEST_BRANCH
+        FULLSTACK_TEST_REPO=ProdTesting
     
     - stage: 'Source clear'
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
