@@ -22,23 +22,32 @@ import (
 
 	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers/utils"
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 // GtMatcher matches against the "gt" match type
 type GtMatcher struct {
 	Condition entities.Condition
+	Logger    logging.OptimizelyLogProducer
 }
 
 // Match returns true if the user's attribute is greater than the condition's string value
 func (m GtMatcher) Match(user entities.UserContext) (bool, error) {
 
+	if !user.CheckAttributeExists(m.Condition.Name) {
+		m.Logger.Debug(fmt.Sprintf(`Audience condition %s evaluated to UNKNOWN because a null value was passed for user attribute "%s".`, m.Condition.StringRepresentation, m.Condition))
+		return false, fmt.Errorf(`no attribute named "%s"`, m.Condition.Name)
+	}
+
 	if floatValue, ok := utils.ToFloat(m.Condition.Value); ok {
 		attributeValue, err := user.GetFloatAttribute(m.Condition.Name)
 		if err != nil {
+			m.Logger.Warning(fmt.Sprintf(`Audience condition "%s" evaluated to UNKNOWN because a value of type "%s" was passed for user attribute "%s".`, m.Condition.StringRepresentation, m.Condition.Value, m.Condition.Name))
 			return false, err
 		}
 		return floatValue < attributeValue, nil
 	}
 
+	m.Logger.Warning(fmt.Sprintf(`Audience condition "%s" has an unsupported condition value. You may need to upgrade to a newer release of the Optimizely SDK.`, m.Condition.StringRepresentation))
 	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
 }

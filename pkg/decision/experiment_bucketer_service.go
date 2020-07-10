@@ -38,8 +38,8 @@ type ExperimentBucketerService struct {
 func NewExperimentBucketerService(logger logging.OptimizelyLogProducer) *ExperimentBucketerService {
 	// @TODO(mng): add experiment override service
 	return &ExperimentBucketerService{
-		logger:logger,
-		audienceTreeEvaluator: evaluator.NewMixedTreeEvaluator(),
+		logger:                logger,
+		audienceTreeEvaluator: evaluator.NewMixedTreeEvaluator(logger),
 		bucketer:              *bucketer.NewMurmurhashExperimentBucketer(logger, bucketer.DefaultHashSeed),
 	}
 }
@@ -52,11 +52,16 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	// Determine if user can be part of the experiment
 	if experiment.AudienceConditionTree != nil {
 		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
+		s.logger.Debug(fmt.Sprintf(`Evaluating audiences for experiment "%s".`, experiment.Key))
 		evalResult, _ := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
+		s.logger.Info(fmt.Sprintf(`Audiences for rule %s collectively evaluated to %t.`, experiment.Key, evalResult))
 		if !evalResult {
+			s.logger.Info(fmt.Sprintf(`User "%s" does not meet conditions to be in experiment "%s".`, userContext.ID, experiment.Key))
 			experimentDecision.Reason = reasons.FailedAudienceTargeting
 			return experimentDecision, nil
 		}
+	} else {
+		s.logger.Info(fmt.Sprintf(`Audiences for experiment "%s" collectively evaluated to TRUE.`, experiment.Key))
 	}
 
 	var group entities.Group

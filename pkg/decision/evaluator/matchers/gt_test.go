@@ -22,10 +22,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 func TestGtMatcherInt(t *testing.T) {
 	matcher := GtMatcher{
+		Logger: logging.GetLogger("", ""),
 		Condition: entities.Condition{
 			Match: "gt",
 			Value: 42,
@@ -89,6 +91,7 @@ func TestGtMatcherInt(t *testing.T) {
 
 func TestGtMatcherFloat(t *testing.T) {
 	matcher := GtMatcher{
+		Logger: logging.GetLogger("", ""),
 		Condition: entities.Condition{
 			Match: "gt",
 			Value: 4.2,

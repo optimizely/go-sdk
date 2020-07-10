@@ -22,10 +22,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 func TestLtMatcherInt(t *testing.T) {
 	matcher := LtMatcher{
+		Logger: logging.GetLogger("", ""),
 		Condition: entities.Condition{
 			Match: "lt",
 			Value: 42,
@@ -89,6 +91,7 @@ func TestLtMatcherInt(t *testing.T) {
 
 func TestLtMatcherFloat(t *testing.T) {
 	matcher := LtMatcher{
+		Logger: logging.GetLogger("", ""),
 		Condition: entities.Condition{
 			Match: "lt",
 			Value: 4.2,

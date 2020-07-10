@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 func TestSubstringMatcher(t *testing.T) {
@@ -31,6 +32,7 @@ func TestSubstringMatcher(t *testing.T) {
 			Value: "foo",
 			Name:  "string_foo",
 		},
+		Logger: logging.GetLogger("", ""),
 	}
 
 	// Test match

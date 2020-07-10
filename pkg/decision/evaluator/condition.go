@@ -22,6 +22,7 @@ import (
 
 	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers"
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 const (
@@ -38,14 +39,22 @@ type ItemEvaluator interface {
 }
 
 // CustomAttributeConditionEvaluator evaluates conditions with custom attributes
-type CustomAttributeConditionEvaluator struct{}
+type CustomAttributeConditionEvaluator struct {
+	logger logging.OptimizelyLogProducer
+}
+
+// NewCustomAttributeConditionEvaluator creates a custom attribute condition
+func NewCustomAttributeConditionEvaluator(logger logging.OptimizelyLogProducer) *CustomAttributeConditionEvaluator {
+	return &CustomAttributeConditionEvaluator{logger: logger}
+}
 
 // Evaluate returns true if the given user's attributes match the condition
 func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *entities.TreeParameters) (bool, error) {
 	// We should only be evaluating custom attributes
 
 	if condition.Type != customAttributeType {
-		return false, fmt.Errorf(`unable to evaluator condition of type "%s"`, condition.Type)
+		c.logger.Warning(fmt.Sprintf(`Audience condition "%s" uses an unknown condition type. You may need to upgrade to a newer release of the Optimizely SDK.`, condition.StringRepresentation))
+		return false, fmt.Errorf(`unable to evaluate condition of type "%s"`, condition.Type)
 	}
 
 	var matcher matchers.Matcher
@@ -57,6 +66,7 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 	case exactMatchType:
 		matcher = matchers.ExactMatcher{
 			Condition: condition,
+			Logger:    c.logger,
 		}
 	case existsMatchType:
 		matcher = matchers.ExistsMatcher{
@@ -65,16 +75,20 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 	case ltMatchType:
 		matcher = matchers.LtMatcher{
 			Condition: condition,
+			Logger:    c.logger,
 		}
 	case gtMatchType:
 		matcher = matchers.GtMatcher{
 			Condition: condition,
+			Logger:    c.logger,
 		}
 	case substringMatchType:
 		matcher = matchers.SubstringMatcher{
 			Condition: condition,
+			Logger:    c.logger,
 		}
 	default:
+		c.logger.Warning(fmt.Sprintf(`Audience condition "%s" uses an unknown match type. You may need to upgrade to a newer release of the Optimizely SDK.`, condition.StringRepresentation))
 		return false, fmt.Errorf(`invalid Condition matcher "%s"`, condition.Match)
 	}
 
@@ -84,20 +98,28 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 }
 
 // AudienceConditionEvaluator evaluates conditions with audience condition
-type AudienceConditionEvaluator struct{}
+type AudienceConditionEvaluator struct {
+	logger logging.OptimizelyLogProducer
+}
+
+// NewAudienceConditionEvaluator creates a audience condition evaluator
+func NewAudienceConditionEvaluator(logger logging.OptimizelyLogProducer) *AudienceConditionEvaluator {
+	return &AudienceConditionEvaluator{logger: logger}
+}
 
 // Evaluate returns true if the given user's attributes match the condition
 func (c AudienceConditionEvaluator) Evaluate(audienceID string, condTreeParams *entities.TreeParameters) (bool, error) {
 
 	if audience, ok := condTreeParams.AudienceMap[audienceID]; ok {
+		c.logger.Debug(fmt.Sprintf(`Starting to evaluate audience "%s".`, audienceID))
 		condTree := audience.ConditionTree
-		conditionTreeEvaluator := NewMixedTreeEvaluator()
+		conditionTreeEvaluator := NewMixedTreeEvaluator(c.logger)
 		retValue, isValid := conditionTreeEvaluator.Evaluate(condTree, condTreeParams)
 		if !isValid {
 			return false, fmt.Errorf(`an error occurred while evaluating nested tree for audience ID "%s"`, audienceID)
 		}
+		c.logger.Debug(fmt.Sprintf(`Audience "%s" evaluated to %t.`, audienceID, retValue))
 		return retValue, nil
-
 	}
 
 	return false, fmt.Errorf(`unable to evaluate nested tree for audience ID "%s"`, audienceID)

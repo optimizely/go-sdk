@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	e "github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 var stringFooCondition = e.Condition{
@@ -30,7 +31,7 @@ var int42Condition = e.Condition{
 }
 
 func TestConditionTreeEvaluateSimpleCondition(t *testing.T) {
-	conditionTreeEvaluator := NewMixedTreeEvaluator()
+	conditionTreeEvaluator := NewMixedTreeEvaluator(logging.GetLogger("", ""))
 	conditionTree := &e.TreeNode{
 		Operator: "or",
 		Nodes: []*e.TreeNode{
@@ -61,7 +62,7 @@ func TestConditionTreeEvaluateSimpleCondition(t *testing.T) {
 }
 
 func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
-	conditionTreeEvaluator := NewMixedTreeEvaluator()
+	conditionTreeEvaluator := NewMixedTreeEvaluator(logging.GetLogger("", ""))
 	conditionTree := &e.TreeNode{
 		Operator: "or",
 		Nodes: []*e.TreeNode{
@@ -116,7 +117,7 @@ func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
 }
 
 func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
-	conditionTreeEvaluator := NewMixedTreeEvaluator()
+	conditionTreeEvaluator := NewMixedTreeEvaluator(logging.GetLogger("", ""))
 	conditionTree := &e.TreeNode{
 		Operator: "and",
 		Nodes: []*e.TreeNode{
@@ -171,7 +172,7 @@ func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
 }
 
 func TestConditionTreeEvaluateNotCondition(t *testing.T) {
-	conditionTreeEvaluator := NewMixedTreeEvaluator()
+	conditionTreeEvaluator := NewMixedTreeEvaluator(logging.GetLogger("", ""))
 	// [or, [not, stringFooCondition], [not, boolTrueCondition]]
 	conditionTree := &e.TreeNode{
 		Operator: "or",
@@ -237,7 +238,7 @@ func TestConditionTreeEvaluateNotCondition(t *testing.T) {
 }
 
 func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
-	conditionTreeEvaluator := NewMixedTreeEvaluator()
+	conditionTreeEvaluator := NewMixedTreeEvaluator(logging.GetLogger("", ""))
 	// [or, [and, stringFooCondition, boolTrueCondition], [or, [not, stringFooCondition], int42Condition]]
 	conditionTree := &e.TreeNode{
 		Operator: "or",
@@ -371,7 +372,7 @@ func TestConditionTreeEvaluateAnAudienceTreeSingleAudience(t *testing.T) {
 		},
 	}
 
-	conditionTreeEvaluator := NewMixedTreeEvaluator()
+	conditionTreeEvaluator := NewMixedTreeEvaluator(logging.GetLogger("", ""))
 
 	// Test matches audience 11111
 	treeParams := &e.TreeParameters{
@@ -400,7 +401,7 @@ func TestConditionTreeEvaluateAnAudienceTreeMultipleAudiences(t *testing.T) {
 		},
 	}
 
-	conditionTreeEvaluator := NewMixedTreeEvaluator()
+	conditionTreeEvaluator := NewMixedTreeEvaluator(logging.GetLogger("", ""))
 
 	// Test only matches audience 11111
 	treeParams := &e.TreeParameters{

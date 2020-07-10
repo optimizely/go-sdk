@@ -22,10 +22,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 func TestExactMatcherString(t *testing.T) {
 	matcher := ExactMatcher{
+		Logger: logging.GetLogger("", ""),
 		Condition: entities.Condition{
 			Match: "exact",
 			Value: "foo",
@@ -67,6 +69,7 @@ func TestExactMatcherString(t *testing.T) {
 
 func TestExactMatcherBool(t *testing.T) {
 	matcher := ExactMatcher{
+		Logger: logging.GetLogger("", ""),
 		Condition: entities.Condition{
 			Match: "exact",
 			Value: true,
@@ -108,6 +111,7 @@ func TestExactMatcherBool(t *testing.T) {
 
 func TestExactMatcherInt(t *testing.T) {
 	matcher := ExactMatcher{
+		Logger: logging.GetLogger("", ""),
 		Condition: entities.Condition{
 			Match: "exact",
 			Value: 42,
@@ -160,6 +164,7 @@ func TestExactMatcherInt(t *testing.T) {
 
 func TestExactMatcherFloat(t *testing.T) {
 	matcher := ExactMatcher{
+		Logger: logging.GetLogger("", ""),
 		Condition: entities.Condition{
 			Match: "exact",
 			Value: 4.2,

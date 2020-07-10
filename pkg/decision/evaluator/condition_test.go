@@ -20,11 +20,12 @@ import (
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCustomAttributeConditionEvaluator(t *testing.T) {
-	conditionEvaluator := CustomAttributeConditionEvaluator{}
+	conditionEvaluator := NewCustomAttributeConditionEvaluator(logging.GetLogger("", ""))
 	condition := entities.Condition{
 		Match: "exact",
 		Value: "foo",
@@ -54,7 +55,7 @@ func TestCustomAttributeConditionEvaluator(t *testing.T) {
 }
 
 func TestCustomAttributeConditionEvaluatorWithoutMatchType(t *testing.T) {
-	conditionEvaluator := CustomAttributeConditionEvaluator{}
+	conditionEvaluator := NewCustomAttributeConditionEvaluator(logging.GetLogger("", ""))
 	condition := entities.Condition{
 		Value: "foo",
 		Name:  "string_foo",

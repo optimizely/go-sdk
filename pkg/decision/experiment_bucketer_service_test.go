@@ -35,14 +35,34 @@ func (m *MockBucketer) Bucket(bucketingID string, experiment entities.Experiment
 	return args.Get(0).(*entities.Variation), args.Get(1).(reasons.Reason), args.Error(2)
 }
 
+type MockLogger struct {
+	mock.Mock
+}
+
+func (m *MockLogger) Debug(message string) {
+	m.Called(message)
+}
+
+func (m *MockLogger) Info(message string) {
+	m.Called(message)
+}
+
+func (m *MockLogger) Warning(message string) {
+}
+
+func (m *MockLogger) Error(message string, err interface{}) {
+}
+
 type ExperimentBucketerTestSuite struct {
 	suite.Suite
 	mockBucketer *MockBucketer
+	mockLogger   *MockLogger
 	mockConfig   *mockProjectConfig
 }
 
 func (s *ExperimentBucketerTestSuite) SetupTest() {
 	s.mockBucketer = new(MockBucketer)
+	s.mockLogger = new(MockLogger)
 	s.mockConfig = new(mockProjectConfig)
 }
 
@@ -63,9 +83,10 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionNoTargeting() {
 		ProjectConfig: s.mockConfig,
 	}
 	s.mockBucketer.On("Bucket", testUserContext.ID, testExp1111, entities.Group{}).Return(&testExp1111Var2222, reasons.BucketedIntoVariation, nil)
-
+	s.mockLogger.On("Info", `Audiences for experiment "test_experiment_1111" collectively evaluated to TRUE.`)
 	experimentBucketerService := ExperimentBucketerService{
 		bucketer: s.mockBucketer,
+		logger:   s.mockLogger,
 	}
 	decision, err := experimentBucketerService.GetDecision(testDecisionContext, testUserContext)
 	s.Equal(expectedDecision, decision)
@@ -89,9 +110,12 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingPasses() {
 	mockAudienceTreeEvaluator.On("Evaluate", mock.Anything, mock.Anything).Return(true, true)
 	experimentBucketerService := ExperimentBucketerService{
 		audienceTreeEvaluator: mockAudienceTreeEvaluator,
+		logger:                s.mockLogger,
 		bucketer:              s.mockBucketer,
 	}
 	s.mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
+	s.mockLogger.On("Debug", `Evaluating audiences for experiment "test_targeted_experiment_1116".`)
+	s.mockLogger.On("Info", `Audiences for rule test_targeted_experiment_1116 collectively evaluated to true.`)
 
 	testDecisionContext := ExperimentDecisionContext{
 		Experiment:    &testTargetedExp1116,
@@ -116,9 +140,13 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingFails() {
 	mockAudienceTreeEvaluator.On("Evaluate", mock.Anything, mock.Anything).Return(false, true)
 	experimentBucketerService := ExperimentBucketerService{
 		audienceTreeEvaluator: mockAudienceTreeEvaluator,
+		logger:                s.mockLogger,
 		bucketer:              s.mockBucketer,
 	}
 	s.mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
+	s.mockLogger.On("Debug", `Evaluating audiences for experiment "test_targeted_experiment_1116".`)
+	s.mockLogger.On("Info", `Audiences for rule test_targeted_experiment_1116 collectively evaluated to false.`)
+	s.mockLogger.On("Info", `User "test_user_1" does not meet conditions to be in experiment "test_targeted_experiment_1116".`)
 
 	testDecisionContext := ExperimentDecisionContext{
 		Experiment:    &testTargetedExp1116,

@@ -26,8 +26,9 @@ type Audience struct {
 
 // Condition has condition info
 type Condition struct {
-	Name  string      `json:"name"`
-	Match string      `json:"match"`
-	Type  string      `json:"type"`
-	Value interface{} `json:"value"`
+	Name                 string      `json:"name"`
+	Match                string      `json:"match"`
+	Type                 string      `json:"type"`
+	Value                interface{} `json:"value"`
+	StringRepresentation string
 }

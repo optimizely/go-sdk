@@ -127,6 +127,7 @@ func createLeafCondition(typedV map[string]interface{}, node *entities.TreeNode)
 	if err := json.Unmarshal(jsonBody, &condition); err != nil {
 		return err
 	}
+	condition.StringRepresentation = string(jsonBody)
 	node.Item = condition
 	return nil
 }
