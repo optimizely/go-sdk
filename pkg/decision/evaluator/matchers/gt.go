@@ -33,22 +33,28 @@ type GtMatcher struct {
 
 // Match returns true if the user's attribute is greater than the condition's string value
 func (m GtMatcher) Match(user entities.UserContext) (bool, error) {
+	return matchGtOrLt(user, m.Condition, m.Logger, true)
+}
 
-	if !user.CheckAttributeExists(m.Condition.Name) {
-		m.Logger.Debug(fmt.Sprintf(string(logging.NullUserAttribute), m.Condition.StringRepresentation, m.Condition.Name))
-		return false, fmt.Errorf(`no attribute named "%s"`, m.Condition.Name)
+func matchGtOrLt(user entities.UserContext, condition entities.Condition, logger logging.OptimizelyLogProducer, gtMatch bool) (bool, error) {
+	if !user.CheckAttributeExists(condition.Name) {
+		logger.Debug(fmt.Sprintf(string(logging.NullUserAttribute), condition.StringRepresentation, condition.Name))
+		return false, fmt.Errorf(`no attribute named "%s"`, condition.Name)
 	}
 
-	if floatValue, ok := utils.ToFloat(m.Condition.Value); ok {
-		attributeValue, err := user.GetFloatAttribute(m.Condition.Name)
+	if floatValue, ok := utils.ToFloat(condition.Value); ok {
+		attributeValue, err := user.GetFloatAttribute(condition.Name)
 		if err != nil {
-			val, _ := user.GetAttribute(m.Condition.Name)
-			m.Logger.Warning(fmt.Sprintf(string(logging.InvalidAttributeValueType), m.Condition.StringRepresentation, val, m.Condition.Name))
+			val, _ := user.GetAttribute(condition.Name)
+			logger.Warning(fmt.Sprintf(string(logging.InvalidAttributeValueType), condition.StringRepresentation, val, condition.Name))
 			return false, err
 		}
-		return floatValue < attributeValue, nil
+		if gtMatch {
+			return floatValue < attributeValue, nil
+		}
+		return floatValue > attributeValue, nil
 	}
 
-	m.Logger.Warning(fmt.Sprintf(string(logging.UnsupportedConditionValue), m.Condition.StringRepresentation))
-	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
+	logger.Warning(fmt.Sprintf(string(logging.UnsupportedConditionValue), condition.StringRepresentation))
+	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", condition.Name)
 }
