@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -35,19 +35,20 @@ type SubstringMatcher struct {
 func (m SubstringMatcher) Match(user entities.UserContext) (bool, error) {
 
 	if !user.CheckAttributeExists(m.Condition.Name) {
-		m.Logger.Debug(fmt.Sprintf(`Audience condition %s evaluated to UNKNOWN because a null value was passed for user attribute "%s".`, m.Condition.StringRepresentation, m.Condition))
+		m.Logger.Debug(fmt.Sprintf(string(logging.NullUserAttribute), m.Condition.StringRepresentation, m.Condition.Name))
 		return false, fmt.Errorf(`no attribute named "%s"`, m.Condition.Name)
 	}
 
 	if stringValue, ok := m.Condition.Value.(string); ok {
 		attributeValue, err := user.GetStringAttribute(m.Condition.Name)
 		if err != nil {
-			m.Logger.Warning(fmt.Sprintf(`Audience condition "%s" evaluated to UNKNOWN because a value of type "%s" was passed for user attribute "%s".`, m.Condition.StringRepresentation, m.Condition.Value, m.Condition.Name))
+			val, _ := user.GetAttribute(m.Condition.Name)
+			m.Logger.Warning(fmt.Sprintf(string(logging.InvalidAttributeValueType), m.Condition.StringRepresentation, val, m.Condition.Name))
 			return false, err
 		}
 		return strings.Contains(attributeValue, stringValue), nil
 	}
 
-	m.Logger.Warning(fmt.Sprintf(`Audience condition "%s" has an unsupported condition value. You may need to upgrade to a newer release of the Optimizely SDK.`, m.Condition.StringRepresentation))
+	m.Logger.Warning(fmt.Sprintf(string(logging.UnsupportedConditionValue), m.Condition.StringRepresentation))
 	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
 }

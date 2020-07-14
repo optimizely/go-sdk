@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -53,7 +53,8 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 	// We should only be evaluating custom attributes
 
 	if condition.Type != customAttributeType {
-		c.logger.Warning(fmt.Sprintf(`Audience condition "%s" uses an unknown condition type. You may need to upgrade to a newer release of the Optimizely SDK.`, condition.StringRepresentation))
+
+		c.logger.Warning(fmt.Sprintf(string(logging.UnknownConditionType), condition.StringRepresentation))
 		return false, fmt.Errorf(`unable to evaluate condition of type "%s"`, condition.Type)
 	}
 
@@ -88,7 +89,7 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 			Logger:    c.logger,
 		}
 	default:
-		c.logger.Warning(fmt.Sprintf(`Audience condition "%s" uses an unknown match type. You may need to upgrade to a newer release of the Optimizely SDK.`, condition.StringRepresentation))
+		c.logger.Warning(fmt.Sprintf(string(logging.UnknownMatchType), condition.StringRepresentation))
 		return false, fmt.Errorf(`invalid Condition matcher "%s"`, condition.Match)
 	}
 
@@ -111,14 +112,14 @@ func NewAudienceConditionEvaluator(logger logging.OptimizelyLogProducer) *Audien
 func (c AudienceConditionEvaluator) Evaluate(audienceID string, condTreeParams *entities.TreeParameters) (bool, error) {
 
 	if audience, ok := condTreeParams.AudienceMap[audienceID]; ok {
-		c.logger.Debug(fmt.Sprintf(`Starting to evaluate audience "%s".`, audienceID))
+		c.logger.Debug(fmt.Sprintf(string(logging.AudienceEvaluationStarted), audienceID))
 		condTree := audience.ConditionTree
 		conditionTreeEvaluator := NewMixedTreeEvaluator(c.logger)
 		retValue, isValid := conditionTreeEvaluator.Evaluate(condTree, condTreeParams)
 		if !isValid {
 			return false, fmt.Errorf(`an error occurred while evaluating nested tree for audience ID "%s"`, audienceID)
 		}
-		c.logger.Debug(fmt.Sprintf(`Audience "%s" evaluated to %t.`, audienceID, retValue))
+		c.logger.Debug(fmt.Sprintf(string(logging.AudienceEvaluatedTo), audienceID, retValue))
 		return retValue, nil
 	}
 

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -52,16 +52,16 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	// Determine if user can be part of the experiment
 	if experiment.AudienceConditionTree != nil {
 		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
-		s.logger.Debug(fmt.Sprintf(`Evaluating audiences for experiment "%s".`, experiment.Key))
+		s.logger.Debug(fmt.Sprintf(string(logging.EvaluatingAudiencesForExperiment), experiment.Key))
 		evalResult, _ := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
-		s.logger.Info(fmt.Sprintf(`Audiences for rule %s collectively evaluated to %t.`, experiment.Key, evalResult))
+		s.logger.Info(fmt.Sprintf(string(logging.ExperimentAudiencesEvaluatedTo), experiment.Key, evalResult))
 		if !evalResult {
-			s.logger.Info(fmt.Sprintf(`User "%s" does not meet conditions to be in experiment "%s".`, userContext.ID, experiment.Key))
+			s.logger.Info(fmt.Sprintf(string(logging.UserNotInExperiment), userContext.ID, experiment.Key))
 			experimentDecision.Reason = reasons.FailedAudienceTargeting
 			return experimentDecision, nil
 		}
 	} else {
-		s.logger.Info(fmt.Sprintf(`Audiences for experiment "%s" collectively evaluated to TRUE.`, experiment.Key))
+		s.logger.Info(fmt.Sprintf(string(logging.ExperimentAudiencesEvaluatedTo), experiment.Key, true))
 	}
 
 	var group entities.Group

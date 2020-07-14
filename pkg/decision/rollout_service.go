@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -19,6 +19,7 @@ package decision
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/optimizely/go-sdk/pkg/decision/evaluator"
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
@@ -54,7 +55,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 
 	evaluateConditionTree := func(experiment *entities.Experiment, loggingKey string) bool {
 		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
-		r.logger.Debug(fmt.Sprintf(`Evaluating audiences for rule %s.`, loggingKey))
+		r.logger.Debug(fmt.Sprintf(string(logging.EvaluatingAudiencesForRollout), loggingKey))
 		evalResult, _ := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
 		if !evalResult {
 			featureDecision.Reason = reasons.FailedRolloutTargeting
@@ -98,15 +99,15 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	}
 
 	for index := 0; index < numberOfExperiments-1; index++ {
-		loggingKey := string(index + 1)
+		loggingKey := strconv.Itoa(index + 1)
 		experiment := &rollout.Experiments[index]
 		experimentDecisionContext := getExperimentDecisionContext(experiment)
 		// Move to next evaluation if condition tree is available and evaluation fails
 
 		evaluationResult := experiment.AudienceConditionTree == nil || evaluateConditionTree(experiment, loggingKey)
-		r.logger.Info(fmt.Sprintf(`Audiences for rule %s collectively evaluated to %t.`, loggingKey, evaluationResult))
+		r.logger.Info(fmt.Sprintf(string(logging.RolloutAudiencesEvaluatedTo), loggingKey, evaluationResult))
 		if !evaluationResult {
-			r.logger.Debug(fmt.Sprintf(`User "%s" does not meet conditions for targeting rule %s.`, userContext.ID, loggingKey))
+			r.logger.Debug(fmt.Sprintf(string(logging.UserNotInRollout), userContext.ID, loggingKey))
 			// Evaluate this user for the next rule
 			continue
 		}
@@ -124,12 +125,13 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	experimentDecisionContext := getExperimentDecisionContext(experiment)
 	// Move to bucketing if conditionTree is unavailable or evaluation passes
 	evaluationResult := experiment.AudienceConditionTree == nil || evaluateConditionTree(experiment, "Everyone Else")
-	r.logger.Info(fmt.Sprintf(`Audiences for rule %s collectively evaluated to %t.`, "Everyone Else", evaluationResult))
+	r.logger.Info(fmt.Sprintf(string(logging.RolloutAudiencesEvaluatedTo), "Everyone Else", evaluationResult))
 
 	if evaluationResult {
 		decision, err := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext)
 		if err == nil {
-			r.logger.Debug(fmt.Sprintf(`User "%s" meets conditions for targeting rule "Everyone Else".`, userContext.ID))
+
+			r.logger.Debug(fmt.Sprintf(string(logging.UserInEveryoneElse), userContext.ID))
 		}
 		return getFeatureDecision(experiment, &decision)
 	}

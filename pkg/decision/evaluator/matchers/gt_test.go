@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -17,17 +17,27 @@
 package matchers
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
-func TestGtMatcherInt(t *testing.T) {
+type GtTestSuite struct {
+	suite.Suite
+	mockLogger *MockLogger
+}
+
+func (s *GtTestSuite) SetupTest() {
+	s.mockLogger = new(MockLogger)
+}
+
+func (s *GtTestSuite) TestGtMatcherInt() {
 	matcher := GtMatcher{
-		Logger: logging.GetLogger("", ""),
+		Logger: s.mockLogger,
 		Condition: entities.Condition{
 			Match: "gt",
 			Value: 42,
@@ -42,8 +52,8 @@ func TestGtMatcherInt(t *testing.T) {
 		},
 	}
 	result, err := matcher.Match(user)
-	assert.NoError(t, err)
-	assert.True(t, result)
+	s.NoError(err)
+	s.True(result)
 
 	// Test match int to float
 	user = entities.UserContext{
@@ -53,8 +63,8 @@ func TestGtMatcherInt(t *testing.T) {
 	}
 
 	result, err = matcher.Match(user)
-	assert.NoError(t, err)
-	assert.True(t, result)
+	s.NoError(err)
+	s.True(result)
 
 	// Test no match
 	user = entities.UserContext{
@@ -64,8 +74,8 @@ func TestGtMatcherInt(t *testing.T) {
 	}
 
 	result, err = matcher.Match(user)
-	assert.NoError(t, err)
-	assert.False(t, result)
+	s.NoError(err)
+	s.False(result)
 
 	// Test no match
 	user = entities.UserContext{
@@ -75,8 +85,8 @@ func TestGtMatcherInt(t *testing.T) {
 	}
 
 	result, err = matcher.Match(user)
-	assert.NoError(t, err)
-	assert.False(t, result)
+	s.NoError(err)
+	s.False(result)
 
 	// Test attribute not found
 	user = entities.UserContext{
@@ -84,14 +94,26 @@ func TestGtMatcherInt(t *testing.T) {
 			"int_43": 42,
 		},
 	}
-
+	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.NullUserAttribute), "", "int_42"))
 	_, err = matcher.Match(user)
-	assert.Error(t, err)
+	s.Error(err)
+
+	// Test attribute of different type
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"int_42": true,
+		},
+	}
+	s.mockLogger.On("Warning", fmt.Sprintf(string(logging.InvalidAttributeValueType), "", true, "int_42"))
+	result, err = matcher.Match(user)
+	s.Error(err)
+	s.False(result)
+	s.mockLogger.AssertExpectations(s.T())
 }
 
-func TestGtMatcherFloat(t *testing.T) {
+func (s *GtTestSuite) TestGtMatcherFloat() {
 	matcher := GtMatcher{
-		Logger: logging.GetLogger("", ""),
+		Logger: s.mockLogger,
 		Condition: entities.Condition{
 			Match: "gt",
 			Value: 4.2,
@@ -106,8 +128,8 @@ func TestGtMatcherFloat(t *testing.T) {
 		},
 	}
 	result, err := matcher.Match(user)
-	assert.NoError(t, err)
-	assert.True(t, result)
+	s.NoError(err)
+	s.True(result)
 
 	// Test match
 	user = entities.UserContext{
@@ -116,8 +138,8 @@ func TestGtMatcherFloat(t *testing.T) {
 		},
 	}
 	result, err = matcher.Match(user)
-	assert.NoError(t, err)
-	assert.True(t, result)
+	s.NoError(err)
+	s.True(result)
 
 	// Test no match
 	user = entities.UserContext{
@@ -127,8 +149,8 @@ func TestGtMatcherFloat(t *testing.T) {
 	}
 
 	result, err = matcher.Match(user)
-	assert.NoError(t, err)
-	assert.False(t, result)
+	s.NoError(err)
+	s.False(result)
 
 	// Test attribute not found
 	user = entities.UserContext{
@@ -137,6 +159,46 @@ func TestGtMatcherFloat(t *testing.T) {
 		},
 	}
 
+	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.NullUserAttribute), "", "float_4_2"))
 	_, err = matcher.Match(user)
-	assert.Error(t, err)
+	s.Error(err)
+
+	// Test attribute of different type
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"float_4_2": true,
+		},
+	}
+	s.mockLogger.On("Warning", fmt.Sprintf(string(logging.InvalidAttributeValueType), "", true, "float_4_2"))
+	result, err = matcher.Match(user)
+	s.Error(err)
+	s.False(result)
+	s.mockLogger.AssertExpectations(s.T())
+}
+
+func (s *GtTestSuite) TestGtMatcherUnsupportedConditionValue() {
+	matcher := GtMatcher{
+		Logger: s.mockLogger,
+		Condition: entities.Condition{
+			Match: "gt",
+			Value: false,
+			Name:  "float_4_2",
+		},
+	}
+
+	// Test match - unsupported condition value
+	user := entities.UserContext{
+		Attributes: map[string]interface{}{
+			"float_4_2": 4.2,
+		},
+	}
+	s.mockLogger.On("Warning", fmt.Sprintf(string(logging.UnsupportedConditionValue), ""))
+	result, err := matcher.Match(user)
+	s.Error(err)
+	s.False(result)
+	s.mockLogger.AssertExpectations(s.T())
+}
+
+func TestGtTestSuite(t *testing.T) {
+	suite.Run(t, new(GtTestSuite))
 }

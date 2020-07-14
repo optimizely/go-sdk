@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -17,15 +17,26 @@
 package evaluator
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestCustomAttributeConditionEvaluator(t *testing.T) {
-	conditionEvaluator := NewCustomAttributeConditionEvaluator(logging.GetLogger("", ""))
+type ConditionTestSuite struct {
+	suite.Suite
+	mockLogger         *MockLogger
+	conditionEvaluator *CustomAttributeConditionEvaluator
+}
+
+func (s *ConditionTestSuite) SetupTest() {
+	s.mockLogger = new(MockLogger)
+	s.conditionEvaluator = NewCustomAttributeConditionEvaluator(s.mockLogger)
+}
+
+func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluator() {
 	condition := entities.Condition{
 		Match: "exact",
 		Value: "foo",
@@ -41,8 +52,8 @@ func TestCustomAttributeConditionEvaluator(t *testing.T) {
 	}
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
-	result, _ := conditionEvaluator.Evaluate(condition, condTreeParams)
-	assert.Equal(t, result, true)
+	result, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams)
+	s.Equal(result, true)
 
 	// Test condition fails
 	user = entities.UserContext{
@@ -50,12 +61,11 @@ func TestCustomAttributeConditionEvaluator(t *testing.T) {
 			"string_foo": "not_foo",
 		},
 	}
-	result, _ = conditionEvaluator.Evaluate(condition, condTreeParams)
-	assert.Equal(t, result, false)
+	result, _ = s.conditionEvaluator.Evaluate(condition, condTreeParams)
+	s.Equal(result, false)
 }
 
-func TestCustomAttributeConditionEvaluatorWithoutMatchType(t *testing.T) {
-	conditionEvaluator := NewCustomAttributeConditionEvaluator(logging.GetLogger("", ""))
+func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorWithoutMatchType() {
 	condition := entities.Condition{
 		Value: "foo",
 		Name:  "string_foo",
@@ -70,8 +80,8 @@ func TestCustomAttributeConditionEvaluatorWithoutMatchType(t *testing.T) {
 	}
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
-	result, _ := conditionEvaluator.Evaluate(condition, condTreeParams)
-	assert.Equal(t, result, true)
+	result, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams)
+	s.Equal(result, true)
 
 	// Test condition fails
 	user = entities.UserContext{
@@ -79,6 +89,53 @@ func TestCustomAttributeConditionEvaluatorWithoutMatchType(t *testing.T) {
 			"string_foo": "not_foo",
 		},
 	}
-	result, _ = conditionEvaluator.Evaluate(condition, condTreeParams)
-	assert.Equal(t, result, false)
+	result, _ = s.conditionEvaluator.Evaluate(condition, condTreeParams)
+	s.Equal(result, false)
+}
+
+func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorWithInvalidMatchType() {
+	condition := entities.Condition{
+		Value: "foo",
+		Name:  "string_foo",
+		Type:  "custom_attribute",
+		Match: "invalid",
+	}
+
+	// Test condition fails
+	user := entities.UserContext{
+		Attributes: map[string]interface{}{
+			"string_foo": "foo",
+		},
+	}
+
+	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
+	s.mockLogger.On("Warning", fmt.Sprintf(string(logging.UnknownMatchType), ""))
+	result, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams)
+	s.Equal(result, false)
+	s.mockLogger.AssertExpectations(s.T())
+}
+
+func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorWithUnknownType() {
+	condition := entities.Condition{
+		Value: "foo",
+		Name:  "string_foo",
+		Type:  "",
+	}
+
+	// Test condition fails
+	user := entities.UserContext{
+		Attributes: map[string]interface{}{
+			"string_foo": "foo",
+		},
+	}
+
+	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
+	s.mockLogger.On("Warning", fmt.Sprintf(string(logging.UnknownConditionType), ""))
+	result, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams)
+	s.Equal(result, false)
+	s.mockLogger.AssertExpectations(s.T())
+}
+
+func TestConditionTestSuite(t *testing.T) {
+	suite.Run(t, new(ConditionTestSuite))
 }

@@ -1,13 +1,51 @@
+/****************************************************************************
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ *                                                                          *
+ * Licensed under the Apache License, Version 2.0 (the "License");          *
+ * you may not use this file except in compliance with the License.         *
+ * You may obtain a copy of the License at                                  *
+ *                                                                          *
+ *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *                                                                          *
+ * Unless required by applicable law or agreed to in writing, software      *
+ * distributed under the License is distributed on an "AS IS" BASIS,        *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+ * See the License for the specific language governing permissions and      *
+ * limitations under the License.                                           *
+ ***************************************************************************/
+
 package evaluator
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 
 	e "github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
+
+type MockLogger struct {
+	mock.Mock
+}
+
+func (m *MockLogger) Debug(message string) {
+	m.Called(message)
+}
+
+func (m *MockLogger) Info(message string) {
+	m.Called(message)
+}
+
+func (m *MockLogger) Warning(message string) {
+	m.Called(message)
+}
+
+func (m *MockLogger) Error(message string, err interface{}) {
+	m.Called(message, err)
+}
 
 var stringFooCondition = e.Condition{
 	Type:  "custom_attribute",
@@ -30,12 +68,22 @@ var int42Condition = e.Condition{
 	Value: 42,
 }
 
-func TestConditionTreeEvaluateSimpleCondition(t *testing.T) {
-	conditionTreeEvaluator := NewMixedTreeEvaluator(logging.GetLogger("", ""))
+type ConditionTreeTestSuite struct {
+	suite.Suite
+	mockLogger             *MockLogger
+	conditionTreeEvaluator *MixedTreeEvaluator
+}
+
+func (s *ConditionTreeTestSuite) SetupTest() {
+	s.mockLogger = new(MockLogger)
+	s.conditionTreeEvaluator = NewMixedTreeEvaluator(s.mockLogger)
+}
+
+func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateSimpleCondition() {
 	conditionTree := &e.TreeNode{
 		Operator: "or",
 		Nodes: []*e.TreeNode{
-			&e.TreeNode{
+			{
 				Item: stringFooCondition,
 			},
 		},
@@ -48,8 +96,8 @@ func TestConditionTreeEvaluateSimpleCondition(t *testing.T) {
 		},
 	}
 	condTreeParams := e.NewTreeParameters(&user, map[string]e.Audience{})
-	result, _ := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
-	assert.True(t, result)
+	result, _ := s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
+	s.True(result)
 
 	// Test no match
 	user = e.UserContext{
@@ -57,19 +105,18 @@ func TestConditionTreeEvaluateSimpleCondition(t *testing.T) {
 			"string_foo": "not foo",
 		},
 	}
-	result, _ = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
-	assert.False(t, result)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
+	s.False(result)
 }
 
-func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
-	conditionTreeEvaluator := NewMixedTreeEvaluator(logging.GetLogger("", ""))
+func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateMultipleOrConditions() {
 	conditionTree := &e.TreeNode{
 		Operator: "or",
 		Nodes: []*e.TreeNode{
-			&e.TreeNode{
+			{
 				Item: stringFooCondition,
 			},
-			&e.TreeNode{
+			{
 				Item: boolTrueCondition,
 			},
 		},
@@ -83,8 +130,8 @@ func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
 	}
 
 	condTreeParams := e.NewTreeParameters(&user, map[string]e.Audience{})
-	result, _ := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
-	assert.True(t, result)
+	result, _ := s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
+	s.True(result)
 
 	// Test match bool
 	user = e.UserContext{
@@ -92,8 +139,10 @@ func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
 			"bool_true": true,
 		},
 	}
-	result, _ = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
-	assert.True(t, result)
+	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.NullUserAttribute), "", "string_foo"))
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
+
+	s.True(result)
 
 	// Test match both
 	user = e.UserContext{
@@ -102,8 +151,8 @@ func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
 			"bool_true":  true,
 		},
 	}
-	result, _ = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
-	assert.True(t, result)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
+	s.True(result)
 
 	// Test no match
 	user = e.UserContext{
@@ -112,19 +161,19 @@ func TestConditionTreeEvaluateMultipleOrConditions(t *testing.T) {
 			"bool_true":  false,
 		},
 	}
-	result, _ = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
-	assert.False(t, result)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
+	s.False(result)
+	s.mockLogger.AssertExpectations(s.T())
 }
 
-func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
-	conditionTreeEvaluator := NewMixedTreeEvaluator(logging.GetLogger("", ""))
+func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateMultipleAndConditions() {
 	conditionTree := &e.TreeNode{
 		Operator: "and",
 		Nodes: []*e.TreeNode{
-			&e.TreeNode{
+			{
 				Item: stringFooCondition,
 			},
-			&e.TreeNode{
+			{
 				Item: boolTrueCondition,
 			},
 		},
@@ -138,8 +187,9 @@ func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
 	}
 
 	condTreeParams := e.NewTreeParameters(&user, map[string]e.Audience{})
-	result, _ := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
-	assert.False(t, result)
+	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.NullUserAttribute), "", "bool_true"))
+	result, _ := s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
+	s.False(result)
 
 	// Test only bool match with NULL bubbling
 	user = e.UserContext{
@@ -147,8 +197,10 @@ func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
 			"bool_true": true,
 		},
 	}
-	result, _ = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
-	assert.False(t, result)
+
+	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.NullUserAttribute), "", "string_foo"))
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
+	s.False(result)
 
 	// Test match both
 	user = e.UserContext{
@@ -157,8 +209,8 @@ func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
 			"bool_true":  true,
 		},
 	}
-	result, _ = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
-	assert.True(t, result)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
+	s.True(result)
 
 	// Test no match
 	user = e.UserContext{
@@ -167,28 +219,28 @@ func TestConditionTreeEvaluateMultipleAndConditions(t *testing.T) {
 			"bool_true":  false,
 		},
 	}
-	result, _ = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
-	assert.False(t, result)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
+	s.False(result)
+	s.mockLogger.AssertExpectations(s.T())
 }
 
-func TestConditionTreeEvaluateNotCondition(t *testing.T) {
-	conditionTreeEvaluator := NewMixedTreeEvaluator(logging.GetLogger("", ""))
+func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateNotCondition() {
 	// [or, [not, stringFooCondition], [not, boolTrueCondition]]
 	conditionTree := &e.TreeNode{
 		Operator: "or",
 		Nodes: []*e.TreeNode{
-			&e.TreeNode{
+			{
 				Operator: "not",
 				Nodes: []*e.TreeNode{
-					&e.TreeNode{
+					{
 						Item: stringFooCondition,
 					},
 				},
 			},
-			&e.TreeNode{
+			{
 				Operator: "not",
 				Nodes: []*e.TreeNode{
-					&e.TreeNode{
+					{
 						Item: boolTrueCondition,
 					},
 				},
@@ -204,8 +256,8 @@ func TestConditionTreeEvaluateNotCondition(t *testing.T) {
 	}
 
 	condTreeParams := e.NewTreeParameters(&user, map[string]e.Audience{})
-	result, _ := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
-	assert.True(t, result)
+	result, _ := s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
+	s.True(result)
 
 	// Test match bool
 	user = e.UserContext{
@@ -213,8 +265,9 @@ func TestConditionTreeEvaluateNotCondition(t *testing.T) {
 			"bool_true": false,
 		},
 	}
-	result, _ = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
-	assert.True(t, result)
+	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.NullUserAttribute), "", "string_foo"))
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
+	s.True(result)
 
 	// Test match both
 	user = e.UserContext{
@@ -223,8 +276,8 @@ func TestConditionTreeEvaluateNotCondition(t *testing.T) {
 			"bool_true":  false,
 		},
 	}
-	result, _ = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
-	assert.True(t, result)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
+	s.True(result)
 
 	// Test no match
 	user = e.UserContext{
@@ -233,39 +286,39 @@ func TestConditionTreeEvaluateNotCondition(t *testing.T) {
 			"bool_true":  true,
 		},
 	}
-	result, _ = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
-	assert.False(t, result)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
+	s.False(result)
+	s.mockLogger.AssertExpectations(s.T())
 }
 
-func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
-	conditionTreeEvaluator := NewMixedTreeEvaluator(logging.GetLogger("", ""))
+func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateMultipleMixedConditions() {
 	// [or, [and, stringFooCondition, boolTrueCondition], [or, [not, stringFooCondition], int42Condition]]
 	conditionTree := &e.TreeNode{
 		Operator: "or",
 		Nodes: []*e.TreeNode{
-			&e.TreeNode{
+			{
 				Operator: "and",
 				Nodes: []*e.TreeNode{
-					&e.TreeNode{
+					{
 						Item: stringFooCondition,
 					},
-					&e.TreeNode{
+					{
 						Item: boolTrueCondition,
 					},
 				},
 			},
-			&e.TreeNode{
+			{
 				Operator: "or",
 				Nodes: []*e.TreeNode{
-					&e.TreeNode{
+					{
 						Operator: "not",
 						Nodes: []*e.TreeNode{
-							&e.TreeNode{
+							{
 								Item: stringFooCondition,
 							},
 						},
 					},
-					&e.TreeNode{
+					{
 						Item: int42Condition,
 					},
 				},
@@ -283,8 +336,8 @@ func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
 	}
 
 	condTreeParams := e.NewTreeParameters(&user, map[string]e.Audience{})
-	result, _ := conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
-	assert.True(t, result)
+	result, _ := s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
+	s.True(result)
 
 	// Test only match the NOT condition
 	user = e.UserContext{
@@ -294,8 +347,8 @@ func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
 			"int_42":     43,
 		},
 	}
-	result, _ = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
-	assert.True(t, result)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
+	s.True(result)
 
 	// Test only match the int condition
 	user = e.UserContext{
@@ -305,8 +358,8 @@ func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
 			"int_42":     42,
 		},
 	}
-	result, _ = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
-	assert.True(t, result)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
+	s.True(result)
 
 	// Test no match
 	user = e.UserContext{
@@ -316,8 +369,8 @@ func TestConditionTreeEvaluateMultipleMixedConditions(t *testing.T) {
 			"int_42":     43,
 		},
 	}
-	result, _ = conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
-	assert.False(t, result)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
+	s.False(result)
 }
 
 var audienceMap = map[string]e.Audience{
@@ -330,10 +383,10 @@ var audience11111 = e.Audience{
 	ConditionTree: &e.TreeNode{
 		Operator: "or",
 		Nodes: []*e.TreeNode{
-			&e.TreeNode{
+			{
 				Operator: "or",
 				Nodes: []*e.TreeNode{
-					&e.TreeNode{
+					{
 						Item: stringFooCondition,
 					},
 				},
@@ -347,13 +400,13 @@ var audience11112 = e.Audience{
 	ConditionTree: &e.TreeNode{
 		Operator: "or",
 		Nodes: []*e.TreeNode{
-			&e.TreeNode{
+			{
 				Operator: "and",
 				Nodes: []*e.TreeNode{
-					&e.TreeNode{
+					{
 						Item: boolTrueCondition,
 					},
-					&e.TreeNode{
+					{
 						Item: int42Condition,
 					},
 				},
@@ -362,17 +415,15 @@ var audience11112 = e.Audience{
 	},
 }
 
-func TestConditionTreeEvaluateAnAudienceTreeSingleAudience(t *testing.T) {
+func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateAnAudienceTreeSingleAudience() {
 	audienceTree := &e.TreeNode{
 		Operator: "or",
 		Nodes: []*e.TreeNode{
-			&e.TreeNode{
+			{
 				Item: audience11111.ID,
 			},
 		},
 	}
-
-	conditionTreeEvaluator := NewMixedTreeEvaluator(logging.GetLogger("", ""))
 
 	// Test matches audience 11111
 	treeParams := &e.TreeParameters{
@@ -384,24 +435,26 @@ func TestConditionTreeEvaluateAnAudienceTreeSingleAudience(t *testing.T) {
 		},
 		AudienceMap: audienceMap,
 	}
-	result, _ := conditionTreeEvaluator.Evaluate(audienceTree, treeParams)
-	assert.True(t, result)
+
+	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.AudienceEvaluationStarted), "11111"))
+	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.AudienceEvaluatedTo), "11111", true))
+	result, _ := s.conditionTreeEvaluator.Evaluate(audienceTree, treeParams)
+	s.True(result)
+	s.mockLogger.AssertExpectations(s.T())
 }
 
-func TestConditionTreeEvaluateAnAudienceTreeMultipleAudiences(t *testing.T) {
+func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateAnAudienceTreeMultipleAudiences() {
 	audienceTree := &e.TreeNode{
 		Operator: "or",
 		Nodes: []*e.TreeNode{
-			&e.TreeNode{
+			{
 				Item: audience11111.ID,
 			},
-			&e.TreeNode{
+			{
 				Item: audience11112.ID,
 			},
 		},
 	}
-
-	conditionTreeEvaluator := NewMixedTreeEvaluator(logging.GetLogger("", ""))
 
 	// Test only matches audience 11111
 	treeParams := &e.TreeParameters{
@@ -413,8 +466,10 @@ func TestConditionTreeEvaluateAnAudienceTreeMultipleAudiences(t *testing.T) {
 		},
 		AudienceMap: audienceMap,
 	}
-	result, _ := conditionTreeEvaluator.Evaluate(audienceTree, treeParams)
-	assert.True(t, result)
+	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.AudienceEvaluationStarted), "11111"))
+	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.AudienceEvaluatedTo), "11111", true))
+	result, _ := s.conditionTreeEvaluator.Evaluate(audienceTree, treeParams)
+	s.True(result)
 
 	// Test only matches audience 11112
 	treeParams = &e.TreeParameters{
@@ -427,6 +482,16 @@ func TestConditionTreeEvaluateAnAudienceTreeMultipleAudiences(t *testing.T) {
 		},
 		AudienceMap: audienceMap,
 	}
-	result, _ = conditionTreeEvaluator.Evaluate(audienceTree, treeParams)
-	assert.True(t, result)
+	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.AudienceEvaluationStarted), "11111"))
+	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.NullUserAttribute), "", "string_foo"))
+	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.AudienceEvaluationStarted), "11112"))
+	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.AudienceEvaluatedTo), "11112", true))
+
+	result, _ = s.conditionTreeEvaluator.Evaluate(audienceTree, treeParams)
+	s.True(result)
+	s.mockLogger.AssertExpectations(s.T())
+}
+
+func TestConditionTreeTestSuite(t *testing.T) {
+	suite.Run(t, new(ConditionTreeTestSuite))
 }
