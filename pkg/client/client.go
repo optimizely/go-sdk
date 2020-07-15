@@ -350,9 +350,16 @@ func (o *OptimizelyClient) getFeatureVariable(featureKey, variableKey string, us
 	variable := featureDecisionContext.Variable
 
 	if featureDecision.Variation != nil {
-		if v, ok := featureDecision.Variation.Variables[variable.ID]; ok && featureDecision.Variation.FeatureEnabled {
-			return v.Value, variable.Type, &featureDecision, nil
+		if featureDecision.Variation.FeatureEnabled {
+			if v, ok := featureDecision.Variation.Variables[variable.ID]; ok {
+				o.logger.Info(fmt.Sprintf(logging.VariableValueForFeatureFlag.String(), v.Value, variable.Key, featureKey))
+				return v.Value, variable.Type, &featureDecision, nil
+			}
+		} else {
+			o.logger.Info(fmt.Sprintf(logging.FeatureNotEnabledForUserReturningDefault.String(), featureKey, userContext.ID, variable.DefaultValue))
 		}
+	} else {
+		o.logger.Info(fmt.Sprintf(logging.ReturningDefaultValue.String(), userContext.ID, variableKey, featureKey))
 	}
 
 	return variable.DefaultValue, variable.Type, &featureDecision, nil
@@ -411,6 +418,13 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string,
 
 	if featureDecision.Variation != nil {
 		enabled = featureDecision.Variation.FeatureEnabled
+		if enabled {
+			o.logger.Info(fmt.Sprintf(logging.FeatureEnabledForUser.String(), featureKey, userContext.ID))
+		} else {
+			o.logger.Info(fmt.Sprintf(logging.FeatureNotEnabledForUser.String(), featureKey, userContext.ID))
+		}
+	} else {
+		o.logger.Info(fmt.Sprintf(logging.ReturningAllDefaultValue.String(), userContext.ID, featureKey))
 	}
 
 	feature := decisionContext.Feature
@@ -427,6 +441,7 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string,
 		if enabled {
 			if variable, ok := featureDecision.Variation.Variables[v.ID]; ok {
 				val = variable.Value
+				o.logger.Debug(fmt.Sprintf(logging.VariableValueForFeatureFlag.String(), val, v.Key, featureKey))
 			}
 		}
 

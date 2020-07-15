@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -36,7 +36,7 @@ const maxTrafficValue = 10000
 // Bucketer is used to generate bucket value using bucketing key
 type Bucketer interface {
 	Generate(bucketingKey string) int
-	BucketToEntity(bucketKey string, trafficAllocations []entities.Range) (entityID string)
+	BucketToEntity(bucketingID, entityID string, trafficAllocations []entities.Range) string
 }
 
 // MurmurhashBucketer generates the bucketing value using the mmh3 algorightm
@@ -49,7 +49,7 @@ type MurmurhashBucketer struct {
 func NewMurmurhashBucketer(logger logging.OptimizelyLogProducer, hashSeed uint32) *MurmurhashBucketer {
 	return &MurmurhashBucketer{
 		hashSeed: hashSeed,
-		logger: logger,
+		logger:   logger,
 	}
 }
 
@@ -64,10 +64,10 @@ func (b MurmurhashBucketer) Generate(bucketingKey string) int {
 	return int(ratio * maxTrafficValue)
 }
 
-// BucketToEntity buckets into a traffic against given bucketKey
-func (b MurmurhashBucketer) BucketToEntity(bucketKey string, trafficAllocations []entities.Range) (entityID string) {
-	bucketValue := b.Generate(bucketKey)
-
+// BucketToEntity buckets into a traffic against given bucketingId and entityID
+func (b MurmurhashBucketer) BucketToEntity(bucketingID, entityID string, trafficAllocations []entities.Range) string {
+	bucketValue := b.Generate(bucketingID + entityID)
+	b.logger.Debug(fmt.Sprintf(logging.UserAssignedToBucketValue.String(), bucketValue, bucketingID))
 	var currentEndOfRange int
 	for _, trafficAllocationRange := range trafficAllocations {
 		currentEndOfRange = trafficAllocationRange.EndOfRange

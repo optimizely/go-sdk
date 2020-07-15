@@ -80,6 +80,11 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	}
 	// @TODO: handle error from bucketer
 	variation, reason, _ := s.bucketer.Bucket(bucketingID, *experiment, group)
+	if variation != nil {
+		s.logger.Info(fmt.Sprintf(logging.UserBucketedIntoVariationInExperiment.String(), userContext.ID, variation.Key, experiment.Key))
+	} else {
+		s.logger.Info(fmt.Sprintf(logging.UserNotBucketedIntoVariation.String(), userContext.ID))
+	}
 	experimentDecision.Reason = reason
 	experimentDecision.Variation = variation
 	return experimentDecision, nil

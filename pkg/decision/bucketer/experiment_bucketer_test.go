@@ -1,16 +1,56 @@
+/****************************************************************************
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ *                                                                          *
+ * Licensed under the Apache License, Version 2.0 (the "License");          *
+ * you may not use this file except in compliance with the License.         *
+ * You may obtain a copy of the License at                                  *
+ *                                                                          *
+ *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *                                                                          *
+ * Unless required by applicable law or agreed to in writing, software      *
+ * distributed under the License is distributed on an "AS IS" BASIS,        *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+ * See the License for the specific language governing permissions and      *
+ * limitations under the License.                                           *
+ ***************************************************************************/
+
+// Package bucketer //
 package bucketer
 
 import (
-	"github.com/optimizely/go-sdk/pkg/logging"
+	"fmt"
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
+	"github.com/optimizely/go-sdk/pkg/logging"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
+type MockLogger struct {
+	mock.Mock
+}
+
+func (m *MockLogger) Debug(message string) {
+	m.Called(message)
+}
+
+func (m *MockLogger) Info(message string) {
+	m.Called(message)
+}
+
+func (m *MockLogger) Warning(message string) {
+	m.Called(message)
+}
+
+func (m *MockLogger) Error(message string, err interface{}) {
+	m.Called(message, err)
+}
+
 func TestBucketExclusionGroups(t *testing.T) {
+	mockLogger := MockLogger{}
 	experiment1 := entities.Experiment{
 		ID:  "1886780721",
 		Key: "experiment_1",
@@ -47,8 +87,13 @@ func TestBucketExclusionGroups(t *testing.T) {
 		},
 	}
 
-	bucketer := NewMurmurhashExperimentBucketer(logging.GetLogger("","TestBucketExclusionGroups" ), DefaultHashSeed)
+	bucketer := NewMurmurhashExperimentBucketer(&mockLogger, DefaultHashSeed)
 	// ppid2 + 1886780722 (groupId) will generate bucket value of 2434 which maps to experiment 1
+	mockLogger.On("Debug", fmt.Sprintf(logging.UserAssignedToBucketValue.String(), 2434, "ppid2"))
+	mockLogger.On("Info", fmt.Sprintf(logging.UserBucketedIntoExperimentInGroup.String(), "ppid2", "experiment_1", "1886780722"))
+	mockLogger.On("Debug", fmt.Sprintf(logging.UserAssignedToBucketValue.String(), 4299, "ppid2"))
+	mockLogger.On("Info", fmt.Sprintf(logging.UserNotBucketedIntoExperimentInGroup.String(), "ppid2", "experiment_2", "1886780722"))
+
 	bucketedVariation, reason, _ := bucketer.Bucket("ppid2", experiment1, exclusionGroup)
 	assert.Equal(t, experiment1.Variations["22222"], *bucketedVariation)
 	assert.Equal(t, reasons.BucketedIntoVariation, reason)

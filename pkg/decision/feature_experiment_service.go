@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -18,8 +18,6 @@
 package decision
 
 import (
-	"fmt"
-
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
@@ -33,7 +31,7 @@ type FeatureExperimentService struct {
 // NewFeatureExperimentService returns a new instance of the FeatureExperimentService
 func NewFeatureExperimentService(logger logging.OptimizelyLogProducer, compositeExperimentService ExperimentService) *FeatureExperimentService {
 	return &FeatureExperimentService{
-		logger: logger,
+		logger:                     logger,
 		compositeExperimentService: compositeExperimentService,
 	}
 }
@@ -50,12 +48,6 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 		}
 
 		experimentDecision, err := f.compositeExperimentService.GetDecision(experimentDecisionContext, userContext)
-		f.logger.Debug(fmt.Sprintf(
-			`Decision made for feature test with key "%s" for user "%s" with the following reason: "%s".`,
-			feature.Key,
-			userContext.ID,
-			experimentDecision.Reason,
-		))
 
 		// Variation not nil means we got a decision and should return it
 		if experimentDecision.Variation != nil {

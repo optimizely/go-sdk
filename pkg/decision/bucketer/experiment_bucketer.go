@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -18,6 +18,8 @@
 package bucketer
 
 import (
+	"fmt"
+
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
@@ -31,28 +33,34 @@ type ExperimentBucketer interface {
 // MurmurhashExperimentBucketer buckets the user using the mmh3 algorightm
 type MurmurhashExperimentBucketer struct {
 	bucketer Bucketer
+	logger   logging.OptimizelyLogProducer
 }
 
 // NewMurmurhashExperimentBucketer returns a new instance of the murmurhash experiment bucketer
 func NewMurmurhashExperimentBucketer(logger logging.OptimizelyLogProducer, hashSeed uint32) *MurmurhashExperimentBucketer {
 	return &MurmurhashExperimentBucketer{
-		bucketer: MurmurhashBucketer{hashSeed: hashSeed, logger:logger},
+		bucketer: MurmurhashBucketer{hashSeed: hashSeed, logger: logger},
+		logger:   logger,
 	}
 }
 
 // Bucket buckets the user into the given experiment
 func (b MurmurhashExperimentBucketer) Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (*entities.Variation, reasons.Reason, error) {
 	if experiment.GroupID != "" && group.Policy == "random" {
-		bucketKey := bucketingID + group.ID
-		bucketedExperimentID := b.bucketer.BucketToEntity(bucketKey, group.TrafficAllocation)
-		if bucketedExperimentID == "" || bucketedExperimentID != experiment.ID {
-			// User is not bucketed into provided experiment in mutex group
+		if bucketedExperimentID := b.bucketer.BucketToEntity(bucketingID, group.ID, group.TrafficAllocation); bucketedExperimentID != "" {
+			if bucketedExperimentID != experiment.ID {
+				// User is not bucketed into provided experiment in mutex group
+				b.logger.Info(fmt.Sprintf(logging.UserNotBucketedIntoExperimentInGroup.String(), bucketingID, experiment.Key, group.ID))
+				return nil, reasons.NotBucketedIntoVariation, nil
+			}
+			b.logger.Info(fmt.Sprintf(logging.UserBucketedIntoExperimentInGroup.String(), bucketingID, experiment.Key, group.ID))
+		} else {
+			b.logger.Info(fmt.Sprintf(logging.UserNotBucketedIntoAnyExperimentInGroup.String(), bucketingID, group.ID))
 			return nil, reasons.NotBucketedIntoVariation, nil
 		}
 	}
 
-	bucketKey := bucketingID + experiment.ID
-	bucketedVariationID := b.bucketer.BucketToEntity(bucketKey, experiment.TrafficAllocation)
+	bucketedVariationID := b.bucketer.BucketToEntity(bucketingID, experiment.ID, experiment.TrafficAllocation)
 	if bucketedVariationID == "" {
 		// User is not bucketed into a variation in the experiment, return nil variation
 		return nil, reasons.NotBucketedIntoVariation, nil
