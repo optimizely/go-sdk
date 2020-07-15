@@ -139,7 +139,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateMultipleOrConditions()
 			"bool_true": true,
 		},
 	}
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.NullUserAttribute), "", "string_foo"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "string_foo"))
 	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 
 	s.True(result)
@@ -187,7 +187,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateMultipleAndConditions(
 	}
 
 	condTreeParams := e.NewTreeParameters(&user, map[string]e.Audience{})
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.NullUserAttribute), "", "bool_true"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "bool_true"))
 	result, _ := s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	s.False(result)
 
@@ -198,7 +198,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateMultipleAndConditions(
 		},
 	}
 
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.NullUserAttribute), "", "string_foo"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "string_foo"))
 	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	s.False(result)
 
@@ -265,7 +265,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateNotCondition() {
 			"bool_true": false,
 		},
 	}
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.NullUserAttribute), "", "string_foo"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "string_foo"))
 	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams)
 	s.True(result)
 
@@ -436,8 +436,8 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateAnAudienceTreeSingleAu
 		AudienceMap: audienceMap,
 	}
 
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.AudienceEvaluationStarted), "11111"))
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.AudienceEvaluatedTo), "11111", true))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.AudienceEvaluationStarted.String(), "11111"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.AudienceEvaluatedTo.String(), "11111", true))
 	result, _ := s.conditionTreeEvaluator.Evaluate(audienceTree, treeParams)
 	s.True(result)
 	s.mockLogger.AssertExpectations(s.T())
@@ -466,8 +466,8 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateAnAudienceTreeMultiple
 		},
 		AudienceMap: audienceMap,
 	}
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.AudienceEvaluationStarted), "11111"))
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.AudienceEvaluatedTo), "11111", true))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.AudienceEvaluationStarted.String(), "11111"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.AudienceEvaluatedTo.String(), "11111", true))
 	result, _ := s.conditionTreeEvaluator.Evaluate(audienceTree, treeParams)
 	s.True(result)
 
@@ -482,10 +482,10 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateAnAudienceTreeMultiple
 		},
 		AudienceMap: audienceMap,
 	}
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.AudienceEvaluationStarted), "11111"))
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.NullUserAttribute), "", "string_foo"))
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.AudienceEvaluationStarted), "11112"))
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.AudienceEvaluatedTo), "11112", true))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.AudienceEvaluationStarted.String(), "11111"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "string_foo"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.AudienceEvaluationStarted.String(), "11112"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.AudienceEvaluatedTo.String(), "11112", true))
 
 	result, _ = s.conditionTreeEvaluator.Evaluate(audienceTree, treeParams)
 	s.True(result)

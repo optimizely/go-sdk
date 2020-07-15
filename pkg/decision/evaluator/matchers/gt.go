@@ -38,7 +38,7 @@ func (m GtMatcher) Match(user entities.UserContext) (bool, error) {
 
 func matchGtOrLt(user entities.UserContext, condition entities.Condition, logger logging.OptimizelyLogProducer, gtMatch bool) (bool, error) {
 	if !user.CheckAttributeExists(condition.Name) {
-		logger.Debug(fmt.Sprintf(string(logging.NullUserAttribute), condition.StringRepresentation, condition.Name))
+		logger.Debug(fmt.Sprintf(logging.NullUserAttribute.String(), condition.StringRepresentation, condition.Name))
 		return false, fmt.Errorf(`no attribute named "%s"`, condition.Name)
 	}
 
@@ -46,7 +46,7 @@ func matchGtOrLt(user entities.UserContext, condition entities.Condition, logger
 		attributeValue, err := user.GetFloatAttribute(condition.Name)
 		if err != nil {
 			val, _ := user.GetAttribute(condition.Name)
-			logger.Warning(fmt.Sprintf(string(logging.InvalidAttributeValueType), condition.StringRepresentation, val, condition.Name))
+			logger.Warning(fmt.Sprintf(logging.InvalidAttributeValueType.String(), condition.StringRepresentation, val, condition.Name))
 			return false, err
 		}
 		if gtMatch {
@@ -55,6 +55,6 @@ func matchGtOrLt(user entities.UserContext, condition entities.Condition, logger
 		return floatValue > attributeValue, nil
 	}
 
-	logger.Warning(fmt.Sprintf(string(logging.UnsupportedConditionValue), condition.StringRepresentation))
+	logger.Warning(fmt.Sprintf(logging.UnsupportedConditionValue.String(), condition.StringRepresentation))
 	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", condition.Name)
 }

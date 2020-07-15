@@ -35,7 +35,7 @@ type ExactMatcher struct {
 func (m ExactMatcher) Match(user entities.UserContext) (bool, error) {
 
 	if !user.CheckAttributeExists(m.Condition.Name) {
-		m.Logger.Debug(fmt.Sprintf(string(logging.NullUserAttribute), m.Condition.StringRepresentation, m.Condition.Name))
+		m.Logger.Debug(fmt.Sprintf(logging.NullUserAttribute.String(), m.Condition.StringRepresentation, m.Condition.Name))
 		return false, fmt.Errorf(`no attribute named "%s"`, m.Condition.Name)
 	}
 
@@ -43,7 +43,7 @@ func (m ExactMatcher) Match(user entities.UserContext) (bool, error) {
 		attributeValue, err := user.GetStringAttribute(m.Condition.Name)
 		if err != nil {
 			val, _ := user.GetAttribute(m.Condition.Name)
-			m.Logger.Warning(fmt.Sprintf(string(logging.InvalidAttributeValueType), m.Condition.StringRepresentation, val, m.Condition.Name))
+			m.Logger.Warning(fmt.Sprintf(logging.InvalidAttributeValueType.String(), m.Condition.StringRepresentation, val, m.Condition.Name))
 			return false, err
 		}
 		return stringValue == attributeValue, nil
@@ -53,7 +53,7 @@ func (m ExactMatcher) Match(user entities.UserContext) (bool, error) {
 		attributeValue, err := user.GetBoolAttribute(m.Condition.Name)
 		if err != nil {
 			val, _ := user.GetAttribute(m.Condition.Name)
-			m.Logger.Warning(fmt.Sprintf(string(logging.InvalidAttributeValueType), m.Condition.StringRepresentation, val, m.Condition.Name))
+			m.Logger.Warning(fmt.Sprintf(logging.InvalidAttributeValueType.String(), m.Condition.StringRepresentation, val, m.Condition.Name))
 			return false, err
 		}
 		return boolValue == attributeValue, nil
@@ -63,12 +63,12 @@ func (m ExactMatcher) Match(user entities.UserContext) (bool, error) {
 		attributeValue, err := user.GetFloatAttribute(m.Condition.Name)
 		if err != nil {
 			val, _ := user.GetAttribute(m.Condition.Name)
-			m.Logger.Warning(fmt.Sprintf(string(logging.InvalidAttributeValueType), m.Condition.StringRepresentation, val, m.Condition.Name))
+			m.Logger.Warning(fmt.Sprintf(logging.InvalidAttributeValueType.String(), m.Condition.StringRepresentation, val, m.Condition.Name))
 			return false, err
 		}
 		return floatValue == attributeValue, nil
 	}
 
-	m.Logger.Warning(fmt.Sprintf(string(logging.UnsupportedConditionValue), m.Condition.StringRepresentation))
+	m.Logger.Warning(fmt.Sprintf(logging.UnsupportedConditionValue.String(), m.Condition.StringRepresentation))
 	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
 }

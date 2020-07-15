@@ -74,7 +74,7 @@ func (s *SubstringTestSuite) TestSubstringMatcher() {
 		},
 	}
 
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.NullUserAttribute), "", "string_foo"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "string_foo"))
 	_, err = matcher.Match(user)
 	s.Error(err)
 
@@ -84,7 +84,7 @@ func (s *SubstringTestSuite) TestSubstringMatcher() {
 			"string_foo": true,
 		},
 	}
-	s.mockLogger.On("Warning", fmt.Sprintf(string(logging.InvalidAttributeValueType), "", true, "string_foo"))
+	s.mockLogger.On("Warning", fmt.Sprintf(logging.InvalidAttributeValueType.String(), "", true, "string_foo"))
 	result, err = matcher.Match(user)
 	s.Error(err)
 	s.False(result)
@@ -107,7 +107,7 @@ func (s *GtTestSuite) TestSubstringMatcherUnsupportedConditionValue() {
 			"string_foo": "foo",
 		},
 	}
-	s.mockLogger.On("Warning", fmt.Sprintf(string(logging.UnsupportedConditionValue), ""))
+	s.mockLogger.On("Warning", fmt.Sprintf(logging.UnsupportedConditionValue.String(), ""))
 	result, err := matcher.Match(user)
 	s.Error(err)
 	s.False(result)

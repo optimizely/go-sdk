@@ -52,16 +52,16 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	// Determine if user can be part of the experiment
 	if experiment.AudienceConditionTree != nil {
 		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
-		s.logger.Debug(fmt.Sprintf(string(logging.EvaluatingAudiencesForExperiment), experiment.Key))
+		s.logger.Debug(fmt.Sprintf(logging.EvaluatingAudiencesForExperiment.String(), experiment.Key))
 		evalResult, _ := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
-		s.logger.Info(fmt.Sprintf(string(logging.ExperimentAudiencesEvaluatedTo), experiment.Key, evalResult))
+		s.logger.Info(fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, evalResult))
 		if !evalResult {
-			s.logger.Info(fmt.Sprintf(string(logging.UserNotInExperiment), userContext.ID, experiment.Key))
+			s.logger.Info(fmt.Sprintf(logging.UserNotInExperiment.String(), userContext.ID, experiment.Key))
 			experimentDecision.Reason = reasons.FailedAudienceTargeting
 			return experimentDecision, nil
 		}
 	} else {
-		s.logger.Info(fmt.Sprintf(string(logging.ExperimentAudiencesEvaluatedTo), experiment.Key, true))
+		s.logger.Info(fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, true))
 	}
 
 	var group entities.Group

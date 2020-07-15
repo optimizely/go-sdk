@@ -93,7 +93,7 @@ func (s *ExactTestSuite) TestExactMatcherString() {
 			"string_not_foo": "foo",
 		},
 	}
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.NullUserAttribute), "", "string_foo"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "string_foo"))
 	_, err = matcher.Match(user)
 	s.Error(err)
 
@@ -103,7 +103,7 @@ func (s *ExactTestSuite) TestExactMatcherString() {
 			"string_foo": 121,
 		},
 	}
-	s.mockLogger.On("Warning", fmt.Sprintf(string(logging.InvalidAttributeValueType), "", 121, "string_foo"))
+	s.mockLogger.On("Warning", fmt.Sprintf(logging.InvalidAttributeValueType.String(), "", 121, "string_foo"))
 	result, err = matcher.Match(user)
 	s.Error(err)
 	s.False(false)
@@ -148,7 +148,7 @@ func (s *ExactTestSuite) TestExactMatcherBool() {
 		},
 	}
 
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.NullUserAttribute), "", "bool_true"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "bool_true"))
 	_, err = matcher.Match(user)
 	s.Error(err)
 
@@ -158,7 +158,7 @@ func (s *ExactTestSuite) TestExactMatcherBool() {
 			"bool_true": 121,
 		},
 	}
-	s.mockLogger.On("Warning", fmt.Sprintf(string(logging.InvalidAttributeValueType), "", 121, "bool_true"))
+	s.mockLogger.On("Warning", fmt.Sprintf(logging.InvalidAttributeValueType.String(), "", 121, "bool_true"))
 	result, err = matcher.Match(user)
 	s.Error(err)
 	s.False(result)
@@ -213,7 +213,7 @@ func (s *ExactTestSuite) TestExactMatcherInt() {
 			"int_43": 42,
 		},
 	}
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.NullUserAttribute), "", "int_42"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "int_42"))
 	_, err = matcher.Match(user)
 	s.Error(err)
 
@@ -223,7 +223,7 @@ func (s *ExactTestSuite) TestExactMatcherInt() {
 			"int_42": "test",
 		},
 	}
-	s.mockLogger.On("Warning", fmt.Sprintf(string(logging.InvalidAttributeValueType), "", "test", "int_42"))
+	s.mockLogger.On("Warning", fmt.Sprintf(logging.InvalidAttributeValueType.String(), "", "test", "int_42"))
 	result, err = matcher.Match(user)
 	s.Error(err)
 	s.False(result)
@@ -267,7 +267,7 @@ func (s *ExactTestSuite) TestExactMatcherFloat() {
 			"float_4_3": 4.2,
 		},
 	}
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.NullUserAttribute), "", "float_4_2"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "float_4_2"))
 	_, err = matcher.Match(user)
 	s.Error(err)
 
@@ -277,7 +277,7 @@ func (s *ExactTestSuite) TestExactMatcherFloat() {
 			"float_4_2": "test",
 		},
 	}
-	s.mockLogger.On("Warning", fmt.Sprintf(string(logging.InvalidAttributeValueType), "", "test", "float_4_2"))
+	s.mockLogger.On("Warning", fmt.Sprintf(logging.InvalidAttributeValueType.String(), "", "test", "float_4_2"))
 	result, err = matcher.Match(user)
 	s.Error(err)
 	s.False(result)
@@ -300,7 +300,7 @@ func (s *ExactTestSuite) TestExactMatcherUnsupportedConditionValue() {
 			"int_42": 42,
 		},
 	}
-	s.mockLogger.On("Warning", fmt.Sprintf(string(logging.UnsupportedConditionValue), ""))
+	s.mockLogger.On("Warning", fmt.Sprintf(logging.UnsupportedConditionValue.String(), ""))
 	result, err := matcher.Match(user)
 	s.Error(err)
 	s.False(result)

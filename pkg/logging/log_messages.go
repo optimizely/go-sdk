@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2020, Optimizely, Inc. and contributors                   		*
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -19,6 +19,10 @@ package logging
 
 // LogMessage defines string type for log messages
 type LogMessage string
+
+func (l LogMessage) String() string {
+	return string(l)
+}
 
 const (
 	// Debug Logs

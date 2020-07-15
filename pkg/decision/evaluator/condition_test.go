@@ -109,7 +109,7 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorWithInvalidMat
 	}
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
-	s.mockLogger.On("Warning", fmt.Sprintf(string(logging.UnknownMatchType), ""))
+	s.mockLogger.On("Warning", fmt.Sprintf(logging.UnknownMatchType.String(), ""))
 	result, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams)
 	s.Equal(result, false)
 	s.mockLogger.AssertExpectations(s.T())
@@ -130,7 +130,7 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorWithUnknownTyp
 	}
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
-	s.mockLogger.On("Warning", fmt.Sprintf(string(logging.UnknownConditionType), ""))
+	s.mockLogger.On("Warning", fmt.Sprintf(logging.UnknownConditionType.String(), ""))
 	result, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams)
 	s.Equal(result, false)
 	s.mockLogger.AssertExpectations(s.T())

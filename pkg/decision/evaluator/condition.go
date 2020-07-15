@@ -54,7 +54,7 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 
 	if condition.Type != customAttributeType {
 
-		c.logger.Warning(fmt.Sprintf(string(logging.UnknownConditionType), condition.StringRepresentation))
+		c.logger.Warning(fmt.Sprintf(logging.UnknownConditionType.String(), condition.StringRepresentation))
 		return false, fmt.Errorf(`unable to evaluate condition of type "%s"`, condition.Type)
 	}
 
@@ -89,7 +89,7 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 			Logger:    c.logger,
 		}
 	default:
-		c.logger.Warning(fmt.Sprintf(string(logging.UnknownMatchType), condition.StringRepresentation))
+		c.logger.Warning(fmt.Sprintf(logging.UnknownMatchType.String(), condition.StringRepresentation))
 		return false, fmt.Errorf(`invalid Condition matcher "%s"`, condition.Match)
 	}
 
@@ -112,14 +112,14 @@ func NewAudienceConditionEvaluator(logger logging.OptimizelyLogProducer) *Audien
 func (c AudienceConditionEvaluator) Evaluate(audienceID string, condTreeParams *entities.TreeParameters) (bool, error) {
 
 	if audience, ok := condTreeParams.AudienceMap[audienceID]; ok {
-		c.logger.Debug(fmt.Sprintf(string(logging.AudienceEvaluationStarted), audienceID))
+		c.logger.Debug(fmt.Sprintf(logging.AudienceEvaluationStarted.String(), audienceID))
 		condTree := audience.ConditionTree
 		conditionTreeEvaluator := NewMixedTreeEvaluator(c.logger)
 		retValue, isValid := conditionTreeEvaluator.Evaluate(condTree, condTreeParams)
 		if !isValid {
 			return false, fmt.Errorf(`an error occurred while evaluating nested tree for audience ID "%s"`, audienceID)
 		}
-		c.logger.Debug(fmt.Sprintf(string(logging.AudienceEvaluatedTo), audienceID, retValue))
+		c.logger.Debug(fmt.Sprintf(logging.AudienceEvaluatedTo.String(), audienceID, retValue))
 		return retValue, nil
 	}
 

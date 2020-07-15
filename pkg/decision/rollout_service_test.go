@@ -125,8 +125,8 @@ func (s *RolloutServiceTestSuite) TestGetDecisionHappyPath() {
 		Source:     Rollout,
 		Decision:   Decision{Reason: reasons.BucketedIntoRollout},
 	}
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.EvaluatingAudiencesForRollout), "1"))
-	s.mockLogger.On("Info", fmt.Sprintf(string(logging.RolloutAudiencesEvaluatedTo), "1", true))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "1"))
+	s.mockLogger.On("Info", fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "1", true))
 	s.mockLogger.On("Debug", `Decision made for user "test_user" for feature rollout with key "test_feature_rollout_3334_key": Bucketed into feature rollout.`)
 	decision, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext)
 	s.Equal(expectedFeatureDecision, decision)
@@ -165,11 +165,11 @@ func (s *RolloutServiceTestSuite) TestGetDecisionFallbacksToLastWhenFailsBucketi
 		Source:     Rollout,
 		Decision:   Decision{Reason: reasons.BucketedIntoRollout},
 	}
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.EvaluatingAudiencesForRollout), "1"))
-	s.mockLogger.On("Info", fmt.Sprintf(string(logging.RolloutAudiencesEvaluatedTo), "1", true))
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.EvaluatingAudiencesForRollout), "Everyone Else"))
-	s.mockLogger.On("Info", fmt.Sprintf(string(logging.RolloutAudiencesEvaluatedTo), "Everyone Else", true))
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.UserInEveryoneElse), "test_user"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "1"))
+	s.mockLogger.On("Info", fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "1", true))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "Everyone Else"))
+	s.mockLogger.On("Info", fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "Everyone Else", true))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.UserInEveryoneElse.String(), "test_user"))
 	s.mockLogger.On("Debug", `Decision made for user "test_user" for feature rollout with key "test_feature_rollout_3334_key": Bucketed into feature rollout.`)
 	decision, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext)
 	s.Equal(expectedFeatureDecision, decision)
@@ -203,11 +203,11 @@ func (s *RolloutServiceTestSuite) TestGetDecisionWhenFallbackBucketingFails() {
 		Source:     Rollout,
 		Decision:   Decision{Reason: reasons.FailedRolloutBucketing},
 	}
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.EvaluatingAudiencesForRollout), "1"))
-	s.mockLogger.On("Info", fmt.Sprintf(string(logging.RolloutAudiencesEvaluatedTo), "1", true))
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.EvaluatingAudiencesForRollout), "Everyone Else"))
-	s.mockLogger.On("Info", fmt.Sprintf(string(logging.RolloutAudiencesEvaluatedTo), "Everyone Else", true))
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.UserInEveryoneElse), "test_user"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "1"))
+	s.mockLogger.On("Info", fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "1", true))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "Everyone Else"))
+	s.mockLogger.On("Info", fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "Everyone Else", true))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.UserInEveryoneElse.String(), "test_user"))
 	s.mockLogger.On("Debug", `Decision made for user "test_user" for feature rollout with key "test_feature_rollout_3334_key": Not bucketed into rollout.`)
 	decision, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext)
 	s.Equal(expectedFeatureDecision, decision)
@@ -240,11 +240,11 @@ func (s *RolloutServiceTestSuite) TestEvaluatesNextIfPreviousTargetingFails() {
 		Source:     Rollout,
 		Decision:   Decision{Reason: reasons.BucketedIntoRollout},
 	}
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.EvaluatingAudiencesForRollout), "1"))
-	s.mockLogger.On("Info", fmt.Sprintf(string(logging.RolloutAudiencesEvaluatedTo), "1", false))
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.UserNotInRollout), "test_user", "1"))
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.EvaluatingAudiencesForRollout), "2"))
-	s.mockLogger.On("Info", fmt.Sprintf(string(logging.RolloutAudiencesEvaluatedTo), "2", true))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "1"))
+	s.mockLogger.On("Info", fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "1", false))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.UserNotInRollout.String(), "test_user", "1"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "2"))
+	s.mockLogger.On("Info", fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "2", true))
 	s.mockLogger.On("Debug", `Decision made for user "test_user" for feature rollout with key "test_feature_rollout_3334_key": Bucketed into feature rollout.`)
 	decision, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext)
 	s.Equal(expectedFeatureDecision, decision)
@@ -268,14 +268,14 @@ func (s *RolloutServiceTestSuite) TestGetDecisionFailsTargeting() {
 		},
 		Source: Rollout,
 	}
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.EvaluatingAudiencesForRollout), "1"))
-	s.mockLogger.On("Info", fmt.Sprintf(string(logging.RolloutAudiencesEvaluatedTo), "1", false))
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.UserNotInRollout), "test_user", "1"))
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.EvaluatingAudiencesForRollout), "2"))
-	s.mockLogger.On("Info", fmt.Sprintf(string(logging.RolloutAudiencesEvaluatedTo), "2", false))
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.UserNotInRollout), "test_user", "2"))
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.EvaluatingAudiencesForRollout), "Everyone Else"))
-	s.mockLogger.On("Info", fmt.Sprintf(string(logging.RolloutAudiencesEvaluatedTo), "Everyone Else", false))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "1"))
+	s.mockLogger.On("Info", fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "1", false))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.UserNotInRollout.String(), "test_user", "1"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "2"))
+	s.mockLogger.On("Info", fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "2", false))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.UserNotInRollout.String(), "test_user", "2"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "Everyone Else"))
+	s.mockLogger.On("Info", fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "Everyone Else", false))
 	decision, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext)
 	s.Equal(expectedFeatureDecision, decision)
 	s.mockAudienceTreeEvaluator.AssertExpectations(s.T())

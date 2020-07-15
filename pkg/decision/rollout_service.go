@@ -55,7 +55,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 
 	evaluateConditionTree := func(experiment *entities.Experiment, loggingKey string) bool {
 		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
-		r.logger.Debug(fmt.Sprintf(string(logging.EvaluatingAudiencesForRollout), loggingKey))
+		r.logger.Debug(fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), loggingKey))
 		evalResult, _ := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
 		if !evalResult {
 			featureDecision.Reason = reasons.FailedRolloutTargeting
@@ -105,9 +105,9 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		// Move to next evaluation if condition tree is available and evaluation fails
 
 		evaluationResult := experiment.AudienceConditionTree == nil || evaluateConditionTree(experiment, loggingKey)
-		r.logger.Info(fmt.Sprintf(string(logging.RolloutAudiencesEvaluatedTo), loggingKey, evaluationResult))
+		r.logger.Info(fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), loggingKey, evaluationResult))
 		if !evaluationResult {
-			r.logger.Debug(fmt.Sprintf(string(logging.UserNotInRollout), userContext.ID, loggingKey))
+			r.logger.Debug(fmt.Sprintf(logging.UserNotInRollout.String(), userContext.ID, loggingKey))
 			// Evaluate this user for the next rule
 			continue
 		}
@@ -125,13 +125,13 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	experimentDecisionContext := getExperimentDecisionContext(experiment)
 	// Move to bucketing if conditionTree is unavailable or evaluation passes
 	evaluationResult := experiment.AudienceConditionTree == nil || evaluateConditionTree(experiment, "Everyone Else")
-	r.logger.Info(fmt.Sprintf(string(logging.RolloutAudiencesEvaluatedTo), "Everyone Else", evaluationResult))
+	r.logger.Info(fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "Everyone Else", evaluationResult))
 
 	if evaluationResult {
 		decision, err := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext)
 		if err == nil {
 
-			r.logger.Debug(fmt.Sprintf(string(logging.UserInEveryoneElse), userContext.ID))
+			r.logger.Debug(fmt.Sprintf(logging.UserInEveryoneElse.String(), userContext.ID))
 		}
 		return getFeatureDecision(experiment, &decision)
 	}

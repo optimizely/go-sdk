@@ -87,7 +87,7 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionNoTargeting() {
 		ProjectConfig: s.mockConfig,
 	}
 	s.mockBucketer.On("Bucket", testUserContext.ID, testExp1111, entities.Group{}).Return(&testExp1111Var2222, reasons.BucketedIntoVariation, nil)
-	s.mockLogger.On("Info", fmt.Sprintf(string(logging.ExperimentAudiencesEvaluatedTo), "test_experiment_1111", true))
+	s.mockLogger.On("Info", fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), "test_experiment_1111", true))
 	experimentBucketerService := ExperimentBucketerService{
 		bucketer: s.mockBucketer,
 		logger:   s.mockLogger,
@@ -119,8 +119,8 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingPasses() {
 		bucketer:              s.mockBucketer,
 	}
 	s.mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.EvaluatingAudiencesForExperiment), "test_targeted_experiment_1116"))
-	s.mockLogger.On("Info", fmt.Sprintf(string(logging.ExperimentAudiencesEvaluatedTo), "test_targeted_experiment_1116", true))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForExperiment.String(), "test_targeted_experiment_1116"))
+	s.mockLogger.On("Info", fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), "test_targeted_experiment_1116", true))
 
 	testDecisionContext := ExperimentDecisionContext{
 		Experiment:    &testTargetedExp1116,
@@ -150,9 +150,9 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingFails() {
 		bucketer:              s.mockBucketer,
 	}
 	s.mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
-	s.mockLogger.On("Debug", fmt.Sprintf(string(logging.EvaluatingAudiencesForExperiment), "test_targeted_experiment_1116"))
-	s.mockLogger.On("Info", fmt.Sprintf(string(logging.ExperimentAudiencesEvaluatedTo), "test_targeted_experiment_1116", false))
-	s.mockLogger.On("Info", fmt.Sprintf(string(logging.UserNotInExperiment), "test_user_1", "test_targeted_experiment_1116"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForExperiment.String(), "test_targeted_experiment_1116"))
+	s.mockLogger.On("Info", fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), "test_targeted_experiment_1116", false))
+	s.mockLogger.On("Info", fmt.Sprintf(logging.UserNotInExperiment.String(), "test_user_1", "test_targeted_experiment_1116"))
 
 	testDecisionContext := ExperimentDecisionContext{
 		Experiment:    &testTargetedExp1116,
