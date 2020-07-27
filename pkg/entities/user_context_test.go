@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -22,6 +22,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestSetDefaultDecideOptions(t *testing.T) {
+	userContext := UserContext{}
+	userContext.SetDefaultDecideOptions(DisableTracking)
+	assert.Equal(t, []OptimizelyDecideOption{DisableTracking}, userContext.DefaultDecideOptions)
+}
 
 func TestUserAttributeExists(t *testing.T) {
 	userContext := UserContext{

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -27,8 +27,14 @@ const bucketingIDAttributeName = "$opt_bucketing_id"
 
 // UserContext holds information about a user
 type UserContext struct {
-	ID         string
-	Attributes map[string]interface{}
+	ID                   string
+	Attributes           map[string]interface{}
+	DefaultDecideOptions []OptimizelyDecideOption
+}
+
+// SetDefaultDecideOptions sets default decide options
+func (u *UserContext) SetDefaultDecideOptions(options ...OptimizelyDecideOption) {
+	u.DefaultDecideOptions = append(u.DefaultDecideOptions, options...)
 }
 
 // CheckAttributeExists returns whether the specified attribute name exists in the attributes map.

@@ -171,6 +171,46 @@ func (TestConfig) GetClientVersion() string {
 	return "1.0.0"
 }
 
+func TestSetUserContext(t *testing.T) {
+	client := OptimizelyClient{
+		ConfigManager: ValidProjectConfigManager(),
+	}
+
+	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}, DefaultDecideOptions: []entities.OptimizelyDecideOption{entities.DisableTracking}}
+	err := client.SetUserContext(userContext)
+	assert.NoError(t, err)
+	assert.Equal(t, userContext, client.userContext)
+}
+
+func TestSetUserContextReplace(t *testing.T) {
+	client := OptimizelyClient{
+		ConfigManager: ValidProjectConfigManager(),
+	}
+
+	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}, DefaultDecideOptions: []entities.OptimizelyDecideOption{entities.DisableTracking}}
+	err := client.SetUserContext(userContext)
+	assert.NoError(t, err)
+	assert.Equal(t, userContext, client.userContext)
+
+	userContext2 := entities.UserContext{ID: "1212127", Attributes: map[string]interface{}{}, DefaultDecideOptions: []entities.OptimizelyDecideOption{entities.BypassUPS}}
+	err = client.SetUserContext(userContext2)
+	assert.NoError(t, err)
+	assert.Equal(t, userContext2, client.userContext)
+}
+
+func TestSetUserContextWithoutConfig(t *testing.T) {
+	// ensure that we recover if the SDK panics
+	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}, DefaultDecideOptions: []entities.OptimizelyDecideOption{entities.DisableTracking}}
+	client := OptimizelyClient{
+		ConfigManager:   new(PanickingConfigManager),
+		DecisionService: new(MockDecisionService),
+		logger:          logging.GetLogger("", ""),
+	}
+
+	err := client.SetUserContext(userContext)
+	assert.Error(t, err)
+}
+
 func TestTrack(t *testing.T) {
 	mockProcessor := new(MockProcessor)
 	mockDecisionService := new(MockDecisionService)
