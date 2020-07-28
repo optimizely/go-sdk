@@ -20,6 +20,7 @@ package entities
 import (
 	"fmt"
 
+	guuid "github.com/google/uuid"
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
@@ -30,6 +31,21 @@ type UserContext struct {
 	ID                   string
 	Attributes           map[string]interface{}
 	DefaultDecideOptions []OptimizelyDecideOption
+}
+
+// NewUserContext creates and returns a new user context
+func NewUserContext(userID string, attributes map[string]interface{}) *UserContext {
+	if userID == "" {
+		userID = guuid.New().String()
+	}
+	if attributes == nil {
+		attributes = map[string]interface{}{}
+	}
+	return &UserContext{
+		ID:                   userID,
+		Attributes:           attributes,
+		DefaultDecideOptions: []OptimizelyDecideOption{},
+	}
 }
 
 // SetDefaultDecideOptions sets default decide options

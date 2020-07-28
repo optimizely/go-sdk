@@ -24,9 +24,14 @@ import (
 )
 
 func TestSetDefaultDecideOptions(t *testing.T) {
-	userContext := UserContext{}
+	userContext := NewUserContext("1212", map[string]interface{}{})
 	userContext.SetDefaultDecideOptions(DisableTracking)
 	assert.Equal(t, []OptimizelyDecideOption{DisableTracking}, userContext.DefaultDecideOptions)
+}
+
+func TestSetEmptyUserID(t *testing.T) {
+	userContext := NewUserContext("", map[string]interface{}{})
+	assert.NotEqual(t, "", userContext.ID)
 }
 
 func TestUserAttributeExists(t *testing.T) {

@@ -45,13 +45,13 @@ type OptimizelyClient struct {
 	EventProcessor     event.Processor
 	notificationCenter notification.Center
 	execGroup          *utils.ExecGroup
-	userContext        entities.UserContext
+	userContext        *entities.UserContext
 	logger             logging.OptimizelyLogProducer
 	lock               sync.Mutex
 }
 
 // SetUserContext sets user context to be used by decision apis
-func (o *OptimizelyClient) SetUserContext(user entities.UserContext) (err error) {
+func (o *OptimizelyClient) SetUserContext(user *entities.UserContext) (err error) {
 
 	defer func() {
 		if r := recover(); r != nil {

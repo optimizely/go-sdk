@@ -176,7 +176,8 @@ func TestSetUserContext(t *testing.T) {
 		ConfigManager: ValidProjectConfigManager(),
 	}
 
-	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}, DefaultDecideOptions: []entities.OptimizelyDecideOption{entities.DisableTracking}}
+	userContext := entities.NewUserContext("1212121", map[string]interface{}{})
+	userContext.SetDefaultDecideOptions(entities.DisableTracking)
 	err := client.SetUserContext(userContext)
 	assert.NoError(t, err)
 	assert.Equal(t, userContext, client.userContext)
@@ -187,12 +188,14 @@ func TestSetUserContextReplace(t *testing.T) {
 		ConfigManager: ValidProjectConfigManager(),
 	}
 
-	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}, DefaultDecideOptions: []entities.OptimizelyDecideOption{entities.DisableTracking}}
+	userContext := entities.NewUserContext("1212121", map[string]interface{}{})
+	userContext.SetDefaultDecideOptions(entities.DisableTracking)
 	err := client.SetUserContext(userContext)
 	assert.NoError(t, err)
 	assert.Equal(t, userContext, client.userContext)
 
-	userContext2 := entities.UserContext{ID: "1212127", Attributes: map[string]interface{}{}, DefaultDecideOptions: []entities.OptimizelyDecideOption{entities.BypassUPS}}
+	userContext2 := entities.NewUserContext("1212121", map[string]interface{}{})
+	userContext2.SetDefaultDecideOptions(entities.BypassUPS)
 	err = client.SetUserContext(userContext2)
 	assert.NoError(t, err)
 	assert.Equal(t, userContext2, client.userContext)
@@ -200,7 +203,8 @@ func TestSetUserContextReplace(t *testing.T) {
 
 func TestSetUserContextWithoutConfig(t *testing.T) {
 	// ensure that we recover if the SDK panics
-	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}, DefaultDecideOptions: []entities.OptimizelyDecideOption{entities.DisableTracking}}
+	userContext := entities.NewUserContext("1212121", map[string]interface{}{})
+	userContext.SetDefaultDecideOptions(entities.DisableTracking)
 	client := OptimizelyClient{
 		ConfigManager:   new(PanickingConfigManager),
 		DecisionService: new(MockDecisionService),
