@@ -460,17 +460,22 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 	if featureDecision.Variation != nil {
 		decisionInfo.Enabled = featureDecision.Variation.FeatureEnabled
 
+		var experiment = entities.Experiment{}
+		var variation = entities.Variation{}
+
 		// This information is only necessary for feature tests.
 		// For rollouts experiments and variations are an implementation detail only.
 		if featureDecision.Source == decision.FeatureTest {
 			decisionInfo.VariationKey = featureDecision.Variation.Key
 			decisionInfo.ExperimentKey = featureDecision.Experiment.Key
+			experiment = featureDecision.Experiment
+			variation = *featureDecision.Variation
 		}
 
 		// Triggers impression events when applicable
 		if !disableTracking {
 			// send impression event for feature tests
-			impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment, *featureDecision.Variation, userContext)
+			impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, experiment, variation, userContext)
 			o.EventProcessor.ProcessEvent(impressionEvent)
 		}
 	}
