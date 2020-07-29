@@ -5,9 +5,9 @@ git:
 install:
   - eval "$(gimme)"
 stages:
-  - 'Unit test'
   - 'Lint markdown files'
   - 'Lint'
+  - 'Unit test'
   - 'Benchmark test'  
   - 'Integration tests'
   - 'Production tests'
