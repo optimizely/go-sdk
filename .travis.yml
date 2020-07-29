@@ -87,6 +87,7 @@ jobs:
         FULLSTACK_TEST_REPO=ProdTesting
     
     - stage: 'Source clear'
+      if: type = cron
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
       language: go
       addons:
