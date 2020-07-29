@@ -18,6 +18,8 @@ package logging
 
 import (
 	"bytes"
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -55,9 +57,17 @@ func TestLogFormatting(t *testing.T) {
 }
 
 func BenchmarkLogger(b *testing.B) {
-	b.Run("FilteredLevelLogConsumer", func(b *testing.B) {
+	b.Run("FilteredLevelLogConsumer-Stdout", func(b *testing.B) {
+		logger := NewFilteredLevelLogConsumer(LogLevelInfo, os.Stdout)
+		benchmarkLogger(b, logger)
+	})
+	b.Run("FilteredLevelLogConsumer-ByteBuffer", func(b *testing.B) {
 		out := &bytes.Buffer{}
 		logger := NewFilteredLevelLogConsumer(LogLevelInfo, out)
+		benchmarkLogger(b, logger)
+	})
+	b.Run("FilteredLevelLogConsumer-Discard", func(b *testing.B) {
+		logger := NewFilteredLevelLogConsumer(LogLevelInfo, ioutil.Discard)
 		benchmarkLogger(b, logger)
 	})
 }
