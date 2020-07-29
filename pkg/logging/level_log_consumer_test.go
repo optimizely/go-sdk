@@ -70,6 +70,10 @@ func BenchmarkLogger(b *testing.B) {
 		logger := NewFilteredLevelLogConsumer(LogLevelInfo, ioutil.Discard)
 		benchmarkLogger(b, logger)
 	})
+	b.Run("ZeroLogConsumer", func(b *testing.B) {
+		logger := NewZeroLogConsumer(LogLevelInfo)
+		benchmarkLogger(b, logger)
+	})
 }
 
 func benchmarkLogger(b *testing.B, logger OptimizelyLogConsumer) {

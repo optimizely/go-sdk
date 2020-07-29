@@ -5,10 +5,10 @@ git:
 install:
   - eval "$(gimme)"
 stages:
+  - 'Benchmark test'
   - 'Lint markdown files'
   - 'Lint'
   - 'Unit test'
-  - 'Benchmark test'  
   - 'Integration tests'
   - 'Production tests'
   - 'Source clear'
