@@ -53,3 +53,17 @@ func TestLogFormatting(t *testing.T) {
 	assert.Contains(t, out.String(), "[testLogFormatting-sdkKey]")
 	assert.Contains(t, out.String(), "[Optimizely]")
 }
+
+func BenchmarkLogging(b *testing.B) {
+	out := &bytes.Buffer{}
+	logger := NewFilteredLevelLogConsumer(LogLevelInfo, out)
+	fields := map[string]interface{}{
+		"k1": "v1",
+		"k2": "v2",
+		"k3": "v3",
+	}
+
+	for i := 0; i < b.N; i++ {
+		logger.Log(LogLevelInfo, "test message", fields)
+	}
+}
