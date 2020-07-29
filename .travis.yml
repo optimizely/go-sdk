@@ -5,9 +5,9 @@ git:
 install:
   - eval "$(gimme)"
 stages:
+  - 'Unit test'
   - 'Lint markdown files'
   - 'Lint'
-  - 'Unit test'
   - 'Benchmark test'  
   - 'Integration tests'
   - 'Production tests'
@@ -49,8 +49,7 @@ jobs:
         - mv $GOPATH/src/gopkg.in/yaml $GOPATH/src/gopkg.in/yaml.v2 && pushd $GOPATH/src/gopkg.in/yaml.v2  && git checkout v2.2.2 && popd
         - go get -v -d ./...
         # This pkg not in go 1.10
-        - go get github.com/stretchr/testify
-        - pushd $GOPATH/src/github.com/stretchr/testify && git checkout v1.4.0 && popd
+        - go get -d -v github.com/stretchr/testify@v1.4.0
         # -coverprofile was not introduced in 1.10
         - make test
 
