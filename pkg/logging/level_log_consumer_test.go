@@ -54,9 +54,15 @@ func TestLogFormatting(t *testing.T) {
 	assert.Contains(t, out.String(), "[Optimizely]")
 }
 
-func BenchmarkLogging(b *testing.B) {
-	out := &bytes.Buffer{}
-	logger := NewFilteredLevelLogConsumer(LogLevelInfo, out)
+func BenchmarkLogger(b *testing.B) {
+	b.Run("FilteredLevelLogConsumer", func(b *testing.B) {
+		out := &bytes.Buffer{}
+		logger := NewFilteredLevelLogConsumer(LogLevelInfo, out)
+		benchmarkLogger(b, logger)
+	})
+}
+
+func benchmarkLogger(b *testing.B, logger OptimizelyLogConsumer) {
 	fields := map[string]interface{}{
 		"k1": "v1",
 		"k2": "v2",
