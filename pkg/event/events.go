@@ -40,12 +40,14 @@ type UserEvent struct {
 
 // ImpressionEvent represents an impression event
 type ImpressionEvent struct {
-	EntityID     string `json:"entity_id"`
-	Key          string `json:"key"`
 	Attributes   []VisitorAttribute
-	VariationID  string `json:"variation_id"`
 	CampaignID   string `json:"campaign_id"`
+	EntityID     string `json:"entity_id"`
 	ExperimentID string `json:"experiment_id"`
+	FlagKey      string `json:"flag_key"`
+	FlagType     string `json:"flag_type"`
+	Key          string `json:"key"`
+	VariationID  string `json:"variation_id"`
 }
 
 // ConversionEvent represents a conversion event

@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/config"
+	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/stretchr/testify/assert"
 )
@@ -87,16 +88,21 @@ var userContext = entities.UserContext{
 func BuildTestImpressionEvent() UserEvent {
 	config := TestConfig{}
 
-	experiment := entities.Experiment{}
-	experiment.Key = "background_experiment"
-	experiment.LayerID = "15399420423"
-	experiment.ID = "15402980349"
+	fd := decision.FeatureDecision{
+		Decision: decision.Decision{},
+		Source:   "test",
+		Experiment: entities.Experiment{
+			ID:      "15402980349",
+			LayerID: "15399420423",
+			Key:     "background_experiment",
+		},
+		Variation: &entities.Variation{
+			ID:  "15410990633",
+			Key: "variation_a",
+		},
+	}
 
-	variation := entities.Variation{}
-	variation.Key = "variation_a"
-	variation.ID = "15410990633"
-
-	impressionUserEvent := CreateImpressionUserEvent(config, experiment, variation, userContext)
+	impressionUserEvent := CreateImpressionUserEvent(config, fd, userContext)
 
 	return impressionUserEvent
 }
@@ -127,7 +133,7 @@ func TestCreateAndSendImpressionEvent(t *testing.T) {
 
 	processor := NewBatchEventProcessor(WithBatchSize(10), WithQueueSize(100),
 		WithFlushInterval(10),
-		WithEventDispatcher(&MockDispatcher{Events:NewInMemoryQueue(100)}))
+		WithEventDispatcher(&MockDispatcher{Events: NewInMemoryQueue(100)}))
 
 	go processor.Start(context.Background())
 
@@ -145,7 +151,7 @@ func TestCreateAndSendConversionEvent(t *testing.T) {
 	conversionUserEvent := BuildTestConversionEvent()
 
 	processor := NewBatchEventProcessor(WithFlushInterval(10),
-		WithEventDispatcher(&MockDispatcher{Events:NewInMemoryQueue(100)}))
+		WithEventDispatcher(&MockDispatcher{Events: NewInMemoryQueue(100)}))
 
 	go processor.Start(context.Background())
 

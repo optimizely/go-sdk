@@ -76,7 +76,8 @@ func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.U
 	if experimentDecision.Variation != nil && decisionContext.Experiment != nil {
 		// send an impression event
 		result = experimentDecision.Variation.Key
-		impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *decisionContext.Experiment, *experimentDecision.Variation, userContext)
+		impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *decisionContext.Experiment,
+			*experimentDecision.Variation, userContext, experimentKey, "experiment")
 		o.EventProcessor.ProcessEvent(impressionEvent)
 	}
 
@@ -129,7 +130,8 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 		}
 	}
 
-	impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment, *featureDecision.Variation, userContext)
+	impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
+		*featureDecision.Variation, userContext, featureKey, featureDecision.Source)
 	o.EventProcessor.ProcessEvent(impressionEvent)
 	return result, err
 }
@@ -460,22 +462,18 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 	if featureDecision.Variation != nil {
 		decisionInfo.Enabled = featureDecision.Variation.FeatureEnabled
 
-		var experiment = entities.Experiment{}
-		var variation = entities.Variation{}
-
 		// This information is only necessary for feature tests.
 		// For rollouts experiments and variations are an implementation detail only.
 		if featureDecision.Source == decision.FeatureTest {
 			decisionInfo.VariationKey = featureDecision.Variation.Key
 			decisionInfo.ExperimentKey = featureDecision.Experiment.Key
-			experiment = featureDecision.Experiment
-			variation = *featureDecision.Variation
 		}
 
 		// Triggers impression events when applicable
 		if !disableTracking {
 			// send impression event for feature tests
-			impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, experiment, variation, userContext)
+			impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
+				*featureDecision.Variation, userContext, featureKey, featureDecision.Source)
 			o.EventProcessor.ProcessEvent(impressionEvent)
 		}
 	}

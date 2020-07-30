@@ -23,6 +23,7 @@ import (
 	"time"
 
 	guuid "github.com/google/uuid"
+
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/utils"
@@ -57,26 +58,31 @@ func CreateEventContext(projectConfig config.ProjectConfig) Context {
 	return context
 }
 
-func createImpressionEvent(projectConfig config.ProjectConfig, experiment entities.Experiment,
-	variation entities.Variation, attributes map[string]interface{}) ImpressionEvent {
+func createImpressionEvent(
+	projectConfig config.ProjectConfig,
+	experiment entities.Experiment,
+	variation entities.Variation,
+	attributes map[string]interface{},
+	flagKey, flagType string,
+) ImpressionEvent {
 
-	impression := ImpressionEvent{}
-	impression.Key = impressionKey
-	impression.EntityID = experiment.LayerID
-	impression.Attributes = getEventAttributes(projectConfig, attributes)
-	impression.VariationID = variation.ID
-	impression.ExperimentID = experiment.ID
-	impression.CampaignID = experiment.LayerID
-
-	return impression
+	return ImpressionEvent{
+		Attributes:   getEventAttributes(projectConfig, attributes),
+		CampaignID:   experiment.LayerID,
+		EntityID:     experiment.LayerID,
+		ExperimentID: experiment.ID,
+		FlagKey:      flagKey,
+		FlagType:     flagType,
+		Key:          impressionKey,
+		VariationID:  variation.ID,
+	}
 }
 
 // CreateImpressionUserEvent creates and returns ImpressionEvent for user
 func CreateImpressionUserEvent(projectConfig config.ProjectConfig, experiment entities.Experiment,
-	variation entities.Variation,
-	userContext entities.UserContext) UserEvent {
+	variation entities.Variation, userContext entities.UserContext, flagKey, flagType string) UserEvent {
 
-	impression := createImpressionEvent(projectConfig, experiment, variation, userContext.Attributes)
+	impression := createImpressionEvent(projectConfig, experiment, variation, userContext.Attributes, flagKey, flagType)
 
 	userEvent := UserEvent{}
 	userEvent.Timestamp = makeTimestamp()
