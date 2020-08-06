@@ -21,5 +21,5 @@ import "github.com/optimizely/go-sdk/pkg/entities"
 
 // Matcher matches the condition against the user's attributes
 type Matcher interface {
-	Match(entities.UserContext) (bool, error)
+	Match(entities.Condition, entities.UserContext) (bool, error)
 }

@@ -25,12 +25,11 @@ import (
 )
 
 func TestSubstringMatcher(t *testing.T) {
-	matcher := SubstringMatcher{
-		Condition: entities.Condition{
-			Match: "substring",
-			Value: "foo",
-			Name:  "string_foo",
-		},
+	matcher := SubstringMatcher{}
+	condition := entities.Condition{
+		Match: "substring",
+		Value: "foo",
+		Name:  "string_foo",
 	}
 
 	// Test match
@@ -40,7 +39,7 @@ func TestSubstringMatcher(t *testing.T) {
 		},
 	}
 
-	result, err := matcher.Match(user)
+	result, err := matcher.Match(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -51,7 +50,7 @@ func TestSubstringMatcher(t *testing.T) {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = matcher.Match(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -62,6 +61,6 @@ func TestSubstringMatcher(t *testing.T) {
 		},
 	}
 
-	_, err = matcher.Match(user)
+	_, err = matcher.Match(condition, user)
 	assert.Error(t, err)
 }

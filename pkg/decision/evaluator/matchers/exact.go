@@ -26,34 +26,33 @@ import (
 
 // ExactMatcher matches against the "exact" match type
 type ExactMatcher struct {
-	Condition entities.Condition
 }
 
 // Match returns true if the user's attribute match the condition's string value
-func (m ExactMatcher) Match(user entities.UserContext) (bool, error) {
-	if stringValue, ok := m.Condition.Value.(string); ok {
-		attributeValue, err := user.GetStringAttribute(m.Condition.Name)
+func (m ExactMatcher) Match(condition entities.Condition, user entities.UserContext) (bool, error) {
+	if stringValue, ok := condition.Value.(string); ok {
+		attributeValue, err := user.GetStringAttribute(condition.Name)
 		if err != nil {
 			return false, err
 		}
 		return stringValue == attributeValue, nil
 	}
 
-	if boolValue, ok := m.Condition.Value.(bool); ok {
-		attributeValue, err := user.GetBoolAttribute(m.Condition.Name)
+	if boolValue, ok := condition.Value.(bool); ok {
+		attributeValue, err := user.GetBoolAttribute(condition.Name)
 		if err != nil {
 			return false, err
 		}
 		return boolValue == attributeValue, nil
 	}
 
-	if floatValue, ok := utils.ToFloat(m.Condition.Value); ok {
-		attributeValue, err := user.GetFloatAttribute(m.Condition.Name)
+	if floatValue, ok := utils.ToFloat(condition.Value); ok {
+		attributeValue, err := user.GetFloatAttribute(condition.Name)
 		if err != nil {
 			return false, err
 		}
 		return floatValue == attributeValue, nil
 	}
 
-	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
+	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", condition.Name)
 }

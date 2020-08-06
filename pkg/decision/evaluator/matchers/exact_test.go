@@ -25,12 +25,11 @@ import (
 )
 
 func TestExactMatcherString(t *testing.T) {
-	matcher := ExactMatcher{
-		Condition: entities.Condition{
-			Match: "exact",
-			Value: "foo",
-			Name:  "string_foo",
-		},
+	matcher := ExactMatcher{}
+	condition := entities.Condition{
+		Match: "exact",
+		Value: "foo",
+		Name:  "string_foo",
 	}
 
 	// Test match
@@ -39,7 +38,7 @@ func TestExactMatcherString(t *testing.T) {
 			"string_foo": "foo",
 		},
 	}
-	result, err := matcher.Match(user)
+	result, err := matcher.Match(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -50,7 +49,7 @@ func TestExactMatcherString(t *testing.T) {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = matcher.Match(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -61,17 +60,16 @@ func TestExactMatcherString(t *testing.T) {
 		},
 	}
 
-	_, err = matcher.Match(user)
+	_, err = matcher.Match(condition, user)
 	assert.Error(t, err)
 }
 
 func TestExactMatcherBool(t *testing.T) {
-	matcher := ExactMatcher{
-		Condition: entities.Condition{
-			Match: "exact",
-			Value: true,
-			Name:  "bool_true",
-		},
+	matcher := ExactMatcher{}
+	condition := entities.Condition{
+		Match: "exact",
+		Value: true,
+		Name:  "bool_true",
 	}
 
 	// Test match
@@ -80,7 +78,7 @@ func TestExactMatcherBool(t *testing.T) {
 			"bool_true": true,
 		},
 	}
-	result, err := matcher.Match(user)
+	result, err := matcher.Match(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -91,7 +89,7 @@ func TestExactMatcherBool(t *testing.T) {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = matcher.Match(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -102,17 +100,16 @@ func TestExactMatcherBool(t *testing.T) {
 		},
 	}
 
-	_, err = matcher.Match(user)
+	_, err = matcher.Match(condition, user)
 	assert.Error(t, err)
 }
 
 func TestExactMatcherInt(t *testing.T) {
-	matcher := ExactMatcher{
-		Condition: entities.Condition{
-			Match: "exact",
-			Value: 42,
-			Name:  "int_42",
-		},
+	matcher := ExactMatcher{}
+	condition := entities.Condition{
+		Match: "exact",
+		Value: 42,
+		Name:  "int_42",
 	}
 
 	// Test match - same type
@@ -121,7 +118,7 @@ func TestExactMatcherInt(t *testing.T) {
 			"int_42": 42,
 		},
 	}
-	result, err := matcher.Match(user)
+	result, err := matcher.Match(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -132,7 +129,7 @@ func TestExactMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = matcher.Match(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -143,7 +140,7 @@ func TestExactMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = matcher.Match(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -154,17 +151,16 @@ func TestExactMatcherInt(t *testing.T) {
 		},
 	}
 
-	_, err = matcher.Match(user)
+	_, err = matcher.Match(condition, user)
 	assert.Error(t, err)
 }
 
 func TestExactMatcherFloat(t *testing.T) {
-	matcher := ExactMatcher{
-		Condition: entities.Condition{
-			Match: "exact",
-			Value: 4.2,
-			Name:  "float_4_2",
-		},
+	matcher := ExactMatcher{}
+	condition := entities.Condition{
+		Match: "exact",
+		Value: 4.2,
+		Name:  "float_4_2",
 	}
 
 	// Test match
@@ -173,7 +169,7 @@ func TestExactMatcherFloat(t *testing.T) {
 			"float_4_2": 4.2,
 		},
 	}
-	result, err := matcher.Match(user)
+	result, err := matcher.Match(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -184,7 +180,7 @@ func TestExactMatcherFloat(t *testing.T) {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = matcher.Match(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -195,6 +191,6 @@ func TestExactMatcherFloat(t *testing.T) {
 		},
 	}
 
-	_, err = matcher.Match(user)
+	_, err = matcher.Match(condition, user)
 	assert.Error(t, err)
 }
