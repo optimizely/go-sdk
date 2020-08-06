@@ -1,5 +1,11 @@
 package matchers
 
+import (
+	"github.com/optimizely/go-sdk/pkg/entities"
+)
+
+type Matcher func(entities.Condition, entities.UserContext) (bool, error)
+
 const (
 	ExactMatchType     = "exact"
 	ExistsMatchType    = "exists"
@@ -11,11 +17,11 @@ const (
 var registry = make(map[string]Matcher)
 
 func init() {
-	Register(ExactMatchType, ExactMatcher{})
-	Register(ExistsMatchType, ExistsMatcher{})
-	Register(LtMatchType, LtMatcher{})
-	Register(GtMatchType, GtMatcher{})
-	Register(SubstringMatchType, SubstringMatcher{})
+	Register(ExactMatchType, ExactMatcher)
+	Register(ExistsMatchType, ExistsMatcher)
+	Register(LtMatchType, LtMatcher)
+	Register(GtMatchType, GtMatcher)
+	Register(SubstringMatchType, SubstringMatcher)
 }
 
 func Register(name string, matcher Matcher) {

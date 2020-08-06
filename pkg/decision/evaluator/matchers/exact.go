@@ -25,11 +25,7 @@ import (
 )
 
 // ExactMatcher matches against the "exact" match type
-type ExactMatcher struct {
-}
-
-// Match returns true if the user's attribute match the condition's string value
-func (m ExactMatcher) Match(condition entities.Condition, user entities.UserContext) (bool, error) {
+func ExactMatcher(condition entities.Condition, user entities.UserContext) (bool, error) {
 	if stringValue, ok := condition.Value.(string); ok {
 		attributeValue, err := user.GetStringAttribute(condition.Name)
 		if err != nil {

@@ -25,7 +25,6 @@ import (
 )
 
 func TestLtMatcherInt(t *testing.T) {
-	matcher := LtMatcher{}
 	condition := entities.Condition{
 		Match: "lt",
 		Value: 42,
@@ -38,7 +37,7 @@ func TestLtMatcherInt(t *testing.T) {
 			"int_42": 41,
 		},
 	}
-	result, err := matcher.Match(condition, user)
+	result, err := LtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -49,7 +48,7 @@ func TestLtMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = matcher.Match(condition, user)
+	result, err = LtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -60,7 +59,7 @@ func TestLtMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = matcher.Match(condition, user)
+	result, err = LtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -71,7 +70,7 @@ func TestLtMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = matcher.Match(condition, user)
+	result, err = LtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -82,12 +81,11 @@ func TestLtMatcherInt(t *testing.T) {
 		},
 	}
 
-	_, err = matcher.Match(condition, user)
+	_, err = LtMatcher(condition, user)
 	assert.Error(t, err)
 }
 
 func TestLtMatcherFloat(t *testing.T) {
-	matcher := LtMatcher{}
 	condition := entities.Condition{
 		Match: "lt",
 		Value: 4.2,
@@ -100,7 +98,7 @@ func TestLtMatcherFloat(t *testing.T) {
 			"float_4_2": 4,
 		},
 	}
-	result, err := matcher.Match(condition, user)
+	result, err := LtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -110,7 +108,7 @@ func TestLtMatcherFloat(t *testing.T) {
 			"float_4_2": 4.19999,
 		},
 	}
-	result, err = matcher.Match(condition, user)
+	result, err = LtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -121,7 +119,7 @@ func TestLtMatcherFloat(t *testing.T) {
 		},
 	}
 
-	result, err = matcher.Match(condition, user)
+	result, err = LtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -132,6 +130,6 @@ func TestLtMatcherFloat(t *testing.T) {
 		},
 	}
 
-	_, err = matcher.Match(condition, user)
+	_, err = LtMatcher(condition, user)
 	assert.Error(t, err)
 }

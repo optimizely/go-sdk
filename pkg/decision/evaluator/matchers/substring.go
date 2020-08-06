@@ -25,11 +25,7 @@ import (
 )
 
 // SubstringMatcher matches against the "substring" match type
-type SubstringMatcher struct {
-}
-
-// Match returns true if the user's attribute is a substring of the condition's string value
-func (m SubstringMatcher) Match(condition entities.Condition, user entities.UserContext) (bool, error) {
+func SubstringMatcher(condition entities.Condition, user entities.UserContext) (bool, error) {
 
 	if stringValue, ok := condition.Value.(string); ok {
 		attributeValue, err := user.GetStringAttribute(condition.Name)

@@ -48,7 +48,7 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 	if matcher, ok := matchers.Get(matchType); !ok {
 		return false, fmt.Errorf(`invalid Condition matcher "%s"`, condition.Match)
 	} else {
-		return matcher.Match(condition, *condTreeParams.User)
+		return matcher(condition, *condTreeParams.User)
 	}
 }
 

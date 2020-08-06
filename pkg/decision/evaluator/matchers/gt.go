@@ -25,11 +25,7 @@ import (
 )
 
 // GtMatcher matches against the "gt" match type
-type GtMatcher struct {
-}
-
-// Match returns true if the user's attribute is greater than the condition's string value
-func (m GtMatcher) Match(condition entities.Condition, user entities.UserContext) (bool, error) {
+func GtMatcher(condition entities.Condition, user entities.UserContext) (bool, error) {
 
 	if floatValue, ok := utils.ToFloat(condition.Value); ok {
 		attributeValue, err := user.GetFloatAttribute(condition.Name)

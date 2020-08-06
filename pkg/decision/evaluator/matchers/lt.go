@@ -25,11 +25,7 @@ import (
 )
 
 // LtMatcher matches against the "lt" match type
-type LtMatcher struct {
-}
-
-// Match returns true if the user's attribute is less than the condition's string value
-func (m LtMatcher) Match(condition entities.Condition, user entities.UserContext) (bool, error) {
+func LtMatcher(condition entities.Condition, user entities.UserContext) (bool, error) {
 
 	if floatValue, ok := utils.ToFloat(condition.Value); ok {
 		attributeValue, err := user.GetFloatAttribute(condition.Name)

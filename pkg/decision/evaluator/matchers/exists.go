@@ -22,10 +22,6 @@ import (
 )
 
 // ExistsMatcher matches against the "exists" match type
-type ExistsMatcher struct {
-}
-
-// Match returns true if the user's attribute is in the condition
-func (m ExistsMatcher) Match(condition entities.Condition, user entities.UserContext) (bool, error) {
+func ExistsMatcher(condition entities.Condition, user entities.UserContext) (bool, error) {
 	return user.CheckAttributeExists(condition.Name), nil
 }
