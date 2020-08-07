@@ -45,11 +45,12 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 		matchType = matchers.ExactMatchType
 	}
 
-	if matcher, ok := matchers.Get(matchType); !ok {
+	matcher, ok := matchers.Get(matchType)
+	if !ok {
 		return false, fmt.Errorf(`invalid Condition matcher "%s"`, condition.Match)
-	} else {
-		return matcher(condition, *condTreeParams.User)
 	}
+
+	return matcher(condition, *condTreeParams.User)
 }
 
 // AudienceConditionEvaluator evaluates conditions with audience condition
