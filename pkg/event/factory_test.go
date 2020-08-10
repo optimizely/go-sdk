@@ -23,10 +23,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/optimizely/go-sdk/pkg/config"
-	"github.com/optimizely/go-sdk/pkg/decision"
-	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/optimizely/go-sdk/pkg/config"
+	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
 type TestConfig struct {
@@ -88,21 +88,16 @@ var userContext = entities.UserContext{
 func BuildTestImpressionEvent() UserEvent {
 	config := TestConfig{}
 
-	fd := decision.FeatureDecision{
-		Decision: decision.Decision{},
-		Source:   "test",
-		Experiment: entities.Experiment{
-			ID:      "15402980349",
-			LayerID: "15399420423",
-			Key:     "background_experiment",
-		},
-		Variation: &entities.Variation{
-			ID:  "15410990633",
-			Key: "variation_a",
-		},
-	}
+	experiment := entities.Experiment{}
+	experiment.Key = "background_experiment"
+	experiment.LayerID = "15399420423"
+	experiment.ID = "15402980349"
 
-	impressionUserEvent := CreateImpressionUserEvent(config, fd, userContext)
+	variation := entities.Variation{}
+	variation.Key = "variation_a"
+	variation.ID = "15410990633"
+
+	impressionUserEvent := CreateImpressionUserEvent(config, experiment, variation, userContext, experiment.Key, "experiment")
 
 	return impressionUserEvent
 }

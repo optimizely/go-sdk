@@ -48,6 +48,7 @@ type ImpressionEvent struct {
 	FlagType     string `json:"flag_type"`
 	Key          string `json:"key"`
 	VariationID  string `json:"variation_id"`
+	VariationKey string `json:"variation_key"`
 }
 
 // ConversionEvent represents a conversion event
@@ -106,6 +107,9 @@ type Decision struct {
 	VariationID  string `json:"variation_id"`
 	CampaignID   string `json:"campaign_id"`
 	ExperimentID string `json:"experiment_id"`
+	FlagKey      string `json:"flag_key"`
+	FlagType     string `json:"flag_type"`
+	VariationKey string `json:"variation_key"`
 }
 
 // SnapshotEvent represents an event of a snapshot

@@ -75,6 +75,7 @@ func createImpressionEvent(
 		FlagType:     flagType,
 		Key:          impressionKey,
 		VariationID:  variation.ID,
+		VariationKey: variation.Key,
 	}
 }
 
@@ -100,6 +101,9 @@ func createImpressionVisitor(userEvent UserEvent) Visitor {
 	decision.CampaignID = userEvent.Impression.CampaignID
 	decision.ExperimentID = userEvent.Impression.ExperimentID
 	decision.VariationID = userEvent.Impression.VariationID
+	decision.FlagKey = userEvent.Impression.FlagKey
+	decision.FlagType = userEvent.Impression.FlagType
+	decision.VariationKey = userEvent.Impression.VariationKey
 
 	dispatchEvent := SnapshotEvent{}
 	dispatchEvent.Timestamp = makeTimestamp()

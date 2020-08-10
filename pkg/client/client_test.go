@@ -2813,9 +2813,18 @@ func (s *ClientTestSuiteTrackNotification) TestRemoveOnTrackThrowsErrorWhenRemov
 	mockNotificationCenter.AssertExpectations(s.T())
 }
 
-func TestClientTestSuite(t *testing.T) {
+func TestClientTestSuiteAB(t *testing.T) {
 	suite.Run(t, new(ClientTestSuiteAB))
+}
+
+func TestClientTestSuiteFM(t *testing.T) {
 	suite.Run(t, new(ClientTestSuiteFM))
+}
+
+func TestClientTestSuiteTrackEvent(t *testing.T) {
 	suite.Run(t, new(ClientTestSuiteTrackEvent))
+}
+
+func TestClientTestSuiteTrackNotification(t *testing.T) {
 	suite.Run(t, new(ClientTestSuiteTrackNotification))
 }
