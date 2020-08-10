@@ -61,12 +61,12 @@ func CreateEventContext(projectConfig config.ProjectConfig) Context {
 func createImpressionEvent(
 	projectConfig config.ProjectConfig,
 	experiment entities.Experiment,
-	variation entities.Variation,
+	variation *entities.Variation,
 	attributes map[string]interface{},
 	flagKey, flagType string,
 ) ImpressionEvent {
 
-	return ImpressionEvent{
+	event := ImpressionEvent{
 		Attributes:   getEventAttributes(projectConfig, attributes),
 		CampaignID:   experiment.LayerID,
 		EntityID:     experiment.LayerID,
@@ -74,14 +74,19 @@ func createImpressionEvent(
 		FlagKey:      flagKey,
 		FlagType:     flagType,
 		Key:          impressionKey,
-		VariationID:  variation.ID,
-		VariationKey: variation.Key,
 	}
+
+	if variation != nil {
+		event.VariationKey = variation.Key
+		event.VariationID = variation.ID
+	}
+
+	return event
 }
 
 // CreateImpressionUserEvent creates and returns ImpressionEvent for user
 func CreateImpressionUserEvent(projectConfig config.ProjectConfig, experiment entities.Experiment,
-	variation entities.Variation, userContext entities.UserContext, flagKey, flagType string) UserEvent {
+	variation *entities.Variation, userContext entities.UserContext, flagKey, flagType string) UserEvent {
 
 	impression := createImpressionEvent(projectConfig, experiment, variation, userContext.Attributes, flagKey, flagType)
 

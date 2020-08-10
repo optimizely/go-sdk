@@ -77,7 +77,7 @@ func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.U
 		// send an impression event
 		result = experimentDecision.Variation.Key
 		impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *decisionContext.Experiment,
-			*experimentDecision.Variation, userContext, experimentKey, "experiment")
+			experimentDecision.Variation, userContext, experimentKey, "experiment")
 		o.EventProcessor.ProcessEvent(impressionEvent)
 	}
 
@@ -131,7 +131,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 	}
 
 	impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
-		*featureDecision.Variation, userContext, featureKey, featureDecision.Source)
+		featureDecision.Variation, userContext, featureKey, featureDecision.Source)
 	o.EventProcessor.ProcessEvent(impressionEvent)
 	return result, err
 }
@@ -473,7 +473,7 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 		if !disableTracking {
 			// send impression event for feature tests
 			impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
-				*featureDecision.Variation, userContext, featureKey, featureDecision.Source)
+				featureDecision.Variation, userContext, featureKey, featureDecision.Source)
 			o.EventProcessor.ProcessEvent(impressionEvent)
 		}
 	}
@@ -627,12 +627,14 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 		return decisionContext, featureDecision, e
 	}
 
+	decisionContext.ProjectConfig = projectConfig
 	feature, e := projectConfig.GetFeatureByKey(featureKey)
 	if e != nil {
 		o.logger.Warning(fmt.Sprintf(`Could not get feature for key "%s": %s`, featureKey, e))
 		return decisionContext, featureDecision, nil
 	}
 
+	decisionContext.Feature = &feature
 	variable := entities.Variable{}
 	if variableKey != "" {
 		variable, err = projectConfig.GetVariableByKey(feature.Key, variableKey)
@@ -642,12 +644,7 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 		}
 	}
 
-	decisionContext = decision.FeatureDecisionContext{
-		Feature:       &feature,
-		ProjectConfig: projectConfig,
-		Variable:      variable,
-	}
-
+	decisionContext.Variable = variable
 	featureDecision, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext)
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature "%s": %s`, featureKey, err))

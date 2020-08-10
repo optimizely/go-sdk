@@ -97,7 +97,7 @@ func BuildTestImpressionEvent() UserEvent {
 	variation.Key = "variation_a"
 	variation.ID = "15410990633"
 
-	impressionUserEvent := CreateImpressionUserEvent(config, experiment, variation, userContext, experiment.Key, "experiment")
+	impressionUserEvent := CreateImpressionUserEvent(config, experiment, &variation, userContext, experiment.Key, "experiment")
 
 	return impressionUserEvent
 }
