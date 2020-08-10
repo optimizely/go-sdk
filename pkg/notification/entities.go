@@ -47,6 +47,8 @@ const (
 	FeatureVariable DecisionNotificationType = "feature-variable"
 	// AllFeatureVariables is used when the decision is returned as part of evaluating a feature with all variables
 	AllFeatureVariables DecisionNotificationType = "all-feature-variables"
+	FlagDecide          DecisionNotificationType = "flag-decide"
+	ExperimentDecide    DecisionNotificationType = "experiment-decide"
 )
 
 // DecisionNotification is a notification triggered when a decision is made for either a feature or an experiment

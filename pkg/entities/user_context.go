@@ -20,6 +20,7 @@ package entities
 import (
 	"fmt"
 
+	guuid "github.com/google/uuid"
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
@@ -27,8 +28,24 @@ const bucketingIDAttributeName = "$opt_bucketing_id"
 
 // UserContext holds information about a user
 type UserContext struct {
-	ID         string
-	Attributes map[string]interface{}
+	ID                   string
+	Attributes           map[string]interface{}
+	DefaultDecideOptions OptimizelyDecideOptions
+}
+
+// NewUserContext creates and returns a new user context
+func NewUserContext(userID string, attributes map[string]interface{}) *UserContext {
+	if userID == "" {
+		userID = guuid.New().String()
+	}
+	if attributes == nil {
+		attributes = map[string]interface{}{}
+	}
+	return &UserContext{
+		ID:                   userID,
+		Attributes:           attributes,
+		DefaultDecideOptions: OptimizelyDecideOptions{},
+	}
 }
 
 // CheckAttributeExists returns whether the specified attribute name exists in the attributes map.

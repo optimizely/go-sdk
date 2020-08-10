@@ -21,7 +21,28 @@ import (
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/optimizelyjson"
 )
+
+// OptimizelyDecision returns an optimizely api decision
+type OptimizelyDecision struct {
+	VariationKey string
+	Enabled      bool
+	Variables    *optimizelyjson.OptimizelyJSON
+
+	Key     string
+	User    *entities.UserContext
+	Reasons []reasons.Reason
+}
+
+// ErrorDecision returns an error OptimizelyDecision
+func ErrorDecision(key string, user *entities.UserContext, reason reasons.Reason) *OptimizelyDecision {
+	return &OptimizelyDecision{
+		Key:     key,
+		User:    user,
+		Reasons: []reasons.Reason{reason},
+	}
+}
 
 // ExperimentDecisionContext contains the information needed to be able to make a decision for a given experiment
 type ExperimentDecisionContext struct {

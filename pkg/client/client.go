@@ -24,6 +24,7 @@ import (
 	"reflect"
 	"runtime/debug"
 	"strconv"
+	"sync"
 
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decision"
@@ -44,7 +45,40 @@ type OptimizelyClient struct {
 	EventProcessor     event.Processor
 	notificationCenter notification.Center
 	execGroup          *utils.ExecGroup
+	userContext        *entities.UserContext
 	logger             logging.OptimizelyLogProducer
+	lock               sync.Mutex
+}
+
+// SetUserContext sets user context to be used by decision apis
+func (o *OptimizelyClient) SetUserContext(user *entities.UserContext) (err error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			switch t := r.(type) {
+			case error:
+				err = t
+			case string:
+				err = errors.New(t)
+			default:
+				err = errors.New("unexpected error")
+			}
+			errorMessage := fmt.Sprintf("SetUserContext call, optimizely SDK is panicking with the error:")
+			o.logger.Error(errorMessage, err)
+			o.logger.Debug(string(debug.Stack()))
+		}
+	}()
+
+	if _, err := o.getProjectConfig(); err != nil {
+		o.logger.Error("Error retrieving ProjectConfig", err)
+		return err
+	}
+
+	o.lock.Lock()
+	defer o.lock.Unlock()
+	o.userContext = user
+
+	return nil
 }
 
 // Activate returns the key of the variation the user is bucketed into and queues up an impression event to be sent to

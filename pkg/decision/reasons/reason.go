@@ -55,4 +55,12 @@ const (
 	InvalidOverrideVariationAssignment Reason = "Invalid override variation assignment"
 	// OverrideVariationAssignmentFound - A valid override variation was found for the given user and experiment
 	OverrideVariationAssignmentFound Reason = "Override variation assignment found"
+	SdkNotReady                      Reason = "Optimizely SDK not configured properly yet."
+	UserNotSet                       Reason = "User not set properly yet."
+	FeatureKeyInvalid                Reason = "Feature key %s is not in datafile."
+	ExperimentKeyInvalid             Reason = "Experiment key $s is not in datafile. It is either invalid, paused, or archived."
+	FeatureDecisionError             Reason = "received an error while computing feature decision"
+	ExperimentDecisionError          Reason = "received an error while computing experiment decision"
+	VariableValueInvalid             Reason = "Variable value for key %s is invalid or wrong type"
+	InvalidJSONVariable              Reason = "Unable to initialize OptimizelyJSON with the provided dictionary."
 )
