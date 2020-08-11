@@ -23,6 +23,19 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
+const (
+	// SemverEqMatchType represents match type for semantic version equality comparator
+	SemverEqMatchType = "semver_eq"
+	// SemverLtMatchType represents match type for semantic version less than comparator
+	SemverLtMatchType = "semver_lt"
+	// SemverLeMatchType represents match type for semantic version less than or equal to comparator
+	SemverLeMatchType = "semver_le"
+	// SemverGtMatchType represents match type for semantic version greater than comparator
+	SemverGtMatchType = "semver_gt"
+	// SemverGeMatchType represents match type for semantic version greater than or equal to comparator
+	SemverGeMatchType = "semver_ge"
+)
+
 // SemVerEqMatcher matches against the "semver_eq" match type
 type SemVerEqMatcher struct {
 	Condition entities.Condition
@@ -30,18 +43,31 @@ type SemVerEqMatcher struct {
 
 // Match returns true if condition value for semantic versions is equal to the target semantic version
 func (m SemVerEqMatcher) Match(user entities.UserContext) (bool, error) {
+	return match(m.Condition, user)
+}
 
-	if stringValue, ok := m.Condition.Value.(string); ok {
-		attributeValue, err := user.GetStringAttribute(m.Condition.Name)
+func match(condition entities.Condition, user entities.UserContext) (bool, error) {
+	if stringValue, ok := condition.Value.(string); ok {
+		attributeValue, err := user.GetStringAttribute(condition.Name)
 		if err != nil {
 			return false, err
 		}
 		result, err := entities.SemanticVersion(attributeValue).CompareVersion(entities.SemanticVersion(stringValue))
 		if err == nil {
-			return result == 0, nil
+			switch condition.Match {
+			case SemverEqMatchType:
+				return result == 0, nil
+			case SemverLtMatchType:
+				return result < 0, nil
+			case SemverLeMatchType:
+				return result <= 0, nil
+			case SemverGtMatchType:
+				return result > 0, nil
+			case SemverGeMatchType:
+				return result >= 0, nil
+			}
 		}
 		return false, err
 	}
-
-	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
+	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", condition.Name)
 }

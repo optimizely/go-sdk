@@ -32,11 +32,6 @@ const (
 	gtMatchType        = "gt"
 	geMatchType        = "ge"
 	substringMatchType = "substring"
-	semverEqMatchType  = "semver_eq"
-	semverLtMatchType  = "semver_lt"
-	semverLeMatchType  = "semver_le"
-	semverGtMatchType  = "semver_gt"
-	semverGeMatchType  = "semver_ge"
 )
 
 // ItemEvaluator evaluates a condition against the given user's attributes
@@ -89,23 +84,23 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 		matcher = matchers.SubstringMatcher{
 			Condition: condition,
 		}
-	case semverEqMatchType:
+	case matchers.SemverEqMatchType:
 		matcher = matchers.SemVerEqMatcher{
 			Condition: condition,
 		}
-	case semverLtMatchType:
+	case matchers.SemverLtMatchType:
 		matcher = matchers.SemVerLtMatcher{
 			Condition: condition,
 		}
-	case semverLeMatchType:
+	case matchers.SemverLeMatchType:
 		matcher = matchers.SemVerLeMatcher{
 			Condition: condition,
 		}
-	case semverGtMatchType:
+	case matchers.SemverGtMatchType:
 		matcher = matchers.SemVerGtMatcher{
 			Condition: condition,
 		}
-	case semverGeMatchType:
+	case matchers.SemverGeMatchType:
 		matcher = matchers.SemVerGeMatcher{
 			Condition: condition,
 		}

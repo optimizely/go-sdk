@@ -55,7 +55,7 @@ func (s SemanticVersion) CompareVersion(targetedVersion SemanticVersion) (val in
 		}
 
 		if !SemanticVersion(versionParts[idx]).isNumber() {
-			//Compare strings
+			// Compare strings
 			if versionParts[idx] < targetedVersionParts[idx] {
 				return -1, nil
 			} else if versionParts[idx] > targetedVersionParts[idx] {
@@ -84,7 +84,7 @@ func (s SemanticVersion) splitSemanticVersion() (targetedVersionParts []string, 
 	var targetParts []string
 	var targetPrefix = string(s)
 	var targetSuffix []string
-	invalidAttributesError := errors.New("Provided attributes are in an invalid format")
+	invalidAttributesError := errors.New("provided attributes are in an invalid format")
 
 	if s.hasWhiteSpace() {
 		return targetedVersionParts, invalidAttributesError

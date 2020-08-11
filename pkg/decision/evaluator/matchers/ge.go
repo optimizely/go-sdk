@@ -32,17 +32,12 @@ func (m GeMatcher) Match(user entities.UserContext) (bool, error) {
 	var result bool
 	var err error
 
-	ltMatcher := LtMatcher{
-		Condition: m.Condition,
-	}
-
+	ltMatcher := LtMatcher(m)
 	if result, err = ltMatcher.Match(user); err == nil && result {
 		return true, nil
 	}
 
-	exactMatcher := ExactMatcher{
-		Condition: m.Condition,
-	}
+	exactMatcher := ExactMatcher(m)
 
 	if result, err = exactMatcher.Match(user); err == nil && result {
 		return true, nil
