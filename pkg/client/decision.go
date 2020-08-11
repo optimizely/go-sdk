@@ -49,6 +49,56 @@ func (o *OptimizelyClient) Decide(key string, user *entities.UserContext, option
 	return o.featureDecide(projectConfig, key, user, options)
 }
 
+func (o *OptimizelyClient) DecideAll(keys []string, user *entities.UserContext, options *entities.OptimizelyDecideOptions) (optlyDecisions map[string]*decision.OptimizelyDecision) {
+	defer func() {
+		if r := recover(); r != nil {
+			errorMessage := fmt.Sprintf("Decide call, optimizely SDK is panicking with the error:")
+			o.logger.Error(errorMessage, r)
+			o.logger.Debug(string(debug.Stack()))
+		}
+	}()
+
+	if user == nil {
+		o.logger.Error(string(reasons.UserNotSet), nil)
+		return optlyDecisions
+	}
+
+	projectConfig, e := o.getProjectConfig()
+	if e != nil {
+		o.logger.Error(string(reasons.SdkNotReady), nil)
+		return optlyDecisions
+	}
+
+	optlyDecisions = map[string]*decision.OptimizelyDecision{}
+	for _, key := range keys {
+		var isFeatureKey, isExperimentKey bool
+
+		_, featErr := projectConfig.GetFeatureByKey(key)
+		_, expErr := projectConfig.GetExperimentByKey(key)
+
+		isFeatureKey = featErr == nil
+		isExperimentKey = expErr == nil
+
+		if options.ForExperiment {
+			isFeatureKey = false
+			isExperimentKey = true
+		}
+
+		if isExperimentKey && !isFeatureKey {
+			optlyDecisions[key] = o.experimentDecide(projectConfig, key, user, options)
+		}
+
+		optlyDecisions[key] = o.featureDecide(projectConfig, key, user, options)
+		decision := o.featureDecide(projectConfig, key, user, options)
+
+		if !options.EnabledOnly || (decision.Enabled) {
+			optlyDecisions[key] = decision
+		}
+	}
+
+	return optlyDecisions
+}
+
 func (o *OptimizelyClient) featureDecide(projectConfig config.ProjectConfig, featureKey string, userContext *entities.UserContext, options *entities.OptimizelyDecideOptions) (optlyDecision *decision.OptimizelyDecision) {
 	_, featErr := projectConfig.GetFeatureByKey(featureKey)
 	if featErr != nil {
