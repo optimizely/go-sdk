@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -74,7 +74,7 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 			Condition: condition,
 		}
 	case leMatchType:
-		matcher = matchers.LEMatcher{
+		matcher = matchers.LeMatcher{
 			Condition: condition,
 		}
 	case gtMatchType:
@@ -82,15 +82,31 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 			Condition: condition,
 		}
 	case geMatchType:
-		matcher = matchers.GEMatcher{
+		matcher = matchers.GeMatcher{
 			Condition: condition,
 		}
 	case substringMatchType:
 		matcher = matchers.SubstringMatcher{
 			Condition: condition,
 		}
+	case semverEqMatchType:
+		matcher = matchers.SemVerEqMatcher{
+			Condition: condition,
+		}
 	case semverLtMatchType:
 		matcher = matchers.SemVerLtMatcher{
+			Condition: condition,
+		}
+	case semverLeMatchType:
+		matcher = matchers.SemVerLeMatcher{
+			Condition: condition,
+		}
+	case semverGtMatchType:
+		matcher = matchers.SemVerGtMatcher{
+			Condition: condition,
+		}
+	case semverGeMatchType:
+		matcher = matchers.SemVerGeMatcher{
 			Condition: condition,
 		}
 	default:

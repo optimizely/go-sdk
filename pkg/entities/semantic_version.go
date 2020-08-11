@@ -19,28 +19,138 @@ package entities
 
 import (
 	"errors"
-
-	"golang.org/x/mod/semver"
+	"strconv"
+	"strings"
 )
 
 // SemanticVersion represents semantic version
 type SemanticVersion string
 
 // CompareVersion compares two semantic versions
-// result will be 0 if v == w, -1 if v < w, or +1 if v > w.
-func (s SemanticVersion) CompareVersion(targetedVersion SemanticVersion) (int, error) {
+func (s SemanticVersion) CompareVersion(targetedVersion SemanticVersion) (val int, err error) {
 
-	sVersion := string(s)
-	sTargetedVersion := string(targetedVersion)
-
-	if sTargetedVersion == "" {
+	if string(targetedVersion) == "" {
 		// Any version.
 		return 0, nil
 	}
 
-	// Up to the precision of targetedVersion, expect version to match exactly.
-	if semver.IsValid(sVersion) && semver.IsValid(sTargetedVersion) {
-		return semver.Compare(sVersion, sTargetedVersion), nil
+	targetedVersionParts, err := targetedVersion.splitSemanticVersion()
+	if err != nil {
+		return val, err
 	}
-	return 0, errors.New("provided versions are in an invalid format")
+
+	versionParts, err := s.splitSemanticVersion()
+	if err != nil {
+		return val, err
+	}
+
+	// Up to the precision of targetedVersion, expect version to match exactly.
+	for idx := range targetedVersionParts {
+		if len(versionParts) <= idx {
+			// even if they are equal at this point. if the target is a prerelease then it must be greater than the pre release.
+			if targetedVersion.isPreRelease() {
+				return 1, nil
+			}
+			return -1, nil
+		}
+
+		if !SemanticVersion(versionParts[idx]).isNumber() {
+			//Compare strings
+			if versionParts[idx] < targetedVersionParts[idx] {
+				return -1, nil
+			} else if versionParts[idx] > targetedVersionParts[idx] {
+				return 1, nil
+			}
+		} else if part, err := strconv.Atoi(versionParts[idx]); err == nil {
+			if target, err := strconv.Atoi(targetedVersionParts[idx]); err == nil {
+				if part < target {
+					return -1, nil
+				} else if part > target {
+					return 1, nil
+				}
+			}
+		} else {
+			return -1, nil
+		}
+	}
+	if s.isPreRelease() && !targetedVersion.isPreRelease() {
+		return -1, nil
+	}
+	return 0, nil
+}
+
+func (s SemanticVersion) splitSemanticVersion() (targetedVersionParts []string, err error) {
+
+	var targetParts []string
+	var targetPrefix = string(s)
+	var targetSuffix []string
+	invalidAttributesError := errors.New("Provided attributes are in an invalid format")
+
+	if s.hasWhiteSpace() {
+		return targetedVersionParts, invalidAttributesError
+	}
+
+	if s.isPreRelease() || s.isBuild() {
+		if s.isPreRelease() {
+			targetParts = strings.Split(targetPrefix, s.preReleaseSeperator())
+		} else {
+			targetParts = strings.Split(targetPrefix, s.buildSeperator())
+		}
+		targetParts = s.deleteEmpty(targetParts)
+		if len(targetParts) <= 1 {
+			return targetedVersionParts, invalidAttributesError
+		}
+		targetPrefix = targetParts[0]
+		targetSuffix = targetParts[1:]
+	}
+
+	// Expect a version string of the form x.y.z
+	dotCount := strings.Count(targetPrefix, ".")
+	if dotCount > 2 {
+		return targetedVersionParts, invalidAttributesError
+	}
+	targetedVersionParts = strings.Split(targetPrefix, ".")
+	targetedVersionParts = s.deleteEmpty(targetedVersionParts)
+
+	if len(targetedVersionParts) != dotCount+1 {
+		return []string{}, invalidAttributesError
+	}
+	targetedVersionParts = append(targetedVersionParts, targetSuffix...)
+
+	return targetedVersionParts, nil
+}
+
+func (s SemanticVersion) hasWhiteSpace() bool {
+	return strings.Contains(string(s), " ")
+}
+
+func (s SemanticVersion) isNumber() bool {
+	_, err := strconv.Atoi(string(s))
+	return err == nil
+}
+
+func (s SemanticVersion) isPreRelease() bool {
+	return strings.Contains(string(s), s.preReleaseSeperator())
+}
+
+func (s SemanticVersion) isBuild() bool {
+	return strings.Contains(string(s), s.buildSeperator())
+}
+
+func (s SemanticVersion) buildSeperator() string {
+	return "+"
+}
+
+func (s SemanticVersion) preReleaseSeperator() string {
+	return "-"
+}
+
+func (s SemanticVersion) deleteEmpty(arr []string) []string {
+	var finalArray []string
+	for _, str := range arr {
+		if str != "" {
+			finalArray = append(finalArray, str)
+		}
+	}
+	return finalArray
 }

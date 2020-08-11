@@ -18,30 +18,29 @@
 package matchers
 
 import (
-	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers"
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
-// GEMatcher matches against the "ge" match type
-type GEMatcher struct {
+// GeMatcher matches against the "ge" match type
+type GeMatcher struct {
 	Condition entities.Condition
 }
 
 // Match returns true if the user's attribute is greater than or equal to the condition's string value
-func (m GEMatcher) Match(user entities.UserContext) (bool, error) {
+func (m GeMatcher) Match(user entities.UserContext) (bool, error) {
 
 	var result bool
 	var err error
 
-	gtMatcher := matchers.GtMatcher{
+	ltMatcher := LtMatcher{
 		Condition: m.Condition,
 	}
 
-	if result, err = gtMatcher.Match(user); err == nil && result {
+	if result, err = ltMatcher.Match(user); err == nil && result {
 		return true, nil
 	}
 
-	exactMatcher := matchers.ExactMatcher{
+	exactMatcher := ExactMatcher{
 		Condition: m.Condition,
 	}
 

@@ -36,7 +36,7 @@ func (m SemVerGtMatcher) Match(user entities.UserContext) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		result, err := entities.SemanticVersion(stringValue).CompareVersion(entities.SemanticVersion(attributeValue))
+		result, err := entities.SemanticVersion(attributeValue).CompareVersion(entities.SemanticVersion(stringValue))
 		if err == nil {
 			return result > 0, nil
 		}

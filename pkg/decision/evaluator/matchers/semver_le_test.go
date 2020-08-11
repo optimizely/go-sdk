@@ -14,34 +14,61 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package matchers //
 package matchers
 
 import (
-	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
-// SemVerGeMatcher matches against the "semver_gt" match type
-type SemVerGeMatcher struct {
-	Condition entities.Condition
-}
-
-// Match returns true if condition value for semantic versions is greater than or equal to target semantic version
-func (m SemVerGeMatcher) Match(user entities.UserContext) (bool, error) {
-
-	if stringValue, ok := m.Condition.Value.(string); ok {
-		attributeValue, err := user.GetStringAttribute(m.Condition.Name)
-		if err != nil {
-			return false, err
-		}
-		result, err := entities.SemanticVersion(attributeValue).CompareVersion(entities.SemanticVersion(stringValue))
-		if err == nil {
-			return result >= 0, nil
-		}
-		return false, err
+func TestSemverLeMatcher(t *testing.T) {
+	matcher := SemVerLeMatcher{
+		Condition: entities.Condition{
+			Match: "semver_le",
+			Value: "2.0",
+			Name:  "version",
+		},
 	}
 
-	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
+	user := entities.UserContext{
+		Attributes: map[string]interface{}{
+			"version": "2.0.0",
+		},
+	}
+	result, err := matcher.Match(user)
+	assert.NoError(t, err)
+	assert.True(t, result)
+
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"version": "2.5.1",
+		},
+	}
+
+	result, err = matcher.Match(user)
+	assert.NoError(t, err)
+	assert.False(t, result)
+
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"version": "1.9",
+		},
+	}
+
+	result, err = matcher.Match(user)
+	assert.NoError(t, err)
+	assert.True(t, result)
+
+	// Test attribute not found
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"version1": "2.0",
+		},
+	}
+
+	_, err = matcher.Match(user)
+	assert.Error(t, err)
 }
