@@ -81,3 +81,24 @@ func TestCustomAttributeConditionEvaluatorWithoutMatchType(t *testing.T) {
 	result, _ = conditionEvaluator.Evaluate(condition, condTreeParams)
 	assert.Equal(t, result, false)
 }
+
+func TestCustomAttributeConditionEvaluatorForSemver(t *testing.T) {
+	conditionEvaluator := CustomAttributeConditionEvaluator{}
+	condition := entities.Condition{
+		Match: "semver_ge",
+		Value: "2.9",
+		Name:  "string_foo",
+		Type:  "custom_attribute",
+	}
+
+	// Test condition passes
+	user := entities.UserContext{
+		Attributes: map[string]interface{}{
+			"string_foo": "2.9.1",
+		},
+	}
+
+	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
+	result, _ := conditionEvaluator.Evaluate(condition, condTreeParams)
+	assert.Equal(t, result, true)
+}
