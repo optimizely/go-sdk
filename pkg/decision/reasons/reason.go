@@ -21,7 +21,7 @@ package reasons
 type Reason string
 
 const (
-	// AttributeFormatInvalid - invalid format for attirbutes
+	// AttributeFormatInvalid - invalid format for attributes
 	AttributeFormatInvalid Reason = "Provided attributes are in an invalid format."
 	// BucketedVariationNotFound - the bucketed variation ID is not in the config
 	BucketedVariationNotFound Reason = "Bucketed variation not found"

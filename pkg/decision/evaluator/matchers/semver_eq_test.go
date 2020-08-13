@@ -39,6 +39,7 @@ func TestSemverEqMatcher(t *testing.T) {
 			"string_foo": "3.0.0",
 		},
 	}
+
 	result, err := matcher.Match(user)
 	assert.NoError(t, err)
 	assert.True(t, result)

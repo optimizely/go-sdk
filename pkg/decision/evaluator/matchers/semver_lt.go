@@ -18,8 +18,6 @@
 package matchers
 
 import (
-	"fmt"
-
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
@@ -30,19 +28,9 @@ type SemverLtMatcher struct {
 
 // Match returns true if the user's attribute match the condition's string value
 func (m SemverLtMatcher) Match(user entities.UserContext) (bool, error) {
-	if stringValue, ok := m.Condition.Value.(string); ok {
-
-		attributeValue, err := user.GetStringAttribute(m.Condition.Name)
-		if err != nil {
-			return false, err
-		}
-		semVer := SemanticVersion{stringValue}
-		comparison, e := semVer.compareVersion(attributeValue)
-		if e != nil {
-			return false, e
-		}
-		return comparison < 0, nil
+	comparison, err := SemverEvaluator(&m.Condition, &user)
+	if err != nil {
+		return false, err
 	}
-
-	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
+	return comparison < 0, nil
 }

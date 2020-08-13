@@ -1,12 +1,32 @@
+/****************************************************************************
+ * Copyright 2019, Optimizely, Inc. and contributors                        *
+ *                                                                          *
+ * Licensed under the Apache License, Version 2.0 (the "License");          *
+ * you may not use this file except in compliance with the License.         *
+ * You may obtain a copy of the License at                                  *
+ *                                                                          *
+ *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *                                                                          *
+ * Unless required by applicable law or agreed to in writing, software      *
+ * distributed under the License is distributed on an "AS IS" BASIS,        *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+ * See the License for the specific language governing permissions and      *
+ * limitations under the License.                                           *
+ ***************************************************************************/
+
+// Package matchers //
 package matchers
 
 import (
-	"github.com/optimizely/go-sdk/pkg/decision/reasons"
-	"github.com/pkg/errors"
-
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/optimizely/go-sdk/pkg/decision/reasons"
+	"github.com/optimizely/go-sdk/pkg/entities"
+
+	"github.com/pkg/errors"
 )
 
 // SemanticVersion defines the class
@@ -30,7 +50,7 @@ func (sv SemanticVersion) compareVersion(attribute string) (int, error) {
 		if len(versionParts) <= idx {
 			return -1, nil
 		} else if !sv.isNumber(versionParts[idx]) {
-			//Compare strings
+			// Compare strings
 			if versionParts[idx] < targetedVersionParts[idx] {
 				return -1, nil
 			} else if versionParts[idx] > targetedVersionParts[idx] {
@@ -99,4 +119,22 @@ func (sv SemanticVersion) buildSeperator() string {
 
 func (sv SemanticVersion) preReleaseSeperator() string {
 	return "-"
+}
+
+// SemverEvaluator is a help function to wrap a common evaluation code
+func SemverEvaluator(cond *entities.Condition, user *entities.UserContext) (int, error) {
+
+	if stringValue, ok := cond.Value.(string); ok {
+		attributeValue, err := user.GetStringAttribute(cond.Name)
+		if err != nil {
+			return 0, err
+		}
+		semVer := SemanticVersion{stringValue}
+		comparison, e := semVer.compareVersion(attributeValue)
+		if e != nil {
+			return 0, e
+		}
+		return comparison, nil
+	}
+	return 0, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", cond.Name)
 }
