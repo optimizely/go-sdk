@@ -47,21 +47,28 @@ func (sv SemanticVersion) compareVersion(attribute string) (int, error) {
 
 	// Up to the precision of targetedVersion, expect version to match exactly.
 	for idx := range targetedVersionParts {
-		if len(versionParts) <= idx {
+
+		switch {
+		case len(versionParts) <= idx:
 			return -1, nil
-		} else if !sv.isNumber(versionParts[idx]) {
+		case !sv.isNumber(versionParts[idx]):
 			// Compare strings
 			if versionParts[idx] < targetedVersionParts[idx] {
 				return -1, nil
 			} else if versionParts[idx] > targetedVersionParts[idx] {
 				return 1, nil
 			}
-		} else if sv.toInt(versionParts[idx]) < sv.toInt(targetedVersionParts[idx]) {
+		case sv.isNumber(targetedVersionParts[idx]): // both targetedVersionParts and versionParts are digits
+			if sv.toInt(versionParts[idx]) < sv.toInt(targetedVersionParts[idx]) {
+				return -1, nil
+			} else if sv.toInt(versionParts[idx]) > sv.toInt(targetedVersionParts[idx]) {
+				return 1, nil
+			}
+		default:
 			return -1, nil
-		} else if sv.toInt(versionParts[idx]) > sv.toInt(targetedVersionParts[idx]) {
-			return 1, nil
 		}
 	}
+
 	return 0, nil
 }
 
