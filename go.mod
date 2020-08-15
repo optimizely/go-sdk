@@ -12,6 +12,5 @@ require (
 	github.com/twmb/murmur3 v1.0.0
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 )
-
 // Work around issue with git.apache.org/thrift.git
 replace git.apache.org/thrift.git => github.com/apache/thrift v0.12.0
