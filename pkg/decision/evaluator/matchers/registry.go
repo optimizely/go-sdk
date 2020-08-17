@@ -39,16 +39,16 @@ const (
 	SubstringMatchType = "substring"
 )
 
-var registry = make(map[string]Matcher)
-var lock = sync.RWMutex{}
+var registry = map[string]Matcher{
+	ExactMatchType: ExactMatcher,
+	ExistsMatchType: ExistsMatcher,
+	LtMatchType: LtMatcher,
+	GtMatchType: GtMatcher,
+	SubstringMatchType: SubstringMatcher,
 
-func init() {
-	Register(ExactMatchType, ExactMatcher)
-	Register(ExistsMatchType, ExistsMatcher)
-	Register(LtMatchType, LtMatcher)
-	Register(GtMatchType, GtMatcher)
-	Register(SubstringMatchType, SubstringMatcher)
 }
+
+var lock = sync.RWMutex{}
 
 // Register new matchers by providing a name and a Matcher implementation
 func Register(name string, matcher Matcher) {

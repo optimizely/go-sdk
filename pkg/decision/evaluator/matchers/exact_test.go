@@ -24,8 +24,9 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
+var exactMatcher, _ = Get(ExactMatchType)
+
 func TestExactMatcherString(t *testing.T) {
-	matcher, _ := Get(ExactMatchType)
 	condition := entities.Condition{
 		Match: "exact",
 		Value: "foo",
@@ -38,7 +39,7 @@ func TestExactMatcherString(t *testing.T) {
 			"string_foo": "foo",
 		},
 	}
-	result, err := matcher(condition, user)
+	result, err := exactMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -49,7 +50,7 @@ func TestExactMatcherString(t *testing.T) {
 		},
 	}
 
-	result, err = matcher(condition, user)
+	result, err = exactMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -60,12 +61,11 @@ func TestExactMatcherString(t *testing.T) {
 		},
 	}
 
-	_, err = matcher(condition, user)
+	_, err = exactMatcher(condition, user)
 	assert.Error(t, err)
 }
 
 func TestExactMatcherBool(t *testing.T) {
-	matcher, _ := Get(ExactMatchType)
 	condition := entities.Condition{
 		Match: "exact",
 		Value: true,
@@ -78,7 +78,7 @@ func TestExactMatcherBool(t *testing.T) {
 			"bool_true": true,
 		},
 	}
-	result, err := matcher(condition, user)
+	result, err := exactMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -89,7 +89,7 @@ func TestExactMatcherBool(t *testing.T) {
 		},
 	}
 
-	result, err = matcher(condition, user)
+	result, err = exactMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -100,12 +100,11 @@ func TestExactMatcherBool(t *testing.T) {
 		},
 	}
 
-	_, err = matcher(condition, user)
+	_, err = exactMatcher(condition, user)
 	assert.Error(t, err)
 }
 
 func TestExactMatcherInt(t *testing.T) {
-	matcher, _ := Get(ExactMatchType)
 	condition := entities.Condition{
 		Match: "exact",
 		Value: 42,
@@ -118,7 +117,7 @@ func TestExactMatcherInt(t *testing.T) {
 			"int_42": 42,
 		},
 	}
-	result, err := matcher(condition, user)
+	result, err := exactMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -129,7 +128,7 @@ func TestExactMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = matcher(condition, user)
+	result, err = exactMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -140,7 +139,7 @@ func TestExactMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = matcher(condition, user)
+	result, err = exactMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -151,7 +150,7 @@ func TestExactMatcherInt(t *testing.T) {
 		},
 	}
 
-	_, err = matcher(condition, user)
+	_, err = exactMatcher(condition, user)
 	assert.Error(t, err)
 }
 

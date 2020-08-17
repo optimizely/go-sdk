@@ -24,6 +24,8 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
+var gtMatcher, _ = Get(GtMatchType)
+
 func TestGtMatcherInt(t *testing.T) {
 	condition := entities.Condition{
 		Match: "gt",
@@ -37,7 +39,7 @@ func TestGtMatcherInt(t *testing.T) {
 			"int_42": 43,
 		},
 	}
-	result, err := GtMatcher(condition, user)
+	result, err := gtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -48,7 +50,7 @@ func TestGtMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = GtMatcher(condition, user)
+	result, err = gtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -59,7 +61,7 @@ func TestGtMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = GtMatcher(condition, user)
+	result, err = gtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -70,7 +72,7 @@ func TestGtMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = GtMatcher(condition, user)
+	result, err = gtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -81,7 +83,7 @@ func TestGtMatcherInt(t *testing.T) {
 		},
 	}
 
-	_, err = GtMatcher(condition, user)
+	_, err = gtMatcher(condition, user)
 	assert.Error(t, err)
 }
 
@@ -98,7 +100,7 @@ func TestGtMatcherFloat(t *testing.T) {
 			"float_4_2": 5,
 		},
 	}
-	result, err := GtMatcher(condition, user)
+	result, err := gtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -108,7 +110,7 @@ func TestGtMatcherFloat(t *testing.T) {
 			"float_4_2": 4.29999,
 		},
 	}
-	result, err = GtMatcher(condition, user)
+	result, err = gtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -119,7 +121,7 @@ func TestGtMatcherFloat(t *testing.T) {
 		},
 	}
 
-	result, err = GtMatcher(condition, user)
+	result, err = gtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -130,6 +132,6 @@ func TestGtMatcherFloat(t *testing.T) {
 		},
 	}
 
-	_, err = GtMatcher(condition, user)
+	_, err = gtMatcher(condition, user)
 	assert.Error(t, err)
 }
