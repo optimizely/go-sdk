@@ -69,10 +69,18 @@ func (sv SemanticVersion) compareVersion(attribute string) (int, error) {
 		}
 	}
 
+	if sv.isPreRelease(attribute) && !sv.isPreRelease(sv.Condition) {
+		return -1, nil
+	}
+
 	return 0, nil
 }
 
-func (sv SemanticVersion) splitSemanticVersion(targetedVersion string) (parts []string, err error) {
+func (sv SemanticVersion) splitSemanticVersion(targetedVersion string) ([]string, error) {
+
+	if sv.hasWhiteSpace(targetedVersion) {
+		return []string{}, errors.New(string(reasons.AttributeFormatInvalid))
+	}
 
 	splitBy := ""
 	if sv.isBuild(targetedVersion) {
@@ -82,7 +90,7 @@ func (sv SemanticVersion) splitSemanticVersion(targetedVersion string) (parts []
 	}
 	targetParts := strings.Split(targetedVersion, splitBy)
 	if len(targetParts) == 0 {
-		return parts, errors.New(string(reasons.AttributeFormatInvalid))
+		return []string{}, errors.New(string(reasons.AttributeFormatInvalid))
 	}
 
 	targetPrefix := targetParts[0]
@@ -91,8 +99,12 @@ func (sv SemanticVersion) splitSemanticVersion(targetedVersion string) (parts []
 	// Expect a version string of the form x.y.z
 	targetedVersionParts := strings.Split(targetPrefix, ".")
 
+	if len(targetedVersionParts) > 3 {
+		return []string{}, errors.New(string(reasons.AttributeFormatInvalid))
+	}
+
 	if len(targetedVersionParts) == 0 {
-		return parts, errors.New(string(reasons.AttributeFormatInvalid))
+		return []string{}, errors.New(string(reasons.AttributeFormatInvalid))
 	}
 
 	targetedVersionParts = append(targetedVersionParts, targetSuffix...)
@@ -118,6 +130,10 @@ func (sv SemanticVersion) isPreRelease(str string) bool {
 
 func (sv SemanticVersion) isBuild(str string) bool {
 	return strings.Contains(str, "+")
+}
+
+func (sv SemanticVersion) hasWhiteSpace(str string) bool {
+	return strings.Contains(str, " ")
 }
 
 func (sv SemanticVersion) buildSeperator() string {
