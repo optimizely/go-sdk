@@ -27,8 +27,6 @@ import (
 type Matcher func(entities.Condition, entities.UserContext) (bool, error)
 
 const (
-	// EmptyMatchType name for an empty matcher
-	EmptyMatchType = ""
 	// ExactMatchType name for the "exact" matcher
 	ExactMatchType = "exact"
 	// ExistsMatchType name for the "exists" matcher
@@ -42,7 +40,6 @@ const (
 )
 
 var registry = map[string]Matcher{
-	EmptyMatchType: ExactMatcher,
 	ExactMatchType: ExactMatcher,
 	ExistsMatchType: ExistsMatcher,
 	LtMatchType: LtMatcher,
