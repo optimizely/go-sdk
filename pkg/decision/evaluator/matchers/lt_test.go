@@ -24,7 +24,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
-var ltMatcher, _ = Get(LtMatchType)
+var ltMatcher = LtMatcher
 
 func TestLtMatcherInt(t *testing.T) {
 	condition := entities.Condition{
