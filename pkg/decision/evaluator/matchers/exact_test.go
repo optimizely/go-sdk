@@ -24,7 +24,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
-var exactMatcher = ExactMatcher
+var exactMatcher, _ = Get(ExactMatchType)
 
 func TestExactMatcherString(t *testing.T) {
 	condition := entities.Condition{

@@ -24,7 +24,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
-var substringMatcher = SubstringMatcher
+var substringMatcher, _ = Get(SubstringMatchType)
 
 func TestSubstringMatcher(t *testing.T) {
 	condition := entities.Condition{

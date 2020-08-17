@@ -24,7 +24,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
-var existsMatcher = ExistsMatcher
+var existsMatcher, _ = Get(ExistsMatchType)
 
 func TestExistsMatcher(t *testing.T) {
 	condition := entities.Condition{
