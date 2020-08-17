@@ -45,7 +45,6 @@ var registry = map[string]Matcher{
 	LtMatchType: LtMatcher,
 	GtMatchType: GtMatcher,
 	SubstringMatchType: SubstringMatcher,
-
 }
 
 var lock = sync.RWMutex{}
