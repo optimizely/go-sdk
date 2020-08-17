@@ -37,6 +37,7 @@ func TestRegister(t *testing.T) {
 }
 
 func TestInit(t *testing.T) {
+	assertMatcher(t, EmptyMatchType)
 	assertMatcher(t, ExactMatchType)
 	assertMatcher(t, ExistsMatchType)
 	assertMatcher(t, LtMatchType)
