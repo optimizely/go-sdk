@@ -14,18 +14,59 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package matchers //
 package matchers
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
-// SemverLeMatcher returns true if the user's semver attribute is less than or equal to the semver condition value
-func SemverLeMatcher(condition entities.Condition, user entities.UserContext) (bool, error) {
-	comparison, err := SemverEvaluator(condition, user)
-	if err != nil {
-		return false, err
+func TestSemverGeMatcher(t *testing.T) {
+	condition := entities.Condition{
+		Match: "semver_ge",
+		Value: "2.0",
+		Name:  "version",
 	}
-	return comparison <= 0, nil
+
+	user := entities.UserContext{
+		Attributes: map[string]interface{}{
+			"version": "2.0.0",
+		},
+	}
+	result, err := SemverGeMatcher(condition, user)
+	assert.NoError(t, err)
+	assert.True(t, result)
+
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"version": "2.9",
+		},
+	}
+
+	result, err = SemverGeMatcher(condition, user)
+	assert.NoError(t, err)
+	assert.True(t, result)
+
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"version": "1.9",
+		},
+	}
+
+	result, err = SemverGeMatcher(condition, user)
+	assert.NoError(t, err)
+	assert.False(t, result)
+
+	// Test attribute not found
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"version1": "2.0",
+		},
+	}
+
+	_, err = SemverGeMatcher(condition, user)
+	assert.Error(t, err)
 }

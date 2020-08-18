@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2020, Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -21,14 +21,9 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
-// SemverEqMatcher checks if the strings are identical
-type SemverEqMatcher struct {
-	Condition entities.Condition
-}
-
-// Match returns true if the user's attribute match the condition's string value
-func (m SemverEqMatcher) Match(user entities.UserContext) (bool, error) {
-	comparison, err := SemverEvaluator(&m.Condition, &user)
+// SemverEqMatcher returns true if the user's semver attribute is equal to the semver condition value
+func SemverEqMatcher(condition entities.Condition, user entities.UserContext) (bool, error) {
+	comparison, err := SemverEvaluator(condition, user)
 	if err != nil {
 		return false, err
 	}

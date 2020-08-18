@@ -24,19 +24,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
-const (
-	exactMatchType     = "exact"
-	existsMatchType    = "exists"
-	ltMatchType        = "lt"
-	gtMatchType        = "gt"
-	substringMatchType = "substring"
-	semverEqMatchType  = "semver_eq"
-	semverLtMatchType  = "semver_lt"
-	semverLeMatchType  = "semver_le"
-	semverGtMatchType  = "semver_gt"
-	semverGeMatchType  = "semver_ge"
-)
-
 // ItemEvaluator evaluates a condition against the given user's attributes
 type ItemEvaluator interface {
 	Evaluate(interface{}, *entities.TreeParameters) (bool, error)
@@ -53,59 +40,17 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 		return false, fmt.Errorf(`unable to evaluator condition of type "%s"`, condition.Type)
 	}
 
-	var matcher matchers.Matcher
 	matchType := condition.Match
 	if matchType == "" {
-		matchType = exactMatchType
+		matchType = matchers.ExactMatchType
 	}
-	switch matchType {
-	case exactMatchType:
-		matcher = matchers.ExactMatcher{
-			Condition: condition,
-		}
-	case existsMatchType:
-		matcher = matchers.ExistsMatcher{
-			Condition: condition,
-		}
-	case ltMatchType:
-		matcher = matchers.LtMatcher{
-			Condition: condition,
-		}
-	case gtMatchType:
-		matcher = matchers.GtMatcher{
-			Condition: condition,
-		}
-	case substringMatchType:
-		matcher = matchers.SubstringMatcher{
-			Condition: condition,
-		}
-	case semverEqMatchType:
-		matcher = matchers.SemverEqMatcher{
-			Condition: condition,
-		}
-	case semverLtMatchType:
-		matcher = matchers.SemverLtMatcher{
-			Condition: condition,
-		}
-	case semverLeMatchType:
-		matcher = matchers.SemverLeMatcher{
-			Condition: condition,
-		}
-	case semverGtMatchType:
-		matcher = matchers.SemverGtMatcher{
-			Condition: condition,
-		}
-	case semverGeMatchType:
-		matcher = matchers.SemverGeMatcher{
-			Condition: condition,
-		}
-	default:
+
+	matcher, ok := matchers.Get(matchType)
+	if !ok {
 		return false, fmt.Errorf(`invalid Condition matcher "%s"`, condition.Match)
 	}
 
-	user := *condTreeParams.User
-	result, err := matcher.Match(user)
-	return result, err
+	return matcher(condition, *condTreeParams.User)
 }
 
 // AudienceConditionEvaluator evaluates conditions with audience condition

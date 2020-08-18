@@ -25,20 +25,15 @@ import (
 )
 
 // LtMatcher matches against the "lt" match type
-type LtMatcher struct {
-	Condition entities.Condition
-}
+func LtMatcher(condition entities.Condition, user entities.UserContext) (bool, error) {
 
-// Match returns true if the user's attribute is less than the condition's string value
-func (m LtMatcher) Match(user entities.UserContext) (bool, error) {
-
-	if floatValue, ok := utils.ToFloat(m.Condition.Value); ok {
-		attributeValue, err := user.GetFloatAttribute(m.Condition.Name)
+	if floatValue, ok := utils.ToFloat(condition.Value); ok {
+		attributeValue, err := user.GetFloatAttribute(condition.Name)
 		if err != nil {
 			return false, err
 		}
 		return floatValue > attributeValue, nil
 	}
 
-	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
+	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", condition.Name)
 }

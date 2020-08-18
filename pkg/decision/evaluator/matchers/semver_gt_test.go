@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2020, Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -24,40 +24,49 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
-func TestSemverGtMatcherMore(t *testing.T) {
-	matcher := SemverGtMatcher{
-		Condition: entities.Condition{
-			Match: "gt",
-			Value: "2.2",
-			Name:  "is_semantic_more",
-		},
+func TestSemverGtMatcher(t *testing.T) {
+	condition := entities.Condition{
+		Match: "semver_gt",
+		Value: "2.0",
+		Name:  "version",
 	}
 
 	user := entities.UserContext{
 		Attributes: map[string]interface{}{
-			"is_semantic_more": "2.3.6",
+			"version": "2.0.0",
 		},
 	}
-	result, err := matcher.Match(user)
+	result, err := SemverGtMatcher(condition, user)
 	assert.NoError(t, err)
-	assert.True(t, result)
-}
+	assert.False(t, result)
 
-func TestSemverGtMatcherFullMore(t *testing.T) {
-	matcher := SemverGtMatcher{
-		Condition: entities.Condition{
-			Match: "gt",
-			Value: "2.1.6",
-			Name:  "is_semantic_full_more",
-		},
-	}
-
-	user := entities.UserContext{
+	user = entities.UserContext{
 		Attributes: map[string]interface{}{
-			"is_semantic_full_more": "2.1.9",
+			"version": "2.9",
 		},
 	}
-	result, err := matcher.Match(user)
+
+	result, err = SemverGtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
+
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"version": "1.9",
+		},
+	}
+
+	result, err = SemverGtMatcher(condition, user)
+	assert.NoError(t, err)
+	assert.False(t, result)
+
+	// Test attribute not found
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"version1": "2.0",
+		},
+	}
+
+	_, err = SemverGtMatcher(condition, user)
+	assert.Error(t, err)
 }

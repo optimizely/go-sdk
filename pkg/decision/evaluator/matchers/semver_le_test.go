@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2020, Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -14,12 +14,59 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package matchers //
 package matchers
 
-import "github.com/optimizely/go-sdk/pkg/entities"
+import (
+	"testing"
 
-// Matcher matches the condition against the user's attributes
-type Matcher interface {
-	Match(entities.UserContext) (bool, error)
+	"github.com/stretchr/testify/assert"
+
+	"github.com/optimizely/go-sdk/pkg/entities"
+)
+
+func TestSemverLeMatcher(t *testing.T) {
+	condition := entities.Condition{
+		Match: "semver_le",
+		Value: "2.0",
+		Name:  "version",
+	}
+
+	user := entities.UserContext{
+		Attributes: map[string]interface{}{
+			"version": "2.0.0",
+		},
+	}
+	result, err := SemverLeMatcher(condition, user)
+	assert.NoError(t, err)
+	assert.True(t, result)
+
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"version": "2.5.1",
+		},
+	}
+
+	result, err = SemverLeMatcher(condition, user)
+	assert.NoError(t, err)
+	assert.False(t, result)
+
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"version": "1.9",
+		},
+	}
+
+	result, err = SemverLeMatcher(condition, user)
+	assert.NoError(t, err)
+	assert.True(t, result)
+
+	// Test attribute not found
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"version1": "2.0",
+		},
+	}
+
+	_, err = SemverLeMatcher(condition, user)
+	assert.Error(t, err)
 }

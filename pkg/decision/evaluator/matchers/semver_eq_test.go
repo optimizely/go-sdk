@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2020, Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -25,43 +25,74 @@ import (
 )
 
 func TestSemverEqMatcher(t *testing.T) {
-	matcher := SemverEqMatcher{
-		Condition: entities.Condition{
-			Match: "semver_eq",
-			Value: "3.0.0",
-			Name:  "string_foo",
-		},
+
+	condition := entities.Condition{
+		Match: "semver_eq",
+		Value: "2.0",
+		Name:  "version",
 	}
 
-	// Test match
 	user := entities.UserContext{
 		Attributes: map[string]interface{}{
-			"string_foo": "3.0.0",
+			"version": "2.0.0",
 		},
 	}
-
-	result, err := matcher.Match(user)
+	result, err := SemverEqMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
-	// Test no match
 	user = entities.UserContext{
 		Attributes: map[string]interface{}{
-			"string_foo": "3.0.1",
+			"version": "2.9",
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = SemverEqMatcher(condition, user)
+	assert.NoError(t, err)
+	assert.False(t, result)
+
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"version": "1.9",
+		},
+	}
+
+	result, err = SemverEqMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
 	// Test attribute not found
 	user = entities.UserContext{
 		Attributes: map[string]interface{}{
-			"string_not_foo": "foo",
+			"version1": "2.0",
 		},
 	}
 
-	_, err = matcher.Match(user)
+	_, err = SemverEqMatcher(condition, user)
+	assert.Error(t, err)
+}
+
+func TestSemverEqMatcherInvalidType(t *testing.T) {
+	condition := entities.Condition{
+		Match: "semver_eq",
+		Value: "2.0",
+		Name:  "version",
+	}
+
+	user := entities.UserContext{
+		Attributes: map[string]interface{}{
+			"version": true,
+		},
+	}
+	_, err := SemverEqMatcher(condition, user)
+	assert.Error(t, err)
+
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"version": 37,
+		},
+	}
+
+	_, err = SemverEqMatcher(condition, user)
 	assert.Error(t, err)
 }

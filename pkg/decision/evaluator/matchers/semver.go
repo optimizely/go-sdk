@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2020, Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -145,7 +145,7 @@ func (sv SemanticVersion) preReleaseSeperator() string {
 }
 
 // SemverEvaluator is a help function to wrap a common evaluation code
-func SemverEvaluator(cond *entities.Condition, user *entities.UserContext) (int, error) {
+func SemverEvaluator(cond entities.Condition, user entities.UserContext) (int, error) {
 
 	if stringValue, ok := cond.Value.(string); ok {
 		attributeValue, err := user.GetStringAttribute(cond.Name)
