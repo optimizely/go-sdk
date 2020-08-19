@@ -24,13 +24,13 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
+var substringMatcher, _ = Get(SubstringMatchType)
+
 func TestSubstringMatcher(t *testing.T) {
-	matcher := SubstringMatcher{
-		Condition: entities.Condition{
-			Match: "substring",
-			Value: "foo",
-			Name:  "string_foo",
-		},
+	condition := entities.Condition{
+		Match: "substring",
+		Value: "foo",
+		Name:  "string_foo",
 	}
 
 	// Test match
@@ -40,7 +40,7 @@ func TestSubstringMatcher(t *testing.T) {
 		},
 	}
 
-	result, err := matcher.Match(user)
+	result, err := substringMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -51,7 +51,7 @@ func TestSubstringMatcher(t *testing.T) {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = substringMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -62,6 +62,6 @@ func TestSubstringMatcher(t *testing.T) {
 		},
 	}
 
-	_, err = matcher.Match(user)
+	_, err = substringMatcher(condition, user)
 	assert.Error(t, err)
 }

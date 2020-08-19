@@ -24,13 +24,13 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
+var gtMatcher, _ = Get(GtMatchType)
+
 func TestGtMatcherInt(t *testing.T) {
-	matcher := GtMatcher{
-		Condition: entities.Condition{
-			Match: "gt",
-			Value: 42,
-			Name:  "int_42",
-		},
+	condition := entities.Condition{
+		Match: "gt",
+		Value: 42,
+		Name:  "int_42",
 	}
 
 	// Test match - same type
@@ -39,7 +39,7 @@ func TestGtMatcherInt(t *testing.T) {
 			"int_42": 43,
 		},
 	}
-	result, err := matcher.Match(user)
+	result, err := gtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -50,7 +50,7 @@ func TestGtMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = gtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -61,7 +61,7 @@ func TestGtMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = gtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -72,7 +72,7 @@ func TestGtMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = gtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -83,17 +83,15 @@ func TestGtMatcherInt(t *testing.T) {
 		},
 	}
 
-	_, err = matcher.Match(user)
+	_, err = gtMatcher(condition, user)
 	assert.Error(t, err)
 }
 
 func TestGtMatcherFloat(t *testing.T) {
-	matcher := GtMatcher{
-		Condition: entities.Condition{
-			Match: "gt",
-			Value: 4.2,
-			Name:  "float_4_2",
-		},
+	condition := entities.Condition{
+		Match: "gt",
+		Value: 4.2,
+		Name:  "float_4_2",
 	}
 
 	// Test match float to int
@@ -102,7 +100,7 @@ func TestGtMatcherFloat(t *testing.T) {
 			"float_4_2": 5,
 		},
 	}
-	result, err := matcher.Match(user)
+	result, err := gtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -112,7 +110,7 @@ func TestGtMatcherFloat(t *testing.T) {
 			"float_4_2": 4.29999,
 		},
 	}
-	result, err = matcher.Match(user)
+	result, err = gtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -123,7 +121,7 @@ func TestGtMatcherFloat(t *testing.T) {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = gtMatcher(condition, user)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -134,6 +132,6 @@ func TestGtMatcherFloat(t *testing.T) {
 		},
 	}
 
-	_, err = matcher.Match(user)
+	_, err = gtMatcher(condition, user)
 	assert.Error(t, err)
 }
