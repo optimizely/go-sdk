@@ -27,7 +27,10 @@ import (
 
 // GtMatcher matches against the "gt" match type
 func GtMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, error) {
+	return matchGtOrLt(condition, user, logger, true)
+}
 
+func matchGtOrLt(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, gtMatch bool) (bool, error) {
 	if !user.CheckAttributeExists(condition.Name) {
 		logger.Debug(fmt.Sprintf(logging.NullUserAttribute.String(), condition.StringRepresentation, condition.Name))
 		return false, fmt.Errorf(`no attribute named "%s"`, condition.Name)
@@ -40,7 +43,10 @@ func GtMatcher(condition entities.Condition, user entities.UserContext, logger l
 			logger.Warning(fmt.Sprintf(logging.InvalidAttributeValueType.String(), condition.StringRepresentation, val, condition.Name))
 			return false, err
 		}
-		return floatValue < attributeValue, nil
+		if gtMatch {
+			return floatValue < attributeValue, nil
+		}
+		return floatValue > attributeValue, nil
 	}
 
 	logger.Warning(fmt.Sprintf(logging.UnsupportedConditionValue.String(), condition.StringRepresentation))
