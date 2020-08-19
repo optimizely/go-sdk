@@ -32,6 +32,7 @@ var datafileVersions = map[string]struct{}{
 
 // DatafileProjectConfig is a project config backed by a datafile
 type DatafileProjectConfig struct {
+	datafile             string
 	accountID            string
 	projectID            string
 	revision             string
@@ -46,6 +47,11 @@ type DatafileProjectConfig struct {
 	rolloutMap           map[string]entities.Rollout
 	anonymizeIP          bool
 	botFiltering         bool
+}
+
+// GetDatafile returns a JSON string representation of the environment's datafile
+func (c DatafileProjectConfig) GetDatafile() string {
+	return c.datafile
 }
 
 // GetProjectID returns projectID
@@ -196,6 +202,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	mergedAudiences := append(datafile.TypedAudiences, datafile.Audiences...)
 	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentMap)
 	config := &DatafileProjectConfig{
+		datafile:             string(jsonDatafile),
 		accountID:            datafile.AccountID,
 		anonymizeIP:          datafile.AnonymizeIP,
 		attributeKeyToIDMap:  attributeKeyToIDMap,

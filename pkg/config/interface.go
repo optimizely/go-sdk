@@ -24,6 +24,7 @@ import (
 
 // ProjectConfig represents the project's experiments and feature flags and contains methods for accessing the them.
 type ProjectConfig interface {
+	GetDatafile() string
 	GetAccountID() string
 	GetAnonymizeIP() bool
 	GetAttributeID(id string) string // returns "" if there is no id

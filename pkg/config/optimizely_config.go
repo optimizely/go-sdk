@@ -17,13 +17,21 @@
 // Package config //
 package config
 
-import "github.com/optimizely/go-sdk/pkg/entities"
+import (
+	"github.com/optimizely/go-sdk/pkg/entities"
+)
 
 // OptimizelyConfig is a snapshot of the experiments and features in the project config
 type OptimizelyConfig struct {
 	Revision       string                          `json:"revision"`
 	ExperimentsMap map[string]OptimizelyExperiment `json:"experimentsMap"`
 	FeaturesMap    map[string]OptimizelyFeature    `json:"featuresMap"`
+	datafile       string
+}
+
+// GetDatafile returns a JSON string representation of the environment's datafile
+func (c OptimizelyConfig) GetDatafile() string {
+	return c.datafile
 }
 
 // OptimizelyExperiment has experiment info
@@ -159,6 +167,7 @@ func NewOptimizelyConfig(projConfig ProjectConfig) *OptimizelyConfig {
 	optimizelyConfig.ExperimentsMap = getExperimentMap(featuresList, experimentsList, variableByIDMap)
 	optimizelyConfig.FeaturesMap = getFeatureMap(featuresList, optimizelyConfig.ExperimentsMap)
 	optimizelyConfig.Revision = revision
+	optimizelyConfig.datafile = projConfig.GetDatafile()
 
 	return optimizelyConfig
 }

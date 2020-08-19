@@ -62,17 +62,22 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 	s.Equal(s.expectedOptimizelyConfig.FeaturesMap, optimizelyConfig.FeaturesMap)
 	s.Equal(s.expectedOptimizelyConfig.ExperimentsMap, optimizelyConfig.ExperimentsMap)
 	s.Equal(s.expectedOptimizelyConfig.Revision, optimizelyConfig.Revision)
-
-	s.Equal(s.expectedOptimizelyConfig, *optimizelyConfig)
-
 }
 
 func (s *OptimizelyConfigTestSuite) TestOptlyConfigNullProjectConfig() {
 	optimizelyConfig := NewOptimizelyConfig(nil)
 
 	s.Nil(optimizelyConfig)
-
 }
+
+func (s *OptimizelyConfigTestSuite) TestOptlyConfigGetDatafile() {
+	datafile := []byte(`{"version":"4"}`)
+	projectMgr := NewStaticProjectConfigManagerWithOptions("", WithInitialDatafile(datafile))
+	optimizelyConfig := NewOptimizelyConfig(projectMgr.projectConfig)
+	s.NotNil(optimizelyConfig.datafile)
+	s.Equal(string(datafile), optimizelyConfig.GetDatafile())
+}
+
 func TestOptimizelyConfigTestSuite(t *testing.T) {
 	suite.Run(t, new(OptimizelyConfigTestSuite))
 }
