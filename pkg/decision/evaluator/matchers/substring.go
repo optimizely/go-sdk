@@ -25,20 +25,15 @@ import (
 )
 
 // SubstringMatcher matches against the "substring" match type
-type SubstringMatcher struct {
-	Condition entities.Condition
-}
+func SubstringMatcher(condition entities.Condition, user entities.UserContext) (bool, error) {
 
-// Match returns true if the user's attribute is a substring of the condition's string value
-func (m SubstringMatcher) Match(user entities.UserContext) (bool, error) {
-
-	if stringValue, ok := m.Condition.Value.(string); ok {
-		attributeValue, err := user.GetStringAttribute(m.Condition.Name)
+	if stringValue, ok := condition.Value.(string); ok {
+		attributeValue, err := user.GetStringAttribute(condition.Name)
 		if err != nil {
 			return false, err
 		}
 		return strings.Contains(attributeValue, stringValue), nil
 	}
 
-	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
+	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", condition.Name)
 }

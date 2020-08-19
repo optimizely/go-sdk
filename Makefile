@@ -10,7 +10,7 @@ GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
-GOLINT=golangci-lint
+GOLINT=$(GOPATH)/bin/golangci-lint
 
 # Make is verbose in Linux. Make it silent.
 MAKEFLAGS += --silent

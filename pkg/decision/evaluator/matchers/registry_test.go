@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2020, Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -17,9 +17,36 @@
 // Package matchers //
 package matchers
 
-import "github.com/optimizely/go-sdk/pkg/entities"
+import (
+	"testing"
 
-// Matcher matches the condition against the user's attributes
-type Matcher interface {
-	Match(entities.UserContext) (bool, error)
+	"github.com/stretchr/testify/assert"
+
+	"github.com/optimizely/go-sdk/pkg/entities"
+)
+
+func TestRegister(t *testing.T) {
+	expected := func(condition entities.Condition, user entities.UserContext) (bool, error) {
+		return false, nil
+	}
+	Register("test", expected)
+	actual := assertMatcher(t, "test")
+	matches, err := actual(entities.Condition{}, entities.UserContext{})
+	assert.False(t, matches)
+	assert.NoError(t, err)
+}
+
+func TestInit(t *testing.T) {
+	assertMatcher(t, ExactMatchType)
+	assertMatcher(t, ExistsMatchType)
+	assertMatcher(t, LtMatchType)
+	assertMatcher(t, GtMatchType)
+	assertMatcher(t, SubstringMatchType)
+}
+
+func assertMatcher(t *testing.T, name string) Matcher {
+	actual, ok := Get(name)
+	assert.True(t, ok)
+	assert.NotNil(t, actual)
+	return actual
 }
