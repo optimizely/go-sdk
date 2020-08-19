@@ -29,6 +29,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	buildSeperator      = "+"
+	preReleaseSeperator = "-"
+)
+
+var digitCheck = regexp.MustCompile(`^[0-9]+$`)
+
 // SemanticVersion defines the class
 type SemanticVersion struct {
 	Condition string // condition is always a string here
@@ -84,9 +91,9 @@ func (sv SemanticVersion) splitSemanticVersion(targetedVersion string) ([]string
 
 	splitBy := ""
 	if sv.isBuild(targetedVersion) {
-		splitBy = sv.buildSeperator()
+		splitBy = buildSeperator
 	} else if sv.isPreRelease(targetedVersion) {
-		splitBy = sv.preReleaseSeperator()
+		splitBy = preReleaseSeperator
 	}
 	targetParts := strings.Split(targetedVersion, splitBy)
 	if len(targetParts) == 0 {
@@ -112,8 +119,7 @@ func (sv SemanticVersion) splitSemanticVersion(targetedVersion string) ([]string
 }
 
 func (sv SemanticVersion) isNumber(str string) bool {
-	var digitCheck = regexp.MustCompile(`^[0-9]+$`)
-	return (digitCheck.MatchString(str))
+	return digitCheck.MatchString(str)
 }
 
 func (sv SemanticVersion) toInt(str string) int {
@@ -136,14 +142,6 @@ func (sv SemanticVersion) hasWhiteSpace(str string) bool {
 	return strings.Contains(str, " ")
 }
 
-func (sv SemanticVersion) buildSeperator() string {
-	return "+"
-}
-
-func (sv SemanticVersion) preReleaseSeperator() string {
-	return "-"
-}
-
 // SemverEvaluator is a help function to wrap a common evaluation code
 func SemverEvaluator(cond entities.Condition, user entities.UserContext) (int, error) {
 
@@ -160,4 +158,49 @@ func SemverEvaluator(cond entities.Condition, user entities.UserContext) (int, e
 		return comparison, nil
 	}
 	return 0, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", cond.Name)
+}
+
+// SemverEqMatcher returns true if the user's semver attribute is equal to the semver condition value
+func SemverEqMatcher(condition entities.Condition, user entities.UserContext) (bool, error) {
+	comparison, err := SemverEvaluator(condition, user)
+	if err != nil {
+		return false, err
+	}
+	return comparison == 0, nil
+}
+
+// SemverGeMatcher returns true if the user's semver attribute is greater or equal to the semver condition value
+func SemverGeMatcher(condition entities.Condition, user entities.UserContext) (bool, error) {
+	comparison, err := SemverEvaluator(condition, user)
+	if err != nil {
+		return false, err
+	}
+	return comparison >= 0, nil
+}
+
+// SemverGtMatcher returns true if the user's semver attribute is greater than the semver condition value
+func SemverGtMatcher(condition entities.Condition, user entities.UserContext) (bool, error) {
+	comparison, err := SemverEvaluator(condition, user)
+	if err != nil {
+		return false, err
+	}
+	return comparison > 0, nil
+}
+
+// SemverLeMatcher returns true if the user's semver attribute is less than or equal to the semver condition value
+func SemverLeMatcher(condition entities.Condition, user entities.UserContext) (bool, error) {
+	comparison, err := SemverEvaluator(condition, user)
+	if err != nil {
+		return false, err
+	}
+	return comparison <= 0, nil
+}
+
+// SemverLtMatcher returns true if the user's semver attribute is less than the semver condition value
+func SemverLtMatcher(condition entities.Condition, user entities.UserContext) (bool, error) {
+	comparison, err := SemverEvaluator(condition, user)
+	if err != nil {
+		return false, err
+	}
+	return comparison < 0, nil
 }
