@@ -33,8 +33,12 @@ const (
 	ExistsMatchType = "exists"
 	// LtMatchType name for the "lt" matcher
 	LtMatchType = "lt"
+	// LeMatchType name for the "le" matcher
+	LeMatchType = "le"
 	// GtMatchType name for the "gt" matcher
 	GtMatchType = "gt"
+	// GeMatchType name for the "ge" matcher
+	GeMatchType = "ge"
 	// SubstringMatchType name for the "substring" matcher
 	SubstringMatchType = "substring"
 	// SemverEqMatchType name for the semver_eq matcher
@@ -53,7 +57,9 @@ var registry = map[string]Matcher{
 	ExactMatchType:     ExactMatcher,
 	ExistsMatchType:    ExistsMatcher,
 	LtMatchType:        LtMatcher,
+	LeMatchType:        LeMatcher,
 	GtMatchType:        GtMatcher,
+	GeMatchType:        GeMatcher,
 	SubstringMatchType: SubstringMatcher,
 	SemverEqMatchType:  SemverEqMatcher,
 	SemverLtMatchType:  SemverLtMatcher,
