@@ -26,17 +26,8 @@ import (
 )
 
 // GtMatcher matches against the "gt" match type
-type GtMatcher struct {
-	Condition entities.Condition
-	Logger    logging.OptimizelyLogProducer
-}
+func GtMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, error) {
 
-// Match returns true if the user's attribute is greater than the condition's string value
-func (m GtMatcher) Match(user entities.UserContext) (bool, error) {
-	return matchGtOrLt(user, m.Condition, m.Logger, true)
-}
-
-func matchGtOrLt(user entities.UserContext, condition entities.Condition, logger logging.OptimizelyLogProducer, gtMatch bool) (bool, error) {
 	if !user.CheckAttributeExists(condition.Name) {
 		logger.Debug(fmt.Sprintf(logging.NullUserAttribute.String(), condition.StringRepresentation, condition.Name))
 		return false, fmt.Errorf(`no attribute named "%s"`, condition.Name)
@@ -49,10 +40,7 @@ func matchGtOrLt(user entities.UserContext, condition entities.Condition, logger
 			logger.Warning(fmt.Sprintf(logging.InvalidAttributeValueType.String(), condition.StringRepresentation, val, condition.Name))
 			return false, err
 		}
-		if gtMatch {
-			return floatValue < attributeValue, nil
-		}
-		return floatValue > attributeValue, nil
+		return floatValue < attributeValue, nil
 	}
 
 	logger.Warning(fmt.Sprintf(logging.UnsupportedConditionValue.String(), condition.StringRepresentation))

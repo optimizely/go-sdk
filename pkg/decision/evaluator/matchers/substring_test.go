@@ -29,20 +29,19 @@ import (
 type SubstringTestSuite struct {
 	suite.Suite
 	mockLogger *MockLogger
+	matcher    Matcher
 }
 
 func (s *SubstringTestSuite) SetupTest() {
 	s.mockLogger = new(MockLogger)
+	s.matcher, _ = Get(SubstringMatchType)
 }
 
 func (s *SubstringTestSuite) TestSubstringMatcher() {
-	matcher := SubstringMatcher{
-		Condition: entities.Condition{
-			Match: "substring",
-			Value: "foo",
-			Name:  "string_foo",
-		},
-		Logger: s.mockLogger,
+	condition := entities.Condition{
+		Match: "substring",
+		Value: "foo",
+		Name:  "string_foo",
 	}
 
 	// Test match
@@ -52,7 +51,7 @@ func (s *SubstringTestSuite) TestSubstringMatcher() {
 		},
 	}
 
-	result, err := matcher.Match(user)
+	result, err := s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -63,7 +62,7 @@ func (s *SubstringTestSuite) TestSubstringMatcher() {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.False(result)
 
@@ -75,7 +74,7 @@ func (s *SubstringTestSuite) TestSubstringMatcher() {
 	}
 
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "string_foo"))
-	_, err = matcher.Match(user)
+	_, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 
 	// Test attribute of different type
@@ -85,20 +84,17 @@ func (s *SubstringTestSuite) TestSubstringMatcher() {
 		},
 	}
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.InvalidAttributeValueType.String(), "", true, "string_foo"))
-	result, err = matcher.Match(user)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())
 }
 
-func (s *GtTestSuite) TestSubstringMatcherUnsupportedConditionValue() {
-	matcher := SubstringMatcher{
-		Condition: entities.Condition{
-			Match: "substring",
-			Value: false,
-			Name:  "string_foo",
-		},
-		Logger: s.mockLogger,
+func (s *SubstringTestSuite) TestSubstringMatcherUnsupportedConditionValue() {
+	condition := entities.Condition{
+		Match: "substring",
+		Value: false,
+		Name:  "string_foo",
 	}
 
 	// Test match - unsupported condition value
@@ -108,7 +104,7 @@ func (s *GtTestSuite) TestSubstringMatcherUnsupportedConditionValue() {
 		},
 	}
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.UnsupportedConditionValue.String(), ""))
-	result, err := matcher.Match(user)
+	result, err := s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())

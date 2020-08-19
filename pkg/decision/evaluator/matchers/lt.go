@@ -18,17 +18,31 @@
 package matchers
 
 import (
+	"fmt"
+
+	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers/utils"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 // LtMatcher matches against the "lt" match type
-type LtMatcher struct {
-	Condition entities.Condition
-	Logger    logging.OptimizelyLogProducer
-}
+func LtMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, error) {
 
-// Match returns true if the user's attribute is less than the condition's string value
-func (m LtMatcher) Match(user entities.UserContext) (bool, error) {
-	return matchGtOrLt(user, m.Condition, m.Logger, false)
+	if !user.CheckAttributeExists(condition.Name) {
+		logger.Debug(fmt.Sprintf(logging.NullUserAttribute.String(), condition.StringRepresentation, condition.Name))
+		return false, fmt.Errorf(`no attribute named "%s"`, condition.Name)
+	}
+
+	if floatValue, ok := utils.ToFloat(condition.Value); ok {
+		attributeValue, err := user.GetFloatAttribute(condition.Name)
+		if err != nil {
+			val, _ := user.GetAttribute(condition.Name)
+			logger.Warning(fmt.Sprintf(logging.InvalidAttributeValueType.String(), condition.StringRepresentation, val, condition.Name))
+			return false, err
+		}
+		return floatValue > attributeValue, nil
+	}
+
+	logger.Warning(fmt.Sprintf(logging.UnsupportedConditionValue.String(), condition.StringRepresentation))
+	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", condition.Name)
 }

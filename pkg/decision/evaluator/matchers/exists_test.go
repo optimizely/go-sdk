@@ -24,12 +24,12 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
+var existsMatcher, _ = Get(ExistsMatchType)
+
 func TestExistsMatcher(t *testing.T) {
-	matcher := ExistsMatcher{
-		Condition: entities.Condition{
-			Match: "exists",
-			Name:  "string_foo",
-		},
+	condition := entities.Condition{
+		Match: "exists",
+		Name:  "string_foo",
 	}
 
 	// Test match
@@ -38,7 +38,7 @@ func TestExistsMatcher(t *testing.T) {
 			"string_foo": "any_value",
 		},
 	}
-	result, err := matcher.Match(user)
+	result, err := existsMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -49,7 +49,7 @@ func TestExistsMatcher(t *testing.T) {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = existsMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -57,7 +57,7 @@ func TestExistsMatcher(t *testing.T) {
 	user = entities.UserContext{
 		Attributes: map[string]interface{}{},
 	}
-	result, err = matcher.Match(user)
+	result, err = ExistsMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.False(t, result)
 }
