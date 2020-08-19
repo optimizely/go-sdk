@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -49,6 +49,7 @@ func (s *OptimizelyConfigTestSuite) SetupTest() {
 	if err != nil {
 		s.Fail("error opening file " + dataFileName)
 	}
+	s.expectedOptimizelyConfig.datafile = string(dataFile)
 
 	projectMgr := NewStaticProjectConfigManagerWithOptions("", WithInitialDatafile(dataFile))
 
@@ -62,6 +63,9 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 	s.Equal(s.expectedOptimizelyConfig.FeaturesMap, optimizelyConfig.FeaturesMap)
 	s.Equal(s.expectedOptimizelyConfig.ExperimentsMap, optimizelyConfig.ExperimentsMap)
 	s.Equal(s.expectedOptimizelyConfig.Revision, optimizelyConfig.Revision)
+	s.Equal(s.expectedOptimizelyConfig.datafile, optimizelyConfig.datafile)
+
+	s.Equal(s.expectedOptimizelyConfig, *optimizelyConfig)
 }
 
 func (s *OptimizelyConfigTestSuite) TestOptlyConfigNullProjectConfig() {

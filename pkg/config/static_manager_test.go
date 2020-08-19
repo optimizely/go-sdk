@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -48,9 +48,7 @@ func TestNewStaticProjectConfigManagerFromPayload(t *testing.T) {
 
 func TestStaticGetOptimizelyConfig(t *testing.T) {
 
-	// since marshalling changes the order of keys in jsonString everytime, using json with a single key
-	// for test purposes
-	mockDatafile := []byte(`{"version":"4"}`)
+	mockDatafile := []byte(`{"accountId":"42","projectId":"123","version":"4"}`)
 	logger := logging.GetLogger("", "DatafileProjectConfig")
 	projectConfig, _ := datafileprojectconfig.NewDatafileProjectConfig([]byte(mockDatafile), logger)
 	configManager := NewStaticProjectConfigManager(projectConfig, logger)
@@ -60,7 +58,7 @@ func TestStaticGetOptimizelyConfig(t *testing.T) {
 	optimizelyConfig := configManager.GetOptimizelyConfig()
 	assert.NotNil(t, configManager.optimizelyConfig)
 	assert.Equal(t, &OptimizelyConfig{ExperimentsMap: map[string]OptimizelyExperiment{},
-		FeaturesMap: map[string]OptimizelyFeature{}, datafile: "{\"version\":\"4\"}"}, optimizelyConfig)
+		FeaturesMap: map[string]OptimizelyFeature{}, datafile: "{\"accountId\":\"42\",\"projectId\":\"123\",\"version\":\"4\"}"}, optimizelyConfig)
 }
 func TestNewStaticProjectConfigManagerFromURL(t *testing.T) {
 

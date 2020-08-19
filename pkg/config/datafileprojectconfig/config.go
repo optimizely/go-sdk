@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -49,7 +49,7 @@ type DatafileProjectConfig struct {
 	botFiltering         bool
 }
 
-// GetDatafile returns a JSON string representation of the environment's datafile
+// GetDatafile returns a string representation of the environment's datafile
 func (c DatafileProjectConfig) GetDatafile() string {
 	return c.datafile
 }
