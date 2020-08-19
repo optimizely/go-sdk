@@ -31,6 +31,10 @@ const (
 	AudienceEvaluationStarted LogMessage = `Starting to evaluate audience "%s".`
 	// AudienceEvaluatedTo when single audience evaluation is completed
 	AudienceEvaluatedTo LogMessage = `Audience "%s" evaluated to %t.`
+	// ExperimentAudiencesEvaluatedTo when collective audience evaluation for experiment is completed
+	ExperimentAudiencesEvaluatedTo LogMessage = `Audiences for experiment %s collectively evaluated to %t.`
+	// RolloutAudiencesEvaluatedTo when collective audience evaluation for rule is completed
+	RolloutAudiencesEvaluatedTo LogMessage = `Audiences for rule %s collectively evaluated to %t.`
 	// EvaluatingAudiencesForExperiment when audience evaluation is started for an experiment
 	EvaluatingAudiencesForExperiment LogMessage = `Evaluating audiences for experiment "%s".`
 	// EvaluatingAudiencesForRollout when audience evaluation is started for a rule
@@ -41,13 +45,6 @@ const (
 	UserInEveryoneElse LogMessage = `User "%s" meets conditions for targeting rule "Everyone Else".`
 	// UserNotInRollout when user is not in rollout/rule
 	UserNotInRollout LogMessage = `User "%s" does not meet conditions for targeting rule %s.`
-
-	// Info Logs
-
-	// ExperimentAudiencesEvaluatedTo when collective audience evaluation for experiment is completed
-	ExperimentAudiencesEvaluatedTo LogMessage = `Audiences for experiment %s collectively evaluated to %t.`
-	// RolloutAudiencesEvaluatedTo when collective audience evaluation for rule is completed
-	RolloutAudiencesEvaluatedTo LogMessage = `Audiences for rule %s collectively evaluated to %t.`
 	// UserNotInExperiment when user is not in experiment
 	UserNotInExperiment LogMessage = `User "%s" does not meet conditions to be in experiment "%s".`
 
