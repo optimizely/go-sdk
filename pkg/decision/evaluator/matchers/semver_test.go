@@ -24,6 +24,15 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
+type test struct {
+	name      string
+	version   interface{}
+	attribute string
+
+	validBool bool
+	result    bool
+}
+
 func TestSemverEqMatcher(t *testing.T) {
 
 	condition := entities.Condition{
@@ -32,69 +41,30 @@ func TestSemverEqMatcher(t *testing.T) {
 		Name:  "version",
 	}
 
-	user := entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version": "2.0.0",
-		},
-	}
-	result, err := SemverEqMatcher(condition, user)
-	assert.NoError(t, err)
-	assert.True(t, result)
-
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version": "2.9",
-		},
+	testSuite := []test{
+		{name: "equalValues", attribute: "version", version: "2.0.0", result: true, validBool: true},
+		{name: "notEqualValues", attribute: "version", version: "2.9", result: false, validBool: true},
+		{name: "notEqualValues", attribute: "version", version: "1.9", result: false, validBool: true},
+		{name: "attributeNotFound", attribute: "version1", version: "2.0", result: false, validBool: false},
+		{name: "invalidType", attribute: "version", version: true, result: false, validBool: false},
+		{name: "invalidType", attribute: "version", version: 37, result: false, validBool: false},
 	}
 
-	result, err = SemverEqMatcher(condition, user)
-	assert.NoError(t, err)
-	assert.False(t, result)
-
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version": "1.9",
-		},
+	for _, ts := range testSuite {
+		user := entities.UserContext{
+			Attributes: map[string]interface{}{
+				ts.attribute: ts.version,
+			},
+		}
+		result, err := SemverEqMatcher(condition, user)
+		if ts.validBool {
+			assert.NoError(t, err)
+			assert.Equal(t, ts.result, result)
+		} else {
+			assert.Error(t, err)
+		}
 	}
 
-	result, err = SemverEqMatcher(condition, user)
-	assert.NoError(t, err)
-	assert.False(t, result)
-
-	// Test attribute not found
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version1": "2.0",
-		},
-	}
-
-	_, err = SemverEqMatcher(condition, user)
-	assert.Error(t, err)
-}
-
-func TestSemverEqMatcherInvalidType(t *testing.T) {
-	condition := entities.Condition{
-		Match: "semver_eq",
-		Value: "2.0",
-		Name:  "version",
-	}
-
-	user := entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version": true,
-		},
-	}
-	_, err := SemverEqMatcher(condition, user)
-	assert.Error(t, err)
-
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version": 37,
-		},
-	}
-
-	_, err = SemverEqMatcher(condition, user)
-	assert.Error(t, err)
 }
 
 func TestSemverGeMatcher(t *testing.T) {
@@ -104,44 +74,28 @@ func TestSemverGeMatcher(t *testing.T) {
 		Name:  "version",
 	}
 
-	user := entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version": "2.0.0",
-		},
-	}
-	result, err := SemverGeMatcher(condition, user)
-	assert.NoError(t, err)
-	assert.True(t, result)
-
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version": "2.9",
-		},
+	testSuite := []test{
+		{name: "equalValues", attribute: "version", version: "2.0.0", result: true, validBool: true},
+		{name: "notEqualValues", attribute: "version", version: "2.9", result: true, validBool: true},
+		{name: "notEqualValues", attribute: "version", version: "1.9", result: false, validBool: true},
+		{name: "attributeNotFound", attribute: "version1", version: "2.0", result: false, validBool: false},
 	}
 
-	result, err = SemverGeMatcher(condition, user)
-	assert.NoError(t, err)
-	assert.True(t, result)
-
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version": "1.9",
-		},
+	for _, ts := range testSuite {
+		user := entities.UserContext{
+			Attributes: map[string]interface{}{
+				ts.attribute: ts.version,
+			},
+		}
+		result, err := SemverGeMatcher(condition, user)
+		if ts.validBool {
+			assert.NoError(t, err)
+			assert.Equal(t, ts.result, result)
+		} else {
+			assert.Error(t, err)
+		}
 	}
 
-	result, err = SemverGeMatcher(condition, user)
-	assert.NoError(t, err)
-	assert.False(t, result)
-
-	// Test attribute not found
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version1": "2.0",
-		},
-	}
-
-	_, err = SemverGeMatcher(condition, user)
-	assert.Error(t, err)
 }
 
 func TestSemverGtMatcher(t *testing.T) {
@@ -151,44 +105,27 @@ func TestSemverGtMatcher(t *testing.T) {
 		Name:  "version",
 	}
 
-	user := entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version": "2.0.0",
-		},
-	}
-	result, err := SemverGtMatcher(condition, user)
-	assert.NoError(t, err)
-	assert.False(t, result)
-
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version": "2.9",
-		},
+	testSuite := []test{
+		{name: "equalValues", attribute: "version", version: "2.0.0", result: false, validBool: true},
+		{name: "notEqualValues", attribute: "version", version: "2.9", result: true, validBool: true},
+		{name: "notEqualValues", attribute: "version", version: "1.9", result: false, validBool: true},
+		{name: "attributeNotFound", attribute: "version1", version: "2.0", result: false, validBool: false},
 	}
 
-	result, err = SemverGtMatcher(condition, user)
-	assert.NoError(t, err)
-	assert.True(t, result)
-
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version": "1.9",
-		},
+	for _, ts := range testSuite {
+		user := entities.UserContext{
+			Attributes: map[string]interface{}{
+				ts.attribute: ts.version,
+			},
+		}
+		result, err := SemverGtMatcher(condition, user)
+		if ts.validBool {
+			assert.NoError(t, err)
+			assert.Equal(t, ts.result, result)
+		} else {
+			assert.Error(t, err)
+		}
 	}
-
-	result, err = SemverGtMatcher(condition, user)
-	assert.NoError(t, err)
-	assert.False(t, result)
-
-	// Test attribute not found
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version1": "2.0",
-		},
-	}
-
-	_, err = SemverGtMatcher(condition, user)
-	assert.Error(t, err)
 }
 
 func TestSemverLeMatcher(t *testing.T) {
@@ -198,44 +135,27 @@ func TestSemverLeMatcher(t *testing.T) {
 		Name:  "version",
 	}
 
-	user := entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version": "2.0.0",
-		},
-	}
-	result, err := SemverLeMatcher(condition, user)
-	assert.NoError(t, err)
-	assert.True(t, result)
-
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version": "2.5.1",
-		},
+	testSuite := []test{
+		{name: "equalValues", attribute: "version", version: "2.0.0", result: true, validBool: true},
+		{name: "notEqualValues", attribute: "version", version: "2.9", result: false, validBool: true},
+		{name: "notEqualValues", attribute: "version", version: "1.9", result: true, validBool: true},
+		{name: "attributeNotFound", attribute: "version1", version: "2.0", result: false, validBool: false},
 	}
 
-	result, err = SemverLeMatcher(condition, user)
-	assert.NoError(t, err)
-	assert.False(t, result)
-
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version": "1.9",
-		},
+	for _, ts := range testSuite {
+		user := entities.UserContext{
+			Attributes: map[string]interface{}{
+				ts.attribute: ts.version,
+			},
+		}
+		result, err := SemverLeMatcher(condition, user)
+		if ts.validBool {
+			assert.NoError(t, err)
+			assert.Equal(t, ts.result, result)
+		} else {
+			assert.Error(t, err)
+		}
 	}
-
-	result, err = SemverLeMatcher(condition, user)
-	assert.NoError(t, err)
-	assert.True(t, result)
-
-	// Test attribute not found
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version1": "2.0",
-		},
-	}
-
-	_, err = SemverLeMatcher(condition, user)
-	assert.Error(t, err)
 }
 
 func TestSemverLtMatcher(t *testing.T) {
@@ -245,42 +165,25 @@ func TestSemverLtMatcher(t *testing.T) {
 		Name:  "version",
 	}
 
-	user := entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version": "2.0.0",
-		},
-	}
-	result, err := SemverLtMatcher(condition, user)
-	assert.NoError(t, err)
-	assert.False(t, result)
-
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version": "2.5.1",
-		},
+	testSuite := []test{
+		{name: "equalValues", attribute: "version", version: "2.0.0", result: false, validBool: true},
+		{name: "notEqualValues", attribute: "version", version: "2.9", result: false, validBool: true},
+		{name: "notEqualValues", attribute: "version", version: "1.9", result: true, validBool: true},
+		{name: "attributeNotFound", attribute: "version1", version: "2.0", result: false, validBool: false},
 	}
 
-	result, err = SemverLtMatcher(condition, user)
-	assert.NoError(t, err)
-	assert.False(t, result)
-
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version": "1.9",
-		},
+	for _, ts := range testSuite {
+		user := entities.UserContext{
+			Attributes: map[string]interface{}{
+				ts.attribute: ts.version,
+			},
+		}
+		result, err := SemverLtMatcher(condition, user)
+		if ts.validBool {
+			assert.NoError(t, err)
+			assert.Equal(t, ts.result, result)
+		} else {
+			assert.Error(t, err)
+		}
 	}
-
-	result, err = SemverLtMatcher(condition, user)
-	assert.NoError(t, err)
-	assert.True(t, result)
-
-	// Test attribute not found
-	user = entities.UserContext{
-		Attributes: map[string]interface{}{
-			"version1": "2.0",
-		},
-	}
-
-	_, err = SemverLtMatcher(condition, user)
-	assert.Error(t, err)
 }
