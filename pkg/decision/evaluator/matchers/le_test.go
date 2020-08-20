@@ -94,6 +94,21 @@ func TestLeMatcherInt(t *testing.T) {
 
 	_, err = leMatcher(condition, user)
 	assert.Error(t, err)
+
+	// Test bad condition
+	condition = entities.Condition{
+		Match: "le",
+		Value: "123",
+		Name:  "int_43",
+	}
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"int_43": "some_string",
+		},
+	}
+
+	_, err = gtMatcher(condition, user)
+	assert.Error(t, err)
 }
 
 func TestLeMatcherFloat(t *testing.T) {
