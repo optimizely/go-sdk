@@ -82,7 +82,7 @@ func TestCustomAttributeConditionEvaluatorWithoutMatchType(t *testing.T) {
 	assert.Equal(t, result, false)
 }
 
-func TestCustomAttributeConditionEvaluatorForSemver(t *testing.T) {
+func TestCustomAttributeConditionEvaluatorForGeSemver(t *testing.T) {
 	conditionEvaluator := CustomAttributeConditionEvaluator{}
 	condition := entities.Condition{
 		Match: "semver_ge",

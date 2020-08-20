@@ -32,6 +32,7 @@ import (
 const (
 	buildSeperator      = "+"
 	preReleaseSeperator = "-"
+	whiteSpace          = " "
 )
 
 var digitCheck = regexp.MustCompile(`^[0-9]+$`)
@@ -131,15 +132,15 @@ func (sv SemanticVersion) toInt(str string) int {
 }
 
 func (sv SemanticVersion) isPreRelease(str string) bool {
-	return strings.Contains(str, "-")
+	return strings.Contains(str, preReleaseSeperator)
 }
 
 func (sv SemanticVersion) isBuild(str string) bool {
-	return strings.Contains(str, "+")
+	return strings.Contains(str, buildSeperator)
 }
 
 func (sv SemanticVersion) hasWhiteSpace(str string) bool {
-	return strings.Contains(str, " ")
+	return strings.Contains(str, whiteSpace)
 }
 
 // SemverEvaluator is a help function to wrap a common evaluation code
