@@ -75,6 +75,108 @@ func TestValidAttributes(t *testing.T) {
 	}
 }
 
+func TestValidAttributesReleaseToBeta(t *testing.T) {
+	scenarios := []struct {
+		matchType string
+		version   string
+		expected  bool
+	}{
+		{matchType: "semver_eq", version: "2.1.2-release", expected: false},
+		{matchType: "semver_eq", version: "2.1.2", expected: false},
+		{matchType: "semver_eq", version: "2.1.2-beta", expected: true},
+
+		{matchType: "semver_ge", version: "2.1.2-release", expected: true},
+		{matchType: "semver_ge", version: "2.1.2", expected: false},
+		{matchType: "semver_ge", version: "2.1.2-beta", expected: true},
+
+		{matchType: "semver_gt", version: "2.1.2-release", expected: true},
+		{matchType: "semver_gt", version: "2.1.2", expected: false},
+		{matchType: "semver_gt", version: "2.1.2-beta", expected: false},
+
+		{matchType: "semver_le", version: "2.1.2-release", expected: false},
+		{matchType: "semver_le", version: "2.1.2", expected: true},
+		{matchType: "semver_le", version: "2.1.2-beta", expected: true},
+
+		{matchType: "semver_lt", version: "2.1.2-release", expected: false},
+		{matchType: "semver_lt", version: "2.1.2", expected: true},
+		{matchType: "semver_lt", version: "2.1.2-beta", expected: false},
+	}
+
+	for _, scenario := range scenarios {
+		condition := entities.Condition{
+			Match: scenario.matchType,
+			Value: "2.1.2-beta",
+			Name:  "version",
+		}
+		user := entities.UserContext{
+			Attributes: map[string]interface{}{
+				"version": scenario.version,
+			},
+		}
+
+		messageAndArgs := []interface{}{"matchType: %s, condition: %s, attribute: %s", scenario.matchType, condition.Value, scenario.version}
+
+		matcher, ok := Get(scenario.matchType)
+		assert.True(t, ok, messageAndArgs...)
+
+		actual, err := matcher(condition, user)
+		assert.NoError(t, err, messageAndArgs...)
+
+		assert.Equal(t, scenario.expected, actual, messageAndArgs...)
+	}
+}
+
+func TestValidAttributesBetaToRelease(t *testing.T) {
+	scenarios := []struct {
+		matchType string
+		version   string
+		expected  bool
+	}{
+		{matchType: "semver_eq", version: "2.1.2-beta", expected: false},
+		{matchType: "semver_eq", version: "2.1.2", expected: false},
+		{matchType: "semver_eq", version: "2.1.2-release", expected: true},
+
+		{matchType: "semver_ge", version: "2.1.2-beta", expected: false},
+		{matchType: "semver_ge", version: "2.1.2", expected: false},
+		{matchType: "semver_ge", version: "2.1.2-release", expected: true},
+
+		{matchType: "semver_gt", version: "2.1.2-beta", expected: false},
+		{matchType: "semver_gt", version: "2.1.2", expected: false},
+		{matchType: "semver_gt", version: "2.1.2-release", expected: false},
+
+		{matchType: "semver_le", version: "2.1.2-beta", expected: true},
+		{matchType: "semver_le", version: "2.1.2", expected: true},
+		{matchType: "semver_le", version: "2.1.2-release", expected: true},
+
+		{matchType: "semver_lt", version: "2.1.2-beta", expected: true},
+		{matchType: "semver_lt", version: "2.1.2", expected: true},
+		{matchType: "semver_lt", version: "2.1.2-release", expected: false},
+	}
+
+	for _, scenario := range scenarios {
+		condition := entities.Condition{
+			Match: scenario.matchType,
+			Value: "2.1.2-release",
+			Name:  "version",
+		}
+		user := entities.UserContext{
+			Attributes: map[string]interface{}{
+				"version": scenario.version,
+			},
+		}
+
+		messageAndArgs := []interface{}{"matchType: %s, condition: %s, attribute: %s", scenario.matchType, condition.Value, scenario.version}
+
+		matcher, ok := Get(scenario.matchType)
+		assert.True(t, ok, messageAndArgs...)
+
+		actual, err := matcher(condition, user)
+		assert.NoError(t, err, messageAndArgs...)
+
+		assert.Equal(t, scenario.expected, actual, messageAndArgs...)
+	}
+}
+
 func TestInvalidAttributes(t *testing.T) {
 
 	condition := entities.Condition{

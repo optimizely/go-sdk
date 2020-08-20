@@ -58,6 +58,9 @@ func (sv SemanticVersion) compareVersion(attribute string) (int, error) {
 
 		switch {
 		case len(versionParts) <= idx:
+			if sv.isPreRelease(attribute) {
+				return 1, nil
+			}
 			return -1, nil
 		case !sv.isNumber(versionParts[idx]):
 			// Compare strings
