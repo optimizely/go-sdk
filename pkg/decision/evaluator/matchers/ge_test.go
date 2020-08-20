@@ -85,6 +85,31 @@ func TestGeMatcherInt(t *testing.T) {
 
 	_, err = gtMatcher(condition, user)
 	assert.Error(t, err)
+
+	// Test wrong int
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"int_43": "some_string",
+		},
+	}
+
+	_, err = gtMatcher(condition, user)
+	assert.Error(t, err)
+
+	// Test bad condition
+	condition = entities.Condition{
+		Match: "ge",
+		Value: "123",
+		Name:  "int_42",
+	}
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"int_43": "some_string",
+		},
+	}
+
+	_, err = gtMatcher(condition, user)
+	assert.Error(t, err)
 }
 
 func TestGeMatcherFloat(t *testing.T) {
