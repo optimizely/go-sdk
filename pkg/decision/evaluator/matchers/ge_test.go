@@ -108,7 +108,7 @@ func TestGeMatcherInt(t *testing.T) {
 		},
 	}
 
-	_, err = gtMatcher(condition, user)
+	_, err = geMatcher(condition, user)
 	assert.Error(t, err)
 }
 
