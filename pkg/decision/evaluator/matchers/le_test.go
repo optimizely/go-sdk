@@ -107,7 +107,7 @@ func TestLeMatcherInt(t *testing.T) {
 		},
 	}
 
-	_, err = gtMatcher(condition, user)
+	_, err = LeMatcher(condition, user)
 	assert.Error(t, err)
 }
 
