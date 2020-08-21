@@ -136,6 +136,69 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorWithUnknownTyp
 	s.mockLogger.AssertExpectations(s.T())
 }
 
+func (s *ConditionTestSuite)  TestCustomAttributeConditionEvaluatorForGeSemver() {
+	conditionEvaluator := CustomAttributeConditionEvaluator{}
+	condition := entities.Condition{
+		Match: "semver_ge",
+		Value: "2.9",
+		Name:  "string_foo",
+		Type:  "custom_attribute",
+	}
+
+	// Test condition passes
+	user := entities.UserContext{
+		Attributes: map[string]interface{}{
+			"string_foo": "2.9.1",
+		},
+	}
+
+	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
+	result, _ := conditionEvaluator.Evaluate(condition, condTreeParams)
+	s.Equal( result, true)
+}
+
+func (s *ConditionTestSuite)  TestCustomAttributeConditionEvaluatorForGeSemverBeta() {
+	conditionEvaluator := CustomAttributeConditionEvaluator{}
+	condition := entities.Condition{
+		Match: "semver_ge",
+		Value: "3.7.0",
+		Name:  "string_foo",
+		Type:  "custom_attribute",
+	}
+
+	// Test condition passes
+	user := entities.UserContext{
+		Attributes: map[string]interface{}{
+			"string_foo": "3.7.1-beta",
+		},
+	}
+
+	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
+	result, _ := conditionEvaluator.Evaluate(condition, condTreeParams)
+	s.Equal(true, result)
+}
+
+func (s *ConditionTestSuite)  TestCustomAttributeConditionEvaluatorForGeSemverInvalid() {
+	conditionEvaluator := CustomAttributeConditionEvaluator{}
+	condition := entities.Condition{
+		Match: "semver_ge",
+		Value: "3.7.0",
+		Name:  "string_foo",
+		Type:  "custom_attribute",
+	}
+
+	// Test condition passes
+	user := entities.UserContext{
+		Attributes: map[string]interface{}{
+			"string_foo": "3.7.2.2",
+		},
+	}
+
+	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
+	_, err := conditionEvaluator.Evaluate(condition, condTreeParams)
+	s.NotNil(err)
+}
+
 func TestConditionTestSuite(t *testing.T) {
 	suite.Run(t, new(ConditionTestSuite))
 }

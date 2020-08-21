@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -21,6 +21,8 @@ package reasons
 type Reason string
 
 const (
+	// AttributeFormatInvalid - invalid format for attributes
+	AttributeFormatInvalid Reason = "Provided attributes are in an invalid format."
 	// BucketedVariationNotFound - the bucketed variation ID is not in the config
 	BucketedVariationNotFound Reason = "Bucketed variation not found"
 	// BucketedIntoVariation - the user is bucketed into a variation for the given experiment

@@ -34,18 +34,39 @@ const (
 	ExistsMatchType = "exists"
 	// LtMatchType name for the "lt" matcher
 	LtMatchType = "lt"
+	// LeMatchType name for the "le" matcher
+	LeMatchType = "le"
 	// GtMatchType name for the "gt" matcher
 	GtMatchType = "gt"
+	// GeMatchType name for the "ge" matcher
+	GeMatchType = "ge"
 	// SubstringMatchType name for the "substring" matcher
 	SubstringMatchType = "substring"
+	// SemverEqMatchType name for the semver_eq matcher
+	SemverEqMatchType = "semver_eq"
+	// SemverLtMatchType name for the semver_eq matcher
+	SemverLtMatchType = "semver_lt"
+	// SemverLeMatchType name for the semver_eq matcher
+	SemverLeMatchType = "semver_le"
+	// SemverGtMatchType name for the semver_eq matcher
+	SemverGtMatchType = "semver_gt"
+	// SemverGeMatchType name for the semver_eq matcher
+	SemverGeMatchType = "semver_ge"
 )
 
 var registry = map[string]Matcher{
 	ExactMatchType:     ExactMatcher,
 	ExistsMatchType:    ExistsMatcher,
 	LtMatchType:        LtMatcher,
+	LeMatchType:        LeMatcher,
 	GtMatchType:        GtMatcher,
+	GeMatchType:        GeMatcher,
 	SubstringMatchType: SubstringMatcher,
+	SemverEqMatchType:  SemverEqMatcher,
+	SemverLtMatchType:  SemverLtMatcher,
+	SemverLeMatchType:  SemverLeMatcher,
+	SemverGtMatchType:  SemverGtMatcher,
+	SemverGeMatchType:  SemverGeMatcher,
 }
 
 var lock = sync.RWMutex{}
