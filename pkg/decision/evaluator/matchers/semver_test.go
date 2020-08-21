@@ -197,6 +197,7 @@ func TestInvalidAttributes(t *testing.T) {
 		true,
 		37,
 		nil,
+		"",
 	}
 
 	for _, matchType := range matchTypes {
@@ -212,5 +213,33 @@ func TestInvalidAttributes(t *testing.T) {
 			_, err := matcher(condition, user)
 			assert.Error(t, err, "matchType: %s, value: %v", matchType, attribute)
 		}
+	}
+}
+
+func TestInvalidConditions(t *testing.T) {
+
+	conditions := []entities.Condition{{
+		Match: "semver_eq",
+		Value: "",
+		Name:  "version",
+	}, {
+		Match: "semver_eq",
+		Value: nil,
+		Name:  "version",
+	},
+	}
+
+	for _, condition := range conditions {
+		matcher, ok := Get("semver_eq")
+		assert.True(t, ok)
+
+		user := entities.UserContext{
+			Attributes: map[string]interface{}{
+				"version": "12.2.3",
+			},
+		}
+		_, err := matcher(condition, user)
+		assert.Error(t, err, "matchType: semver_eq, value: 12.2.3")
+
 	}
 }
