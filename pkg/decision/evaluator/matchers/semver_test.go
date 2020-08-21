@@ -30,6 +30,7 @@ func TestValidAttributes(t *testing.T) {
 		version   string
 		expected  bool
 	}{
+		{matchType: "semver_eq", version: "2", expected: false},
 		{matchType: "semver_eq", version: "2.0.0", expected: true},
 		{matchType: "semver_eq", version: "2.9", expected: false},
 		{matchType: "semver_eq", version: "1.9", expected: false},
