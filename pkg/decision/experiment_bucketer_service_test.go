@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -17,9 +17,11 @@
 package decision
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
+	"github.com/optimizely/go-sdk/pkg/logging"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/stretchr/testify/mock"
@@ -35,14 +37,36 @@ func (m *MockBucketer) Bucket(bucketingID string, experiment entities.Experiment
 	return args.Get(0).(*entities.Variation), args.Get(1).(reasons.Reason), args.Error(2)
 }
 
+type MockLogger struct {
+	mock.Mock
+}
+
+func (m *MockLogger) Debug(message string) {
+	m.Called(message)
+}
+
+func (m *MockLogger) Info(message string) {
+	m.Called(message)
+}
+
+func (m *MockLogger) Warning(message string) {
+	m.Called(message)
+}
+
+func (m *MockLogger) Error(message string, err interface{}) {
+	m.Called(message, err)
+}
+
 type ExperimentBucketerTestSuite struct {
 	suite.Suite
 	mockBucketer *MockBucketer
+	mockLogger   *MockLogger
 	mockConfig   *mockProjectConfig
 }
 
 func (s *ExperimentBucketerTestSuite) SetupTest() {
 	s.mockBucketer = new(MockBucketer)
+	s.mockLogger = new(MockLogger)
 	s.mockConfig = new(mockProjectConfig)
 }
 
@@ -63,13 +87,15 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionNoTargeting() {
 		ProjectConfig: s.mockConfig,
 	}
 	s.mockBucketer.On("Bucket", testUserContext.ID, testExp1111, entities.Group{}).Return(&testExp1111Var2222, reasons.BucketedIntoVariation, nil)
-
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), "test_experiment_1111", true))
 	experimentBucketerService := ExperimentBucketerService{
 		bucketer: s.mockBucketer,
+		logger:   s.mockLogger,
 	}
 	decision, err := experimentBucketerService.GetDecision(testDecisionContext, testUserContext)
 	s.Equal(expectedDecision, decision)
 	s.NoError(err)
+	s.mockLogger.AssertExpectations(s.T())
 }
 
 func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingPasses() {
@@ -89,9 +115,12 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingPasses() {
 	mockAudienceTreeEvaluator.On("Evaluate", mock.Anything, mock.Anything).Return(true, true)
 	experimentBucketerService := ExperimentBucketerService{
 		audienceTreeEvaluator: mockAudienceTreeEvaluator,
+		logger:                s.mockLogger,
 		bucketer:              s.mockBucketer,
 	}
 	s.mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForExperiment.String(), "test_targeted_experiment_1116"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), "test_targeted_experiment_1116", true))
 
 	testDecisionContext := ExperimentDecisionContext{
 		Experiment:    &testTargetedExp1116,
@@ -100,6 +129,7 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingPasses() {
 	decision, err := experimentBucketerService.GetDecision(testDecisionContext, testUserContext)
 	s.Equal(expectedDecision, decision)
 	s.NoError(err)
+	s.mockLogger.AssertExpectations(s.T())
 }
 
 func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingFails() {
@@ -116,9 +146,13 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingFails() {
 	mockAudienceTreeEvaluator.On("Evaluate", mock.Anything, mock.Anything).Return(false, true)
 	experimentBucketerService := ExperimentBucketerService{
 		audienceTreeEvaluator: mockAudienceTreeEvaluator,
+		logger:                s.mockLogger,
 		bucketer:              s.mockBucketer,
 	}
 	s.mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForExperiment.String(), "test_targeted_experiment_1116"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), "test_targeted_experiment_1116", false))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.UserNotInExperiment.String(), "test_user_1", "test_targeted_experiment_1116"))
 
 	testDecisionContext := ExperimentDecisionContext{
 		Experiment:    &testTargetedExp1116,
@@ -128,6 +162,8 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingFails() {
 	s.Equal(expectedDecision, decision)
 	s.NoError(err)
 	s.mockBucketer.AssertNotCalled(s.T(), "Bucket")
+	s.mockLogger.AssertExpectations(s.T())
+
 }
 
 func TestExperimentBucketerTestSuite(t *testing.T) {

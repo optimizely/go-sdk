@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -18,22 +18,15 @@
 package matchers
 
 import (
-	"fmt"
-
-	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers/utils"
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 // LtMatcher matches against the "lt" match type
-func LtMatcher(condition entities.Condition, user entities.UserContext) (bool, error) {
-
-	if floatValue, ok := utils.ToFloat(condition.Value); ok {
-		attributeValue, err := user.GetFloatAttribute(condition.Name)
-		if err != nil {
-			return false, err
-		}
-		return floatValue > attributeValue, nil
+func LtMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, error) {
+	res, err := compare(condition, user, logger)
+	if err != nil {
+		return false, err
 	}
-
-	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", condition.Name)
+	return res < 0, nil
 }

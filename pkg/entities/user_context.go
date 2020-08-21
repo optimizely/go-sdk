@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -86,6 +86,15 @@ func (u UserContext) GetIntAttribute(attrName string) (int64, error) {
 	}
 
 	return 0, fmt.Errorf(`no int attribute named "%s"`, attrName)
+}
+
+// GetAttribute returns the value for the specified attribute name in the attributes map. Returns error if not found.
+func (u UserContext) GetAttribute(attrName string) (interface{}, error) {
+	if value, ok := u.Attributes[attrName]; ok {
+		return value, nil
+	}
+
+	return 0, fmt.Errorf(`no attribute named "%s"`, attrName)
 }
 
 // GetBucketingID returns the bucketing ID to use for the given user

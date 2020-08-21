@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -26,8 +26,9 @@ type Audience struct {
 
 // Condition has condition info
 type Condition struct {
-	Name  string      `json:"name"`
-	Match string      `json:"match"`
-	Type  string      `json:"type"`
-	Value interface{} `json:"value"`
+	Name                 string      `json:"name"`
+	Match                string      `json:"match"`
+	Type                 string      `json:"type"`
+	Value                interface{} `json:"value"`
+	StringRepresentation string
 }
