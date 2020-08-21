@@ -24,5 +24,9 @@ import (
 
 // LtMatcher matches against the "lt" match type
 func LtMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, error) {
-	return matchGtOrLt(condition, user, logger, false)
+	res, err := compare(condition, user, logger)
+	if err != nil {
+		return false, err
+	}
+	return res < 0, nil
 }
