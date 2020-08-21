@@ -93,13 +93,17 @@ func (sv SemanticVersion) splitSemanticVersion(targetedVersion string) ([]string
 		return []string{}, errors.New(string(reasons.AttributeFormatInvalid))
 	}
 
-	splitBy := ""
-	if sv.isBuild(targetedVersion) {
-		splitBy = buildSeperator
-	} else if sv.isPreRelease(targetedVersion) {
+	// we will default to build which is "+".  if there is a "-" before the + it is a
+	// pre-release
+	splitBy := buildSeperator
+
+	if sv.isPreRelease(targetedVersion) {
 		splitBy = preReleaseSeperator
 	}
+	// this is going to slit with the first occurance.
 	targetParts := strings.Split(targetedVersion, splitBy)
+	// in the case it is neither a build or pre release it will return the
+	// original string as the first element in the array
 	if len(targetParts) == 0 {
 		return []string{}, errors.New(string(reasons.AttributeFormatInvalid))
 	}
@@ -108,6 +112,7 @@ func (sv SemanticVersion) splitSemanticVersion(targetedVersion string) ([]string
 	targetSuffix := targetParts[1:]
 
 	// Expect a version string of the form x.y.z
+	// split all dots with SplitAfter
 	targetedVersionParts := strings.Split(targetPrefix, ".")
 
 	if len(targetedVersionParts) > 3 {

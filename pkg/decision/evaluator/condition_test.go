@@ -102,3 +102,45 @@ func TestCustomAttributeConditionEvaluatorForGeSemver(t *testing.T) {
 	result, _ := conditionEvaluator.Evaluate(condition, condTreeParams)
 	assert.Equal(t, result, true)
 }
+
+func TestCustomAttributeConditionEvaluatorForGeSemverBeta(t *testing.T) {
+	conditionEvaluator := CustomAttributeConditionEvaluator{}
+	condition := entities.Condition{
+		Match: "semver_ge",
+		Value: "3.7.0",
+		Name:  "string_foo",
+		Type:  "custom_attribute",
+	}
+
+	// Test condition passes
+	user := entities.UserContext{
+		Attributes: map[string]interface{}{
+			"string_foo": "3.7.1-beta",
+		},
+	}
+
+	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
+	result, _ := conditionEvaluator.Evaluate(condition, condTreeParams)
+	assert.Equal(t, true, result)
+}
+
+func TestCustomAttributeConditionEvaluatorForGeSemverInvalid(t *testing.T) {
+	conditionEvaluator := CustomAttributeConditionEvaluator{}
+	condition := entities.Condition{
+		Match: "semver_ge",
+		Value: "3.7.0",
+		Name:  "string_foo",
+		Type:  "custom_attribute",
+	}
+
+	// Test condition passes
+	user := entities.UserContext{
+		Attributes: map[string]interface{}{
+			"string_foo": "3.7.2.2",
+		},
+	}
+
+	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
+	_, err := conditionEvaluator.Evaluate(condition, condTreeParams)
+	assert.NotNil(t, err)
+}
