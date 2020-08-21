@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -17,16 +17,27 @@
 package matchers
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
-var substringMatcher, _ = Get(SubstringMatchType)
+type SubstringTestSuite struct {
+	suite.Suite
+	mockLogger *MockLogger
+	matcher    Matcher
+}
 
-func TestSubstringMatcher(t *testing.T) {
+func (s *SubstringTestSuite) SetupTest() {
+	s.mockLogger = new(MockLogger)
+	s.matcher, _ = Get(SubstringMatchType)
+}
+
+func (s *SubstringTestSuite) TestSubstringMatcher() {
 	condition := entities.Condition{
 		Match: "substring",
 		Value: "foo",
@@ -40,9 +51,9 @@ func TestSubstringMatcher(t *testing.T) {
 		},
 	}
 
-	result, err := substringMatcher(condition, user)
-	assert.NoError(t, err)
-	assert.True(t, result)
+	result, err := s.matcher(condition, user, s.mockLogger)
+	s.NoError(err)
+	s.True(result)
 
 	// Test no match
 	user = entities.UserContext{
@@ -51,9 +62,9 @@ func TestSubstringMatcher(t *testing.T) {
 		},
 	}
 
-	result, err = substringMatcher(condition, user)
-	assert.NoError(t, err)
-	assert.False(t, result)
+	result, err = s.matcher(condition, user, s.mockLogger)
+	s.NoError(err)
+	s.False(result)
 
 	// Test attribute not found
 	user = entities.UserContext{
@@ -62,6 +73,43 @@ func TestSubstringMatcher(t *testing.T) {
 		},
 	}
 
-	_, err = substringMatcher(condition, user)
-	assert.Error(t, err)
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "string_foo"))
+	_, err = s.matcher(condition, user, s.mockLogger)
+	s.Error(err)
+
+	// Test attribute of different type
+	user = entities.UserContext{
+		Attributes: map[string]interface{}{
+			"string_foo": true,
+		},
+	}
+	s.mockLogger.On("Warning", fmt.Sprintf(logging.InvalidAttributeValueType.String(), "", true, "string_foo"))
+	result, err = s.matcher(condition, user, s.mockLogger)
+	s.Error(err)
+	s.False(result)
+	s.mockLogger.AssertExpectations(s.T())
+}
+
+func (s *SubstringTestSuite) TestSubstringMatcherUnsupportedConditionValue() {
+	condition := entities.Condition{
+		Match: "substring",
+		Value: false,
+		Name:  "string_foo",
+	}
+
+	// Test match - unsupported condition value
+	user := entities.UserContext{
+		Attributes: map[string]interface{}{
+			"string_foo": "foo",
+		},
+	}
+	s.mockLogger.On("Warning", fmt.Sprintf(logging.UnsupportedConditionValue.String(), ""))
+	result, err := s.matcher(condition, user, s.mockLogger)
+	s.Error(err)
+	s.False(result)
+	s.mockLogger.AssertExpectations(s.T())
+}
+
+func TestSubstringTestSuite(t *testing.T) {
+	suite.Run(t, new(SubstringTestSuite))
 }

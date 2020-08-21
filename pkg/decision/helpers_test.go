@@ -108,7 +108,7 @@ var testExp1111 = entities.Experiment{
 		"2222": "2222",
 	},
 	TrafficAllocation: []entities.Range{
-		entities.Range{EntityID: "2222", EndOfRange: 10000},
+		{EntityID: "2222", EndOfRange: 10000},
 	},
 }
 
@@ -135,7 +135,7 @@ var testExp1112 = entities.Experiment{
 	AudienceConditionTree: &entities.TreeNode{
 		Operator: "and",
 		Nodes: []*entities.TreeNode{
-			&entities.TreeNode{Item: "test_audience_5555"},
+			{Item: "test_audience_5555"},
 		},
 	},
 	ID:  "1112",
@@ -147,7 +147,7 @@ var testExp1112 = entities.Experiment{
 		"2222": "2222",
 	},
 	TrafficAllocation: []entities.Range{
-		entities.Range{EntityID: "2222", EndOfRange: 10000},
+		{EntityID: "2222", EndOfRange: 10000},
 	},
 }
 var testExp1117Var2223 = entities.Variation{ID: "2223", Key: "2223"}
@@ -156,7 +156,7 @@ var testExp1117 = entities.Experiment{
 	AudienceConditionTree: &entities.TreeNode{
 		Operator: "and",
 		Nodes: []*entities.TreeNode{
-			&entities.TreeNode{Item: "test_audience_5556"},
+			{Item: "test_audience_5556"},
 		},
 	},
 	ID:  "1117",
@@ -168,7 +168,7 @@ var testExp1117 = entities.Experiment{
 		"2223": "2223",
 	},
 	TrafficAllocation: []entities.Range{
-		entities.Range{EntityID: "2223", EndOfRange: 10000},
+		{EntityID: "2223", EndOfRange: 10000},
 	},
 }
 var testExp1118Var2224 = entities.Variation{ID: "2224", Key: "2224"}
@@ -177,7 +177,7 @@ var testExp1118 = entities.Experiment{
 	AudienceConditionTree: &entities.TreeNode{
 		Operator: "and",
 		Nodes: []*entities.TreeNode{
-			&entities.TreeNode{Item: "test_audience_5557"},
+			{Item: "test_audience_5557"},
 		},
 	},
 	ID:  "1118",
@@ -189,7 +189,7 @@ var testExp1118 = entities.Experiment{
 		"2224": "2224",
 	},
 	TrafficAllocation: []entities.Range{
-		entities.Range{EntityID: "2224", EndOfRange: 10000},
+		{EntityID: "2224", EndOfRange: 10000},
 	},
 }
 
@@ -225,8 +225,8 @@ var testExp1113 = entities.Experiment{
 		"2224": "2224",
 	},
 	TrafficAllocation: []entities.Range{
-		entities.Range{EntityID: "2223", EndOfRange: 5000},
-		entities.Range{EntityID: "2224", EndOfRange: 10000},
+		{EntityID: "2223", EndOfRange: 5000},
+		{EntityID: "2224", EndOfRange: 10000},
 	},
 }
 
@@ -247,16 +247,16 @@ var testExp1114 = entities.Experiment{
 		"2226": "2226",
 	},
 	TrafficAllocation: []entities.Range{
-		entities.Range{EntityID: "2225", EndOfRange: 5000},
-		entities.Range{EntityID: "2226", EndOfRange: 10000},
+		{EntityID: "2225", EndOfRange: 5000},
+		{EntityID: "2226", EndOfRange: 10000},
 	},
 }
 var testGroup6666 = entities.Group{
 	ID:     "6666",
 	Policy: "random",
 	TrafficAllocation: []entities.Range{
-		entities.Range{EntityID: "1113", EndOfRange: 3000},
-		entities.Range{EntityID: "1114", EndOfRange: 6000},
+		{EntityID: "1113", EndOfRange: 3000},
+		{EntityID: "1114", EndOfRange: 6000},
 	},
 }
 
@@ -274,7 +274,7 @@ var testExp1115 = entities.Experiment{
 		"2227": "2227",
 	},
 	TrafficAllocation: []entities.Range{
-		entities.Range{EntityID: "2227", EndOfRange: 5000},
+		{EntityID: "2227", EndOfRange: 5000},
 	},
 }
 var testFeat3335 = entities.Feature{
@@ -302,7 +302,7 @@ var testTargetedExp1116 = entities.Experiment{
 		"2228": "2228",
 	},
 	TrafficAllocation: []entities.Range{
-		entities.Range{EntityID: "2228", EndOfRange: 10000},
+		{EntityID: "2228", EndOfRange: 10000},
 	},
 }
 
@@ -320,7 +320,7 @@ var testExpWhitelist = entities.Experiment{
 		"var_2229": "2229",
 	},
 	TrafficAllocation: []entities.Range{
-		entities.Range{EntityID: "2229", EndOfRange: 10000},
+		{EntityID: "2229", EndOfRange: 10000},
 	},
 	Whitelist: map[string]string{
 		"test_user_1": "var_2229",

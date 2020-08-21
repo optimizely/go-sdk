@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -111,9 +111,10 @@ func TestBuildConditionTreeUsingDatafileAudienceConditions(t *testing.T) {
 						Nodes: []*entities.TreeNode{
 							{
 								Item: entities.Condition{
-									Name:  "s_foo",
-									Type:  "custom_attribute",
-									Value: "foo",
+									Name:                 "s_foo",
+									Type:                 "custom_attribute",
+									Value:                "foo",
+									StringRepresentation: `{"name":"s_foo","type":"custom_attribute","value":"foo"}`,
 								},
 							},
 						},
@@ -145,10 +146,11 @@ func TestBuildConditionTreeSimpleAudienceCondition(t *testing.T) {
 						Nodes: []*entities.TreeNode{
 							{
 								Item: entities.Condition{
-									Name:  "s_foo",
-									Match: "exact",
-									Type:  "custom_attribute",
-									Value: "foo",
+									Name:                 "s_foo",
+									Match:                "exact",
+									Type:                 "custom_attribute",
+									Value:                "foo",
+									StringRepresentation: `{"match":"exact","name":"s_foo","type":"custom_attribute","value":"foo"}`,
 								},
 							},
 						},
@@ -172,10 +174,11 @@ func TestBuildConditionTreeWithLeafNode(t *testing.T) {
 		Nodes: []*entities.TreeNode{
 			{
 				Item: entities.Condition{
-					Name:  "s_foo",
-					Match: "exact",
-					Type:  "custom_attribute",
-					Value: "foo",
+					Name:                 "s_foo",
+					Match:                "exact",
+					Type:                 "custom_attribute",
+					Value:                "foo",
+					StringRepresentation: `{"match":"exact","name":"s_foo","type":"custom_attribute","value":"foo"}`,
 				},
 			},
 		},

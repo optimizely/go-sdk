@@ -19,9 +19,10 @@ package matchers
 
 import (
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 // ExistsMatcher matches against the "exists" match type
-func ExistsMatcher(condition entities.Condition, user entities.UserContext) (bool, error) {
+func ExistsMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, error) {
 	return user.CheckAttributeExists(condition.Name), nil
 }
