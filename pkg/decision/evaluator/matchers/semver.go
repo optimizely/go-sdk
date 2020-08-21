@@ -153,7 +153,7 @@ func (sv SemanticVersion) isBuild(str string) bool {
 }
 
 func (sv SemanticVersion) hasWhiteSpace(str string) bool {
-	return strings.Contains(str, whiteSpace)
+	return len(str) == 0 ||  strings.Contains(str, whiteSpace)
 }
 
 // SemverEvaluator is a help function to wrap a common evaluation code

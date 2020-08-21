@@ -39,7 +39,7 @@ func TestGeMatcherInt(t *testing.T) {
 			"int_42": 43,
 		},
 	}
-	result, err := gtMatcher(condition, user)
+	result, err := geMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -50,7 +50,7 @@ func TestGeMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = geMatcher(condition, user)
+	result, err = geMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -61,7 +61,7 @@ func TestGeMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = geMatcher(condition, user)
+	result, err = geMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -72,7 +72,7 @@ func TestGeMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = geMatcher(condition, user)
+	result, err = geMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -83,7 +83,7 @@ func TestGeMatcherInt(t *testing.T) {
 		},
 	}
 
-	_, err = geMatcher(condition, user)
+	_, err = geMatcher(condition, user, nil)
 	assert.Error(t, err)
 
 	// Test wrong int
@@ -93,7 +93,7 @@ func TestGeMatcherInt(t *testing.T) {
 		},
 	}
 
-	_, err = geMatcher(condition, user)
+	_, err = geMatcher(condition, user, nil)
 	assert.Error(t, err)
 
 	// Test bad condition
@@ -108,7 +108,7 @@ func TestGeMatcherInt(t *testing.T) {
 		},
 	}
 
-	_, err = geMatcher(condition, user)
+	_, err = geMatcher(condition, user, nil)
 	assert.Error(t, err)
 }
 
@@ -125,7 +125,7 @@ func TestGeMatcherFloat(t *testing.T) {
 			"float_4_2": 5,
 		},
 	}
-	result, err := geMatcher(condition, user)
+	result, err := geMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -135,7 +135,7 @@ func TestGeMatcherFloat(t *testing.T) {
 			"float_4_2": 4.29999,
 		},
 	}
-	result, err = geMatcher(condition, user)
+	result, err = geMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -146,7 +146,7 @@ func TestGeMatcherFloat(t *testing.T) {
 		},
 	}
 
-	result, err = geMatcher(condition, user)
+	result, err = geMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -157,6 +157,6 @@ func TestGeMatcherFloat(t *testing.T) {
 		},
 	}
 
-	_, err = geMatcher(condition, user)
+	_, err = geMatcher(condition, user, nil)
 	assert.Error(t, err)
 }
