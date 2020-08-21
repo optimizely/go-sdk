@@ -21,10 +21,11 @@ import (
 	"sync"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 // Matcher type is used to evaluate audience conditional primitives
-type Matcher func(entities.Condition, entities.UserContext) (bool, error)
+type Matcher func(entities.Condition, entities.UserContext, logging.OptimizelyLogProducer) (bool, error)
 
 const (
 	// ExactMatchType name for the "exact" matcher
@@ -40,10 +41,10 @@ const (
 )
 
 var registry = map[string]Matcher{
-	ExactMatchType: ExactMatcher,
-	ExistsMatchType: ExistsMatcher,
-	LtMatchType: LtMatcher,
-	GtMatchType: GtMatcher,
+	ExactMatchType:     ExactMatcher,
+	ExistsMatchType:    ExistsMatcher,
+	LtMatchType:        LtMatcher,
+	GtMatchType:        GtMatcher,
 	SubstringMatchType: SubstringMatcher,
 }
 
