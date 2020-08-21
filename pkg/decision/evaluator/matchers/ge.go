@@ -19,13 +19,14 @@ package matchers
 
 import (
 	"fmt"
+	"github.com/optimizely/go-sdk/pkg/logging"
 
 	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers/utils"
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
 // GeMatcher matches against the "ge" match type
-func GeMatcher(condition entities.Condition, user entities.UserContext) (bool, error) {
+func GeMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, error) {
 
 	if floatValue, ok := utils.ToFloat(condition.Value); ok {
 		attributeValue, err := user.GetFloatAttribute(condition.Name)

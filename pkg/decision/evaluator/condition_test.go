@@ -136,11 +136,7 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorWithUnknownTyp
 	s.mockLogger.AssertExpectations(s.T())
 }
 
-func TestConditionTestSuite(t *testing.T) {
-	suite.Run(t, new(ConditionTestSuite))
-}
-
-func TestCustomAttributeConditionEvaluatorForGeSemver(t *testing.T) {
+func (s *ConditionTestSuite)  TestCustomAttributeConditionEvaluatorForGeSemver() {
 	conditionEvaluator := CustomAttributeConditionEvaluator{}
 	condition := entities.Condition{
 		Match: "semver_ge",
@@ -158,10 +154,10 @@ func TestCustomAttributeConditionEvaluatorForGeSemver(t *testing.T) {
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
 	result, _ := conditionEvaluator.Evaluate(condition, condTreeParams)
-	assert.Equal(t, result, true)
+	s.Equal( result, true)
 }
 
-func TestCustomAttributeConditionEvaluatorForGeSemverBeta(t *testing.T) {
+func (s *ConditionTestSuite)  TestCustomAttributeConditionEvaluatorForGeSemverBeta() {
 	conditionEvaluator := CustomAttributeConditionEvaluator{}
 	condition := entities.Condition{
 		Match: "semver_ge",
@@ -179,10 +175,10 @@ func TestCustomAttributeConditionEvaluatorForGeSemverBeta(t *testing.T) {
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
 	result, _ := conditionEvaluator.Evaluate(condition, condTreeParams)
-	assert.Equal(t, true, result)
+	s.Equal(true, result)
 }
 
-func TestCustomAttributeConditionEvaluatorForGeSemverInvalid(t *testing.T) {
+func (s *ConditionTestSuite)  TestCustomAttributeConditionEvaluatorForGeSemverInvalid() {
 	conditionEvaluator := CustomAttributeConditionEvaluator{}
 	condition := entities.Condition{
 		Match: "semver_ge",
@@ -200,5 +196,9 @@ func TestCustomAttributeConditionEvaluatorForGeSemverInvalid(t *testing.T) {
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
 	_, err := conditionEvaluator.Evaluate(condition, condTreeParams)
-	assert.NotNil(t, err)
+	s.NotNil(err)
+}
+
+func TestConditionTestSuite(t *testing.T) {
+	suite.Run(t, new(ConditionTestSuite))
 }
