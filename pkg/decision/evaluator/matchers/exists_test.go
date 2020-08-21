@@ -38,7 +38,7 @@ func TestExistsMatcher(t *testing.T) {
 			"string_foo": "any_value",
 		},
 	}
-	result, err := existsMatcher(condition, user)
+	result, err := existsMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -49,7 +49,7 @@ func TestExistsMatcher(t *testing.T) {
 		},
 	}
 
-	result, err = existsMatcher(condition, user)
+	result, err = existsMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -57,7 +57,7 @@ func TestExistsMatcher(t *testing.T) {
 	user = entities.UserContext{
 		Attributes: map[string]interface{}{},
 	}
-	result, err = ExistsMatcher(condition, user)
+	result, err = ExistsMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.False(t, result)
 }

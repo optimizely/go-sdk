@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 const customAttributeType = "custom_attribute"
@@ -41,11 +42,12 @@ type TreeEvaluator interface {
 
 // MixedTreeEvaluator evaluates a tree of mixed node types (condition node or audience nodes)
 type MixedTreeEvaluator struct {
+	logger logging.OptimizelyLogProducer
 }
 
 // NewMixedTreeEvaluator creates a condition tree evaluator with the out-of-the-box condition evaluators
-func NewMixedTreeEvaluator() *MixedTreeEvaluator {
-	return &MixedTreeEvaluator{}
+func NewMixedTreeEvaluator(logger logging.OptimizelyLogProducer) *MixedTreeEvaluator {
+	return &MixedTreeEvaluator{logger: logger}
 }
 
 // Evaluate returns whether the userAttributes satisfy the given condition tree and the evaluation of the condition is valid or not (to handle null bubbling)
@@ -66,10 +68,10 @@ func (c MixedTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *en
 	var err error
 	switch v := node.Item.(type) {
 	case entities.Condition:
-		evaluator := CustomAttributeConditionEvaluator{}
+		evaluator := NewCustomAttributeConditionEvaluator(c.logger)
 		result, err = evaluator.Evaluate(node.Item.(entities.Condition), condTreeParams)
 	case string:
-		evaluator := AudienceConditionEvaluator{}
+		evaluator := NewAudienceConditionEvaluator(c.logger)
 		result, err = evaluator.Evaluate(node.Item.(string), condTreeParams)
 	default:
 		fmt.Printf("I don't know about type %T!\n", v)
