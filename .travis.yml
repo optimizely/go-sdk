@@ -5,12 +5,13 @@ git:
 install:
   - eval "$(gimme)"
 stages:
+  - 'Source clear'
   - 'Lint markdown files'
   - 'Lint'
   - 'Unit test'
   - 'Benchmark test'  
   - 'Integration tests'
-  - 'Source clear'
+  - 'Production tests'
   - 'Readme-sync'
 jobs:
   include:
@@ -48,7 +49,7 @@ jobs:
         - mv $GOPATH/src/gopkg.in/yaml $GOPATH/src/gopkg.in/yaml.v2 && pushd $GOPATH/src/gopkg.in/yaml.v2  && git checkout v2.2.2 && popd
         - go get -v -d ./...
         # This pkg not in go 1.10
-        - go get github.com/stretchr/testify
+        - go get -d -v github.com/stretchr/testify
         - pushd $GOPATH/src/github.com/stretchr/testify && git checkout v1.4.0 && popd
         # -coverprofile was not introduced in 1.10
         - make test
@@ -66,7 +67,8 @@ jobs:
       script:
         - make benchmark
 
-    - stage: 'Integration tests'
+    - &integrationtest
+      stage: 'Integration tests'
       env: SDK=go SDK_BRANCH=$TRAVIS_PULL_REQUEST_BRANCH
       cache: false
       language: minimal
@@ -76,8 +78,16 @@ jobs:
       script:
         - $HOME/travisci-tools/trigger-script-with-status-update.sh
       after_success: travis_terminate 0
+
+    - <<: *integrationtest
+      stage: 'Production tests'
+      env:
+        SDK=go
+        SDK_BRANCH=$TRAVIS_PULL_REQUEST_BRANCH
+        FULLSTACK_TEST_REPO=ProdTesting
     
     - stage: 'Source clear'
+      if: type = cron
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
       language: go
       addons:

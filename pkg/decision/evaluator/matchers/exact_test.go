@@ -50,20 +50,19 @@ func (m *MockLogger) Error(message string, err interface{}) {
 type ExactTestSuite struct {
 	suite.Suite
 	mockLogger *MockLogger
+	matcher    Matcher
 }
 
 func (s *ExactTestSuite) SetupTest() {
 	s.mockLogger = new(MockLogger)
+	s.matcher, _ = Get(ExactMatchType)
 }
 
 func (s *ExactTestSuite) TestExactMatcherString() {
-	matcher := ExactMatcher{
-		Logger: s.mockLogger,
-		Condition: entities.Condition{
-			Match: "exact",
-			Value: "foo",
-			Name:  "string_foo",
-		},
+	condition := entities.Condition{
+		Match: "exact",
+		Value: "foo",
+		Name:  "string_foo",
 	}
 
 	// Test match
@@ -72,7 +71,7 @@ func (s *ExactTestSuite) TestExactMatcherString() {
 			"string_foo": "foo",
 		},
 	}
-	result, err := matcher.Match(user)
+	result, err := s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -83,7 +82,7 @@ func (s *ExactTestSuite) TestExactMatcherString() {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.False(result)
 
@@ -94,7 +93,7 @@ func (s *ExactTestSuite) TestExactMatcherString() {
 		},
 	}
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "string_foo"))
-	_, err = matcher.Match(user)
+	_, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 
 	// Test attribute of different type
@@ -104,20 +103,17 @@ func (s *ExactTestSuite) TestExactMatcherString() {
 		},
 	}
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.InvalidAttributeValueType.String(), "", 121, "string_foo"))
-	result, err = matcher.Match(user)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 	s.False(false)
 	s.mockLogger.AssertExpectations(s.T())
 }
 
 func (s *ExactTestSuite) TestExactMatcherBool() {
-	matcher := ExactMatcher{
-		Logger: s.mockLogger,
-		Condition: entities.Condition{
-			Match: "exact",
-			Value: true,
-			Name:  "bool_true",
-		},
+	condition := entities.Condition{
+		Match: "exact",
+		Value: true,
+		Name:  "bool_true",
 	}
 
 	// Test match
@@ -126,7 +122,7 @@ func (s *ExactTestSuite) TestExactMatcherBool() {
 			"bool_true": true,
 		},
 	}
-	result, err := matcher.Match(user)
+	result, err := s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -137,7 +133,7 @@ func (s *ExactTestSuite) TestExactMatcherBool() {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.False(result)
 
@@ -149,7 +145,7 @@ func (s *ExactTestSuite) TestExactMatcherBool() {
 	}
 
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "bool_true"))
-	_, err = matcher.Match(user)
+	_, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 
 	// Test attribute of different type
@@ -159,20 +155,17 @@ func (s *ExactTestSuite) TestExactMatcherBool() {
 		},
 	}
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.InvalidAttributeValueType.String(), "", 121, "bool_true"))
-	result, err = matcher.Match(user)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())
 }
 
 func (s *ExactTestSuite) TestExactMatcherInt() {
-	matcher := ExactMatcher{
-		Logger: s.mockLogger,
-		Condition: entities.Condition{
-			Match: "exact",
-			Value: 42,
-			Name:  "int_42",
-		},
+	condition := entities.Condition{
+		Match: "exact",
+		Value: 42,
+		Name:  "int_42",
 	}
 
 	// Test match - same type
@@ -181,7 +174,7 @@ func (s *ExactTestSuite) TestExactMatcherInt() {
 			"int_42": 42,
 		},
 	}
-	result, err := matcher.Match(user)
+	result, err := s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -192,7 +185,7 @@ func (s *ExactTestSuite) TestExactMatcherInt() {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -203,7 +196,7 @@ func (s *ExactTestSuite) TestExactMatcherInt() {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.False(result)
 
@@ -214,7 +207,7 @@ func (s *ExactTestSuite) TestExactMatcherInt() {
 		},
 	}
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "int_42"))
-	_, err = matcher.Match(user)
+	_, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 
 	// Test attribute of different type
@@ -224,20 +217,17 @@ func (s *ExactTestSuite) TestExactMatcherInt() {
 		},
 	}
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.InvalidAttributeValueType.String(), "", "test", "int_42"))
-	result, err = matcher.Match(user)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())
 }
 
 func (s *ExactTestSuite) TestExactMatcherFloat() {
-	matcher := ExactMatcher{
-		Logger: s.mockLogger,
-		Condition: entities.Condition{
-			Match: "exact",
-			Value: 4.2,
-			Name:  "float_4_2",
-		},
+	condition := entities.Condition{
+		Match: "exact",
+		Value: 4.2,
+		Name:  "float_4_2",
 	}
 
 	// Test match
@@ -246,7 +236,7 @@ func (s *ExactTestSuite) TestExactMatcherFloat() {
 			"float_4_2": 4.2,
 		},
 	}
-	result, err := matcher.Match(user)
+	result, err := s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -257,7 +247,7 @@ func (s *ExactTestSuite) TestExactMatcherFloat() {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.False(result)
 
@@ -268,7 +258,7 @@ func (s *ExactTestSuite) TestExactMatcherFloat() {
 		},
 	}
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "float_4_2"))
-	_, err = matcher.Match(user)
+	_, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 
 	// Test attribute of different type
@@ -278,20 +268,17 @@ func (s *ExactTestSuite) TestExactMatcherFloat() {
 		},
 	}
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.InvalidAttributeValueType.String(), "", "test", "float_4_2"))
-	result, err = matcher.Match(user)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())
 }
 
 func (s *ExactTestSuite) TestExactMatcherUnsupportedConditionValue() {
-	matcher := ExactMatcher{
-		Logger: s.mockLogger,
-		Condition: entities.Condition{
-			Match: "exact",
-			Value: map[string]interface{}{},
-			Name:  "int_42",
-		},
+	condition := entities.Condition{
+		Match: "exact",
+		Value: map[string]interface{}{},
+		Name:  "int_42",
 	}
 
 	// Test match - unsupported condition value
@@ -301,7 +288,7 @@ func (s *ExactTestSuite) TestExactMatcherUnsupportedConditionValue() {
 		},
 	}
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.UnsupportedConditionValue.String(), ""))
-	result, err := matcher.Match(user)
+	result, err := s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())

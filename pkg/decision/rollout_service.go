@@ -105,7 +105,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		// Move to next evaluation if condition tree is available and evaluation fails
 
 		evaluationResult := experiment.AudienceConditionTree == nil || evaluateConditionTree(experiment, loggingKey)
-		r.logger.Info(fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), loggingKey, evaluationResult))
+		r.logger.Debug(fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), loggingKey, evaluationResult))
 		if !evaluationResult {
 			r.logger.Debug(fmt.Sprintf(logging.UserNotInRollout.String(), userContext.ID, loggingKey))
 			// Evaluate this user for the next rule
@@ -125,7 +125,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	experimentDecisionContext := getExperimentDecisionContext(experiment)
 	// Move to bucketing if conditionTree is unavailable or evaluation passes
 	evaluationResult := experiment.AudienceConditionTree == nil || evaluateConditionTree(experiment, "Everyone Else")
-	r.logger.Info(fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "Everyone Else", evaluationResult))
+	r.logger.Debug(fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "Everyone Else", evaluationResult))
 
 	if evaluationResult {
 		decision, err := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext)

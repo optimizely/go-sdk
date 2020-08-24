@@ -26,29 +26,23 @@ import (
 )
 
 // SubstringMatcher matches against the "substring" match type
-type SubstringMatcher struct {
-	Condition entities.Condition
-	Logger    logging.OptimizelyLogProducer
-}
+func SubstringMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, error) {
 
-// Match returns true if the user's attribute is a substring of the condition's string value
-func (m SubstringMatcher) Match(user entities.UserContext) (bool, error) {
-
-	if !user.CheckAttributeExists(m.Condition.Name) {
-		m.Logger.Debug(fmt.Sprintf(logging.NullUserAttribute.String(), m.Condition.StringRepresentation, m.Condition.Name))
-		return false, fmt.Errorf(`no attribute named "%s"`, m.Condition.Name)
+	if !user.CheckAttributeExists(condition.Name) {
+		logger.Debug(fmt.Sprintf(logging.NullUserAttribute.String(), condition.StringRepresentation, condition.Name))
+		return false, fmt.Errorf(`no attribute named "%s"`, condition.Name)
 	}
 
-	if stringValue, ok := m.Condition.Value.(string); ok {
-		attributeValue, err := user.GetStringAttribute(m.Condition.Name)
+	if stringValue, ok := condition.Value.(string); ok {
+		attributeValue, err := user.GetStringAttribute(condition.Name)
 		if err != nil {
-			val, _ := user.GetAttribute(m.Condition.Name)
-			m.Logger.Warning(fmt.Sprintf(logging.InvalidAttributeValueType.String(), m.Condition.StringRepresentation, val, m.Condition.Name))
+			val, _ := user.GetAttribute(condition.Name)
+			logger.Warning(fmt.Sprintf(logging.InvalidAttributeValueType.String(), condition.StringRepresentation, val, condition.Name))
 			return false, err
 		}
 		return strings.Contains(attributeValue, stringValue), nil
 	}
 
-	m.Logger.Warning(fmt.Sprintf(logging.UnsupportedConditionValue.String(), m.Condition.StringRepresentation))
-	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", m.Condition.Name)
+	logger.Warning(fmt.Sprintf(logging.UnsupportedConditionValue.String(), condition.StringRepresentation))
+	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", condition.Name)
 }

@@ -54,14 +54,14 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
 		s.logger.Debug(fmt.Sprintf(logging.EvaluatingAudiencesForExperiment.String(), experiment.Key))
 		evalResult, _ := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
-		s.logger.Info(fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, evalResult))
+		s.logger.Debug(fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, evalResult))
 		if !evalResult {
-			s.logger.Info(fmt.Sprintf(logging.UserNotInExperiment.String(), userContext.ID, experiment.Key))
+			s.logger.Debug(fmt.Sprintf(logging.UserNotInExperiment.String(), userContext.ID, experiment.Key))
 			experimentDecision.Reason = reasons.FailedAudienceTargeting
 			return experimentDecision, nil
 		}
 	} else {
-		s.logger.Info(fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, true))
+		s.logger.Debug(fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, true))
 	}
 
 	var group entities.Group
@@ -81,9 +81,9 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	// @TODO: handle error from bucketer
 	variation, reason, _ := s.bucketer.Bucket(bucketingID, *experiment, group)
 	if variation != nil {
-		s.logger.Info(fmt.Sprintf(logging.UserBucketedIntoVariationInExperiment.String(), userContext.ID, variation.Key, experiment.Key))
+		s.logger.Debug(fmt.Sprintf(logging.UserBucketedIntoVariationInExperiment.String(), userContext.ID, variation.Key, experiment.Key))
 	} else {
-		s.logger.Info(fmt.Sprintf(logging.UserNotBucketedIntoVariation.String(), userContext.ID))
+		s.logger.Debug(fmt.Sprintf(logging.UserNotBucketedIntoVariation.String(), userContext.ID))
 	}
 	experimentDecision.Reason = reason
 	experimentDecision.Variation = variation

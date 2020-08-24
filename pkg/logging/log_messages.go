@@ -31,25 +31,21 @@ const (
 	AudienceEvaluationStarted LogMessage = `Starting to evaluate audience "%s".`
 	// AudienceEvaluatedTo when single audience evaluation is completed
 	AudienceEvaluatedTo LogMessage = `Audience "%s" evaluated to %t.`
+
+	// ExperimentAudiencesEvaluatedTo when collective audience evaluation for experiment is completed
+	ExperimentAudiencesEvaluatedTo LogMessage = `Audiences for experiment %s collectively evaluated to %t.`
+	// RolloutAudiencesEvaluatedTo when collective audience evaluation for rule is completed
+	RolloutAudiencesEvaluatedTo LogMessage = `Audiences for rule %s collectively evaluated to %t.`
 	// EvaluatingAudiencesForExperiment when audience evaluation is started for an experiment
 	EvaluatingAudiencesForExperiment LogMessage = `Evaluating audiences for experiment "%s".`
 	// EvaluatingAudiencesForRollout when audience evaluation is started for a rule
-	EvaluatingAudiencesForRollout LogMessage = `Evaluating audiences for rule "%s".`
+	EvaluatingAudiencesForRollout LogMessage = `Evaluating audiences for rule %s.".`
 	// NullUserAttribute when user attribute is missing or nil
-	NullUserAttribute LogMessage = `Audience condition "%s" evaluated to UNKNOWN because a null value was passed for user attribute "%s".`
+	NullUserAttribute LogMessage = `Audience condition %s evaluated to UNKNOWN because a null value was passed for user attribute "%s".`
 	// UserInEveryoneElse when user is in last rule
 	UserInEveryoneElse LogMessage = `User "%s" meets conditions for targeting rule "Everyone Else".`
 	// UserNotInRollout when user is not in rollout/rule
-	UserNotInRollout LogMessage = `User "%s" does not meet conditions for targeting rule "%s".`
-	// UserAssignedToBucketValue when user is assigned to a bucket value
-	UserAssignedToBucketValue LogMessage = `Assigned bucket "%d" to user with bucketing ID "%s".`
-
-	// Info Logs
-
-	// ExperimentAudiencesEvaluatedTo when collective audience evaluation for experiment is completed
-	ExperimentAudiencesEvaluatedTo LogMessage = `Audiences for experiment "%s" collectively evaluated to %t.`
-	// RolloutAudiencesEvaluatedTo when collective audience evaluation for rule is completed
-	RolloutAudiencesEvaluatedTo LogMessage = `Audiences for rule "%s" collectively evaluated to %t.`
+	UserNotInRollout LogMessage = `User "%s" does not meet conditions for targeting rule %s.`
 	// UserNotInExperiment when user is not in experiment
 	UserNotInExperiment LogMessage = `User "%s" does not meet conditions to be in experiment "%s".`
 	// UserBucketedIntoExperimentInGroup when user is bucketed to experiment group
@@ -62,6 +58,8 @@ const (
 	UserBucketedIntoVariationInExperiment LogMessage = `User "%s" is in variation "%s" of experiment "%s"`
 	// UserNotBucketedIntoVariation when user not bucketed to a variation
 	UserNotBucketedIntoVariation LogMessage = `User "%s" is in no variation.`
+	// UserAssignedToBucketValue when user is assigned to a bucket value
+	UserAssignedToBucketValue LogMessage = `Assigned bucket "%d" to user with bucketing ID "%s".`
 	// VariableValueForFeatureFlag when got variable value for variable of feature flag
 	VariableValueForFeatureFlag LogMessage = `Got variable value "%s" for variable "%s" of feature flag "%s".`
 	// FeatureEnabledForUser when feature is enabled for user

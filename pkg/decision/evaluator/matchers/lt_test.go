@@ -29,20 +29,19 @@ import (
 type LtTestSuite struct {
 	suite.Suite
 	mockLogger *MockLogger
+	matcher    Matcher
 }
 
 func (s *LtTestSuite) SetupTest() {
 	s.mockLogger = new(MockLogger)
+	s.matcher, _ = Get(LtMatchType)
 }
 
 func (s *LtTestSuite) TestLtMatcherInt() {
-	matcher := LtMatcher{
-		Logger: s.mockLogger,
-		Condition: entities.Condition{
-			Match: "lt",
-			Value: 42,
-			Name:  "int_42",
-		},
+	condition := entities.Condition{
+		Match: "lt",
+		Value: 42,
+		Name:  "int_42",
 	}
 
 	// Test match - same type
@@ -51,7 +50,7 @@ func (s *LtTestSuite) TestLtMatcherInt() {
 			"int_42": 41,
 		},
 	}
-	result, err := matcher.Match(user)
+	result, err := s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -62,7 +61,7 @@ func (s *LtTestSuite) TestLtMatcherInt() {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -73,7 +72,7 @@ func (s *LtTestSuite) TestLtMatcherInt() {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.False(result)
 
@@ -84,7 +83,7 @@ func (s *LtTestSuite) TestLtMatcherInt() {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.False(result)
 
@@ -96,7 +95,7 @@ func (s *LtTestSuite) TestLtMatcherInt() {
 	}
 
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "int_42"))
-	_, err = matcher.Match(user)
+	_, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 
 	// Test attribute of different type
@@ -106,20 +105,17 @@ func (s *LtTestSuite) TestLtMatcherInt() {
 		},
 	}
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.InvalidAttributeValueType.String(), "", true, "int_42"))
-	result, err = matcher.Match(user)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())
 }
 
 func (s *LtTestSuite) TestLtMatcherFloat() {
-	matcher := LtMatcher{
-		Logger: s.mockLogger,
-		Condition: entities.Condition{
-			Match: "lt",
-			Value: 4.2,
-			Name:  "float_4_2",
-		},
+	condition := entities.Condition{
+		Match: "lt",
+		Value: 4.2,
+		Name:  "float_4_2",
 	}
 
 	// Test match float to int
@@ -128,7 +124,7 @@ func (s *LtTestSuite) TestLtMatcherFloat() {
 			"float_4_2": 4,
 		},
 	}
-	result, err := matcher.Match(user)
+	result, err := s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -138,7 +134,7 @@ func (s *LtTestSuite) TestLtMatcherFloat() {
 			"float_4_2": 4.19999,
 		},
 	}
-	result, err = matcher.Match(user)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -149,7 +145,7 @@ func (s *LtTestSuite) TestLtMatcherFloat() {
 		},
 	}
 
-	result, err = matcher.Match(user)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.False(result)
 
@@ -161,7 +157,7 @@ func (s *LtTestSuite) TestLtMatcherFloat() {
 	}
 
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "float_4_2"))
-	_, err = matcher.Match(user)
+	_, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 
 	// Test attribute of different type
@@ -171,20 +167,17 @@ func (s *LtTestSuite) TestLtMatcherFloat() {
 		},
 	}
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.InvalidAttributeValueType.String(), "", true, "float_4_2"))
-	result, err = matcher.Match(user)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())
 }
 
 func (s *LtTestSuite) TestLtMatcherUnsupportedConditionValue() {
-	matcher := LtMatcher{
-		Logger: s.mockLogger,
-		Condition: entities.Condition{
-			Match: "lt",
-			Value: false,
-			Name:  "float_4_2",
-		},
+	condition := entities.Condition{
+		Match: "lt",
+		Value: false,
+		Name:  "float_4_2",
 	}
 
 	// Test match - unsupported condition value
@@ -194,7 +187,7 @@ func (s *LtTestSuite) TestLtMatcherUnsupportedConditionValue() {
 		},
 	}
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.UnsupportedConditionValue.String(), ""))
-	result, err := matcher.Match(user)
+	result, err := s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())

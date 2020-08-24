@@ -25,14 +25,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
-const (
-	exactMatchType     = "exact"
-	existsMatchType    = "exists"
-	ltMatchType        = "lt"
-	gtMatchType        = "gt"
-	substringMatchType = "substring"
-)
-
 // ItemEvaluator evaluates a condition against the given user's attributes
 type ItemEvaluator interface {
 	Evaluate(interface{}, *entities.TreeParameters) (bool, error)
@@ -58,44 +50,18 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 		return false, fmt.Errorf(`unable to evaluate condition of type "%s"`, condition.Type)
 	}
 
-	var matcher matchers.Matcher
 	matchType := condition.Match
 	if matchType == "" {
-		matchType = exactMatchType
+		matchType = matchers.ExactMatchType
 	}
-	switch matchType {
-	case exactMatchType:
-		matcher = matchers.ExactMatcher{
-			Condition: condition,
-			Logger:    c.logger,
-		}
-	case existsMatchType:
-		matcher = matchers.ExistsMatcher{
-			Condition: condition,
-		}
-	case ltMatchType:
-		matcher = matchers.LtMatcher{
-			Condition: condition,
-			Logger:    c.logger,
-		}
-	case gtMatchType:
-		matcher = matchers.GtMatcher{
-			Condition: condition,
-			Logger:    c.logger,
-		}
-	case substringMatchType:
-		matcher = matchers.SubstringMatcher{
-			Condition: condition,
-			Logger:    c.logger,
-		}
-	default:
+
+	matcher, ok := matchers.Get(matchType)
+	if !ok {
 		c.logger.Warning(fmt.Sprintf(logging.UnknownMatchType.String(), condition.StringRepresentation))
 		return false, fmt.Errorf(`invalid Condition matcher "%s"`, condition.Match)
 	}
 
-	user := *condTreeParams.User
-	result, err := matcher.Match(user)
-	return result, err
+	return matcher(condition, *condTreeParams.User, c.logger)
 }
 
 // AudienceConditionEvaluator evaluates conditions with audience condition
