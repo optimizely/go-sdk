@@ -50,12 +50,12 @@ func (b MurmurhashExperimentBucketer) Bucket(bucketingID string, experiment enti
 		if bucketedExperimentID := b.bucketer.BucketToEntity(bucketingID, group.ID, group.TrafficAllocation); bucketedExperimentID != "" {
 			if bucketedExperimentID != experiment.ID {
 				// User is not bucketed into provided experiment in mutex group
-				b.logger.Info(fmt.Sprintf(logging.UserNotBucketedIntoExperimentInGroup.String(), bucketingID, experiment.Key, group.ID))
+				b.logger.Debug(fmt.Sprintf(logging.UserNotBucketedIntoExperimentInGroup.String(), bucketingID, experiment.Key, group.ID))
 				return nil, reasons.NotBucketedIntoVariation, nil
 			}
-			b.logger.Info(fmt.Sprintf(logging.UserBucketedIntoExperimentInGroup.String(), bucketingID, experiment.Key, group.ID))
+			b.logger.Debug(fmt.Sprintf(logging.UserBucketedIntoExperimentInGroup.String(), bucketingID, experiment.Key, group.ID))
 		} else {
-			b.logger.Info(fmt.Sprintf(logging.UserNotBucketedIntoAnyExperimentInGroup.String(), bucketingID, group.ID))
+			b.logger.Debug(fmt.Sprintf(logging.UserNotBucketedIntoAnyExperimentInGroup.String(), bucketingID, group.ID))
 			return nil, reasons.NotBucketedIntoVariation, nil
 		}
 	}
