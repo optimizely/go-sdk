@@ -129,7 +129,7 @@ func (sv SemanticVersion) splitSemanticVersion(targetedVersion string) ([]string
 	}
 
 	for i := 0; i < len(targetedVersionParts);i++ {
-		if _, err := strconv.Atoi(targetedVersionParts[i]); err == nil {
+		if  !sv.isNumber(targetedVersionParts[i]) {
 			return []string{}, errors.New(string(reasons.AttributeFormatInvalid))
 		}
 	}
