@@ -128,6 +128,12 @@ func (sv SemanticVersion) splitSemanticVersion(targetedVersion string) ([]string
 		return []string{}, errors.New(string(reasons.AttributeFormatInvalid))
 	}
 
+	for i := 0; i < len(targetedVersionParts);i++ {
+		if  !sv.isNumber(targetedVersionParts[i]) {
+			return []string{}, errors.New(string(reasons.AttributeFormatInvalid))
+		}
+	}
+
 	targetedVersionParts = append(targetedVersionParts, targetSuffix...)
 	return targetedVersionParts, nil
 }

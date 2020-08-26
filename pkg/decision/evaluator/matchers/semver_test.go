@@ -199,6 +199,19 @@ func TestInvalidAttributes(t *testing.T) {
 		37,
 		nil,
 		"",
+		"-",
+		".",
+		"..",
+		"+",
+		"+test",
+		" ",
+		"2 .3. 0",
+		"2.",
+		".2.2",
+		"3.7.2.2",
+		"3.x",
+		",",
+		"+build-prerelese",
 	}
 
 	for _, matchType := range matchTypes {
