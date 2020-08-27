@@ -47,6 +47,12 @@ type OptimizelyClient struct {
 	logger             logging.OptimizelyLogProducer
 }
 
+const (
+	flagTypeKey     = "FLAG_TYPE"
+	flagKeyKey      = "FLAG_KEY"
+	variationKeyKey = "VARIATION_KEY"
+)
+
 // Activate returns the key of the variation the user is bucketed into and queues up an impression event to be sent to
 // the Optimizely log endpoint for results processing.
 func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.UserContext) (result string, err error) {

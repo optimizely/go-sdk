@@ -66,19 +66,24 @@ func createImpressionEvent(
 	flagKey, flagType string,
 ) ImpressionEvent {
 
+	metadata := map[string]string{
+		"FLAG_KEY":  flagKey,
+		"FLAG_TYPE": flagType,
+	}
+
+	var variationID string
+	if variation != nil {
+		metadata["VARIAITON_KEY"] = variation.Key
+		variationID = variation.ID
+	}
+
 	event := ImpressionEvent{
 		Attributes:   getEventAttributes(projectConfig, attributes),
 		CampaignID:   experiment.LayerID,
 		EntityID:     experiment.LayerID,
 		ExperimentID: experiment.ID,
-		FlagKey:      flagKey,
-		FlagType:     flagType,
-		Key:          impressionKey,
-	}
-
-	if variation != nil {
-		event.VariationKey = variation.Key
-		event.VariationID = variation.ID
+		Metadata:     metadata,
+		VariationID:  variationID,
 	}
 
 	return event
@@ -106,9 +111,7 @@ func createImpressionVisitor(userEvent UserEvent) Visitor {
 	decision.CampaignID = userEvent.Impression.CampaignID
 	decision.ExperimentID = userEvent.Impression.ExperimentID
 	decision.VariationID = userEvent.Impression.VariationID
-	decision.FlagKey = userEvent.Impression.FlagKey
-	decision.FlagType = userEvent.Impression.FlagType
-	decision.VariationKey = userEvent.Impression.VariationKey
+	decision.Metadata = userEvent.Impression.Metadata
 
 	dispatchEvent := SnapshotEvent{}
 	dispatchEvent.Timestamp = makeTimestamp()
