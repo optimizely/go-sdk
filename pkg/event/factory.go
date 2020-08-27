@@ -82,6 +82,7 @@ func createImpressionEvent(
 		CampaignID:   experiment.LayerID,
 		EntityID:     experiment.LayerID,
 		ExperimentID: experiment.ID,
+		Key:          impressionKey,
 		Metadata:     metadata,
 		VariationID:  variationID,
 	}
