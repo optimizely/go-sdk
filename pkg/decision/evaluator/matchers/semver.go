@@ -66,22 +66,12 @@ func (sv SemanticVersion) compareVersion(attribute string) (int, error) {
 			return -1, nil
 		case !sv.isNumber(versionParts[idx]):
 			// Compare strings
-			if versionParts[idx] < targetedVersionParts[idx] {
-				if sv.isPreRelease(sv.Condition) && !sv.isPreRelease(attribute) {
-					return 1, nil
-				}
-				return -1, nil
-			} else if versionParts[idx] > targetedVersionParts[idx] {
-				if !sv.isPreRelease(sv.Condition) && sv.isPreRelease(attribute) {
-					return -1, nil
-				}
-				return 1, nil
+			if result := sv.compareVersionStrings(versionParts[idx], targetedVersionParts[idx], attribute); result != 0 {
+				return result, nil
 			}
 		case sv.isNumber(targetedVersionParts[idx]): // both targetedVersionParts and versionParts are digits
-			if sv.toInt(versionParts[idx]) < sv.toInt(targetedVersionParts[idx]) {
-				return -1, nil
-			} else if sv.toInt(versionParts[idx]) > sv.toInt(targetedVersionParts[idx]) {
-				return 1, nil
+			if result := sv.compareVersionNumbers(versionParts[idx], targetedVersionParts[idx]); result != 0 {
+				return result, nil
 			}
 		default:
 			return -1, nil
@@ -142,6 +132,32 @@ func (sv SemanticVersion) splitSemanticVersion(targetedVersion string) ([]string
 
 	targetedVersionParts = append(targetedVersionParts, targetSuffix...)
 	return targetedVersionParts, nil
+}
+
+// returns 1 if versionPart > targetedVersionPart, -1 if targetedVersionPart > versionPart, 0 otherwise
+func (sv SemanticVersion) compareVersionStrings(versionPart, targetedVersionPart, attribute string) int {
+	if versionPart < targetedVersionPart {
+		if sv.isPreRelease(sv.Condition) && !sv.isPreRelease(attribute) {
+			return 1
+		}
+		return -1
+	} else if versionPart > targetedVersionPart {
+		if !sv.isPreRelease(sv.Condition) && sv.isPreRelease(attribute) {
+			return -1
+		}
+		return 1
+	}
+	return 0
+}
+
+// returns 1 if versionPart > targetedVersionPart, -1 if targetedVersionPart > versionPart, 0 otherwise
+func (sv SemanticVersion) compareVersionNumbers(versionPart, targetedVersionPart string) int {
+	if sv.toInt(versionPart) < sv.toInt(targetedVersionPart) {
+		return -1
+	} else if sv.toInt(versionPart) > sv.toInt(targetedVersionPart) {
+		return 1
+	}
+	return 0
 }
 
 func (sv SemanticVersion) isNumber(str string) bool {
