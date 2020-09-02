@@ -178,6 +178,112 @@ func TestValidAttributesBetaToRelease(t *testing.T) {
 	}
 }
 
+func TestTargetBetaAndBetaComplex(t *testing.T) {
+	testValues := []string{"2.1.3-beta+1", "2.1.3+build-1.2.3"}
+	scenarios := []struct {
+		matchType string
+		version   string
+		expected  bool
+	}{
+		{matchType: "semver_eq", version: "2.1.3-beta+1.2.3", expected: false},
+		{matchType: "semver_eq", version: "2.1.3+build-1", expected: false},
+
+		{matchType: "semver_ge", version: "2.1.3-beta+1.2.3", expected: true},
+		{matchType: "semver_ge", version: "2.1.3+build-1", expected: false},
+
+		{matchType: "semver_gt", version: "2.1.3-beta+1.2.3", expected: true},
+		{matchType: "semver_gt", version: "2.1.3+build-1", expected: false},
+
+		{matchType: "semver_le", version: "2.1.3-beta+1.2.3", expected: false},
+		{matchType: "semver_le", version: "2.1.3+build-1", expected: true},
+
+		{matchType: "semver_lt", version: "2.1.3-beta+1.2.3", expected: false},
+		{matchType: "semver_lt", version: "2.1.3+build-1", expected: true},
+	}
+
+	for index, scenario := range scenarios {
+		condition := entities.Condition{
+			Match: scenario.matchType,
+			Value: testValues[index%len(testValues)],
+			Name:  "version",
+		}
+
+		user := entities.UserContext{
+			Attributes: map[string]interface{}{
+				"version": scenario.version,
+			},
+		}
+
+		messageAndArgs := []interface{}{"matchType: %s, condition: %s, attribute: %s", scenario.matchType, condition.Value, scenario.version}
+
+		matcher, ok := Get(scenario.matchType)
+		assert.True(t, ok, messageAndArgs...)
+
+		actual, err := matcher(condition, user, nil)
+		assert.NoError(t, err, messageAndArgs...)
+
+		assert.Equal(t, scenario.expected, actual, messageAndArgs...)
+	}
+}
+
+func TestDifferentAttributeAgainstBuildAndPrerelease(t *testing.T) {
+	testValues := []string{"3.7.0", "3.7.0", "3.7.0-prerelease", "3.7.0-prerelease+build"}
+	scenarios := []struct {
+		matchType string
+		version   string
+		expected  bool
+	}{
+		{matchType: "semver_eq", version: "3.7.0+build", expected: true},
+		{matchType: "semver_eq", version: "3.7.0-prerelease", expected: false},
+		{matchType: "semver_eq", version: "3.7.0+build", expected: false},
+		{matchType: "semver_eq", version: "3.7.0-prerelease-prelrease+rc", expected: false},
+
+		{matchType: "semver_ge", version: "3.7.0+build", expected: true},
+		{matchType: "semver_ge", version: "3.7.0-prerelease", expected: false},
+		{matchType: "semver_ge", version: "3.7.0+build", expected: true},
+		{matchType: "semver_ge", version: "3.7.0-prerelease-prelrease+rc", expected: true},
+
+		{matchType: "semver_gt", version: "3.7.0+build", expected: false},
+		{matchType: "semver_gt", version: "3.7.0-prerelease", expected: false},
+		{matchType: "semver_gt", version: "3.7.0+build", expected: true},
+		{matchType: "semver_gt", version: "3.7.0-prerelease-prelrease+rc", expected: true},
+
+		{matchType: "semver_le", version: "3.7.0+build", expected: true},
+		{matchType: "semver_le", version: "3.7.0-prerelease", expected: true},
+		{matchType: "semver_le", version: "3.7.0+build", expected: false},
+		{matchType: "semver_le", version: "3.7.0-prerelease-prelrease+rc", expected: false},
+
+		{matchType: "semver_lt", version: "3.7.0+build", expected: false},
+		{matchType: "semver_lt", version: "3.7.0-prerelease", expected: true},
+		{matchType: "semver_lt", version: "3.7.0+build", expected: false},
+		{matchType: "semver_lt", version: "3.7.0-prerelease-prelrease+rc", expected: false},
+	}
+
+	for index, scenario := range scenarios {
+		condition := entities.Condition{
+			Match: scenario.matchType,
+			Value: testValues[index%len(testValues)],
+			Name:  "version",
+		}
+
+		user := entities.UserContext{
+			Attributes: map[string]interface{}{
+				"version": scenario.version,
+			},
+		}
+
+		messageAndArgs := []interface{}{"matchType: %s, condition: %s, attribute: %s", scenario.matchType, condition.Value, scenario.version}
+
+		matcher, ok := Get(scenario.matchType)
+		assert.True(t, ok, messageAndArgs...)
+
+		actual, err := matcher(condition, user, nil)
+		assert.NoError(t, err, messageAndArgs...)
+
+		assert.Equal(t, scenario.expected, actual, messageAndArgs...)
+	}
+}
+
 func TestInvalidAttributes(t *testing.T) {
 
 	condition := entities.Condition{
@@ -198,7 +304,6 @@ func TestInvalidAttributes(t *testing.T) {
 		true,
 		37,
 		nil,
-		"",
 		"-",
 		".",
 		"..",

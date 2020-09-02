@@ -19,10 +19,11 @@ package matchers
 
 import (
 	"fmt"
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/optimizely/go-sdk/pkg/logging"
 
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
@@ -65,16 +66,12 @@ func (sv SemanticVersion) compareVersion(attribute string) (int, error) {
 			return -1, nil
 		case !sv.isNumber(versionParts[idx]):
 			// Compare strings
-			if versionParts[idx] < targetedVersionParts[idx] {
-				return -1, nil
-			} else if versionParts[idx] > targetedVersionParts[idx] {
-				return 1, nil
+			if result := sv.compareVersionStrings(versionParts[idx], targetedVersionParts[idx], attribute); result != 0 {
+				return result, nil
 			}
 		case sv.isNumber(targetedVersionParts[idx]): // both targetedVersionParts and versionParts are digits
-			if sv.toInt(versionParts[idx]) < sv.toInt(targetedVersionParts[idx]) {
-				return -1, nil
-			} else if sv.toInt(versionParts[idx]) > sv.toInt(targetedVersionParts[idx]) {
-				return 1, nil
+			if result := sv.compareVersionNumbers(versionParts[idx], targetedVersionParts[idx]); result != 0 {
+				return result, nil
 			}
 		default:
 			return -1, nil
@@ -94,17 +91,16 @@ func (sv SemanticVersion) splitSemanticVersion(targetedVersion string) ([]string
 		return []string{}, errors.New(string(reasons.AttributeFormatInvalid))
 	}
 
-
 	targetPrefix := targetedVersion
 	var targetSuffix []string
 
-	if sv.isPreRelease(targetedVersion) || sv.isBuild(targetedVersion){
+	if sv.isPreRelease(targetedVersion) || sv.isBuild(targetedVersion) {
 		sep := buildSeperator
 		if sv.isPreRelease(targetedVersion) {
 			sep = preReleaseSeperator
 		}
 		// this is going to slit with the first occurrence.
-		targetParts := strings.Split(targetedVersion, sep)
+		targetParts := strings.SplitN(targetedVersion, sep, 2)
 		// in the case it is neither a build or pre release it will return the
 		// original string as the first element in the array
 		if len(targetParts) == 0 {
@@ -128,14 +124,40 @@ func (sv SemanticVersion) splitSemanticVersion(targetedVersion string) ([]string
 		return []string{}, errors.New(string(reasons.AttributeFormatInvalid))
 	}
 
-	for i := 0; i < len(targetedVersionParts);i++ {
-		if  !sv.isNumber(targetedVersionParts[i]) {
+	for i := 0; i < len(targetedVersionParts); i++ {
+		if !sv.isNumber(targetedVersionParts[i]) {
 			return []string{}, errors.New(string(reasons.AttributeFormatInvalid))
 		}
 	}
 
 	targetedVersionParts = append(targetedVersionParts, targetSuffix...)
 	return targetedVersionParts, nil
+}
+
+// returns 1 if versionPart > targetedVersionPart, -1 if targetedVersionPart > versionPart, 0 otherwise
+func (sv SemanticVersion) compareVersionStrings(versionPart, targetedVersionPart, attribute string) int {
+	if versionPart < targetedVersionPart {
+		if sv.isPreRelease(sv.Condition) && !sv.isPreRelease(attribute) {
+			return 1
+		}
+		return -1
+	} else if versionPart > targetedVersionPart {
+		if !sv.isPreRelease(sv.Condition) && sv.isPreRelease(attribute) {
+			return -1
+		}
+		return 1
+	}
+	return 0
+}
+
+// returns 1 if versionPart > targetedVersionPart, -1 if targetedVersionPart > versionPart, 0 otherwise
+func (sv SemanticVersion) compareVersionNumbers(versionPart, targetedVersionPart string) int {
+	if sv.toInt(versionPart) < sv.toInt(targetedVersionPart) {
+		return -1
+	} else if sv.toInt(versionPart) > sv.toInt(targetedVersionPart) {
+		return 1
+	}
+	return 0
 }
 
 func (sv SemanticVersion) isNumber(str string) bool {
@@ -151,15 +173,27 @@ func (sv SemanticVersion) toInt(str string) int {
 }
 
 func (sv SemanticVersion) isPreRelease(str string) bool {
-	return strings.Contains(str, preReleaseSeperator)
+	if prIndex := strings.Index(str, preReleaseSeperator); prIndex > 0 {
+		if buildIndex := strings.Index(str, buildSeperator); buildIndex > 0 {
+			return prIndex < buildIndex
+		}
+		return true
+	}
+	return false
 }
 
 func (sv SemanticVersion) isBuild(str string) bool {
-	return strings.Contains(str, buildSeperator)
+	if buildIndex := strings.Index(str, buildSeperator); buildIndex > 0 {
+		if prIndex := strings.Index(str, preReleaseSeperator); prIndex > 0 {
+			return buildIndex < prIndex
+		}
+		return true
+	}
+	return false
 }
 
 func (sv SemanticVersion) hasWhiteSpace(str string) bool {
-	return str == "" ||  strings.Contains(str, whiteSpace)
+	return str == "" || strings.Contains(str, whiteSpace)
 }
 
 // SemverEvaluator is a help function to wrap a common evaluation code
