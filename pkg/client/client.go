@@ -76,9 +76,10 @@ func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.U
 	if experimentDecision.Variation != nil && decisionContext.Experiment != nil {
 		// send an impression event
 		result = experimentDecision.Variation.Key
-		impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *decisionContext.Experiment,
-			experimentDecision.Variation, userContext, experimentKey, "experiment")
-		o.EventProcessor.ProcessEvent(impressionEvent)
+		if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *decisionContext.Experiment,
+			experimentDecision.Variation, userContext, experimentKey, "experiment"); ok {
+			o.EventProcessor.ProcessEvent(ue)
+		}
 	}
 
 	return result, err
@@ -130,9 +131,11 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 		}
 	}
 
-	impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
-		featureDecision.Variation, userContext, featureKey, featureDecision.Source)
-	o.EventProcessor.ProcessEvent(impressionEvent)
+	if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
+		featureDecision.Variation, userContext, featureKey, featureDecision.Source); ok {
+		o.EventProcessor.ProcessEvent(ue)
+	}
+
 	return result, err
 }
 
@@ -472,9 +475,10 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 		// Triggers impression events when applicable
 		if !disableTracking {
 			// send impression event for feature tests
-			impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
-				featureDecision.Variation, userContext, featureKey, featureDecision.Source)
-			o.EventProcessor.ProcessEvent(impressionEvent)
+			if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
+				featureDecision.Variation, userContext, featureKey, featureDecision.Source); ok {
+				o.EventProcessor.ProcessEvent(ue)
+			}
 		}
 	}
 

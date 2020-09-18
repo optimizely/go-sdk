@@ -25,6 +25,7 @@ import (
 	guuid "github.com/google/uuid"
 
 	"github.com/optimizely/go-sdk/pkg/config"
+	decisionPkg "github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
@@ -92,7 +93,11 @@ func createImpressionEvent(
 
 // CreateImpressionUserEvent creates and returns ImpressionEvent for user
 func CreateImpressionUserEvent(projectConfig config.ProjectConfig, experiment entities.Experiment,
-	variation *entities.Variation, userContext entities.UserContext, flagKey, flagType string) UserEvent {
+	variation *entities.Variation, userContext entities.UserContext, flagKey, flagType string) (UserEvent, bool) {
+
+	if flagType == decisionPkg.Rollout || variation == nil {
+		return UserEvent{}, false
+	}
 
 	impression := createImpressionEvent(projectConfig, experiment, variation, userContext.Attributes, flagKey, flagType)
 
@@ -103,7 +108,7 @@ func CreateImpressionUserEvent(projectConfig config.ProjectConfig, experiment en
 	userEvent.Impression = &impression
 	userEvent.EventContext = CreateEventContext(projectConfig)
 
-	return userEvent
+	return userEvent, true
 }
 
 // create an impression visitor
