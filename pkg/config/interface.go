@@ -41,6 +41,7 @@ type ProjectConfig interface {
 	GetGroupByID(string) (entities.Group, error)
 	GetProjectID() string
 	GetRevision() string
+	SendFlagDecisions() bool
 }
 
 // ProjectConfigManager maintains an instance of the ProjectConfig

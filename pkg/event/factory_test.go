@@ -69,6 +69,9 @@ func (TestConfig) GetClientName() string {
 func (TestConfig) GetClientVersion() string {
 	return "1.0.0"
 }
+func (TestConfig) SendFlagDecisions() bool {
+	return false
+}
 
 func RandomString(len int) string {
 	bytes := make([]byte, len)

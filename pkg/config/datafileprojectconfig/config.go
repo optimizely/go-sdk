@@ -47,6 +47,7 @@ type DatafileProjectConfig struct {
 	rolloutMap           map[string]entities.Rollout
 	anonymizeIP          bool
 	botFiltering         bool
+	sendFlagDecisions    bool
 }
 
 // GetDatafile returns a string representation of the environment's datafile
@@ -178,6 +179,11 @@ func (c DatafileProjectConfig) GetGroupByID(groupID string) (entities.Group, err
 	return entities.Group{}, fmt.Errorf(`group with ID "%s" not found`, groupID)
 }
 
+// SendFlagDecisions determines whether impressions events are sent for ALL decision types
+func (c DatafileProjectConfig) SendFlagDecisions() bool {
+	return c.sendFlagDecisions
+}
+
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser
 func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogProducer) (*DatafileProjectConfig, error) {
 	datafile, err := Parse(jsonDatafile)
@@ -217,6 +223,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		projectID:            datafile.ProjectID,
 		revision:             datafile.Revision,
 		rolloutMap:           rolloutMap,
+		sendFlagDecisions:    datafile.SendFlagDecisions,
 	}
 
 	logger.Info("Datafile is valid.")

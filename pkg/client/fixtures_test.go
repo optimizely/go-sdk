@@ -77,6 +77,9 @@ func (c *MockProjectConfig) GetAnonymizeIP() bool {
 func (c *MockProjectConfig) GetBotFiltering() bool {
 	return false
 }
+func (c *MockProjectConfig) SendFlagDecisions() bool {
+	return false
+}
 
 type MockProjectConfigManager struct {
 	projectConfig config.ProjectConfig

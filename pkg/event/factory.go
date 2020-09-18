@@ -95,7 +95,7 @@ func createImpressionEvent(
 func CreateImpressionUserEvent(projectConfig config.ProjectConfig, experiment entities.Experiment,
 	variation *entities.Variation, userContext entities.UserContext, flagKey, flagType string) (UserEvent, bool) {
 
-	if flagType == decisionPkg.Rollout || variation == nil {
+	if projectConfig.SendFlagDecisions() || flagType == decisionPkg.Rollout || variation == nil {
 		return UserEvent{}, false
 	}
 
