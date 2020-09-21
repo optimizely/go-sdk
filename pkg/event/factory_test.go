@@ -26,11 +26,24 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/optimizely/go-sdk/pkg/config"
+	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
+var testExperiment = entities.Experiment{
+	Key:     "background_experiment",
+	LayerID: "15399420423",
+	ID:      "15402980349",
+}
+
+var testVariation = entities.Variation{
+	Key: "variation_a",
+	ID:  "15410990633",
+}
+
 type TestConfig struct {
 	config.ProjectConfig
+	sendFlagDecisions bool
 }
 
 func (TestConfig) GetAttributeByKey(string) (entities.Attribute, error) {
@@ -69,8 +82,8 @@ func (TestConfig) GetClientName() string {
 func (TestConfig) GetClientVersion() string {
 	return "1.0.0"
 }
-func (TestConfig) SendFlagDecisions() bool {
-	return false
+func (t TestConfig) SendFlagDecisions() bool {
+	return t.sendFlagDecisions
 }
 
 func RandomString(len int) string {
@@ -89,31 +102,19 @@ var userContext = entities.UserContext{
 }
 
 func BuildTestImpressionEvent() UserEvent {
-	config := TestConfig{}
-
-	experiment := entities.Experiment{}
-	experiment.Key = "background_experiment"
-	experiment.LayerID = "15399420423"
-	experiment.ID = "15402980349"
-
-	variation := entities.Variation{}
-	variation.Key = "variation_a"
-	variation.ID = "15410990633"
-
-	impressionUserEvent, _ := CreateImpressionUserEvent(config, experiment, &variation, userContext, experiment.Key, "experiment")
-
+	tc := TestConfig{}
+	impressionUserEvent, _ := CreateImpressionUserEvent(tc, testExperiment, &testVariation, userContext, testExperiment.Key, "experiment")
 	return impressionUserEvent
 }
 
 func BuildTestConversionEvent() UserEvent {
-	config := TestConfig{}
-	conversionUserEvent := CreateConversionUserEvent(config, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext, make(map[string]interface{}))
+	tc := TestConfig{}
+	conversionUserEvent := CreateConversionUserEvent(tc, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext, make(map[string]interface{}))
 
 	return conversionUserEvent
 }
 
 func TestCreateEmptyEvent(t *testing.T) {
-
 	impressionUserEvent := BuildTestImpressionEvent()
 
 	impressionUserEvent.Impression = nil
@@ -126,7 +127,6 @@ func TestCreateEmptyEvent(t *testing.T) {
 }
 
 func TestCreateAndSendImpressionEvent(t *testing.T) {
-
 	impressionUserEvent := BuildTestImpressionEvent()
 
 	processor := NewBatchEventProcessor(WithBatchSize(10), WithQueueSize(100),
@@ -164,9 +164,9 @@ func TestCreateAndSendConversionEvent(t *testing.T) {
 
 func TestCreateConversionEventRevenue(t *testing.T) {
 	eventTags := map[string]interface{}{"revenue": 55.0, "value": 25.1}
-	config := TestConfig{}
+	tc := TestConfig{}
 
-	conversionUserEvent := CreateConversionUserEvent(config, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext, eventTags)
+	conversionUserEvent := CreateConversionUserEvent(tc, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext, eventTags)
 
 	assert.Equal(t, int64(55), *conversionUserEvent.Conversion.Revenue)
 	assert.Equal(t, 25.1, *conversionUserEvent.Conversion.Value)
@@ -175,4 +175,36 @@ func TestCreateConversionEventRevenue(t *testing.T) {
 	assert.Equal(t, int64(55), *batch.Visitors[0].Snapshots[0].Events[0].Revenue)
 	assert.Equal(t, 25.1, *batch.Visitors[0].Snapshots[0].Events[0].Value)
 
+}
+
+func TestCreateImpressionUserEvent(t *testing.T) {
+	tc := TestConfig{}
+
+	scenarios := []struct {
+		flagType string
+		expected bool
+	}{
+		{decision.FeatureTest, true},
+		{"experiment", true},
+		{"anything-else", true},
+		{decision.Rollout, false},
+	}
+
+	for _, scenario := range scenarios {
+		_, ok := CreateImpressionUserEvent(tc, testExperiment, &testVariation, userContext, testExperiment.Key, scenario.flagType)
+		assert.Equal(t, ok, scenario.expected)
+	}
+
+	// nil variation should _always_ return false
+	for _, scenario := range scenarios {
+		_, ok := CreateImpressionUserEvent(tc, testExperiment, nil, userContext, testExperiment.Key, scenario.flagType)
+		assert.False(t, ok)
+	}
+
+	// should _always_ return true if sendFlagDecisions is set
+	tc.sendFlagDecisions = true
+	for _, scenario := range scenarios {
+		_, ok := CreateImpressionUserEvent(tc, testExperiment, nil, userContext, testExperiment.Key, scenario.flagType)
+		assert.True(t, ok)
+	}
 }
