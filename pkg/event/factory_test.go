@@ -128,6 +128,10 @@ func TestCreateEmptyEvent(t *testing.T) {
 
 func TestCreateAndSendImpressionEvent(t *testing.T) {
 	impressionUserEvent := BuildTestImpressionEvent()
+	assert.Equal(t, userContext.ID, impressionUserEvent.VisitorID)
+	assert.Equal(t, "experiment", impressionUserEvent.Impression.Metadata.FlagType)
+	assert.Equal(t, testVariation.Key, impressionUserEvent.Impression.Metadata.VariationKey)
+	assert.Equal(t, testExperiment.Key, impressionUserEvent.Impression.Metadata.FlagKey)
 
 	processor := NewBatchEventProcessor(WithBatchSize(10), WithQueueSize(100),
 		WithFlushInterval(10),

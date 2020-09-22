@@ -67,14 +67,14 @@ func createImpressionEvent(
 	flagKey, flagType string,
 ) ImpressionEvent {
 
-	metadata := map[string]string{
-		"FLAG_KEY":  flagKey,
-		"FLAG_TYPE": flagType,
+	metadata := DecisionMetadata{
+		FlagType: flagType,
+		FlagKey:  flagKey,
 	}
 
 	var variationID string
 	if variation != nil {
-		metadata["VARIAITON_KEY"] = variation.Key
+		metadata.VariationKey = variation.Key
 		variationID = variation.ID
 	}
 
