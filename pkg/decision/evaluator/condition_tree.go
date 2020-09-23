@@ -80,7 +80,7 @@ func (c MixedTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *en
 
 	if err != nil {
 		// Result is invalid
-		c.logger.Info("Invalid match result: " + err.Error())
+		c.logger.Warning("Invalid match result: " + err.Error())
 		return false, false
 	}
 	return result, true
