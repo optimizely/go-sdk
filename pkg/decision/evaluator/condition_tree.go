@@ -74,12 +74,13 @@ func (c MixedTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *en
 		evaluator := NewAudienceConditionEvaluator(c.logger)
 		result, err = evaluator.Evaluate(node.Item.(string), condTreeParams)
 	default:
-		fmt.Printf("I don't know about type %T!\n", v)
+		c.logger.Warning(fmt.Sprintf("I don't know about type %T!\n", v))
 		return false, false
 	}
 
 	if err != nil {
 		// Result is invalid
+		c.logger.Info("Invalid match result: " + err.Error())
 		return false, false
 	}
 	return result, true
