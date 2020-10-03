@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.4.0] - October 2nd, 2020
+## New Features
+- Add MatchRegistry for custom match implementations. ([#286](https://github.com/optimizely/go-sdk/pull/286)) …
+
+- Added and refactored audience evaluation logs. ([#280](https://github.com/optimizely/go-sdk/pull/280))
+
+- Add datafile accessor to access config as json string. ([#290](https://github.com/optimizely/go-sdk/pull/290))
+ 
+- Support version audience evaluation following semantic versioning implementation. ([#289](https://github.com/optimizely/go-sdk/pull/289))
+
+- Support number 'less than or equal to' and 'greater than or equal to'. ([#289](https://github.com/optimizely/go-sdk/pull/289))
+## Bug Fix
+- Fixed a spelling mistake in go.mod file. ([#285](https://github.com/optimizely/go-sdk/pull/285))
+
 ## [1.3.0] - July 7th, 2020
 ## New Features
 - Add support for JSON feature variables ([#250](https://github.com/optimizely/go-sdk/pull/250), [#251](https://github.com/optimizely/go-sdk/pull/251), [#253](https://github.com/optimizely/go-sdk/pull/253))
