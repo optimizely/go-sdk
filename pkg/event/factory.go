@@ -64,12 +64,13 @@ func createImpressionEvent(
 	experiment entities.Experiment,
 	variation *entities.Variation,
 	attributes map[string]interface{},
-	flagKey, flagType string,
+	flagKey, ruleKey, ruleType string,
 ) ImpressionEvent {
 
 	metadata := DecisionMetadata{
-		FlagType: flagType,
 		FlagKey:  flagKey,
+		RuleKey:  ruleKey,
+		RuleType: ruleType,
 	}
 
 	var variationID string
@@ -93,13 +94,13 @@ func createImpressionEvent(
 
 // CreateImpressionUserEvent creates and returns ImpressionEvent for user
 func CreateImpressionUserEvent(projectConfig config.ProjectConfig, experiment entities.Experiment,
-	variation *entities.Variation, userContext entities.UserContext, flagKey, flagType string) (UserEvent, bool) {
+	variation *entities.Variation, userContext entities.UserContext, flagKey, ruleKey, ruleType string) (UserEvent, bool) {
 
-	if (flagType == decisionPkg.Rollout || variation == nil) && !projectConfig.SendFlagDecisions() {
+	if (ruleType == decisionPkg.Rollout || variation == nil) && !projectConfig.SendFlagDecisions() {
 		return UserEvent{}, false
 	}
 
-	impression := createImpressionEvent(projectConfig, experiment, variation, userContext.Attributes, flagKey, flagType)
+	impression := createImpressionEvent(projectConfig, experiment, variation, userContext.Attributes, flagKey, ruleKey, ruleType)
 
 	userEvent := UserEvent{}
 	userEvent.Timestamp = makeTimestamp()

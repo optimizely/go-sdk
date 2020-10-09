@@ -51,8 +51,9 @@ type ImpressionEvent struct {
 
 // DecisionMetadata captures additional information regarding the decision
 type DecisionMetadata struct {
-	FlagType     string `json:"flag_type"`
 	FlagKey      string `json:"flag_key"`
+	RuleKey      string `json:"rule_key"`
+	RuleType     string `json:"rule_type"`
 	VariationKey string `json:"variation_key"`
 }
 

@@ -103,7 +103,7 @@ var userContext = entities.UserContext{
 
 func BuildTestImpressionEvent() UserEvent {
 	tc := TestConfig{}
-	impressionUserEvent, _ := CreateImpressionUserEvent(tc, testExperiment, &testVariation, userContext, testExperiment.Key, "experiment")
+	impressionUserEvent, _ := CreateImpressionUserEvent(tc, testExperiment, &testVariation, userContext, "", testExperiment.Key, "experiment")
 	return impressionUserEvent
 }
 
@@ -129,9 +129,9 @@ func TestCreateEmptyEvent(t *testing.T) {
 func TestCreateAndSendImpressionEvent(t *testing.T) {
 	impressionUserEvent := BuildTestImpressionEvent()
 	assert.Equal(t, userContext.ID, impressionUserEvent.VisitorID)
-	assert.Equal(t, "experiment", impressionUserEvent.Impression.Metadata.FlagType)
+	assert.Equal(t, "experiment", impressionUserEvent.Impression.Metadata.RuleType)
 	assert.Equal(t, testVariation.Key, impressionUserEvent.Impression.Metadata.VariationKey)
-	assert.Equal(t, testExperiment.Key, impressionUserEvent.Impression.Metadata.FlagKey)
+	assert.Equal(t, testExperiment.Key, impressionUserEvent.Impression.Metadata.RuleKey)
 
 	processor := NewBatchEventProcessor(WithBatchSize(10), WithQueueSize(100),
 		WithFlushInterval(10),
@@ -195,20 +195,20 @@ func TestCreateImpressionUserEvent(t *testing.T) {
 	}
 
 	for _, scenario := range scenarios {
-		_, ok := CreateImpressionUserEvent(tc, testExperiment, &testVariation, userContext, testExperiment.Key, scenario.flagType)
+		_, ok := CreateImpressionUserEvent(tc, testExperiment, &testVariation, userContext, "", testExperiment.Key, scenario.flagType)
 		assert.Equal(t, ok, scenario.expected)
 	}
 
 	// nil variation should _always_ return false
 	for _, scenario := range scenarios {
-		_, ok := CreateImpressionUserEvent(tc, testExperiment, nil, userContext, testExperiment.Key, scenario.flagType)
+		_, ok := CreateImpressionUserEvent(tc, testExperiment, nil, userContext, "", testExperiment.Key, scenario.flagType)
 		assert.False(t, ok)
 	}
 
 	// should _always_ return true if sendFlagDecisions is set
 	tc.sendFlagDecisions = true
 	for _, scenario := range scenarios {
-		_, ok := CreateImpressionUserEvent(tc, testExperiment, nil, userContext, testExperiment.Key, scenario.flagType)
+		_, ok := CreateImpressionUserEvent(tc, testExperiment, nil, userContext, "", testExperiment.Key, scenario.flagType)
 		assert.True(t, ok)
 	}
 }
