@@ -40,12 +40,21 @@ type UserEvent struct {
 
 // ImpressionEvent represents an impression event
 type ImpressionEvent struct {
-	EntityID     string `json:"entity_id"`
-	Key          string `json:"key"`
 	Attributes   []VisitorAttribute
-	VariationID  string `json:"variation_id"`
-	CampaignID   string `json:"campaign_id"`
-	ExperimentID string `json:"experiment_id"`
+	CampaignID   string           `json:"campaign_id"`
+	EntityID     string           `json:"entity_id"`
+	ExperimentID string           `json:"experiment_id"`
+	Key          string           `json:"key"`
+	Metadata     DecisionMetadata `json:"metadata"`
+	VariationID  string           `json:"variation_id"`
+}
+
+// DecisionMetadata captures additional information regarding the decision
+type DecisionMetadata struct {
+	FlagKey      string `json:"flag_key"`
+	RuleKey      string `json:"rule_key"`
+	RuleType     string `json:"rule_type"`
+	VariationKey string `json:"variation_key"`
 }
 
 // ConversionEvent represents a conversion event
@@ -101,9 +110,10 @@ type Snapshot struct {
 
 // Decision represents a decision of a snapshot
 type Decision struct {
-	VariationID  string `json:"variation_id"`
-	CampaignID   string `json:"campaign_id"`
-	ExperimentID string `json:"experiment_id"`
+	VariationID  string           `json:"variation_id"`
+	CampaignID   string           `json:"campaign_id"`
+	ExperimentID string           `json:"experiment_id"`
+	Metadata     DecisionMetadata `json:"metadata"`
 }
 
 // SnapshotEvent represents an event of a snapshot

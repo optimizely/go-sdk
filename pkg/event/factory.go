@@ -23,7 +23,9 @@ import (
 	"time"
 
 	guuid "github.com/google/uuid"
+
 	"github.com/optimizely/go-sdk/pkg/config"
+	decisionPkg "github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
@@ -57,26 +59,48 @@ func CreateEventContext(projectConfig config.ProjectConfig) Context {
 	return context
 }
 
-func createImpressionEvent(projectConfig config.ProjectConfig, experiment entities.Experiment,
-	variation entities.Variation, attributes map[string]interface{}) ImpressionEvent {
+func createImpressionEvent(
+	projectConfig config.ProjectConfig,
+	experiment entities.Experiment,
+	variation *entities.Variation,
+	attributes map[string]interface{},
+	flagKey, ruleKey, ruleType string,
+) ImpressionEvent {
 
-	impression := ImpressionEvent{}
-	impression.Key = impressionKey
-	impression.EntityID = experiment.LayerID
-	impression.Attributes = getEventAttributes(projectConfig, attributes)
-	impression.VariationID = variation.ID
-	impression.ExperimentID = experiment.ID
-	impression.CampaignID = experiment.LayerID
+	metadata := DecisionMetadata{
+		FlagKey:  flagKey,
+		RuleKey:  ruleKey,
+		RuleType: ruleType,
+	}
 
-	return impression
+	var variationID string
+	if variation != nil {
+		metadata.VariationKey = variation.Key
+		variationID = variation.ID
+	}
+
+	event := ImpressionEvent{
+		Attributes:   getEventAttributes(projectConfig, attributes),
+		CampaignID:   experiment.LayerID,
+		EntityID:     experiment.LayerID,
+		ExperimentID: experiment.ID,
+		Key:          impressionKey,
+		Metadata:     metadata,
+		VariationID:  variationID,
+	}
+
+	return event
 }
 
 // CreateImpressionUserEvent creates and returns ImpressionEvent for user
 func CreateImpressionUserEvent(projectConfig config.ProjectConfig, experiment entities.Experiment,
-	variation entities.Variation,
-	userContext entities.UserContext) UserEvent {
+	variation *entities.Variation, userContext entities.UserContext, flagKey, ruleKey, ruleType string) (UserEvent, bool) {
 
-	impression := createImpressionEvent(projectConfig, experiment, variation, userContext.Attributes)
+	if (ruleType == decisionPkg.Rollout || variation == nil) && !projectConfig.SendFlagDecisions() {
+		return UserEvent{}, false
+	}
+
+	impression := createImpressionEvent(projectConfig, experiment, variation, userContext.Attributes, flagKey, ruleKey, ruleType)
 
 	userEvent := UserEvent{}
 	userEvent.Timestamp = makeTimestamp()
@@ -85,7 +109,7 @@ func CreateImpressionUserEvent(projectConfig config.ProjectConfig, experiment en
 	userEvent.Impression = &impression
 	userEvent.EventContext = CreateEventContext(projectConfig)
 
-	return userEvent
+	return userEvent, true
 }
 
 // create an impression visitor
@@ -94,6 +118,7 @@ func createImpressionVisitor(userEvent UserEvent) Visitor {
 	decision.CampaignID = userEvent.Impression.CampaignID
 	decision.ExperimentID = userEvent.Impression.ExperimentID
 	decision.VariationID = userEvent.Impression.VariationID
+	decision.Metadata = userEvent.Impression.Metadata
 
 	dispatchEvent := SnapshotEvent{}
 	dispatchEvent.Timestamp = makeTimestamp()

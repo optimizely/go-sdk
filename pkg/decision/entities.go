@@ -45,7 +45,7 @@ type UnsafeFeatureDecisionInfo struct {
 }
 
 // Source is where the decision came from
-type Source string
+type Source = string
 
 const (
 	// Rollout - the decision came from a rollout

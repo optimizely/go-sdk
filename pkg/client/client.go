@@ -76,8 +76,10 @@ func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.U
 	if experimentDecision.Variation != nil && decisionContext.Experiment != nil {
 		// send an impression event
 		result = experimentDecision.Variation.Key
-		impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *decisionContext.Experiment, *experimentDecision.Variation, userContext)
-		o.EventProcessor.ProcessEvent(impressionEvent)
+		if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *decisionContext.Experiment,
+			experimentDecision.Variation, userContext, "", experimentKey, "experiment"); ok {
+			o.EventProcessor.ProcessEvent(ue)
+		}
 	}
 
 	return result, err
@@ -129,11 +131,11 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 		}
 	}
 
-	if featureDecision.Source == decision.FeatureTest && featureDecision.Variation != nil {
-		// send impression event for feature tests
-		impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment, *featureDecision.Variation, userContext)
-		o.EventProcessor.ProcessEvent(impressionEvent)
+	if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
+		featureDecision.Variation, userContext, featureKey, featureDecision.Experiment.Key, featureDecision.Source); ok {
+		o.EventProcessor.ProcessEvent(ue)
 	}
+
 	return result, err
 }
 
@@ -463,14 +465,19 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 	if featureDecision.Variation != nil {
 		decisionInfo.Enabled = featureDecision.Variation.FeatureEnabled
 
+		// This information is only necessary for feature tests.
+		// For rollouts experiments and variations are an implementation detail only.
 		if featureDecision.Source == decision.FeatureTest {
 			decisionInfo.VariationKey = featureDecision.Variation.Key
 			decisionInfo.ExperimentKey = featureDecision.Experiment.Key
-			// Triggers impression events when applicable
-			if !disableTracking {
-				// send impression event for feature tests
-				impressionEvent := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment, *featureDecision.Variation, userContext)
-				o.EventProcessor.ProcessEvent(impressionEvent)
+		}
+
+		// Triggers impression events when applicable
+		if !disableTracking {
+			// send impression event for feature tests
+			if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
+				featureDecision.Variation, userContext, featureKey, featureDecision.Experiment.Key, featureDecision.Source); ok {
+				o.EventProcessor.ProcessEvent(ue)
 			}
 		}
 	}
@@ -624,12 +631,14 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 		return decisionContext, featureDecision, e
 	}
 
+	decisionContext.ProjectConfig = projectConfig
 	feature, e := projectConfig.GetFeatureByKey(featureKey)
 	if e != nil {
 		o.logger.Warning(fmt.Sprintf(`Could not get feature for key "%s": %s`, featureKey, e))
 		return decisionContext, featureDecision, nil
 	}
 
+	decisionContext.Feature = &feature
 	variable := entities.Variable{}
 	if variableKey != "" {
 		variable, err = projectConfig.GetVariableByKey(feature.Key, variableKey)
@@ -639,12 +648,7 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 		}
 	}
 
-	decisionContext = decision.FeatureDecisionContext{
-		Feature:       &feature,
-		ProjectConfig: projectConfig,
-		Variable:      variable,
-	}
-
+	decisionContext.Variable = variable
 	featureDecision, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext)
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature "%s": %s`, featureKey, err))

@@ -2320,7 +2320,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledWithDecisionError() {
 	s.mockDecisionService.AssertExpectations(s.T())
 }
 
-func (s *ClientTestSuiteFM) TestIsFeatureEnabledErrorCases() {
+func (s *ClientTestSuiteFM) TestIsFeatureEnabledErrorConfig() {
 	testUserContext := entities.UserContext{ID: "test_user_1"}
 	testFeatureKey := "test_feature_key"
 
@@ -2335,13 +2335,22 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledErrorCases() {
 	result, _ := client.IsFeatureEnabled(testFeatureKey, testUserContext)
 	s.False(result)
 	s.mockDecisionService.AssertNotCalled(s.T(), "GetFeatureDecision")
+}
+
+func (s *ClientTestSuiteFM) TestIsFeatureEnabledErrorFeatureKey() {
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	testFeatureKey := "test_feature_key"
 
 	// Test invalid feature key
 	expectedError := errors.New("Invalid feature key")
 	s.mockConfig.On("GetFeatureByKey", testFeatureKey).Return(entities.Feature{}, expectedError)
+	s.mockConfig.On("GetBotFiltering").Return(true)
 	s.mockConfigManager.On("GetConfig").Return(s.mockConfig, nil)
 
-	client = OptimizelyClient{
+	s.mockEventProcessor.On("ProcessEvent", mock.Anything).Return(true)
+
+	client := OptimizelyClient{
+		EventProcessor:  s.mockEventProcessor,
 		ConfigManager:   s.mockConfigManager,
 		DecisionService: s.mockDecisionService,
 		logger:          logging.GetLogger("", ""),
@@ -2813,9 +2822,18 @@ func (s *ClientTestSuiteTrackNotification) TestRemoveOnTrackThrowsErrorWhenRemov
 	mockNotificationCenter.AssertExpectations(s.T())
 }
 
-func TestClientTestSuite(t *testing.T) {
+func TestClientTestSuiteAB(t *testing.T) {
 	suite.Run(t, new(ClientTestSuiteAB))
+}
+
+func TestClientTestSuiteFM(t *testing.T) {
 	suite.Run(t, new(ClientTestSuiteFM))
+}
+
+func TestClientTestSuiteTrackEvent(t *testing.T) {
 	suite.Run(t, new(ClientTestSuiteTrackEvent))
+}
+
+func TestClientTestSuiteTrackNotification(t *testing.T) {
 	suite.Run(t, new(ClientTestSuiteTrackNotification))
 }
