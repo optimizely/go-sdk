@@ -26,6 +26,7 @@ import (
 	"strconv"
 
 	"github.com/optimizely/go-sdk/pkg/config"
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
@@ -39,12 +40,36 @@ import (
 
 // OptimizelyClient is the entry point to the Optimizely SDK
 type OptimizelyClient struct {
-	ConfigManager      config.ProjectConfigManager
-	DecisionService    decision.Service
-	EventProcessor     event.Processor
-	notificationCenter notification.Center
-	execGroup          *utils.ExecGroup
-	logger             logging.OptimizelyLogProducer
+	ConfigManager        config.ProjectConfigManager
+	DecisionService      decision.Service
+	EventProcessor       event.Processor
+	notificationCenter   notification.Center
+	execGroup            *utils.ExecGroup
+	logger               logging.OptimizelyLogProducer
+	defaultDecideOptions []decide.Options
+}
+
+// CreateUserContext will return an OptimizelyUserContext associated with this OptimizelyClient
+// and context of the user for which decision APIs will be called
+//
+// The SDK will keep this context until it is called again with a different context data.
+//
+// - This API can be called after SDK initialization is completed (otherwise the __sdkNotReady__ error
+//	 will be returned).
+// - Only one user outstanding. The user-context can be changed any time by calling the same method
+//   with a different user-context value.
+// - The SDK will copy the parameter value to create an internal user-context data atomically,
+//   so any further change in its caller copy after the API call is not reflected into the SDK state.
+// - Once this API is called, the following other API calls can be called without a user-context
+//   parameter to use the same user-context.
+// - Each Decide API call can contain an optional user-context parameter when the call targets a
+//   different user-context. This optional user-context parameter value will be used once only,
+//   instead of replacing the saved user-context. This call-based context control can be used to
+//   support multiple users at the same time.
+// - If a user-context has not been set yet and decide APIs are called without a user-context parameter,
+//   SDK will return an error decision (__userNotSet__).
+func (o *OptimizelyClient) CreateUserContext(userContext entities.UserContext) *OptimizelyUserContext {
+	return NewOptimizelyUserContext(o, userContext)
 }
 
 // Activate returns the key of the variation the user is bucketed into and queues up an impression event to be sent to
