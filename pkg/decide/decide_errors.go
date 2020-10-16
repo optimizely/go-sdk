@@ -14,11 +14,11 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package decide has error definitions for decide api
 package decide
 
 import "errors"
 
-// Package decide has error definitions for decide api
 type decideError string
 
 const (
