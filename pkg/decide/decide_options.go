@@ -14,6 +14,7 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package decide has option definitions for decide api
 package decide
 
 // Options controlling flag decisions.
