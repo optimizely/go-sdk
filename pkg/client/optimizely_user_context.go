@@ -40,6 +40,16 @@ func NewOptimizelyUserContext(optimizely *OptimizelyClient, userContext entities
 	return &optimizelyUserContext
 }
 
+// GetOptimizely returns optimizely client instance for Optimizely user context
+func (u *OptimizelyUserContext) GetOptimizely() *OptimizelyClient {
+	return u.optimizely
+}
+
+// GetUserContext returns user settings for Optimizely user context
+func (u *OptimizelyUserContext) GetUserContext() entities.UserContext {
+	return u.userContext
+}
+
 // SetAttribute sets an attribute for a given key.
 func (u *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
 	u.userContext.Attributes[key] = value
@@ -48,32 +58,32 @@ func (u *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
 // Decide returns a decision result for a given flag key and a user context, which contains
 // all data required to deliver the flag or experiment.
 func (u *OptimizelyUserContext) Decide(key string) OptimizelyDecision {
-	return ErrorDecision(key, nil, decide.GetDecideError(decide.SDKNotReady))
+	return CreateErrorDecision(key, nil, decide.GetDecideError(decide.SDKNotReady))
 }
 
 // DecideWithOptions returns a decision result for a given flag key and a user context, which contains
 // all data required to deliver the flag or experiment.
 func (u *OptimizelyUserContext) DecideWithOptions(key string, options []decide.Options) OptimizelyDecision {
-	return ErrorDecision(key, nil, decide.GetDecideError(decide.SDKNotReady))
+	return CreateErrorDecision(key, nil, decide.GetDecideError(decide.SDKNotReady))
 }
 
-// DecideAll returns a key-map of decision results for multiple flag keys and a user context.
-func (u *OptimizelyUserContext) DecideAll(keys []string) map[string]OptimizelyDecision {
+// DecideAll returns a key-map of decision results for all active flag keys.
+func (u *OptimizelyUserContext) DecideAll() map[string]OptimizelyDecision {
 	return map[string]OptimizelyDecision{}
 }
 
-// DecideAllWithOptions returns a key-map of decision results for multiple flag keys and a user context.
-func (u *OptimizelyUserContext) DecideAllWithOptions(keys []string, options []decide.Options) map[string]OptimizelyDecision {
+// DecideAllWithOptions returns a key-map of decision results for all active flag keys with options.
+func (u *OptimizelyUserContext) DecideAllWithOptions(options []decide.Options) map[string]OptimizelyDecision {
 	return map[string]OptimizelyDecision{}
 }
 
-// DecideAllActiveFlags returns a key-map of decision results for all active flag keys and a user context.
-func (u *OptimizelyUserContext) DecideAllActiveFlags(options []decide.Options) map[string]OptimizelyDecision {
+// DecideForKeys returns a key-map of decision results for multiple flag keys.
+func (u *OptimizelyUserContext) DecideForKeys(keys []string) map[string]OptimizelyDecision {
 	return map[string]OptimizelyDecision{}
 }
 
-// DecideAllActiveFlagsWithoutOptions returns a key-map of decision results for all active flag keys and a user context.
-func (u *OptimizelyUserContext) DecideAllActiveFlagsWithoutOptions() map[string]OptimizelyDecision {
+// DecideForKeysWithOptions returns a key-map of decision results for multiple flag keys and options.
+func (u *OptimizelyUserContext) DecideForKeysWithOptions(keys []string, options []decide.Options) map[string]OptimizelyDecision {
 	return map[string]OptimizelyDecision{}
 }
 

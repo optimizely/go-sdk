@@ -2447,6 +2447,38 @@ func (s *ClientTestSuiteFM) TestGetEnabledFeaturesErrorCases() {
 	s.mockDecisionService.AssertNotCalled(s.T(), "GetFeatureDecision")
 }
 
+func TestCreateUserContext(t *testing.T) {
+	client := OptimizelyClient{}
+	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{"key": 1212}}
+	optimizelyUserContext := client.CreateUserContext(userContext)
+
+	assert.Equal(t, client, *optimizelyUserContext.GetOptimizely())
+	assert.Equal(t, userContext, optimizelyUserContext.GetUserContext())
+}
+
+func TestCreateUserContextNoAttributes(t *testing.T) {
+	client := OptimizelyClient{}
+	userContext := entities.UserContext{ID: "testUser1"}
+	optimizelyUserContext := client.CreateUserContext(userContext)
+
+	assert.Equal(t, client, *optimizelyUserContext.GetOptimizely())
+	assert.Equal(t, map[string]interface{}{}, optimizelyUserContext.GetUserContext().Attributes)
+}
+
+func TestCreateUserContextMultiple(t *testing.T) {
+	client := OptimizelyClient{}
+	userContext1 := entities.UserContext{ID: "testUser1", Attributes: map[string]interface{}{"key": 1212}}
+	userContext2 := entities.UserContext{ID: "testUser2", Attributes: map[string]interface{}{"key": 1213}}
+
+	optimizelyUserContext1 := client.CreateUserContext(userContext1)
+	optimizelyUserContext2 := client.CreateUserContext(userContext2)
+
+	assert.Equal(t, client, *optimizelyUserContext1.GetOptimizely())
+	assert.Equal(t, client, *optimizelyUserContext2.GetOptimizely())
+	assert.Equal(t, userContext1, optimizelyUserContext1.GetUserContext())
+	assert.Equal(t, userContext2, optimizelyUserContext2.GetUserContext())
+}
+
 func TestClose(t *testing.T) {
 	mockProcessor := &MockProcessor{}
 	mockDecisionService := new(MockDecisionService)

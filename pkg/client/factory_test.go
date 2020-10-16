@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/config"
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/metrics"
@@ -200,4 +201,18 @@ func TestClientWithDatafileAccessToken(t *testing.T) {
 	assert.NotNil(t, optimizelyClient.EventProcessor)
 
 	assert.Equal(t, accessToken, factory.DatafileAccessToken)
+}
+
+func TestClientWithDefaultDecideOptions(t *testing.T) {
+	decideOptions := []decide.Options{decide.DisableDecisionEvent, decide.EnabledFlagsOnly}
+	factory := OptimizelyFactory{SDKKey: "1212"}
+	optimizelyClient, err := factory.Client(WithDefaultDecideOptions(decideOptions))
+	assert.NoError(t, err)
+	assert.Equal(t, decideOptions, optimizelyClient.defaultDecideOptions)
+
+	// Verify that defaultDecideOptions are initialized as empty by default
+	factory = OptimizelyFactory{SDKKey: "1212"}
+	optimizelyClient, err = factory.Client()
+	assert.NoError(t, err)
+	assert.Equal(t, []decide.Options{}, optimizelyClient.defaultDecideOptions)
 }
