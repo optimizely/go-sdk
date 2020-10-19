@@ -43,60 +43,60 @@ func NewOptimizelyUserContext(optimizely *OptimizelyClient, userContext entities
 }
 
 // GetOptimizely returns optimizely client instance for Optimizely user context
-func (u *OptimizelyUserContext) GetOptimizely() *OptimizelyClient {
-	return u.optimizely
+func (o *OptimizelyUserContext) GetOptimizely() *OptimizelyClient {
+	return o.optimizely
 }
 
 // GetUserContext returns user settings for Optimizely user context
-func (u *OptimizelyUserContext) GetUserContext() entities.UserContext {
-	u.mutex.RLock()
-	u.mutex.RUnlock()
-	return copyUserContext(u.userContext)
+func (o *OptimizelyUserContext) GetUserContext() entities.UserContext {
+	o.mutex.RLock()
+	defer o.mutex.RUnlock()
+	return copyUserContext(o.userContext)
 }
 
 // SetAttribute sets an attribute for a given key.
-func (u *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
-	u.mutex.Lock()
-	u.userContext.Attributes[key] = value
-	u.mutex.Unlock()
+func (o *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	o.userContext.Attributes[key] = value
 }
 
 // Decide returns a decision result for a given flag key and a user context, which contains
 // all data required to deliver the flag or experiment.
-func (u *OptimizelyUserContext) Decide(key string) OptimizelyDecision {
+func (o *OptimizelyUserContext) Decide(key string) OptimizelyDecision {
 	return CreateErrorDecision(key, nil, decide.GetDecideError(decide.SDKNotReady))
 }
 
 // DecideWithOptions returns a decision result for a given flag key and a user context, which contains
 // all data required to deliver the flag or experiment.
-func (u *OptimizelyUserContext) DecideWithOptions(key string, options []decide.Options) OptimizelyDecision {
+func (o *OptimizelyUserContext) DecideWithOptions(key string, options []decide.Options) OptimizelyDecision {
 	return CreateErrorDecision(key, nil, decide.GetDecideError(decide.SDKNotReady))
 }
 
 // DecideAll returns a key-map of decision results for all active flag keys.
-func (u *OptimizelyUserContext) DecideAll() map[string]OptimizelyDecision {
+func (o *OptimizelyUserContext) DecideAll() map[string]OptimizelyDecision {
 	return map[string]OptimizelyDecision{}
 }
 
 // DecideAllWithOptions returns a key-map of decision results for all active flag keys with options.
-func (u *OptimizelyUserContext) DecideAllWithOptions(options []decide.Options) map[string]OptimizelyDecision {
+func (o *OptimizelyUserContext) DecideAllWithOptions(options []decide.Options) map[string]OptimizelyDecision {
 	return map[string]OptimizelyDecision{}
 }
 
 // DecideForKeys returns a key-map of decision results for multiple flag keys.
-func (u *OptimizelyUserContext) DecideForKeys(keys []string) map[string]OptimizelyDecision {
+func (o *OptimizelyUserContext) DecideForKeys(keys []string) map[string]OptimizelyDecision {
 	return map[string]OptimizelyDecision{}
 }
 
 // DecideForKeysWithOptions returns a key-map of decision results for multiple flag keys and options.
-func (u *OptimizelyUserContext) DecideForKeysWithOptions(keys []string, options []decide.Options) map[string]OptimizelyDecision {
+func (o *OptimizelyUserContext) DecideForKeysWithOptions(keys []string, options []decide.Options) map[string]OptimizelyDecision {
 	return map[string]OptimizelyDecision{}
 }
 
 // TrackEvent generates a conversion event with the given event key if it exists and queues it up to be sent to the Optimizely
 // log endpoint for results processing.
-func (u *OptimizelyUserContext) TrackEvent(eventKey string, eventTags map[string]interface{}) (err error) {
-	return u.optimizely.Track(eventKey, u.userContext, eventTags)
+func (o *OptimizelyUserContext) TrackEvent(eventKey string, eventTags map[string]interface{}) (err error) {
+	return o.optimizely.Track(eventKey, o.GetUserContext(), eventTags)
 }
 
 func copyUserContext(userContext entities.UserContext) entities.UserContext {
