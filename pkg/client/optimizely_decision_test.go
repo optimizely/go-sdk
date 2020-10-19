@@ -47,7 +47,7 @@ func (s *OptimizelyDecisionTestSuite) TestOptimizelyDecision() {
 
 	userContext := entities.UserContext{ID: "testUser1", Attributes: map[string]interface{}{"key": 1212}}
 	optimizelyUserContext := s.OptimizelyClient.CreateUserContext(userContext)
-	decision := NewOptimizelyDecision(variationKey, ruleKey, flagKey, enabled, variables, optimizelyUserContext, reasons)
+	decision := NewOptimizelyDecision(variationKey, ruleKey, flagKey, enabled, *variables, optimizelyUserContext, reasons)
 
 	assert.Equal(s.T(), variationKey, decision.GetVariationKey())
 	assert.Equal(s.T(), enabled, decision.GetEnabled())

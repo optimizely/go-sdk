@@ -14,10 +14,12 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package client has client definitions
+// Package client //
 package client
 
 import (
+	"sync"
+
 	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
@@ -26,16 +28,16 @@ import (
 type OptimizelyUserContext struct {
 	optimizely  *OptimizelyClient
 	userContext entities.UserContext
+	mutex       sync.RWMutex
 }
 
 // NewOptimizelyUserContext returns an instance of the optimizely user context.
 func NewOptimizelyUserContext(optimizely *OptimizelyClient, userContext entities.UserContext) *OptimizelyUserContext {
+	// store a copy of the provided usercontext so it isn't affected by changes made afterwards.
+	userContextCopy := copyUserContext(userContext)
 	optimizelyUserContext := OptimizelyUserContext{
 		optimizely:  optimizely,
-		userContext: userContext,
-	}
-	if userContext.Attributes == nil {
-		optimizelyUserContext.userContext.Attributes = map[string]interface{}{}
+		userContext: userContextCopy,
 	}
 	return &optimizelyUserContext
 }
@@ -47,12 +49,16 @@ func (u *OptimizelyUserContext) GetOptimizely() *OptimizelyClient {
 
 // GetUserContext returns user settings for Optimizely user context
 func (u *OptimizelyUserContext) GetUserContext() entities.UserContext {
-	return u.userContext
+	u.mutex.RLock()
+	u.mutex.RUnlock()
+	return copyUserContext(u.userContext)
 }
 
 // SetAttribute sets an attribute for a given key.
 func (u *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
+	u.mutex.Lock()
 	u.userContext.Attributes[key] = value
+	u.mutex.Unlock()
 }
 
 // Decide returns a decision result for a given flag key and a user context, which contains
@@ -91,4 +97,15 @@ func (u *OptimizelyUserContext) DecideForKeysWithOptions(keys []string, options 
 // log endpoint for results processing.
 func (u *OptimizelyUserContext) TrackEvent(eventKey string, eventTags map[string]interface{}) (err error) {
 	return u.optimizely.Track(eventKey, u.userContext, eventTags)
+}
+
+func copyUserContext(userContext entities.UserContext) entities.UserContext {
+	userContextCopy := userContext
+	userContextCopy.Attributes = make(map[string]interface{})
+	if userContext.Attributes != nil {
+		for k, v := range userContext.Attributes {
+			userContextCopy.Attributes[k] = v
+		}
+	}
+	return userContextCopy
 }

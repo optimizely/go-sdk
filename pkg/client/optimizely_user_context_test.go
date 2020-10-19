@@ -17,6 +17,7 @@
 package client
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
@@ -50,15 +51,44 @@ func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextNoAttributes()
 	assert.Equal(s.T(), map[string]interface{}{}, optimizelyUserContext.GetUserContext().Attributes)
 }
 
+func (s *OptimizelyUserContextTestSuite) TestUpatingProvidedUserContextHasNoImpactOnOptimizelyUserContext() {
+	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{"k1": "v1", "k2": false}}
+	optimizelyUserContext := NewOptimizelyUserContext(s.OptimizelyClient, userContext)
+
+	assert.Equal(s.T(), s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
+	assert.Equal(s.T(), userContext, optimizelyUserContext.GetUserContext())
+
+	userContext.Attributes["k1"] = "v2"
+	userContext.Attributes["k2"] = true
+
+	assert.Equal(s.T(), "v1", optimizelyUserContext.GetUserContext().Attributes["k1"])
+	assert.Equal(s.T(), false, optimizelyUserContext.GetUserContext().Attributes["k2"])
+
+	userContext = optimizelyUserContext.GetUserContext()
+	userContext.Attributes["k1"] = "v2"
+	userContext.Attributes["k2"] = true
+
+	assert.Equal(s.T(), "v1", optimizelyUserContext.GetUserContext().Attributes["k1"])
+	assert.Equal(s.T(), false, optimizelyUserContext.GetUserContext().Attributes["k2"])
+}
+
 func (s *OptimizelyUserContextTestSuite) TestSetAttribute() {
 	userContext := entities.UserContext{ID: "1212121"}
 	optimizelyUserContext := NewOptimizelyUserContext(s.OptimizelyClient, userContext)
 	assert.Equal(s.T(), s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 
-	optimizelyUserContext.SetAttribute("k1", "v1")
-	optimizelyUserContext.SetAttribute("k2", true)
-	optimizelyUserContext.SetAttribute("k3", 100)
-	optimizelyUserContext.SetAttribute("k4", 3.5)
+	var wg sync.WaitGroup
+	wg.Add(4)
+	addInsideGoRoutine := func(key string, value interface{}, wg *sync.WaitGroup) {
+		optimizelyUserContext.SetAttribute(key, value)
+		wg.Done()
+	}
+
+	go addInsideGoRoutine("k1", "v1", &wg)
+	go addInsideGoRoutine("k2", true, &wg)
+	go addInsideGoRoutine("k3", 100, &wg)
+	go addInsideGoRoutine("k4", 3.5, &wg)
+	wg.Wait()
 
 	assert.Equal(s.T(), userContext.ID, optimizelyUserContext.GetUserContext().ID)
 	assert.Equal(s.T(), "v1", optimizelyUserContext.GetUserContext().Attributes["k1"])

@@ -21,11 +21,11 @@ import (
 	"github.com/optimizely/go-sdk/pkg/optimizelyjson"
 )
 
-// OptimizelyDecision defines a struct that the SDK makes for a flag key and a user context
+// OptimizelyDecision defines the decision returned by decide api.
 type OptimizelyDecision struct {
 	variationKey string
 	enabled      bool
-	variables    *optimizelyjson.OptimizelyJSON
+	variables    optimizelyjson.OptimizelyJSON
 	ruleKey      string
 	flagKey      string
 	userContext  *OptimizelyUserContext
@@ -33,7 +33,7 @@ type OptimizelyDecision struct {
 }
 
 // NewOptimizelyDecision creates and returns a new instance of OptimizelyDecision
-func NewOptimizelyDecision(variationKey, ruleKey, flagKey string, enabled bool, variables *optimizelyjson.OptimizelyJSON, userContext *OptimizelyUserContext, reasons []string) OptimizelyDecision {
+func NewOptimizelyDecision(variationKey, ruleKey, flagKey string, enabled bool, variables optimizelyjson.OptimizelyJSON, userContext *OptimizelyUserContext, reasons []string) OptimizelyDecision {
 	return OptimizelyDecision{
 		variationKey: variationKey,
 		enabled:      enabled,
@@ -59,13 +59,13 @@ func (o OptimizelyDecision) GetVariationKey() string {
 	return o.variationKey
 }
 
-// GetEnabled return the boolean value indicating if the flag is enabled or not.
+// GetEnabled returns the boolean value indicating if the flag is enabled or not.
 func (o OptimizelyDecision) GetEnabled() bool {
 	return o.enabled
 }
 
 // GetVariables returns the collection of variables associated with the decision.
-func (o OptimizelyDecision) GetVariables() *optimizelyjson.OptimizelyJSON {
+func (o OptimizelyDecision) GetVariables() optimizelyjson.OptimizelyJSON {
 	return o.variables
 }
 
