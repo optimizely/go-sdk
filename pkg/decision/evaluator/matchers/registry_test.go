@@ -22,17 +22,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 func TestRegister(t *testing.T) {
-	expected := func(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, error) {
+	expected := func(entities.Condition, entities.UserContext, logging.OptimizelyLogProducer, decide.DecisionReasons) (bool, error) {
 		return false, nil
 	}
 	Register("test", expected)
 	actual := assertMatcher(t, "test")
-	matches, err := actual(entities.Condition{}, entities.UserContext{}, nil)
+	matches, err := actual(entities.Condition{}, entities.UserContext{}, nil, decide.NewDecisionReasons([]decide.Options{}))
 	assert.False(t, matches)
 	assert.NoError(t, err)
 }

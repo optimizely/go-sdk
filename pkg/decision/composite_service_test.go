@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/notification"
 )
@@ -28,6 +29,8 @@ import (
 type CompositeServiceFeatureTestSuite struct {
 	suite.Suite
 	decisionContext    FeatureDecisionContext
+	options            []decide.Options
+	reasons            decide.DecisionReasons
 	mockFeatureService *MockFeatureDecisionService
 	testUserContext    entities.UserContext
 }
@@ -39,6 +42,8 @@ func (s *CompositeServiceFeatureTestSuite) SetupTest() {
 		Feature:       &testFeat3333,
 		ProjectConfig: mockConfig,
 	}
+	s.options = []decide.Options{}
+	s.reasons = decide.NewDecisionReasons(s.options)
 	s.mockFeatureService = new(MockFeatureDecisionService)
 	s.testUserContext = entities.UserContext{
 		ID: "test_user",
@@ -53,8 +58,8 @@ func (s *CompositeServiceFeatureTestSuite) TestGetFeatureDecision() {
 	decisionService := &CompositeService{
 		compositeFeatureService: s.mockFeatureService,
 	}
-	s.mockFeatureService.On("GetDecision", s.decisionContext, s.testUserContext).Return(expectedFeatureDecision, nil)
-	featureDecision, err := decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext)
+	s.mockFeatureService.On("GetDecision", s.decisionContext, s.testUserContext, s.options, s.reasons).Return(expectedFeatureDecision, nil)
+	featureDecision, err := decisionService.GetFeatureDecision(s.decisionContext, s.testUserContext, s.options, s.reasons)
 
 	// Test assertions
 	s.Equal(expectedFeatureDecision, featureDecision)
@@ -80,6 +85,8 @@ func (s *CompositeServiceFeatureTestSuite) TestNewCompositeServiceWithCustomOpti
 type CompositeServiceExperimentTestSuite struct {
 	suite.Suite
 	decisionContext       ExperimentDecisionContext
+	options               []decide.Options
+	reasons               decide.DecisionReasons
 	mockExperimentService *MockExperimentDecisionService
 	testUserContext       entities.UserContext
 }
@@ -90,6 +97,8 @@ func (s *CompositeServiceExperimentTestSuite) SetupTest() {
 		Experiment:    &testExp1111,
 		ProjectConfig: mockConfig,
 	}
+	s.options = []decide.Options{}
+	s.reasons = decide.NewDecisionReasons(s.options)
 	s.mockExperimentService = new(MockExperimentDecisionService)
 	s.testUserContext = entities.UserContext{
 		ID: "test_user",
@@ -103,8 +112,8 @@ func (s *CompositeServiceExperimentTestSuite) TestGetExperimentDecision() {
 	decisionService := &CompositeService{
 		compositeExperimentService: s.mockExperimentService,
 	}
-	s.mockExperimentService.On("GetDecision", s.decisionContext, s.testUserContext).Return(expectedExperimentDecision, nil)
-	experimentDecision, err := decisionService.GetExperimentDecision(s.decisionContext, s.testUserContext)
+	s.mockExperimentService.On("GetDecision", s.decisionContext, s.testUserContext, s.options, s.reasons).Return(expectedExperimentDecision, nil)
+	experimentDecision, err := decisionService.GetExperimentDecision(s.decisionContext, s.testUserContext, s.options, s.reasons)
 
 	// Test assertions
 	s.Equal(expectedExperimentDecision, experimentDecision)
@@ -121,8 +130,8 @@ func (s *CompositeServiceExperimentTestSuite) TestDecisionListeners() {
 		compositeExperimentService: s.mockExperimentService,
 		notificationCenter:         notificationCenter,
 	}
-	s.mockExperimentService.On("GetDecision", s.decisionContext, s.testUserContext).Return(expectedExperimentDecision, nil)
-	decisionService.GetExperimentDecision(s.decisionContext, s.testUserContext)
+	s.mockExperimentService.On("GetDecision", s.decisionContext, s.testUserContext, s.options, s.reasons).Return(expectedExperimentDecision, nil)
+	decisionService.GetExperimentDecision(s.decisionContext, s.testUserContext, s.options, s.reasons)
 
 	var numberOfCalls = 0
 
@@ -133,13 +142,13 @@ func (s *CompositeServiceExperimentTestSuite) TestDecisionListeners() {
 	id, _ := decisionService.OnDecision(callback)
 
 	s.NotEqual(0, id)
-	decisionService.GetExperimentDecision(s.decisionContext, s.testUserContext)
+	decisionService.GetExperimentDecision(s.decisionContext, s.testUserContext, s.options, s.reasons)
 
 	s.Equal(numberOfCalls, 1)
 
 	err := decisionService.RemoveOnDecision(id)
 	s.NoError(err)
-	decisionService.GetExperimentDecision(s.decisionContext, s.testUserContext)
+	decisionService.GetExperimentDecision(s.decisionContext, s.testUserContext, s.options, s.reasons)
 	s.Equal(numberOfCalls, 1)
 }
 

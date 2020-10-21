@@ -20,6 +20,7 @@ package decision
 import (
 	"testing"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/stretchr/testify/suite"
@@ -29,11 +30,15 @@ type ExperimentWhitelistServiceTestSuite struct {
 	suite.Suite
 	mockConfig       *mockProjectConfig
 	whitelistService *ExperimentWhitelistService
+	options          []decide.Options
+	reasons          decide.DecisionReasons
 }
 
 func (s *ExperimentWhitelistServiceTestSuite) SetupTest() {
 	s.mockConfig = new(mockProjectConfig)
 	s.whitelistService = NewExperimentWhitelistService()
+	s.options = []decide.Options{}
+	s.reasons = decide.NewDecisionReasons(s.options)
 }
 
 func (s *ExperimentWhitelistServiceTestSuite) TestWhitelistIncludesDecision() {
@@ -46,7 +51,7 @@ func (s *ExperimentWhitelistServiceTestSuite) TestWhitelistIncludesDecision() {
 		ID: "test_user_1",
 	}
 
-	decision, err := s.whitelistService.GetDecision(testDecisionContext, testUserContext)
+	decision, err := s.whitelistService.GetDecision(testDecisionContext, testUserContext, s.options, s.reasons)
 
 	s.NoError(err)
 	s.NotNil(decision.Variation)
@@ -63,7 +68,7 @@ func (s *ExperimentWhitelistServiceTestSuite) TestNoUserEntryInWhitelist() {
 		ID: "test_user_3",
 	}
 
-	decision, err := s.whitelistService.GetDecision(testDecisionContext, testUserContext)
+	decision, err := s.whitelistService.GetDecision(testDecisionContext, testUserContext, s.options, s.reasons)
 
 	s.NoError(err)
 	s.Nil(decision.Variation)
@@ -81,7 +86,7 @@ func (s *ExperimentWhitelistServiceTestSuite) TestEmptyWhitelist() {
 		ID: "test_user_1",
 	}
 
-	decision, err := s.whitelistService.GetDecision(testDecisionContext, testUserContext)
+	decision, err := s.whitelistService.GetDecision(testDecisionContext, testUserContext, s.options, s.reasons)
 
 	s.NoError(err)
 	s.Nil(decision.Variation)
@@ -99,7 +104,7 @@ func (s *ExperimentWhitelistServiceTestSuite) TestInvalidVariationInUserEntry() 
 		ID: "test_user_2",
 	}
 
-	decision, err := s.whitelistService.GetDecision(testDecisionContext, testUserContext)
+	decision, err := s.whitelistService.GetDecision(testDecisionContext, testUserContext, s.options, s.reasons)
 
 	s.NoError(err)
 	s.Nil(decision.Variation)
@@ -116,7 +121,7 @@ func (s *ExperimentWhitelistServiceTestSuite) TestNoExperimentInDecisionContext(
 		ID: "test_user_1",
 	}
 
-	decision, err := s.whitelistService.GetDecision(testDecisionContext, testUserContext)
+	decision, err := s.whitelistService.GetDecision(testDecisionContext, testUserContext, s.options, s.reasons)
 
 	s.Error(err)
 	s.Nil(decision.Variation)

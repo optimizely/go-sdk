@@ -20,12 +20,13 @@ package matchers
 import (
 	"sync"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 // Matcher type is used to evaluate audience conditional primitives
-type Matcher func(entities.Condition, entities.UserContext, logging.OptimizelyLogProducer) (bool, error)
+type Matcher func(entities.Condition, entities.UserContext, logging.OptimizelyLogProducer, decide.DecisionReasons) (bool, error)
 
 const (
 	// ExactMatchType name for the "exact" matcher

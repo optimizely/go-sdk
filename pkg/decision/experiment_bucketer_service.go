@@ -20,9 +20,10 @@ package decision
 import (
 	"fmt"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/decision/bucketer"
 	"github.com/optimizely/go-sdk/pkg/decision/evaluator"
-	"github.com/optimizely/go-sdk/pkg/decision/reasons"
+	pkgReasons "github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
@@ -45,7 +46,7 @@ func NewExperimentBucketerService(logger logging.OptimizelyLogProducer) *Experim
 }
 
 // GetDecision returns the decision with the variation the user is bucketed into
-func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
+func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options []decide.Options, reasons decide.DecisionReasons) (ExperimentDecision, error) {
 	experimentDecision := ExperimentDecision{}
 	experiment := decisionContext.Experiment
 
@@ -53,15 +54,17 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	if experiment.AudienceConditionTree != nil {
 		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
 		s.logger.Debug(fmt.Sprintf(logging.EvaluatingAudiencesForExperiment.String(), experiment.Key))
-		evalResult, _ := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
-		s.logger.Debug(fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, evalResult))
+		evalResult, _ := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams, options, reasons)
+		message := reasons.AddInfof(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, evalResult)
+		s.logger.Debug(message)
 		if !evalResult {
 			s.logger.Debug(fmt.Sprintf(logging.UserNotInExperiment.String(), userContext.ID, experiment.Key))
-			experimentDecision.Reason = reasons.FailedAudienceTargeting
+			experimentDecision.Reason = pkgReasons.FailedAudienceTargeting
 			return experimentDecision, nil
 		}
 	} else {
-		s.logger.Debug(fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, true))
+		message := reasons.AddInfof(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, true)
+		s.logger.Debug(message)
 	}
 
 	var group entities.Group

@@ -20,6 +20,7 @@ package evaluator
 import (
 	"fmt"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
@@ -27,7 +28,7 @@ import (
 
 // ItemEvaluator evaluates a condition against the given user's attributes
 type ItemEvaluator interface {
-	Evaluate(interface{}, *entities.TreeParameters) (bool, error)
+	Evaluate(interface{}, *entities.TreeParameters, []decide.Options, decide.DecisionReasons) (bool, error)
 }
 
 // CustomAttributeConditionEvaluator evaluates conditions with custom attributes
@@ -41,12 +42,12 @@ func NewCustomAttributeConditionEvaluator(logger logging.OptimizelyLogProducer) 
 }
 
 // Evaluate returns true if the given user's attributes match the condition
-func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *entities.TreeParameters) (bool, error) {
+func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *entities.TreeParameters, options []decide.Options, reasons decide.DecisionReasons) (bool, error) {
 	// We should only be evaluating custom attributes
 
 	if condition.Type != customAttributeType {
-
-		c.logger.Warning(fmt.Sprintf(logging.UnknownConditionType.String(), condition.StringRepresentation))
+		message := reasons.AddInfof(logging.UnknownConditionType.String(), condition.StringRepresentation)
+		c.logger.Warning(message)
 		return false, fmt.Errorf(`unable to evaluate condition of type "%s"`, condition.Type)
 	}
 
@@ -57,11 +58,12 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 
 	matcher, ok := matchers.Get(matchType)
 	if !ok {
-		c.logger.Warning(fmt.Sprintf(logging.UnknownMatchType.String(), condition.StringRepresentation))
+		message := reasons.AddInfof(logging.UnknownMatchType.String(), condition.StringRepresentation)
+		c.logger.Warning(message)
 		return false, fmt.Errorf(`invalid Condition matcher "%s"`, condition.Match)
 	}
 
-	return matcher(condition, *condTreeParams.User, c.logger)
+	return matcher(condition, *condTreeParams.User, c.logger, reasons)
 }
 
 // AudienceConditionEvaluator evaluates conditions with audience condition
@@ -75,13 +77,12 @@ func NewAudienceConditionEvaluator(logger logging.OptimizelyLogProducer) *Audien
 }
 
 // Evaluate returns true if the given user's attributes match the condition
-func (c AudienceConditionEvaluator) Evaluate(audienceID string, condTreeParams *entities.TreeParameters) (bool, error) {
-
+func (c AudienceConditionEvaluator) Evaluate(audienceID string, condTreeParams *entities.TreeParameters, options []decide.Options, reasons decide.DecisionReasons) (bool, error) {
 	if audience, ok := condTreeParams.AudienceMap[audienceID]; ok {
 		c.logger.Debug(fmt.Sprintf(logging.AudienceEvaluationStarted.String(), audienceID))
 		condTree := audience.ConditionTree
 		conditionTreeEvaluator := NewMixedTreeEvaluator(c.logger)
-		retValue, isValid := conditionTreeEvaluator.Evaluate(condTree, condTreeParams)
+		retValue, isValid := conditionTreeEvaluator.Evaluate(condTree, condTreeParams, options, reasons)
 		if !isValid {
 			return false, fmt.Errorf(`an error occurred while evaluating nested tree for audience ID "%s"`, audienceID)
 		}

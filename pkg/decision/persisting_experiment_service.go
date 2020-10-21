@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -20,6 +20,7 @@ package decision
 import (
 	"fmt"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
@@ -30,13 +31,13 @@ import (
 type PersistingExperimentService struct {
 	experimentBucketedService ExperimentService
 	userProfileService        UserProfileService
-	logger 					  logging.OptimizelyLogProducer
+	logger                    logging.OptimizelyLogProducer
 }
 
 // NewPersistingExperimentService returns a new instance of the PersistingExperimentService
 func NewPersistingExperimentService(userProfileService UserProfileService, experimentBucketerService ExperimentService, logger logging.OptimizelyLogProducer) *PersistingExperimentService {
 	persistingExperimentService := &PersistingExperimentService{
-		logger: logger,
+		logger:                    logger,
 		experimentBucketedService: experimentBucketerService,
 		userProfileService:        userProfileService,
 	}
@@ -45,29 +46,32 @@ func NewPersistingExperimentService(userProfileService UserProfileService, exper
 }
 
 // GetDecision returns the decision with the variation the user is bucketed into
-func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (experimentDecision ExperimentDecision, err error) {
+func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options []decide.Options, reasons decide.DecisionReasons) (experimentDecision ExperimentDecision, err error) {
 	if p.userProfileService == nil {
-		return p.experimentBucketedService.GetDecision(decisionContext, userContext)
+		return p.experimentBucketedService.GetDecision(decisionContext, userContext, options, reasons)
 	}
 
 	var userProfile UserProfile
 	// check to see if there is a saved decision for the user
-	experimentDecision, userProfile = p.getSavedDecision(decisionContext, userContext)
+	experimentDecision, userProfile = p.getSavedDecision(decisionContext, userContext, options, reasons)
 	if experimentDecision.Variation != nil {
 		return experimentDecision, nil
 	}
 
-	experimentDecision, err = p.experimentBucketedService.GetDecision(decisionContext, userContext)
+	experimentDecision, err = p.experimentBucketedService.GetDecision(decisionContext, userContext, options, reasons)
 	if experimentDecision.Variation != nil {
 		// save decision if a user profile service is provided
 		userProfile.ID = userContext.ID
-		p.saveDecision(userProfile, decisionContext.Experiment, experimentDecision)
+		p.saveDecision(userProfile, decisionContext.Experiment, experimentDecision, options, reasons)
 	}
 
 	return experimentDecision, err
 }
 
-func (p PersistingExperimentService) getSavedDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, UserProfile) {
+func (p PersistingExperimentService) getSavedDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options []decide.Options, reasons decide.DecisionReasons) (ExperimentDecision, UserProfile) {
+	if p.shouldIgnoreUPS(options) {
+		return ExperimentDecision{}, UserProfile{}
+	}
 	experimentDecision := ExperimentDecision{}
 	userProfile := p.userProfileService.Lookup(userContext.ID)
 
@@ -80,16 +84,23 @@ func (p PersistingExperimentService) getSavedDecision(decisionContext Experiment
 	if savedVariationID, ok := userProfile.ExperimentBucketMap[decisionKey]; ok {
 		if variation, ok := decisionContext.Experiment.Variations[savedVariationID]; ok {
 			experimentDecision.Variation = &variation
-			p.logger.Debug(fmt.Sprintf(`User "%s" was previously bucketed into variation "%s" of experiment "%s".`, userContext.ID, variation.Key, decisionContext.Experiment.Key))
+			message := reasons.AddInfof(`Returning previously activated variation "%s" of experiment "%s" for user "%s" from user profile.`, variation.Key, decisionContext.Experiment.Key, userContext.ID)
+			p.logger.Info(message)
 		} else {
-			p.logger.Warning(fmt.Sprintf(`User "%s" was previously bucketed into variation with ID "%s" for experiment "%s", but no matching variation was found.`, userContext.ID, savedVariationID, decisionContext.Experiment.Key))
+			message := reasons.AddInfof(`User "%s" was previously bucketed into variation with ID "%s" for experiment "%s", but no matching variation was found for that user. We will re-bucket the user.`, userContext.ID, savedVariationID, decisionContext.Experiment.Key)
+			p.logger.Info(message)
 		}
 	}
 
+	message := reasons.AddInfof(`No previously activated variation of experiment "%s" for user "%s" found in user profile.`, decisionContext.Experiment.Key, userContext.ID)
+	p.logger.Info(message)
 	return experimentDecision, userProfile
 }
 
-func (p PersistingExperimentService) saveDecision(userProfile UserProfile, experiment *entities.Experiment, decision ExperimentDecision) {
+func (p PersistingExperimentService) saveDecision(userProfile UserProfile, experiment *entities.Experiment, decision ExperimentDecision, options []decide.Options, reasons decide.DecisionReasons) {
+	if p.shouldIgnoreUPS(options) {
+		return
+	}
 	if p.userProfileService != nil {
 		decisionKey := NewUserDecisionKey(experiment.ID)
 		if userProfile.ExperimentBucketMap == nil {
@@ -99,4 +110,13 @@ func (p PersistingExperimentService) saveDecision(userProfile UserProfile, exper
 		p.userProfileService.Save(userProfile)
 		p.logger.Debug(fmt.Sprintf(`Decision saved for user "%s".`, userProfile.ID))
 	}
+}
+
+func (p PersistingExperimentService) shouldIgnoreUPS(options []decide.Options) bool {
+	for option := range options {
+		if option == int(decide.IgnoreUserProfileService) {
+			return true
+		}
+	}
+	return false
 }

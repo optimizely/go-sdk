@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/stretchr/testify/suite"
@@ -29,11 +30,15 @@ type ConditionTestSuite struct {
 	suite.Suite
 	mockLogger         *MockLogger
 	conditionEvaluator *CustomAttributeConditionEvaluator
+	options            []decide.Options
+	reasons            decide.DecisionReasons
 }
 
 func (s *ConditionTestSuite) SetupTest() {
 	s.mockLogger = new(MockLogger)
 	s.conditionEvaluator = NewCustomAttributeConditionEvaluator(s.mockLogger)
+	s.options = []decide.Options{}
+	s.reasons = decide.NewDecisionReasons(s.options)
 }
 
 func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluator() {
@@ -52,7 +57,7 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluator() {
 	}
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
-	result, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams)
+	result, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams, s.options, s.reasons)
 	s.Equal(result, true)
 
 	// Test condition fails
@@ -61,7 +66,7 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluator() {
 			"string_foo": "not_foo",
 		},
 	}
-	result, _ = s.conditionEvaluator.Evaluate(condition, condTreeParams)
+	result, _ = s.conditionEvaluator.Evaluate(condition, condTreeParams, s.options, s.reasons)
 	s.Equal(result, false)
 }
 
@@ -80,7 +85,7 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorWithoutMatchTy
 	}
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
-	result, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams)
+	result, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams, s.options, s.reasons)
 	s.Equal(result, true)
 
 	// Test condition fails
@@ -89,7 +94,7 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorWithoutMatchTy
 			"string_foo": "not_foo",
 		},
 	}
-	result, _ = s.conditionEvaluator.Evaluate(condition, condTreeParams)
+	result, _ = s.conditionEvaluator.Evaluate(condition, condTreeParams, s.options, s.reasons)
 	s.Equal(result, false)
 }
 
@@ -110,7 +115,7 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorWithInvalidMat
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.UnknownMatchType.String(), ""))
-	result, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams)
+	result, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams, s.options, s.reasons)
 	s.Equal(result, false)
 	s.mockLogger.AssertExpectations(s.T())
 }
@@ -131,12 +136,12 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorWithUnknownTyp
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.UnknownConditionType.String(), ""))
-	result, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams)
+	result, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams, s.options, s.reasons)
 	s.Equal(result, false)
 	s.mockLogger.AssertExpectations(s.T())
 }
 
-func (s *ConditionTestSuite)  TestCustomAttributeConditionEvaluatorForGeSemver() {
+func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorForGeSemver() {
 	conditionEvaluator := CustomAttributeConditionEvaluator{}
 	condition := entities.Condition{
 		Match: "semver_ge",
@@ -153,11 +158,11 @@ func (s *ConditionTestSuite)  TestCustomAttributeConditionEvaluatorForGeSemver()
 	}
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
-	result, _ := conditionEvaluator.Evaluate(condition, condTreeParams)
-	s.Equal( result, true)
+	result, _ := conditionEvaluator.Evaluate(condition, condTreeParams, s.options, s.reasons)
+	s.Equal(result, true)
 }
 
-func (s *ConditionTestSuite)  TestCustomAttributeConditionEvaluatorForGeSemverBeta() {
+func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorForGeSemverBeta() {
 	conditionEvaluator := CustomAttributeConditionEvaluator{}
 	condition := entities.Condition{
 		Match: "semver_ge",
@@ -174,11 +179,11 @@ func (s *ConditionTestSuite)  TestCustomAttributeConditionEvaluatorForGeSemverBe
 	}
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
-	result, _ := conditionEvaluator.Evaluate(condition, condTreeParams)
+	result, _ := conditionEvaluator.Evaluate(condition, condTreeParams, s.options, s.reasons)
 	s.Equal(true, result)
 }
 
-func (s *ConditionTestSuite)  TestCustomAttributeConditionEvaluatorForGeSemverInvalid() {
+func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorForGeSemverInvalid() {
 	conditionEvaluator := CustomAttributeConditionEvaluator{}
 	condition := entities.Condition{
 		Match: "semver_ge",
@@ -195,7 +200,7 @@ func (s *ConditionTestSuite)  TestCustomAttributeConditionEvaluatorForGeSemverIn
 	}
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
-	_, err := conditionEvaluator.Evaluate(condition, condTreeParams)
+	_, err := conditionEvaluator.Evaluate(condition, condTreeParams, s.options, s.reasons)
 	s.NotNil(err)
 }
 

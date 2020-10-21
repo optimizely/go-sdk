@@ -20,23 +20,25 @@ package matchers
 import (
 	"fmt"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers/utils"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 // GtMatcher matches against the "gt" match type
-func GtMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, error) {
-	res, err := compare(condition, user, logger)
+func GtMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, reasons decide.DecisionReasons) (bool, error) {
+	res, err := compare(condition, user, logger, reasons)
 	if err != nil {
 		return false, err
 	}
 	return res > 0, nil
 }
 
-func compare(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (int, error) {
+func compare(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, reasons decide.DecisionReasons) (int, error) {
 	if !user.CheckAttributeExists(condition.Name) {
-		logger.Debug(fmt.Sprintf(logging.NullUserAttribute.String(), condition.StringRepresentation, condition.Name))
+		message := reasons.AddInfof(logging.NullUserAttribute.String(), condition.StringRepresentation, condition.Name)
+		logger.Debug(message)
 		return 0, fmt.Errorf(`no attribute named "%s"`, condition.Name)
 	}
 
@@ -44,7 +46,8 @@ func compare(condition entities.Condition, user entities.UserContext, logger log
 		attributeValue, err := user.GetFloatAttribute(condition.Name)
 		if err != nil {
 			val, _ := user.GetAttribute(condition.Name)
-			logger.Warning(fmt.Sprintf(logging.InvalidAttributeValueType.String(), condition.StringRepresentation, val, condition.Name))
+			message := reasons.AddInfof(logging.InvalidAttributeValueType.String(), condition.StringRepresentation, val, condition.Name)
+			logger.Warning(message)
 			return 0, err
 		}
 		if floatValue < attributeValue {
@@ -55,6 +58,7 @@ func compare(condition entities.Condition, user entities.UserContext, logger log
 		return 0, nil
 	}
 
-	logger.Warning(fmt.Sprintf(logging.UnsupportedConditionValue.String(), condition.StringRepresentation))
+	message := reasons.AddInfof(logging.UnsupportedConditionValue.String(), condition.StringRepresentation)
+	logger.Warning(message)
 	return 0, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", condition.Name)
 }

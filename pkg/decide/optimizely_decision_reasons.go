@@ -14,29 +14,50 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package matchers //
-package matchers
+// Package decide //
+package decide
 
-import (
-	"fmt"
+import "fmt"
 
-	"github.com/optimizely/go-sdk/pkg/decide"
-	"github.com/optimizely/go-sdk/pkg/logging"
+// DecisionReasons defines the reasons for which the decision was made.
+type DecisionReasons struct {
+	errors, logs   []string
+	includeReasons bool
+}
 
-	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers/utils"
-	"github.com/optimizely/go-sdk/pkg/entities"
-)
-
-// GeMatcher matches against the "ge" match type
-func GeMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, reasons decide.DecisionReasons) (bool, error) {
-
-	if floatValue, ok := utils.ToFloat(condition.Value); ok {
-		attributeValue, err := user.GetFloatAttribute(condition.Name)
-		if err != nil {
-			return false, err
+// NewDecisionReasons returns a new instance of OptimizelyDecisionReasons.
+func NewDecisionReasons(options []Options) DecisionReasons {
+	includeReasons := false
+	for option := range options {
+		if option == int(IncludeReasons) {
+			includeReasons = true
+			break
 		}
-		return floatValue <= attributeValue, nil
 	}
+	return DecisionReasons{
+		errors:         []string{},
+		logs:           []string{},
+		includeReasons: includeReasons,
+	}
+}
 
-	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", condition.Name)
+// AddError appends given message to the error list.
+func (o *DecisionReasons) AddError(message string) {
+	o.errors = append(o.errors, message)
+}
+
+// AddInfof appends given info message to the info list.
+func (o *DecisionReasons) AddInfof(format string, arguments ...interface{}) string {
+	message := fmt.Sprintf(format, arguments...)
+	o.logs = append(o.errors, message)
+	return message
+}
+
+// ToReport returns reasons to be reported.
+func (o *DecisionReasons) ToReport() []string {
+	reasons := o.errors
+	if o.includeReasons {
+		reasons = append(reasons, o.logs...)
+	}
+	return reasons
 }

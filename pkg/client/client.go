@@ -49,9 +49,11 @@ type OptimizelyClient struct {
 	defaultDecideOptions []decide.Options
 }
 
+// Decide API
+
 // CreateUserContext creates a context of the user for which decision APIs will be called.
 // A user context will be created successfully even when the SDK is not fully configured yet.
-func (o *OptimizelyClient) CreateUserContext(userContext entities.UserContext) *OptimizelyUserContext {
+func (o *OptimizelyClient) CreateUserContext(userContext entities.UserContext) OptimizelyUserContext {
 	return NewOptimizelyUserContext(o, userContext)
 }
 
@@ -657,7 +659,8 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 	}
 
 	decisionContext.Variable = variable
-	featureDecision, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext)
+	options := []decide.Options{}
+	featureDecision, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext, options, decide.NewDecisionReasons(options))
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature "%s": %s`, featureKey, err))
 		return decisionContext, featureDecision, nil
@@ -687,7 +690,8 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 		ProjectConfig: projectConfig,
 	}
 
-	experimentDecision, err = o.DecisionService.GetExperimentDecision(decisionContext, userContext)
+	options := []decide.Options{}
+	experimentDecision, err = o.DecisionService.GetExperimentDecision(decisionContext, userContext, options, decide.NewDecisionReasons(options))
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for experiment "%s": %s`, experimentKey, err))
 		return decisionContext, experimentDecision, nil

@@ -14,29 +14,43 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package matchers //
-package matchers
+// Package decision //
+package decision
 
 import (
-	"fmt"
-
-	"github.com/optimizely/go-sdk/pkg/decide"
-	"github.com/optimizely/go-sdk/pkg/logging"
-
-	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers/utils"
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/notification"
 )
 
-// GeMatcher matches against the "ge" match type
-func GeMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, reasons decide.DecisionReasons) (bool, error) {
+// FlagNotification constructs default flag notification
+func FlagNotification(flagKey, variationKey, ruleKey string, enabled, decisionEventDispatched bool, userContext *entities.UserContext, variables map[string]interface{}, reasons []string) *notification.DecisionNotification {
 
-	if floatValue, ok := utils.ToFloat(condition.Value); ok {
-		attributeValue, err := user.GetFloatAttribute(condition.Name)
-		if err != nil {
-			return false, err
-		}
-		return floatValue <= attributeValue, nil
+	if flagKey == "" {
+		return nil
 	}
 
-	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", condition.Name)
+	decisionInfo := map[string]interface{}{
+		"flagKey":                 flagKey,
+		"enabled":                 enabled,
+		"variables":               variables,
+		"variationKey":            variationKey,
+		"ruleKey":                 ruleKey,
+		"reasons":                 reasons,
+		"decisionEventDispatched": decisionEventDispatched,
+	}
+
+	decisionInfo["flagKey"] = flagKey
+	decisionInfo["enabled"] = enabled
+	decisionInfo["variables"] = variables
+	decisionInfo["variationKey"] = variationKey
+	decisionInfo["ruleKey"] = ruleKey
+	decisionInfo["reasons"] = reasons
+	decisionInfo["decisionEventDispatched"] = decisionEventDispatched
+
+	decisionNotification := &notification.DecisionNotification{
+		DecisionInfo: decisionInfo,
+		Type:         notification.Flag,
+		UserContext:  *userContext,
+	}
+	return decisionNotification
 }

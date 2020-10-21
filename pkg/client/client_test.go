@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/config"
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
@@ -301,7 +302,7 @@ func TestGetFeatureVariableBool(t *testing.T) {
 
 		expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 		mockDecisionService := new(MockDecisionService)
-		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 		client := OptimizelyClient{
 			ConfigManager:   mockConfigManager,
@@ -379,7 +380,7 @@ func TestGetFeatureVariableBoolWithNotification(t *testing.T) {
 
 		expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 		mockDecisionService := new(MockDecisionService)
-		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 		notificationCenter := notification.NewNotificationCenter()
 		client := OptimizelyClient{
@@ -486,7 +487,7 @@ func TestGetFeatureVariableDouble(t *testing.T) {
 
 		expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 		mockDecisionService := new(MockDecisionService)
-		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 		client := OptimizelyClient{
 			ConfigManager:   mockConfigManager,
@@ -564,7 +565,7 @@ func TestGetFeatureVariableDoubleWithNotification(t *testing.T) {
 
 		expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 		mockDecisionService := new(MockDecisionService)
-		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 		notificationCenter := notification.NewNotificationCenter()
 		client := OptimizelyClient{
@@ -671,7 +672,7 @@ func TestGetFeatureVariableInteger(t *testing.T) {
 
 		expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 		mockDecisionService := new(MockDecisionService)
-		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 		client := OptimizelyClient{
 			ConfigManager:   mockConfigManager,
@@ -749,7 +750,7 @@ func TestGetFeatureVariableIntegerWithNotification(t *testing.T) {
 
 		expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 		mockDecisionService := new(MockDecisionService)
-		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 		notificationCenter := notification.NewNotificationCenter()
 		client := OptimizelyClient{
@@ -854,7 +855,7 @@ func TestGetFeatureVariableSting(t *testing.T) {
 
 		expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 		mockDecisionService := new(MockDecisionService)
-		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 		client := OptimizelyClient{
 			ConfigManager:   mockConfigManager,
@@ -930,7 +931,7 @@ func TestGetFeatureVariableStringWithNotification(t *testing.T) {
 
 		expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 		mockDecisionService := new(MockDecisionService)
-		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 		notificationCenter := notification.NewNotificationCenter()
 		client := OptimizelyClient{
@@ -1037,7 +1038,7 @@ func TestGetFeatureVariableJSON(t *testing.T) {
 
 		expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 		mockDecisionService := new(MockDecisionService)
-		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 		client := OptimizelyClient{
 			ConfigManager:   mockConfigManager,
@@ -1121,7 +1122,7 @@ func TestGetFeatureVariableJSONWithNotification(t *testing.T) {
 
 		expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 		mockDecisionService := new(MockDecisionService)
-		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+		mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 		notificationCenter := notification.NewNotificationCenter()
 		client := OptimizelyClient{
@@ -1270,7 +1271,7 @@ func TestGetFeatureDecisionValid(t *testing.T) {
 
 	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 	client := OptimizelyClient{
 		ConfigManager:   mockConfigManager,
@@ -1316,7 +1317,7 @@ func TestGetFeatureDecisionErrProjectConfig(t *testing.T) {
 
 	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 	client := OptimizelyClient{
 		ConfigManager:   mockConfigManager,
@@ -1360,7 +1361,7 @@ func TestGetFeatureDecisionPanicProjectConfig(t *testing.T) {
 	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 	mockDecisionService := new(MockDecisionService)
 
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 	client := OptimizelyClient{
 		ConfigManager:   &PanickingConfigManager{},
@@ -1441,7 +1442,7 @@ func TestGetFeatureDecisionErrFeatureDecision(t *testing.T) {
 
 	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, errors.New("error feature"))
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, errors.New("error feature"))
 
 	client := OptimizelyClient{
 		ConfigManager:   mockConfigManager,
@@ -1496,7 +1497,7 @@ func TestGetAllFeatureVariablesWithDecision(t *testing.T) {
 
 	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 	client := OptimizelyClient{
 		ConfigManager:   mockConfigManager,
@@ -1553,7 +1554,7 @@ func TestGetAllFeatureVariablesWithDecisionWithNotification(t *testing.T) {
 
 	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 	notificationCenter := notification.NewNotificationCenter()
 	client := OptimizelyClient{
@@ -1615,7 +1616,7 @@ func TestGetAllFeatureVariablesWithDecisionWithError(t *testing.T) {
 
 	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, errors.New(""))
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, errors.New(""))
 
 	client := OptimizelyClient{
 		ConfigManager:   mockConfigManager,
@@ -1695,7 +1696,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithNotification(t *testing.T) {
 
 	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 	notificationCenter := notification.NewNotificationCenter()
 	client := OptimizelyClient{
@@ -1766,7 +1767,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithTrackingDisabled(t *testing.T) {
 
 	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 	client := OptimizelyClient{
 		ConfigManager:   mockConfigManager,
@@ -1826,7 +1827,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithError(t *testing.T) {
 
 	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, errors.New(""))
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, errors.New(""))
 
 	client := OptimizelyClient{
 		ConfigManager:   mockConfigManager,
@@ -1866,7 +1867,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithFeatureTestAndTrackingEnabled(t *te
 		Source:     decision.FeatureTest,
 	}
 
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 	client := OptimizelyClient{
 		ConfigManager:   mockConfigManager,
@@ -1927,7 +1928,7 @@ func TestGetAllFeatureVariables(t *testing.T) {
 
 	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 	client := OptimizelyClient{
 		ConfigManager:   mockConfigManager,
@@ -1935,10 +1936,10 @@ func TestGetAllFeatureVariables(t *testing.T) {
 		logger:          logging.GetLogger("", ""),
 	}
 
-	optlyJson, err := client.GetAllFeatureVariables(testFeatureKey, testUserContext)
+	optlyJSON, err := client.GetAllFeatureVariables(testFeatureKey, testUserContext)
 	assert.NoError(t, err)
-	assert.NotNil(t, optlyJson)
-	variationMap := optlyJson.ToMap()
+	assert.NotNil(t, optlyJSON)
+	variationMap := optlyJSON.ToMap()
 	assert.NoError(t, err)
 
 	for _, v := range variables {
@@ -2043,7 +2044,7 @@ func (s *ClientTestSuiteAB) TestActivate() {
 	expectedExperimentDecision := decision.ExperimentDecision{
 		Variation: &expectedVariation,
 	}
-	s.mockDecisionService.On("GetExperimentDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision, nil)
+	s.mockDecisionService.On("GetExperimentDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedExperimentDecision, nil)
 	s.mockEventProcessor.On("ProcessEvent", mock.AnythingOfType("event.UserEvent"))
 
 	testClient := OptimizelyClient{
@@ -2112,7 +2113,7 @@ func (s *ClientTestSuiteAB) TestGetVariation() {
 	expectedExperimentDecision := decision.ExperimentDecision{
 		Variation: &expectedVariation,
 	}
-	s.mockDecisionService.On("GetExperimentDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision, nil)
+	s.mockDecisionService.On("GetExperimentDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedExperimentDecision, nil)
 
 	testClient := OptimizelyClient{
 		ConfigManager:   s.mockConfigManager,
@@ -2142,7 +2143,7 @@ func (s *ClientTestSuiteAB) TestGetVariationWithDecisionError() {
 	expectedExperimentDecision := decision.ExperimentDecision{
 		Variation: &expectedVariation,
 	}
-	s.mockDecisionService.On("GetExperimentDecision", testDecisionContext, testUserContext).Return(expectedExperimentDecision, errors.New(""))
+	s.mockDecisionService.On("GetExperimentDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedExperimentDecision, errors.New(""))
 
 	testClient := OptimizelyClient{
 		ConfigManager:   s.mockConfigManager,
@@ -2210,7 +2211,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabled() {
 		Source:     decision.FeatureTest,
 	}
 
-	s.mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+	s.mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 	client := OptimizelyClient{
 		ConfigManager:   s.mockConfigManager,
@@ -2247,7 +2248,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledWithNotification() {
 		Source:     decision.FeatureTest,
 	}
 
-	s.mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, nil)
+	s.mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, nil)
 
 	notificationCenter := notification.NewNotificationCenter()
 	client := OptimizelyClient{
@@ -2301,7 +2302,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledWithDecisionError() {
 		Source:     decision.FeatureTest,
 	}
 
-	s.mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext).Return(expectedFeatureDecision, errors.New(""))
+	s.mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecision, errors.New(""))
 	s.mockEventProcessor.On("ProcessEvent", mock.AnythingOfType("event.UserEvent"))
 
 	client := OptimizelyClient{
@@ -2410,8 +2411,8 @@ func (s *ClientTestSuiteFM) TestGetEnabledFeatures() {
 		Variation:  &testVariationDisabled,
 	}
 
-	s.mockDecisionService.On("GetFeatureDecision", testDecisionContextEnabled, testUserContext).Return(expectedFeatureDecisionEnabled, nil)
-	s.mockDecisionService.On("GetFeatureDecision", testDecisionContextDisabled, testUserContext).Return(expectedFeatureDecisionDisabled, nil)
+	s.mockDecisionService.On("GetFeatureDecision", testDecisionContextEnabled, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecisionEnabled, nil)
+	s.mockDecisionService.On("GetFeatureDecision", testDecisionContextDisabled, testUserContext, []decide.Options{}, decide.NewDecisionReasons([]decide.Options{})).Return(expectedFeatureDecisionDisabled, nil)
 
 	client := OptimizelyClient{
 		ConfigManager:   s.mockConfigManager,

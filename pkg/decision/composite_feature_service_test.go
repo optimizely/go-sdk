@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -20,6 +20,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
@@ -32,6 +33,8 @@ type CompositeFeatureServiceTestSuite struct {
 	mockFeatureService         *MockFeatureDecisionService
 	mockFeatureService2        *MockFeatureDecisionService
 	testFeatureDecisionContext FeatureDecisionContext
+	options                    []decide.Options
+	reasons                    decide.DecisionReasons
 }
 
 func (s *CompositeFeatureServiceTestSuite) SetupTest() {
@@ -39,6 +42,8 @@ func (s *CompositeFeatureServiceTestSuite) SetupTest() {
 
 	s.mockFeatureService = new(MockFeatureDecisionService)
 	s.mockFeatureService2 = new(MockFeatureDecisionService)
+	s.options = []decide.Options{}
+	s.reasons = decide.NewDecisionReasons(s.options)
 
 	// Setup test data
 	s.testFeatureDecisionContext = FeatureDecisionContext{
@@ -59,16 +64,16 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecision() {
 		Experiment: testExp1113,
 		Variation:  &testExp1113Var2223,
 	}
-	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext).Return(expectedDecision, nil)
+	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options, s.reasons).Return(expectedDecision, nil)
 
 	compositeFeatureService := &CompositeFeatureService{
 		featureServices: []FeatureService{
 			s.mockFeatureService,
 			s.mockFeatureService2,
 		},
-		logger:logging.GetLogger("sdkKey", "CompositeFeatureService"),
+		logger: logging.GetLogger("sdkKey", "CompositeFeatureService"),
 	}
-	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext)
+	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options, s.reasons)
 	s.Equal(expectedDecision, decision)
 	s.NoError(err)
 	s.mockFeatureService.AssertExpectations(s.T())
@@ -82,21 +87,21 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionFallthrough() {
 	}
 
 	nilDecision := FeatureDecision{}
-	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext).Return(nilDecision, nil)
+	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options, s.reasons).Return(nilDecision, nil)
 
 	expectedDecision := FeatureDecision{
 		Variation: &testExp1113Var2223,
 	}
-	s.mockFeatureService2.On("GetDecision", s.testFeatureDecisionContext, testUserContext).Return(expectedDecision, nil)
+	s.mockFeatureService2.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options, s.reasons).Return(expectedDecision, nil)
 
 	compositeFeatureService := &CompositeFeatureService{
 		featureServices: []FeatureService{
 			s.mockFeatureService,
 			s.mockFeatureService2,
 		},
-		logger:logging.GetLogger("sdkKey", "CompositeFeatureService"),
+		logger: logging.GetLogger("sdkKey", "CompositeFeatureService"),
 	}
-	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext)
+	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options, s.reasons)
 	s.Equal(expectedDecision, decision)
 	s.NoError(err)
 	s.mockFeatureService.AssertExpectations(s.T())
@@ -112,22 +117,21 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsError() {
 	shouldBeIgnoredDecision := FeatureDecision{
 		Variation: &testExp1113Var2223,
 	}
-	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext).Return(shouldBeIgnoredDecision, errors.New("Error making decision"))
+	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options, s.reasons).Return(shouldBeIgnoredDecision, errors.New("Error making decision"))
 
 	expectedDecision := FeatureDecision{
 		Variation: &testExp1113Var2224,
 	}
-	s.mockFeatureService2.On("GetDecision", s.testFeatureDecisionContext, testUserContext).Return(expectedDecision, nil)
+	s.mockFeatureService2.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options, s.reasons).Return(expectedDecision, nil)
 
 	compositeFeatureService := &CompositeFeatureService{
 		featureServices: []FeatureService{
 			s.mockFeatureService,
 			s.mockFeatureService2,
 		},
-		logger:logging.GetLogger("sdkKey", "CompositeFeatureService"),
-
+		logger: logging.GetLogger("sdkKey", "CompositeFeatureService"),
 	}
-	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext)
+	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options, s.reasons)
 	s.Equal(expectedDecision, decision)
 	s.NoError(err)
 	s.mockFeatureService.AssertExpectations(s.T())
@@ -143,18 +147,17 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsLastDecisionWit
 	expectedDecision := FeatureDecision{
 		Variation: &testExp1113Var2223,
 	}
-	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext).Return(expectedDecision, errors.New("Error making decision"))
-
-	s.mockFeatureService2.On("GetDecision", s.testFeatureDecisionContext, testUserContext).Return(expectedDecision, errors.New("test error"))
+	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options, s.reasons).Return(expectedDecision, errors.New("Error making decision"))
+	s.mockFeatureService2.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options, s.reasons).Return(expectedDecision, errors.New("test error"))
 
 	compositeFeatureService := &CompositeFeatureService{
 		featureServices: []FeatureService{
 			s.mockFeatureService,
 			s.mockFeatureService2,
 		},
-		logger:logging.GetLogger("sdkKey", "CompositeFeatureService"),
+		logger: logging.GetLogger("sdkKey", "CompositeFeatureService"),
 	}
-	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext)
+	decision, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options, s.reasons)
 	s.Equal(expectedDecision, decision)
 	s.Error(err)
 	s.Equal(err.Error(), "test error")

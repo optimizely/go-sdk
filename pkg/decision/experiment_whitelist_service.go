@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -20,7 +20,8 @@ package decision
 import (
 	"errors"
 
-	"github.com/optimizely/go-sdk/pkg/decision/reasons"
+	"github.com/optimizely/go-sdk/pkg/decide"
+	pkgReasons "github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
@@ -34,7 +35,7 @@ func NewExperimentWhitelistService() *ExperimentWhitelistService {
 }
 
 // GetDecision returns a decision with a variation when a variation assignment is found in the experiment whitelist for the given user and experiment
-func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
+func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options []decide.Options, reasons decide.DecisionReasons) (ExperimentDecision, error) {
 	decision := ExperimentDecision{}
 
 	if decisionContext.Experiment == nil {
@@ -43,18 +44,20 @@ func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisi
 
 	variationKey, ok := decisionContext.Experiment.Whitelist[userContext.ID]
 	if !ok {
-		decision.Reason = reasons.NoWhitelistVariationAssignment
+		decision.Reason = pkgReasons.NoWhitelistVariationAssignment
 		return decision, nil
 	}
 
 	if id, ok := decisionContext.Experiment.VariationKeyToIDMap[variationKey]; ok {
 		if variation, ok := decisionContext.Experiment.Variations[id]; ok {
-			decision.Reason = reasons.WhitelistVariationAssignmentFound
+			decision.Reason = pkgReasons.WhitelistVariationAssignmentFound
 			decision.Variation = &variation
+			reasons.AddInfof(`User "%s" is forced in variation "%s".`, userContext.ID, variationKey)
 			return decision, nil
 		}
+		reasons.AddInfof(`Variation \"%s\" is not in the datafile. Not activating user \"%s\".`, variationKey, userContext.ID)
 	}
 
-	decision.Reason = reasons.InvalidWhitelistVariationAssignment
+	decision.Reason = pkgReasons.InvalidWhitelistVariationAssignment
 	return decision, nil
 }

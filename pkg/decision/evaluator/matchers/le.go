@@ -19,6 +19,8 @@ package matchers
 
 import (
 	"fmt"
+
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/logging"
 
 	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers/utils"
@@ -26,7 +28,7 @@ import (
 )
 
 // LeMatcher matches against the "le" match type
-func LeMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, error) {
+func LeMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, reasons decide.DecisionReasons) (bool, error) {
 
 	if floatValue, ok := utils.ToFloat(condition.Value); ok {
 		attributeValue, err := user.GetFloatAttribute(condition.Name)
