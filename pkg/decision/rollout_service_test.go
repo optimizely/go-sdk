@@ -206,7 +206,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionWhenFallbackBucketingFails() {
 		logger:                    s.mockLogger,
 	}
 	expectedFeatureDecision := FeatureDecision{
-		Experiment: testExp1118,
+		Experiment: entities.Experiment{}, // should not populate good experiment on nil variation
 		Source:     Rollout,
 		Decision:   Decision{Reason: reasons.FailedRolloutBucketing},
 	}
