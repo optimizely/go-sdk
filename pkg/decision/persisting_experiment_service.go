@@ -97,7 +97,7 @@ func (p PersistingExperimentService) getSavedDecision(decisionContext Experiment
 	return experimentDecision, userProfile
 }
 
-func (p PersistingExperimentService) saveDecision(userProfile UserProfile, experiment *entities.Experiment, decision ExperimentDecision, options []decide.Options, reasons decide.DecisionReasons) {
+func (p PersistingExperimentService) saveDecision(userProfile UserProfile, experiment *entities.Experiment, decision ExperimentDecision, options []decide.Options, _ decide.DecisionReasons) {
 	if p.shouldIgnoreUPS(options) {
 		return
 	}

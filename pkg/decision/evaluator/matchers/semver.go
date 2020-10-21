@@ -216,7 +216,7 @@ func SemverEvaluator(cond entities.Condition, user entities.UserContext) (int, e
 }
 
 // SemverEqMatcher returns true if the user's semver attribute is equal to the semver condition value
-func SemverEqMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, reasons decide.DecisionReasons) (bool, error) {
+func SemverEqMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, _ decide.DecisionReasons) (bool, error) {
 	comparison, err := SemverEvaluator(condition, user)
 	if err != nil {
 		return false, err
@@ -225,7 +225,7 @@ func SemverEqMatcher(condition entities.Condition, user entities.UserContext, lo
 }
 
 // SemverGeMatcher returns true if the user's semver attribute is greater or equal to the semver condition value
-func SemverGeMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, reasons decide.DecisionReasons) (bool, error) {
+func SemverGeMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, _ decide.DecisionReasons) (bool, error) {
 	comparison, err := SemverEvaluator(condition, user)
 	if err != nil {
 		return false, err
@@ -234,7 +234,7 @@ func SemverGeMatcher(condition entities.Condition, user entities.UserContext, lo
 }
 
 // SemverGtMatcher returns true if the user's semver attribute is greater than the semver condition value
-func SemverGtMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, reasons decide.DecisionReasons) (bool, error) {
+func SemverGtMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, _ decide.DecisionReasons) (bool, error) {
 	comparison, err := SemverEvaluator(condition, user)
 	if err != nil {
 		return false, err

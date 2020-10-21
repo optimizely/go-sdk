@@ -49,7 +49,7 @@ func (o *DecisionReasons) AddError(message string) {
 // AddInfof appends given info message to the info list.
 func (o *DecisionReasons) AddInfof(format string, arguments ...interface{}) string {
 	message := fmt.Sprintf(format, arguments...)
-	o.logs = append(o.errors, message)
+	o.logs = append(o.logs, message)
 	return message
 }
 
