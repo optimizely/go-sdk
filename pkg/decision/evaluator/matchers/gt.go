@@ -35,7 +35,7 @@ func GtMatcher(condition entities.Condition, user entities.UserContext, logger l
 	return res > 0, nil
 }
 
-func compare(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, reasons decide.DecisionReasons) (int, error) {
+func compare(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, _ decide.DecisionReasons) (int, error) {
 	if !user.CheckAttributeExists(condition.Name) {
 		logger.Debug(fmt.Sprintf(logging.NullUserAttribute.String(), condition.StringRepresentation, condition.Name))
 		return 0, fmt.Errorf(`no attribute named "%s"`, condition.Name)

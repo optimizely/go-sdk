@@ -68,7 +68,7 @@ func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecis
 	return experimentDecision, err
 }
 
-func (p PersistingExperimentService) getSavedDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options []decide.Options, reasons decide.DecisionReasons) (ExperimentDecision, UserProfile) {
+func (p PersistingExperimentService) getSavedDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options []decide.Options, _ decide.DecisionReasons) (ExperimentDecision, UserProfile) {
 	if p.shouldIgnoreUPS(options) {
 		return ExperimentDecision{}, UserProfile{}
 	}
