@@ -19,6 +19,7 @@ package decision
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/optimizely/go-sdk/pkg/decide"
@@ -107,8 +108,7 @@ func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisio
 		if variation, ok := decisionContext.Experiment.Variations[variationID]; ok {
 			decision.Variation = &variation
 			decision.Reason = pkgReasons.OverrideVariationAssignmentFound
-			message := reasons.AddInfof(`Override variation %v found for user %v`, variationKey, userContext.ID)
-			s.logger.Debug(message)
+			s.logger.Debug(fmt.Sprintf("Override variation %v found for user %v", variationKey, userContext.ID))
 			return decision, nil
 		}
 	}

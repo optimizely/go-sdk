@@ -17,15 +17,19 @@
 // Package decide //
 package decide
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 // DecisionReasons defines the reasons for which the decision was made.
 type DecisionReasons struct {
 	errors, logs   []string
 	includeReasons bool
+	mutex          *sync.RWMutex
 }
 
-// NewDecisionReasons returns a new instance of OptimizelyDecisionReasons.
+// NewDecisionReasons returns a new instance of DecisionReasons.
 func NewDecisionReasons(options []Options) DecisionReasons {
 	includeReasons := false
 	for option := range options {
@@ -38,23 +42,37 @@ func NewDecisionReasons(options []Options) DecisionReasons {
 		errors:         []string{},
 		logs:           []string{},
 		includeReasons: includeReasons,
+		mutex:          new(sync.RWMutex),
 	}
 }
 
 // AddError appends given message to the error list.
 func (o *DecisionReasons) AddError(message string) {
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
 	o.errors = append(o.errors, message)
 }
 
-// AddInfof appends given info message to the info list.
+// AddInfo appends given message to the info list.
+func (o *DecisionReasons) AddInfo(message string) {
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	o.logs = append(o.logs, message)
+}
+
+// AddInfof appends given info message to the info list after formatting.
 func (o *DecisionReasons) AddInfof(format string, arguments ...interface{}) string {
 	message := fmt.Sprintf(format, arguments...)
-	o.logs = append(o.logs, message)
+	if o.includeReasons {
+		o.AddInfo(message)
+	}
 	return message
 }
 
 // ToReport returns reasons to be reported.
-func (o *DecisionReasons) ToReport() []string {
+func (o DecisionReasons) ToReport() []string {
+	o.mutex.RLock()
+	defer o.mutex.RUnlock()
 	reasons := o.errors
 	if o.includeReasons {
 		reasons = append(reasons, o.logs...)

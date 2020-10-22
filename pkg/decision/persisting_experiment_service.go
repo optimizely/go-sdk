@@ -84,16 +84,12 @@ func (p PersistingExperimentService) getSavedDecision(decisionContext Experiment
 	if savedVariationID, ok := userProfile.ExperimentBucketMap[decisionKey]; ok {
 		if variation, ok := decisionContext.Experiment.Variations[savedVariationID]; ok {
 			experimentDecision.Variation = &variation
-			message := reasons.AddInfof(`Returning previously activated variation "%s" of experiment "%s" for user "%s" from user profile.`, variation.Key, decisionContext.Experiment.Key, userContext.ID)
-			p.logger.Info(message)
+			p.logger.Debug(fmt.Sprintf(`User "%s" was previously bucketed into variation "%s" of experiment "%s".`, userContext.ID, variation.Key, decisionContext.Experiment.Key))
 		} else {
-			message := reasons.AddInfof(`User "%s" was previously bucketed into variation with ID "%s" for experiment "%s", but no matching variation was found for that user. We will re-bucket the user.`, userContext.ID, savedVariationID, decisionContext.Experiment.Key)
-			p.logger.Info(message)
+			p.logger.Warning(fmt.Sprintf(`User "%s" was previously bucketed into variation with ID "%s" for experiment "%s", but no matching variation was found.`, userContext.ID, savedVariationID, decisionContext.Experiment.Key))
 		}
 	}
 
-	message := reasons.AddInfof(`No previously activated variation of experiment "%s" for user "%s" found in user profile.`, decisionContext.Experiment.Key, userContext.ID)
-	p.logger.Info(message)
 	return experimentDecision, userProfile
 }
 

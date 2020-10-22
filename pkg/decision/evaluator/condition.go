@@ -46,8 +46,7 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 	// We should only be evaluating custom attributes
 
 	if condition.Type != customAttributeType {
-		message := reasons.AddInfof(logging.UnknownConditionType.String(), condition.StringRepresentation)
-		c.logger.Warning(message)
+		c.logger.Warning(fmt.Sprintf(logging.UnknownConditionType.String(), condition.StringRepresentation))
 		return false, fmt.Errorf(`unable to evaluate condition of type "%s"`, condition.Type)
 	}
 
@@ -58,8 +57,7 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 
 	matcher, ok := matchers.Get(matchType)
 	if !ok {
-		message := reasons.AddInfof(logging.UnknownMatchType.String(), condition.StringRepresentation)
-		c.logger.Warning(message)
+		c.logger.Warning(fmt.Sprintf(logging.UnknownMatchType.String(), condition.StringRepresentation))
 		return false, fmt.Errorf(`invalid Condition matcher "%s"`, condition.Match)
 	}
 

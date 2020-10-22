@@ -52,10 +52,8 @@ func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisi
 		if variation, ok := decisionContext.Experiment.Variations[id]; ok {
 			decision.Reason = pkgReasons.WhitelistVariationAssignmentFound
 			decision.Variation = &variation
-			reasons.AddInfof(`User "%s" is forced in variation "%s".`, userContext.ID, variationKey)
 			return decision, nil
 		}
-		reasons.AddInfof(`Variation \"%s\" is not in the datafile. Not activating user \"%s\".`, variationKey, userContext.ID)
 	}
 
 	decision.Reason = pkgReasons.InvalidWhitelistVariationAssignment
