@@ -53,19 +53,12 @@ func (o *DecisionReasons) AddError(message string) {
 	o.errors = append(o.errors, message)
 }
 
-// AddInfo appends given message to the info list.
-func (o *DecisionReasons) AddInfo(message string) {
-	o.mutex.Lock()
-	defer o.mutex.Unlock()
-	o.logs = append(o.logs, message)
-}
-
 // AddInfof appends given info message to the info list after formatting.
 func (o *DecisionReasons) AddInfof(format string, arguments ...interface{}) string {
 	message := fmt.Sprintf(format, arguments...)
-	if o.includeReasons {
-		o.AddInfo(message)
-	}
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	o.logs = append(o.logs, message)
 	return message
 }
 
