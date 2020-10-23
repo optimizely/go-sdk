@@ -109,8 +109,8 @@ func (p PersistingExperimentService) saveDecision(userProfile UserProfile, exper
 }
 
 func (p PersistingExperimentService) shouldIgnoreUPS(options []decide.Options) bool {
-	for option := range options {
-		if option == int(decide.IgnoreUserProfileService) {
+	for _, option := range options {
+		if option == decide.IgnoreUserProfileService {
 			return true
 		}
 	}

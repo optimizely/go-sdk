@@ -32,8 +32,8 @@ type DecisionReasons struct {
 // NewDecisionReasons returns a new instance of DecisionReasons.
 func NewDecisionReasons(options []Options) DecisionReasons {
 	includeReasons := false
-	for option := range options {
-		if option == int(IncludeReasons) {
+	for _, option := range options {
+		if option == IncludeReasons {
 			includeReasons = true
 			break
 		}

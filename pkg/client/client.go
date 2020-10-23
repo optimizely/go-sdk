@@ -57,6 +57,180 @@ func (o *OptimizelyClient) CreateUserContext(userContext entities.UserContext) O
 	return NewOptimizelyUserContext(o, userContext)
 }
 
+func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string, options []decide.Options) OptimizelyDecision {
+	var err error
+	decisionContext := decision.FeatureDecisionContext{}
+	defer func() {
+		if r := recover(); r != nil {
+			switch t := r.(type) {
+			case error:
+				err = t
+			case string:
+				err = errors.New(t)
+			default:
+				err = errors.New("unexpected error")
+			}
+			errorMessage := fmt.Sprintf("decide call, optimizely SDK is panicking with the error:")
+			o.logger.Error(errorMessage, err)
+			o.logger.Debug(string(debug.Stack()))
+		}
+	}()
+
+	projectConfig, err := o.getProjectConfig()
+	if err != nil {
+		return NewErrorDecision(key, userContext, decide.GetDecideError(decide.SDKNotReady))
+	}
+	decisionContext.ProjectConfig = projectConfig
+
+	feature, err := projectConfig.GetFeatureByKey(key)
+	if err != nil {
+		return NewErrorDecision(key, userContext, decide.GetDecideError(decide.FlagKeyInvalid, key))
+	}
+	decisionContext.Feature = &feature
+
+	usrContext := userContext.GetUserContext()
+	var variationKey string
+	eventSent := false
+	flagEnabled := false
+	allOptions := o.getAllOptions(options)
+	decisionReasons := decide.NewDecisionReasons(options)
+	variable := entities.Variable{}
+
+	decisionContext.Variable = variable
+
+	featureDecision, _ := o.DecisionService.GetFeatureDecision(decisionContext, usrContext, options, decisionReasons)
+	if featureDecision.Variation != nil {
+		variationKey = featureDecision.Variation.Key
+		if featureDecision.Source == decision.FeatureTest {
+			shouldSendEvent := true
+			for _, option := range allOptions {
+				if option == decide.DisableDecisionEvent {
+					shouldSendEvent = false
+					break
+				}
+			}
+			if shouldSendEvent {
+				if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
+					featureDecision.Variation, usrContext, key, featureDecision.Experiment.Key, featureDecision.Source); ok {
+					o.EventProcessor.ProcessEvent(ue)
+				}
+				eventSent = true
+			}
+		} else {
+			message := decisionReasons.AddInfof(`The user "%s" is not included in an experiment for flag "%s".`, usrContext.ID, key)
+			o.logger.Info(message)
+		}
+		if featureDecision.Variation.FeatureEnabled {
+			flagEnabled = true
+		}
+	}
+
+	variableMap := map[string]interface{}{}
+	shouldExcludeVariables := false
+	for _, option := range allOptions {
+		if option == decide.ExcludeVariables {
+			shouldExcludeVariables = true
+			break
+		}
+	}
+	if !shouldExcludeVariables {
+		variableMap = o.getDecisionVariableMap(feature, featureDecision.Variation, flagEnabled, decisionReasons)
+	}
+	optimizelyJSON := optimizelyjson.NewOptimizelyJSONfromMap(variableMap)
+	reasonsToReport := decisionReasons.ToReport()
+	ruleKey := featureDecision.Experiment.Key
+
+	if o.notificationCenter != nil {
+		decisionNotification := decision.FlagNotification(key, variationKey, ruleKey, flagEnabled, eventSent, usrContext, variableMap, reasonsToReport)
+		o.logger.Info(fmt.Sprintf(`Feature "%s" is enabled for user "%s"? %v`, key, usrContext.ID, flagEnabled))
+		if e := o.notificationCenter.Send(notification.Decision, *decisionNotification); e != nil {
+			o.logger.Warning("Problem with sending notification")
+		}
+	}
+
+	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, *optimizelyJSON, userContext, reasonsToReport)
+}
+
+func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options []decide.Options) map[string]OptimizelyDecision {
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			switch t := r.(type) {
+			case error:
+				err = t
+			case string:
+				err = errors.New(t)
+			default:
+				err = errors.New("unexpected error")
+			}
+			errorMessage := fmt.Sprintf("decideForKeys call, optimizely SDK is panicking with the error:")
+			o.logger.Error(errorMessage, err)
+			o.logger.Debug(string(debug.Stack()))
+		}
+	}()
+
+	decisionMap := map[string]OptimizelyDecision{}
+	if _, err = o.getProjectConfig(); err != nil {
+		o.logger.Error("Optimizely instance is not valid, failing isFeatureEnabled call.", err)
+		return decisionMap
+	}
+
+	if len(keys) == 0 {
+		return decisionMap
+	}
+
+	enabledFlagsOnly := false
+	for _, option := range o.getAllOptions(options) {
+		if option == decide.EnabledFlagsOnly {
+			enabledFlagsOnly = true
+			break
+		}
+	}
+
+	for _, key := range keys {
+		optimizelyDecision := o.decide(userContext, key, options)
+		if !enabledFlagsOnly || optimizelyDecision.GetEnabled() {
+			decisionMap[key] = optimizelyDecision
+		}
+	}
+
+	return decisionMap
+}
+
+func (o *OptimizelyClient) decideAll(userContext OptimizelyUserContext, options []decide.Options) map[string]OptimizelyDecision {
+
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			switch t := r.(type) {
+			case error:
+				err = t
+			case string:
+				err = errors.New(t)
+			default:
+				err = errors.New("unexpected error")
+			}
+			errorMessage := fmt.Sprintf("decideAll call, optimizely SDK is panicking with the error:")
+			o.logger.Error(errorMessage, err)
+			o.logger.Debug(string(debug.Stack()))
+		}
+	}()
+
+	decisionMap := map[string]OptimizelyDecision{}
+	projectConfig, err := o.getProjectConfig()
+	if err != nil {
+		o.logger.Error("Optimizely instance is not valid, failing isFeatureEnabled call.", err)
+		return decisionMap
+	}
+
+	allFlagKeys := []string{}
+	for _, flag := range projectConfig.GetFeatureList() {
+		allFlagKeys = append(allFlagKeys, flag.Key)
+	}
+
+	return o.decideForKeys(userContext, allFlagKeys, options)
+}
+
 // Activate returns the key of the variation the user is bucketed into and queues up an impression event to be sent to
 // the Optimizely log endpoint for results processing.
 func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.UserContext) (result string, err error) {
@@ -778,16 +952,42 @@ func (o *OptimizelyClient) getProjectConfig() (projectConfig config.ProjectConfi
 	return projectConfig, nil
 }
 
+func (o *OptimizelyClient) getAllOptions(options []decide.Options) []decide.Options {
+	copiedOptions := o.defaultDecideOptions
+	return append(copiedOptions, options...)
+}
+
 // GetOptimizelyConfig returns OptimizelyConfig object
 func (o *OptimizelyClient) GetOptimizelyConfig() (optimizelyConfig *config.OptimizelyConfig) {
 
 	return o.ConfigManager.GetOptimizelyConfig()
-
 }
 
 // Close closes the Optimizely instance and stops any ongoing tasks from its children components.
 func (o *OptimizelyClient) Close() {
 	o.execGroup.TerminateAndWait()
+}
+
+func (o *OptimizelyClient) getDecisionVariableMap(feature entities.Feature, variation *entities.Variation, featureEnabled bool, decisionReasons decide.DecisionReasons) map[string]interface{} {
+	valuesMap := map[string]interface{}{}
+
+	for _, v := range feature.VariableMap {
+		val := v.DefaultValue
+
+		if featureEnabled {
+			if variable, ok := variation.Variables[v.ID]; ok {
+				val = variable.Value
+			}
+		}
+
+		typedValue, typedError := o.getTypedValue(val, v.Type)
+		if typedError != nil {
+			decisionReasons.AddError(decide.GetDecideMessage(decide.VariableValueInvalid, v.Key))
+		}
+		valuesMap[v.Key] = typedValue
+	}
+
+	return valuesMap
 }
 
 func isNil(v interface{}) bool {
