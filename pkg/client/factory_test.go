@@ -216,3 +216,12 @@ func TestClientWithDefaultDecideOptions(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []decide.Options{}, optimizelyClient.defaultDecideOptions)
 }
+
+func TestModifyingDecideOptionsOutsideClient(t *testing.T) {
+	decideOptions := []decide.Options{decide.DisableDecisionEvent, decide.EnabledFlagsOnly}
+	factory := OptimizelyFactory{SDKKey: "1212"}
+	optimizelyClient, err := factory.Client(WithDefaultDecideOptions(decideOptions))
+	assert.NoError(t, err)
+	decideOptions = append(decideOptions, decide.IgnoreUserProfileService)
+	assert.Equal(t, []decide.Options{decide.DisableDecisionEvent, decide.EnabledFlagsOnly}, optimizelyClient.defaultDecideOptions)
+}

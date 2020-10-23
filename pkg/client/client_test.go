@@ -2457,6 +2457,21 @@ func TestCreateUserContext(t *testing.T) {
 	assert.Equal(t, userContext, optimizelyUserContext.GetUserContext())
 }
 
+func TestChangingAttributesDoesntEffectUserContext(t *testing.T) {
+	client := OptimizelyClient{}
+	userContext := entities.UserContext{ID: "1", Attributes: map[string]interface{}{"key": 1212}}
+	optimizelyUserContext := client.CreateUserContext(userContext)
+	assert.Equal(t, client, *optimizelyUserContext.GetOptimizely())
+
+	// Changing original values
+	userContext.ID = "2"
+	userContext.Attributes["key"] = 1213
+	// Verifying that no changes were reflected in the user context
+	actualUserContext := optimizelyUserContext.GetUserContext()
+	assert.Equal(t, "1", actualUserContext.ID)
+	assert.Equal(t, map[string]interface{}{"key": 1212}, actualUserContext.Attributes)
+}
+
 func TestCreateUserContextNoAttributes(t *testing.T) {
 	client := OptimizelyClient{}
 	userContext := entities.UserContext{ID: "testUser1"}

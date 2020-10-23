@@ -45,8 +45,8 @@ func NewOptimizelyDecision(variationKey, ruleKey, flagKey string, enabled bool, 
 	}
 }
 
-// CreateErrorDecision returns a decision with error
-func CreateErrorDecision(key string, user OptimizelyUserContext, err error) OptimizelyDecision {
+// NewErrorDecision returns a decision with error
+func NewErrorDecision(key string, user OptimizelyUserContext, err error) OptimizelyDecision {
 	return OptimizelyDecision{
 		flagKey:     key,
 		userContext: user,
@@ -87,9 +87,4 @@ func (o OptimizelyDecision) GetUserContext() OptimizelyUserContext {
 // GetReasons returns an array of error/info/debug messages describing why the decision has been made.
 func (o OptimizelyDecision) GetReasons() []string {
 	return o.reasons
-}
-
-// HasFailed returns if variation was not found.
-func (o OptimizelyDecision) HasFailed() bool {
-	return o.variationKey == ""
 }

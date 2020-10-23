@@ -64,13 +64,13 @@ func (o *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
 // Decide returns a decision result for a given flag key and a user context, which contains
 // all data required to deliver the flag or experiment.
 func (o *OptimizelyUserContext) Decide(key string) OptimizelyDecision {
-	return CreateErrorDecision(key, OptimizelyUserContext{}, decide.GetError(decide.SDKNotReady))
+	return NewErrorDecision(key, OptimizelyUserContext{}, decide.GetError(decide.SDKNotReady))
 }
 
 // DecideWithOptions returns a decision result for a given flag key and a user context, which contains
 // all data required to deliver the flag or experiment.
 func (o *OptimizelyUserContext) DecideWithOptions(key string, options []decide.Options) OptimizelyDecision {
-	return CreateErrorDecision(key, OptimizelyUserContext{}, decide.GetError(decide.SDKNotReady))
+	return NewErrorDecision(key, OptimizelyUserContext{}, decide.GetError(decide.SDKNotReady))
 }
 
 // DecideAll returns a key-map of decision results for all active flag keys.
