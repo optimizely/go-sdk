@@ -76,36 +76,6 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 		}
 	}()
 
-	sendImpressionEvent := func(featureDecision decision.FeatureDecision, userContext entities.UserContext, decisionReasons decide.DecisionReasons) (allOptions []decide.Options, variationKey string, eventSent bool, flagEnabled bool) {
-		allOptions = o.getAllOptions(options)
-		if featureDecision.Variation != nil {
-			variationKey = featureDecision.Variation.Key
-			if featureDecision.Source == decision.FeatureTest {
-				shouldSendEvent := true
-				for _, option := range allOptions {
-					if option == decide.DisableDecisionEvent {
-						shouldSendEvent = false
-						break
-					}
-				}
-				if shouldSendEvent {
-					if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
-						featureDecision.Variation, userContext, key, featureDecision.Experiment.Key, featureDecision.Source); ok {
-						o.EventProcessor.ProcessEvent(ue)
-					}
-					eventSent = true
-				}
-			} else {
-				message := decisionReasons.AddInfof(`The user "%s" is not included in an experiment for flag "%s".`, userContext.ID, key)
-				o.logger.Info(message)
-			}
-			if featureDecision.Variation.FeatureEnabled {
-				flagEnabled = true
-			}
-		}
-		return allOptions, variationKey, eventSent, flagEnabled
-	}
-
 	projectConfig, err := o.getProjectConfig()
 	if err != nil {
 		return NewErrorDecision(key, userContext, decide.GetDecideError(decide.SDKNotReady))
@@ -119,20 +89,40 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	decisionContext.Feature = &feature
 
 	usrContext := userContext.GetUserContext()
+	var variationKey string
+	eventSent := false
+	flagEnabled := false
+	allOptions := o.getAllOptions(options)
 	decisionReasons := decide.NewDecisionReasons(options)
-	decisionContext.Variable = entities.Variable{}
+	variable := entities.Variable{}
+
+	decisionContext.Variable = variable
 
 	featureDecision, _ := o.DecisionService.GetFeatureDecision(decisionContext, usrContext, options, decisionReasons)
-	allOptions, variationKey, eventSent, flagEnabled := sendImpressionEvent(featureDecision, usrContext, decisionReasons)
+	if featureDecision.Variation != nil {
+		variationKey = featureDecision.Variation.Key
+		if featureDecision.Source == decision.FeatureTest {
+			shouldSendEvent := decideOptionsContain(allOptions, decide.DisableDecisionEvent)
 
-	variableMap := map[string]interface{}{}
-	shouldExcludeVariables := false
-	for _, option := range allOptions {
-		if option == decide.ExcludeVariables {
-			shouldExcludeVariables = true
-			break
+			if shouldSendEvent {
+				if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
+					featureDecision.Variation, usrContext, key, featureDecision.Experiment.Key, featureDecision.Source); ok {
+					o.EventProcessor.ProcessEvent(ue)
+				}
+				eventSent = true
+			}
+		} else {
+			message := decisionReasons.AddInfof(`The user "%s" is not included in an experiment for flag "%s".`, usrContext.ID, key)
+			o.logger.Info(message)
+		}
+		if featureDecision.Variation.FeatureEnabled {
+			flagEnabled = true
 		}
 	}
+
+	variableMap := map[string]interface{}{}
+	shouldExcludeVariables := decideOptionsContain(allOptions, decide.ExcludeVariables)
+
 	if !shouldExcludeVariables {
 		variableMap = o.getDecisionVariableMap(feature, featureDecision.Variation, flagEnabled, decisionReasons)
 	}
@@ -179,14 +169,7 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 		return decisionMap
 	}
 
-	enabledFlagsOnly := false
-	for _, option := range o.getAllOptions(options) {
-		if option == decide.EnabledFlagsOnly {
-			enabledFlagsOnly = true
-			break
-		}
-	}
-
+	enabledFlagsOnly := decideOptionsContain(o.getAllOptions(options), decide.EnabledFlagsOnly)
 	for _, key := range keys {
 		optimizelyDecision := o.decide(userContext, key, options)
 		if !enabledFlagsOnly || optimizelyDecision.GetEnabled() {
@@ -988,6 +971,15 @@ func (o *OptimizelyClient) getDecisionVariableMap(feature entities.Feature, vari
 	}
 
 	return valuesMap
+}
+
+func decideOptionsContain(options []decide.Options, element decide.Options) bool {
+	for _, option := range options {
+		if option == element {
+			return true
+		}
+	}
+	return false
 }
 
 func isNil(v interface{}) bool {
