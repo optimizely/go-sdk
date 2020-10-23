@@ -28,18 +28,18 @@ import (
 type OptimizelyUserContext struct {
 	optimizely  *OptimizelyClient
 	userContext entities.UserContext
-	mutex       sync.RWMutex
+	mutex       *sync.RWMutex
 }
 
 // NewOptimizelyUserContext returns an instance of the optimizely user context.
-func NewOptimizelyUserContext(optimizely *OptimizelyClient, userContext entities.UserContext) *OptimizelyUserContext {
+func NewOptimizelyUserContext(optimizely *OptimizelyClient, userContext entities.UserContext) OptimizelyUserContext {
 	// store a copy of the provided usercontext so it isn't affected by changes made afterwards.
 	userContextCopy := copyUserContext(userContext)
-	optimizelyUserContext := OptimizelyUserContext{
+	return OptimizelyUserContext{
 		optimizely:  optimizely,
 		userContext: userContextCopy,
+		mutex:       new(sync.RWMutex),
 	}
-	return &optimizelyUserContext
 }
 
 // GetOptimizely returns optimizely client instance for Optimizely user context
@@ -64,13 +64,13 @@ func (o *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
 // Decide returns a decision result for a given flag key and a user context, which contains
 // all data required to deliver the flag or experiment.
 func (o *OptimizelyUserContext) Decide(key string) OptimizelyDecision {
-	return CreateErrorDecision(key, nil, decide.GetDecideError(decide.SDKNotReady))
+	return NewErrorDecision(key, OptimizelyUserContext{}, decide.GetError(decide.SDKNotReady))
 }
 
 // DecideWithOptions returns a decision result for a given flag key and a user context, which contains
 // all data required to deliver the flag or experiment.
 func (o *OptimizelyUserContext) DecideWithOptions(key string, options []decide.Options) OptimizelyDecision {
-	return CreateErrorDecision(key, nil, decide.GetDecideError(decide.SDKNotReady))
+	return NewErrorDecision(key, OptimizelyUserContext{}, decide.GetError(decide.SDKNotReady))
 }
 
 // DecideAll returns a key-map of decision results for all active flag keys.

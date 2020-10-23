@@ -28,12 +28,12 @@ type OptimizelyDecision struct {
 	variables    optimizelyjson.OptimizelyJSON
 	ruleKey      string
 	flagKey      string
-	userContext  *OptimizelyUserContext
+	userContext  OptimizelyUserContext
 	reasons      []string
 }
 
 // NewOptimizelyDecision creates and returns a new instance of OptimizelyDecision
-func NewOptimizelyDecision(variationKey, ruleKey, flagKey string, enabled bool, variables optimizelyjson.OptimizelyJSON, userContext *OptimizelyUserContext, reasons []string) OptimizelyDecision {
+func NewOptimizelyDecision(variationKey, ruleKey, flagKey string, enabled bool, variables optimizelyjson.OptimizelyJSON, userContext OptimizelyUserContext, reasons []string) OptimizelyDecision {
 	return OptimizelyDecision{
 		variationKey: variationKey,
 		enabled:      enabled,
@@ -45,8 +45,8 @@ func NewOptimizelyDecision(variationKey, ruleKey, flagKey string, enabled bool, 
 	}
 }
 
-// CreateErrorDecision returns a decision with error
-func CreateErrorDecision(key string, user *OptimizelyUserContext, err error) OptimizelyDecision {
+// NewErrorDecision returns a decision with error
+func NewErrorDecision(key string, user OptimizelyUserContext, err error) OptimizelyDecision {
 	return OptimizelyDecision{
 		flagKey:     key,
 		userContext: user,
@@ -80,16 +80,11 @@ func (o OptimizelyDecision) GetFlagKey() string {
 }
 
 // GetUserContext returns the user context for which the  decision was made.
-func (o OptimizelyDecision) GetUserContext() *OptimizelyUserContext {
+func (o OptimizelyDecision) GetUserContext() OptimizelyUserContext {
 	return o.userContext
 }
 
 // GetReasons returns an array of error/info/debug messages describing why the decision has been made.
 func (o OptimizelyDecision) GetReasons() []string {
 	return o.reasons
-}
-
-// HasFailed returns if variation was not found.
-func (o OptimizelyDecision) HasFailed() bool {
-	return o.variationKey == ""
 }

@@ -58,12 +58,12 @@ func (s *OptimizelyDecisionTestSuite) TestOptimizelyDecision() {
 	assert.Equal(s.T(), optimizelyUserContext, decision.GetUserContext())
 }
 
-func (s *OptimizelyDecisionTestSuite) TestCreateErrorDecision() {
+func (s *OptimizelyDecisionTestSuite) TestNewErrorDecision() {
 	flagKey := "flag1"
 	errorString := "SDK has an error"
 	userContext := entities.UserContext{ID: "testUser1", Attributes: map[string]interface{}{"key": 1212}}
 	optimizelyUserContext := s.OptimizelyClient.CreateUserContext(userContext)
-	decision := CreateErrorDecision(flagKey, optimizelyUserContext, errors.New(errorString))
+	decision := NewErrorDecision(flagKey, optimizelyUserContext, errors.New(errorString))
 
 	assert.Equal(s.T(), "", decision.GetVariationKey())
 	assert.Equal(s.T(), false, decision.GetEnabled())

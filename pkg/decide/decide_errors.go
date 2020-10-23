@@ -26,7 +26,7 @@ const (
 	SDKNotReady decideError = "Optimizely SDK not configured properly yet"
 )
 
-// GetDecideError returns error for decide error type
-func GetDecideError(errorType decideError) error {
+// GetError returns error for decide error type
+func GetError(errorType decideError) error {
 	return errors.New(string(errorType))
 }
