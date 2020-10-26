@@ -20,7 +20,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/optimizelyjson"
 
 	"github.com/stretchr/testify/assert"
@@ -44,10 +43,11 @@ func (s *OptimizelyDecisionTestSuite) TestOptimizelyDecision() {
 	var ruleKey string
 	flagKey := "flag1"
 	reasons := []string{}
+	userID := "testUser1"
+	attributes := map[string]interface{}{"key": 1212}
 
-	userContext := entities.UserContext{ID: "testUser1", Attributes: map[string]interface{}{"key": 1212}}
-	optimizelyUserContext := s.OptimizelyClient.CreateUserContext(userContext)
-	decision := NewOptimizelyDecision(variationKey, ruleKey, flagKey, enabled, *variables, optimizelyUserContext, reasons)
+	optimizelyUserContext := s.OptimizelyClient.CreateUserContext(userID, attributes)
+	decision := NewOptimizelyDecision(variationKey, ruleKey, flagKey, enabled, variables, optimizelyUserContext, reasons)
 
 	assert.Equal(s.T(), variationKey, decision.GetVariationKey())
 	assert.Equal(s.T(), enabled, decision.GetEnabled())
@@ -61,13 +61,14 @@ func (s *OptimizelyDecisionTestSuite) TestOptimizelyDecision() {
 func (s *OptimizelyDecisionTestSuite) TestNewErrorDecision() {
 	flagKey := "flag1"
 	errorString := "SDK has an error"
-	userContext := entities.UserContext{ID: "testUser1", Attributes: map[string]interface{}{"key": 1212}}
-	optimizelyUserContext := s.OptimizelyClient.CreateUserContext(userContext)
+	userID := "testUser1"
+	attributes := map[string]interface{}{"key": 1212}
+	optimizelyUserContext := s.OptimizelyClient.CreateUserContext(userID, attributes)
 	decision := NewErrorDecision(flagKey, optimizelyUserContext, errors.New(errorString))
 
 	assert.Equal(s.T(), "", decision.GetVariationKey())
 	assert.Equal(s.T(), false, decision.GetEnabled())
-	assert.Nil(s.T(), decision.GetVariables())
+	assert.Equal(s.T(), optimizelyjson.OptimizelyJSON{}, decision.GetVariables())
 	assert.Equal(s.T(), "", decision.GetRuleKey())
 	assert.Equal(s.T(), flagKey, decision.GetFlagKey())
 	assert.Equal(s.T(), 1, len(decision.GetReasons()))

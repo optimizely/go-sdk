@@ -25,7 +25,7 @@ import (
 type OptimizelyDecision struct {
 	variationKey string
 	enabled      bool
-	variables    optimizelyjson.OptimizelyJSON
+	variables    *optimizelyjson.OptimizelyJSON
 	ruleKey      string
 	flagKey      string
 	userContext  OptimizelyUserContext
@@ -33,7 +33,7 @@ type OptimizelyDecision struct {
 }
 
 // NewOptimizelyDecision creates and returns a new instance of OptimizelyDecision
-func NewOptimizelyDecision(variationKey, ruleKey, flagKey string, enabled bool, variables optimizelyjson.OptimizelyJSON, userContext OptimizelyUserContext, reasons []string) OptimizelyDecision {
+func NewOptimizelyDecision(variationKey, ruleKey, flagKey string, enabled bool, variables *optimizelyjson.OptimizelyJSON, userContext OptimizelyUserContext, reasons []string) OptimizelyDecision {
 	return OptimizelyDecision{
 		variationKey: variationKey,
 		enabled:      enabled,
@@ -50,6 +50,7 @@ func NewErrorDecision(key string, user OptimizelyUserContext, err error) Optimiz
 	return OptimizelyDecision{
 		flagKey:     key,
 		userContext: user,
+		variables:   &optimizelyjson.OptimizelyJSON{},
 		reasons:     []string{err.Error()},
 	}
 }
@@ -65,7 +66,7 @@ func (o OptimizelyDecision) GetEnabled() bool {
 }
 
 // GetVariables returns the collection of variables associated with the decision.
-func (o OptimizelyDecision) GetVariables() optimizelyjson.OptimizelyJSON {
+func (o OptimizelyDecision) GetVariables() *optimizelyjson.OptimizelyJSON {
 	return o.variables
 }
 

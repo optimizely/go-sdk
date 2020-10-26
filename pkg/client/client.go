@@ -53,8 +53,8 @@ type OptimizelyClient struct {
 
 // CreateUserContext creates a context of the user for which decision APIs will be called.
 // A user context will be created successfully even when the SDK is not fully configured yet.
-func (o *OptimizelyClient) CreateUserContext(userContext entities.UserContext) OptimizelyUserContext {
-	return newOptimizelyUserContext(o, userContext)
+func (o *OptimizelyClient) CreateUserContext(userID string, attributes map[string]interface{}) OptimizelyUserContext {
+	return newOptimizelyUserContext(o, userID, attributes)
 }
 
 func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string, options []decide.Options) OptimizelyDecision {
@@ -88,7 +88,10 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	}
 	decisionContext.Feature = &feature
 
-	usrContext := userContext.GetUserContext()
+	usrContext := entities.UserContext{
+		ID:         userContext.GetUserID(),
+		Attributes: userContext.GetUserAttributes(),
+	}
 	var variationKey string
 	eventSent := false
 	flagEnabled := false
@@ -102,7 +105,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	if featureDecision.Variation != nil {
 		variationKey = featureDecision.Variation.Key
 		if featureDecision.Source == decision.FeatureTest {
-			shouldSendEvent := decideOptionsContain(allOptions, decide.DisableDecisionEvent)
+			shouldSendEvent := !decideOptionsContain(allOptions, decide.DisableDecisionEvent)
 
 			if shouldSendEvent {
 				if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
@@ -138,7 +141,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 		}
 	}
 
-	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, *optimizelyJSON, userContext, reasonsToReport)
+	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, userContext, reasonsToReport)
 }
 
 func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options []decide.Options) map[string]OptimizelyDecision {

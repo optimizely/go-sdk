@@ -17,65 +17,88 @@
 package client
 
 import (
+	"io/ioutil"
+	"path/filepath"
 	"sync"
 	"testing"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/stretchr/testify/assert"
+	"github.com/optimizely/go-sdk/pkg/optimizelyjson"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
+
+var doOnce sync.Once // required since we only need to read datafile once
+var datafile []byte
 
 type OptimizelyUserContextTestSuite struct {
 	suite.Suite
 	*OptimizelyClient
+	userID         string
+	eventProcessor *MockProcessor
 }
 
 func (s *OptimizelyUserContextTestSuite) SetupTest() {
-	factory := OptimizelyFactory{SDKKey: "1212"}
-	s.OptimizelyClient, _ = factory.Client()
+	doOnce.Do(func() {
+		absPath, _ := filepath.Abs("../../test-data/decide-test-datafile.json")
+		datafile, _ = ioutil.ReadFile(absPath)
+	})
+	s.eventProcessor = new(MockProcessor)
+	s.eventProcessor.On("ProcessEvent", mock.AnythingOfType("event.UserEvent")).Return(true)
+	factory := OptimizelyFactory{Datafile: datafile}
+	s.OptimizelyClient, _ = factory.Client(WithEventProcessor(s.eventProcessor))
+	s.userID = "tester"
 }
 
 func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextWithAttributes() {
-	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{"key1": 1212, "key2": 1213}}
-	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userContext)
+	attributes := map[string]interface{}{"key1": 1212, "key2": 1213}
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes)
 
-	assert.Equal(s.T(), s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
-	assert.Equal(s.T(), userContext, optimizelyUserContext.GetUserContext())
+	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
+	s.Equal(s.userID, optimizelyUserContext.GetUserID())
+	s.Equal(attributes, optimizelyUserContext.GetUserAttributes())
 }
 
 func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextNoAttributes() {
-	userContext := entities.UserContext{ID: "1212121"}
-	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userContext)
+	var attributes map[string]interface{}
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes)
 
-	assert.Equal(s.T(), s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
-	assert.Equal(s.T(), map[string]interface{}{}, optimizelyUserContext.GetUserContext().Attributes)
+	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
+	s.Equal(s.userID, optimizelyUserContext.GetUserID())
+	s.Equal(attributes, optimizelyUserContext.GetUserAttributes())
 }
 
 func (s *OptimizelyUserContextTestSuite) TestUpatingProvidedUserContextHasNoImpactOnOptimizelyUserContext() {
-	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{"k1": "v1", "k2": false}}
-	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userContext)
+	attributes := map[string]interface{}{"k1": "v1", "k2": false}
 
-	assert.Equal(s.T(), s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
-	assert.Equal(s.T(), userContext, optimizelyUserContext.GetUserContext())
+	userContext := entities.UserContext{ID: s.userID, Attributes: attributes}
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes)
+
+	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
+	s.Equal(s.userID, optimizelyUserContext.GetUserID())
+	s.Equal(attributes, optimizelyUserContext.GetUserAttributes())
 
 	userContext.Attributes["k1"] = "v2"
 	userContext.Attributes["k2"] = true
 
-	assert.Equal(s.T(), "v1", optimizelyUserContext.GetUserContext().Attributes["k1"])
-	assert.Equal(s.T(), false, optimizelyUserContext.GetUserContext().Attributes["k2"])
+	s.Equal("v1", optimizelyUserContext.GetUserAttributes()["k1"])
+	s.Equal(false, optimizelyUserContext.GetUserAttributes()["k2"])
 
-	userContext = optimizelyUserContext.GetUserContext()
-	userContext.Attributes["k1"] = "v2"
-	userContext.Attributes["k2"] = true
+	attributes = optimizelyUserContext.GetUserAttributes()
+	attributes["k1"] = "v2"
+	attributes["k2"] = true
 
-	assert.Equal(s.T(), "v1", optimizelyUserContext.GetUserContext().Attributes["k1"])
-	assert.Equal(s.T(), false, optimizelyUserContext.GetUserContext().Attributes["k2"])
+	s.Equal("v1", optimizelyUserContext.GetUserAttributes()["k1"])
+	s.Equal(false, optimizelyUserContext.GetUserAttributes()["k2"])
 }
 
 func (s *OptimizelyUserContextTestSuite) TestSetAttribute() {
-	userContext := entities.UserContext{ID: "1212121"}
-	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userContext)
-	assert.Equal(s.T(), s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
+	userID := "1212121"
+	var attributes map[string]interface{}
+
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes)
+	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 
 	var wg sync.WaitGroup
 	wg.Add(4)
@@ -90,25 +113,225 @@ func (s *OptimizelyUserContextTestSuite) TestSetAttribute() {
 	go addInsideGoRoutine("k4", 3.5, &wg)
 	wg.Wait()
 
-	assert.Equal(s.T(), userContext.ID, optimizelyUserContext.GetUserContext().ID)
-	assert.Equal(s.T(), "v1", optimizelyUserContext.GetUserContext().Attributes["k1"])
-	assert.Equal(s.T(), true, optimizelyUserContext.GetUserContext().Attributes["k2"])
-	assert.Equal(s.T(), 100, optimizelyUserContext.GetUserContext().Attributes["k3"])
-	assert.Equal(s.T(), 3.5, optimizelyUserContext.GetUserContext().Attributes["k4"])
+	s.Equal(userID, optimizelyUserContext.GetUserID())
+	s.Equal("v1", optimizelyUserContext.GetUserAttributes()["k1"])
+	s.Equal(true, optimizelyUserContext.GetUserAttributes()["k2"])
+	s.Equal(100, optimizelyUserContext.GetUserAttributes()["k3"])
+	s.Equal(3.5, optimizelyUserContext.GetUserAttributes()["k4"])
 }
 
 func (s *OptimizelyUserContextTestSuite) TestSetAttributeOverride() {
-	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{"k1": "v1", "k2": false}}
-	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userContext)
+	userID := "1212121"
+	attributes := map[string]interface{}{"k1": "v1", "k2": false}
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes)
 
-	assert.Equal(s.T(), s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
-	assert.Equal(s.T(), userContext, optimizelyUserContext.GetUserContext())
+	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
+	s.Equal(userID, optimizelyUserContext.GetUserID())
+	s.Equal(attributes, optimizelyUserContext.GetUserAttributes())
 
 	optimizelyUserContext.SetAttribute("k1", "v2")
 	optimizelyUserContext.SetAttribute("k2", true)
 
-	assert.Equal(s.T(), "v2", optimizelyUserContext.GetUserContext().Attributes["k1"])
-	assert.Equal(s.T(), true, optimizelyUserContext.GetUserContext().Attributes["k2"])
+	s.Equal("v2", optimizelyUserContext.GetUserAttributes()["k1"])
+	s.Equal(true, optimizelyUserContext.GetUserAttributes()["k2"])
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecide() {
+	flagKey := "feature_2"
+	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
+	s.Nil(err)
+
+	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
+	decision := user.Decide(flagKey, nil)
+
+	s.Equal("variation_with_traffic", decision.GetVariationKey())
+	s.Equal(true, decision.GetEnabled())
+	s.Equal(variablesExpected.ToMap(), decision.GetVariables().ToMap())
+	s.Equal("exp_no_audience", decision.GetRuleKey())
+	s.Equal(flagKey, decision.GetFlagKey())
+	s.Equal(user, decision.GetUserContext())
+	s.Len(decision.GetReasons(), 0)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecideForKeyWithOneFlag() {
+	flagKey := "feature_2"
+	flagKeys := []string{flagKey}
+	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
+	s.Nil(err)
+
+	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
+	decisions := user.DecideForKeys(flagKeys, nil)
+	s.Len(decisions, 1)
+
+	decision := decisions[flagKey]
+	s.Equal("variation_with_traffic", decision.GetVariationKey())
+	s.Equal(true, decision.GetEnabled())
+	s.Equal(variablesExpected.ToMap(), decision.GetVariables().ToMap())
+	s.Equal("exp_no_audience", decision.GetRuleKey())
+	s.Equal(flagKey, decision.GetFlagKey())
+	s.Equal(user, decision.GetUserContext())
+	s.Len(decision.GetReasons(), 0)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecideForKeysWithMultipleFlags() {
+	flagKey1 := "feature_1"
+	flagKey2 := "feature_2"
+	flagKeys := []string{flagKey1, flagKey2}
+	variablesExpected1, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey1, entities.UserContext{ID: s.userID})
+	s.Nil(err)
+	variablesExpected2, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey2, entities.UserContext{ID: s.userID})
+	s.Nil(err)
+
+	user := s.OptimizelyClient.CreateUserContext(s.userID, map[string]interface{}{"gender": "f"})
+	decisions := user.DecideForKeys(flagKeys, nil)
+	s.Len(decisions, 2)
+
+	decision1 := decisions[flagKey1]
+	s.Equal("a", decision1.GetVariationKey())
+	s.Equal(true, decision1.GetEnabled())
+	s.Equal(variablesExpected1.ToMap(), decision1.GetVariables().ToMap())
+	s.Equal("exp_with_audience", decision1.GetRuleKey())
+	s.Equal(flagKey1, decision1.GetFlagKey())
+	s.Equal(user, decision1.GetUserContext())
+	s.Len(decision1.GetReasons(), 0)
+
+	decision2 := decisions[flagKey2]
+	s.Equal("variation_with_traffic", decision2.GetVariationKey())
+	s.Equal(true, decision2.GetEnabled())
+	s.Equal(variablesExpected2.ToMap(), decision2.GetVariables().ToMap())
+	s.Equal("exp_no_audience", decision2.GetRuleKey())
+	s.Equal(flagKey2, decision2.GetFlagKey())
+	s.Equal(user, decision2.GetUserContext())
+	s.Len(decision2.GetReasons(), 0)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecideAllFlags() {
+	flagKey1 := "feature_1"
+	flagKey2 := "feature_2"
+	flagKey3 := "feature_3"
+	variablesExpected1, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey1, entities.UserContext{ID: s.userID})
+	s.Nil(err)
+	variablesExpected2, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey2, entities.UserContext{ID: s.userID})
+	s.Nil(err)
+	variablesExpected3 := optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{})
+
+	user := s.OptimizelyClient.CreateUserContext(s.userID, map[string]interface{}{"gender": "f"})
+	decisions := user.DecideAll(nil)
+	s.Len(decisions, 3)
+
+	decision1 := decisions[flagKey1]
+	s.Equal("a", decision1.GetVariationKey())
+	s.Equal(true, decision1.GetEnabled())
+	s.Equal(variablesExpected1.ToMap(), decision1.GetVariables().ToMap())
+	s.Equal("exp_with_audience", decision1.GetRuleKey())
+	s.Equal(flagKey1, decision1.GetFlagKey())
+	s.Equal(user, decision1.GetUserContext())
+	s.Len(decision1.GetReasons(), 0)
+
+	decision2 := decisions[flagKey2]
+	s.Equal("variation_with_traffic", decision2.GetVariationKey())
+	s.Equal(true, decision2.GetEnabled())
+	s.Equal(variablesExpected2.ToMap(), decision2.GetVariables().ToMap())
+	s.Equal("exp_no_audience", decision2.GetRuleKey())
+	s.Equal(flagKey2, decision2.GetFlagKey())
+	s.Equal(user, decision2.GetUserContext())
+	s.Len(decision2.GetReasons(), 0)
+
+	decision3 := decisions[flagKey3]
+	s.Equal("", decision3.GetVariationKey())
+	s.Equal(false, decision3.GetEnabled())
+	s.Equal(variablesExpected3.ToMap(), decision3.GetVariables().ToMap())
+	s.Equal("", decision3.GetRuleKey())
+	s.Equal(flagKey3, decision3.GetFlagKey())
+	s.Equal(user, decision3.GetUserContext())
+	s.Len(decision3.GetReasons(), 0)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecideAllEnabledFlagsOnly() {
+	flagKey1 := "feature_1"
+	variablesExpected1, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey1, entities.UserContext{ID: s.userID})
+	s.Nil(err)
+
+	user := s.OptimizelyClient.CreateUserContext(s.userID, map[string]interface{}{"gender": "f"})
+	decisions := user.DecideAll([]decide.Options{decide.EnabledFlagsOnly})
+	s.Len(decisions, 2)
+
+	decision1 := decisions[flagKey1]
+	s.Equal("a", decision1.GetVariationKey())
+	s.Equal(true, decision1.GetEnabled())
+	s.Equal(variablesExpected1.ToMap(), decision1.GetVariables().ToMap())
+	s.Equal("exp_with_audience", decision1.GetRuleKey())
+	s.Equal(flagKey1, decision1.GetFlagKey())
+	s.Equal(user, decision1.GetUserContext())
+	s.Len(decision1.GetReasons(), 0)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestTrackEvent() {
+	eventKey := "event1"
+	eventTags := map[string]interface{}{"name": "carrot"}
+	attributes := map[string]interface{}{"gender": "f"}
+	user := s.OptimizelyClient.CreateUserContext(s.userID, attributes)
+	err := user.TrackEvent(eventKey, eventTags)
+	s.Nil(err)
+	s.True(len(s.eventProcessor.Events) == 1)
+	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
+	s.Equal(eventKey, s.eventProcessor.Events[0].Conversion.Key)
+	s.Equal(eventTags, s.eventProcessor.Events[0].Conversion.Tags)
+	s.Equal("gender", s.eventProcessor.Events[0].Conversion.Attributes[0].Key)
+	s.Equal("f", s.eventProcessor.Events[0].Conversion.Attributes[0].Value)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestTrackEventWithoutEventTags() {
+	eventKey := "event1"
+	attributes := map[string]interface{}{"gender": "f"}
+	user := s.OptimizelyClient.CreateUserContext(s.userID, attributes)
+	err := user.TrackEvent(eventKey, nil)
+	s.Nil(err)
+	s.True(len(s.eventProcessor.Events) == 1)
+	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
+	s.Equal(eventKey, s.eventProcessor.Events[0].Conversion.Key)
+	s.Equal("gender", s.eventProcessor.Events[0].Conversion.Attributes[0].Key)
+	s.Equal("f", s.eventProcessor.Events[0].Conversion.Attributes[0].Value)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestTrackEventWithEmptyAttributes() {
+	eventKey := "event1"
+	eventTags := map[string]interface{}{"name": "carrot"}
+	attributes := map[string]interface{}{}
+	user := s.OptimizelyClient.CreateUserContext(s.userID, attributes)
+	err := user.TrackEvent(eventKey, eventTags)
+	s.Nil(err)
+	s.True(len(s.eventProcessor.Events) == 1)
+	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
+	s.Equal(eventKey, s.eventProcessor.Events[0].Conversion.Key)
+	s.Equal(eventTags, s.eventProcessor.Events[0].Conversion.Tags)
+	s.Len(s.eventProcessor.Events[0].Conversion.Attributes, 1)
+	s.Equal("$opt_bot_filtering", s.eventProcessor.Events[0].Conversion.Attributes[0].Key)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecideSendEvent() {
+	flagKey := "feature_2"
+	experimentID := "10420810910"
+	variationID := "10418551353"
+
+	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
+	decision := user.Decide(flagKey, nil)
+
+	s.Equal("variation_with_traffic", decision.GetVariationKey())
+	s.True(len(s.eventProcessor.Events) == 1)
+	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
+	s.Equal(experimentID, s.eventProcessor.Events[0].Impression.ExperimentID)
+	s.Equal(variationID, s.eventProcessor.Events[0].Impression.VariationID)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecideDoNotSendEvent() {
+	flagKey := "feature_2"
+
+	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
+	decision := user.Decide(flagKey, []decide.Options{decide.DisableDecisionEvent})
+
+	s.Equal("variation_with_traffic", decision.GetVariationKey())
+	s.True(len(s.eventProcessor.Events) == 0)
 }
 
 func TestOptimizelyUserContextTestSuite(t *testing.T) {

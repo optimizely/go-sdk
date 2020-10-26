@@ -26,19 +26,21 @@ import (
 
 // OptimizelyUserContext defines user contexts that the SDK will use to make decisions for.
 type OptimizelyUserContext struct {
-	optimizely  *OptimizelyClient
-	userContext entities.UserContext
-	mutex       *sync.RWMutex
+	optimizely *OptimizelyClient
+	userID     string
+	attributes map[string]interface{}
+	mutex      *sync.RWMutex
 }
 
 // returns an instance of the optimizely user context.
-func newOptimizelyUserContext(optimizely *OptimizelyClient, userContext entities.UserContext) OptimizelyUserContext {
-	// store a copy of the provided usercontext so it isn't affected by changes made afterwards.
-	userContextCopy := copyUserContext(userContext)
+func newOptimizelyUserContext(optimizely *OptimizelyClient, userID string, attributes map[string]interface{}) OptimizelyUserContext {
+	// store a copy of the provided attributes so it isn't affected by changes made afterwards.
+	attributesCopy := copyUserAttributes(attributes)
 	return OptimizelyUserContext{
-		optimizely:  optimizely,
-		userContext: userContextCopy,
-		mutex:       new(sync.RWMutex),
+		optimizely: optimizely,
+		userID:     userID,
+		attributes: attributesCopy,
+		mutex:      new(sync.RWMutex),
 	}
 }
 
@@ -47,18 +49,26 @@ func (o *OptimizelyUserContext) GetOptimizely() *OptimizelyClient {
 	return o.optimizely
 }
 
-// GetUserContext returns user settings for Optimizely user context
-func (o *OptimizelyUserContext) GetUserContext() entities.UserContext {
+// GetUserID returns userID for Optimizely user context
+func (o *OptimizelyUserContext) GetUserID() string {
+	return o.userID
+}
+
+// GetUserAttributes returns user attributes for Optimizely user context
+func (o *OptimizelyUserContext) GetUserAttributes() map[string]interface{} {
 	o.mutex.RLock()
 	defer o.mutex.RUnlock()
-	return copyUserContext(o.userContext)
+	return copyUserAttributes(o.attributes)
 }
 
 // SetAttribute sets an attribute for a given key.
 func (o *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
-	o.userContext.Attributes[key] = value
+	if o.attributes == nil {
+		o.attributes = make(map[string]interface{})
+	}
+	o.attributes[key] = value
 }
 
 // Decide returns a decision result for a given flag key and a user context, which contains
@@ -89,16 +99,19 @@ func (o *OptimizelyUserContext) DecideForKeys(keys []string, options []decide.Op
 // TrackEvent generates a conversion event with the given event key if it exists and queues it up to be sent to the Optimizely
 // log endpoint for results processing.
 func (o *OptimizelyUserContext) TrackEvent(eventKey string, eventTags map[string]interface{}) (err error) {
-	return o.optimizely.Track(eventKey, o.GetUserContext(), eventTags)
+	userContext := entities.UserContext{
+		ID:         o.GetUserID(),
+		Attributes: o.GetUserAttributes(),
+	}
+	return o.optimizely.Track(eventKey, userContext, eventTags)
 }
 
-func copyUserContext(userContext entities.UserContext) entities.UserContext {
-	userContextCopy := userContext
-	userContextCopy.Attributes = make(map[string]interface{})
-	if userContext.Attributes != nil {
-		for k, v := range userContext.Attributes {
-			userContextCopy.Attributes[k] = v
+func copyUserAttributes(attributes map[string]interface{}) (attributesCopy map[string]interface{}) {
+	if attributes != nil {
+		attributesCopy = make(map[string]interface{})
+		for k, v := range attributes {
+			attributesCopy[k] = v
 		}
 	}
-	return userContextCopy
+	return attributesCopy
 }
