@@ -50,6 +50,7 @@ func NewErrorDecision(key string, user OptimizelyUserContext, err error) Optimiz
 	return OptimizelyDecision{
 		flagKey:     key,
 		userContext: user,
+		variables:   optimizelyjson.OptimizelyJSON{},
 		reasons:     []string{err.Error()},
 	}
 }
