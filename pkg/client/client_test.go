@@ -2450,49 +2450,56 @@ func (s *ClientTestSuiteFM) TestGetEnabledFeaturesErrorCases() {
 
 func TestCreateUserContext(t *testing.T) {
 	client := OptimizelyClient{}
-	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{"key": 1212}}
-	optimizelyUserContext := client.CreateUserContext(userContext)
+	userID := "1212121"
+	userAttributes := map[string]interface{}{"key": 1212}
+	optimizelyUserContext := client.CreateUserContext(userID, userAttributes)
 
 	assert.Equal(t, client, *optimizelyUserContext.GetOptimizely())
-	assert.Equal(t, userContext, optimizelyUserContext.GetUserContext())
+	assert.Equal(t, userID, optimizelyUserContext.GetUserID())
+	assert.Equal(t, userAttributes, optimizelyUserContext.GetUserAttributes())
 }
 
 func TestChangingAttributesDoesntEffectUserContext(t *testing.T) {
 	client := OptimizelyClient{}
-	userContext := entities.UserContext{ID: "1", Attributes: map[string]interface{}{"key": 1212}}
-	optimizelyUserContext := client.CreateUserContext(userContext)
+	userID := "1"
+	userAttributes := map[string]interface{}{"key": 1212}
+	optimizelyUserContext := client.CreateUserContext(userID, userAttributes)
 	assert.Equal(t, client, *optimizelyUserContext.GetOptimizely())
 
 	// Changing original values
-	userContext.ID = "2"
-	userContext.Attributes["key"] = 1213
+	userID = "2"
+	userAttributes["key"] = 1213
 	// Verifying that no changes were reflected in the user context
-	actualUserContext := optimizelyUserContext.GetUserContext()
-	assert.Equal(t, "1", actualUserContext.ID)
-	assert.Equal(t, map[string]interface{}{"key": 1212}, actualUserContext.Attributes)
+	assert.Equal(t, "1", optimizelyUserContext.GetUserID())
+	assert.Equal(t, map[string]interface{}{"key": 1212}, optimizelyUserContext.GetUserAttributes())
 }
 
 func TestCreateUserContextNoAttributes(t *testing.T) {
 	client := OptimizelyClient{}
-	userContext := entities.UserContext{ID: "testUser1"}
-	optimizelyUserContext := client.CreateUserContext(userContext)
+	var attributes map[string]interface{}
+	userID := "testUser1"
+	optimizelyUserContext := client.CreateUserContext(userID, attributes)
 
 	assert.Equal(t, client, *optimizelyUserContext.GetOptimizely())
-	assert.Equal(t, map[string]interface{}{}, optimizelyUserContext.GetUserContext().Attributes)
+	assert.Equal(t, attributes, optimizelyUserContext.GetUserAttributes())
 }
 
 func TestCreateUserContextMultiple(t *testing.T) {
 	client := OptimizelyClient{}
-	userContext1 := entities.UserContext{ID: "testUser1", Attributes: map[string]interface{}{"key": 1212}}
-	userContext2 := entities.UserContext{ID: "testUser2", Attributes: map[string]interface{}{"key": 1213}}
+	userID1 := "testUser1"
+	userID2 := "testUser2"
+	userAttributes1 := map[string]interface{}{"key": 1212}
+	userAttributes2 := map[string]interface{}{"key": 1213}
 
-	optimizelyUserContext1 := client.CreateUserContext(userContext1)
-	optimizelyUserContext2 := client.CreateUserContext(userContext2)
+	optimizelyUserContext1 := client.CreateUserContext(userID1, userAttributes1)
+	optimizelyUserContext2 := client.CreateUserContext(userID2, userAttributes2)
 
 	assert.Equal(t, client, *optimizelyUserContext1.GetOptimizely())
 	assert.Equal(t, client, *optimizelyUserContext2.GetOptimizely())
-	assert.Equal(t, userContext1, optimizelyUserContext1.GetUserContext())
-	assert.Equal(t, userContext2, optimizelyUserContext2.GetUserContext())
+	assert.Equal(t, userID1, optimizelyUserContext1.GetUserID())
+	assert.Equal(t, userID2, optimizelyUserContext2.GetUserID())
+	assert.Equal(t, userAttributes1, optimizelyUserContext1.GetUserAttributes())
+	assert.Equal(t, userAttributes2, optimizelyUserContext2.GetUserAttributes())
 }
 
 func TestClose(t *testing.T) {
