@@ -31,8 +31,8 @@ type OptimizelyUserContext struct {
 	mutex       *sync.RWMutex
 }
 
-// NewOptimizelyUserContext returns an instance of the optimizely user context.
-func NewOptimizelyUserContext(optimizely *OptimizelyClient, userContext entities.UserContext) OptimizelyUserContext {
+// returns an instance of the optimizely user context.
+func newOptimizelyUserContext(optimizely *OptimizelyClient, userContext entities.UserContext) OptimizelyUserContext {
 	// store a copy of the provided usercontext so it isn't affected by changes made afterwards.
 	userContextCopy := copyUserContext(userContext)
 	return OptimizelyUserContext{
@@ -63,33 +63,26 @@ func (o *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
 
 // Decide returns a decision result for a given flag key and a user context, which contains
 // all data required to deliver the flag or experiment.
-func (o *OptimizelyUserContext) Decide(key string) OptimizelyDecision {
-	return o.DecideWithOptions(key, []decide.Options{})
-}
-
-// DecideWithOptions returns a decision result for a given flag key and a user context, which contains
-// all data required to deliver the flag or experiment.
-func (o *OptimizelyUserContext) DecideWithOptions(key string, options []decide.Options) OptimizelyDecision {
+func (o *OptimizelyUserContext) Decide(key string, options []decide.Options) OptimizelyDecision {
+	if options == nil {
+		return o.optimizely.decide(*o, key, []decide.Options{})
+	}
 	return o.optimizely.decide(*o, key, options)
 }
 
-// DecideAll returns a key-map of decision results for all active flag keys.
-func (o *OptimizelyUserContext) DecideAll() map[string]OptimizelyDecision {
-	return o.DecideAllWithOptions([]decide.Options{})
-}
-
-// DecideAllWithOptions returns a key-map of decision results for all active flag keys with options.
-func (o *OptimizelyUserContext) DecideAllWithOptions(options []decide.Options) map[string]OptimizelyDecision {
+// DecideAll returns a key-map of decision results for all active flag keys with options.
+func (o *OptimizelyUserContext) DecideAll(options []decide.Options) map[string]OptimizelyDecision {
+	if options == nil {
+		return o.optimizely.decideAll(*o, []decide.Options{})
+	}
 	return o.optimizely.decideAll(*o, options)
 }
 
-// DecideForKeys returns a key-map of decision results for multiple flag keys.
-func (o *OptimizelyUserContext) DecideForKeys(keys []string) map[string]OptimizelyDecision {
-	return o.DecideForKeysWithOptions(keys, []decide.Options{})
-}
-
-// DecideForKeysWithOptions returns a key-map of decision results for multiple flag keys and options.
-func (o *OptimizelyUserContext) DecideForKeysWithOptions(keys []string, options []decide.Options) map[string]OptimizelyDecision {
+// DecideForKeys returns a key-map of decision results for multiple flag keys and options.
+func (o *OptimizelyUserContext) DecideForKeys(keys []string, options []decide.Options) map[string]OptimizelyDecision {
+	if options == nil {
+		return o.optimizely.decideForKeys(*o, keys, []decide.Options{})
+	}
 	return o.optimizely.decideForKeys(*o, keys, options)
 }
 

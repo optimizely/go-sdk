@@ -39,14 +39,6 @@ func FlagNotification(flagKey, variationKey, ruleKey string, enabled, decisionEv
 		"decisionEventDispatched": decisionEventDispatched,
 	}
 
-	decisionInfo["flagKey"] = flagKey
-	decisionInfo["enabled"] = enabled
-	decisionInfo["variables"] = variables
-	decisionInfo["variationKey"] = variationKey
-	decisionInfo["ruleKey"] = ruleKey
-	decisionInfo["reasons"] = reasons
-	decisionInfo["decisionEventDispatched"] = decisionEventDispatched
-
 	decisionNotification := &notification.DecisionNotification{
 		DecisionInfo: decisionInfo,
 		Type:         notification.Flag,

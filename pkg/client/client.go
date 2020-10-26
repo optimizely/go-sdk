@@ -54,7 +54,7 @@ type OptimizelyClient struct {
 // CreateUserContext creates a context of the user for which decision APIs will be called.
 // A user context will be created successfully even when the SDK is not fully configured yet.
 func (o *OptimizelyClient) CreateUserContext(userContext entities.UserContext) OptimizelyUserContext {
-	return NewOptimizelyUserContext(o, userContext)
+	return newOptimizelyUserContext(o, userContext)
 }
 
 func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string, options []decide.Options) OptimizelyDecision {

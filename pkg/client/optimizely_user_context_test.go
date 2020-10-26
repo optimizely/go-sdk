@@ -37,7 +37,7 @@ func (s *OptimizelyUserContextTestSuite) SetupTest() {
 
 func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextWithAttributes() {
 	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{"key1": 1212, "key2": 1213}}
-	optimizelyUserContext := NewOptimizelyUserContext(s.OptimizelyClient, userContext)
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userContext)
 
 	assert.Equal(s.T(), s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 	assert.Equal(s.T(), userContext, optimizelyUserContext.GetUserContext())
@@ -45,7 +45,7 @@ func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextWithAttributes
 
 func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextNoAttributes() {
 	userContext := entities.UserContext{ID: "1212121"}
-	optimizelyUserContext := NewOptimizelyUserContext(s.OptimizelyClient, userContext)
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userContext)
 
 	assert.Equal(s.T(), s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 	assert.Equal(s.T(), map[string]interface{}{}, optimizelyUserContext.GetUserContext().Attributes)
@@ -53,7 +53,7 @@ func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextNoAttributes()
 
 func (s *OptimizelyUserContextTestSuite) TestUpatingProvidedUserContextHasNoImpactOnOptimizelyUserContext() {
 	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{"k1": "v1", "k2": false}}
-	optimizelyUserContext := NewOptimizelyUserContext(s.OptimizelyClient, userContext)
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userContext)
 
 	assert.Equal(s.T(), s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 	assert.Equal(s.T(), userContext, optimizelyUserContext.GetUserContext())
@@ -74,7 +74,7 @@ func (s *OptimizelyUserContextTestSuite) TestUpatingProvidedUserContextHasNoImpa
 
 func (s *OptimizelyUserContextTestSuite) TestSetAttribute() {
 	userContext := entities.UserContext{ID: "1212121"}
-	optimizelyUserContext := NewOptimizelyUserContext(s.OptimizelyClient, userContext)
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userContext)
 	assert.Equal(s.T(), s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 
 	var wg sync.WaitGroup
@@ -99,7 +99,7 @@ func (s *OptimizelyUserContextTestSuite) TestSetAttribute() {
 
 func (s *OptimizelyUserContextTestSuite) TestSetAttributeOverride() {
 	userContext := entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{"k1": "v1", "k2": false}}
-	optimizelyUserContext := NewOptimizelyUserContext(s.OptimizelyClient, userContext)
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userContext)
 
 	assert.Equal(s.T(), s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 	assert.Equal(s.T(), userContext, optimizelyUserContext.GetUserContext())
