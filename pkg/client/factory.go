@@ -83,8 +83,7 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		logger:             logging.GetLogger(f.SDKKey, "OptimizelyClient"),
 	}
 
-	copiedOptions := f.defaultDecideOptions
-	appClient.defaultDecideOptions = copiedOptions
+	appClient.defaultDecideOptions = f.defaultDecideOptions
 
 	if f.configManager != nil {
 		appClient.ConfigManager = f.configManager
