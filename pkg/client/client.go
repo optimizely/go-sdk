@@ -46,7 +46,7 @@ type OptimizelyClient struct {
 	notificationCenter   notification.Center
 	execGroup            *utils.ExecGroup
 	logger               logging.OptimizelyLogProducer
-	defaultDecideOptions []decide.Options
+	defaultDecideOptions decide.OptimizelyDecideOptions
 }
 
 // Decide API
@@ -57,7 +57,7 @@ func (o *OptimizelyClient) CreateUserContext(userID string, attributes map[strin
 	return newOptimizelyUserContext(o, userID, attributes)
 }
 
-func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string, options []decide.Options) OptimizelyDecision {
+func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string, options decide.OptimizelyDecideOptions) OptimizelyDecision {
 	var err error
 	decisionContext := decision.FeatureDecisionContext{}
 	defer func() {
@@ -105,9 +105,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	if featureDecision.Variation != nil {
 		variationKey = featureDecision.Variation.Key
 		if featureDecision.Source == decision.FeatureTest {
-			shouldSendEvent := !decideOptionsContain(allOptions, decide.DisableDecisionEvent)
-
-			if shouldSendEvent {
+			if !allOptions.DisableDecisionEvent {
 				if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
 					featureDecision.Variation, usrContext, key, featureDecision.Experiment.Key, featureDecision.Source); ok {
 					o.EventProcessor.ProcessEvent(ue)
@@ -124,9 +122,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	}
 
 	variableMap := map[string]interface{}{}
-	shouldExcludeVariables := decideOptionsContain(allOptions, decide.ExcludeVariables)
-
-	if !shouldExcludeVariables {
+	if !allOptions.ExcludeVariables {
 		variableMap = o.getDecisionVariableMap(feature, featureDecision.Variation, flagEnabled, decisionReasons)
 	}
 	optimizelyJSON := optimizelyjson.NewOptimizelyJSONfromMap(variableMap)
@@ -144,7 +140,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, userContext, reasonsToReport)
 }
 
-func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options []decide.Options) map[string]OptimizelyDecision {
+func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
@@ -172,7 +168,7 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 		return decisionMap
 	}
 
-	enabledFlagsOnly := decideOptionsContain(o.getAllOptions(options), decide.EnabledFlagsOnly)
+	enabledFlagsOnly := o.getAllOptions(options).EnabledFlagsOnly
 	for _, key := range keys {
 		optimizelyDecision := o.decide(userContext, key, options)
 		if !enabledFlagsOnly || optimizelyDecision.GetEnabled() {
@@ -183,7 +179,7 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 	return decisionMap
 }
 
-func (o *OptimizelyClient) decideAll(userContext OptimizelyUserContext, options []decide.Options) map[string]OptimizelyDecision {
+func (o *OptimizelyClient) decideAll(userContext OptimizelyUserContext, options decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 
 	var err error
 	defer func() {
@@ -819,7 +815,7 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 	}
 
 	decisionContext.Variable = variable
-	options := []decide.Options{}
+	options := decide.OptimizelyDecideOptions{}
 	featureDecision, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext, options, decide.NewDecisionReasons(options))
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature "%s": %s`, featureKey, err))
@@ -850,7 +846,7 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 		ProjectConfig: projectConfig,
 	}
 
-	options := []decide.Options{}
+	options := decide.OptimizelyDecideOptions{}
 	experimentDecision, err = o.DecisionService.GetExperimentDecision(decisionContext, userContext, options, decide.NewDecisionReasons(options))
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for experiment "%s": %s`, experimentKey, err))
@@ -938,9 +934,14 @@ func (o *OptimizelyClient) getProjectConfig() (projectConfig config.ProjectConfi
 	return projectConfig, nil
 }
 
-func (o *OptimizelyClient) getAllOptions(options []decide.Options) []decide.Options {
-	copiedOptions := o.defaultDecideOptions
-	return append(copiedOptions, options...)
+func (o *OptimizelyClient) getAllOptions(options decide.OptimizelyDecideOptions) decide.OptimizelyDecideOptions {
+	return decide.OptimizelyDecideOptions{
+		DisableDecisionEvent:     (o.defaultDecideOptions.DisableDecisionEvent || options.DisableDecisionEvent),
+		EnabledFlagsOnly:         (o.defaultDecideOptions.EnabledFlagsOnly || options.EnabledFlagsOnly),
+		ExcludeVariables:         (o.defaultDecideOptions.ExcludeVariables || options.ExcludeVariables),
+		IgnoreUserProfileService: (o.defaultDecideOptions.IgnoreUserProfileService || options.IgnoreUserProfileService),
+		IncludeReasons:           (o.defaultDecideOptions.IncludeReasons || options.IncludeReasons),
+	}
 }
 
 // GetOptimizelyConfig returns OptimizelyConfig object
@@ -974,15 +975,6 @@ func (o *OptimizelyClient) getDecisionVariableMap(feature entities.Feature, vari
 	}
 
 	return valuesMap
-}
-
-func decideOptionsContain(options []decide.Options, element decide.Options) bool {
-	for _, option := range options {
-		if option == element {
-			return true
-		}
-	}
-	return false
 }
 
 func isNil(v interface{}) bool {

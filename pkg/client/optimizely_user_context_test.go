@@ -141,8 +141,9 @@ func (s *OptimizelyUserContextTestSuite) TestDecide() {
 	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
 	s.Nil(err)
 
+	var options decide.OptimizelyDecideOptions
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-	decision := user.Decide(flagKey, nil)
+	decision := user.Decide(flagKey, options)
 
 	s.Equal("variation_with_traffic", decision.GetVariationKey())
 	s.Equal(true, decision.GetEnabled())
@@ -159,8 +160,9 @@ func (s *OptimizelyUserContextTestSuite) TestDecideForKeyWithOneFlag() {
 	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
 	s.Nil(err)
 
+	var options decide.OptimizelyDecideOptions
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-	decisions := user.DecideForKeys(flagKeys, nil)
+	decisions := user.DecideForKeys(flagKeys, options)
 	s.Len(decisions, 1)
 
 	decision := decisions[flagKey]
@@ -182,8 +184,9 @@ func (s *OptimizelyUserContextTestSuite) TestDecideForKeysWithMultipleFlags() {
 	variablesExpected2, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey2, entities.UserContext{ID: s.userID})
 	s.Nil(err)
 
+	var options decide.OptimizelyDecideOptions
 	user := s.OptimizelyClient.CreateUserContext(s.userID, map[string]interface{}{"gender": "f"})
-	decisions := user.DecideForKeys(flagKeys, nil)
+	decisions := user.DecideForKeys(flagKeys, options)
 	s.Len(decisions, 2)
 
 	decision1 := decisions[flagKey1]
@@ -215,8 +218,9 @@ func (s *OptimizelyUserContextTestSuite) TestDecideAllFlags() {
 	s.Nil(err)
 	variablesExpected3 := optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{})
 
+	var options decide.OptimizelyDecideOptions
 	user := s.OptimizelyClient.CreateUserContext(s.userID, map[string]interface{}{"gender": "f"})
-	decisions := user.DecideAll(nil)
+	decisions := user.DecideAll(options)
 	s.Len(decisions, 3)
 
 	decision1 := decisions[flagKey1]
@@ -253,7 +257,9 @@ func (s *OptimizelyUserContextTestSuite) TestDecideAllEnabledFlagsOnly() {
 	s.Nil(err)
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, map[string]interface{}{"gender": "f"})
-	decisions := user.DecideAll([]decide.Options{decide.EnabledFlagsOnly})
+	decisions := user.DecideAll(decide.OptimizelyDecideOptions{
+		EnabledFlagsOnly: true,
+	})
 	s.Len(decisions, 2)
 
 	decision1 := decisions[flagKey1]
@@ -313,9 +319,10 @@ func (s *OptimizelyUserContextTestSuite) TestDecideSendEvent() {
 	flagKey := "feature_2"
 	experimentID := "10420810910"
 	variationID := "10418551353"
+	var options decide.OptimizelyDecideOptions
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-	decision := user.Decide(flagKey, nil)
+	decision := user.Decide(flagKey, options)
 
 	s.Equal("variation_with_traffic", decision.GetVariationKey())
 	s.True(len(s.eventProcessor.Events) == 1)
@@ -328,7 +335,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideDoNotSendEvent() {
 	flagKey := "feature_2"
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-	decision := user.Decide(flagKey, []decide.Options{decide.DisableDecisionEvent})
+	decision := user.Decide(flagKey, decide.OptimizelyDecideOptions{DisableDecisionEvent: true})
 
 	s.Equal("variation_with_traffic", decision.GetVariationKey())
 	s.True(len(s.eventProcessor.Events) == 0)

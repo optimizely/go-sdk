@@ -33,7 +33,7 @@ type CompositeExperimentTestSuite struct {
 	mockExperimentService  *MockExperimentDecisionService
 	mockExperimentService2 *MockExperimentDecisionService
 	testDecisionContext    ExperimentDecisionContext
-	options                []decide.Options
+	options                decide.OptimizelyDecideOptions
 	reasons                decide.DecisionReasons
 }
 
@@ -41,7 +41,7 @@ func (s *CompositeExperimentTestSuite) SetupTest() {
 	s.mockConfig = new(mockProjectConfig)
 	s.mockExperimentService = new(MockExperimentDecisionService)
 	s.mockExperimentService2 = new(MockExperimentDecisionService)
-	s.options = []decide.Options{}
+	s.options = decide.OptimizelyDecideOptions{}
 	s.reasons = decide.NewDecisionReasons(s.options)
 
 	// Setup test data

@@ -29,7 +29,7 @@ import (
 type CompositeServiceFeatureTestSuite struct {
 	suite.Suite
 	decisionContext    FeatureDecisionContext
-	options            []decide.Options
+	options            decide.OptimizelyDecideOptions
 	reasons            decide.DecisionReasons
 	mockFeatureService *MockFeatureDecisionService
 	testUserContext    entities.UserContext
@@ -42,7 +42,7 @@ func (s *CompositeServiceFeatureTestSuite) SetupTest() {
 		Feature:       &testFeat3333,
 		ProjectConfig: mockConfig,
 	}
-	s.options = []decide.Options{}
+	s.options = decide.OptimizelyDecideOptions{}
 	s.reasons = decide.NewDecisionReasons(s.options)
 	s.mockFeatureService = new(MockFeatureDecisionService)
 	s.testUserContext = entities.UserContext{
@@ -85,7 +85,7 @@ func (s *CompositeServiceFeatureTestSuite) TestNewCompositeServiceWithCustomOpti
 type CompositeServiceExperimentTestSuite struct {
 	suite.Suite
 	decisionContext       ExperimentDecisionContext
-	options               []decide.Options
+	options               decide.OptimizelyDecideOptions
 	reasons               decide.DecisionReasons
 	mockExperimentService *MockExperimentDecisionService
 	testUserContext       entities.UserContext
@@ -97,7 +97,7 @@ func (s *CompositeServiceExperimentTestSuite) SetupTest() {
 		Experiment:    &testExp1111,
 		ProjectConfig: mockConfig,
 	}
-	s.options = []decide.Options{}
+	s.options = decide.OptimizelyDecideOptions{}
 	s.reasons = decide.NewDecisionReasons(s.options)
 	s.mockExperimentService = new(MockExperimentDecisionService)
 	s.testUserContext = entities.UserContext{

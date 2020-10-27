@@ -33,7 +33,7 @@ func TestRegister(t *testing.T) {
 	}
 	Register("test", expected)
 	actual := assertMatcher(t, "test")
-	matches, err := actual(entities.Condition{}, entities.UserContext{}, nil, decide.NewDecisionReasons([]decide.Options{}))
+	matches, err := actual(entities.Condition{}, entities.UserContext{}, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 	assert.False(t, matches)
 	assert.NoError(t, err)
 }

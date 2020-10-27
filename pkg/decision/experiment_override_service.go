@@ -91,7 +91,7 @@ func NewExperimentOverrideService(overrides ExperimentOverrideStore, logger logg
 }
 
 // GetDecision returns a decision with a variation when the store returns a variation assignment for the given user and experiment
-func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options []decide.Options, reasons decide.DecisionReasons) (experimentDecision ExperimentDecision, err error) {
+func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (experimentDecision ExperimentDecision, err error) {
 	decision := ExperimentDecision{}
 
 	if decisionContext.Experiment == nil {

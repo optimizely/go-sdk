@@ -23,14 +23,21 @@ import (
 )
 
 func TestNewDecisionReasonsWithEmptyOptions(t *testing.T) {
-	reasons := NewDecisionReasons([]Options{})
+	reasons := NewDecisionReasons(OptimizelyDecideOptions{})
 	assert.Equal(t, 0, len(reasons.errors))
 	assert.Equal(t, 0, len(reasons.logs))
 	assert.Equal(t, 0, len(reasons.ToReport()))
 }
 
 func TestAddErrorWorksWithEveryOption(t *testing.T) {
-	reasons := NewDecisionReasons([]Options{DisableDecisionEvent, EnabledFlagsOnly, IgnoreUserProfileService, ExcludeVariables, IncludeReasons})
+	options := OptimizelyDecideOptions{
+		DisableDecisionEvent:     true,
+		EnabledFlagsOnly:         true,
+		IgnoreUserProfileService: true,
+		ExcludeVariables:         true,
+		IncludeReasons:           true,
+	}
+	reasons := NewDecisionReasons(options)
 	reasons.AddError("error message")
 	assert.Equal(t, 1, len(reasons.errors))
 
@@ -40,7 +47,13 @@ func TestAddErrorWorksWithEveryOption(t *testing.T) {
 }
 
 func TestInfoLogsAreOnlyReportedWhenIncludeReasonsOptionIsSet(t *testing.T) {
-	reasons := NewDecisionReasons([]Options{DisableDecisionEvent, EnabledFlagsOnly, IgnoreUserProfileService, ExcludeVariables})
+	options := OptimizelyDecideOptions{
+		DisableDecisionEvent:     true,
+		EnabledFlagsOnly:         true,
+		IgnoreUserProfileService: true,
+		ExcludeVariables:         true,
+	}
+	reasons := NewDecisionReasons(options)
 	reasons.AddError("error message")
 	reasons.AddInfof("info message")
 
@@ -48,7 +61,8 @@ func TestInfoLogsAreOnlyReportedWhenIncludeReasonsOptionIsSet(t *testing.T) {
 	assert.Equal(t, 1, len(reportedReasons))
 	assert.Equal(t, "error message", reportedReasons[0])
 
-	reasons = NewDecisionReasons([]Options{DisableDecisionEvent, EnabledFlagsOnly, IgnoreUserProfileService, ExcludeVariables, IncludeReasons})
+	options.IncludeReasons = true
+	reasons = NewDecisionReasons(options)
 	reasons.AddError("error message")
 	reasons.AddInfof("info message")
 

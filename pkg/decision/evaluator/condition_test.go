@@ -30,14 +30,14 @@ type ConditionTestSuite struct {
 	suite.Suite
 	mockLogger         *MockLogger
 	conditionEvaluator *CustomAttributeConditionEvaluator
-	options            []decide.Options
+	options            decide.OptimizelyDecideOptions
 	reasons            decide.DecisionReasons
 }
 
 func (s *ConditionTestSuite) SetupTest() {
 	s.mockLogger = new(MockLogger)
 	s.conditionEvaluator = NewCustomAttributeConditionEvaluator(s.mockLogger)
-	s.options = []decide.Options{}
+	s.options = decide.OptimizelyDecideOptions{}
 	s.reasons = decide.NewDecisionReasons(s.options)
 }
 
