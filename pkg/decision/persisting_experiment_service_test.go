@@ -39,7 +39,7 @@ type PersistingExperimentServiceTestSuite struct {
 	mockUserProfileService *MockUserProfileService
 	testComputedDecision   ExperimentDecision
 	testDecisionContext    ExperimentDecisionContext
-	options                []decide.Options
+	options                decide.OptimizelyDecideOptions
 	reasons                decide.DecisionReasons
 }
 
@@ -56,7 +56,7 @@ func (s *PersistingExperimentServiceTestSuite) SetupTest() {
 	s.testComputedDecision = ExperimentDecision{
 		Variation: &computedVariation,
 	}
-	s.options = []decide.Options{}
+	s.options = decide.OptimizelyDecideOptions{}
 	s.reasons = decide.NewDecisionReasons(s.options)
 	s.mockExperimentService.On("GetDecision", s.testDecisionContext, testUserContext, s.options, s.reasons).Return(s.testComputedDecision, nil)
 }

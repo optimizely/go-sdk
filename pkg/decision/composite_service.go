@@ -65,13 +65,13 @@ func NewCompositeService(sdkKey string, options ...CSOptionFunc) *CompositeServi
 }
 
 // GetFeatureDecision returns a decision for the given feature key
-func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecisionContext, userContext entities.UserContext, options []decide.Options, reasons decide.DecisionReasons) (FeatureDecision, error) {
+func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (FeatureDecision, error) {
 	featureDecision, err := s.compositeFeatureService.GetDecision(featureDecisionContext, userContext, options, reasons)
 	return featureDecision, err
 }
 
 // GetExperimentDecision returns a decision for the given experiment key
-func (s CompositeService) GetExperimentDecision(experimentDecisionContext ExperimentDecisionContext, userContext entities.UserContext, options []decide.Options, reasons decide.DecisionReasons) (experimentDecision ExperimentDecision, err error) {
+func (s CompositeService) GetExperimentDecision(experimentDecisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (experimentDecision ExperimentDecision, err error) {
 	if experimentDecision, err = s.compositeExperimentService.GetDecision(experimentDecisionContext, userContext, options, reasons); err != nil {
 		return experimentDecision, err
 	}

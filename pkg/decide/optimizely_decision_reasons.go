@@ -30,18 +30,11 @@ type DecisionReasons struct {
 }
 
 // NewDecisionReasons returns a new instance of DecisionReasons.
-func NewDecisionReasons(options []Options) DecisionReasons {
-	includeReasons := false
-	for option := range options {
-		if option == int(IncludeReasons) {
-			includeReasons = true
-			break
-		}
-	}
+func NewDecisionReasons(options OptimizelyDecideOptions) DecisionReasons {
 	return DecisionReasons{
 		errors:         []string{},
 		logs:           []string{},
-		includeReasons: includeReasons,
+		includeReasons: options.IncludeReasons,
 		mutex:          new(sync.RWMutex),
 	}
 }

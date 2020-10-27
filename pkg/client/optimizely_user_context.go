@@ -26,9 +26,8 @@ import (
 
 // OptimizelyUserContext defines user contexts that the SDK will use to make decisions for.
 type OptimizelyUserContext struct {
+	entities.UserContext
 	optimizely *OptimizelyClient
-	userID     string
-	attributes map[string]interface{}
 	mutex      *sync.RWMutex
 }
 
@@ -36,11 +35,15 @@ type OptimizelyUserContext struct {
 func newOptimizelyUserContext(optimizely *OptimizelyClient, userID string, attributes map[string]interface{}) OptimizelyUserContext {
 	// store a copy of the provided attributes so it isn't affected by changes made afterwards.
 	attributesCopy := copyUserAttributes(attributes)
+
+	userContext := entities.UserContext{
+		ID:         userID,
+		Attributes: attributesCopy,
+	}
 	return OptimizelyUserContext{
-		optimizely: optimizely,
-		userID:     userID,
-		attributes: attributesCopy,
-		mutex:      new(sync.RWMutex),
+		UserContext: userContext,
+		optimizely:  optimizely,
+		mutex:       new(sync.RWMutex),
 	}
 }
 
@@ -51,39 +54,39 @@ func (o *OptimizelyUserContext) GetOptimizely() *OptimizelyClient {
 
 // GetUserID returns userID for Optimizely user context
 func (o *OptimizelyUserContext) GetUserID() string {
-	return o.userID
+	return o.UserContext.ID
 }
 
 // GetUserAttributes returns user attributes for Optimizely user context
 func (o *OptimizelyUserContext) GetUserAttributes() map[string]interface{} {
 	o.mutex.RLock()
 	defer o.mutex.RUnlock()
-	return copyUserAttributes(o.attributes)
+	return copyUserAttributes(o.UserContext.Attributes)
 }
 
 // SetAttribute sets an attribute for a given key.
 func (o *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
-	if o.attributes == nil {
-		o.attributes = make(map[string]interface{})
+	if o.UserContext.Attributes == nil {
+		o.UserContext.Attributes = make(map[string]interface{})
 	}
-	o.attributes[key] = value
+	o.UserContext.Attributes[key] = value
 }
 
 // Decide returns a decision result for a given flag key and a user context, which contains
 // all data required to deliver the flag or experiment.
-func (o *OptimizelyUserContext) Decide(key string, options []decide.Options) OptimizelyDecision {
+func (o *OptimizelyUserContext) Decide(key string, options decide.OptimizelyDecideOptions) OptimizelyDecision {
 	return NewErrorDecision(key, OptimizelyUserContext{}, decide.GetError(decide.SDKNotReady))
 }
 
 // DecideAll returns a key-map of decision results for all active flag keys with options.
-func (o *OptimizelyUserContext) DecideAll(options []decide.Options) map[string]OptimizelyDecision {
+func (o *OptimizelyUserContext) DecideAll(options decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	return map[string]OptimizelyDecision{}
 }
 
 // DecideForKeys returns a key-map of decision results for multiple flag keys and options.
-func (o *OptimizelyUserContext) DecideForKeys(keys []string, options []decide.Options) map[string]OptimizelyDecision {
+func (o *OptimizelyUserContext) DecideForKeys(keys []string, options decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	return map[string]OptimizelyDecision{}
 }
 

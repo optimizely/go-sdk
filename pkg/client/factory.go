@@ -41,7 +41,7 @@ type OptimizelyFactory struct {
 	configManager        config.ProjectConfigManager
 	ctx                  context.Context
 	decisionService      decision.Service
-	defaultDecideOptions []decide.Options
+	defaultDecideOptions decide.OptimizelyDecideOptions
 	eventDispatcher      event.Dispatcher
 	eventProcessor       event.Processor
 	userProfileService   decision.UserProfileService
@@ -79,14 +79,12 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 
 	eg := utils.NewExecGroup(ctx, logging.GetLogger(f.SDKKey, "ExecGroup"))
 	appClient := &OptimizelyClient{execGroup: eg,
-		notificationCenter:   registry.GetNotificationCenter(f.SDKKey),
-		logger:               logging.GetLogger(f.SDKKey, "OptimizelyClient"),
-		defaultDecideOptions: []decide.Options{},
+		notificationCenter: registry.GetNotificationCenter(f.SDKKey),
+		logger:             logging.GetLogger(f.SDKKey, "OptimizelyClient"),
 	}
 
-	if len(f.defaultDecideOptions) > 0 {
-		appClient.defaultDecideOptions = f.defaultDecideOptions
-	}
+	copiedOptions := f.defaultDecideOptions
+	appClient.defaultDecideOptions = copiedOptions
 
 	if f.configManager != nil {
 		appClient.ConfigManager = f.configManager
@@ -176,7 +174,7 @@ func WithDecisionService(decisionService decision.Service) OptionFunc {
 }
 
 // WithDefaultDecideOptions sets default decide options on a client.
-func WithDefaultDecideOptions(decideOptions []decide.Options) OptionFunc {
+func WithDefaultDecideOptions(decideOptions decide.OptimizelyDecideOptions) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.defaultDecideOptions = decideOptions
 	}

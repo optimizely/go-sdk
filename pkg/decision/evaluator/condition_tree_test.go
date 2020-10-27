@@ -72,14 +72,14 @@ var int42Condition = e.Condition{
 type ConditionTreeTestSuite struct {
 	suite.Suite
 	mockLogger             *MockLogger
-	options                []decide.Options
+	options                decide.OptimizelyDecideOptions
 	reasons                decide.DecisionReasons
 	conditionTreeEvaluator *MixedTreeEvaluator
 }
 
 func (s *ConditionTreeTestSuite) SetupTest() {
 	s.mockLogger = new(MockLogger)
-	s.options = []decide.Options{}
+	s.options = decide.OptimizelyDecideOptions{}
 	s.reasons = decide.NewDecisionReasons(s.options)
 	s.conditionTreeEvaluator = NewMixedTreeEvaluator(s.mockLogger)
 }

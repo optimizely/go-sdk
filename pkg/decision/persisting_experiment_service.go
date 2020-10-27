@@ -46,7 +46,7 @@ func NewPersistingExperimentService(userProfileService UserProfileService, exper
 }
 
 // GetDecision returns the decision with the variation the user is bucketed into
-func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options []decide.Options, reasons decide.DecisionReasons) (experimentDecision ExperimentDecision, err error) {
+func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (experimentDecision ExperimentDecision, err error) {
 	if p.userProfileService == nil {
 		return p.experimentBucketedService.GetDecision(decisionContext, userContext, options, reasons)
 	}
@@ -68,8 +68,8 @@ func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecis
 	return experimentDecision, err
 }
 
-func (p PersistingExperimentService) getSavedDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options []decide.Options, _ decide.DecisionReasons) (ExperimentDecision, UserProfile) {
-	if p.shouldIgnoreUPS(options) {
+func (p PersistingExperimentService) getSavedDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, _ decide.DecisionReasons) (ExperimentDecision, UserProfile) {
+	if options.IgnoreUserProfileService {
 		return ExperimentDecision{}, UserProfile{}
 	}
 	experimentDecision := ExperimentDecision{}
@@ -93,8 +93,8 @@ func (p PersistingExperimentService) getSavedDecision(decisionContext Experiment
 	return experimentDecision, userProfile
 }
 
-func (p PersistingExperimentService) saveDecision(userProfile UserProfile, experiment *entities.Experiment, decision ExperimentDecision, options []decide.Options, _ decide.DecisionReasons) {
-	if p.shouldIgnoreUPS(options) {
+func (p PersistingExperimentService) saveDecision(userProfile UserProfile, experiment *entities.Experiment, decision ExperimentDecision, options decide.OptimizelyDecideOptions, _ decide.DecisionReasons) {
+	if options.IgnoreUserProfileService {
 		return
 	}
 	if p.userProfileService != nil {
@@ -106,13 +106,4 @@ func (p PersistingExperimentService) saveDecision(userProfile UserProfile, exper
 		p.userProfileService.Save(userProfile)
 		p.logger.Debug(fmt.Sprintf(`Decision saved for user "%s".`, userProfile.ID))
 	}
-}
-
-func (p PersistingExperimentService) shouldIgnoreUPS(options []decide.Options) bool {
-	for option := range options {
-		if option == int(decide.IgnoreUserProfileService) {
-			return true
-		}
-	}
-	return false
 }

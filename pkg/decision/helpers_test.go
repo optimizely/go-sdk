@@ -58,7 +58,7 @@ type MockExperimentDecisionService struct {
 	mock.Mock
 }
 
-func (m *MockExperimentDecisionService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options []decide.Options, reasons decide.DecisionReasons) (ExperimentDecision, error) {
+func (m *MockExperimentDecisionService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (ExperimentDecision, error) {
 	args := m.Called(decisionContext, userContext, options, reasons)
 	return args.Get(0).(ExperimentDecision), args.Error(1)
 }
@@ -67,7 +67,7 @@ type MockFeatureDecisionService struct {
 	mock.Mock
 }
 
-func (m *MockFeatureDecisionService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options []decide.Options, reasons decide.DecisionReasons) (FeatureDecision, error) {
+func (m *MockFeatureDecisionService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (FeatureDecision, error) {
 	args := m.Called(decisionContext, userContext, options, reasons)
 	return args.Get(0).(FeatureDecision), args.Error(1)
 }
@@ -90,7 +90,7 @@ func (m *MockUserProfileService) Save(userProfile UserProfile) {
 	m.Called(userProfile)
 }
 
-func (m *MockAudienceTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters, options []decide.Options, reasons decide.DecisionReasons) (evalResult, isValid bool) {
+func (m *MockAudienceTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (evalResult, isValid bool) {
 	args := m.Called(node, condTreeParams, options, reasons)
 	return args.Bool(0), args.Bool(1)
 }
