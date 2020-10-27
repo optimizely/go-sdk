@@ -46,7 +46,7 @@ type OptimizelyClient struct {
 	notificationCenter   notification.Center
 	execGroup            *utils.ExecGroup
 	logger               logging.OptimizelyLogProducer
-	defaultDecideOptions []decide.Options
+	defaultDecideOptions decide.OptimizelyDecideOptions
 }
 
 // CreateUserContext creates a context of the user for which decision APIs will be called.
