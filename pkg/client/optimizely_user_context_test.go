@@ -23,7 +23,9 @@ import (
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/decide"
+	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/optimizelyjson"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -36,6 +38,7 @@ type OptimizelyUserContextTestSuite struct {
 	suite.Suite
 	*OptimizelyClient
 	userID         string
+	factory        OptimizelyFactory
 	eventProcessor *MockProcessor
 }
 
@@ -46,8 +49,8 @@ func (s *OptimizelyUserContextTestSuite) SetupTest() {
 	})
 	s.eventProcessor = new(MockProcessor)
 	s.eventProcessor.On("ProcessEvent", mock.AnythingOfType("event.UserEvent")).Return(true)
-	factory := OptimizelyFactory{Datafile: datafile}
-	s.OptimizelyClient, _ = factory.Client(WithEventProcessor(s.eventProcessor))
+	s.factory = OptimizelyFactory{Datafile: datafile}
+	s.OptimizelyClient, _ = s.factory.Client(WithEventProcessor(s.eventProcessor))
 	s.userID = "tester"
 }
 
@@ -339,6 +342,125 @@ func (s *OptimizelyUserContextTestSuite) TestDecideDoNotSendEvent() {
 
 	s.Equal("variation_with_traffic", decision.GetVariationKey())
 	s.True(len(s.eventProcessor.Events) == 0)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecisionNotification() {
+	flagKey := "feature_2"
+	variationKey := "variation_with_traffic"
+	enabled := true
+	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
+	s.Nil(err)
+
+	ruleKey := "exp_no_audience"
+	reasons := []string{}
+	attributes := map[string]interface{}{"gender": "f"}
+	user := s.OptimizelyClient.CreateUserContext(s.userID, attributes)
+	var receivedNotification notification.DecisionNotification
+	callback := func(notification notification.DecisionNotification) {
+		receivedNotification = notification
+	}
+
+	expectedDecisionInfo := map[string]interface{}{
+		"flagKey":                 flagKey,
+		"variationKey":            variationKey,
+		"enabled":                 enabled,
+		"variables":               variablesExpected.ToMap(),
+		"ruleKey":                 ruleKey,
+		"reasons":                 reasons,
+		"decisionEventDispatched": true,
+	}
+	s.OptimizelyClient.DecisionService.OnDecision(callback)
+	_ = user.Decide(flagKey, decide.OptimizelyDecideOptions{})
+
+	s.Equal(notification.Flag, receivedNotification.Type)
+	s.Equal(s.userID, receivedNotification.UserContext.ID)
+	s.Equal(attributes, receivedNotification.UserContext.Attributes)
+	s.Equal(expectedDecisionInfo, receivedNotification.DecisionInfo)
+
+	receivedNotification = notification.DecisionNotification{}
+	expectedDecisionInfo["decisionEventDispatched"] = false
+	_ = user.Decide(flagKey, decide.OptimizelyDecideOptions{DisableDecisionEvent: true})
+	s.Equal(expectedDecisionInfo, receivedNotification.DecisionInfo)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecideOptionsBypassUps() {
+	flagKey := "feature_2" // embedding experiment: "exp_no_audience"
+	experimentID := "10420810910"
+	variationID2 := "10418510624"
+	variationKey1 := "variation_with_traffic"
+	variationKey2 := "variation_no_traffic"
+
+	userProfileService := new(MockUserProfileService)
+	s.OptimizelyClient, _ = s.factory.Client(
+		WithEventProcessor(s.eventProcessor),
+		WithUserProfileService(userProfileService),
+	)
+
+	decisionKey := decision.NewUserDecisionKey(experimentID)
+	savedUserProfile := decision.UserProfile{
+		ID:                  s.userID,
+		ExperimentBucketMap: map[decision.UserDecisionKey]string{decisionKey: variationID2},
+	}
+	userProfileService.On("Lookup", s.userID).Return(savedUserProfile)
+	userProfileService.On("Save", mock.Anything)
+
+	userContext := s.OptimizelyClient.CreateUserContext(s.userID, map[string]interface{}{})
+	decision := userContext.Decide(flagKey, decide.OptimizelyDecideOptions{})
+	// should return variationId2 set by UPS
+	s.Equal(variationKey2, decision.GetVariationKey())
+
+	decision = userContext.Decide(flagKey, decide.OptimizelyDecideOptions{IgnoreUserProfileService: true})
+	// should ignore variationId2 set by UPS and return variationId1
+	s.Equal(variationKey1, decision.GetVariationKey())
+	// also should not save either
+	userProfileService.AssertNotCalled(s.T(), "Save", mock.Anything)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecideOptionsExcludeVariables() {
+	flagKey := "feature_1"
+	var options decide.OptimizelyDecideOptions
+	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
+
+	decision := user.Decide(flagKey, options)
+	s.True(len(decision.GetVariables().ToMap()) > 0)
+
+	options.ExcludeVariables = true
+	decision = user.Decide(flagKey, options)
+	s.Len(decision.GetVariables().ToMap(), 0)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecideOptionsIncludeReasons() {
+	flagKey := "invalid_key"
+	var options decide.OptimizelyDecideOptions
+	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
+
+	// invalid flag key
+	decision := user.Decide(flagKey, options)
+	s.Len(decision.GetReasons(), 1)
+	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey), decision.GetReasons()[0])
+
+	// invalid flag key with includeReasons
+	options.IncludeReasons = true
+	decision = user.Decide(flagKey, options)
+	s.Len(decision.GetReasons(), 1)
+	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey), decision.GetReasons()[0])
+
+	// valid flag key
+	options.IncludeReasons = false
+	flagKey = "feature_1"
+	decision = user.Decide(flagKey, options)
+	s.Len(decision.GetReasons(), 0)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptions() {
+	flagKey := "feature_1"
+	options := decide.OptimizelyDecideOptions{ExcludeVariables: true}
+	client, _ := s.factory.Client(WithEventProcessor(s.eventProcessor), WithDefaultDecideOptions(options))
+	userContext := client.CreateUserContext(s.userID, nil)
+
+	// should be excluded by DefaultDecideOption
+	decision := userContext.Decide(flagKey, decide.OptimizelyDecideOptions{})
+	s.Len(decision.GetVariables().ToMap(), 0)
 }
 
 func TestOptimizelyUserContextTestSuite(t *testing.T) {

@@ -181,6 +181,15 @@ type MockUserProfileService struct {
 	mock.Mock
 }
 
+func (m *MockUserProfileService) Lookup(userID string) decision.UserProfile {
+	args := m.Called(userID)
+	return args.Get(0).(decision.UserProfile)
+}
+
+func (m *MockUserProfileService) Save(userProfile decision.UserProfile) {
+	m.Called(userProfile)
+}
+
 // Helper methods for creating test entities
 func makeTestExperiment(experimentKey string) entities.Experiment {
 	return entities.Experiment{
