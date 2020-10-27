@@ -463,6 +463,83 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptions() {
 	s.Len(decision.GetVariables().ToMap(), 0)
 }
 
+func (s *OptimizelyUserContextTestSuite) TestDecideSDKNotReady() {
+	flagKey := "feature_1"
+	factory := OptimizelyFactory{SDKKey: "121"}
+	client, _ := factory.Client()
+	userContext := client.CreateUserContext(s.userID, nil)
+	decision := userContext.Decide(flagKey, decide.OptimizelyDecideOptions{})
+
+	s.Equal("", decision.GetVariationKey())
+	s.False(decision.GetEnabled())
+	s.Len(decision.GetVariables().ToMap(), 0)
+	s.Equal(decision.GetFlagKey(), flagKey)
+	s.Equal(decision.GetUserContext(), userContext)
+	s.Len(decision.GetReasons(), 1)
+	s.Equal(decide.GetDecideMessage(decide.SDKNotReady), decision.GetReasons()[0])
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecideInvalidFeatureKey() {
+	flagKey := "invalid_key"
+	userContext := s.OptimizelyClient.CreateUserContext(s.userID, nil)
+	decision := userContext.Decide(flagKey, decide.OptimizelyDecideOptions{})
+
+	s.Equal("", decision.GetVariationKey())
+	s.False(decision.GetEnabled())
+	s.Len(decision.GetVariables().ToMap(), 0)
+	s.Equal(decision.GetFlagKey(), flagKey)
+	s.Equal(decision.GetUserContext(), userContext)
+	s.Len(decision.GetReasons(), 1)
+	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey), decision.GetReasons()[0])
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecideForKeySDKNotReady() {
+	flagKeys := []string{"feature_1"}
+	factory := OptimizelyFactory{SDKKey: "121"}
+	client, _ := factory.Client()
+	userContext := client.CreateUserContext(s.userID, nil)
+	decisions := userContext.DecideForKeys(flagKeys, decide.OptimizelyDecideOptions{})
+
+	s.Len(decisions, 0)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecideAllSDKNotReady() {
+	factory := OptimizelyFactory{SDKKey: "121"}
+	client, _ := factory.Client()
+	userContext := client.CreateUserContext(s.userID, nil)
+	decisions := userContext.DecideAll(decide.OptimizelyDecideOptions{})
+
+	s.Len(decisions, 0)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecideForKeysErrorDecisionIncluded() {
+	flagKey1 := "feature_2"
+	flagKey2 := "invalid_key"
+	flagKeys := []string{flagKey1, flagKey2}
+	variablesExpected1, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey1, entities.UserContext{ID: s.userID})
+	s.Nil(err)
+
+	var options decide.OptimizelyDecideOptions
+	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
+	decisions := user.DecideForKeys(flagKeys, options)
+	s.Len(decisions, 2)
+
+	decision := decisions[flagKey1]
+	s.Equal("variation_with_traffic", decision.GetVariationKey())
+	s.Equal(true, decision.GetEnabled())
+	s.Equal(variablesExpected1.ToMap(), decision.GetVariables().ToMap())
+	s.Equal("exp_no_audience", decision.GetRuleKey())
+	s.Equal(flagKey1, decision.GetFlagKey())
+	s.Equal(user, decision.GetUserContext())
+	s.Len(decision.GetReasons(), 0)
+
+	decision = decisions[flagKey2]
+	s.Equal(flagKey2, decision.GetFlagKey())
+	s.Equal(user, decision.GetUserContext())
+	s.Len(decision.GetReasons(), 1)
+	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey2), decision.GetReasons()[0])
+}
+
 func TestOptimizelyUserContextTestSuite(t *testing.T) {
 	suite.Run(t, new(OptimizelyUserContextTestSuite))
 }
