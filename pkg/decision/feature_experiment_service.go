@@ -40,7 +40,7 @@ func NewFeatureExperimentService(logger logging.OptimizelyLogProducer, composite
 }
 
 // GetDecision returns a decision for the given feature test and user context
-func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (FeatureDecision, error) {
+func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons *decide.DecisionReasons) (FeatureDecision, error) {
 	feature := decisionContext.Feature
 	// @TODO this can be improved by getting group ID first and determining experiment and then bucketing in experiment
 	for _, featureExperiment := range feature.FeatureExperiments {

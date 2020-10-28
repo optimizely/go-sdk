@@ -34,7 +34,7 @@ type CompositeExperimentTestSuite struct {
 	mockExperimentService2 *MockExperimentDecisionService
 	testDecisionContext    ExperimentDecisionContext
 	options                decide.OptimizelyDecideOptions
-	reasons                decide.DecisionReasons
+	reasons                *decide.DecisionReasons
 }
 
 func (s *CompositeExperimentTestSuite) SetupTest() {

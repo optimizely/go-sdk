@@ -26,7 +26,7 @@ import (
 )
 
 // Matcher type is used to evaluate audience conditional primitives
-type Matcher func(entities.Condition, entities.UserContext, logging.OptimizelyLogProducer, decide.DecisionReasons) (bool, error)
+type Matcher func(entities.Condition, entities.UserContext, logging.OptimizelyLogProducer, *decide.DecisionReasons) (bool, error)
 
 const (
 	// ExactMatchType name for the "exact" matcher

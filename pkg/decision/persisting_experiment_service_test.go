@@ -40,7 +40,7 @@ type PersistingExperimentServiceTestSuite struct {
 	testComputedDecision   ExperimentDecision
 	testDecisionContext    ExperimentDecisionContext
 	options                decide.OptimizelyDecideOptions
-	reasons                decide.DecisionReasons
+	reasons                *decide.DecisionReasons
 }
 
 func (s *PersistingExperimentServiceTestSuite) SetupTest() {

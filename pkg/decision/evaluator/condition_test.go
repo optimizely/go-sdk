@@ -31,7 +31,7 @@ type ConditionTestSuite struct {
 	mockLogger         *MockLogger
 	conditionEvaluator *CustomAttributeConditionEvaluator
 	options            decide.OptimizelyDecideOptions
-	reasons            decide.DecisionReasons
+	reasons            *decide.DecisionReasons
 }
 
 func (s *ConditionTestSuite) SetupTest() {

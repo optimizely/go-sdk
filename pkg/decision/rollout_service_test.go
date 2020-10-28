@@ -42,7 +42,7 @@ type RolloutServiceTestSuite struct {
 	testUserContext                   entities.UserContext
 	mockLogger                        *MockLogger
 	options                           decide.OptimizelyDecideOptions
-	reasons                           decide.DecisionReasons
+	reasons                           *decide.DecisionReasons
 }
 
 func (s *RolloutServiceTestSuite) SetupTest() {

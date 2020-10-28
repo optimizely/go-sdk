@@ -28,7 +28,7 @@ import (
 
 // ItemEvaluator evaluates a condition against the given user's attributes
 type ItemEvaluator interface {
-	Evaluate(interface{}, *entities.TreeParameters, decide.OptimizelyDecideOptions, decide.DecisionReasons) (bool, error)
+	Evaluate(interface{}, *entities.TreeParameters, decide.OptimizelyDecideOptions, *decide.DecisionReasons) (bool, error)
 }
 
 // CustomAttributeConditionEvaluator evaluates conditions with custom attributes
@@ -42,7 +42,7 @@ func NewCustomAttributeConditionEvaluator(logger logging.OptimizelyLogProducer) 
 }
 
 // Evaluate returns true if the given user's attributes match the condition
-func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *entities.TreeParameters, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (bool, error) {
+func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *entities.TreeParameters, options decide.OptimizelyDecideOptions, reasons *decide.DecisionReasons) (bool, error) {
 	// We should only be evaluating custom attributes
 
 	if condition.Type != customAttributeType {
@@ -75,7 +75,7 @@ func NewAudienceConditionEvaluator(logger logging.OptimizelyLogProducer) *Audien
 }
 
 // Evaluate returns true if the given user's attributes match the condition
-func (c AudienceConditionEvaluator) Evaluate(audienceID string, condTreeParams *entities.TreeParameters, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (bool, error) {
+func (c AudienceConditionEvaluator) Evaluate(audienceID string, condTreeParams *entities.TreeParameters, options decide.OptimizelyDecideOptions, reasons *decide.DecisionReasons) (bool, error) {
 	if audience, ok := condTreeParams.AudienceMap[audienceID]; ok {
 		c.logger.Debug(fmt.Sprintf(logging.AudienceEvaluationStarted.String(), audienceID))
 		condTree := audience.ConditionTree

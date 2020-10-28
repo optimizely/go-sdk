@@ -30,8 +30,8 @@ type DecisionReasons struct {
 }
 
 // NewDecisionReasons returns a new instance of DecisionReasons.
-func NewDecisionReasons(options OptimizelyDecideOptions) DecisionReasons {
-	return DecisionReasons{
+func NewDecisionReasons(options OptimizelyDecideOptions) *DecisionReasons {
+	return &DecisionReasons{
 		errors:         []string{},
 		logs:           []string{},
 		includeReasons: options.IncludeReasons,
