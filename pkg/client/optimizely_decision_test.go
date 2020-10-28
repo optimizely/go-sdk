@@ -46,7 +46,7 @@ func (s *OptimizelyDecisionTestSuite) TestOptimizelyDecision() {
 	attributes := map[string]interface{}{"key": 1212}
 
 	optimizelyUserContext := s.OptimizelyClient.CreateUserContext(userID, attributes)
-	decision := NewOptimizelyDecision(variationKey, ruleKey, flagKey, enabled, *variables, optimizelyUserContext, reasons)
+	decision := NewOptimizelyDecision(variationKey, ruleKey, flagKey, enabled, variables, optimizelyUserContext, reasons)
 
 	s.Equal(variationKey, decision.GetVariationKey())
 	s.Equal(enabled, decision.GetEnabled())
@@ -67,7 +67,7 @@ func (s *OptimizelyDecisionTestSuite) TestNewErrorDecision() {
 
 	s.Equal("", decision.GetVariationKey())
 	s.Equal(false, decision.GetEnabled())
-	s.Equal(optimizelyjson.OptimizelyJSON{}, decision.GetVariables())
+	s.Equal(&optimizelyjson.OptimizelyJSON{}, decision.GetVariables())
 	s.Equal("", decision.GetRuleKey())
 	s.Equal(flagKey, decision.GetFlagKey())
 	s.Equal(1, len(decision.GetReasons()))
@@ -76,5 +76,5 @@ func (s *OptimizelyDecisionTestSuite) TestNewErrorDecision() {
 }
 
 func TestOptimizelyDecisionTestSuite(t *testing.T) {
-	suite.Run(t, new(OptimizelyUserContextTestSuite))
+	suite.Run(t, new(OptimizelyDecisionTestSuite))
 }
