@@ -78,13 +78,12 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 	}
 
 	eg := utils.NewExecGroup(ctx, logging.GetLogger(f.SDKKey, "ExecGroup"))
-	appClient := &OptimizelyClient{execGroup: eg,
-		notificationCenter: registry.GetNotificationCenter(f.SDKKey),
-		logger:             logging.GetLogger(f.SDKKey, "OptimizelyClient"),
+	appClient := &OptimizelyClient{
+		defaultDecideOptions: f.defaultDecideOptions,
+		execGroup:            eg,
+		notificationCenter:   registry.GetNotificationCenter(f.SDKKey),
+		logger:               logging.GetLogger(f.SDKKey, "OptimizelyClient"),
 	}
-
-	copiedOptions := f.defaultDecideOptions
-	appClient.defaultDecideOptions = copiedOptions
 
 	if f.configManager != nil {
 		appClient.ConfigManager = f.configManager

@@ -74,16 +74,14 @@ func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextNoAttributes()
 
 func (s *OptimizelyUserContextTestSuite) TestUpatingProvidedUserContextHasNoImpactOnOptimizelyUserContext() {
 	attributes := map[string]interface{}{"k1": "v1", "k2": false}
-
-	userContext := entities.UserContext{ID: s.userID, Attributes: attributes}
 	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes)
 
 	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 	s.Equal(s.userID, optimizelyUserContext.GetUserID())
 	s.Equal(attributes, optimizelyUserContext.GetUserAttributes())
 
-	userContext.Attributes["k1"] = "v2"
-	userContext.Attributes["k2"] = true
+	attributes["k1"] = "v2"
+	attributes["k2"] = true
 
 	s.Equal("v1", optimizelyUserContext.GetUserAttributes()["k1"])
 	s.Equal(false, optimizelyUserContext.GetUserAttributes()["k2"])

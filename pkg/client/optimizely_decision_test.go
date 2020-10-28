@@ -22,7 +22,6 @@ import (
 
 	"github.com/optimizely/go-sdk/pkg/optimizelyjson"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -49,13 +48,13 @@ func (s *OptimizelyDecisionTestSuite) TestOptimizelyDecision() {
 	optimizelyUserContext := s.OptimizelyClient.CreateUserContext(userID, attributes)
 	decision := NewOptimizelyDecision(variationKey, ruleKey, flagKey, enabled, variables, optimizelyUserContext, reasons)
 
-	assert.Equal(s.T(), variationKey, decision.GetVariationKey())
-	assert.Equal(s.T(), enabled, decision.GetEnabled())
-	assert.Equal(s.T(), variables, decision.GetVariables())
-	assert.Equal(s.T(), ruleKey, decision.GetRuleKey())
-	assert.Equal(s.T(), flagKey, decision.GetFlagKey())
-	assert.Equal(s.T(), reasons, decision.GetReasons())
-	assert.Equal(s.T(), optimizelyUserContext, decision.GetUserContext())
+	s.Equal(variationKey, decision.GetVariationKey())
+	s.Equal(enabled, decision.GetEnabled())
+	s.Equal(variables, decision.GetVariables())
+	s.Equal(ruleKey, decision.GetRuleKey())
+	s.Equal(flagKey, decision.GetFlagKey())
+	s.Equal(reasons, decision.GetReasons())
+	s.Equal(optimizelyUserContext, decision.GetUserContext())
 }
 
 func (s *OptimizelyDecisionTestSuite) TestNewErrorDecision() {
@@ -66,16 +65,16 @@ func (s *OptimizelyDecisionTestSuite) TestNewErrorDecision() {
 	optimizelyUserContext := s.OptimizelyClient.CreateUserContext(userID, attributes)
 	decision := NewErrorDecision(flagKey, optimizelyUserContext, errors.New(errorString))
 
-	assert.Equal(s.T(), "", decision.GetVariationKey())
-	assert.Equal(s.T(), false, decision.GetEnabled())
-	assert.Equal(s.T(), optimizelyjson.OptimizelyJSON{}, decision.GetVariables())
-	assert.Equal(s.T(), "", decision.GetRuleKey())
-	assert.Equal(s.T(), flagKey, decision.GetFlagKey())
-	assert.Equal(s.T(), 1, len(decision.GetReasons()))
-	assert.Equal(s.T(), optimizelyUserContext, decision.GetUserContext())
-	assert.Equal(s.T(), errorString, decision.GetReasons()[0])
+	s.Equal("", decision.GetVariationKey())
+	s.Equal(false, decision.GetEnabled())
+	s.Equal(&optimizelyjson.OptimizelyJSON{}, decision.GetVariables())
+	s.Equal("", decision.GetRuleKey())
+	s.Equal(flagKey, decision.GetFlagKey())
+	s.Equal(1, len(decision.GetReasons()))
+	s.Equal(optimizelyUserContext, decision.GetUserContext())
+	s.Equal(errorString, decision.GetReasons()[0])
 }
 
 func TestOptimizelyDecisionTestSuite(t *testing.T) {
-	suite.Run(t, new(OptimizelyUserContextTestSuite))
+	suite.Run(t, new(OptimizelyDecisionTestSuite))
 }
