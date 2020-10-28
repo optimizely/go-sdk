@@ -35,7 +35,7 @@ func NewExperimentWhitelistService() *ExperimentWhitelistService {
 }
 
 // GetDecision returns a decision with a variation when a variation assignment is found in the experiment whitelist for the given user and experiment
-func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (ExperimentDecision, error) {
+func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons *decide.DecisionReasons) (ExperimentDecision, error) {
 	decision := ExperimentDecision{}
 
 	if decisionContext.Experiment == nil {

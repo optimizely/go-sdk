@@ -64,7 +64,7 @@ type ExperimentBucketerTestSuite struct {
 	mockLogger   *MockLogger
 	mockConfig   *mockProjectConfig
 	options      decide.OptimizelyDecideOptions
-	reasons      decide.DecisionReasons
+	reasons      *decide.DecisionReasons
 }
 
 func (s *ExperimentBucketerTestSuite) SetupTest() {

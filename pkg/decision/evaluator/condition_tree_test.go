@@ -73,7 +73,7 @@ type ConditionTreeTestSuite struct {
 	suite.Suite
 	mockLogger             *MockLogger
 	options                decide.OptimizelyDecideOptions
-	reasons                decide.DecisionReasons
+	reasons                *decide.DecisionReasons
 	conditionTreeEvaluator *MixedTreeEvaluator
 }
 

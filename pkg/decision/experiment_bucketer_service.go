@@ -46,7 +46,7 @@ func NewExperimentBucketerService(logger logging.OptimizelyLogProducer) *Experim
 }
 
 // GetDecision returns the decision with the variation the user is bucketed into
-func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (ExperimentDecision, error) {
+func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons *decide.DecisionReasons) (ExperimentDecision, error) {
 	experimentDecision := ExperimentDecision{}
 	experiment := decisionContext.Experiment
 

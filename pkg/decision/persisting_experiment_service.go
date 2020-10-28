@@ -46,7 +46,7 @@ func NewPersistingExperimentService(userProfileService UserProfileService, exper
 }
 
 // GetDecision returns the decision with the variation the user is bucketed into
-func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (experimentDecision ExperimentDecision, err error) {
+func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons *decide.DecisionReasons) (experimentDecision ExperimentDecision, err error) {
 	if p.userProfileService == nil {
 		return p.experimentBucketedService.GetDecision(decisionContext, userContext, options, reasons)
 	}
@@ -68,7 +68,7 @@ func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecis
 	return experimentDecision, err
 }
 
-func (p PersistingExperimentService) getSavedDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, _ decide.DecisionReasons) (ExperimentDecision, UserProfile) {
+func (p PersistingExperimentService) getSavedDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, _ *decide.DecisionReasons) (ExperimentDecision, UserProfile) {
 	if options.IgnoreUserProfileService {
 		return ExperimentDecision{}, UserProfile{}
 	}
@@ -93,7 +93,7 @@ func (p PersistingExperimentService) getSavedDecision(decisionContext Experiment
 	return experimentDecision, userProfile
 }
 
-func (p PersistingExperimentService) saveDecision(userProfile UserProfile, experiment *entities.Experiment, decision ExperimentDecision, options decide.OptimizelyDecideOptions, _ decide.DecisionReasons) {
+func (p PersistingExperimentService) saveDecision(userProfile UserProfile, experiment *entities.Experiment, decision ExperimentDecision, options decide.OptimizelyDecideOptions, _ *decide.DecisionReasons) {
 	if options.IgnoreUserProfileService {
 		return
 	}

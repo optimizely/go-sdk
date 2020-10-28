@@ -955,7 +955,7 @@ func (o *OptimizelyClient) Close() {
 	o.execGroup.TerminateAndWait()
 }
 
-func (o *OptimizelyClient) getDecisionVariableMap(feature entities.Feature, variation *entities.Variation, featureEnabled bool, decisionReasons decide.DecisionReasons) map[string]interface{} {
+func (o *OptimizelyClient) getDecisionVariableMap(feature entities.Feature, variation *entities.Variation, featureEnabled bool, decisionReasons *decide.DecisionReasons) map[string]interface{} {
 	valuesMap := map[string]interface{}{}
 
 	for _, v := range feature.VariableMap {
