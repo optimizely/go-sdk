@@ -59,7 +59,6 @@ func (o *OptimizelyClient) CreateUserContext(userID string, attributes map[strin
 
 func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string, options decide.OptimizelyDecideOptions) OptimizelyDecision {
 	var err error
-	decisionContext := decision.FeatureDecisionContext{}
 	defer func() {
 		if r := recover(); r != nil {
 			switch t := r.(type) {
@@ -76,6 +75,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 		}
 	}()
 
+	decisionContext := decision.FeatureDecisionContext{}
 	projectConfig, err := o.getProjectConfig()
 	if err != nil {
 		return NewErrorDecision(key, userContext, decide.GetDecideError(decide.SDKNotReady))
@@ -97,13 +97,12 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	flagEnabled := false
 	allOptions := o.getAllOptions(options)
 	decisionReasons := decide.NewDecisionReasons(options)
-	variable := entities.Variable{}
-
-	decisionContext.Variable = variable
+	decisionContext.Variable = entities.Variable{}
 
 	featureDecision, _ := o.DecisionService.GetFeatureDecision(decisionContext, usrContext, options, decisionReasons)
 	if featureDecision.Variation != nil {
 		variationKey = featureDecision.Variation.Key
+		flagEnabled = featureDecision.Variation.FeatureEnabled
 		if featureDecision.Source == decision.FeatureTest {
 			if !allOptions.DisableDecisionEvent {
 				if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
@@ -115,9 +114,6 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 		} else {
 			message := decisionReasons.AddInfof(`The user "%s" is not included in an experiment for flag "%s".`, usrContext.ID, key)
 			o.logger.Info(message)
-		}
-		if featureDecision.Variation.FeatureEnabled {
-			flagEnabled = true
 		}
 	}
 
@@ -160,7 +156,7 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 
 	decisionMap := map[string]OptimizelyDecision{}
 	if _, err = o.getProjectConfig(); err != nil {
-		o.logger.Error("Optimizely instance is not valid, failing isFeatureEnabled call.", err)
+		o.logger.Error("Optimizely instance is not valid, failing decideForKeys call.", err)
 		return decisionMap
 	}
 
@@ -198,11 +194,10 @@ func (o *OptimizelyClient) decideAll(userContext OptimizelyUserContext, options 
 		}
 	}()
 
-	decisionMap := map[string]OptimizelyDecision{}
 	projectConfig, err := o.getProjectConfig()
 	if err != nil {
-		o.logger.Error("Optimizely instance is not valid, failing isFeatureEnabled call.", err)
-		return decisionMap
+		o.logger.Error("Optimizely instance is not valid, failing decideAll call.", err)
+		return map[string]OptimizelyDecision{}
 	}
 
 	allFlagKeys := []string{}
