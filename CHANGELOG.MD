@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.5.0] - October 29th, 2020
+## New Features
+- Correct logic for rollout service
+- Add support for sending flag decisions along with decision metadata
+
 ## [1.4.0] - October 2nd, 2020
 ## New Features
 - Add MatchRegistry for custom match implementations. ([#286](https://github.com/optimizely/go-sdk/pull/286)) …
