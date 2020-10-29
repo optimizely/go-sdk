@@ -48,17 +48,17 @@ func newOptimizelyUserContext(optimizely *OptimizelyClient, userID string, attri
 }
 
 // GetOptimizely returns optimizely client instance for Optimizely user context
-func (o *OptimizelyUserContext) GetOptimizely() *OptimizelyClient {
+func (o OptimizelyUserContext) GetOptimizely() *OptimizelyClient {
 	return o.optimizely
 }
 
 // GetUserID returns userID for Optimizely user context
-func (o *OptimizelyUserContext) GetUserID() string {
+func (o OptimizelyUserContext) GetUserID() string {
 	return o.UserContext.ID
 }
 
 // GetUserAttributes returns user attributes for Optimizely user context
-func (o *OptimizelyUserContext) GetUserAttributes() map[string]interface{} {
+func (o OptimizelyUserContext) GetUserAttributes() map[string]interface{} {
 	o.mutex.RLock()
 	defer o.mutex.RUnlock()
 	return copyUserAttributes(o.UserContext.Attributes)
