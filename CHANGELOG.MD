@@ -9,8 +9,8 @@ Changes that have landed but are not yet released.	Changes that have landed but 
 
 ## [1.5.0] - October 29th, 2020
 ## New Features
-- Correct logic for rollout service
-- Add support for sending flag decisions along with decision metadata
+- Correct logic for rollout service ([#296](https://github.com/optimizely/go-sdk/pull/296))
+- Add support for sending flag decisions along with decision metadata ([#292](https://github.com/optimizely/go-sdk/pull/292))
 
 ## [1.4.0] - October 2nd, 2020
 ## New Features
