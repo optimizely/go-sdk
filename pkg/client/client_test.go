@@ -2476,7 +2476,7 @@ func TestChangingAttributesDoesntEffectUserContext(t *testing.T) {
 
 func TestCreateUserContextNoAttributes(t *testing.T) {
 	client := OptimizelyClient{}
-	var attributes map[string]interface{}
+	attributes := map[string]interface{}{}
 	userID := "testUser1"
 	optimizelyUserContext := client.CreateUserContext(userID, attributes)
 

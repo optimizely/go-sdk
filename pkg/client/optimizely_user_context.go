@@ -34,8 +34,10 @@ type OptimizelyUserContext struct {
 // returns an instance of the optimizely user context.
 func newOptimizelyUserContext(optimizely *OptimizelyClient, userID string, attributes map[string]interface{}) OptimizelyUserContext {
 	// store a copy of the provided attributes so it isn't affected by changes made afterwards.
+	if attributes == nil {
+		attributes = map[string]interface{}{}
+	}
 	attributesCopy := copyUserAttributes(attributes)
-
 	userContext := entities.UserContext{
 		ID:         userID,
 		Attributes: attributesCopy,
@@ -68,9 +70,6 @@ func (o OptimizelyUserContext) GetUserAttributes() map[string]interface{} {
 func (o *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
-	if o.UserContext.Attributes == nil {
-		o.UserContext.Attributes = make(map[string]interface{})
-	}
 	o.UserContext.Attributes[key] = value
 }
 

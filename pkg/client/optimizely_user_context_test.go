@@ -64,7 +64,7 @@ func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextWithAttributes
 }
 
 func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextNoAttributes() {
-	var attributes map[string]interface{}
+	attributes := map[string]interface{}{}
 	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes)
 
 	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
