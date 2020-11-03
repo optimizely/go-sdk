@@ -28,7 +28,7 @@ import (
 )
 
 func TestRegister(t *testing.T) {
-	expected := func(entities.Condition, entities.UserContext, logging.OptimizelyLogProducer, *decide.DecisionReasons) (bool, error) {
+	expected := func(entities.Condition, entities.UserContext, logging.OptimizelyLogProducer, decide.DecisionReasons) (bool, error) {
 		return false, nil
 	}
 	Register("test", expected)

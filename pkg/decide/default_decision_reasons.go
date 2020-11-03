@@ -22,16 +22,16 @@ import (
 	"sync"
 )
 
-// DecisionReasons defines the reasons for which the decision was made.
-type DecisionReasons struct {
+// DefaultDecisionReasons provides the default implementation of DecisionReasons.
+type DefaultDecisionReasons struct {
 	errors, logs   []string
 	includeReasons bool
 	mutex          *sync.RWMutex
 }
 
 // NewDecisionReasons returns a new instance of DecisionReasons.
-func NewDecisionReasons(options OptimizelyDecideOptions) *DecisionReasons {
-	return &DecisionReasons{
+func NewDecisionReasons(options OptimizelyDecideOptions) *DefaultDecisionReasons {
+	return &DefaultDecisionReasons{
 		errors:         []string{},
 		logs:           []string{},
 		includeReasons: options.IncludeReasons,
@@ -40,15 +40,18 @@ func NewDecisionReasons(options OptimizelyDecideOptions) *DecisionReasons {
 }
 
 // AddError appends given message to the error list.
-func (o *DecisionReasons) AddError(message string) {
+func (o *DefaultDecisionReasons) AddError(format string, arguments ...interface{}) {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
-	o.errors = append(o.errors, message)
+	o.errors = append(o.errors, fmt.Sprintf(format, arguments...))
 }
 
-// AddInfof appends given info message to the info list after formatting.
-func (o *DecisionReasons) AddInfof(format string, arguments ...interface{}) string {
+// AddInfo appends given info message to the info list after formatting.
+func (o *DefaultDecisionReasons) AddInfo(format string, arguments ...interface{}) string {
 	message := fmt.Sprintf(format, arguments...)
+	if !o.includeReasons {
+		return message
+	}
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 	o.logs = append(o.logs, message)
@@ -56,12 +59,12 @@ func (o *DecisionReasons) AddInfof(format string, arguments ...interface{}) stri
 }
 
 // ToReport returns reasons to be reported.
-func (o DecisionReasons) ToReport() []string {
+func (o *DefaultDecisionReasons) ToReport() []string {
 	o.mutex.RLock()
 	defer o.mutex.RUnlock()
 	reasons := o.errors
-	if o.includeReasons {
-		reasons = append(reasons, o.logs...)
+	if !o.includeReasons {
+		return reasons
 	}
-	return reasons
+	return append(reasons, o.logs...)
 }

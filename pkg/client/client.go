@@ -112,7 +112,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 				eventSent = true
 			}
 		} else {
-			message := decisionReasons.AddInfof(`The user "%s" is not included in an experiment for flag "%s".`, usrContext.ID, key)
+			message := decisionReasons.AddInfo(`The user "%s" is not included in an experiment for flag "%s".`, usrContext.ID, key)
 			o.logger.Info(message)
 		}
 	}
@@ -950,7 +950,7 @@ func (o *OptimizelyClient) Close() {
 	o.execGroup.TerminateAndWait()
 }
 
-func (o *OptimizelyClient) getDecisionVariableMap(feature entities.Feature, variation *entities.Variation, featureEnabled bool, decisionReasons *decide.DecisionReasons) map[string]interface{} {
+func (o *OptimizelyClient) getDecisionVariableMap(feature entities.Feature, variation *entities.Variation, featureEnabled bool, decisionReasons decide.DecisionReasons) map[string]interface{} {
 	valuesMap := map[string]interface{}{}
 
 	for _, v := range feature.VariableMap {

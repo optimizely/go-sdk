@@ -24,8 +24,6 @@ import (
 
 func TestNewDecisionReasonsWithEmptyOptions(t *testing.T) {
 	reasons := NewDecisionReasons(OptimizelyDecideOptions{})
-	assert.Equal(t, 0, len(reasons.errors))
-	assert.Equal(t, 0, len(reasons.logs))
 	assert.Equal(t, 0, len(reasons.ToReport()))
 }
 
@@ -39,7 +37,6 @@ func TestAddErrorWorksWithEveryOption(t *testing.T) {
 	}
 	reasons := NewDecisionReasons(options)
 	reasons.AddError("error message")
-	assert.Equal(t, 1, len(reasons.errors))
 
 	reportedReasons := reasons.ToReport()
 	assert.Equal(t, 1, len(reportedReasons))
@@ -55,7 +52,7 @@ func TestInfoLogsAreOnlyReportedWhenIncludeReasonsOptionIsSet(t *testing.T) {
 	}
 	reasons := NewDecisionReasons(options)
 	reasons.AddError("error message")
-	reasons.AddInfof("info message")
+	reasons.AddInfo("info message")
 
 	reportedReasons := reasons.ToReport()
 	assert.Equal(t, 1, len(reportedReasons))
@@ -64,7 +61,7 @@ func TestInfoLogsAreOnlyReportedWhenIncludeReasonsOptionIsSet(t *testing.T) {
 	options.IncludeReasons = true
 	reasons = NewDecisionReasons(options)
 	reasons.AddError("error message")
-	reasons.AddInfof("info message")
+	reasons.AddInfo("info message")
 
 	reportedReasons = reasons.ToReport()
 	assert.Equal(t, 2, len(reportedReasons))

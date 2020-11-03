@@ -46,7 +46,7 @@ func NewRolloutService(sdkKey string) *RolloutService {
 }
 
 // GetDecision returns a decision for the given feature and user context
-func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons *decide.DecisionReasons) (FeatureDecision, error) {
+func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (FeatureDecision, error) {
 	featureDecision := FeatureDecision{
 		Source: Rollout,
 	}
@@ -56,7 +56,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	evaluateConditionTree := func(experiment *entities.Experiment, loggingKey string) bool {
 		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
 		r.logger.Debug(fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), loggingKey))
-		evalResult, _ := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams, options, reasons)
+		evalResult, _ := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams, reasons)
 		if !evalResult {
 			featureDecision.Reason = pkgReasons.FailedRolloutTargeting
 		}

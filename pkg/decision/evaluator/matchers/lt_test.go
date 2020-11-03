@@ -30,7 +30,7 @@ import (
 type LtTestSuite struct {
 	suite.Suite
 	mockLogger *MockLogger
-	reasons    *decide.DecisionReasons
+	reasons    decide.DecisionReasons
 	matcher    Matcher
 }
 

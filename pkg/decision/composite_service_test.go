@@ -30,7 +30,7 @@ type CompositeServiceFeatureTestSuite struct {
 	suite.Suite
 	decisionContext    FeatureDecisionContext
 	options            decide.OptimizelyDecideOptions
-	reasons            *decide.DecisionReasons
+	reasons            decide.DecisionReasons
 	mockFeatureService *MockFeatureDecisionService
 	testUserContext    entities.UserContext
 }
@@ -86,7 +86,7 @@ type CompositeServiceExperimentTestSuite struct {
 	suite.Suite
 	decisionContext       ExperimentDecisionContext
 	options               decide.OptimizelyDecideOptions
-	reasons               *decide.DecisionReasons
+	reasons               decide.DecisionReasons
 	mockExperimentService *MockExperimentDecisionService
 	testUserContext       entities.UserContext
 }

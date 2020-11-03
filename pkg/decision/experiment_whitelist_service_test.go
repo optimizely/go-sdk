@@ -31,7 +31,7 @@ type ExperimentWhitelistServiceTestSuite struct {
 	mockConfig       *mockProjectConfig
 	whitelistService *ExperimentWhitelistService
 	options          decide.OptimizelyDecideOptions
-	reasons          *decide.DecisionReasons
+	reasons          decide.DecisionReasons
 }
 
 func (s *ExperimentWhitelistServiceTestSuite) SetupTest() {

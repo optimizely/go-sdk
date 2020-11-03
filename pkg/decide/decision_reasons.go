@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2020, Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -14,16 +14,12 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package matchers //
-package matchers
+// Package decide //
+package decide
 
-import (
-	"github.com/optimizely/go-sdk/pkg/decide"
-	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/optimizely/go-sdk/pkg/logging"
-)
-
-// ExistsMatcher matches against the "exists" match type
-func ExistsMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, reasons decide.DecisionReasons) (bool, error) {
-	return user.CheckAttributeExists(condition.Name), nil
+// DecisionReasons defines the reasons for which the decision was made.
+type DecisionReasons interface {
+	AddError(format string, arguments ...interface{})
+	AddInfo(format string, arguments ...interface{}) string
+	ToReport() []string
 }
