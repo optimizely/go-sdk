@@ -72,15 +72,13 @@ var int42Condition = e.Condition{
 type ConditionTreeTestSuite struct {
 	suite.Suite
 	mockLogger             *MockLogger
-	options                decide.OptimizelyDecideOptions
-	reasons                *decide.DecisionReasons
+	reasons                decide.DecisionReasons
 	conditionTreeEvaluator *MixedTreeEvaluator
 }
 
 func (s *ConditionTreeTestSuite) SetupTest() {
 	s.mockLogger = new(MockLogger)
-	s.options = decide.OptimizelyDecideOptions{}
-	s.reasons = decide.NewDecisionReasons(s.options)
+	s.reasons = decide.NewDecisionReasons(decide.OptimizelyDecideOptions{})
 	s.conditionTreeEvaluator = NewMixedTreeEvaluator(s.mockLogger)
 }
 
@@ -101,7 +99,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateSimpleCondition() {
 		},
 	}
 	condTreeParams := e.NewTreeParameters(&user, map[string]e.Audience{})
-	result, _ := s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.options, s.reasons)
+	result, _ := s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.reasons)
 	s.True(result)
 
 	// Test no match
@@ -110,7 +108,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateSimpleCondition() {
 			"string_foo": "not foo",
 		},
 	}
-	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.options, s.reasons)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.reasons)
 	s.False(result)
 }
 
@@ -135,7 +133,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateMultipleOrConditions()
 	}
 
 	condTreeParams := e.NewTreeParameters(&user, map[string]e.Audience{})
-	result, _ := s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.options, s.reasons)
+	result, _ := s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.reasons)
 	s.True(result)
 
 	// Test match bool
@@ -145,7 +143,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateMultipleOrConditions()
 		},
 	}
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "string_foo"))
-	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.options, s.reasons)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.reasons)
 
 	s.True(result)
 
@@ -156,7 +154,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateMultipleOrConditions()
 			"bool_true":  true,
 		},
 	}
-	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.options, s.reasons)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.reasons)
 	s.True(result)
 
 	// Test no match
@@ -166,7 +164,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateMultipleOrConditions()
 			"bool_true":  false,
 		},
 	}
-	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.options, s.reasons)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.reasons)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())
 }
@@ -193,7 +191,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateMultipleAndConditions(
 
 	condTreeParams := e.NewTreeParameters(&user, map[string]e.Audience{})
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "bool_true"))
-	result, _ := s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.options, s.reasons)
+	result, _ := s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.reasons)
 	s.False(result)
 
 	// Test only bool match with NULL bubbling
@@ -204,7 +202,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateMultipleAndConditions(
 	}
 
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "string_foo"))
-	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.options, s.reasons)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.reasons)
 	s.False(result)
 
 	// Test match both
@@ -214,7 +212,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateMultipleAndConditions(
 			"bool_true":  true,
 		},
 	}
-	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.options, s.reasons)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.reasons)
 	s.True(result)
 
 	// Test no match
@@ -224,7 +222,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateMultipleAndConditions(
 			"bool_true":  false,
 		},
 	}
-	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.options, s.reasons)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.reasons)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())
 }
@@ -261,7 +259,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateNotCondition() {
 	}
 
 	condTreeParams := e.NewTreeParameters(&user, map[string]e.Audience{})
-	result, _ := s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.options, s.reasons)
+	result, _ := s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.reasons)
 	s.True(result)
 
 	// Test match bool
@@ -271,7 +269,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateNotCondition() {
 		},
 	}
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "string_foo"))
-	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.options, s.reasons)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.reasons)
 	s.True(result)
 
 	// Test match both
@@ -281,7 +279,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateNotCondition() {
 			"bool_true":  false,
 		},
 	}
-	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.options, s.reasons)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.reasons)
 	s.True(result)
 
 	// Test no match
@@ -291,7 +289,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateNotCondition() {
 			"bool_true":  true,
 		},
 	}
-	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.options, s.reasons)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.reasons)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())
 }
@@ -341,7 +339,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateMultipleMixedCondition
 	}
 
 	condTreeParams := e.NewTreeParameters(&user, map[string]e.Audience{})
-	result, _ := s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.options, s.reasons)
+	result, _ := s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.reasons)
 	s.True(result)
 
 	// Test only match the NOT condition
@@ -352,7 +350,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateMultipleMixedCondition
 			"int_42":     43,
 		},
 	}
-	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.options, s.reasons)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.reasons)
 	s.True(result)
 
 	// Test only match the int condition
@@ -363,7 +361,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateMultipleMixedCondition
 			"int_42":     42,
 		},
 	}
-	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.options, s.reasons)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.reasons)
 	s.True(result)
 
 	// Test no match
@@ -374,7 +372,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateMultipleMixedCondition
 			"int_42":     43,
 		},
 	}
-	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.options, s.reasons)
+	result, _ = s.conditionTreeEvaluator.Evaluate(conditionTree, condTreeParams, s.reasons)
 	s.False(result)
 }
 
@@ -443,7 +441,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateAnAudienceTreeSingleAu
 
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.AudienceEvaluationStarted.String(), "11111"))
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.AudienceEvaluatedTo.String(), "11111", true))
-	result, _ := s.conditionTreeEvaluator.Evaluate(audienceTree, treeParams, s.options, s.reasons)
+	result, _ := s.conditionTreeEvaluator.Evaluate(audienceTree, treeParams, s.reasons)
 	s.True(result)
 	s.mockLogger.AssertExpectations(s.T())
 }
@@ -473,7 +471,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateAnAudienceTreeMultiple
 	}
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.AudienceEvaluationStarted.String(), "11111"))
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.AudienceEvaluatedTo.String(), "11111", true))
-	result, _ := s.conditionTreeEvaluator.Evaluate(audienceTree, treeParams, s.options, s.reasons)
+	result, _ := s.conditionTreeEvaluator.Evaluate(audienceTree, treeParams, s.reasons)
 	s.True(result)
 
 	// Test only matches audience 11112
@@ -492,7 +490,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateAnAudienceTreeMultiple
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.AudienceEvaluationStarted.String(), "11112"))
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.AudienceEvaluatedTo.String(), "11112", true))
 
-	result, _ = s.conditionTreeEvaluator.Evaluate(audienceTree, treeParams, s.options, s.reasons)
+	result, _ = s.conditionTreeEvaluator.Evaluate(audienceTree, treeParams, s.reasons)
 	s.True(result)
 	s.mockLogger.AssertExpectations(s.T())
 }

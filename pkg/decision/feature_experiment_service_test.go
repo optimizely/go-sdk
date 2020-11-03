@@ -32,7 +32,7 @@ type FeatureExperimentServiceTestSuite struct {
 	testFeatureDecisionContext FeatureDecisionContext
 	mockExperimentService      *MockExperimentDecisionService
 	options                    decide.OptimizelyDecideOptions
-	reasons                    *decide.DecisionReasons
+	reasons                    decide.DecisionReasons
 }
 
 func (s *FeatureExperimentServiceTestSuite) SetupTest() {

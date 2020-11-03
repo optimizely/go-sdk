@@ -35,7 +35,7 @@ type ExperimentOverrideServiceTestSuite struct {
 	overrides       *MapExperimentOverridesStore
 	overrideService *ExperimentOverrideService
 	options         decide.OptimizelyDecideOptions
-	reasons         *decide.DecisionReasons
+	reasons         decide.DecisionReasons
 }
 
 func (s *ExperimentOverrideServiceTestSuite) SetupTest() {

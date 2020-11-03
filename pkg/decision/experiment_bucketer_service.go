@@ -46,7 +46,7 @@ func NewExperimentBucketerService(logger logging.OptimizelyLogProducer) *Experim
 }
 
 // GetDecision returns the decision with the variation the user is bucketed into
-func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons *decide.DecisionReasons) (ExperimentDecision, error) {
+func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (ExperimentDecision, error) {
 	experimentDecision := ExperimentDecision{}
 	experiment := decisionContext.Experiment
 
@@ -54,7 +54,7 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	if experiment.AudienceConditionTree != nil {
 		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
 		s.logger.Debug(fmt.Sprintf(logging.EvaluatingAudiencesForExperiment.String(), experiment.Key))
-		evalResult, _ := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams, options, reasons)
+		evalResult, _ := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams, reasons)
 		s.logger.Debug(fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, evalResult))
 		if !evalResult {
 			s.logger.Debug(fmt.Sprintf(logging.UserNotInExperiment.String(), userContext.ID, experiment.Key))
