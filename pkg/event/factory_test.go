@@ -103,7 +103,7 @@ var userContext = entities.UserContext{
 
 func BuildTestImpressionEvent() UserEvent {
 	tc := TestConfig{}
-	impressionUserEvent, _ := CreateImpressionUserEvent(tc, testExperiment, &testVariation, userContext, "", testExperiment.Key, "experiment")
+	impressionUserEvent, _ := CreateImpressionUserEvent(tc, testExperiment, &testVariation, userContext, "", testExperiment.Key, "experiment", true)
 	return impressionUserEvent
 }
 
@@ -195,20 +195,20 @@ func TestCreateImpressionUserEvent(t *testing.T) {
 	}
 
 	for _, scenario := range scenarios {
-		_, ok := CreateImpressionUserEvent(tc, testExperiment, &testVariation, userContext, "", testExperiment.Key, scenario.flagType)
+		_, ok := CreateImpressionUserEvent(tc, testExperiment, &testVariation, userContext, "", testExperiment.Key, scenario.flagType, true)
 		assert.Equal(t, ok, scenario.expected)
 	}
 
 	// nil variation should _always_ return false
 	for _, scenario := range scenarios {
-		_, ok := CreateImpressionUserEvent(tc, testExperiment, nil, userContext, "", testExperiment.Key, scenario.flagType)
+		_, ok := CreateImpressionUserEvent(tc, testExperiment, nil, userContext, "", testExperiment.Key, scenario.flagType, true)
 		assert.False(t, ok)
 	}
 
 	// should _always_ return true if sendFlagDecisions is set
 	tc.sendFlagDecisions = true
 	for _, scenario := range scenarios {
-		_, ok := CreateImpressionUserEvent(tc, testExperiment, nil, userContext, "", testExperiment.Key, scenario.flagType)
+		_, ok := CreateImpressionUserEvent(tc, testExperiment, nil, userContext, "", testExperiment.Key, scenario.flagType, true)
 		assert.True(t, ok)
 	}
 }
