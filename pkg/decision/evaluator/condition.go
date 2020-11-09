@@ -28,7 +28,7 @@ import (
 
 // ItemEvaluator evaluates a condition against the given user's attributes
 type ItemEvaluator interface {
-	Evaluate(interface{}, *entities.TreeParameters, decide.OptimizelyDecideOptions, decide.DecisionReasons) (bool, error)
+	Evaluate(interface{}, *entities.TreeParameters, decide.DecisionReasons) (bool, error)
 }
 
 // CustomAttributeConditionEvaluator evaluates conditions with custom attributes

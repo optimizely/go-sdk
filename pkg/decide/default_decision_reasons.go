@@ -35,14 +35,11 @@ func NewDecisionReasons(options OptimizelyDecideOptions) *DefaultDecisionReasons
 		errors:         []string{},
 		logs:           []string{},
 		includeReasons: options.IncludeReasons,
-		mutex:          new(sync.RWMutex),
 	}
 }
 
 // AddError appends given message to the error list.
 func (o *DefaultDecisionReasons) AddError(format string, arguments ...interface{}) {
-	o.mutex.Lock()
-	defer o.mutex.Unlock()
 	o.errors = append(o.errors, fmt.Sprintf(format, arguments...))
 }
 
@@ -52,16 +49,12 @@ func (o *DefaultDecisionReasons) AddInfo(format string, arguments ...interface{}
 	if !o.includeReasons {
 		return message
 	}
-	o.mutex.Lock()
-	defer o.mutex.Unlock()
 	o.logs = append(o.logs, message)
 	return message
 }
 
 // ToReport returns reasons to be reported.
 func (o *DefaultDecisionReasons) ToReport() []string {
-	o.mutex.RLock()
-	defer o.mutex.RUnlock()
 	reasons := o.errors
 	if !o.includeReasons {
 		return reasons
