@@ -19,14 +19,12 @@ package decide
 
 import (
 	"fmt"
-	"sync"
 )
 
 // DefaultDecisionReasons provides the default implementation of DecisionReasons.
 type DefaultDecisionReasons struct {
 	errors, logs   []string
 	includeReasons bool
-	mutex          *sync.RWMutex
 }
 
 // NewDecisionReasons returns a new instance of DecisionReasons.
