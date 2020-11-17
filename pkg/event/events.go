@@ -55,6 +55,7 @@ type DecisionMetadata struct {
 	RuleKey      string `json:"rule_key"`
 	RuleType     string `json:"rule_type"`
 	VariationKey string `json:"variation_key"`
+	Enabled      bool   `json:"enabled"`
 }
 
 // ConversionEvent represents a conversion event
