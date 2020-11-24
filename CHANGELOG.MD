@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.5.1] - November 16th, 2020
+## New Features
+- Add "enabled" field to decision metadata structure ([#301](https://github.com/optimizely/go-sdk/pull/301))
+
 ## [1.5.0] - October 29th, 2020
 ## New Features
 - Correct logic for rollout service ([#296](https://github.com/optimizely/go-sdk/pull/296))

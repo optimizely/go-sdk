@@ -103,18 +103,14 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	if featureDecision.Variation != nil {
 		variationKey = featureDecision.Variation.Key
 		flagEnabled = featureDecision.Variation.FeatureEnabled
-		if featureDecision.Source == decision.FeatureTest {
-			if !allOptions.DisableDecisionEvent {
-				if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
-					featureDecision.Variation, usrContext, key, featureDecision.Experiment.Key, featureDecision.Source); ok {
-					o.EventProcessor.ProcessEvent(ue)
-				}
-				eventSent = true
-			}
-		} else {
-			message := decisionReasons.AddInfo(`The user "%s" is not included in an experiment for flag "%s".`, usrContext.ID, key)
-			o.logger.Info(message)
+	}
+
+	if !allOptions.DisableDecisionEvent {
+		if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
+			featureDecision.Variation, usrContext, key, featureDecision.Experiment.Key, featureDecision.Source, flagEnabled); ok {
+			o.EventProcessor.ProcessEvent(ue)
 		}
+		eventSent = true
 	}
 
 	variableMap := map[string]interface{}{}
@@ -238,7 +234,7 @@ func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.U
 		// send an impression event
 		result = experimentDecision.Variation.Key
 		if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *decisionContext.Experiment,
-			experimentDecision.Variation, userContext, "", experimentKey, "experiment"); ok {
+			experimentDecision.Variation, userContext, "", experimentKey, "experiment", true); ok {
 			o.EventProcessor.ProcessEvent(ue)
 		}
 	}
@@ -293,7 +289,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 	}
 
 	if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
-		featureDecision.Variation, userContext, featureKey, featureDecision.Experiment.Key, featureDecision.Source); ok {
+		featureDecision.Variation, userContext, featureKey, featureDecision.Experiment.Key, featureDecision.Source, result); ok && featureDecision.Source != "" {
 		o.EventProcessor.ProcessEvent(ue)
 	}
 
@@ -637,7 +633,7 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 		if !disableTracking {
 			// send impression event for feature tests
 			if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
-				featureDecision.Variation, userContext, featureKey, featureDecision.Experiment.Key, featureDecision.Source); ok {
+				featureDecision.Variation, userContext, featureKey, featureDecision.Experiment.Key, featureDecision.Source, decisionInfo.Enabled); ok {
 				o.EventProcessor.ProcessEvent(ue)
 			}
 		}

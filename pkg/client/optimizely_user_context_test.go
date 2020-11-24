@@ -137,8 +137,26 @@ func (s *OptimizelyUserContextTestSuite) TestSetAttributeOverride() {
 	s.Equal(true, optimizelyUserContext.GetUserAttributes()["k2"])
 }
 
-func (s *OptimizelyUserContextTestSuite) TestDecide() {
+func (s *OptimizelyUserContextTestSuite) TestSetAttributeNullValue() {
+	userID := "1212121"
+	attributes := map[string]interface{}{"k1": nil}
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes)
+
+	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
+	s.Equal(userID, optimizelyUserContext.GetUserID())
+	s.Equal(attributes, optimizelyUserContext.GetUserAttributes())
+
+	optimizelyUserContext.SetAttribute("k1", true)
+	s.Equal(true, optimizelyUserContext.GetUserAttributes()["k1"])
+
+	optimizelyUserContext.SetAttribute("k1", nil)
+	s.Equal(nil, optimizelyUserContext.GetUserAttributes()["k1"])
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTest() {
 	flagKey := "feature_2"
+	ruleKey := "exp_no_audience"
+	variationKey := "variation_with_traffic"
 	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
 	s.Nil(err)
 
@@ -146,18 +164,93 @@ func (s *OptimizelyUserContextTestSuite) TestDecide() {
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 	decision := user.Decide(flagKey, options)
 
-	s.Equal("variation_with_traffic", decision.GetVariationKey())
+	s.Equal(variationKey, decision.GetVariationKey())
 	s.Equal(true, decision.GetEnabled())
 	s.Equal(variablesExpected.ToMap(), decision.GetVariables().ToMap())
-	s.Equal("exp_no_audience", decision.GetRuleKey())
+	s.Equal(ruleKey, decision.GetRuleKey())
 	s.Equal(flagKey, decision.GetFlagKey())
 	s.Equal(user, decision.GetUserContext())
 	s.Len(decision.GetReasons(), 0)
+
+	s.True(len(s.eventProcessor.Events) == 1)
+	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
+
+	impressionEvent := s.eventProcessor.Events[0].Impression
+	s.Equal(flagKey, impressionEvent.Metadata.FlagKey)
+	s.Equal(ruleKey, impressionEvent.Metadata.RuleKey)
+	s.Equal("feature-test", impressionEvent.Metadata.RuleType)
+	s.Equal(variationKey, impressionEvent.Metadata.VariationKey)
+	s.Equal(true, impressionEvent.Metadata.Enabled)
+	s.Equal("10420810910", impressionEvent.ExperimentID)
+	s.Equal("10418551353", impressionEvent.VariationID)
 }
 
-func (s *OptimizelyUserContextTestSuite) TestDecideForKeyWithOneFlag() {
+func (s *OptimizelyUserContextTestSuite) TestDecideRollout() {
+	flagKey := "feature_1"
+	ruleKey := "18322080788"
+	variationKey := "18257766532"
+	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
+	s.Nil(err)
+
+	var options decide.OptimizelyDecideOptions
+	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
+	decision := user.Decide(flagKey, options)
+
+	s.Equal(variationKey, decision.GetVariationKey())
+	s.Equal(true, decision.GetEnabled())
+	s.Equal(variablesExpected.ToMap(), decision.GetVariables().ToMap())
+	s.Equal(ruleKey, decision.GetRuleKey())
+	s.Equal(flagKey, decision.GetFlagKey())
+	s.Equal(user, decision.GetUserContext())
+	s.Len(decision.GetReasons(), 0)
+
+	s.True(len(s.eventProcessor.Events) == 1)
+	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
+
+	impressionEvent := s.eventProcessor.Events[0].Impression
+	s.Equal(flagKey, impressionEvent.Metadata.FlagKey)
+	s.Equal(ruleKey, impressionEvent.Metadata.RuleKey)
+	s.Equal("rollout", impressionEvent.Metadata.RuleType)
+	s.Equal(variationKey, impressionEvent.Metadata.VariationKey)
+	s.Equal(true, impressionEvent.Metadata.Enabled)
+	s.Equal("18322080788", impressionEvent.ExperimentID)
+	s.Equal("18257766532", impressionEvent.VariationID)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecideNullVariation() {
+	flagKey := "feature_3"
+	variablesExpected := optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{})
+
+	var options decide.OptimizelyDecideOptions
+	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
+	decision := user.Decide(flagKey, options)
+
+	s.Equal("", decision.GetVariationKey())
+	s.Equal(false, decision.GetEnabled())
+	s.Equal(variablesExpected.ToMap(), decision.GetVariables().ToMap())
+	s.Equal("", decision.GetRuleKey())
+	s.Equal("feature_3", decision.GetFlagKey())
+	s.Equal(user, decision.GetUserContext())
+	s.Len(decision.GetReasons(), 0)
+
+	s.True(len(s.eventProcessor.Events) == 1)
+	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
+
+	impressionEvent := s.eventProcessor.Events[0].Impression
+	s.Equal(flagKey, impressionEvent.Metadata.FlagKey)
+	s.Equal("", impressionEvent.Metadata.RuleKey)
+	s.Equal("rollout", impressionEvent.Metadata.RuleType)
+	s.Equal("", impressionEvent.Metadata.VariationKey)
+	s.Equal(false, impressionEvent.Metadata.Enabled)
+	s.Equal("", impressionEvent.ExperimentID)
+	s.Equal("", impressionEvent.VariationID)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecideForKeysOneFlag() {
 	flagKey := "feature_2"
 	flagKeys := []string{flagKey}
+	ruleKey := "exp_no_audience"
+	variationKey := "variation_with_traffic"
 	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
 	s.Nil(err)
 
@@ -166,19 +259,35 @@ func (s *OptimizelyUserContextTestSuite) TestDecideForKeyWithOneFlag() {
 	decisions := user.DecideForKeys(flagKeys, options)
 	s.Len(decisions, 1)
 
-	decision := decisions[flagKey]
-	s.Equal("variation_with_traffic", decision.GetVariationKey())
-	s.Equal(true, decision.GetEnabled())
-	s.Equal(variablesExpected.ToMap(), decision.GetVariables().ToMap())
-	s.Equal("exp_no_audience", decision.GetRuleKey())
-	s.Equal(flagKey, decision.GetFlagKey())
-	s.Equal(user, decision.GetUserContext())
-	s.Len(decision.GetReasons(), 0)
+	decision1 := decisions[flagKey]
+	s.Equal(variationKey, decision1.GetVariationKey())
+	s.Equal(true, decision1.GetEnabled())
+	s.Equal(variablesExpected.ToMap(), decision1.GetVariables().ToMap())
+	s.Equal(ruleKey, decision1.GetRuleKey())
+	s.Equal(flagKey, decision1.GetFlagKey())
+	s.Equal(user, decision1.GetUserContext())
+	s.Len(decision1.GetReasons(), 0)
+
+	s.True(len(s.eventProcessor.Events) == 1)
+	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
+
+	impressionEvent := s.eventProcessor.Events[0].Impression
+	s.Equal(flagKey, impressionEvent.Metadata.FlagKey)
+	s.Equal(ruleKey, impressionEvent.Metadata.RuleKey)
+	s.Equal("feature-test", impressionEvent.Metadata.RuleType)
+	s.Equal(variationKey, impressionEvent.Metadata.VariationKey)
+	s.Equal(true, impressionEvent.Metadata.Enabled)
+	s.Equal("10420810910", impressionEvent.ExperimentID)
+	s.Equal("10418551353", impressionEvent.VariationID)
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDecideForKeysWithMultipleFlags() {
 	flagKey1 := "feature_1"
 	flagKey2 := "feature_2"
+	ruleKey1 := "exp_with_audience"
+	ruleKey2 := "exp_no_audience"
+	variationKey1 := "a"
+	variationKey2 := "variation_with_traffic"
 	flagKeys := []string{flagKey1, flagKey2}
 	variablesExpected1, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey1, entities.UserContext{ID: s.userID})
 	s.Nil(err)
@@ -191,28 +300,56 @@ func (s *OptimizelyUserContextTestSuite) TestDecideForKeysWithMultipleFlags() {
 	s.Len(decisions, 2)
 
 	decision1 := decisions[flagKey1]
-	s.Equal("a", decision1.GetVariationKey())
+	s.Equal(variationKey1, decision1.GetVariationKey())
 	s.Equal(true, decision1.GetEnabled())
 	s.Equal(variablesExpected1.ToMap(), decision1.GetVariables().ToMap())
-	s.Equal("exp_with_audience", decision1.GetRuleKey())
+	s.Equal(ruleKey1, decision1.GetRuleKey())
 	s.Equal(flagKey1, decision1.GetFlagKey())
 	s.Equal(user, decision1.GetUserContext())
 	s.Len(decision1.GetReasons(), 0)
 
 	decision2 := decisions[flagKey2]
-	s.Equal("variation_with_traffic", decision2.GetVariationKey())
+	s.Equal(variationKey2, decision2.GetVariationKey())
 	s.Equal(true, decision2.GetEnabled())
 	s.Equal(variablesExpected2.ToMap(), decision2.GetVariables().ToMap())
-	s.Equal("exp_no_audience", decision2.GetRuleKey())
+	s.Equal(ruleKey2, decision2.GetRuleKey())
 	s.Equal(flagKey2, decision2.GetFlagKey())
 	s.Equal(user, decision2.GetUserContext())
 	s.Len(decision2.GetReasons(), 0)
+
+	s.True(len(s.eventProcessor.Events) == 2)
+	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
+
+	impressionEvent1 := s.eventProcessor.Events[0].Impression
+	s.Equal(flagKey1, impressionEvent1.Metadata.FlagKey)
+	s.Equal(ruleKey1, impressionEvent1.Metadata.RuleKey)
+	s.Equal("feature-test", impressionEvent1.Metadata.RuleType)
+	s.Equal(variationKey1, impressionEvent1.Metadata.VariationKey)
+	s.Equal(true, impressionEvent1.Metadata.Enabled)
+	s.Equal("10390977673", impressionEvent1.ExperimentID)
+	s.Equal("10389729780", impressionEvent1.VariationID)
+
+	impressionEvent2 := s.eventProcessor.Events[1].Impression
+	s.Equal(flagKey2, impressionEvent2.Metadata.FlagKey)
+	s.Equal(ruleKey2, impressionEvent2.Metadata.RuleKey)
+	s.Equal("feature-test", impressionEvent2.Metadata.RuleType)
+	s.Equal(variationKey2, impressionEvent2.Metadata.VariationKey)
+	s.Equal(true, impressionEvent2.Metadata.Enabled)
+	s.Equal("10420810910", impressionEvent2.ExperimentID)
+	s.Equal("10418551353", impressionEvent2.VariationID)
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDecideAllFlags() {
 	flagKey1 := "feature_1"
 	flagKey2 := "feature_2"
 	flagKey3 := "feature_3"
+	variationKey1 := "a"
+	variationKey2 := "variation_with_traffic"
+	variationKey3 := ""
+	ruleKey1 := "exp_with_audience"
+	ruleKey2 := "exp_no_audience"
+	ruleKey3 := ""
+
 	variablesExpected1, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey1, entities.UserContext{ID: s.userID})
 	s.Nil(err)
 	variablesExpected2, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey2, entities.UserContext{ID: s.userID})
@@ -225,31 +362,61 @@ func (s *OptimizelyUserContextTestSuite) TestDecideAllFlags() {
 	s.Len(decisions, 3)
 
 	decision1 := decisions[flagKey1]
-	s.Equal("a", decision1.GetVariationKey())
+	s.Equal(variationKey1, decision1.GetVariationKey())
 	s.Equal(true, decision1.GetEnabled())
 	s.Equal(variablesExpected1.ToMap(), decision1.GetVariables().ToMap())
-	s.Equal("exp_with_audience", decision1.GetRuleKey())
+	s.Equal(ruleKey1, decision1.GetRuleKey())
 	s.Equal(flagKey1, decision1.GetFlagKey())
 	s.Equal(user, decision1.GetUserContext())
 	s.Len(decision1.GetReasons(), 0)
 
 	decision2 := decisions[flagKey2]
-	s.Equal("variation_with_traffic", decision2.GetVariationKey())
+	s.Equal(variationKey2, decision2.GetVariationKey())
 	s.Equal(true, decision2.GetEnabled())
 	s.Equal(variablesExpected2.ToMap(), decision2.GetVariables().ToMap())
-	s.Equal("exp_no_audience", decision2.GetRuleKey())
+	s.Equal(ruleKey2, decision2.GetRuleKey())
 	s.Equal(flagKey2, decision2.GetFlagKey())
 	s.Equal(user, decision2.GetUserContext())
 	s.Len(decision2.GetReasons(), 0)
 
 	decision3 := decisions[flagKey3]
-	s.Equal("", decision3.GetVariationKey())
+	s.Equal(variationKey3, decision3.GetVariationKey())
 	s.Equal(false, decision3.GetEnabled())
 	s.Equal(variablesExpected3.ToMap(), decision3.GetVariables().ToMap())
-	s.Equal("", decision3.GetRuleKey())
+	s.Equal(ruleKey3, decision3.GetRuleKey())
 	s.Equal(flagKey3, decision3.GetFlagKey())
 	s.Equal(user, decision3.GetUserContext())
 	s.Len(decision3.GetReasons(), 0)
+
+	s.True(len(s.eventProcessor.Events) == 3)
+	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
+
+	impressionEvent1 := s.eventProcessor.Events[0].Impression
+	s.Equal(flagKey1, impressionEvent1.Metadata.FlagKey)
+	s.Equal(ruleKey1, impressionEvent1.Metadata.RuleKey)
+	s.Equal("feature-test", impressionEvent1.Metadata.RuleType)
+	s.Equal(variationKey1, impressionEvent1.Metadata.VariationKey)
+	s.Equal(true, impressionEvent1.Metadata.Enabled)
+	s.Equal("10390977673", impressionEvent1.ExperimentID)
+	s.Equal("10389729780", impressionEvent1.VariationID)
+
+	impressionEvent2 := s.eventProcessor.Events[1].Impression
+	s.Equal(flagKey2, impressionEvent2.Metadata.FlagKey)
+	s.Equal(ruleKey2, impressionEvent2.Metadata.RuleKey)
+	s.Equal("feature-test", impressionEvent2.Metadata.RuleType)
+	s.Equal(variationKey2, impressionEvent2.Metadata.VariationKey)
+	s.Equal(true, impressionEvent2.Metadata.Enabled)
+	s.Equal("10420810910", impressionEvent2.ExperimentID)
+	s.Equal("10418551353", impressionEvent2.VariationID)
+
+	impressionEvent3 := s.eventProcessor.Events[2].Impression
+	s.Equal(flagKey3, impressionEvent3.Metadata.FlagKey)
+	s.Equal(ruleKey3, impressionEvent3.Metadata.RuleKey)
+	s.Equal("rollout", impressionEvent3.Metadata.RuleType)
+	s.Equal("", impressionEvent3.Metadata.VariationKey)
+	s.Equal(false, impressionEvent3.Metadata.Enabled)
+	s.Equal("", impressionEvent3.ExperimentID)
+	s.Equal("", impressionEvent3.VariationID)
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDecideAllEnabledFlagsOnly() {
