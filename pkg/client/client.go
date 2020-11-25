@@ -95,10 +95,10 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	var variationKey string
 	var eventSent, flagEnabled bool
 	allOptions := o.getAllOptions(options)
-	decisionReasons := decide.NewDecisionReasons(options)
+	decisionReasons := decide.NewDecisionReasons(allOptions)
 	decisionContext.Variable = entities.Variable{}
 
-	featureDecision, err := o.DecisionService.GetFeatureDecision(decisionContext, usrContext, options, decisionReasons)
+	featureDecision, err := o.DecisionService.GetFeatureDecision(decisionContext, usrContext, allOptions, decisionReasons)
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature "%s": %s`, key, err))
 	}
@@ -112,8 +112,8 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 		if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
 			featureDecision.Variation, usrContext, key, featureDecision.Experiment.Key, featureDecision.Source, flagEnabled); ok {
 			o.EventProcessor.ProcessEvent(ue)
+			eventSent = true
 		}
-		eventSent = true
 	}
 
 	variableMap := map[string]interface{}{}
