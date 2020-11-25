@@ -93,13 +93,16 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 		Attributes: userContext.GetUserAttributes(),
 	}
 	var variationKey string
-	eventSent := false
-	flagEnabled := false
+	var eventSent, flagEnabled bool
 	allOptions := o.getAllOptions(options)
 	decisionReasons := decide.NewDecisionReasons(options)
 	decisionContext.Variable = entities.Variable{}
 
-	featureDecision, _ := o.DecisionService.GetFeatureDecision(decisionContext, usrContext, options, decisionReasons)
+	featureDecision, err := o.DecisionService.GetFeatureDecision(decisionContext, usrContext, options, decisionReasons)
+	if err != nil {
+		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature "%s": %s`, key, err))
+	}
+
 	if featureDecision.Variation != nil {
 		variationKey = featureDecision.Variation.Key
 		flagEnabled = featureDecision.Variation.FeatureEnabled

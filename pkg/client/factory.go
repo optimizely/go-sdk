@@ -173,9 +173,9 @@ func WithDecisionService(decisionService decision.Service) OptionFunc {
 }
 
 // WithDefaultDecideOptions sets default decide options on a client.
-func WithDefaultDecideOptions(decideOptions decide.OptimizelyDecideOptions) OptionFunc {
+func WithDefaultDecideOptions(decideOptions []decide.Options) OptionFunc {
 	return func(f *OptimizelyFactory) {
-		f.defaultDecideOptions = decideOptions
+		f.defaultDecideOptions = convertDecideOptions(decideOptions)
 	}
 }
 
@@ -244,4 +244,23 @@ func (f *OptimizelyFactory) StaticClient() (optlyClient *OptimizelyClient, err e
 	)
 
 	return optlyClient, err
+}
+
+func convertDecideOptions(options []decide.Options) decide.OptimizelyDecideOptions {
+	finalOptions := decide.OptimizelyDecideOptions{}
+	for _, option := range options {
+		switch option {
+		case decide.DisableDecisionEvent:
+			finalOptions.DisableDecisionEvent = true
+		case decide.EnabledFlagsOnly:
+			finalOptions.EnabledFlagsOnly = true
+		case decide.IgnoreUserProfileService:
+			finalOptions.IgnoreUserProfileService = true
+		case decide.IncludeReasons:
+			finalOptions.IncludeReasons = true
+		case decide.ExcludeVariables:
+			finalOptions.ExcludeVariables = true
+		}
+	}
+	return finalOptions
 }
