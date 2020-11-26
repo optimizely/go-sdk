@@ -41,7 +41,7 @@ type OptimizelyFactory struct {
 	configManager        config.ProjectConfigManager
 	ctx                  context.Context
 	decisionService      decision.Service
-	defaultDecideOptions decide.OptimizelyDecideOptions
+	defaultDecideoptions *decide.OptimizelyDecideOptions
 	eventDispatcher      event.Dispatcher
 	eventProcessor       event.Processor
 	userProfileService   decision.UserProfileService
@@ -77,9 +77,16 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		ctx = context.Background()
 	}
 
+	var decideOptions *decide.OptimizelyDecideOptions
+	if f.defaultDecideoptions != nil {
+		decideOptions = f.defaultDecideoptions
+	} else {
+		decideOptions = &decide.OptimizelyDecideOptions{}
+	}
+
 	eg := utils.NewExecGroup(ctx, logging.GetLogger(f.SDKKey, "ExecGroup"))
 	appClient := &OptimizelyClient{
-		defaultDecideOptions: f.defaultDecideOptions,
+		defaultDecideoptions: decideOptions,
 		execGroup:            eg,
 		notificationCenter:   registry.GetNotificationCenter(f.SDKKey),
 		logger:               logging.GetLogger(f.SDKKey, "OptimizelyClient"),
@@ -175,7 +182,7 @@ func WithDecisionService(decisionService decision.Service) OptionFunc {
 // WithDefaultDecideOptions sets default decide options on a client.
 func WithDefaultDecideOptions(decideOptions []decide.Options) OptionFunc {
 	return func(f *OptimizelyFactory) {
-		f.defaultDecideOptions = convertDecideOptions(decideOptions)
+		f.defaultDecideoptions = convertDecideOptions(decideOptions)
 	}
 }
 
@@ -246,7 +253,7 @@ func (f *OptimizelyFactory) StaticClient() (optlyClient *OptimizelyClient, err e
 	return optlyClient, err
 }
 
-func convertDecideOptions(options []decide.Options) decide.OptimizelyDecideOptions {
+func convertDecideOptions(options []decide.Options) *decide.OptimizelyDecideOptions {
 	finalOptions := decide.OptimizelyDecideOptions{}
 	for _, option := range options {
 		switch option {
@@ -262,5 +269,5 @@ func convertDecideOptions(options []decide.Options) decide.OptimizelyDecideOptio
 			finalOptions.ExcludeVariables = true
 		}
 	}
-	return finalOptions
+	return &finalOptions
 }

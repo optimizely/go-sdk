@@ -211,11 +211,11 @@ func TestClientWithDefaultDecideOptions(t *testing.T) {
 	factory := OptimizelyFactory{SDKKey: "1212"}
 	optimizelyClient, err := factory.Client(WithDefaultDecideOptions(decideOptions))
 	assert.NoError(t, err)
-	assert.Equal(t, convertDecideOptions(decideOptions), optimizelyClient.defaultDecideOptions)
+	assert.Equal(t, convertDecideOptions(decideOptions), optimizelyClient.defaultDecideoptions)
 
 	// Verify that defaultDecideOptions are initialized as empty by default
 	factory = OptimizelyFactory{SDKKey: "1212"}
 	optimizelyClient, err = factory.Client()
 	assert.NoError(t, err)
-	assert.Equal(t, decide.OptimizelyDecideOptions{}, optimizelyClient.defaultDecideOptions)
+	assert.Equal(t, &decide.OptimizelyDecideOptions{}, optimizelyClient.defaultDecideoptions)
 }

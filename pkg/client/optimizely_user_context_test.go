@@ -721,7 +721,7 @@ func (s *OptimizelyUserContextTestSuite) TestGetAllOptionsUsesOrOperator() {
 	}
 	client, _ := s.factory.Client(WithDefaultDecideOptions(options1))
 	// Pass all false options
-	options2 := client.getAllOptions(decide.OptimizelyDecideOptions{})
+	options2 := client.getAllOptions(&decide.OptimizelyDecideOptions{})
 
 	s.Equal(decide.OptimizelyDecideOptions{
 		DisableDecisionEvent:     true,

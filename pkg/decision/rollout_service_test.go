@@ -41,7 +41,7 @@ type RolloutServiceTestSuite struct {
 	testConditionTreeParams           *entities.TreeParameters
 	testUserContext                   entities.UserContext
 	mockLogger                        *MockLogger
-	options                           decide.OptimizelyDecideOptions
+	options                           *decide.OptimizelyDecideOptions
 	reasons                           decide.DecisionReasons
 }
 
@@ -69,7 +69,7 @@ func (s *RolloutServiceTestSuite) SetupTest() {
 	s.testConditionTreeParams = entities.NewTreeParameters(&s.testUserContext, testAudienceMap)
 	s.mockConfig.On("GetAudienceMap").Return(testAudienceMap)
 	s.mockLogger = new(MockLogger)
-	s.options = decide.OptimizelyDecideOptions{}
+	s.options = &decide.OptimizelyDecideOptions{}
 	s.reasons = decide.NewDecisionReasons(s.options)
 }
 

@@ -36,7 +36,7 @@ type SubstringTestSuite struct {
 
 func (s *SubstringTestSuite) SetupTest() {
 	s.mockLogger = new(MockLogger)
-	s.reasons = decide.NewDecisionReasons(decide.OptimizelyDecideOptions{})
+	s.reasons = decide.NewDecisionReasons(&decide.OptimizelyDecideOptions{})
 	s.matcher, _ = Get(SubstringMatchType)
 }
 

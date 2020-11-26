@@ -46,7 +46,7 @@ type OptimizelyClient struct {
 	notificationCenter   notification.Center
 	execGroup            *utils.ExecGroup
 	logger               logging.OptimizelyLogProducer
-	defaultDecideOptions decide.OptimizelyDecideOptions
+	defaultDecideoptions *decide.OptimizelyDecideOptions
 }
 
 // Decide API
@@ -57,7 +57,7 @@ func (o *OptimizelyClient) CreateUserContext(userID string, attributes map[strin
 	return newOptimizelyUserContext(o, userID, attributes)
 }
 
-func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string, options decide.OptimizelyDecideOptions) OptimizelyDecision {
+func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string, options *decide.OptimizelyDecideOptions) OptimizelyDecision {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
@@ -95,10 +95,10 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	var variationKey string
 	var eventSent, flagEnabled bool
 	allOptions := o.getAllOptions(options)
-	decisionReasons := decide.NewDecisionReasons(allOptions)
+	decisionReasons := decide.NewDecisionReasons(&allOptions)
 	decisionContext.Variable = entities.Variable{}
 
-	featureDecision, err := o.DecisionService.GetFeatureDecision(decisionContext, usrContext, allOptions, decisionReasons)
+	featureDecision, err := o.DecisionService.GetFeatureDecision(decisionContext, usrContext, &allOptions, decisionReasons)
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature "%s": %s`, key, err))
 	}
@@ -135,7 +135,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, userContext, reasonsToReport)
 }
 
-func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
+func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options *decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
@@ -174,7 +174,7 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 	return decisionMap
 }
 
-func (o *OptimizelyClient) decideAll(userContext OptimizelyUserContext, options decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
+func (o *OptimizelyClient) decideAll(userContext OptimizelyUserContext, options *decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 
 	var err error
 	defer func() {
@@ -809,7 +809,7 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 	}
 
 	decisionContext.Variable = variable
-	options := decide.OptimizelyDecideOptions{}
+	options := &decide.OptimizelyDecideOptions{}
 	featureDecision, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext, options, decide.NewDecisionReasons(options))
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature "%s": %s`, featureKey, err))
@@ -840,7 +840,7 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 		ProjectConfig: projectConfig,
 	}
 
-	options := decide.OptimizelyDecideOptions{}
+	options := &decide.OptimizelyDecideOptions{}
 	experimentDecision, err = o.DecisionService.GetExperimentDecision(decisionContext, userContext, options, decide.NewDecisionReasons(options))
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for experiment "%s": %s`, experimentKey, err))
@@ -928,13 +928,13 @@ func (o *OptimizelyClient) getProjectConfig() (projectConfig config.ProjectConfi
 	return projectConfig, nil
 }
 
-func (o *OptimizelyClient) getAllOptions(options decide.OptimizelyDecideOptions) decide.OptimizelyDecideOptions {
+func (o *OptimizelyClient) getAllOptions(options *decide.OptimizelyDecideOptions) decide.OptimizelyDecideOptions {
 	return decide.OptimizelyDecideOptions{
-		DisableDecisionEvent:     (o.defaultDecideOptions.DisableDecisionEvent || options.DisableDecisionEvent),
-		EnabledFlagsOnly:         (o.defaultDecideOptions.EnabledFlagsOnly || options.EnabledFlagsOnly),
-		ExcludeVariables:         (o.defaultDecideOptions.ExcludeVariables || options.ExcludeVariables),
-		IgnoreUserProfileService: (o.defaultDecideOptions.IgnoreUserProfileService || options.IgnoreUserProfileService),
-		IncludeReasons:           (o.defaultDecideOptions.IncludeReasons || options.IncludeReasons),
+		DisableDecisionEvent:     o.defaultDecideoptions.DisableDecisionEvent || options.DisableDecisionEvent,
+		EnabledFlagsOnly:         o.defaultDecideoptions.EnabledFlagsOnly || options.EnabledFlagsOnly,
+		ExcludeVariables:         o.defaultDecideoptions.ExcludeVariables || options.ExcludeVariables,
+		IgnoreUserProfileService: o.defaultDecideoptions.IgnoreUserProfileService || options.IgnoreUserProfileService,
+		IncludeReasons:           o.defaultDecideoptions.IncludeReasons || options.IncludeReasons,
 	}
 }
 

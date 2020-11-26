@@ -78,7 +78,7 @@ type ConditionTreeTestSuite struct {
 
 func (s *ConditionTreeTestSuite) SetupTest() {
 	s.mockLogger = new(MockLogger)
-	s.reasons = decide.NewDecisionReasons(decide.OptimizelyDecideOptions{})
+	s.reasons = decide.NewDecisionReasons(&decide.OptimizelyDecideOptions{})
 	s.conditionTreeEvaluator = NewMixedTreeEvaluator(s.mockLogger)
 }
 

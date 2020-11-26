@@ -31,7 +31,7 @@ type FeatureExperimentServiceTestSuite struct {
 	mockConfig                 *mockProjectConfig
 	testFeatureDecisionContext FeatureDecisionContext
 	mockExperimentService      *MockExperimentDecisionService
-	options                    decide.OptimizelyDecideOptions
+	options                    *decide.OptimizelyDecideOptions
 	reasons                    decide.DecisionReasons
 }
 
@@ -43,7 +43,7 @@ func (s *FeatureExperimentServiceTestSuite) SetupTest() {
 		Variable:      testVariable,
 	}
 	s.mockExperimentService = new(MockExperimentDecisionService)
-	s.options = decide.OptimizelyDecideOptions{}
+	s.options = &decide.OptimizelyDecideOptions{}
 	s.reasons = decide.NewDecisionReasons(s.options)
 }
 

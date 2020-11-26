@@ -28,7 +28,7 @@ type DefaultDecisionReasons struct {
 }
 
 // NewDecisionReasons returns a new instance of DecisionReasons.
-func NewDecisionReasons(options OptimizelyDecideOptions) *DefaultDecisionReasons {
+func NewDecisionReasons(options *OptimizelyDecideOptions) *DefaultDecisionReasons {
 	return &DefaultDecisionReasons{
 		errors:         []string{},
 		logs:           []string{},
