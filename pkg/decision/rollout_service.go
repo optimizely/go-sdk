@@ -46,7 +46,7 @@ func NewRolloutService(sdkKey string) *RolloutService {
 }
 
 // GetDecision returns a decision for the given feature and user context
-func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (FeatureDecision, error) {
+func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (FeatureDecision, error) {
 	featureDecision := FeatureDecision{
 		Source: Rollout,
 	}

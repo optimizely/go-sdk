@@ -83,7 +83,7 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 }
 
 // GetDecision returns a decision for the given experiment and user context
-func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (decision ExperimentDecision, err error) {
+func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (decision ExperimentDecision, err error) {
 	// Run through the various decision services until we get a decision
 	for _, experimentService := range s.experimentServices {
 		decision, err = experimentService.GetDecision(decisionContext, userContext, options, reasons)

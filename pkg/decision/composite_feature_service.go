@@ -43,7 +43,7 @@ func NewCompositeFeatureService(sdkKey string, compositeExperimentService Experi
 }
 
 // GetDecision returns a decision for the given feature and user context
-func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (FeatureDecision, error) {
+func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (FeatureDecision, error) {
 	var featureDecision = FeatureDecision{}
 	var err error
 	for _, featureDecisionService := range f.featureServices {

@@ -33,7 +33,7 @@ type CompositeFeatureServiceTestSuite struct {
 	mockFeatureService         *MockFeatureDecisionService
 	mockFeatureService2        *MockFeatureDecisionService
 	testFeatureDecisionContext FeatureDecisionContext
-	options                    *decide.OptimizelyDecideOptions
+	options                    *decide.Options
 	reasons                    decide.DecisionReasons
 }
 
@@ -42,7 +42,7 @@ func (s *CompositeFeatureServiceTestSuite) SetupTest() {
 
 	s.mockFeatureService = new(MockFeatureDecisionService)
 	s.mockFeatureService2 = new(MockFeatureDecisionService)
-	s.options = &decide.OptimizelyDecideOptions{}
+	s.options = &decide.Options{}
 	s.reasons = decide.NewDecisionReasons(s.options)
 
 	// Setup test data

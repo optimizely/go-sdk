@@ -442,7 +442,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideAllEnabledFlagsOnly() {
 	s.Nil(err)
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, map[string]interface{}{"gender": "f"})
-	decisions := user.DecideAll([]decide.Options{decide.EnabledFlagsOnly})
+	decisions := user.DecideAll([]decide.OptimizelyDecideOptions{decide.EnabledFlagsOnly})
 	s.Len(decisions, 2)
 
 	decision1 := decisions[flagKey1]
@@ -517,7 +517,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideDoNotSendEvent() {
 	flagKey := "feature_2"
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-	decision := user.Decide(flagKey, []decide.Options{decide.DisableDecisionEvent})
+	decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.DisableDecisionEvent})
 
 	s.Equal("variation_with_traffic", decision.GetVariationKey())
 	s.True(len(s.eventProcessor.Events) == 0)
@@ -558,7 +558,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecisionNotification() {
 
 	receivedNotification = notification.DecisionNotification{}
 	expectedDecisionInfo["decisionEventDispatched"] = false
-	_ = user.Decide(flagKey, []decide.Options{decide.DisableDecisionEvent})
+	_ = user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.DisableDecisionEvent})
 	s.Equal(expectedDecisionInfo, receivedNotification.DecisionInfo)
 }
 
@@ -590,7 +590,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsBypassUps() {
 	userProfileService.AssertCalled(s.T(), "Lookup", s.userID)
 	userProfileService.AssertNotCalled(s.T(), "Save", mock.Anything)
 
-	decision = userContext.Decide(flagKey, []decide.Options{decide.IgnoreUserProfileService})
+	decision = userContext.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IgnoreUserProfileService})
 	// should not lookup, ignore variationId2 set by UPS and return variationId1
 	s.Equal(variationKey1, decision.GetVariationKey())
 	userProfileService.AssertNumberOfCalls(s.T(), "Lookup", 1)
@@ -600,7 +600,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsBypassUps() {
 
 func (s *OptimizelyUserContextTestSuite) TestDecideOptionsExcludeVariables() {
 	flagKey := "feature_1"
-	options := []decide.Options{}
+	options := []decide.OptimizelyDecideOptions{}
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 
 	decision := user.Decide(flagKey, options)
@@ -613,7 +613,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsExcludeVariables() {
 
 func (s *OptimizelyUserContextTestSuite) TestDecideOptionsIncludeReasons() {
 	flagKey := "invalid_key"
-	var options []decide.Options
+	var options []decide.OptimizelyDecideOptions
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 
 	// invalid flag key
@@ -635,7 +635,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsIncludeReasons() {
 
 func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsExcludeVariables() {
 	flagKey := "feature_1"
-	options := []decide.Options{decide.ExcludeVariables}
+	options := []decide.OptimizelyDecideOptions{decide.ExcludeVariables}
 	client, _ := s.factory.Client(WithEventProcessor(s.eventProcessor), WithDefaultDecideOptions(options))
 	userContext := client.CreateUserContext(s.userID, nil)
 
@@ -649,7 +649,7 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsExcludeVariable
 func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsEnabledFlagsOnly() {
 	flagKey := "feature_1"
 	variablesExpected, _ := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
-	options := []decide.Options{decide.EnabledFlagsOnly}
+	options := []decide.OptimizelyDecideOptions{decide.EnabledFlagsOnly}
 	client, _ := s.factory.Client(WithEventProcessor(s.eventProcessor), WithDefaultDecideOptions(options))
 	user := client.CreateUserContext(s.userID, map[string]interface{}{"gender": "f"})
 
@@ -669,7 +669,7 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsEnabledFlagsOnl
 
 func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsIncludeReasons() {
 	flagKey := "invalid_key"
-	options := []decide.Options{decide.IncludeReasons}
+	options := []decide.OptimizelyDecideOptions{decide.IncludeReasons}
 	client, _ := s.factory.Client(WithEventProcessor(s.eventProcessor), WithDefaultDecideOptions(options))
 	user := client.CreateUserContext(s.userID, nil)
 
@@ -699,7 +699,7 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsBypassUps() {
 	userProfileService.On("Lookup", s.userID).Return(savedUserProfile)
 	userProfileService.On("Save", mock.Anything)
 
-	options := []decide.Options{decide.IgnoreUserProfileService}
+	options := []decide.OptimizelyDecideOptions{decide.IgnoreUserProfileService}
 	client, _ := s.factory.Client(WithEventProcessor(s.eventProcessor), WithDefaultDecideOptions(options))
 	user := client.CreateUserContext(s.userID, nil)
 	decision := user.Decide(flagKey, nil)
@@ -712,7 +712,7 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsBypassUps() {
 }
 
 func (s *OptimizelyUserContextTestSuite) TestGetAllOptionsUsesOrOperator() {
-	options1 := []decide.Options{
+	options1 := []decide.OptimizelyDecideOptions{
 		decide.DisableDecisionEvent,
 		decide.EnabledFlagsOnly,
 		decide.IgnoreUserProfileService,
@@ -721,9 +721,9 @@ func (s *OptimizelyUserContextTestSuite) TestGetAllOptionsUsesOrOperator() {
 	}
 	client, _ := s.factory.Client(WithDefaultDecideOptions(options1))
 	// Pass all false options
-	options2 := client.getAllOptions(&decide.OptimizelyDecideOptions{})
+	options2 := client.getAllOptions(&decide.Options{})
 
-	s.Equal(decide.OptimizelyDecideOptions{
+	s.Equal(decide.Options{
 		DisableDecisionEvent:     true,
 		EnabledFlagsOnly:         true,
 		IgnoreUserProfileService: true,

@@ -46,7 +46,7 @@ func NewPersistingExperimentService(userProfileService UserProfileService, exper
 }
 
 // GetDecision returns the decision with the variation the user is bucketed into
-func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (experimentDecision ExperimentDecision, err error) {
+func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (experimentDecision ExperimentDecision, err error) {
 	if p.userProfileService == nil || options.IgnoreUserProfileService {
 		return p.experimentBucketedService.GetDecision(decisionContext, userContext, options, reasons)
 	}

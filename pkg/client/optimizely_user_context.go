@@ -77,17 +77,17 @@ func (o *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
 
 // Decide returns a decision result for a given flag key and a user context, which contains
 // all data required to deliver the flag or experiment.
-func (o *OptimizelyUserContext) Decide(key string, options []decide.Options) OptimizelyDecision {
+func (o *OptimizelyUserContext) Decide(key string, options []decide.OptimizelyDecideOptions) OptimizelyDecision {
 	return o.optimizely.decide(*o, key, convertDecideOptions(options))
 }
 
 // DecideAll returns a key-map of decision results for all active flag keys with options.
-func (o *OptimizelyUserContext) DecideAll(options []decide.Options) map[string]OptimizelyDecision {
+func (o *OptimizelyUserContext) DecideAll(options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	return o.optimizely.decideAll(*o, convertDecideOptions(options))
 }
 
 // DecideForKeys returns a key-map of decision results for multiple flag keys and options.
-func (o *OptimizelyUserContext) DecideForKeys(keys []string, options []decide.Options) map[string]OptimizelyDecision {
+func (o *OptimizelyUserContext) DecideForKeys(keys []string, options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	return o.optimizely.decideForKeys(*o, keys, convertDecideOptions(options))
 }
 

@@ -17,12 +17,12 @@
 // Package decide has option definitions for decide api
 package decide
 
-// Options controlling flag decisions.
-type Options int
+// OptimizelyDecideOptions controlling flag decisions.
+type OptimizelyDecideOptions int
 
 const (
 	// DisableDecisionEvent when set, disables decision event tracking.
-	DisableDecisionEvent Options = 1 + iota
+	DisableDecisionEvent OptimizelyDecideOptions = 1 + iota
 	// EnabledFlagsOnly when set, returns decisions only for flags which are enabled.
 	EnabledFlagsOnly
 	// IgnoreUserProfileService when set, skips user profile service for decision.
@@ -33,8 +33,8 @@ const (
 	ExcludeVariables
 )
 
-// OptimizelyDecideOptions defines options for controlling flag decisions.
-type OptimizelyDecideOptions struct {
+// Options defines options for controlling flag decisions.
+type Options struct {
 	DisableDecisionEvent     bool
 	EnabledFlagsOnly         bool
 	IgnoreUserProfileService bool

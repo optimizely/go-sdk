@@ -25,20 +25,20 @@ import (
 
 // Service interface is used to make a decision for a given feature or experiment
 type Service interface {
-	GetFeatureDecision(FeatureDecisionContext, entities.UserContext, *decide.OptimizelyDecideOptions, decide.DecisionReasons) (FeatureDecision, error)
-	GetExperimentDecision(ExperimentDecisionContext, entities.UserContext, *decide.OptimizelyDecideOptions, decide.DecisionReasons) (ExperimentDecision, error)
+	GetFeatureDecision(FeatureDecisionContext, entities.UserContext, *decide.Options, decide.DecisionReasons) (FeatureDecision, error)
+	GetExperimentDecision(ExperimentDecisionContext, entities.UserContext, *decide.Options, decide.DecisionReasons) (ExperimentDecision, error)
 	OnDecision(func(notification.DecisionNotification)) (int, error)
 	RemoveOnDecision(id int) error
 }
 
 // ExperimentService can make a decision about an experiment
 type ExperimentService interface {
-	GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (ExperimentDecision, error)
+	GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (ExperimentDecision, error)
 }
 
 // FeatureService can make a decision about a Feature Flag (can be feature test or rollout)
 type FeatureService interface {
-	GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (FeatureDecision, error)
+	GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (FeatureDecision, error)
 }
 
 // UserProfileService is used to save and retrieve past bucketing decisions for users

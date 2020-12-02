@@ -23,12 +23,12 @@ import (
 )
 
 func TestNewDecisionReasonsWithEmptyOptions(t *testing.T) {
-	reasons := NewDecisionReasons(&OptimizelyDecideOptions{})
+	reasons := NewDecisionReasons(&Options{})
 	assert.Equal(t, 0, len(reasons.ToReport()))
 }
 
 func TestAddErrorWorksWithEveryOption(t *testing.T) {
-	options := &OptimizelyDecideOptions{
+	options := &Options{
 		DisableDecisionEvent:     true,
 		EnabledFlagsOnly:         true,
 		IgnoreUserProfileService: true,
@@ -44,7 +44,7 @@ func TestAddErrorWorksWithEveryOption(t *testing.T) {
 }
 
 func TestInfoLogsAreOnlyReportedWhenIncludeReasonsOptionIsSet(t *testing.T) {
-	options := &OptimizelyDecideOptions{
+	options := &Options{
 		DisableDecisionEvent:     true,
 		EnabledFlagsOnly:         true,
 		IgnoreUserProfileService: true,

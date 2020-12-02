@@ -36,7 +36,7 @@ type GtTestSuite struct {
 
 func (s *GtTestSuite) SetupTest() {
 	s.mockLogger = new(MockLogger)
-	s.reasons = decide.NewDecisionReasons(&decide.OptimizelyDecideOptions{})
+	s.reasons = decide.NewDecisionReasons(&decide.Options{})
 	s.matcher, _ = Get(GtMatchType)
 }
 
