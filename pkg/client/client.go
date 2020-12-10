@@ -26,6 +26,7 @@ import (
 	"strconv"
 
 	"github.com/optimizely/go-sdk/pkg/config"
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
@@ -39,12 +40,19 @@ import (
 
 // OptimizelyClient is the entry point to the Optimizely SDK
 type OptimizelyClient struct {
-	ConfigManager      config.ProjectConfigManager
-	DecisionService    decision.Service
-	EventProcessor     event.Processor
-	notificationCenter notification.Center
-	execGroup          *utils.ExecGroup
-	logger             logging.OptimizelyLogProducer
+	ConfigManager        config.ProjectConfigManager
+	DecisionService      decision.Service
+	EventProcessor       event.Processor
+	notificationCenter   notification.Center
+	execGroup            *utils.ExecGroup
+	logger               logging.OptimizelyLogProducer
+	defaultDecideOptions decide.OptimizelyDecideOptions
+}
+
+// CreateUserContext creates a context of the user for which decision APIs will be called.
+// A user context will be created successfully even when the SDK is not fully configured yet.
+func (o *OptimizelyClient) CreateUserContext(userID string, attributes map[string]interface{}) OptimizelyUserContext {
+	return newOptimizelyUserContext(o, userID, attributes)
 }
 
 // Activate returns the key of the variation the user is bucketed into and queues up an impression event to be sent to

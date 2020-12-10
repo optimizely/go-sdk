@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/config"
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
@@ -37,14 +38,15 @@ type OptimizelyFactory struct {
 	Datafile            []byte
 	DatafileAccessToken string
 
-	configManager      config.ProjectConfigManager
-	ctx                context.Context
-	decisionService    decision.Service
-	eventDispatcher    event.Dispatcher
-	eventProcessor     event.Processor
-	userProfileService decision.UserProfileService
-	overrideStore      decision.ExperimentOverrideStore
-	metricsRegistry    metrics.Registry
+	configManager        config.ProjectConfigManager
+	ctx                  context.Context
+	decisionService      decision.Service
+	defaultDecideOptions decide.OptimizelyDecideOptions
+	eventDispatcher      event.Dispatcher
+	eventProcessor       event.Processor
+	userProfileService   decision.UserProfileService
+	overrideStore        decision.ExperimentOverrideStore
+	metricsRegistry      metrics.Registry
 }
 
 // OptionFunc is used to provide custom client configuration to the OptimizelyFactory.
@@ -76,9 +78,12 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 	}
 
 	eg := utils.NewExecGroup(ctx, logging.GetLogger(f.SDKKey, "ExecGroup"))
-	appClient := &OptimizelyClient{execGroup: eg,
-		notificationCenter: registry.GetNotificationCenter(f.SDKKey),
-		logger:             logging.GetLogger(f.SDKKey, "OptimizelyClient")}
+	appClient := &OptimizelyClient{
+		defaultDecideOptions: f.defaultDecideOptions,
+		execGroup:            eg,
+		notificationCenter:   registry.GetNotificationCenter(f.SDKKey),
+		logger:               logging.GetLogger(f.SDKKey, "OptimizelyClient"),
+	}
 
 	if f.configManager != nil {
 		appClient.ConfigManager = f.configManager
@@ -164,6 +169,13 @@ func WithConfigManager(configManager config.ProjectConfigManager) OptionFunc {
 func WithDecisionService(decisionService decision.Service) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.decisionService = decisionService
+	}
+}
+
+// WithDefaultDecideOptions sets default decide options on a client.
+func WithDefaultDecideOptions(decideOptions decide.OptimizelyDecideOptions) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.defaultDecideOptions = decideOptions
 	}
 }
 
