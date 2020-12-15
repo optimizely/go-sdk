@@ -213,7 +213,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideRollout() {
 	s.Equal(ruleKey, decision.GetRuleKey())
 	s.Equal(flagKey, decision.GetFlagKey())
 	s.Equal(user, decision.GetUserContext())
-	s.Len(decision.GetReasons(), 0)
+	s.Len(decision.GetReasons(), 3)
 
 	s.True(len(s.eventProcessor.Events) == 1)
 	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
@@ -642,7 +642,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsIncludeReasons() {
 	// valid flag key
 	flagKey = "feature_1"
 	decision = user.Decide(flagKey, nil)
-	s.Len(decision.GetReasons(), 0)
+	s.Len(decision.GetReasons(), 3)
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsExcludeVariables() {

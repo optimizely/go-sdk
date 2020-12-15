@@ -52,19 +52,26 @@ func TestInfoLogsAreOnlyReportedWhenIncludeReasonsOptionIsSet(t *testing.T) {
 	}
 	reasons := NewDecisionReasons(options)
 	reasons.AddError("error message")
+	reasons.AddError("error message: code %d", 121)
 	reasons.AddInfo("info message")
+	reasons.AddInfo("info message: %s", "unexpected string")
 
 	reportedReasons := reasons.ToReport()
-	assert.Equal(t, 1, len(reportedReasons))
+	assert.Equal(t, 2, len(reportedReasons))
 	assert.Equal(t, "error message", reportedReasons[0])
+	assert.Equal(t, "error message: code 121", reportedReasons[1])
 
 	options.IncludeReasons = true
 	reasons = NewDecisionReasons(options)
 	reasons.AddError("error message")
+	reasons.AddError("error message: code %d", 121)
 	reasons.AddInfo("info message")
+	reasons.AddInfo("info message: %s", "unexpected string")
 
 	reportedReasons = reasons.ToReport()
-	assert.Equal(t, 2, len(reportedReasons))
+	assert.Equal(t, 4, len(reportedReasons))
 	assert.Equal(t, "error message", reportedReasons[0])
-	assert.Equal(t, "info message", reportedReasons[1])
+	assert.Equal(t, "error message: code 121", reportedReasons[1])
+	assert.Equal(t, "info message", reportedReasons[2])
+	assert.Equal(t, "info message: unexpected string", reportedReasons[3])
 }

@@ -18,6 +18,7 @@
 package evaluator
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/optimizely/go-sdk/pkg/decide"
@@ -47,7 +48,9 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 
 	if condition.Type != customAttributeType {
 		c.logger.Warning(fmt.Sprintf(logging.UnknownConditionType.String(), condition.StringRepresentation))
-		return false, fmt.Errorf(`unable to evaluate condition of type "%s"`, condition.Type)
+		errorMessage := fmt.Sprintf(`unable to evaluate condition of type "%s"`, condition.Type)
+		reasons.AddError(errorMessage)
+		return false, errors.New(errorMessage)
 	}
 
 	matchType := condition.Match
@@ -58,7 +61,9 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 	matcher, ok := matchers.Get(matchType)
 	if !ok {
 		c.logger.Warning(fmt.Sprintf(logging.UnknownMatchType.String(), condition.StringRepresentation))
-		return false, fmt.Errorf(`invalid Condition matcher "%s"`, condition.Match)
+		errorMessage := fmt.Sprintf(`invalid Condition matcher "%s"`, condition.Match)
+		reasons.AddError(errorMessage)
+		return false, errors.New(errorMessage)
 	}
 
 	return matcher(condition, *condTreeParams.User, c.logger, reasons)
@@ -82,11 +87,15 @@ func (c AudienceConditionEvaluator) Evaluate(audienceID string, condTreeParams *
 		conditionTreeEvaluator := NewMixedTreeEvaluator(c.logger)
 		retValue, isValid := conditionTreeEvaluator.Evaluate(condTree, condTreeParams, reasons)
 		if !isValid {
-			return false, fmt.Errorf(`an error occurred while evaluating nested tree for audience ID "%s"`, audienceID)
+			errorMessage := fmt.Sprintf(`an error occurred while evaluating nested tree for audience ID "%s"`, audienceID)
+			reasons.AddError(errorMessage)
+			return false, errors.New(errorMessage)
 		}
 		c.logger.Debug(fmt.Sprintf(logging.AudienceEvaluatedTo.String(), audienceID, retValue))
 		return retValue, nil
 	}
 
-	return false, fmt.Errorf(`unable to evaluate nested tree for audience ID "%s"`, audienceID)
+	errorMessage := fmt.Sprintf(`unable to evaluate nested tree for audience ID "%s"`, audienceID)
+	reasons.AddError(errorMessage)
+	return false, errors.New(errorMessage)
 }
