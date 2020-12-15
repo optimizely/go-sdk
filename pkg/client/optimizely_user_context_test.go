@@ -154,6 +154,18 @@ func (s *OptimizelyUserContextTestSuite) TestSetAttributeNullValue() {
 	s.Equal(nil, optimizelyUserContext.GetUserAttributes()["k1"])
 }
 
+func (s *OptimizelyUserContextTestSuite) TestDecideResponseContainsUserContextCopy() {
+	flagKey := "feature_2"
+	userContext := s.OptimizelyClient.CreateUserContext(s.userID, nil)
+	decision := userContext.Decide(flagKey, nil)
+	decisionUserContext := decision.GetUserContext()
+
+	// Change attributes for user context
+	userContext.SetAttribute("test", 123)
+	// Attributes should not update for the userContext returned inside decision
+	s.Nil(decisionUserContext.attributes["test"])
+}
+
 func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTest() {
 	flagKey := "feature_2"
 	ruleKey := "exp_no_audience"

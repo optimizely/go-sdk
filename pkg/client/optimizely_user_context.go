@@ -78,17 +78,23 @@ func (o *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
 // Decide returns a decision result for a given flag key and a user context, which contains
 // all data required to deliver the flag or experiment.
 func (o *OptimizelyUserContext) Decide(key string, options []decide.OptimizelyDecideOptions) OptimizelyDecision {
-	return o.optimizely.decide(*o, key, convertDecideOptions(options))
+	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
+	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes())
+	return o.optimizely.decide(userContextCopy, key, convertDecideOptions(options))
 }
 
 // DecideAll returns a key-map of decision results for all active flag keys with options.
 func (o *OptimizelyUserContext) DecideAll(options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
-	return o.optimizely.decideAll(*o, convertDecideOptions(options))
+	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
+	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes())
+	return o.optimizely.decideAll(userContextCopy, convertDecideOptions(options))
 }
 
 // DecideForKeys returns a key-map of decision results for multiple flag keys and options.
 func (o *OptimizelyUserContext) DecideForKeys(keys []string, options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
-	return o.optimizely.decideForKeys(*o, keys, convertDecideOptions(options))
+	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
+	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes())
+	return o.optimizely.decideForKeys(userContextCopy, keys, convertDecideOptions(options))
 }
 
 // TrackEvent generates a conversion event with the given event key if it exists and queues it up to be sent to the Optimizely
