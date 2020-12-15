@@ -21,8 +21,9 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/decision/evaluator"
-	"github.com/optimizely/go-sdk/pkg/decision/reasons"
+	pkgReasons "github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
@@ -45,8 +46,7 @@ func NewRolloutService(sdkKey string) *RolloutService {
 }
 
 // GetDecision returns a decision for the given feature and user context
-func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
-
+func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (FeatureDecision, error) {
 	featureDecision := FeatureDecision{
 		Source: Rollout,
 	}
@@ -56,9 +56,9 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	evaluateConditionTree := func(experiment *entities.Experiment, loggingKey string) bool {
 		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
 		r.logger.Debug(fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), loggingKey))
-		evalResult, _ := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
+		evalResult, _ := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams, reasons)
 		if !evalResult {
-			featureDecision.Reason = reasons.FailedRolloutTargeting
+			featureDecision.Reason = pkgReasons.FailedRolloutTargeting
 		}
 		return evalResult
 	}
@@ -66,10 +66,10 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	getFeatureDecision := func(experiment *entities.Experiment, decision *ExperimentDecision) (FeatureDecision, error) {
 		// translate the experiment reason into a more rollouts-appropriate reason
 		switch decision.Reason {
-		case reasons.NotBucketedIntoVariation:
-			featureDecision.Decision = Decision{Reason: reasons.FailedRolloutBucketing}
-		case reasons.BucketedIntoVariation:
-			featureDecision.Decision = Decision{Reason: reasons.BucketedIntoRollout}
+		case pkgReasons.NotBucketedIntoVariation:
+			featureDecision.Decision = Decision{Reason: pkgReasons.FailedRolloutBucketing}
+		case pkgReasons.BucketedIntoVariation:
+			featureDecision.Decision = Decision{Reason: pkgReasons.BucketedIntoRollout}
 		default:
 			featureDecision.Decision = decision.Decision
 		}
@@ -90,13 +90,13 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	}
 
 	if rollout.ID == "" {
-		featureDecision.Reason = reasons.NoRolloutForFeature
+		featureDecision.Reason = pkgReasons.NoRolloutForFeature
 		return featureDecision, nil
 	}
 
 	numberOfExperiments := len(rollout.Experiments)
 	if numberOfExperiments == 0 {
-		featureDecision.Reason = reasons.RolloutHasNoExperiments
+		featureDecision.Reason = pkgReasons.RolloutHasNoExperiments
 		return featureDecision, nil
 	}
 
@@ -114,7 +114,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 			continue
 		}
 
-		decision, _ := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext)
+		decision, _ := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext, options, reasons)
 		if decision.Variation == nil {
 			// Evaluate fall back rule / last rule now
 			break
@@ -130,9 +130,8 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	r.logger.Debug(fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "Everyone Else", evaluationResult))
 
 	if evaluationResult {
-		decision, err := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext)
+		decision, err := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext, options, reasons)
 		if err == nil {
-
 			r.logger.Debug(fmt.Sprintf(logging.UserInEveryoneElse.String(), userContext.ID))
 		}
 		return getFeatureDecision(experiment, &decision)

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -22,7 +22,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/optimizely/go-sdk/pkg/decision/reasons"
+	"github.com/optimizely/go-sdk/pkg/decide"
+	pkgReasons "github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
@@ -84,13 +85,13 @@ type ExperimentOverrideService struct {
 // NewExperimentOverrideService returns a pointer to an initialized ExperimentOverrideService
 func NewExperimentOverrideService(overrides ExperimentOverrideStore, logger logging.OptimizelyLogProducer) *ExperimentOverrideService {
 	return &ExperimentOverrideService{
-		logger: logger,
+		logger:    logger,
 		Overrides: overrides,
 	}
 }
 
 // GetDecision returns a decision with a variation when the store returns a variation assignment for the given user and experiment
-func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
+func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (experimentDecision ExperimentDecision, err error) {
 	decision := ExperimentDecision{}
 
 	if decisionContext.Experiment == nil {
@@ -99,19 +100,19 @@ func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisio
 
 	variationKey, ok := s.Overrides.GetVariation(ExperimentOverrideKey{ExperimentKey: decisionContext.Experiment.Key, UserID: userContext.ID})
 	if !ok {
-		decision.Reason = reasons.NoOverrideVariationAssignment
+		decision.Reason = pkgReasons.NoOverrideVariationAssignment
 		return decision, nil
 	}
 
 	if variationID, ok := decisionContext.Experiment.VariationKeyToIDMap[variationKey]; ok {
 		if variation, ok := decisionContext.Experiment.Variations[variationID]; ok {
 			decision.Variation = &variation
-			decision.Reason = reasons.OverrideVariationAssignmentFound
+			decision.Reason = pkgReasons.OverrideVariationAssignmentFound
 			s.logger.Debug(fmt.Sprintf("Override variation %v found for user %v", variationKey, userContext.ID))
 			return decision, nil
 		}
 	}
 
-	decision.Reason = reasons.InvalidOverrideVariationAssignment
+	decision.Reason = pkgReasons.InvalidOverrideVariationAssignment
 	return decision, nil
 }

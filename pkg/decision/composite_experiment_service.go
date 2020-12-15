@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -19,6 +19,8 @@ package decision
 
 import (
 	"fmt"
+
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
@@ -54,7 +56,7 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 	// 1. Overrides (if supplied)
 	// 2. Whitelist
 	// 3. Bucketing (with User profile integration if supplied)
-	compositeExperimentService := &CompositeExperimentService{logger:logging.GetLogger(sdkKey, "CompositeExperimentService")}
+	compositeExperimentService := &CompositeExperimentService{logger: logging.GetLogger(sdkKey, "CompositeExperimentService")}
 	for _, opt := range options {
 		opt(compositeExperimentService)
 	}
@@ -81,11 +83,10 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 }
 
 // GetDecision returns a decision for the given experiment and user context
-func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (decision ExperimentDecision, err error) {
-
+func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (decision ExperimentDecision, err error) {
 	// Run through the various decision services until we get a decision
 	for _, experimentService := range s.experimentServices {
-		decision, err = experimentService.GetDecision(decisionContext, userContext)
+		decision, err = experimentService.GetDecision(decisionContext, userContext, options, reasons)
 		if err != nil {
 			s.logger.Debug(fmt.Sprintf("%v", err))
 		}

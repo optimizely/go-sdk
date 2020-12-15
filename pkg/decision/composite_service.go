@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -19,6 +19,8 @@ package decision
 
 import (
 	"fmt"
+
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
@@ -63,15 +65,14 @@ func NewCompositeService(sdkKey string, options ...CSOptionFunc) *CompositeServi
 }
 
 // GetFeatureDecision returns a decision for the given feature key
-func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
-	featureDecision, err := s.compositeFeatureService.GetDecision(featureDecisionContext, userContext)
-
+func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (FeatureDecision, error) {
+	featureDecision, err := s.compositeFeatureService.GetDecision(featureDecisionContext, userContext, options, reasons)
 	return featureDecision, err
 }
 
 // GetExperimentDecision returns a decision for the given experiment key
-func (s CompositeService) GetExperimentDecision(experimentDecisionContext ExperimentDecisionContext, userContext entities.UserContext) (experimentDecision ExperimentDecision, err error) {
-	if experimentDecision, err = s.compositeExperimentService.GetDecision(experimentDecisionContext, userContext); err != nil {
+func (s CompositeService) GetExperimentDecision(experimentDecisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (experimentDecision ExperimentDecision, err error) {
+	if experimentDecision, err = s.compositeExperimentService.GetDecision(experimentDecisionContext, userContext, options, reasons); err != nil {
 		return experimentDecision, err
 	}
 

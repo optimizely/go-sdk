@@ -24,6 +24,10 @@ type decideError string
 const (
 	// SDKNotReady when sdk is not ready
 	SDKNotReady decideError = "Optimizely SDK not configured properly yet"
+	// FlagKeyInvalid when invalid flag key is provided
+	FlagKeyInvalid decideError = `No flag was found for key "%s".`
+	// VariableValueInvalid when invalid variable value is provided
+	VariableValueInvalid decideError = `Variable value for key "%s" is invalid or wrong type.`
 )
 
 // GetError returns error for decide error type

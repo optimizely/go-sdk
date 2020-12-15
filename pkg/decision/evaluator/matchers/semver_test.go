@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
@@ -69,7 +70,7 @@ func TestValidAttributes(t *testing.T) {
 		matcher, ok := Get(scenario.matchType)
 		assert.True(t, ok, messageAndArgs...)
 
-		actual, err := matcher(condition, user, nil)
+		actual, err := matcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 		assert.NoError(t, err, messageAndArgs...)
 
 		assert.Equal(t, scenario.expected, actual, messageAndArgs...)
@@ -120,7 +121,7 @@ func TestValidAttributesReleaseToBeta(t *testing.T) {
 		matcher, ok := Get(scenario.matchType)
 		assert.True(t, ok, messageAndArgs...)
 
-		actual, err := matcher(condition, user, nil)
+		actual, err := matcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 		assert.NoError(t, err, messageAndArgs...)
 
 		assert.Equal(t, scenario.expected, actual, messageAndArgs...)
@@ -171,7 +172,7 @@ func TestValidAttributesBetaToRelease(t *testing.T) {
 		matcher, ok := Get(scenario.matchType)
 		assert.True(t, ok, messageAndArgs...)
 
-		actual, err := matcher(condition, user, nil)
+		actual, err := matcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 		assert.NoError(t, err, messageAndArgs...)
 
 		assert.Equal(t, scenario.expected, actual, messageAndArgs...)
@@ -219,7 +220,7 @@ func TestTargetBetaAndBetaComplex(t *testing.T) {
 		matcher, ok := Get(scenario.matchType)
 		assert.True(t, ok, messageAndArgs...)
 
-		actual, err := matcher(condition, user, nil)
+		actual, err := matcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 		assert.NoError(t, err, messageAndArgs...)
 
 		assert.Equal(t, scenario.expected, actual, messageAndArgs...)
@@ -277,7 +278,7 @@ func TestDifferentAttributeAgainstBuildAndPrerelease(t *testing.T) {
 		matcher, ok := Get(scenario.matchType)
 		assert.True(t, ok, messageAndArgs...)
 
-		actual, err := matcher(condition, user, nil)
+		actual, err := matcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 		assert.NoError(t, err, messageAndArgs...)
 
 		assert.Equal(t, scenario.expected, actual, messageAndArgs...)
@@ -329,7 +330,7 @@ func TestInvalidAttributes(t *testing.T) {
 					"version": attribute,
 				},
 			}
-			_, err := matcher(condition, user, nil)
+			_, err := matcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 			assert.Error(t, err, "matchType: %s, value: %v", matchType, attribute)
 		}
 	}
@@ -357,7 +358,7 @@ func TestInvalidConditions(t *testing.T) {
 				"version": "12.2.3",
 			},
 		}
-		_, err := matcher(condition, user, nil)
+		_, err := matcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 		assert.Error(t, err, "matchType: semver_eq, value: 12.2.3")
 
 	}

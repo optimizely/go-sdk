@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -20,6 +20,7 @@ package decision
 import (
 	"fmt"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
@@ -30,13 +31,13 @@ import (
 type PersistingExperimentService struct {
 	experimentBucketedService ExperimentService
 	userProfileService        UserProfileService
-	logger 					  logging.OptimizelyLogProducer
+	logger                    logging.OptimizelyLogProducer
 }
 
 // NewPersistingExperimentService returns a new instance of the PersistingExperimentService
 func NewPersistingExperimentService(userProfileService UserProfileService, experimentBucketerService ExperimentService, logger logging.OptimizelyLogProducer) *PersistingExperimentService {
 	persistingExperimentService := &PersistingExperimentService{
-		logger: logger,
+		logger:                    logger,
 		experimentBucketedService: experimentBucketerService,
 		userProfileService:        userProfileService,
 	}
@@ -45,29 +46,29 @@ func NewPersistingExperimentService(userProfileService UserProfileService, exper
 }
 
 // GetDecision returns the decision with the variation the user is bucketed into
-func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (experimentDecision ExperimentDecision, err error) {
-	if p.userProfileService == nil {
-		return p.experimentBucketedService.GetDecision(decisionContext, userContext)
+func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (experimentDecision ExperimentDecision, err error) {
+	if p.userProfileService == nil || options.IgnoreUserProfileService {
+		return p.experimentBucketedService.GetDecision(decisionContext, userContext, options, reasons)
 	}
 
 	var userProfile UserProfile
 	// check to see if there is a saved decision for the user
-	experimentDecision, userProfile = p.getSavedDecision(decisionContext, userContext)
+	experimentDecision, userProfile = p.getSavedDecision(decisionContext, userContext, reasons)
 	if experimentDecision.Variation != nil {
 		return experimentDecision, nil
 	}
 
-	experimentDecision, err = p.experimentBucketedService.GetDecision(decisionContext, userContext)
+	experimentDecision, err = p.experimentBucketedService.GetDecision(decisionContext, userContext, options, reasons)
 	if experimentDecision.Variation != nil {
 		// save decision if a user profile service is provided
 		userProfile.ID = userContext.ID
-		p.saveDecision(userProfile, decisionContext.Experiment, experimentDecision)
+		p.saveDecision(userProfile, decisionContext.Experiment, experimentDecision, reasons)
 	}
 
 	return experimentDecision, err
 }
 
-func (p PersistingExperimentService) getSavedDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, UserProfile) {
+func (p PersistingExperimentService) getSavedDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, _ decide.DecisionReasons) (ExperimentDecision, UserProfile) {
 	experimentDecision := ExperimentDecision{}
 	userProfile := p.userProfileService.Lookup(userContext.ID)
 
@@ -89,7 +90,7 @@ func (p PersistingExperimentService) getSavedDecision(decisionContext Experiment
 	return experimentDecision, userProfile
 }
 
-func (p PersistingExperimentService) saveDecision(userProfile UserProfile, experiment *entities.Experiment, decision ExperimentDecision) {
+func (p PersistingExperimentService) saveDecision(userProfile UserProfile, experiment *entities.Experiment, decision ExperimentDecision, _ decide.DecisionReasons) {
 	if p.userProfileService != nil {
 		decisionKey := NewUserDecisionKey(experiment.ID)
 		if userProfile.ExperimentBucketMap == nil {

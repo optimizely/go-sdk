@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
@@ -39,7 +40,7 @@ func TestGeMatcherInt(t *testing.T) {
 			"int_42": 43,
 		},
 	}
-	result, err := geMatcher(condition, user, nil)
+	result, err := geMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -50,7 +51,7 @@ func TestGeMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = geMatcher(condition, user, nil)
+	result, err = geMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -61,7 +62,7 @@ func TestGeMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = geMatcher(condition, user, nil)
+	result, err = geMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -72,7 +73,7 @@ func TestGeMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = geMatcher(condition, user, nil)
+	result, err = geMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -83,7 +84,7 @@ func TestGeMatcherInt(t *testing.T) {
 		},
 	}
 
-	_, err = geMatcher(condition, user, nil)
+	_, err = geMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 	assert.Error(t, err)
 
 	// Test wrong int
@@ -93,7 +94,7 @@ func TestGeMatcherInt(t *testing.T) {
 		},
 	}
 
-	_, err = geMatcher(condition, user, nil)
+	_, err = geMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 	assert.Error(t, err)
 
 	// Test bad condition
@@ -108,7 +109,7 @@ func TestGeMatcherInt(t *testing.T) {
 		},
 	}
 
-	_, err = geMatcher(condition, user, nil)
+	_, err = geMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 	assert.Error(t, err)
 }
 
@@ -125,7 +126,7 @@ func TestGeMatcherFloat(t *testing.T) {
 			"float_4_2": 5,
 		},
 	}
-	result, err := geMatcher(condition, user, nil)
+	result, err := geMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -135,7 +136,7 @@ func TestGeMatcherFloat(t *testing.T) {
 			"float_4_2": 4.29999,
 		},
 	}
-	result, err = geMatcher(condition, user, nil)
+	result, err = geMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -146,7 +147,7 @@ func TestGeMatcherFloat(t *testing.T) {
 		},
 	}
 
-	result, err = geMatcher(condition, user, nil)
+	result, err = geMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -157,6 +158,6 @@ func TestGeMatcherFloat(t *testing.T) {
 		},
 	}
 
-	_, err = geMatcher(condition, user, nil)
+	_, err = geMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 	assert.Error(t, err)
 }

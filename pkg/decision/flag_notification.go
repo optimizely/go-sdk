@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2020, Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -14,16 +14,35 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package matchers //
-package matchers
+// Package decision //
+package decision
 
 import (
-	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/pkg/notification"
 )
 
-// ExistsMatcher matches against the "exists" match type
-func ExistsMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, reasons decide.DecisionReasons) (bool, error) {
-	return user.CheckAttributeExists(condition.Name), nil
+// FlagNotification constructs default flag notification
+func FlagNotification(flagKey, variationKey, ruleKey string, enabled, decisionEventDispatched bool, userContext *entities.UserContext, variables map[string]interface{}, reasons []string) *notification.DecisionNotification {
+
+	if flagKey == "" {
+		return nil
+	}
+
+	decisionInfo := map[string]interface{}{
+		"flagKey":                 flagKey,
+		"enabled":                 enabled,
+		"variables":               variables,
+		"variationKey":            variationKey,
+		"ruleKey":                 ruleKey,
+		"reasons":                 reasons,
+		"decisionEventDispatched": decisionEventDispatched,
+	}
+
+	decisionNotification := &notification.DecisionNotification{
+		DecisionInfo: decisionInfo,
+		Type:         notification.Flag,
+		UserContext:  *userContext,
+	}
+	return decisionNotification
 }

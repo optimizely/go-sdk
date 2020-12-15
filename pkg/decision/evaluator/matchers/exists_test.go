@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
@@ -38,7 +39,8 @@ func TestExistsMatcher(t *testing.T) {
 			"string_foo": "any_value",
 		},
 	}
-	result, err := existsMatcher(condition, user, nil)
+
+	result, err := existsMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -49,7 +51,7 @@ func TestExistsMatcher(t *testing.T) {
 		},
 	}
 
-	result, err = existsMatcher(condition, user, nil)
+	result, err = existsMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -57,7 +59,7 @@ func TestExistsMatcher(t *testing.T) {
 	user = entities.UserContext{
 		Attributes: map[string]interface{}{},
 	}
-	result, err = ExistsMatcher(condition, user, nil)
+	result, err = ExistsMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
 	assert.NoError(t, err)
 	assert.False(t, result)
 }

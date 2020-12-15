@@ -23,6 +23,7 @@ package decision
 
 import (
 	"github.com/optimizely/go-sdk/pkg/config"
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/stretchr/testify/mock"
 )
@@ -57,8 +58,8 @@ type MockExperimentDecisionService struct {
 	mock.Mock
 }
 
-func (m *MockExperimentDecisionService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error) {
-	args := m.Called(decisionContext, userContext)
+func (m *MockExperimentDecisionService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (ExperimentDecision, error) {
+	args := m.Called(decisionContext, userContext, options, reasons)
 	return args.Get(0).(ExperimentDecision), args.Error(1)
 }
 
@@ -66,8 +67,8 @@ type MockFeatureDecisionService struct {
 	mock.Mock
 }
 
-func (m *MockFeatureDecisionService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
-	args := m.Called(decisionContext, userContext)
+func (m *MockFeatureDecisionService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (FeatureDecision, error) {
+	args := m.Called(decisionContext, userContext, options, reasons)
 	return args.Get(0).(FeatureDecision), args.Error(1)
 }
 
@@ -89,8 +90,8 @@ func (m *MockUserProfileService) Save(userProfile UserProfile) {
 	m.Called(userProfile)
 }
 
-func (m *MockAudienceTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
-	args := m.Called(node, condTreeParams)
+func (m *MockAudienceTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters, reasons decide.DecisionReasons) (evalResult, isValid bool) {
+	args := m.Called(node, condTreeParams, reasons)
 	return args.Bool(0), args.Bool(1)
 }
 

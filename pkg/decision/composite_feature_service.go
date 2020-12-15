@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -20,6 +20,7 @@ package decision
 import (
 	"fmt"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
@@ -27,13 +28,13 @@ import (
 // CompositeFeatureService is the default out-of-the-box feature decision service
 type CompositeFeatureService struct {
 	featureServices []FeatureService
-	logger logging.OptimizelyLogProducer
+	logger          logging.OptimizelyLogProducer
 }
 
 // NewCompositeFeatureService returns a new instance of the CompositeFeatureService
 func NewCompositeFeatureService(sdkKey string, compositeExperimentService ExperimentService) *CompositeFeatureService {
 	return &CompositeFeatureService{
-		logger:logging.GetLogger(sdkKey, "CompositeFeatureService"),
+		logger: logging.GetLogger(sdkKey, "CompositeFeatureService"),
 		featureServices: []FeatureService{
 			NewFeatureExperimentService(logging.GetLogger(sdkKey, "FeatureExperimentService"), compositeExperimentService),
 			NewRolloutService(sdkKey),
@@ -42,11 +43,11 @@ func NewCompositeFeatureService(sdkKey string, compositeExperimentService Experi
 }
 
 // GetDecision returns a decision for the given feature and user context
-func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error) {
+func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (FeatureDecision, error) {
 	var featureDecision = FeatureDecision{}
 	var err error
 	for _, featureDecisionService := range f.featureServices {
-		featureDecision, err = featureDecisionService.GetDecision(decisionContext, userContext)
+		featureDecision, err = featureDecisionService.GetDecision(decisionContext, userContext, options, reasons)
 		if err != nil {
 			f.logger.Debug(fmt.Sprintf("%v", err))
 		}

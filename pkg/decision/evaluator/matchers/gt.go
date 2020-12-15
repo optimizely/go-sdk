@@ -20,21 +20,22 @@ package matchers
 import (
 	"fmt"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers/utils"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 // GtMatcher matches against the "gt" match type
-func GtMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, error) {
-	res, err := compare(condition, user, logger)
+func GtMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, reasons decide.DecisionReasons) (bool, error) {
+	res, err := compare(condition, user, logger, reasons)
 	if err != nil {
 		return false, err
 	}
 	return res > 0, nil
 }
 
-func compare(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (int, error) {
+func compare(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, _ decide.DecisionReasons) (int, error) {
 	if !user.CheckAttributeExists(condition.Name) {
 		logger.Debug(fmt.Sprintf(logging.NullUserAttribute.String(), condition.StringRepresentation, condition.Name))
 		return 0, fmt.Errorf(`no attribute named "%s"`, condition.Name)

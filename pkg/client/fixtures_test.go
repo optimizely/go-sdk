@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/optimizely/go-sdk/pkg/config"
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
@@ -116,13 +117,13 @@ type MockDecisionService struct {
 	mock.Mock
 }
 
-func (m *MockDecisionService) GetFeatureDecision(decisionContext decision.FeatureDecisionContext, userContext entities.UserContext) (decision.FeatureDecision, error) {
-	args := m.Called(decisionContext, userContext)
+func (m *MockDecisionService) GetFeatureDecision(decisionContext decision.FeatureDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (decision.FeatureDecision, error) {
+	args := m.Called(decisionContext, userContext, options, reasons)
 	return args.Get(0).(decision.FeatureDecision), args.Error(1)
 }
 
-func (m *MockDecisionService) GetExperimentDecision(decisionContext decision.ExperimentDecisionContext, userContext entities.UserContext) (decision.ExperimentDecision, error) {
-	args := m.Called(decisionContext, userContext)
+func (m *MockDecisionService) GetExperimentDecision(decisionContext decision.ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (decision.ExperimentDecision, error) {
+	args := m.Called(decisionContext, userContext, options, reasons)
 	return args.Get(0).(decision.ExperimentDecision), args.Error(1)
 }
 
@@ -159,11 +160,11 @@ func (m *PanickingConfigManager) GetConfig() (config.ProjectConfig, error) {
 type PanickingDecisionService struct {
 }
 
-func (m *PanickingDecisionService) GetFeatureDecision(decisionContext decision.FeatureDecisionContext, userContext entities.UserContext) (decision.FeatureDecision, error) {
+func (m *PanickingDecisionService) GetFeatureDecision(decisionContext decision.FeatureDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (decision.FeatureDecision, error) {
 	panic("I'm panicking")
 }
 
-func (m *PanickingDecisionService) GetExperimentDecision(decisionContext decision.ExperimentDecisionContext, userContext entities.UserContext) (decision.ExperimentDecision, error) {
+func (m *PanickingDecisionService) GetExperimentDecision(decisionContext decision.ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (decision.ExperimentDecision, error) {
 	panic("I'm panicking")
 }
 

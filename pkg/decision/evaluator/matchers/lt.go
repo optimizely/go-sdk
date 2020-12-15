@@ -18,13 +18,14 @@
 package matchers
 
 import (
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 // LtMatcher matches against the "lt" match type
-func LtMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, error) {
-	res, err := compare(condition, user, logger)
+func LtMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, reasons decide.DecisionReasons) (bool, error) {
+	res, err := compare(condition, user, logger, reasons)
 	if err != nil {
 		return false, err
 	}

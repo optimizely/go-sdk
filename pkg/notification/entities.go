@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -47,6 +47,8 @@ const (
 	FeatureVariable DecisionNotificationType = "feature-variable"
 	// AllFeatureVariables is used when the decision is returned as part of evaluating a feature with all variables
 	AllFeatureVariables DecisionNotificationType = "all-feature-variables"
+	// Flag is used when the decision is returned using decide api
+	Flag DecisionNotificationType = "flag"
 )
 
 // DecisionNotification is a notification triggered when a decision is made for either a feature or an experiment

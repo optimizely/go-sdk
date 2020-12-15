@@ -20,6 +20,7 @@ package evaluator
 import (
 	"fmt"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
@@ -37,7 +38,7 @@ const (
 
 // TreeEvaluator evaluates a tree
 type TreeEvaluator interface {
-	Evaluate(*entities.TreeNode, *entities.TreeParameters) (evalResult, isValid bool)
+	Evaluate(*entities.TreeNode, *entities.TreeParameters, decide.DecisionReasons) (evalResult, isValid bool)
 }
 
 // MixedTreeEvaluator evaluates a tree of mixed node types (condition node or audience nodes)
@@ -51,16 +52,16 @@ func NewMixedTreeEvaluator(logger logging.OptimizelyLogProducer) *MixedTreeEvalu
 }
 
 // Evaluate returns whether the userAttributes satisfy the given condition tree and the evaluation of the condition is valid or not (to handle null bubbling)
-func (c MixedTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
+func (c MixedTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters, reasons decide.DecisionReasons) (evalResult, isValid bool) {
 	operator := node.Operator
 	if operator != "" {
 		switch operator {
 		case andOperator:
-			return c.evaluateAnd(node.Nodes, condTreeParams)
+			return c.evaluateAnd(node.Nodes, condTreeParams, reasons)
 		case notOperator:
-			return c.evaluateNot(node.Nodes, condTreeParams)
+			return c.evaluateNot(node.Nodes, condTreeParams, reasons)
 		default: // orOperator
-			return c.evaluateOr(node.Nodes, condTreeParams)
+			return c.evaluateOr(node.Nodes, condTreeParams, reasons)
 		}
 	}
 
@@ -69,10 +70,10 @@ func (c MixedTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *en
 	switch v := node.Item.(type) {
 	case entities.Condition:
 		evaluator := NewCustomAttributeConditionEvaluator(c.logger)
-		result, err = evaluator.Evaluate(node.Item.(entities.Condition), condTreeParams)
+		result, err = evaluator.Evaluate(node.Item.(entities.Condition), condTreeParams, reasons)
 	case string:
 		evaluator := NewAudienceConditionEvaluator(c.logger)
-		result, err = evaluator.Evaluate(node.Item.(string), condTreeParams)
+		result, err = evaluator.Evaluate(node.Item.(string), condTreeParams, reasons)
 	default:
 		fmt.Printf("I don't know about type %T!\n", v)
 		return false, false
@@ -85,10 +86,10 @@ func (c MixedTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *en
 	return result, true
 }
 
-func (c MixedTreeEvaluator) evaluateAnd(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
+func (c MixedTreeEvaluator) evaluateAnd(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters, reasons decide.DecisionReasons) (evalResult, isValid bool) {
 	sawInvalid := false
 	for _, node := range nodes {
-		result, isValid := c.Evaluate(node, condTreeParams)
+		result, isValid := c.Evaluate(node, condTreeParams, reasons)
 		if !isValid {
 			return false, isValid
 		} else if !result {
@@ -104,9 +105,9 @@ func (c MixedTreeEvaluator) evaluateAnd(nodes []*entities.TreeNode, condTreePara
 	return true, true
 }
 
-func (c MixedTreeEvaluator) evaluateNot(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
+func (c MixedTreeEvaluator) evaluateNot(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters, reasons decide.DecisionReasons) (evalResult, isValid bool) {
 	if len(nodes) > 0 {
-		result, isValid := c.Evaluate(nodes[0], condTreeParams)
+		result, isValid := c.Evaluate(nodes[0], condTreeParams, reasons)
 		if !isValid {
 			return false, false
 		}
@@ -115,10 +116,10 @@ func (c MixedTreeEvaluator) evaluateNot(nodes []*entities.TreeNode, condTreePara
 	return false, false
 }
 
-func (c MixedTreeEvaluator) evaluateOr(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool) {
+func (c MixedTreeEvaluator) evaluateOr(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters, reasons decide.DecisionReasons) (evalResult, isValid bool) {
 	sawInvalid := false
 	for _, node := range nodes {
-		result, isValid := c.Evaluate(node, condTreeParams)
+		result, isValid := c.Evaluate(node, condTreeParams, reasons)
 		if !isValid {
 			sawInvalid = true
 		} else if result {

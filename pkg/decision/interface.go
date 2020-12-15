@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -18,26 +18,27 @@
 package decision
 
 import (
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/notification"
 )
 
 // Service interface is used to make a decision for a given feature or experiment
 type Service interface {
-	GetFeatureDecision(FeatureDecisionContext, entities.UserContext) (FeatureDecision, error)
-	GetExperimentDecision(ExperimentDecisionContext, entities.UserContext) (ExperimentDecision, error)
+	GetFeatureDecision(FeatureDecisionContext, entities.UserContext, decide.OptimizelyDecideOptions, decide.DecisionReasons) (FeatureDecision, error)
+	GetExperimentDecision(ExperimentDecisionContext, entities.UserContext, decide.OptimizelyDecideOptions, decide.DecisionReasons) (ExperimentDecision, error)
 	OnDecision(func(notification.DecisionNotification)) (int, error)
 	RemoveOnDecision(id int) error
 }
 
 // ExperimentService can make a decision about an experiment
 type ExperimentService interface {
-	GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, error)
+	GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (ExperimentDecision, error)
 }
 
 // FeatureService can make a decision about a Feature Flag (can be feature test or rollout)
 type FeatureService interface {
-	GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext) (FeatureDecision, error)
+	GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (FeatureDecision, error)
 }
 
 // UserProfileService is used to save and retrieve past bucketing decisions for users

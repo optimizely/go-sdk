@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -19,6 +19,7 @@ package decision
 import (
 	"testing"
 
+	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 
@@ -30,6 +31,8 @@ type FeatureExperimentServiceTestSuite struct {
 	mockConfig                 *mockProjectConfig
 	testFeatureDecisionContext FeatureDecisionContext
 	mockExperimentService      *MockExperimentDecisionService
+	options                    decide.OptimizelyDecideOptions
+	reasons                    decide.DecisionReasons
 }
 
 func (s *FeatureExperimentServiceTestSuite) SetupTest() {
@@ -40,6 +43,8 @@ func (s *FeatureExperimentServiceTestSuite) SetupTest() {
 		Variable:      testVariable,
 	}
 	s.mockExperimentService = new(MockExperimentDecisionService)
+	s.options = decide.OptimizelyDecideOptions{}
+	s.reasons = decide.NewDecisionReasons(s.options)
 }
 
 func (s *FeatureExperimentServiceTestSuite) TestGetDecision() {
@@ -55,11 +60,11 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecision() {
 		Experiment:    &testExp1113,
 		ProjectConfig: s.mockConfig,
 	}
-	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext, testUserContext).Return(returnExperimentDecision, nil)
+	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext, testUserContext, s.options, s.reasons).Return(returnExperimentDecision, nil)
 
 	featureExperimentService := &FeatureExperimentService{
 		compositeExperimentService: s.mockExperimentService,
-		logger:logging.GetLogger("sdkKey", "FeatureExperimentService"),
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
 	}
 
 	expectedFeatureDecision := FeatureDecision{
@@ -67,7 +72,7 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecision() {
 		Variation:  &expectedVariation,
 		Source:     FeatureTest,
 	}
-	decision, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext)
+	decision, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options, s.reasons)
 	s.Equal(expectedFeatureDecision, decision)
 	s.NoError(err)
 	s.mockExperimentService.AssertExpectations(s.T())
@@ -84,7 +89,7 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionMutex() {
 		Experiment:    &testExp1113,
 		ProjectConfig: s.mockConfig,
 	}
-	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext1, testUserContext).Return(nilDecision, nil)
+	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext1, testUserContext, s.options, s.reasons).Return(nilDecision, nil)
 
 	// second experiment returns a valid decision to simulate user being bucketed into this experiment in the group
 	expectedVariation := testExp1114.Variations["2225"]
@@ -95,7 +100,7 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionMutex() {
 		Experiment:    &testExp1114,
 		ProjectConfig: s.mockConfig,
 	}
-	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext2, testUserContext).Return(returnExperimentDecision, nil)
+	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext2, testUserContext, s.options, s.reasons).Return(returnExperimentDecision, nil)
 
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: *testExperimentDecisionContext2.Experiment,
@@ -104,16 +109,16 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionMutex() {
 	}
 	featureExperimentService := &FeatureExperimentService{
 		compositeExperimentService: s.mockExperimentService,
-		logger:logging.GetLogger("sdkKey", "FeatureExperimentService"),
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
 	}
-	decision, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext)
+	decision, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options, s.reasons)
 	s.Equal(expectedFeatureDecision, decision)
 	s.NoError(err)
 	s.mockExperimentService.AssertExpectations(s.T())
 }
 
 func (s *FeatureExperimentServiceTestSuite) TestNewFeatureExperimentService() {
-	compositeExperimentService := &CompositeExperimentService{logger:logging.GetLogger("sdkKey", "CompositeExperimentService")}
+	compositeExperimentService := &CompositeExperimentService{logger: logging.GetLogger("sdkKey", "CompositeExperimentService")}
 	featureExperimentService := NewFeatureExperimentService(logging.GetLogger("", ""), compositeExperimentService)
 	s.IsType(compositeExperimentService, featureExperimentService.compositeExperimentService)
 }

@@ -657,7 +657,8 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 	}
 
 	decisionContext.Variable = variable
-	featureDecision, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext)
+	options := decide.OptimizelyDecideOptions{}
+	featureDecision, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext, options, decide.NewDecisionReasons(options))
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature "%s": %s`, featureKey, err))
 		return decisionContext, featureDecision, nil
@@ -687,7 +688,8 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 		ProjectConfig: projectConfig,
 	}
 
-	experimentDecision, err = o.DecisionService.GetExperimentDecision(decisionContext, userContext)
+	options := decide.OptimizelyDecideOptions{}
+	experimentDecision, err = o.DecisionService.GetExperimentDecision(decisionContext, userContext, options, decide.NewDecisionReasons(options))
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for experiment "%s": %s`, experimentKey, err))
 		return decisionContext, experimentDecision, nil
