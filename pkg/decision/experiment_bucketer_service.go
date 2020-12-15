@@ -57,7 +57,9 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 		evalResult, _ := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams, reasons)
 		s.logger.Debug(fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, evalResult))
 		if !evalResult {
-			s.logger.Debug(fmt.Sprintf(logging.UserNotInExperiment.String(), userContext.ID, experiment.Key))
+			logMessage := fmt.Sprintf(logging.UserNotInExperiment.String(), userContext.ID, experiment.Key)
+			s.logger.Debug(logMessage)
+			reasons.AddInfo(logMessage)
 			experimentDecision.Reason = pkgReasons.FailedAudienceTargeting
 			return experimentDecision, nil
 		}
