@@ -17,16 +17,27 @@
 // Package decide has option definitions for decide api
 package decide
 
-// OptimizelyDecideOptions defines options for controlling flag decisions.
-type OptimizelyDecideOptions struct {
+// OptimizelyDecideOptions controlling flag decisions.
+type OptimizelyDecideOptions int
+
+const (
 	// DisableDecisionEvent when set, disables decision event tracking.
-	DisableDecisionEvent bool
-	// EnabledOnly when set, returns decisions only for flags which are enabled.
-	EnabledFlagsOnly bool
-	// BypassUPS when set, skips user profile service for decision.
+	DisableDecisionEvent OptimizelyDecideOptions = 1 + iota
+	// EnabledFlagsOnly when set, returns decisions only for flags which are enabled.
+	EnabledFlagsOnly
+	// IgnoreUserProfileService when set, skips user profile service for decision.
+	IgnoreUserProfileService
+	// IncludeReasons when set, includes info and debug messages in the decision reasons.
+	IncludeReasons
+	// ExcludeVariables when set, excludes variable values from the decision result.
+	ExcludeVariables
+)
+
+// Options defines options for controlling flag decisions.
+type Options struct {
+	DisableDecisionEvent     bool
+	EnabledFlagsOnly         bool
 	IgnoreUserProfileService bool
-	// ForExperiment when set, includes info and debug messages in the decision reasons.
-	IncludeReasons bool
-	// IncludeReasons when set, excludes variable values from the decision result.
-	ExcludeVariables bool
+	IncludeReasons           bool
+	ExcludeVariables         bool
 }

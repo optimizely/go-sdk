@@ -57,7 +57,7 @@ type ExactTestSuite struct {
 
 func (s *ExactTestSuite) SetupTest() {
 	s.mockLogger = new(MockLogger)
-	s.reasons = decide.NewDecisionReasons(decide.OptimizelyDecideOptions{})
+	s.reasons = decide.NewDecisionReasons(&decide.Options{})
 	s.matcher, _ = Get(ExactMatchType)
 }
 

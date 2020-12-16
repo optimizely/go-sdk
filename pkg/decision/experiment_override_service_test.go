@@ -34,7 +34,7 @@ type ExperimentOverrideServiceTestSuite struct {
 	mockConfig      *mockProjectConfig
 	overrides       *MapExperimentOverridesStore
 	overrideService *ExperimentOverrideService
-	options         decide.OptimizelyDecideOptions
+	options         *decide.Options
 	reasons         decide.DecisionReasons
 }
 
@@ -42,7 +42,7 @@ func (s *ExperimentOverrideServiceTestSuite) SetupTest() {
 	s.mockConfig = new(mockProjectConfig)
 	s.overrides = NewMapExperimentOverridesStore()
 	s.overrideService = NewExperimentOverrideService(s.overrides, logging.GetLogger("", ""))
-	s.options = decide.OptimizelyDecideOptions{}
+	s.options = &decide.Options{}
 	s.reasons = decide.NewDecisionReasons(s.options)
 }
 

@@ -30,14 +30,14 @@ type ExperimentWhitelistServiceTestSuite struct {
 	suite.Suite
 	mockConfig       *mockProjectConfig
 	whitelistService *ExperimentWhitelistService
-	options          decide.OptimizelyDecideOptions
+	options          *decide.Options
 	reasons          decide.DecisionReasons
 }
 
 func (s *ExperimentWhitelistServiceTestSuite) SetupTest() {
 	s.mockConfig = new(mockProjectConfig)
 	s.whitelistService = NewExperimentWhitelistService()
-	s.options = decide.OptimizelyDecideOptions{}
+	s.options = &decide.Options{}
 	s.reasons = decide.NewDecisionReasons(s.options)
 }
 

@@ -117,12 +117,12 @@ type MockDecisionService struct {
 	mock.Mock
 }
 
-func (m *MockDecisionService) GetFeatureDecision(decisionContext decision.FeatureDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (decision.FeatureDecision, error) {
+func (m *MockDecisionService) GetFeatureDecision(decisionContext decision.FeatureDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (decision.FeatureDecision, error) {
 	args := m.Called(decisionContext, userContext, options, reasons)
 	return args.Get(0).(decision.FeatureDecision), args.Error(1)
 }
 
-func (m *MockDecisionService) GetExperimentDecision(decisionContext decision.ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (decision.ExperimentDecision, error) {
+func (m *MockDecisionService) GetExperimentDecision(decisionContext decision.ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (decision.ExperimentDecision, error) {
 	args := m.Called(decisionContext, userContext, options, reasons)
 	return args.Get(0).(decision.ExperimentDecision), args.Error(1)
 }
@@ -160,11 +160,11 @@ func (m *PanickingConfigManager) GetConfig() (config.ProjectConfig, error) {
 type PanickingDecisionService struct {
 }
 
-func (m *PanickingDecisionService) GetFeatureDecision(decisionContext decision.FeatureDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (decision.FeatureDecision, error) {
+func (m *PanickingDecisionService) GetFeatureDecision(decisionContext decision.FeatureDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (decision.FeatureDecision, error) {
 	panic("I'm panicking")
 }
 
-func (m *PanickingDecisionService) GetExperimentDecision(decisionContext decision.ExperimentDecisionContext, userContext entities.UserContext, options decide.OptimizelyDecideOptions, reasons decide.DecisionReasons) (decision.ExperimentDecision, error) {
+func (m *PanickingDecisionService) GetExperimentDecision(decisionContext decision.ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (decision.ExperimentDecision, error) {
 	panic("I'm panicking")
 }
 
@@ -179,6 +179,15 @@ func (m *PanickingDecisionService) RemoveOnDecision(id int) error {
 type MockUserProfileService struct {
 	decision.UserProfileService
 	mock.Mock
+}
+
+func (m *MockUserProfileService) Lookup(userID string) decision.UserProfile {
+	args := m.Called(userID)
+	return args.Get(0).(decision.UserProfile)
+}
+
+func (m *MockUserProfileService) Save(userProfile decision.UserProfile) {
+	m.Called(userProfile)
 }
 
 // Helper methods for creating test entities

@@ -40,7 +40,7 @@ func TestLeMatcherInt(t *testing.T) {
 			"int_42": 41,
 		},
 	}
-	result, err := leMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
+	result, err := leMatcher(condition, user, nil, decide.NewDecisionReasons(&decide.Options{}))
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -50,7 +50,7 @@ func TestLeMatcherInt(t *testing.T) {
 			"int_42": 42,
 		},
 	}
-	result, err = leMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
+	result, err = leMatcher(condition, user, nil, decide.NewDecisionReasons(&decide.Options{}))
 	assert.NoError(t, err)
 	assert.True(t, result)
 	// Test match int to float
@@ -60,7 +60,7 @@ func TestLeMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = leMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
+	result, err = leMatcher(condition, user, nil, decide.NewDecisionReasons(&decide.Options{}))
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -71,7 +71,7 @@ func TestLeMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = leMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
+	result, err = leMatcher(condition, user, nil, decide.NewDecisionReasons(&decide.Options{}))
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -82,7 +82,7 @@ func TestLeMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, err = leMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
+	result, err = leMatcher(condition, user, nil, decide.NewDecisionReasons(&decide.Options{}))
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -93,7 +93,7 @@ func TestLeMatcherInt(t *testing.T) {
 		},
 	}
 
-	_, err = leMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
+	_, err = leMatcher(condition, user, nil, decide.NewDecisionReasons(&decide.Options{}))
 	assert.Error(t, err)
 
 	// Test bad condition
@@ -108,7 +108,7 @@ func TestLeMatcherInt(t *testing.T) {
 		},
 	}
 
-	_, err = LeMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
+	_, err = LeMatcher(condition, user, nil, decide.NewDecisionReasons(&decide.Options{}))
 	assert.Error(t, err)
 }
 
@@ -125,7 +125,7 @@ func TestLeMatcherFloat(t *testing.T) {
 			"float_4_2": 4,
 		},
 	}
-	result, err := leMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
+	result, err := leMatcher(condition, user, nil, decide.NewDecisionReasons(&decide.Options{}))
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -135,7 +135,7 @@ func TestLeMatcherFloat(t *testing.T) {
 			"float_4_2": 4.19999,
 		},
 	}
-	result, err = leMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
+	result, err = leMatcher(condition, user, nil, decide.NewDecisionReasons(&decide.Options{}))
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -145,7 +145,7 @@ func TestLeMatcherFloat(t *testing.T) {
 			"float_4_2": 4.200000,
 		},
 	}
-	result, err = leMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
+	result, err = leMatcher(condition, user, nil, decide.NewDecisionReasons(&decide.Options{}))
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -156,7 +156,7 @@ func TestLeMatcherFloat(t *testing.T) {
 		},
 	}
 
-	result, err = leMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
+	result, err = leMatcher(condition, user, nil, decide.NewDecisionReasons(&decide.Options{}))
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -167,6 +167,6 @@ func TestLeMatcherFloat(t *testing.T) {
 		},
 	}
 
-	_, err = leMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
+	_, err = leMatcher(condition, user, nil, decide.NewDecisionReasons(&decide.Options{}))
 	assert.Error(t, err)
 }

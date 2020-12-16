@@ -204,33 +204,18 @@ func TestClientWithDatafileAccessToken(t *testing.T) {
 }
 
 func TestClientWithDefaultDecideOptions(t *testing.T) {
-	decideOptions := decide.OptimizelyDecideOptions{
-		DisableDecisionEvent: true,
-		EnabledFlagsOnly:     true,
+	decideOptions := []decide.OptimizelyDecideOptions{
+		decide.DisableDecisionEvent,
+		decide.EnabledFlagsOnly,
 	}
 	factory := OptimizelyFactory{SDKKey: "1212"}
 	optimizelyClient, err := factory.Client(WithDefaultDecideOptions(decideOptions))
 	assert.NoError(t, err)
-	assert.Equal(t, decideOptions, optimizelyClient.defaultDecideOptions)
+	assert.Equal(t, convertDecideOptions(decideOptions), optimizelyClient.defaultDecideOptions)
 
 	// Verify that defaultDecideOptions are initialized as empty by default
 	factory = OptimizelyFactory{SDKKey: "1212"}
 	optimizelyClient, err = factory.Client()
 	assert.NoError(t, err)
-	assert.Equal(t, decide.OptimizelyDecideOptions{}, optimizelyClient.defaultDecideOptions)
-}
-
-func TestModifyingDecideOptionsOutsideClient(t *testing.T) {
-	decideOptions := decide.OptimizelyDecideOptions{
-		DisableDecisionEvent: true,
-		EnabledFlagsOnly:     true,
-	}
-	factory := OptimizelyFactory{SDKKey: "1212"}
-	optimizelyClient, err := factory.Client(WithDefaultDecideOptions(decideOptions))
-	assert.NoError(t, err)
-	decideOptions.IgnoreUserProfileService = true
-	assert.Equal(t, decide.OptimizelyDecideOptions{
-		DisableDecisionEvent: true,
-		EnabledFlagsOnly:     true,
-	}, optimizelyClient.defaultDecideOptions)
+	assert.Equal(t, &decide.Options{}, optimizelyClient.defaultDecideOptions)
 }

@@ -36,7 +36,7 @@ type LtTestSuite struct {
 
 func (s *LtTestSuite) SetupTest() {
 	s.mockLogger = new(MockLogger)
-	s.reasons = decide.NewDecisionReasons(decide.OptimizelyDecideOptions{})
+	s.reasons = decide.NewDecisionReasons(&decide.Options{})
 	s.matcher, _ = Get(LtMatchType)
 }
 

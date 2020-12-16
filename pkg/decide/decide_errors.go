@@ -17,20 +17,27 @@
 // Package decide has error definitions for decide api
 package decide
 
-import "errors"
+import (
+	"fmt"
+)
 
-type decideError string
+type decideMessage string
 
 const (
 	// SDKNotReady when sdk is not ready
-	SDKNotReady decideError = "Optimizely SDK not configured properly yet"
+	SDKNotReady decideMessage = "Optimizely SDK not configured properly yet."
 	// FlagKeyInvalid when invalid flag key is provided
-	FlagKeyInvalid decideError = `No flag was found for key "%s".`
+	FlagKeyInvalid decideMessage = `No flag was found for key "%s".`
 	// VariableValueInvalid when invalid variable value is provided
-	VariableValueInvalid decideError = `Variable value for key "%s" is invalid or wrong type.`
+	VariableValueInvalid decideMessage = `Variable value for key "%s" is invalid or wrong type.`
 )
 
-// GetError returns error for decide error type
-func GetError(errorType decideError) error {
-	return errors.New(string(errorType))
+// GetDecideMessage returns message for decide type
+func GetDecideMessage(messageType decideMessage, arguments ...interface{}) string {
+	return fmt.Sprintf(string(messageType), arguments)
+}
+
+// GetDecideError returns error for decide type
+func GetDecideError(messageType decideMessage, arguments ...interface{}) error {
+	return fmt.Errorf(string(messageType), arguments)
 }

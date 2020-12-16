@@ -40,7 +40,7 @@ func TestExistsMatcher(t *testing.T) {
 		},
 	}
 
-	result, err := existsMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
+	result, err := existsMatcher(condition, user, nil, decide.NewDecisionReasons(&decide.Options{}))
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -51,7 +51,7 @@ func TestExistsMatcher(t *testing.T) {
 		},
 	}
 
-	result, err = existsMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
+	result, err = existsMatcher(condition, user, nil, decide.NewDecisionReasons(&decide.Options{}))
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -59,7 +59,7 @@ func TestExistsMatcher(t *testing.T) {
 	user = entities.UserContext{
 		Attributes: map[string]interface{}{},
 	}
-	result, err = ExistsMatcher(condition, user, nil, decide.NewDecisionReasons(decide.OptimizelyDecideOptions{}))
+	result, err = ExistsMatcher(condition, user, nil, decide.NewDecisionReasons(&decide.Options{}))
 	assert.NoError(t, err)
 	assert.False(t, result)
 }
