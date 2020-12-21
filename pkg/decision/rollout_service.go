@@ -65,7 +65,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		return evalResult
 	}
 
-	getFeatureDecision := func(experiment *entities.Experiment, decision *ExperimentDecision) (FeatureDecision, error) {
+	getFeatureDecision := func(experiment *entities.Experiment, decision *ExperimentDecision) FeatureDecision {
 		// translate the experiment reason into a more rollouts-appropriate reason
 		switch decision.Reason {
 		case pkgReasons.NotBucketedIntoVariation:
@@ -81,7 +81,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 			featureDecision.Experiment = *experiment
 		}
 		r.logger.Debug(fmt.Sprintf(`Decision made for user "%s" for feature rollout with key "%s": %s.`, userContext.ID, feature.Key, featureDecision.Reason))
-		return featureDecision, nil
+		return featureDecision
 	}
 
 	getExperimentDecisionContext := func(experiment *entities.Experiment) ExperimentDecisionContext {
@@ -122,8 +122,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 			// Evaluate fall back rule / last rule now
 			break
 		}
-		// error is always nil in this case
-		finalFeatureDecision, _ := getFeatureDecision(experiment, &decision)
+		finalFeatureDecision := getFeatureDecision(experiment, &decision)
 		return finalFeatureDecision, reasons, nil
 	}
 
@@ -140,8 +139,8 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		if err == nil {
 			r.logger.Debug(fmt.Sprintf(logging.UserInEveryoneElse.String(), userContext.ID))
 		}
-		finalFeatureDecision, err := getFeatureDecision(experiment, &decision)
-		return finalFeatureDecision, reasons, err
+		finalFeatureDecision := getFeatureDecision(experiment, &decision)
+		return finalFeatureDecision, reasons, nil
 	}
 
 	return featureDecision, reasons, nil
