@@ -24,6 +24,6 @@ import (
 )
 
 // ExistsMatcher matches against the "exists" match type
-func ExistsMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, reasons decide.DecisionReasons) (bool, error) {
-	return user.CheckAttributeExists(condition.Name), nil
+func ExistsMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, decide.DecisionReasons, error) {
+	return user.CheckAttributeExists(condition.Name), decide.NewDecisionReasons(nil), nil
 }

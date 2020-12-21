@@ -29,7 +29,7 @@ import (
 
 // ItemEvaluator evaluates a condition against the given user's attributes
 type ItemEvaluator interface {
-	Evaluate(interface{}, *entities.TreeParameters, decide.DecisionReasons) (bool, error)
+	Evaluate(interface{}, *entities.TreeParameters) (bool, decide.DecisionReasons, error)
 }
 
 // CustomAttributeConditionEvaluator evaluates conditions with custom attributes
@@ -43,14 +43,15 @@ func NewCustomAttributeConditionEvaluator(logger logging.OptimizelyLogProducer) 
 }
 
 // Evaluate returns true if the given user's attributes match the condition
-func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *entities.TreeParameters, reasons decide.DecisionReasons) (bool, error) {
+func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *entities.TreeParameters) (bool, decide.DecisionReasons, error) {
 	// We should only be evaluating custom attributes
 
+	reasons := decide.NewDecisionReasons(nil)
 	if condition.Type != customAttributeType {
 		c.logger.Warning(fmt.Sprintf(logging.UnknownConditionType.String(), condition.StringRepresentation))
 		errorMessage := fmt.Sprintf(`unable to evaluate condition of type "%s"`, condition.Type)
 		reasons.AddError(errorMessage)
-		return false, errors.New(errorMessage)
+		return false, reasons, errors.New(errorMessage)
 	}
 
 	matchType := condition.Match
@@ -63,10 +64,10 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 		c.logger.Warning(fmt.Sprintf(logging.UnknownMatchType.String(), condition.StringRepresentation))
 		errorMessage := fmt.Sprintf(`invalid Condition matcher "%s"`, condition.Match)
 		reasons.AddError(errorMessage)
-		return false, errors.New(errorMessage)
+		return false, reasons, errors.New(errorMessage)
 	}
 
-	return matcher(condition, *condTreeParams.User, c.logger, reasons)
+	return matcher(condition, *condTreeParams.User, c.logger)
 }
 
 // AudienceConditionEvaluator evaluates conditions with audience condition
@@ -80,22 +81,24 @@ func NewAudienceConditionEvaluator(logger logging.OptimizelyLogProducer) *Audien
 }
 
 // Evaluate returns true if the given user's attributes match the condition
-func (c AudienceConditionEvaluator) Evaluate(audienceID string, condTreeParams *entities.TreeParameters, reasons decide.DecisionReasons) (bool, error) {
+func (c AudienceConditionEvaluator) Evaluate(audienceID string, condTreeParams *entities.TreeParameters) (bool, decide.DecisionReasons, error) {
+	reasons := decide.NewDecisionReasons(nil)
 	if audience, ok := condTreeParams.AudienceMap[audienceID]; ok {
 		c.logger.Debug(fmt.Sprintf(logging.AudienceEvaluationStarted.String(), audienceID))
 		condTree := audience.ConditionTree
 		conditionTreeEvaluator := NewMixedTreeEvaluator(c.logger)
-		retValue, isValid := conditionTreeEvaluator.Evaluate(condTree, condTreeParams, reasons)
+		retValue, isValid, decisionReasons := conditionTreeEvaluator.Evaluate(condTree, condTreeParams)
+		reasons.Append(decisionReasons)
 		if !isValid {
 			errorMessage := fmt.Sprintf(`an error occurred while evaluating nested tree for audience ID "%s"`, audienceID)
 			reasons.AddError(errorMessage)
-			return false, errors.New(errorMessage)
+			return false, reasons, errors.New(errorMessage)
 		}
 		c.logger.Debug(fmt.Sprintf(logging.AudienceEvaluatedTo.String(), audienceID, retValue))
-		return retValue, nil
+		return retValue, reasons, nil
 	}
 
 	errorMessage := fmt.Sprintf(`unable to evaluate nested tree for audience ID "%s"`, audienceID)
 	reasons.AddError(errorMessage)
-	return false, errors.New(errorMessage)
+	return false, reasons, errors.New(errorMessage)
 }

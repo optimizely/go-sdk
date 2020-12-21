@@ -60,7 +60,7 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecision() {
 		Experiment:    &testExp1113,
 		ProjectConfig: s.mockConfig,
 	}
-	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext, testUserContext, s.options, s.reasons).Return(returnExperimentDecision, nil)
+	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext, testUserContext, s.options).Return(returnExperimentDecision, s.reasons, nil)
 
 	featureExperimentService := &FeatureExperimentService{
 		compositeExperimentService: s.mockExperimentService,
@@ -72,7 +72,7 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecision() {
 		Variation:  &expectedVariation,
 		Source:     FeatureTest,
 	}
-	decision, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options)
 	s.Equal(expectedFeatureDecision, decision)
 	s.NoError(err)
 	s.mockExperimentService.AssertExpectations(s.T())
@@ -89,7 +89,7 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionMutex() {
 		Experiment:    &testExp1113,
 		ProjectConfig: s.mockConfig,
 	}
-	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext1, testUserContext, s.options, s.reasons).Return(nilDecision, nil)
+	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext1, testUserContext, s.options).Return(nilDecision, s.reasons, nil)
 
 	// second experiment returns a valid decision to simulate user being bucketed into this experiment in the group
 	expectedVariation := testExp1114.Variations["2225"]
@@ -100,7 +100,7 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionMutex() {
 		Experiment:    &testExp1114,
 		ProjectConfig: s.mockConfig,
 	}
-	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext2, testUserContext, s.options, s.reasons).Return(returnExperimentDecision, nil)
+	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext2, testUserContext, s.options).Return(returnExperimentDecision, s.reasons, nil)
 
 	expectedFeatureDecision := FeatureDecision{
 		Experiment: *testExperimentDecisionContext2.Experiment,
@@ -111,7 +111,7 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionMutex() {
 		compositeExperimentService: s.mockExperimentService,
 		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
 	}
-	decision, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options)
 	s.Equal(expectedFeatureDecision, decision)
 	s.NoError(err)
 	s.mockExperimentService.AssertExpectations(s.T())

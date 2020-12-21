@@ -22,7 +22,6 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
@@ -30,13 +29,11 @@ import (
 type SubstringTestSuite struct {
 	suite.Suite
 	mockLogger *MockLogger
-	reasons    decide.DecisionReasons
 	matcher    Matcher
 }
 
 func (s *SubstringTestSuite) SetupTest() {
 	s.mockLogger = new(MockLogger)
-	s.reasons = decide.NewDecisionReasons(&decide.Options{})
 	s.matcher, _ = Get(SubstringMatchType)
 }
 
@@ -54,7 +51,7 @@ func (s *SubstringTestSuite) TestSubstringMatcher() {
 		},
 	}
 
-	result, err := s.matcher(condition, user, s.mockLogger, s.reasons)
+	result, _, err := s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -65,7 +62,7 @@ func (s *SubstringTestSuite) TestSubstringMatcher() {
 		},
 	}
 
-	result, err = s.matcher(condition, user, s.mockLogger, s.reasons)
+	result, _, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.False(result)
 
@@ -77,7 +74,7 @@ func (s *SubstringTestSuite) TestSubstringMatcher() {
 	}
 
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "string_foo"))
-	_, err = s.matcher(condition, user, s.mockLogger, s.reasons)
+	_, _, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 
 	// Test attribute of different type
@@ -87,7 +84,7 @@ func (s *SubstringTestSuite) TestSubstringMatcher() {
 		},
 	}
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.InvalidAttributeValueType.String(), "", true, "string_foo"))
-	result, err = s.matcher(condition, user, s.mockLogger, s.reasons)
+	result, _, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())
@@ -107,7 +104,7 @@ func (s *SubstringTestSuite) TestSubstringMatcherUnsupportedConditionValue() {
 		},
 	}
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.UnsupportedConditionValue.String(), ""))
-	result, err := s.matcher(condition, user, s.mockLogger, s.reasons)
+	result, _, err := s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())

@@ -91,17 +91,18 @@ func NewExperimentOverrideService(overrides ExperimentOverrideStore, logger logg
 }
 
 // GetDecision returns a decision with a variation when the store returns a variation assignment for the given user and experiment
-func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (experimentDecision ExperimentDecision, err error) {
+func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options) (experimentDecision ExperimentDecision, reasons decide.DecisionReasons, err error) {
 	decision := ExperimentDecision{}
+	reasons = decide.NewDecisionReasons(options)
 
 	if decisionContext.Experiment == nil {
-		return decision, errors.New("decisionContext Experiment is nil")
+		return decision, reasons, errors.New("decisionContext Experiment is nil")
 	}
 
 	variationKey, ok := s.Overrides.GetVariation(ExperimentOverrideKey{ExperimentKey: decisionContext.Experiment.Key, UserID: userContext.ID})
 	if !ok {
 		decision.Reason = pkgReasons.NoOverrideVariationAssignment
-		return decision, nil
+		return decision, reasons, nil
 	}
 
 	if variationID, ok := decisionContext.Experiment.VariationKeyToIDMap[variationKey]; ok {
@@ -109,10 +110,10 @@ func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisio
 			decision.Variation = &variation
 			decision.Reason = pkgReasons.OverrideVariationAssignmentFound
 			s.logger.Debug(fmt.Sprintf("Override variation %v found for user %v", variationKey, userContext.ID))
-			return decision, nil
+			return decision, reasons, nil
 		}
 	}
 
 	decision.Reason = pkgReasons.InvalidOverrideVariationAssignment
-	return decision, nil
+	return decision, reasons, nil
 }

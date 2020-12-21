@@ -29,10 +29,14 @@ type DefaultDecisionReasons struct {
 
 // NewDecisionReasons returns a new instance of DecisionReasons.
 func NewDecisionReasons(options *Options) *DefaultDecisionReasons {
+	includeReasons := false
+	if options != nil {
+		includeReasons = options.IncludeReasons
+	}
 	return &DefaultDecisionReasons{
 		errors:         []string{},
 		logs:           []string{},
-		includeReasons: options.IncludeReasons,
+		includeReasons: includeReasons,
 	}
 }
 
@@ -49,6 +53,16 @@ func (o *DefaultDecisionReasons) AddInfo(format string, arguments ...interface{}
 	}
 	o.logs = append(o.logs, message)
 	return message
+}
+
+// Append appends given reasons.
+func (o *DefaultDecisionReasons) Append(reasons DecisionReasons) {
+	if decisionReasons, ok := reasons.(*DefaultDecisionReasons); ok {
+		o.errors = append(o.errors, decisionReasons.errors...)
+		if o.includeReasons {
+			o.logs = append(o.logs, decisionReasons.logs...)
+		}
+	}
 }
 
 // ToReport returns reasons to be reported.

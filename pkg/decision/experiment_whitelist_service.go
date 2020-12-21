@@ -35,27 +35,28 @@ func NewExperimentWhitelistService() *ExperimentWhitelistService {
 }
 
 // GetDecision returns a decision with a variation when a variation assignment is found in the experiment whitelist for the given user and experiment
-func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (ExperimentDecision, error) {
+func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options) (ExperimentDecision, decide.DecisionReasons, error) {
 	decision := ExperimentDecision{}
+	reasons := decide.NewDecisionReasons(options)
 
 	if decisionContext.Experiment == nil {
-		return decision, errors.New("decisionContext Experiment is nil")
+		return decision, reasons, errors.New("decisionContext Experiment is nil")
 	}
 
 	variationKey, ok := decisionContext.Experiment.Whitelist[userContext.ID]
 	if !ok {
 		decision.Reason = pkgReasons.NoWhitelistVariationAssignment
-		return decision, nil
+		return decision, reasons, nil
 	}
 
 	if id, ok := decisionContext.Experiment.VariationKeyToIDMap[variationKey]; ok {
 		if variation, ok := decisionContext.Experiment.Variations[id]; ok {
 			decision.Reason = pkgReasons.WhitelistVariationAssignmentFound
 			decision.Variation = &variation
-			return decision, nil
+			return decision, reasons, nil
 		}
 	}
 
 	decision.Reason = pkgReasons.InvalidWhitelistVariationAssignment
-	return decision, nil
+	return decision, reasons, nil
 }

@@ -46,22 +46,24 @@ func NewExperimentBucketerService(logger logging.OptimizelyLogProducer) *Experim
 }
 
 // GetDecision returns the decision with the variation the user is bucketed into
-func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (ExperimentDecision, error) {
+func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options) (ExperimentDecision, decide.DecisionReasons, error) {
 	experimentDecision := ExperimentDecision{}
 	experiment := decisionContext.Experiment
+	reasons := decide.NewDecisionReasons(options)
 
 	// Determine if user can be part of the experiment
 	if experiment.AudienceConditionTree != nil {
 		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
 		s.logger.Debug(fmt.Sprintf(logging.EvaluatingAudiencesForExperiment.String(), experiment.Key))
-		evalResult, _ := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams, reasons)
+		evalResult, _, decisionReasons := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
+		reasons.Append(decisionReasons)
 		s.logger.Debug(fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, evalResult))
 		if !evalResult {
 			logMessage := fmt.Sprintf(logging.UserNotInExperiment.String(), userContext.ID, experiment.Key)
 			s.logger.Debug(logMessage)
 			reasons.AddInfo(logMessage)
 			experimentDecision.Reason = pkgReasons.FailedAudienceTargeting
-			return experimentDecision, nil
+			return experimentDecision, reasons, nil
 		}
 	} else {
 		s.logger.Debug(fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, true))
@@ -85,5 +87,5 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	variation, reason, _ := s.bucketer.Bucket(bucketingID, *experiment, group)
 	experimentDecision.Reason = reason
 	experimentDecision.Variation = variation
-	return experimentDecision, nil
+	return experimentDecision, reasons, nil
 }

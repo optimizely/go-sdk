@@ -21,5 +21,6 @@ package decide
 type DecisionReasons interface {
 	AddError(format string, arguments ...interface{})
 	AddInfo(format string, arguments ...interface{}) string
+	Append(reasons DecisionReasons)
 	ToReport() []string
 }

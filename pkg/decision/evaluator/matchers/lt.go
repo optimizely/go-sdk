@@ -24,10 +24,12 @@ import (
 )
 
 // LtMatcher matches against the "lt" match type
-func LtMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, reasons decide.DecisionReasons) (bool, error) {
-	res, err := compare(condition, user, logger, reasons)
+func LtMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, decide.DecisionReasons, error) {
+	reasons := decide.NewDecisionReasons(nil)
+	res, decideReasons, err := compare(condition, user, logger)
+	reasons.Append(decideReasons)
 	if err != nil {
-		return false, err
+		return false, reasons, err
 	}
-	return res < 0, nil
+	return res < 0, reasons, nil
 }

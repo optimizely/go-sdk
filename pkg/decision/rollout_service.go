@@ -46,17 +46,19 @@ func NewRolloutService(sdkKey string) *RolloutService {
 }
 
 // GetDecision returns a decision for the given feature and user context
-func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (FeatureDecision, error) {
+func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options) (FeatureDecision, decide.DecisionReasons, error) {
 	featureDecision := FeatureDecision{
 		Source: Rollout,
 	}
 	feature := decisionContext.Feature
 	rollout := feature.Rollout
+	reasons := decide.NewDecisionReasons(options)
 
 	evaluateConditionTree := func(experiment *entities.Experiment, loggingKey string) bool {
 		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
 		r.logger.Debug(fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), loggingKey))
-		evalResult, _ := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams, reasons)
+		evalResult, _, decisionReasons := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
+		reasons.Append(decisionReasons)
 		if !evalResult {
 			featureDecision.Reason = pkgReasons.FailedRolloutTargeting
 		}
@@ -91,13 +93,13 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 
 	if rollout.ID == "" {
 		featureDecision.Reason = pkgReasons.NoRolloutForFeature
-		return featureDecision, nil
+		return featureDecision, reasons, nil
 	}
 
 	numberOfExperiments := len(rollout.Experiments)
 	if numberOfExperiments == 0 {
 		featureDecision.Reason = pkgReasons.RolloutHasNoExperiments
-		return featureDecision, nil
+		return featureDecision, reasons, nil
 	}
 
 	for index := 0; index < numberOfExperiments-1; index++ {
@@ -114,12 +116,14 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 			continue
 		}
 
-		decision, _ := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext, options, reasons)
+		decision, decisionReasons, _ := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext, options)
+		reasons.Append(decisionReasons)
 		if decision.Variation == nil {
 			// Evaluate fall back rule / last rule now
 			break
 		}
-		return getFeatureDecision(experiment, &decision)
+		featureDecision, err := getFeatureDecision(experiment, &decision)
+		return featureDecision, reasons, err
 	}
 
 	// fall back rule / last rule
@@ -130,12 +134,14 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	r.logger.Debug(fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "Everyone Else", evaluationResult))
 
 	if evaluationResult {
-		decision, err := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext, options, reasons)
+		decision, decisionReasons, err := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext, options)
+		reasons.Append(decisionReasons)
 		if err == nil {
 			r.logger.Debug(fmt.Sprintf(logging.UserInEveryoneElse.String(), userContext.ID))
 		}
-		return getFeatureDecision(experiment, &decision)
+		featureDecision, err := getFeatureDecision(experiment, &decision)
+		return featureDecision, reasons, err
 	}
 
-	return featureDecision, nil
+	return featureDecision, reasons, nil
 }
