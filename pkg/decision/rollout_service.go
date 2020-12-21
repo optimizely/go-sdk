@@ -122,8 +122,9 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 			// Evaluate fall back rule / last rule now
 			break
 		}
-		featureDecision, err := getFeatureDecision(experiment, &decision)
-		return featureDecision, reasons, err
+		// error is always nil in this case
+		finalFeatureDecision, _ := getFeatureDecision(experiment, &decision)
+		return finalFeatureDecision, reasons, nil
 	}
 
 	// fall back rule / last rule
@@ -139,8 +140,8 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		if err == nil {
 			r.logger.Debug(fmt.Sprintf(logging.UserInEveryoneElse.String(), userContext.ID))
 		}
-		featureDecision, err := getFeatureDecision(experiment, &decision)
-		return featureDecision, reasons, err
+		finalFeatureDecision, err := getFeatureDecision(experiment, &decision)
+		return finalFeatureDecision, reasons, err
 	}
 
 	return featureDecision, reasons, nil

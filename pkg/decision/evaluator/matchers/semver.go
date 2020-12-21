@@ -26,7 +26,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/logging"
 
-	"github.com/optimizely/go-sdk/pkg/decision/reasons"
+	pkgReasons "github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
 
 	"github.com/pkg/errors"
@@ -89,7 +89,7 @@ func (sv SemanticVersion) compareVersion(attribute string) (int, error) {
 func (sv SemanticVersion) splitSemanticVersion(targetedVersion string) ([]string, error) {
 
 	if sv.hasWhiteSpace(targetedVersion) {
-		return []string{}, errors.New(string(reasons.AttributeFormatInvalid))
+		return []string{}, errors.New(string(pkgReasons.AttributeFormatInvalid))
 	}
 
 	targetPrefix := targetedVersion
@@ -105,7 +105,7 @@ func (sv SemanticVersion) splitSemanticVersion(targetedVersion string) ([]string
 		// in the case it is neither a build or pre release it will return the
 		// original string as the first element in the array
 		if len(targetParts) == 0 {
-			return []string{}, errors.New(string(reasons.AttributeFormatInvalid))
+			return []string{}, errors.New(string(pkgReasons.AttributeFormatInvalid))
 		}
 
 		targetPrefix = targetParts[0]
@@ -118,16 +118,16 @@ func (sv SemanticVersion) splitSemanticVersion(targetedVersion string) ([]string
 	targetedVersionParts := strings.Split(targetPrefix, ".")
 
 	if len(targetedVersionParts) > 3 {
-		return []string{}, errors.New(string(reasons.AttributeFormatInvalid))
+		return []string{}, errors.New(string(pkgReasons.AttributeFormatInvalid))
 	}
 
 	if len(targetedVersionParts) == 0 {
-		return []string{}, errors.New(string(reasons.AttributeFormatInvalid))
+		return []string{}, errors.New(string(pkgReasons.AttributeFormatInvalid))
 	}
 
 	for i := 0; i < len(targetedVersionParts); i++ {
 		if !sv.isNumber(targetedVersionParts[i]) {
-			return []string{}, errors.New(string(reasons.AttributeFormatInvalid))
+			return []string{}, errors.New(string(pkgReasons.AttributeFormatInvalid))
 		}
 	}
 
