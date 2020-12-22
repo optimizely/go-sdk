@@ -102,6 +102,7 @@ func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisio
 	variationKey, ok := s.Overrides.GetVariation(ExperimentOverrideKey{ExperimentKey: decisionContext.Experiment.Key, UserID: userContext.ID})
 	if !ok {
 		decision.Reason = pkgReasons.NoOverrideVariationAssignment
+		reasons.AddInfo("User %v is not in the forced variation map.", userContext.ID)
 		return decision, reasons, nil
 	}
 
@@ -109,7 +110,10 @@ func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisio
 		if variation, ok := decisionContext.Experiment.Variations[variationID]; ok {
 			decision.Variation = &variation
 			decision.Reason = pkgReasons.OverrideVariationAssignmentFound
-			s.logger.Debug(fmt.Sprintf("Override variation %v found for user %v", variationKey, userContext.ID))
+
+			message := fmt.Sprintf("Override variation %v found for user %v", variationKey, userContext.ID)
+			s.logger.Debug(message)
+			reasons.AddInfo(message)
 			return decision, reasons, nil
 		}
 	}

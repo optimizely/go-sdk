@@ -19,6 +19,7 @@ package decision
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/optimizely/go-sdk/pkg/decide"
 	pkgReasons "github.com/optimizely/go-sdk/pkg/decision/reasons"
@@ -53,10 +54,14 @@ func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisi
 		if variation, ok := decisionContext.Experiment.Variations[id]; ok {
 			decision.Reason = pkgReasons.WhitelistVariationAssignmentFound
 			decision.Variation = &variation
+			logMessage := fmt.Sprintf(`User "%s" is whitelisted into variation "%s" of experiment "%s".`, userContext.ID, variationKey, decisionContext.Experiment.Key)
+			reasons.AddInfo(logMessage)
 			return decision, reasons, nil
 		}
 	}
 
 	decision.Reason = pkgReasons.InvalidWhitelistVariationAssignment
+	logMessage := fmt.Sprintf(`User "%s" is whitelisted into variation "%s", which is not in the datafile.`, userContext.ID, variationKey)
+	reasons.AddInfo(logMessage)
 	return decision, reasons, nil
 }

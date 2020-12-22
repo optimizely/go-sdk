@@ -88,7 +88,9 @@ func (p PersistingExperimentService) getSavedDecision(decisionContext Experiment
 			experimentDecision.Variation = &variation
 			p.logger.Debug(fmt.Sprintf(`User "%s" was previously bucketed into variation "%s" of experiment "%s".`, userContext.ID, variation.Key, decisionContext.Experiment.Key))
 		} else {
-			p.logger.Warning(fmt.Sprintf(`User "%s" was previously bucketed into variation with ID "%s" for experiment "%s", but no matching variation was found.`, userContext.ID, savedVariationID, decisionContext.Experiment.Key))
+			warningMessage := fmt.Sprintf(`User "%s" was previously bucketed into variation with ID "%s" for experiment "%s", but no matching variation was found.`, userContext.ID, savedVariationID, decisionContext.Experiment.Key)
+			p.logger.Warning(warningMessage)
+			reasons.AddInfo(warningMessage)
 		}
 	}
 

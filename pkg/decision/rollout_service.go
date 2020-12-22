@@ -93,6 +93,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 
 	if rollout.ID == "" {
 		featureDecision.Reason = pkgReasons.NoRolloutForFeature
+		reasons.AddInfo(`Rollout with ID "%v" is not in the datafile.`, rollout.ID)
 		return featureDecision, reasons, nil
 	}
 
@@ -111,7 +112,9 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		evaluationResult := experiment.AudienceConditionTree == nil || evaluateConditionTree(experiment, loggingKey)
 		r.logger.Debug(fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), loggingKey, evaluationResult))
 		if !evaluationResult {
-			r.logger.Debug(fmt.Sprintf(logging.UserNotInRollout.String(), userContext.ID, loggingKey))
+			logMessage := fmt.Sprintf(logging.UserNotInRollout.String(), userContext.ID, loggingKey)
+			r.logger.Debug(logMessage)
+			reasons.AddInfo(logMessage)
 			// Evaluate this user for the next rule
 			continue
 		}
@@ -137,7 +140,9 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		decision, decisionReasons, err := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext, options)
 		reasons.Append(decisionReasons)
 		if err == nil {
-			r.logger.Debug(fmt.Sprintf(logging.UserInEveryoneElse.String(), userContext.ID))
+			logMessage := fmt.Sprintf(logging.UserInEveryoneElse.String(), userContext.ID)
+			r.logger.Debug(logMessage)
+			reasons.AddInfo(logMessage)
 		}
 		finalFeatureDecision := getFeatureDecision(experiment, &decision)
 		return finalFeatureDecision, reasons, nil

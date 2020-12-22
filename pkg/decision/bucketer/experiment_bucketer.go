@@ -36,7 +36,7 @@ type MurmurhashExperimentBucketer struct {
 // NewMurmurhashExperimentBucketer returns a new instance of the murmurhash experiment bucketer
 func NewMurmurhashExperimentBucketer(logger logging.OptimizelyLogProducer, hashSeed uint32) *MurmurhashExperimentBucketer {
 	return &MurmurhashExperimentBucketer{
-		bucketer: MurmurhashBucketer{hashSeed: hashSeed, logger:logger},
+		bucketer: MurmurhashBucketer{hashSeed: hashSeed, logger: logger},
 	}
 }
 

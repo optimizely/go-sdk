@@ -94,7 +94,9 @@ func (c AudienceConditionEvaluator) Evaluate(audienceID string, condTreeParams *
 			reasons.AddError(errorMessage)
 			return false, reasons, errors.New(errorMessage)
 		}
-		c.logger.Debug(fmt.Sprintf(logging.AudienceEvaluatedTo.String(), audienceID, retValue))
+		logMessage := fmt.Sprintf(logging.AudienceEvaluatedTo.String(), audienceID, retValue)
+		c.logger.Debug(logMessage)
+		reasons.AddInfo(logMessage)
 		return retValue, reasons, nil
 	}
 

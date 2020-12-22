@@ -57,7 +57,9 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 		s.logger.Debug(fmt.Sprintf(logging.EvaluatingAudiencesForExperiment.String(), experiment.Key))
 		evalResult, _, decisionReasons := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
 		reasons.Append(decisionReasons)
-		s.logger.Debug(fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, evalResult))
+		logMessage := fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, evalResult)
+		s.logger.Debug(logMessage)
+		reasons.AddInfo(logMessage)
 		if !evalResult {
 			logMessage := fmt.Sprintf(logging.UserNotInExperiment.String(), userContext.ID, experiment.Key)
 			s.logger.Debug(logMessage)
@@ -66,7 +68,9 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 			return experimentDecision, reasons, nil
 		}
 	} else {
-		s.logger.Debug(fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, true))
+		logMessage := fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, true)
+		s.logger.Debug(logMessage)
+		reasons.AddInfo(logMessage)
 	}
 
 	var group entities.Group
@@ -77,7 +81,9 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	// bucket user into a variation
 	bucketingID, err := userContext.GetBucketingID()
 	if err != nil {
-		s.logger.Debug(fmt.Sprintf(`Error computing bucketing ID for experiment "%s": "%s"`, experiment.Key, err.Error()))
+		errorMessage := fmt.Sprintf(`Error computing bucketing ID for experiment "%s": "%s"`, experiment.Key, err.Error())
+		s.logger.Debug(errorMessage)
+		reasons.AddError(errorMessage)
 	}
 
 	if bucketingID != userContext.ID {
