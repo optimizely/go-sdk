@@ -96,7 +96,9 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	decisionReasons := decide.NewDecisionReasons(&allOptions)
 	decisionContext.Variable = entities.Variable{}
 
-	featureDecision, err := o.DecisionService.GetFeatureDecision(decisionContext, usrContext, &allOptions, decisionReasons)
+	featureDecision, reasons, err := o.DecisionService.GetFeatureDecision(decisionContext, usrContext, &allOptions)
+	decisionReasons.Append(reasons)
+
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature "%s": %s`, key, err))
 	}
@@ -116,7 +118,8 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 
 	variableMap := map[string]interface{}{}
 	if !allOptions.ExcludeVariables {
-		variableMap = o.getDecisionVariableMap(feature, featureDecision.Variation, flagEnabled, decisionReasons)
+		variableMap, reasons = o.getDecisionVariableMap(feature, featureDecision.Variation, flagEnabled)
+		decisionReasons.Append(reasons)
 	}
 	optimizelyJSON := optimizelyjson.NewOptimizelyJSONfromMap(variableMap)
 	reasonsToReport := decisionReasons.ToReport()
@@ -808,7 +811,7 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 
 	decisionContext.Variable = variable
 	options := &decide.Options{}
-	featureDecision, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext, options, decide.NewDecisionReasons(options))
+	featureDecision, _, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext, options)
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature "%s": %s`, featureKey, err))
 		return decisionContext, featureDecision, nil
@@ -839,7 +842,7 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 	}
 
 	options := &decide.Options{}
-	experimentDecision, err = o.DecisionService.GetExperimentDecision(decisionContext, userContext, options, decide.NewDecisionReasons(options))
+	experimentDecision, _, err = o.DecisionService.GetExperimentDecision(decisionContext, userContext, options)
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for experiment "%s": %s`, experimentKey, err))
 		return decisionContext, experimentDecision, nil
@@ -947,7 +950,8 @@ func (o *OptimizelyClient) Close() {
 	o.execGroup.TerminateAndWait()
 }
 
-func (o *OptimizelyClient) getDecisionVariableMap(feature entities.Feature, variation *entities.Variation, featureEnabled bool, decisionReasons decide.DecisionReasons) map[string]interface{} {
+func (o *OptimizelyClient) getDecisionVariableMap(feature entities.Feature, variation *entities.Variation, featureEnabled bool) (map[string]interface{}, decide.DecisionReasons) {
+	reasons := decide.NewDecisionReasons(nil)
 	valuesMap := map[string]interface{}{}
 
 	for _, v := range feature.VariableMap {
@@ -961,12 +965,12 @@ func (o *OptimizelyClient) getDecisionVariableMap(feature entities.Feature, vari
 
 		typedValue, typedError := o.getTypedValue(val, v.Type)
 		if typedError != nil {
-			decisionReasons.AddError(decide.GetDecideMessage(decide.VariableValueInvalid, v.Key))
+			reasons.AddError(decide.GetDecideMessage(decide.VariableValueInvalid, v.Key))
 		}
 		valuesMap[v.Key] = typedValue
 	}
 
-	return valuesMap
+	return valuesMap, reasons
 }
 
 func isNil(v interface{}) bool {

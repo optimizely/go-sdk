@@ -97,7 +97,7 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionNoTargeting() {
 		bucketer: s.mockBucketer,
 		logger:   s.mockLogger,
 	}
-	decision, err := experimentBucketerService.GetDecision(testDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := experimentBucketerService.GetDecision(testDecisionContext, testUserContext, s.options)
 	s.Equal(expectedDecision, decision)
 	s.NoError(err)
 	s.mockLogger.AssertExpectations(s.T())
@@ -117,7 +117,7 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingPasses() {
 	s.mockBucketer.On("Bucket", testUserContext.ID, testTargetedExp1116, entities.Group{}).Return(&testTargetedExp1116Var2228, reasons.BucketedIntoVariation, nil)
 
 	mockAudienceTreeEvaluator := new(MockAudienceTreeEvaluator)
-	mockAudienceTreeEvaluator.On("Evaluate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, true)
+	mockAudienceTreeEvaluator.On("Evaluate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(true, true, s.reasons)
 	experimentBucketerService := ExperimentBucketerService{
 		audienceTreeEvaluator: mockAudienceTreeEvaluator,
 		logger:                s.mockLogger,
@@ -131,7 +131,7 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingPasses() {
 		Experiment:    &testTargetedExp1116,
 		ProjectConfig: s.mockConfig,
 	}
-	decision, err := experimentBucketerService.GetDecision(testDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := experimentBucketerService.GetDecision(testDecisionContext, testUserContext, s.options)
 	s.Equal(expectedDecision, decision)
 	s.NoError(err)
 	s.mockLogger.AssertExpectations(s.T())
@@ -148,7 +148,7 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingFails() {
 		},
 	}
 	mockAudienceTreeEvaluator := new(MockAudienceTreeEvaluator)
-	mockAudienceTreeEvaluator.On("Evaluate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(false, true)
+	mockAudienceTreeEvaluator.On("Evaluate", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(false, true, s.reasons)
 	experimentBucketerService := ExperimentBucketerService{
 		audienceTreeEvaluator: mockAudienceTreeEvaluator,
 		logger:                s.mockLogger,
@@ -163,7 +163,7 @@ func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingFails() {
 		Experiment:    &testTargetedExp1116,
 		ProjectConfig: s.mockConfig,
 	}
-	decision, err := experimentBucketerService.GetDecision(testDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := experimentBucketerService.GetDecision(testDecisionContext, testUserContext, s.options)
 	s.Equal(expectedDecision, decision)
 	s.NoError(err)
 	s.mockBucketer.AssertNotCalled(s.T(), "Bucket")

@@ -22,7 +22,6 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
@@ -30,13 +29,11 @@ import (
 type LtTestSuite struct {
 	suite.Suite
 	mockLogger *MockLogger
-	reasons    decide.DecisionReasons
 	matcher    Matcher
 }
 
 func (s *LtTestSuite) SetupTest() {
 	s.mockLogger = new(MockLogger)
-	s.reasons = decide.NewDecisionReasons(&decide.Options{})
 	s.matcher, _ = Get(LtMatchType)
 }
 
@@ -54,7 +51,7 @@ func (s *LtTestSuite) TestLtMatcherInt() {
 		},
 	}
 
-	result, err := s.matcher(condition, user, s.mockLogger, s.reasons)
+	result, _, err := s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -65,7 +62,7 @@ func (s *LtTestSuite) TestLtMatcherInt() {
 		},
 	}
 
-	result, err = s.matcher(condition, user, s.mockLogger, s.reasons)
+	result, _, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -76,7 +73,7 @@ func (s *LtTestSuite) TestLtMatcherInt() {
 		},
 	}
 
-	result, err = s.matcher(condition, user, s.mockLogger, s.reasons)
+	result, _, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.False(result)
 
@@ -87,7 +84,7 @@ func (s *LtTestSuite) TestLtMatcherInt() {
 		},
 	}
 
-	result, err = s.matcher(condition, user, s.mockLogger, s.reasons)
+	result, _, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.False(result)
 
@@ -99,7 +96,7 @@ func (s *LtTestSuite) TestLtMatcherInt() {
 	}
 
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "int_42"))
-	_, err = s.matcher(condition, user, s.mockLogger, s.reasons)
+	_, _, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 
 	// Test attribute of different type
@@ -109,7 +106,7 @@ func (s *LtTestSuite) TestLtMatcherInt() {
 		},
 	}
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.InvalidAttributeValueType.String(), "", true, "int_42"))
-	result, err = s.matcher(condition, user, s.mockLogger, s.reasons)
+	result, _, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())
@@ -129,7 +126,7 @@ func (s *LtTestSuite) TestLtMatcherFloat() {
 		},
 	}
 
-	result, err := s.matcher(condition, user, s.mockLogger, s.reasons)
+	result, _, err := s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -140,7 +137,7 @@ func (s *LtTestSuite) TestLtMatcherFloat() {
 		},
 	}
 
-	result, err = s.matcher(condition, user, s.mockLogger, s.reasons)
+	result, _, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -151,7 +148,7 @@ func (s *LtTestSuite) TestLtMatcherFloat() {
 		},
 	}
 
-	result, err = s.matcher(condition, user, s.mockLogger, s.reasons)
+	result, _, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.False(result)
 
@@ -163,7 +160,7 @@ func (s *LtTestSuite) TestLtMatcherFloat() {
 	}
 
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "float_4_2"))
-	_, err = s.matcher(condition, user, s.mockLogger, s.reasons)
+	_, _, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 
 	// Test attribute of different type
@@ -173,7 +170,7 @@ func (s *LtTestSuite) TestLtMatcherFloat() {
 		},
 	}
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.InvalidAttributeValueType.String(), "", true, "float_4_2"))
-	result, err = s.matcher(condition, user, s.mockLogger, s.reasons)
+	result, _, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())
@@ -193,7 +190,7 @@ func (s *LtTestSuite) TestLtMatcherUnsupportedConditionValue() {
 		},
 	}
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.UnsupportedConditionValue.String(), ""))
-	result, err := s.matcher(condition, user, s.mockLogger, s.reasons)
+	result, _, err := s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())

@@ -61,13 +61,13 @@ func (s *CompositeExperimentTestSuite) TestGetDecision() {
 	expectedExperimentDecision := ExperimentDecision{
 		Variation: &expectedVariation,
 	}
-	s.mockExperimentService.On("GetDecision", s.testDecisionContext, testUserContext, s.options, s.reasons).Return(expectedExperimentDecision, nil)
+	s.mockExperimentService.On("GetDecision", s.testDecisionContext, testUserContext, s.options).Return(expectedExperimentDecision, s.reasons, nil)
 
 	compositeExperimentService := &CompositeExperimentService{
 		experimentServices: []ExperimentService{s.mockExperimentService, s.mockExperimentService2},
 		logger:             logging.GetLogger("sdkKey", "ExperimentService"),
 	}
-	decision, err := compositeExperimentService.GetDecision(s.testDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := compositeExperimentService.GetDecision(s.testDecisionContext, testUserContext, s.options)
 	s.Equal(expectedExperimentDecision, decision)
 	s.NoError(err)
 	s.mockExperimentService.AssertExpectations(s.T())
@@ -83,18 +83,18 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionFallthrough() {
 
 	expectedVariation := testExp1111.Variations["2222"]
 	expectedExperimentDecision := ExperimentDecision{}
-	s.mockExperimentService.On("GetDecision", s.testDecisionContext, testUserContext, s.options, s.reasons).Return(expectedExperimentDecision, nil)
+	s.mockExperimentService.On("GetDecision", s.testDecisionContext, testUserContext, s.options).Return(expectedExperimentDecision, s.reasons, nil)
 
 	expectedExperimentDecision2 := ExperimentDecision{
 		Variation: &expectedVariation,
 	}
-	s.mockExperimentService2.On("GetDecision", s.testDecisionContext, testUserContext, s.options, s.reasons).Return(expectedExperimentDecision2, nil)
+	s.mockExperimentService2.On("GetDecision", s.testDecisionContext, testUserContext, s.options).Return(expectedExperimentDecision2, s.reasons, nil)
 
 	compositeExperimentService := &CompositeExperimentService{
 		experimentServices: []ExperimentService{s.mockExperimentService, s.mockExperimentService2},
 		logger:             logging.GetLogger("sdkKey", "CompositeExperimentService"),
 	}
-	decision, err := compositeExperimentService.GetDecision(s.testDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := compositeExperimentService.GetDecision(s.testDecisionContext, testUserContext, s.options)
 
 	s.NoError(err)
 	s.Equal(expectedExperimentDecision2, decision)
@@ -108,16 +108,16 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionNoDecisionsMade() {
 		ID: "test_user_1",
 	}
 	expectedExperimentDecision := ExperimentDecision{}
-	s.mockExperimentService.On("GetDecision", s.testDecisionContext, testUserContext, s.options, s.reasons).Return(expectedExperimentDecision, nil)
+	s.mockExperimentService.On("GetDecision", s.testDecisionContext, testUserContext, s.options).Return(expectedExperimentDecision, s.reasons, nil)
 
 	expectedExperimentDecision2 := ExperimentDecision{}
-	s.mockExperimentService2.On("GetDecision", s.testDecisionContext, testUserContext, s.options, s.reasons).Return(expectedExperimentDecision2, nil)
+	s.mockExperimentService2.On("GetDecision", s.testDecisionContext, testUserContext, s.options).Return(expectedExperimentDecision2, s.reasons, nil)
 
 	compositeExperimentService := &CompositeExperimentService{
 		experimentServices: []ExperimentService{s.mockExperimentService, s.mockExperimentService2},
 		logger:             logging.GetLogger("sdkKey", "CompositeExperimentService"),
 	}
-	decision, err := compositeExperimentService.GetDecision(s.testDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := compositeExperimentService.GetDecision(s.testDecisionContext, testUserContext, s.options)
 
 	s.NoError(err)
 	s.Equal(expectedExperimentDecision2, decision)
@@ -139,12 +139,12 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionReturnsError() {
 	shouldBeIgnoredDecision := ExperimentDecision{
 		Variation: &testExp1114Var2225,
 	}
-	s.mockExperimentService.On("GetDecision", testDecisionContext, testUserContext, s.options, s.reasons).Return(shouldBeIgnoredDecision, errors.New("Error making decision"))
+	s.mockExperimentService.On("GetDecision", testDecisionContext, testUserContext, s.options).Return(shouldBeIgnoredDecision, s.reasons, errors.New("Error making decision"))
 
 	expectedDecision := ExperimentDecision{
 		Variation: &testExp1114Var2226,
 	}
-	s.mockExperimentService2.On("GetDecision", testDecisionContext, testUserContext, s.options, s.reasons).Return(expectedDecision, nil)
+	s.mockExperimentService2.On("GetDecision", testDecisionContext, testUserContext, s.options).Return(expectedDecision, s.reasons, nil)
 
 	compositeExperimentService := &CompositeExperimentService{
 		experimentServices: []ExperimentService{
@@ -153,7 +153,7 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionReturnsError() {
 		},
 		logger: logging.GetLogger("sdkKey", "CompositeExperimentService"),
 	}
-	decision, err := compositeExperimentService.GetDecision(testDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := compositeExperimentService.GetDecision(testDecisionContext, testUserContext, s.options)
 	s.Equal(expectedDecision, decision)
 	s.NoError(err)
 	s.mockExperimentService.AssertExpectations(s.T())

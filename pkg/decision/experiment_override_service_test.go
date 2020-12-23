@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -35,7 +35,6 @@ type ExperimentOverrideServiceTestSuite struct {
 	overrides       *MapExperimentOverridesStore
 	overrideService *ExperimentOverrideService
 	options         *decide.Options
-	reasons         decide.DecisionReasons
 }
 
 func (s *ExperimentOverrideServiceTestSuite) SetupTest() {
@@ -43,7 +42,6 @@ func (s *ExperimentOverrideServiceTestSuite) SetupTest() {
 	s.overrides = NewMapExperimentOverridesStore()
 	s.overrideService = NewExperimentOverrideService(s.overrides, logging.GetLogger("", ""))
 	s.options = &decide.Options{}
-	s.reasons = decide.NewDecisionReasons(s.options)
 }
 
 func (s *ExperimentOverrideServiceTestSuite) TestOverridesIncludeVariation() {
@@ -55,7 +53,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestOverridesIncludeVariation() {
 		ID: "test_user_1",
 	}
 	s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}, testExp1111Var2222.Key)
-	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := s.overrideService.GetDecision(testDecisionContext, testUserContext, s.options)
 	s.NoError(err)
 	s.NotNil(decision.Variation)
 	s.Exactly(testExp1111Var2222.Key, decision.Variation.Key)
@@ -69,7 +67,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestNilDecisionContextExperiment() 
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
 	}
-	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := s.overrideService.GetDecision(testDecisionContext, testUserContext, s.options)
 	s.Error(err)
 	s.Nil(decision.Variation)
 }
@@ -84,7 +82,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestNoOverrideForExperiment() {
 	}
 	// The decision context refers to testExp1111, but this override is for another experiment
 	s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1113.Key, UserID: "test_user_1"}, testExp1113Var2224.Key)
-	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := s.overrideService.GetDecision(testDecisionContext, testUserContext, s.options)
 	s.NoError(err)
 	s.Nil(decision.Variation)
 	s.Exactly(reasons.NoOverrideVariationAssignment, decision.Reason)
@@ -100,7 +98,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestNoOverrideForUser() {
 	}
 	// The user context refers to "test_user_1", but this override is for another user
 	s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_2"}, testExp1111Var2222.Key)
-	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := s.overrideService.GetDecision(testDecisionContext, testUserContext, s.options)
 	s.NoError(err)
 	s.Nil(decision.Variation)
 	s.Exactly(reasons.NoOverrideVariationAssignment, decision.Reason)
@@ -116,7 +114,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestNoOverrideForUserOrExperiment()
 	}
 	// This override is for both a different user and a different experiment than the ones in the contexts above
 	s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1113.Key, UserID: "test_user_3"}, testExp1111Var2222.Key)
-	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := s.overrideService.GetDecision(testDecisionContext, testUserContext, s.options)
 	s.NoError(err)
 	s.Nil(decision.Variation)
 	s.Exactly(reasons.NoOverrideVariationAssignment, decision.Reason)
@@ -132,7 +130,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestInvalidVariationInOverride() {
 	}
 	// This override variation key does not exist in the experiment
 	s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}, "invalid_variation_key")
-	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := s.overrideService.GetDecision(testDecisionContext, testUserContext, s.options)
 	s.NoError(err)
 	s.Nil(decision.Variation)
 	s.Exactly(reasons.InvalidOverrideVariationAssignment, decision.Reason)
@@ -149,9 +147,9 @@ func (s *ExperimentOverrideServiceTestSuite) TestMapExperimentOverridesStoreConc
 	wg.Add(1)
 	go func() {
 		s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}, testExp1111Var2222.Key)
-		user1Decision, _ := s.overrideService.GetDecision(testDecisionContext, entities.UserContext{
+		user1Decision, _, _ := s.overrideService.GetDecision(testDecisionContext, entities.UserContext{
 			ID: "test_user_1",
-		}, s.options, s.reasons)
+		}, s.options)
 		s.NotNil(user1Decision.Variation)
 		s.Exactly(testExp1111Var2222.Key, user1Decision.Variation.Key)
 		wg.Done()
@@ -159,9 +157,9 @@ func (s *ExperimentOverrideServiceTestSuite) TestMapExperimentOverridesStoreConc
 	wg.Add(1)
 	go func() {
 		s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_2"}, testExp1111Var2222.Key)
-		user2Decision, _ := s.overrideService.GetDecision(testDecisionContext, entities.UserContext{
+		user2Decision, _, _ := s.overrideService.GetDecision(testDecisionContext, entities.UserContext{
 			ID: "test_user_2",
-		}, s.options, s.reasons)
+		}, s.options)
 		s.NotNil(user2Decision.Variation)
 		s.Exactly(testExp1111Var2222.Key, user2Decision.Variation.Key)
 		wg.Done()
@@ -169,23 +167,23 @@ func (s *ExperimentOverrideServiceTestSuite) TestMapExperimentOverridesStoreConc
 	wg.Add(1)
 	go func() {
 		s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_3"}, testExp1111Var2222.Key)
-		user3Decision, _ := s.overrideService.GetDecision(testDecisionContext, entities.UserContext{
+		user3Decision, _, _ := s.overrideService.GetDecision(testDecisionContext, entities.UserContext{
 			ID: "test_user_3",
-		}, s.options, s.reasons)
+		}, s.options)
 		s.NotNil(user3Decision.Variation)
 		s.Exactly(testExp1111Var2222.Key, user3Decision.Variation.Key)
 		wg.Done()
 	}()
 	wg.Wait()
-	user1Decision, _ := s.overrideService.GetDecision(testDecisionContext, entities.UserContext{
+	user1Decision, _, _ := s.overrideService.GetDecision(testDecisionContext, entities.UserContext{
 		ID: "test_user_1",
-	}, s.options, s.reasons)
-	user2Decision, _ := s.overrideService.GetDecision(testDecisionContext, entities.UserContext{
+	}, s.options)
+	user2Decision, _, _ := s.overrideService.GetDecision(testDecisionContext, entities.UserContext{
 		ID: "test_user_2",
-	}, s.options, s.reasons)
-	user3Decision, _ := s.overrideService.GetDecision(testDecisionContext, entities.UserContext{
+	}, s.options)
+	user3Decision, _, _ := s.overrideService.GetDecision(testDecisionContext, entities.UserContext{
 		ID: "test_user_3",
-	}, s.options, s.reasons)
+	}, s.options)
 	s.NotNil(user1Decision.Variation)
 	s.Exactly(testExp1111Var2222.Key, user1Decision.Variation.Key)
 	s.NotNil(user2Decision.Variation)
@@ -205,7 +203,7 @@ func (s *ExperimentOverrideServiceTestSuite) TestRemovePreviouslySetVariation() 
 	overrideKey := ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}
 	s.overrides.SetVariation(overrideKey, testExp1111Var2222.Key)
 	s.overrides.RemoveVariation(overrideKey)
-	decision, err := s.overrideService.GetDecision(testDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := s.overrideService.GetDecision(testDecisionContext, testUserContext, s.options)
 	s.NoError(err)
 	s.Nil(decision.Variation)
 }

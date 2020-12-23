@@ -27,11 +27,11 @@ import (
 )
 
 // SubstringMatcher matches against the "substring" match type
-func SubstringMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, reasons decide.DecisionReasons) (bool, error) {
-
+func SubstringMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, decide.DecisionReasons, error) {
+	reasons := decide.NewDecisionReasons(nil)
 	if !user.CheckAttributeExists(condition.Name) {
 		logger.Debug(fmt.Sprintf(logging.NullUserAttribute.String(), condition.StringRepresentation, condition.Name))
-		return false, fmt.Errorf(`no attribute named "%s"`, condition.Name)
+		return false, reasons, fmt.Errorf(`no attribute named "%s"`, condition.Name)
 	}
 
 	if stringValue, ok := condition.Value.(string); ok {
@@ -39,11 +39,11 @@ func SubstringMatcher(condition entities.Condition, user entities.UserContext, l
 		if err != nil {
 			val, _ := user.GetAttribute(condition.Name)
 			logger.Warning(fmt.Sprintf(logging.InvalidAttributeValueType.String(), condition.StringRepresentation, val, condition.Name))
-			return false, err
+			return false, reasons, err
 		}
-		return strings.Contains(attributeValue, stringValue), nil
+		return strings.Contains(attributeValue, stringValue), reasons, nil
 	}
 
 	logger.Warning(fmt.Sprintf(logging.UnsupportedConditionValue.String(), condition.StringRepresentation))
-	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", condition.Name)
+	return false, reasons, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", condition.Name)
 }

@@ -58,12 +58,12 @@ func (s *PersistingExperimentServiceTestSuite) SetupTest() {
 	}
 	s.options = &decide.Options{}
 	s.reasons = decide.NewDecisionReasons(s.options)
-	s.mockExperimentService.On("GetDecision", s.testDecisionContext, testUserContext, s.options, s.reasons).Return(s.testComputedDecision, nil)
+	s.mockExperimentService.On("GetDecision", s.testDecisionContext, testUserContext, s.options).Return(s.testComputedDecision, s.reasons, nil)
 }
 
 func (s *PersistingExperimentServiceTestSuite) TestNilUserProfileService() {
 	persistingExperimentService := NewPersistingExperimentService(nil, s.mockExperimentService, logging.GetLogger("", "NewPersistingExperimentService"))
-	decision, err := persistingExperimentService.GetDecision(s.testDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := persistingExperimentService.GetDecision(s.testDecisionContext, testUserContext, s.options)
 	s.Equal(s.testComputedDecision, decision)
 	s.NoError(err)
 	s.mockExperimentService.AssertExpectations(s.T())
@@ -79,7 +79,7 @@ func (s *PersistingExperimentServiceTestSuite) TestSavedVariationFound() {
 	s.mockUserProfileService.On("Save", mock.Anything)
 
 	persistingExperimentService := NewPersistingExperimentService(s.mockUserProfileService, s.mockExperimentService, logging.GetLogger("", "NewPersistingExperimentService"))
-	decision, err := persistingExperimentService.GetDecision(s.testDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := persistingExperimentService.GetDecision(s.testDecisionContext, testUserContext, s.options)
 	savedDecision := ExperimentDecision{
 		Variation: &testExp1113Var2224,
 	}
@@ -99,7 +99,7 @@ func (s *PersistingExperimentServiceTestSuite) TestNoSavedVariation() {
 
 	s.mockUserProfileService.On("Save", updatedUserProfile)
 	persistingExperimentService := NewPersistingExperimentService(s.mockUserProfileService, s.mockExperimentService, logging.GetLogger("", "NewPersistingExperimentService"))
-	decision, err := persistingExperimentService.GetDecision(s.testDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := persistingExperimentService.GetDecision(s.testDecisionContext, testUserContext, s.options)
 	s.Equal(s.testComputedDecision, decision)
 	s.NoError(err)
 	s.mockExperimentService.AssertExpectations(s.T())
@@ -120,7 +120,7 @@ func (s *PersistingExperimentServiceTestSuite) TestSavedVariationNoLongerValid()
 	}
 	s.mockUserProfileService.On("Save", updatedUserProfile)
 	persistingExperimentService := NewPersistingExperimentService(s.mockUserProfileService, s.mockExperimentService, logging.GetLogger("", "NewPersistingExperimentService"))
-	decision, err := persistingExperimentService.GetDecision(s.testDecisionContext, testUserContext, s.options, s.reasons)
+	decision, _, err := persistingExperimentService.GetDecision(s.testDecisionContext, testUserContext, s.options)
 	s.Equal(s.testComputedDecision, decision)
 	s.NoError(err)
 	s.mockExperimentService.AssertExpectations(s.T())

@@ -28,12 +28,12 @@ import (
 )
 
 func TestRegister(t *testing.T) {
-	expected := func(entities.Condition, entities.UserContext, logging.OptimizelyLogProducer, decide.DecisionReasons) (bool, error) {
-		return false, nil
+	expected := func(entities.Condition, entities.UserContext, logging.OptimizelyLogProducer) (bool, decide.DecisionReasons, error) {
+		return false, decide.DecisionReasons(nil), nil
 	}
 	Register("test", expected)
 	actual := assertMatcher(t, "test")
-	matches, err := actual(entities.Condition{}, entities.UserContext{}, nil, decide.NewDecisionReasons(&decide.Options{}))
+	matches, _, err := actual(entities.Condition{}, entities.UserContext{}, nil)
 	assert.False(t, matches)
 	assert.NoError(t, err)
 }

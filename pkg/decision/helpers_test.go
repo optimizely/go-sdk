@@ -58,18 +58,18 @@ type MockExperimentDecisionService struct {
 	mock.Mock
 }
 
-func (m *MockExperimentDecisionService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (ExperimentDecision, error) {
-	args := m.Called(decisionContext, userContext, options, reasons)
-	return args.Get(0).(ExperimentDecision), args.Error(1)
+func (m *MockExperimentDecisionService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options) (ExperimentDecision, decide.DecisionReasons, error) {
+	args := m.Called(decisionContext, userContext, options)
+	return args.Get(0).(ExperimentDecision), args.Get(1).(decide.DecisionReasons), args.Error(2)
 }
 
 type MockFeatureDecisionService struct {
 	mock.Mock
 }
 
-func (m *MockFeatureDecisionService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (FeatureDecision, error) {
-	args := m.Called(decisionContext, userContext, options, reasons)
-	return args.Get(0).(FeatureDecision), args.Error(1)
+func (m *MockFeatureDecisionService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options) (FeatureDecision, decide.DecisionReasons, error) {
+	args := m.Called(decisionContext, userContext, options)
+	return args.Get(0).(FeatureDecision), args.Get(1).(decide.DecisionReasons), args.Error(2)
 }
 
 type MockAudienceTreeEvaluator struct {
@@ -90,9 +90,9 @@ func (m *MockUserProfileService) Save(userProfile UserProfile) {
 	m.Called(userProfile)
 }
 
-func (m *MockAudienceTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters, reasons decide.DecisionReasons) (evalResult, isValid bool) {
+func (m *MockAudienceTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool, reasons decide.DecisionReasons) {
 	args := m.Called(node, condTreeParams, reasons)
-	return args.Bool(0), args.Bool(1)
+	return args.Bool(0), args.Bool(1), args.Get(2).(decide.DecisionReasons)
 }
 
 // Single variation experiment

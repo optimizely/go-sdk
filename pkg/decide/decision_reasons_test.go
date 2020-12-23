@@ -75,3 +75,37 @@ func TestInfoLogsAreOnlyReportedWhenIncludeReasonsOptionIsSet(t *testing.T) {
 	assert.Equal(t, "info message", reportedReasons[2])
 	assert.Equal(t, "info message: unexpected string", reportedReasons[3])
 }
+
+func TestAppend(t *testing.T) {
+	options := &Options{
+		DisableDecisionEvent:     true,
+		EnabledFlagsOnly:         true,
+		IgnoreUserProfileService: true,
+		ExcludeVariables:         true,
+		IncludeReasons:           true,
+	}
+	reasons1 := NewDecisionReasons(options)
+	reasons1.AddError("error message")
+	reasons1.AddError("error message: code %d", 121)
+	reasons1.AddInfo("info message")
+	reasons1.AddInfo("info message: %s", "unexpected string")
+
+	// Shouldn't append info logs if include reasons is set to false
+	reasons2 := NewDecisionReasons(nil)
+	reasons2.Append(reasons1)
+	reportedReasons := reasons2.ToReport()
+	assert.Equal(t, 2, len(reportedReasons))
+	assert.Equal(t, "error message", reportedReasons[0])
+	assert.Equal(t, "error message: code 121", reportedReasons[1])
+
+	// Should append info logs if include reasons is set to true
+	options.IncludeReasons = true
+	reasons2 = NewDecisionReasons(options)
+	reasons2.Append(reasons1)
+	reportedReasons = reasons2.ToReport()
+	assert.Equal(t, 4, len(reportedReasons))
+	assert.Equal(t, "error message", reportedReasons[0])
+	assert.Equal(t, "error message: code 121", reportedReasons[1])
+	assert.Equal(t, "info message", reportedReasons[2])
+	assert.Equal(t, "info message: unexpected string", reportedReasons[3])
+}

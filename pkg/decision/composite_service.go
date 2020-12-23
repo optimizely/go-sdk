@@ -65,17 +65,22 @@ func NewCompositeService(sdkKey string, options ...CSOptionFunc) *CompositeServi
 }
 
 // GetFeatureDecision returns a decision for the given feature key
-func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (FeatureDecision, error) {
-	featureDecision, err := s.compositeFeatureService.GetDecision(featureDecisionContext, userContext, options, reasons)
-	return featureDecision, err
+func (s CompositeService) GetFeatureDecision(featureDecisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options) (FeatureDecision, decide.DecisionReasons, error) {
+	reasons := decide.NewDecisionReasons(options)
+	featureDecision, decisionReasons, err := s.compositeFeatureService.GetDecision(featureDecisionContext, userContext, options)
+	reasons.Append(decisionReasons)
+	return featureDecision, reasons, err
 }
 
 // GetExperimentDecision returns a decision for the given experiment key
-func (s CompositeService) GetExperimentDecision(experimentDecisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (experimentDecision ExperimentDecision, err error) {
-	if experimentDecision, err = s.compositeExperimentService.GetDecision(experimentDecisionContext, userContext, options, reasons); err != nil {
-		return experimentDecision, err
+func (s CompositeService) GetExperimentDecision(experimentDecisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options) (experimentDecision ExperimentDecision, reasons decide.DecisionReasons, err error) {
+	reasons = decide.NewDecisionReasons(options)
+	var decisionReasons decide.DecisionReasons
+	if experimentDecision, decisionReasons, err = s.compositeExperimentService.GetDecision(experimentDecisionContext, userContext, options); err != nil {
+		return experimentDecision, decisionReasons, err
 	}
 
+	reasons.Append(decisionReasons)
 	if s.notificationCenter != nil {
 		decisionInfo := map[string]interface{}{
 			"experimentKey": experimentDecisionContext.Experiment.Key,
@@ -99,7 +104,7 @@ func (s CompositeService) GetExperimentDecision(experimentDecisionContext Experi
 		}
 	}
 
-	return experimentDecision, err
+	return experimentDecision, reasons, err
 }
 
 // OnDecision registers a handler for Decision notifications

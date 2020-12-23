@@ -28,15 +28,15 @@ import (
 )
 
 // GeMatcher matches against the "ge" match type
-func GeMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer, reasons decide.DecisionReasons) (bool, error) {
-
+func GeMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, decide.DecisionReasons, error) {
+	reasons := decide.NewDecisionReasons(nil)
 	if floatValue, ok := utils.ToFloat(condition.Value); ok {
 		attributeValue, err := user.GetFloatAttribute(condition.Name)
 		if err != nil {
-			return false, err
+			return false, reasons, err
 		}
-		return floatValue <= attributeValue, nil
+		return floatValue <= attributeValue, reasons, nil
 	}
 
-	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", condition.Name)
+	return false, reasons, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", condition.Name)
 }
