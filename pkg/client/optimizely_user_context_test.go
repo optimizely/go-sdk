@@ -158,12 +158,12 @@ func (s *OptimizelyUserContextTestSuite) TestDecideResponseContainsUserContextCo
 	flagKey := "feature_2"
 	userContext := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 	decision := userContext.Decide(flagKey, nil)
-	decisionUserContext := decision.GetUserContext()
+	decisionUserContext := decision.UserContext
 
 	// Change attributes for user context
 	userContext.SetAttribute("test", 123)
 	// Attributes should not update for the userContext returned inside decision
-	s.Nil(decisionUserContext.attributes["test"])
+	s.Nil(decisionUserContext.Attributes["test"])
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTest() {
@@ -176,13 +176,13 @@ func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTest() {
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 	decision := user.Decide(flagKey, nil)
 
-	s.Equal(variationKey, decision.GetVariationKey())
-	s.Equal(true, decision.GetEnabled())
-	s.Equal(variablesExpected.ToMap(), decision.GetVariables().ToMap())
-	s.Equal(ruleKey, decision.GetRuleKey())
-	s.Equal(flagKey, decision.GetFlagKey())
-	s.Equal(user, decision.GetUserContext())
-	s.Len(decision.GetReasons(), 0)
+	s.Equal(variationKey, decision.VariationKey)
+	s.Equal(true, decision.Enabled)
+	s.Equal(variablesExpected.ToMap(), decision.Variables.ToMap())
+	s.Equal(ruleKey, decision.RuleKey)
+	s.Equal(flagKey, decision.FlagKey)
+	s.Equal(user, decision.UserContext)
+	s.Len(decision.Reasons, 0)
 
 	s.True(len(s.eventProcessor.Events) == 1)
 	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
@@ -207,13 +207,13 @@ func (s *OptimizelyUserContextTestSuite) TestDecideRollout() {
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 	decision := user.Decide(flagKey, nil)
 
-	s.Equal(variationKey, decision.GetVariationKey())
-	s.Equal(true, decision.GetEnabled())
-	s.Equal(variablesExpected.ToMap(), decision.GetVariables().ToMap())
-	s.Equal(ruleKey, decision.GetRuleKey())
-	s.Equal(flagKey, decision.GetFlagKey())
-	s.Equal(user, decision.GetUserContext())
-	s.Len(decision.GetReasons(), 3)
+	s.Equal(variationKey, decision.VariationKey)
+	s.Equal(true, decision.Enabled)
+	s.Equal(variablesExpected.ToMap(), decision.Variables.ToMap())
+	s.Equal(ruleKey, decision.RuleKey)
+	s.Equal(flagKey, decision.FlagKey)
+	s.Equal(user, decision.UserContext)
+	s.Len(decision.Reasons, 3)
 
 	s.True(len(s.eventProcessor.Events) == 1)
 	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
@@ -235,13 +235,13 @@ func (s *OptimizelyUserContextTestSuite) TestDecideNullVariation() {
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 	decision := user.Decide(flagKey, nil)
 
-	s.Equal("", decision.GetVariationKey())
-	s.Equal(false, decision.GetEnabled())
-	s.Equal(variablesExpected.ToMap(), decision.GetVariables().ToMap())
-	s.Equal("", decision.GetRuleKey())
-	s.Equal("feature_3", decision.GetFlagKey())
-	s.Equal(user, decision.GetUserContext())
-	s.Len(decision.GetReasons(), 0)
+	s.Equal("", decision.VariationKey)
+	s.Equal(false, decision.Enabled)
+	s.Equal(variablesExpected.ToMap(), decision.Variables.ToMap())
+	s.Equal("", decision.RuleKey)
+	s.Equal("feature_3", decision.FlagKey)
+	s.Equal(user, decision.UserContext)
+	s.Len(decision.Reasons, 0)
 
 	s.True(len(s.eventProcessor.Events) == 1)
 	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
@@ -269,13 +269,13 @@ func (s *OptimizelyUserContextTestSuite) TestDecideForKeysOneFlag() {
 	s.Len(decisions, 1)
 
 	decision1 := decisions[flagKey]
-	s.Equal(variationKey, decision1.GetVariationKey())
-	s.Equal(true, decision1.GetEnabled())
-	s.Equal(variablesExpected.ToMap(), decision1.GetVariables().ToMap())
-	s.Equal(ruleKey, decision1.GetRuleKey())
-	s.Equal(flagKey, decision1.GetFlagKey())
-	s.Equal(user, decision1.GetUserContext())
-	s.Len(decision1.GetReasons(), 0)
+	s.Equal(variationKey, decision1.VariationKey)
+	s.Equal(true, decision1.Enabled)
+	s.Equal(variablesExpected.ToMap(), decision1.Variables.ToMap())
+	s.Equal(ruleKey, decision1.RuleKey)
+	s.Equal(flagKey, decision1.FlagKey)
+	s.Equal(user, decision1.UserContext)
+	s.Len(decision1.Reasons, 0)
 
 	s.True(len(s.eventProcessor.Events) == 1)
 	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
@@ -308,22 +308,22 @@ func (s *OptimizelyUserContextTestSuite) TestDecideForKeysWithMultipleFlags() {
 	s.Len(decisions, 2)
 
 	decision1 := decisions[flagKey1]
-	s.Equal(variationKey1, decision1.GetVariationKey())
-	s.Equal(true, decision1.GetEnabled())
-	s.Equal(variablesExpected1.ToMap(), decision1.GetVariables().ToMap())
-	s.Equal(ruleKey1, decision1.GetRuleKey())
-	s.Equal(flagKey1, decision1.GetFlagKey())
-	s.Equal(user, decision1.GetUserContext())
-	s.Len(decision1.GetReasons(), 0)
+	s.Equal(variationKey1, decision1.VariationKey)
+	s.Equal(true, decision1.Enabled)
+	s.Equal(variablesExpected1.ToMap(), decision1.Variables.ToMap())
+	s.Equal(ruleKey1, decision1.RuleKey)
+	s.Equal(flagKey1, decision1.FlagKey)
+	s.Equal(user, decision1.UserContext)
+	s.Len(decision1.Reasons, 0)
 
 	decision2 := decisions[flagKey2]
-	s.Equal(variationKey2, decision2.GetVariationKey())
-	s.Equal(true, decision2.GetEnabled())
-	s.Equal(variablesExpected2.ToMap(), decision2.GetVariables().ToMap())
-	s.Equal(ruleKey2, decision2.GetRuleKey())
-	s.Equal(flagKey2, decision2.GetFlagKey())
-	s.Equal(user, decision2.GetUserContext())
-	s.Len(decision2.GetReasons(), 0)
+	s.Equal(variationKey2, decision2.VariationKey)
+	s.Equal(true, decision2.Enabled)
+	s.Equal(variablesExpected2.ToMap(), decision2.Variables.ToMap())
+	s.Equal(ruleKey2, decision2.RuleKey)
+	s.Equal(flagKey2, decision2.FlagKey)
+	s.Equal(user, decision2.UserContext)
+	s.Len(decision2.Reasons, 0)
 
 	s.True(len(s.eventProcessor.Events) == 2)
 	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
@@ -379,31 +379,31 @@ func (s *OptimizelyUserContextTestSuite) TestDecideAllFlags() {
 	s.Len(decisions, 3)
 
 	decision1 := decisions[flagKey1]
-	s.Equal(variationKey1, decision1.GetVariationKey())
-	s.Equal(true, decision1.GetEnabled())
-	s.Equal(variablesExpected1.ToMap(), decision1.GetVariables().ToMap())
-	s.Equal(ruleKey1, decision1.GetRuleKey())
-	s.Equal(flagKey1, decision1.GetFlagKey())
-	s.Equal(user, decision1.GetUserContext())
-	s.Len(decision1.GetReasons(), 0)
+	s.Equal(variationKey1, decision1.VariationKey)
+	s.Equal(true, decision1.Enabled)
+	s.Equal(variablesExpected1.ToMap(), decision1.Variables.ToMap())
+	s.Equal(ruleKey1, decision1.RuleKey)
+	s.Equal(flagKey1, decision1.FlagKey)
+	s.Equal(user, decision1.UserContext)
+	s.Len(decision1.Reasons, 0)
 
 	decision2 := decisions[flagKey2]
-	s.Equal(variationKey2, decision2.GetVariationKey())
-	s.Equal(true, decision2.GetEnabled())
-	s.Equal(variablesExpected2.ToMap(), decision2.GetVariables().ToMap())
-	s.Equal(ruleKey2, decision2.GetRuleKey())
-	s.Equal(flagKey2, decision2.GetFlagKey())
-	s.Equal(user, decision2.GetUserContext())
-	s.Len(decision2.GetReasons(), 0)
+	s.Equal(variationKey2, decision2.VariationKey)
+	s.Equal(true, decision2.Enabled)
+	s.Equal(variablesExpected2.ToMap(), decision2.Variables.ToMap())
+	s.Equal(ruleKey2, decision2.RuleKey)
+	s.Equal(flagKey2, decision2.FlagKey)
+	s.Equal(user, decision2.UserContext)
+	s.Len(decision2.Reasons, 0)
 
 	decision3 := decisions[flagKey3]
-	s.Equal(variationKey3, decision3.GetVariationKey())
-	s.Equal(false, decision3.GetEnabled())
-	s.Equal(variablesExpected3.ToMap(), decision3.GetVariables().ToMap())
-	s.Equal(ruleKey3, decision3.GetRuleKey())
-	s.Equal(flagKey3, decision3.GetFlagKey())
-	s.Equal(user, decision3.GetUserContext())
-	s.Len(decision3.GetReasons(), 0)
+	s.Equal(variationKey3, decision3.VariationKey)
+	s.Equal(false, decision3.Enabled)
+	s.Equal(variablesExpected3.ToMap(), decision3.Variables.ToMap())
+	s.Equal(ruleKey3, decision3.RuleKey)
+	s.Equal(flagKey3, decision3.FlagKey)
+	s.Equal(user, decision3.UserContext)
+	s.Len(decision3.Reasons, 0)
 
 	s.True(len(s.eventProcessor.Events) == 3)
 	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
@@ -458,13 +458,13 @@ func (s *OptimizelyUserContextTestSuite) TestDecideAllEnabledFlagsOnly() {
 	s.Len(decisions, 2)
 
 	decision1 := decisions[flagKey1]
-	s.Equal("a", decision1.GetVariationKey())
-	s.Equal(true, decision1.GetEnabled())
-	s.Equal(variablesExpected1.ToMap(), decision1.GetVariables().ToMap())
-	s.Equal("exp_with_audience", decision1.GetRuleKey())
-	s.Equal(flagKey1, decision1.GetFlagKey())
-	s.Equal(user, decision1.GetUserContext())
-	s.Len(decision1.GetReasons(), 0)
+	s.Equal("a", decision1.VariationKey)
+	s.Equal(true, decision1.Enabled)
+	s.Equal(variablesExpected1.ToMap(), decision1.Variables.ToMap())
+	s.Equal("exp_with_audience", decision1.RuleKey)
+	s.Equal(flagKey1, decision1.FlagKey)
+	s.Equal(user, decision1.UserContext)
+	s.Len(decision1.Reasons, 0)
 }
 
 func (s *OptimizelyUserContextTestSuite) TestTrackEvent() {
@@ -518,7 +518,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideSendEvent() {
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 	decision := user.Decide(flagKey, nil)
 
-	s.Equal("variation_with_traffic", decision.GetVariationKey())
+	s.Equal("variation_with_traffic", decision.VariationKey)
 	s.True(len(s.eventProcessor.Events) == 1)
 	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
 	s.Equal(experimentID, s.eventProcessor.Events[0].Impression.ExperimentID)
@@ -531,7 +531,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideDoNotSendEvent() {
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 	decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.DisableDecisionEvent})
 
-	s.Equal("variation_with_traffic", decision.GetVariationKey())
+	s.Equal("variation_with_traffic", decision.VariationKey)
 	s.True(len(s.eventProcessor.Events) == 0)
 }
 
@@ -598,13 +598,13 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsBypassUps() {
 	userContext := s.OptimizelyClient.CreateUserContext(s.userID, map[string]interface{}{})
 	decision := userContext.Decide(flagKey, nil)
 	// should return variationId2 set by UPS
-	s.Equal(variationKey2, decision.GetVariationKey())
+	s.Equal(variationKey2, decision.VariationKey)
 	userProfileService.AssertCalled(s.T(), "Lookup", s.userID)
 	userProfileService.AssertNotCalled(s.T(), "Save", mock.Anything)
 
 	decision = userContext.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IgnoreUserProfileService})
 	// should not lookup, ignore variationId2 set by UPS and return variationId1
-	s.Equal(variationKey1, decision.GetVariationKey())
+	s.Equal(variationKey1, decision.VariationKey)
 	userProfileService.AssertNumberOfCalls(s.T(), "Lookup", 1)
 	// also should not save either
 	userProfileService.AssertNotCalled(s.T(), "Save", mock.Anything)
@@ -616,11 +616,11 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsExcludeVariables() {
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 
 	decision := user.Decide(flagKey, options)
-	s.True(len(decision.GetVariables().ToMap()) > 0)
+	s.True(len(decision.Variables.ToMap()) > 0)
 
 	options = append(options, decide.ExcludeVariables)
 	decision = user.Decide(flagKey, options)
-	s.Len(decision.GetVariables().ToMap(), 0)
+	s.Len(decision.Variables.ToMap(), 0)
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDecideOptionsIncludeReasons() {
@@ -630,19 +630,19 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsIncludeReasons() {
 
 	// invalid flag key
 	decision := user.Decide(flagKey, options)
-	s.Len(decision.GetReasons(), 1)
-	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey), decision.GetReasons()[0])
+	s.Len(decision.Reasons, 1)
+	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey), decision.Reasons[0])
 
 	// invalid flag key with includeReasons
 	options = append(options, decide.IncludeReasons)
 	decision = user.Decide(flagKey, options)
-	s.Len(decision.GetReasons(), 1)
-	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey), decision.GetReasons()[0])
+	s.Len(decision.Reasons, 1)
+	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey), decision.Reasons[0])
 
 	// valid flag key
 	flagKey = "feature_1"
 	decision = user.Decide(flagKey, nil)
-	s.Len(decision.GetReasons(), 3)
+	s.Len(decision.Reasons, 3)
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsExcludeVariables() {
@@ -653,7 +653,7 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsExcludeVariable
 
 	// should be excluded by DefaultDecideOption
 	decision := userContext.Decide(flagKey, nil)
-	s.Len(decision.GetVariables().ToMap(), 0)
+	s.Len(decision.Variables.ToMap(), 0)
 
 	// @TODO: Need one more case: IncludeReasons = true and flagKey = "feature_1". Then reasons.count > 0
 }
@@ -670,13 +670,13 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsEnabledFlagsOnl
 	s.Len(decisions, 2)
 
 	decision1 := decisions[flagKey]
-	s.Equal("a", decision1.GetVariationKey())
-	s.Equal(true, decision1.GetEnabled())
-	s.Equal(variablesExpected.ToMap(), decision1.GetVariables().ToMap())
-	s.Equal("exp_with_audience", decision1.GetRuleKey())
-	s.Equal(flagKey, decision1.GetFlagKey())
-	s.Equal(user, decision1.GetUserContext())
-	s.Len(decision1.GetReasons(), 0)
+	s.Equal("a", decision1.VariationKey)
+	s.Equal(true, decision1.Enabled)
+	s.Equal(variablesExpected.ToMap(), decision1.Variables.ToMap())
+	s.Equal("exp_with_audience", decision1.RuleKey)
+	s.Equal(flagKey, decision1.FlagKey)
+	s.Equal(user, decision1.UserContext)
+	s.Len(decision1.Reasons, 0)
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsIncludeReasons() {
@@ -687,8 +687,8 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsIncludeReasons(
 
 	// should get IncludeReasons by DefaultDecideOption
 	decision := user.Decide(flagKey, options)
-	s.Len(decision.GetReasons(), 1)
-	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey), decision.GetReasons()[0])
+	s.Len(decision.Reasons, 1)
+	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey), decision.Reasons[0])
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsBypassUps() {
@@ -718,7 +718,7 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsBypassUps() {
 
 	// should get IgnoreUserProfileService by DefaultDecideOption
 	// should not lookup, ignore variationId2 set by UPS and return variationId1
-	s.Equal(variationKey1, decision.GetVariationKey())
+	s.Equal(variationKey1, decision.VariationKey)
 	userProfileService.AssertNotCalled(s.T(), "Lookup", s.userID)
 	userProfileService.AssertNotCalled(s.T(), "Save", mock.Anything)
 }
@@ -751,13 +751,13 @@ func (s *OptimizelyUserContextTestSuite) TestDecideSDKNotReady() {
 	userContext := client.CreateUserContext(s.userID, nil)
 	decision := userContext.Decide(flagKey, nil)
 
-	s.Equal("", decision.GetVariationKey())
-	s.False(decision.GetEnabled())
-	s.Len(decision.GetVariables().ToMap(), 0)
-	s.Equal(decision.GetFlagKey(), flagKey)
-	s.Equal(decision.GetUserContext(), userContext)
-	s.Len(decision.GetReasons(), 1)
-	s.Equal(decide.GetDecideMessage(decide.SDKNotReady), decision.GetReasons()[0])
+	s.Equal("", decision.VariationKey)
+	s.False(decision.Enabled)
+	s.Len(decision.Variables.ToMap(), 0)
+	s.Equal(decision.FlagKey, flagKey)
+	s.Equal(decision.UserContext, userContext)
+	s.Len(decision.Reasons, 1)
+	s.Equal(decide.GetDecideMessage(decide.SDKNotReady), decision.Reasons[0])
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDecideInvalidFeatureKey() {
@@ -765,13 +765,13 @@ func (s *OptimizelyUserContextTestSuite) TestDecideInvalidFeatureKey() {
 	userContext := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 	decision := userContext.Decide(flagKey, nil)
 
-	s.Equal("", decision.GetVariationKey())
-	s.False(decision.GetEnabled())
-	s.Len(decision.GetVariables().ToMap(), 0)
-	s.Equal(decision.GetFlagKey(), flagKey)
-	s.Equal(decision.GetUserContext(), userContext)
-	s.Len(decision.GetReasons(), 1)
-	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey), decision.GetReasons()[0])
+	s.Equal("", decision.VariationKey)
+	s.False(decision.Enabled)
+	s.Len(decision.Variables.ToMap(), 0)
+	s.Equal(decision.FlagKey, flagKey)
+	s.Equal(decision.UserContext, userContext)
+	s.Len(decision.Reasons, 1)
+	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey), decision.Reasons[0])
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDecideForKeySDKNotReady() {
@@ -805,19 +805,19 @@ func (s *OptimizelyUserContextTestSuite) TestDecideForKeysErrorDecisionIncluded(
 	s.Len(decisions, 2)
 
 	decision := decisions[flagKey1]
-	s.Equal("variation_with_traffic", decision.GetVariationKey())
-	s.Equal(true, decision.GetEnabled())
-	s.Equal(variablesExpected1.ToMap(), decision.GetVariables().ToMap())
-	s.Equal("exp_no_audience", decision.GetRuleKey())
-	s.Equal(flagKey1, decision.GetFlagKey())
-	s.Equal(user, decision.GetUserContext())
-	s.Len(decision.GetReasons(), 0)
+	s.Equal("variation_with_traffic", decision.VariationKey)
+	s.Equal(true, decision.Enabled)
+	s.Equal(variablesExpected1.ToMap(), decision.Variables.ToMap())
+	s.Equal("exp_no_audience", decision.RuleKey)
+	s.Equal(flagKey1, decision.FlagKey)
+	s.Equal(user, decision.UserContext)
+	s.Len(decision.Reasons, 0)
 
 	decision = decisions[flagKey2]
-	s.Equal(flagKey2, decision.GetFlagKey())
-	s.Equal(user, decision.GetUserContext())
-	s.Len(decision.GetReasons(), 1)
-	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey2), decision.GetReasons()[0])
+	s.Equal(flagKey2, decision.FlagKey)
+	s.Equal(user, decision.UserContext)
+	s.Len(decision.Reasons, 1)
+	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey2), decision.Reasons[0])
 }
 
 func TestOptimizelyUserContextTestSuite(t *testing.T) {
