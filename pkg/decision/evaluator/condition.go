@@ -92,7 +92,7 @@ func (c AudienceConditionEvaluator) Evaluate(audienceID string, condTreeParams *
 			errorMessage := reasons.AddInfo(`an error occurred while evaluating nested tree for audience ID "%s"`, audienceID)
 			return false, reasons, errors.New(errorMessage)
 		}
-		logMessage := reasons.AddInfo(logging.AudienceEvaluatedTo.String(), audienceID, retValue)
+		logMessage := fmt.Sprintf(logging.AudienceEvaluatedTo.String(), audienceID, retValue)
 		c.logger.Debug(logMessage)
 		return retValue, reasons, nil
 	}

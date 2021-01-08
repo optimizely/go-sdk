@@ -340,9 +340,8 @@ func (s *OptimizelyUserContextTestSuite) TestDecideForKeysWithMultipleFlags() {
 	s.Equal(flagKey1, decision1.FlagKey)
 	s.Equal(user, decision1.UserContext)
 	reasons := decision1.Reasons
-	s.Len(reasons, 2)
-	s.Equal(`Audience "13389141123" evaluated to true.`, reasons[0])
-	s.Equal(`Audiences for experiment exp_with_audience collectively evaluated to true.`, reasons[1])
+	s.Len(reasons, 1)
+	s.Equal(`Audiences for experiment exp_with_audience collectively evaluated to true.`, reasons[0])
 
 	decision2 := decisions[flagKey2]
 	s.Equal(variationKey2, decision2.VariationKey)
@@ -495,9 +494,8 @@ func (s *OptimizelyUserContextTestSuite) TestDecideAllEnabledFlagsOnly() {
 	s.Equal(flagKey1, decision1.FlagKey)
 	s.Equal(user, decision1.UserContext)
 	reasons := decision1.Reasons
-	s.Len(reasons, 2)
-	s.Equal(`Audience "13389141123" evaluated to true.`, reasons[0])
-	s.Equal(`Audiences for experiment exp_with_audience collectively evaluated to true.`, reasons[1])
+	s.Len(reasons, 1)
+	s.Equal(`Audiences for experiment exp_with_audience collectively evaluated to true.`, reasons[0])
 }
 
 func (s *OptimizelyUserContextTestSuite) TestTrackEvent() {
@@ -759,9 +757,8 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsEnabledFlagsOnl
 	s.Equal(flagKey, decision1.FlagKey)
 	s.Equal(user, decision1.UserContext)
 	reasons := decision1.Reasons
-	s.Len(reasons, 2)
-	s.Equal(`Audience "13389141123" evaluated to true.`, reasons[0])
-	s.Equal("Audiences for experiment exp_with_audience collectively evaluated to true.", reasons[1])
+	s.Len(reasons, 1)
+	s.Equal("Audiences for experiment exp_with_audience collectively evaluated to true.", reasons[0])
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsIncludeReasons() {

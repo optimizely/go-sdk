@@ -446,8 +446,7 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateAnAudienceTreeSingleAu
 	s.options.IncludeReasons = true
 	result, _, reasons := s.conditionTreeEvaluator.Evaluate(audienceTree, treeParams, &s.options)
 	messages := reasons.ToReport()
-	s.Len(messages, 1)
-	s.Equal(`Audience "11111" evaluated to true.`, messages[0])
+	s.Len(messages, 0)
 	s.True(result)
 	s.mockLogger.AssertExpectations(s.T())
 }
@@ -501,9 +500,8 @@ func (s *ConditionTreeTestSuite) TestConditionTreeEvaluateAnAudienceTreeMultiple
 	result, _, reasons := s.conditionTreeEvaluator.Evaluate(audienceTree, treeParams, &s.options)
 	s.True(result)
 	messages := reasons.ToReport()
-	s.Len(messages, 2)
+	s.Len(messages, 1)
 	s.Equal(`an error occurred while evaluating nested tree for audience ID "11111"`, messages[0])
-	s.Equal(`Audience "11112" evaluated to true.`, messages[1])
 	s.mockLogger.AssertExpectations(s.T())
 }
 
