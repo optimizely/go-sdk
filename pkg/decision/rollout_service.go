@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -57,7 +57,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	evaluateConditionTree := func(experiment *entities.Experiment, loggingKey string) bool {
 		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
 		r.logger.Debug(fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), loggingKey))
-		evalResult, _, decisionReasons := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
+		evalResult, _, decisionReasons := r.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams, options)
 		reasons.Append(decisionReasons)
 		if !evalResult {
 			featureDecision.Reason = pkgReasons.FailedRolloutTargeting
@@ -112,9 +112,8 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		evaluationResult := experiment.AudienceConditionTree == nil || evaluateConditionTree(experiment, loggingKey)
 		r.logger.Debug(fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), loggingKey, evaluationResult))
 		if !evaluationResult {
-			logMessage := fmt.Sprintf(logging.UserNotInRollout.String(), userContext.ID, loggingKey)
+			logMessage := reasons.AddInfo(logging.UserNotInRollout.String(), userContext.ID, loggingKey)
 			r.logger.Debug(logMessage)
-			reasons.AddInfo(logMessage)
 			// Evaluate this user for the next rule
 			continue
 		}
@@ -140,9 +139,8 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		decision, decisionReasons, err := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext, options)
 		reasons.Append(decisionReasons)
 		if err == nil {
-			logMessage := fmt.Sprintf(logging.UserInEveryoneElse.String(), userContext.ID)
+			logMessage := reasons.AddInfo(logging.UserInEveryoneElse.String(), userContext.ID)
 			r.logger.Debug(logMessage)
-			reasons.AddInfo(logMessage)
 		}
 		finalFeatureDecision := getFeatureDecision(experiment, &decision)
 		return finalFeatureDecision, reasons, nil

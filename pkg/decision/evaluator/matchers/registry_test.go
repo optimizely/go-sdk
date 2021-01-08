@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020, Optimizely, Inc. and contributors                        *
+ * Copyright 2020-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -22,18 +22,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 func TestRegister(t *testing.T) {
-	expected := func(entities.Condition, entities.UserContext, logging.OptimizelyLogProducer) (bool, decide.DecisionReasons, error) {
-		return false, decide.DecisionReasons(nil), nil
+	expected := func(entities.Condition, entities.UserContext, logging.OptimizelyLogProducer) (bool, error) {
+		return false, nil
 	}
 	Register("test", expected)
 	actual := assertMatcher(t, "test")
-	matches, _, err := actual(entities.Condition{}, entities.UserContext{}, nil)
+	matches, err := actual(entities.Condition{}, entities.UserContext{}, nil)
 	assert.False(t, matches)
 	assert.NoError(t, err)
 }

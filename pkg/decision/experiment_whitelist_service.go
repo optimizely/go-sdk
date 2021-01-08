@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -19,7 +19,6 @@ package decision
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/optimizely/go-sdk/pkg/decide"
 	pkgReasons "github.com/optimizely/go-sdk/pkg/decision/reasons"
@@ -54,14 +53,12 @@ func (s ExperimentWhitelistService) GetDecision(decisionContext ExperimentDecisi
 		if variation, ok := decisionContext.Experiment.Variations[id]; ok {
 			decision.Reason = pkgReasons.WhitelistVariationAssignmentFound
 			decision.Variation = &variation
-			logMessage := fmt.Sprintf(`User "%s" is whitelisted into variation "%s" of experiment "%s".`, userContext.ID, variationKey, decisionContext.Experiment.Key)
-			reasons.AddInfo(logMessage)
+			reasons.AddInfo(`User "%s" is whitelisted into variation "%s" of experiment "%s".`, userContext.ID, variationKey, decisionContext.Experiment.Key)
 			return decision, reasons, nil
 		}
 	}
 
 	decision.Reason = pkgReasons.InvalidWhitelistVariationAssignment
-	logMessage := fmt.Sprintf(`User "%s" is whitelisted into variation "%s", which is not in the datafile.`, userContext.ID, variationKey)
-	reasons.AddInfo(logMessage)
+	reasons.AddInfo(`User "%s" is whitelisted into variation "%s", which is not in the datafile.`, userContext.ID, variationKey)
 	return decision, reasons, nil
 }

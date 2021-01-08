@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -90,8 +90,8 @@ func (m *MockUserProfileService) Save(userProfile UserProfile) {
 	m.Called(userProfile)
 }
 
-func (m *MockAudienceTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool, reasons decide.DecisionReasons) {
-	args := m.Called(node, condTreeParams, reasons)
+func (m *MockAudienceTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters, options *decide.Options) (evalResult, isValid bool, reasons decide.DecisionReasons) {
+	args := m.Called(node, condTreeParams, options)
 	return args.Bool(0), args.Bool(1), args.Get(2).(decide.DecisionReasons)
 }
 

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -55,7 +55,7 @@ func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecis
 	var userProfile UserProfile
 	var decisionReasons decide.DecisionReasons
 	// check to see if there is a saved decision for the user
-	experimentDecision, userProfile, decisionReasons = p.getSavedDecision(decisionContext, userContext)
+	experimentDecision, userProfile, decisionReasons = p.getSavedDecision(decisionContext, userContext, options)
 	reasons.Append(decisionReasons)
 	if experimentDecision.Variation != nil {
 		return experimentDecision, reasons, nil
@@ -72,8 +72,8 @@ func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecis
 	return experimentDecision, reasons, err
 }
 
-func (p PersistingExperimentService) getSavedDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext) (ExperimentDecision, UserProfile, decide.DecisionReasons) {
-	reasons := decide.NewDecisionReasons(nil)
+func (p PersistingExperimentService) getSavedDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options) (ExperimentDecision, UserProfile, decide.DecisionReasons) {
+	reasons := decide.NewDecisionReasons(options)
 	experimentDecision := ExperimentDecision{}
 	userProfile := p.userProfileService.Lookup(userContext.ID)
 
@@ -86,19 +86,18 @@ func (p PersistingExperimentService) getSavedDecision(decisionContext Experiment
 	if savedVariationID, ok := userProfile.ExperimentBucketMap[decisionKey]; ok {
 		if variation, ok := decisionContext.Experiment.Variations[savedVariationID]; ok {
 			experimentDecision.Variation = &variation
-			p.logger.Debug(fmt.Sprintf(`User "%s" was previously bucketed into variation "%s" of experiment "%s".`, userContext.ID, variation.Key, decisionContext.Experiment.Key))
+			infoMessage := reasons.AddInfo(`User "%s" was previously bucketed into variation "%s" of experiment "%s".`, userContext.ID, variation.Key, decisionContext.Experiment.Key)
+			p.logger.Debug(infoMessage)
 		} else {
-			warningMessage := fmt.Sprintf(`User "%s" was previously bucketed into variation with ID "%s" for experiment "%s", but no matching variation was found.`, userContext.ID, savedVariationID, decisionContext.Experiment.Key)
+			warningMessage := reasons.AddInfo(`User "%s" was previously bucketed into variation with ID "%s" for experiment "%s", but no matching variation was found.`, userContext.ID, savedVariationID, decisionContext.Experiment.Key)
 			p.logger.Warning(warningMessage)
-			reasons.AddInfo(warningMessage)
 		}
 	}
 
 	return experimentDecision, userProfile, reasons
 }
 
-func (p PersistingExperimentService) saveDecision(userProfile UserProfile, experiment *entities.Experiment, decision ExperimentDecision) decide.DecisionReasons {
-	reasons := decide.NewDecisionReasons(nil)
+func (p PersistingExperimentService) saveDecision(userProfile UserProfile, experiment *entities.Experiment, decision ExperimentDecision) {
 	if p.userProfileService != nil {
 		decisionKey := NewUserDecisionKey(experiment.ID)
 		if userProfile.ExperimentBucketMap == nil {
@@ -108,5 +107,4 @@ func (p PersistingExperimentService) saveDecision(userProfile UserProfile, exper
 		p.userProfileService.Save(userProfile)
 		p.logger.Debug(fmt.Sprintf(`Decision saved for user "%s".`, userProfile.ID))
 	}
-	return reasons
 }

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -89,7 +89,11 @@ func (s *RolloutServiceTestSuite) TestGetDecisionWithEmptyRolloutID() {
 		Source:   Rollout,
 		Decision: Decision{Reason: reasons.NoRolloutForFeature},
 	}
-	decision, _, _ := testRolloutService.GetDecision(featureDecisionContext, s.testUserContext, s.options)
+	s.options.IncludeReasons = true
+	decision, rsons, _ := testRolloutService.GetDecision(featureDecisionContext, s.testUserContext, s.options)
+	messages := rsons.ToReport()
+	s.Len(messages, 1)
+	s.Equal(`Rollout with ID "" is not in the datafile.`, messages[0])
 	s.Equal(expectedFeatureDecision, decision)
 }
 
@@ -178,7 +182,12 @@ func (s *RolloutServiceTestSuite) TestGetDecisionFallbacksToLastWhenFailsBucketi
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "Everyone Else", true))
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.UserInEveryoneElse.String(), "test_user"))
 	s.mockLogger.On("Debug", `Decision made for user "test_user" for feature rollout with key "test_feature_rollout_3334_key": Bucketed into feature rollout.`)
-	decision, _, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
+	s.options.IncludeReasons = true
+	decision, rsons, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
+	messages := rsons.ToReport()
+	s.Len(messages, 1)
+	s.Equal(`User "test_user" meets conditions for targeting rule "Everyone Else".`, messages[0])
+
 	s.Equal(expectedFeatureDecision, decision)
 	s.mockAudienceTreeEvaluator.AssertExpectations(s.T())
 	s.mockExperimentService.AssertExpectations(s.T())
@@ -254,7 +263,12 @@ func (s *RolloutServiceTestSuite) TestEvaluatesNextIfPreviousTargetingFails() {
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "2"))
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "2", true))
 	s.mockLogger.On("Debug", `Decision made for user "test_user" for feature rollout with key "test_feature_rollout_3334_key": Bucketed into feature rollout.`)
-	decision, _, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
+	s.options.IncludeReasons = true
+	decision, rsons, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
+	messages := rsons.ToReport()
+	s.Len(messages, 1)
+	s.Equal(`User "test_user" does not meet conditions for targeting rule 1.`, messages[0])
+
 	s.Equal(expectedFeatureDecision, decision)
 	s.mockAudienceTreeEvaluator.AssertExpectations(s.T())
 	s.mockExperimentService.AssertExpectations(s.T())

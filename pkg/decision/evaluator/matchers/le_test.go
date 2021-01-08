@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020, Optimizely, Inc. and contributors                        *
+ * Copyright 2020-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -39,7 +39,7 @@ func TestLeMatcherInt(t *testing.T) {
 			"int_42": 41,
 		},
 	}
-	result, _, err := leMatcher(condition, user, nil)
+	result, err := leMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -49,7 +49,7 @@ func TestLeMatcherInt(t *testing.T) {
 			"int_42": 42,
 		},
 	}
-	result, _, err = leMatcher(condition, user, nil)
+	result, err = leMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.True(t, result)
 	// Test match int to float
@@ -59,7 +59,7 @@ func TestLeMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, _, err = leMatcher(condition, user, nil)
+	result, err = leMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -70,7 +70,7 @@ func TestLeMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, _, err = leMatcher(condition, user, nil)
+	result, err = leMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -81,7 +81,7 @@ func TestLeMatcherInt(t *testing.T) {
 		},
 	}
 
-	result, _, err = leMatcher(condition, user, nil)
+	result, err = leMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -92,7 +92,7 @@ func TestLeMatcherInt(t *testing.T) {
 		},
 	}
 
-	_, _, err = leMatcher(condition, user, nil)
+	_, err = leMatcher(condition, user, nil)
 	assert.Error(t, err)
 
 	// Test bad condition
@@ -107,7 +107,7 @@ func TestLeMatcherInt(t *testing.T) {
 		},
 	}
 
-	_, _, err = LeMatcher(condition, user, nil)
+	_, err = LeMatcher(condition, user, nil)
 	assert.Error(t, err)
 }
 
@@ -124,7 +124,7 @@ func TestLeMatcherFloat(t *testing.T) {
 			"float_4_2": 4,
 		},
 	}
-	result, _, err := leMatcher(condition, user, nil)
+	result, err := leMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -134,7 +134,7 @@ func TestLeMatcherFloat(t *testing.T) {
 			"float_4_2": 4.19999,
 		},
 	}
-	result, _, err = leMatcher(condition, user, nil)
+	result, err = leMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -144,7 +144,7 @@ func TestLeMatcherFloat(t *testing.T) {
 			"float_4_2": 4.200000,
 		},
 	}
-	result, _, err = leMatcher(condition, user, nil)
+	result, err = leMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -155,7 +155,7 @@ func TestLeMatcherFloat(t *testing.T) {
 		},
 	}
 
-	result, _, err = leMatcher(condition, user, nil)
+	result, err = leMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -166,6 +166,6 @@ func TestLeMatcherFloat(t *testing.T) {
 		},
 	}
 
-	_, _, err = leMatcher(condition, user, nil)
+	_, err = leMatcher(condition, user, nil)
 	assert.Error(t, err)
 }

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -79,7 +79,12 @@ func (s *PersistingExperimentServiceTestSuite) TestSavedVariationFound() {
 	s.mockUserProfileService.On("Save", mock.Anything)
 
 	persistingExperimentService := NewPersistingExperimentService(s.mockUserProfileService, s.mockExperimentService, logging.GetLogger("", "NewPersistingExperimentService"))
-	decision, _, err := persistingExperimentService.GetDecision(s.testDecisionContext, testUserContext, s.options)
+	s.options.IncludeReasons = true
+	decision, rsons, err := persistingExperimentService.GetDecision(s.testDecisionContext, testUserContext, s.options)
+	messages := rsons.ToReport()
+	s.Len(messages, 1)
+	s.Equal(`User "test_user_1" was previously bucketed into variation "2224" of experiment "test_experiment_1113".`, messages[0])
+
 	savedDecision := ExperimentDecision{
 		Variation: &testExp1113Var2224,
 	}
@@ -120,7 +125,12 @@ func (s *PersistingExperimentServiceTestSuite) TestSavedVariationNoLongerValid()
 	}
 	s.mockUserProfileService.On("Save", updatedUserProfile)
 	persistingExperimentService := NewPersistingExperimentService(s.mockUserProfileService, s.mockExperimentService, logging.GetLogger("", "NewPersistingExperimentService"))
-	decision, _, err := persistingExperimentService.GetDecision(s.testDecisionContext, testUserContext, s.options)
+	s.options.IncludeReasons = true
+	decision, rsons, err := persistingExperimentService.GetDecision(s.testDecisionContext, testUserContext, s.options)
+	messages := rsons.ToReport()
+	s.Len(messages, 1)
+	s.Equal(`User "test_user_1" was previously bucketed into variation with ID "forgotten_variation" for experiment "test_experiment_1113", but no matching variation was found.`, messages[0])
+
 	s.Equal(s.testComputedDecision, decision)
 	s.NoError(err)
 	s.mockExperimentService.AssertExpectations(s.T())

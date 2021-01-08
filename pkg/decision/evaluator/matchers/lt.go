@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -18,18 +18,15 @@
 package matchers
 
 import (
-	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 // LtMatcher matches against the "lt" match type
-func LtMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, decide.DecisionReasons, error) {
-	reasons := decide.NewDecisionReasons(nil)
-	res, decideReasons, err := compare(condition, user, logger)
-	reasons.Append(decideReasons)
+func LtMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, error) {
+	res, err := compare(condition, user, logger)
 	if err != nil {
-		return false, reasons, err
+		return false, err
 	}
-	return res < 0, reasons, nil
+	return res < 0, nil
 }

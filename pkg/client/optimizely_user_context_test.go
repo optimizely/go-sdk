@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020, Optimizely, Inc. and contributors                        *
+ * Copyright 2020-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -220,11 +220,11 @@ func (s *OptimizelyUserContextTestSuite) TestDecideRollout() {
 
 	expectedLogs := []string{
 		`an error occurred while evaluating nested tree for audience ID "13389141123"`,
-		`an error occurred while evaluating nested tree for audience ID "13389130056"`,
-		`an error occurred while evaluating nested tree for audience ID "12208130097"`,
 		`Audiences for experiment exp_with_audience collectively evaluated to false.`,
 		`User "tester" does not meet conditions to be in experiment "exp_with_audience".`,
+		`an error occurred while evaluating nested tree for audience ID "13389130056"`,
 		`User "tester" does not meet conditions for targeting rule 1.`,
+		`an error occurred while evaluating nested tree for audience ID "12208130097"`,
 		`User "tester" does not meet conditions for targeting rule 2.`,
 		`Audiences for experiment 18322080788 collectively evaluated to true.`,
 		`User "tester" meets conditions for targeting rule "Everyone Else".`,
@@ -338,8 +338,9 @@ func (s *OptimizelyUserContextTestSuite) TestDecideForKeysWithMultipleFlags() {
 	s.Equal(flagKey1, decision1.GetFlagKey())
 	s.Equal(user, decision1.GetUserContext())
 	reasons := decision1.GetReasons()
-	s.Len(reasons, 1)
-	s.Equal(`Audiences for experiment exp_with_audience collectively evaluated to true.`, reasons[0])
+	s.Len(reasons, 2)
+	s.Equal(`Audience "13389141123" evaluated to true.`, reasons[0])
+	s.Equal(`Audiences for experiment exp_with_audience collectively evaluated to true.`, reasons[1])
 
 	decision2 := decisions[flagKey2]
 	s.Equal(variationKey2, decision2.GetVariationKey())
@@ -492,8 +493,9 @@ func (s *OptimizelyUserContextTestSuite) TestDecideAllEnabledFlagsOnly() {
 	s.Equal(flagKey1, decision1.GetFlagKey())
 	s.Equal(user, decision1.GetUserContext())
 	reasons := decision1.GetReasons()
-	s.Len(reasons, 1)
-	s.Equal(`Audiences for experiment exp_with_audience collectively evaluated to true.`, reasons[0])
+	s.Len(reasons, 2)
+	s.Equal(`Audience "13389141123" evaluated to true.`, reasons[0])
+	s.Equal(`Audiences for experiment exp_with_audience collectively evaluated to true.`, reasons[1])
 }
 
 func (s *OptimizelyUserContextTestSuite) TestTrackEvent() {
@@ -628,7 +630,8 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsBypassUps() {
 	userContext := s.OptimizelyClient.CreateUserContext(s.userID, map[string]interface{}{})
 	decision := userContext.Decide(flagKey, options)
 	reasons := decision.GetReasons()
-	s.Len(reasons, 0)
+	s.Len(reasons, 1)
+	s.Equal(`User "tester" was previously bucketed into variation "variation_no_traffic" of experiment "exp_no_audience".`, reasons[0])
 	// should return variationId2 set by UPS
 	s.Equal(variationKey2, decision.GetVariationKey())
 	userProfileService.AssertCalled(s.T(), "Lookup", s.userID)
@@ -683,11 +686,11 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsIncludeReasons() {
 
 	expectedLogs := []string{
 		`an error occurred while evaluating nested tree for audience ID "13389141123"`,
-		`an error occurred while evaluating nested tree for audience ID "13389130056"`,
-		`an error occurred while evaluating nested tree for audience ID "12208130097"`,
 		`Audiences for experiment exp_with_audience collectively evaluated to false.`,
 		`User "tester" does not meet conditions to be in experiment "exp_with_audience".`,
+		`an error occurred while evaluating nested tree for audience ID "13389130056"`,
 		`User "tester" does not meet conditions for targeting rule 1.`,
+		`an error occurred while evaluating nested tree for audience ID "12208130097"`,
 		`User "tester" does not meet conditions for targeting rule 2.`,
 		`Audiences for experiment 18322080788 collectively evaluated to true.`,
 		`User "tester" meets conditions for targeting rule "Everyone Else".`,
@@ -708,17 +711,7 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsExcludeVariable
 	decision := userContext.Decide(flagKey, nil)
 	s.Len(decision.GetVariables().ToMap(), 0)
 	reasons := decision.GetReasons()
-	s.Len(reasons, 3)
-
-	expectedLogs := []string{
-		`an error occurred while evaluating nested tree for audience ID "13389141123"`,
-		`an error occurred while evaluating nested tree for audience ID "13389130056"`,
-		`an error occurred while evaluating nested tree for audience ID "12208130097"`,
-	}
-
-	for index, log := range expectedLogs {
-		s.Equal(log, reasons[index])
-	}
+	s.Len(reasons, 0)
 
 	options = append(options, decide.IncludeReasons)
 	client, _ = s.factory.Client(WithEventProcessor(s.eventProcessor), WithDefaultDecideOptions(options))
@@ -728,13 +721,13 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsExcludeVariable
 	reasons = decision.GetReasons()
 	s.Len(reasons, 9)
 
-	expectedLogs = []string{
+	expectedLogs := []string{
 		`an error occurred while evaluating nested tree for audience ID "13389141123"`,
-		`an error occurred while evaluating nested tree for audience ID "13389130056"`,
-		`an error occurred while evaluating nested tree for audience ID "12208130097"`,
 		`Audiences for experiment exp_with_audience collectively evaluated to false.`,
 		`User "tester" does not meet conditions to be in experiment "exp_with_audience".`,
+		`an error occurred while evaluating nested tree for audience ID "13389130056"`,
 		`User "tester" does not meet conditions for targeting rule 1.`,
+		`an error occurred while evaluating nested tree for audience ID "12208130097"`,
 		`User "tester" does not meet conditions for targeting rule 2.`,
 		`Audiences for experiment 18322080788 collectively evaluated to true.`,
 		`User "tester" meets conditions for targeting rule "Everyone Else".`,
@@ -764,8 +757,9 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsEnabledFlagsOnl
 	s.Equal(flagKey, decision1.GetFlagKey())
 	s.Equal(user, decision1.GetUserContext())
 	reasons := decision1.GetReasons()
-	s.Len(reasons, 1)
-	s.Equal("Audiences for experiment exp_with_audience collectively evaluated to true.", reasons[0])
+	s.Len(reasons, 2)
+	s.Equal(`Audience "13389141123" evaluated to true.`, reasons[0])
+	s.Equal("Audiences for experiment exp_with_audience collectively evaluated to true.", reasons[1])
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsIncludeReasons() {
@@ -839,7 +833,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideSDKNotReady() {
 	factory := OptimizelyFactory{SDKKey: "121"}
 	client, _ := factory.Client()
 	userContext := client.CreateUserContext(s.userID, nil)
-	decision := userContext.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+	decision := userContext.Decide(flagKey, nil)
 
 	s.Equal("", decision.GetVariationKey())
 	s.False(decision.GetEnabled())

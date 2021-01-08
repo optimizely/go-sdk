@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -38,7 +38,7 @@ const (
 
 // TreeEvaluator evaluates a tree
 type TreeEvaluator interface {
-	Evaluate(*entities.TreeNode, *entities.TreeParameters) (evalResult, isValid bool, reasons decide.DecisionReasons)
+	Evaluate(*entities.TreeNode, *entities.TreeParameters, *decide.Options) (evalResult, isValid bool, reasons decide.DecisionReasons)
 }
 
 // MixedTreeEvaluator evaluates a tree of mixed node types (condition node or audience nodes)
@@ -52,17 +52,17 @@ func NewMixedTreeEvaluator(logger logging.OptimizelyLogProducer) *MixedTreeEvalu
 }
 
 // Evaluate returns whether the userAttributes satisfy the given condition tree and the evaluation of the condition is valid or not (to handle null bubbling)
-func (c MixedTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool, reasons decide.DecisionReasons) {
-	reasons = decide.NewDecisionReasons(nil)
+func (c MixedTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *entities.TreeParameters, options *decide.Options) (evalResult, isValid bool, reasons decide.DecisionReasons) {
+	reasons = decide.NewDecisionReasons(options)
 	operator := node.Operator
 	if operator != "" {
 		switch operator {
 		case andOperator:
-			return c.evaluateAnd(node.Nodes, condTreeParams)
+			return c.evaluateAnd(node.Nodes, condTreeParams, options)
 		case notOperator:
-			return c.evaluateNot(node.Nodes, condTreeParams)
+			return c.evaluateNot(node.Nodes, condTreeParams, options)
 		default: // orOperator
-			return c.evaluateOr(node.Nodes, condTreeParams)
+			return c.evaluateOr(node.Nodes, condTreeParams, options)
 		}
 	}
 
@@ -72,11 +72,11 @@ func (c MixedTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *en
 	switch v := node.Item.(type) {
 	case entities.Condition:
 		evaluator := NewCustomAttributeConditionEvaluator(c.logger)
-		result, decisionReasons, err = evaluator.Evaluate(node.Item.(entities.Condition), condTreeParams)
+		result, decisionReasons, err = evaluator.Evaluate(node.Item.(entities.Condition), condTreeParams, options)
 		reasons.Append(decisionReasons)
 	case string:
 		evaluator := NewAudienceConditionEvaluator(c.logger)
-		result, decisionReasons, err = evaluator.Evaluate(node.Item.(string), condTreeParams)
+		result, decisionReasons, err = evaluator.Evaluate(node.Item.(string), condTreeParams, options)
 		reasons.Append(decisionReasons)
 	default:
 		fmt.Printf("I don't know about type %T!\n", v)
@@ -90,11 +90,11 @@ func (c MixedTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *en
 	return result, true, reasons
 }
 
-func (c MixedTreeEvaluator) evaluateAnd(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool, reasons decide.DecisionReasons) {
-	finalReasons := decide.NewDecisionReasons(nil)
+func (c MixedTreeEvaluator) evaluateAnd(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters, options *decide.Options) (evalResult, isValid bool, reasons decide.DecisionReasons) {
+	finalReasons := decide.NewDecisionReasons(options)
 	sawInvalid := false
 	for _, node := range nodes {
-		result, isValid, decisionReasons := c.Evaluate(node, condTreeParams)
+		result, isValid, decisionReasons := c.Evaluate(node, condTreeParams, options)
 		finalReasons.Append(decisionReasons)
 		if !isValid {
 			return false, isValid, finalReasons
@@ -111,10 +111,10 @@ func (c MixedTreeEvaluator) evaluateAnd(nodes []*entities.TreeNode, condTreePara
 	return true, true, finalReasons
 }
 
-func (c MixedTreeEvaluator) evaluateNot(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool, reasons decide.DecisionReasons) {
-	finalReasons := decide.NewDecisionReasons(nil)
+func (c MixedTreeEvaluator) evaluateNot(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters, options *decide.Options) (evalResult, isValid bool, reasons decide.DecisionReasons) {
+	finalReasons := decide.NewDecisionReasons(options)
 	if len(nodes) > 0 {
-		result, isValid, decisionReasons := c.Evaluate(nodes[0], condTreeParams)
+		result, isValid, decisionReasons := c.Evaluate(nodes[0], condTreeParams, options)
 		finalReasons.Append(decisionReasons)
 		if !isValid {
 			return false, false, finalReasons
@@ -124,11 +124,11 @@ func (c MixedTreeEvaluator) evaluateNot(nodes []*entities.TreeNode, condTreePara
 	return false, false, finalReasons
 }
 
-func (c MixedTreeEvaluator) evaluateOr(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters) (evalResult, isValid bool, reasons decide.DecisionReasons) {
-	finalReasons := decide.NewDecisionReasons(nil)
+func (c MixedTreeEvaluator) evaluateOr(nodes []*entities.TreeNode, condTreeParams *entities.TreeParameters, options *decide.Options) (evalResult, isValid bool, reasons decide.DecisionReasons) {
+	finalReasons := decide.NewDecisionReasons(options)
 	sawInvalid := false
 	for _, node := range nodes {
-		result, isValid, decisionReasons := c.Evaluate(node, condTreeParams)
+		result, isValid, decisionReasons := c.Evaluate(node, condTreeParams, options)
 		finalReasons.Append(decisionReasons)
 		if !isValid {
 			sawInvalid = true

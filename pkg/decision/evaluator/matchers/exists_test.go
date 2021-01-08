@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -39,7 +39,7 @@ func TestExistsMatcher(t *testing.T) {
 		},
 	}
 
-	result, _, err := existsMatcher(condition, user, nil)
+	result, err := existsMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.True(t, result)
 
@@ -50,7 +50,7 @@ func TestExistsMatcher(t *testing.T) {
 		},
 	}
 
-	result, _, err = existsMatcher(condition, user, nil)
+	result, err = existsMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -58,7 +58,7 @@ func TestExistsMatcher(t *testing.T) {
 	user = entities.UserContext{
 		Attributes: map[string]interface{}{},
 	}
-	result, _, err = ExistsMatcher(condition, user, nil)
+	result, err = ExistsMatcher(condition, user, nil)
 	assert.NoError(t, err)
 	assert.False(t, result)
 }

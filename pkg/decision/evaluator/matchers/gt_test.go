@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -50,7 +50,7 @@ func (s *GtTestSuite) TestGtMatcherInt() {
 			"int_42": 43,
 		},
 	}
-	result, _, err := s.matcher(condition, user, s.mockLogger)
+	result, err := s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -61,7 +61,7 @@ func (s *GtTestSuite) TestGtMatcherInt() {
 		},
 	}
 
-	result, _, err = s.matcher(condition, user, s.mockLogger)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -72,7 +72,7 @@ func (s *GtTestSuite) TestGtMatcherInt() {
 		},
 	}
 
-	result, _, err = s.matcher(condition, user, s.mockLogger)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.False(result)
 
@@ -83,7 +83,7 @@ func (s *GtTestSuite) TestGtMatcherInt() {
 		},
 	}
 
-	result, _, err = s.matcher(condition, user, s.mockLogger)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.False(result)
 
@@ -94,7 +94,7 @@ func (s *GtTestSuite) TestGtMatcherInt() {
 		},
 	}
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "int_42"))
-	_, _, err = s.matcher(condition, user, s.mockLogger)
+	_, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 
 	// Test attribute of different type
@@ -104,7 +104,7 @@ func (s *GtTestSuite) TestGtMatcherInt() {
 		},
 	}
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.InvalidAttributeValueType.String(), "", true, "int_42"))
-	result, _, err = s.matcher(condition, user, s.mockLogger)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())
@@ -123,7 +123,7 @@ func (s *GtTestSuite) TestGtMatcherFloat() {
 			"float_4_2": 5,
 		},
 	}
-	result, _, err := s.matcher(condition, user, s.mockLogger)
+	result, err := s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -133,7 +133,7 @@ func (s *GtTestSuite) TestGtMatcherFloat() {
 			"float_4_2": 4.29999,
 		},
 	}
-	result, _, err = s.matcher(condition, user, s.mockLogger)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.True(result)
 
@@ -144,7 +144,7 @@ func (s *GtTestSuite) TestGtMatcherFloat() {
 		},
 	}
 
-	result, _, err = s.matcher(condition, user, s.mockLogger)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.NoError(err)
 	s.False(result)
 
@@ -156,7 +156,7 @@ func (s *GtTestSuite) TestGtMatcherFloat() {
 	}
 
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.NullUserAttribute.String(), "", "float_4_2"))
-	_, _, err = s.matcher(condition, user, s.mockLogger)
+	_, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 
 	// Test attribute of different type
@@ -166,7 +166,7 @@ func (s *GtTestSuite) TestGtMatcherFloat() {
 		},
 	}
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.InvalidAttributeValueType.String(), "", true, "float_4_2"))
-	result, _, err = s.matcher(condition, user, s.mockLogger)
+	result, err = s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())
@@ -186,7 +186,7 @@ func (s *GtTestSuite) TestGtMatcherUnsupportedConditionValue() {
 		},
 	}
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.UnsupportedConditionValue.String(), ""))
-	result, _, err := s.matcher(condition, user, s.mockLogger)
+	result, err := s.matcher(condition, user, s.mockLogger)
 	s.Error(err)
 	s.False(result)
 	s.mockLogger.AssertExpectations(s.T())
