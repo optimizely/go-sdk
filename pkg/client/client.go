@@ -167,7 +167,7 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 	enabledFlagsOnly := o.getAllOptions(options).EnabledFlagsOnly
 	for _, key := range keys {
 		optimizelyDecision := o.decide(userContext, key, options)
-		if !enabledFlagsOnly || optimizelyDecision.GetEnabled() {
+		if !enabledFlagsOnly || optimizelyDecision.Enabled {
 			decisionMap[key] = optimizelyDecision
 		}
 	}

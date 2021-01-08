@@ -48,13 +48,13 @@ func (s *OptimizelyDecisionTestSuite) TestOptimizelyDecision() {
 	optimizelyUserContext := s.OptimizelyClient.CreateUserContext(userID, attributes)
 	decision := NewOptimizelyDecision(variationKey, ruleKey, flagKey, enabled, variables, optimizelyUserContext, reasons)
 
-	s.Equal(variationKey, decision.GetVariationKey())
-	s.Equal(enabled, decision.GetEnabled())
-	s.Equal(variables, decision.GetVariables())
-	s.Equal(ruleKey, decision.GetRuleKey())
-	s.Equal(flagKey, decision.GetFlagKey())
-	s.Equal(reasons, decision.GetReasons())
-	s.Equal(optimizelyUserContext, decision.GetUserContext())
+	s.Equal(variationKey, decision.VariationKey)
+	s.Equal(enabled, decision.Enabled)
+	s.Equal(variables, decision.Variables)
+	s.Equal(ruleKey, decision.RuleKey)
+	s.Equal(flagKey, decision.FlagKey)
+	s.Equal(reasons, decision.Reasons)
+	s.Equal(optimizelyUserContext, decision.UserContext)
 }
 
 func (s *OptimizelyDecisionTestSuite) TestNewErrorDecision() {
@@ -65,14 +65,14 @@ func (s *OptimizelyDecisionTestSuite) TestNewErrorDecision() {
 	optimizelyUserContext := s.OptimizelyClient.CreateUserContext(userID, attributes)
 	decision := NewErrorDecision(flagKey, optimizelyUserContext, errors.New(errorString))
 
-	s.Equal("", decision.GetVariationKey())
-	s.Equal(false, decision.GetEnabled())
-	s.Equal(&optimizelyjson.OptimizelyJSON{}, decision.GetVariables())
-	s.Equal("", decision.GetRuleKey())
-	s.Equal(flagKey, decision.GetFlagKey())
-	s.Equal(1, len(decision.GetReasons()))
-	s.Equal(optimizelyUserContext, decision.GetUserContext())
-	s.Equal(errorString, decision.GetReasons()[0])
+	s.Equal("", decision.VariationKey)
+	s.Equal(false, decision.Enabled)
+	s.Equal(&optimizelyjson.OptimizelyJSON{}, decision.Variables)
+	s.Equal("", decision.RuleKey)
+	s.Equal(flagKey, decision.FlagKey)
+	s.Equal(1, len(decision.Reasons))
+	s.Equal(optimizelyUserContext, decision.UserContext)
+	s.Equal(errorString, decision.Reasons[0])
 }
 
 func TestOptimizelyDecisionTestSuite(t *testing.T) {

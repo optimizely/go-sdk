@@ -26,8 +26,9 @@ import (
 
 // OptimizelyUserContext defines user contexts that the SDK will use to make decisions for.
 type OptimizelyUserContext struct {
-	userID     string
-	attributes map[string]interface{}
+	UserID     string                 `json:"userID"`
+	Attributes map[string]interface{} `json:"attributes"`
+
 	optimizely *OptimizelyClient
 	mutex      *sync.RWMutex
 }
@@ -41,8 +42,8 @@ func newOptimizelyUserContext(optimizely *OptimizelyClient, userID string, attri
 	attributesCopy := copyUserAttributes(attributes)
 
 	return OptimizelyUserContext{
-		userID:     userID,
-		attributes: attributesCopy,
+		UserID:     userID,
+		Attributes: attributesCopy,
 		optimizely: optimizely,
 		mutex:      new(sync.RWMutex),
 	}
@@ -55,24 +56,24 @@ func (o OptimizelyUserContext) GetOptimizely() *OptimizelyClient {
 
 // GetUserID returns userID for Optimizely user context
 func (o OptimizelyUserContext) GetUserID() string {
-	return o.userID
+	return o.UserID
 }
 
 // GetUserAttributes returns user attributes for Optimizely user context
 func (o OptimizelyUserContext) GetUserAttributes() map[string]interface{} {
 	o.mutex.RLock()
 	defer o.mutex.RUnlock()
-	return copyUserAttributes(o.attributes)
+	return copyUserAttributes(o.Attributes)
 }
 
 // SetAttribute sets an attribute for a given key.
 func (o *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
-	if o.attributes == nil {
-		o.attributes = make(map[string]interface{})
+	if o.Attributes == nil {
+		o.Attributes = make(map[string]interface{})
 	}
-	o.attributes[key] = value
+	o.Attributes[key] = value
 }
 
 // Decide returns a decision result for a given flag key and a user context, which contains
