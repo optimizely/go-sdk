@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -30,13 +30,15 @@ type ConditionTestSuite struct {
 	suite.Suite
 	mockLogger         *MockLogger
 	conditionEvaluator *CustomAttributeConditionEvaluator
+	options            decide.Options
 	reasons            decide.DecisionReasons
 }
 
 func (s *ConditionTestSuite) SetupTest() {
 	s.mockLogger = new(MockLogger)
 	s.conditionEvaluator = NewCustomAttributeConditionEvaluator(s.mockLogger)
-	s.reasons = decide.NewDecisionReasons(nil)
+	s.options = decide.Options{}
+	s.reasons = decide.NewDecisionReasons(&s.options)
 }
 
 func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluator() {
@@ -55,7 +57,7 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluator() {
 	}
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
-	result, _, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams)
+	result, _, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams, &s.options)
 	s.Equal(result, true)
 
 	// Test condition fails
@@ -64,7 +66,7 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluator() {
 			"string_foo": "not_foo",
 		},
 	}
-	result, _, _ = s.conditionEvaluator.Evaluate(condition, condTreeParams)
+	result, _, _ = s.conditionEvaluator.Evaluate(condition, condTreeParams, &s.options)
 	s.Equal(result, false)
 }
 
@@ -83,7 +85,7 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorWithoutMatchTy
 	}
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
-	result, _, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams)
+	result, _, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams, &s.options)
 	s.Equal(result, true)
 
 	// Test condition fails
@@ -92,7 +94,7 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorWithoutMatchTy
 			"string_foo": "not_foo",
 		},
 	}
-	result, _, _ = s.conditionEvaluator.Evaluate(condition, condTreeParams)
+	result, _, _ = s.conditionEvaluator.Evaluate(condition, condTreeParams, &s.options)
 	s.Equal(result, false)
 }
 
@@ -113,8 +115,12 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorWithInvalidMat
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.UnknownMatchType.String(), ""))
-	result, _, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams)
+	s.options.IncludeReasons = true
+	result, reasons, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams, &s.options)
 	s.Equal(result, false)
+	messages := reasons.ToReport()
+	s.Len(messages, 1)
+	s.Equal(`invalid Condition matcher "invalid"`, messages[0])
 	s.mockLogger.AssertExpectations(s.T())
 }
 
@@ -134,8 +140,12 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorWithUnknownTyp
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
 	s.mockLogger.On("Warning", fmt.Sprintf(logging.UnknownConditionType.String(), ""))
-	result, _, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams)
+	s.options.IncludeReasons = true
+	result, reasons, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams, &s.options)
 	s.Equal(result, false)
+	messages := reasons.ToReport()
+	s.Len(messages, 1)
+	s.Equal(`unable to evaluate condition of type ""`, messages[0])
 	s.mockLogger.AssertExpectations(s.T())
 }
 
@@ -156,7 +166,7 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorForGeSemver() 
 	}
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
-	result, _, _ := conditionEvaluator.Evaluate(condition, condTreeParams)
+	result, _, _ := conditionEvaluator.Evaluate(condition, condTreeParams, &s.options)
 	s.Equal(result, true)
 }
 
@@ -177,7 +187,7 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorForGeSemverBet
 	}
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
-	result, _, _ := conditionEvaluator.Evaluate(condition, condTreeParams)
+	result, _, _ := conditionEvaluator.Evaluate(condition, condTreeParams, &s.options)
 	s.Equal(true, result)
 }
 
@@ -198,7 +208,7 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorForGeSemverInv
 	}
 
 	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
-	_, _, err := conditionEvaluator.Evaluate(condition, condTreeParams)
+	_, _, err := conditionEvaluator.Evaluate(condition, condTreeParams, &s.options)
 	s.NotNil(err)
 }
 

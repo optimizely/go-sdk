@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020, Optimizely, Inc. and contributors                        *
+ * Copyright 2020-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -20,7 +20,6 @@ package matchers
 import (
 	"fmt"
 
-	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/logging"
 
 	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers/utils"
@@ -28,15 +27,14 @@ import (
 )
 
 // GeMatcher matches against the "ge" match type
-func GeMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, decide.DecisionReasons, error) {
-	reasons := decide.NewDecisionReasons(nil)
+func GeMatcher(condition entities.Condition, user entities.UserContext, logger logging.OptimizelyLogProducer) (bool, error) {
 	if floatValue, ok := utils.ToFloat(condition.Value); ok {
 		attributeValue, err := user.GetFloatAttribute(condition.Name)
 		if err != nil {
-			return false, reasons, err
+			return false, err
 		}
-		return floatValue <= attributeValue, reasons, nil
+		return floatValue <= attributeValue, nil
 	}
 
-	return false, reasons, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", condition.Name)
+	return false, fmt.Errorf("audience condition %s evaluated to NULL because the condition value type is not supported", condition.Name)
 }

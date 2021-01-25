@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -29,7 +29,7 @@ import (
 
 // ItemEvaluator evaluates a condition against the given user's attributes
 type ItemEvaluator interface {
-	Evaluate(interface{}, *entities.TreeParameters) (bool, decide.DecisionReasons, error)
+	Evaluate(interface{}, *entities.TreeParameters, *decide.Options) (bool, decide.DecisionReasons, error)
 }
 
 // CustomAttributeConditionEvaluator evaluates conditions with custom attributes
@@ -43,14 +43,13 @@ func NewCustomAttributeConditionEvaluator(logger logging.OptimizelyLogProducer) 
 }
 
 // Evaluate returns true if the given user's attributes match the condition
-func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *entities.TreeParameters) (bool, decide.DecisionReasons, error) {
+func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *entities.TreeParameters, options *decide.Options) (bool, decide.DecisionReasons, error) {
 	// We should only be evaluating custom attributes
 
-	reasons := decide.NewDecisionReasons(nil)
+	reasons := decide.NewDecisionReasons(options)
 	if condition.Type != customAttributeType {
 		c.logger.Warning(fmt.Sprintf(logging.UnknownConditionType.String(), condition.StringRepresentation))
-		errorMessage := fmt.Sprintf(`unable to evaluate condition of type "%s"`, condition.Type)
-		reasons.AddError(errorMessage)
+		errorMessage := reasons.AddInfo(`unable to evaluate condition of type "%s"`, condition.Type)
 		return false, reasons, errors.New(errorMessage)
 	}
 
@@ -62,12 +61,12 @@ func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition
 	matcher, ok := matchers.Get(matchType)
 	if !ok {
 		c.logger.Warning(fmt.Sprintf(logging.UnknownMatchType.String(), condition.StringRepresentation))
-		errorMessage := fmt.Sprintf(`invalid Condition matcher "%s"`, condition.Match)
-		reasons.AddError(errorMessage)
+		errorMessage := reasons.AddInfo(`invalid Condition matcher "%s"`, condition.Match)
 		return false, reasons, errors.New(errorMessage)
 	}
 
-	return matcher(condition, *condTreeParams.User, c.logger)
+	result, err := matcher(condition, *condTreeParams.User, c.logger)
+	return result, reasons, err
 }
 
 // AudienceConditionEvaluator evaluates conditions with audience condition
@@ -81,24 +80,23 @@ func NewAudienceConditionEvaluator(logger logging.OptimizelyLogProducer) *Audien
 }
 
 // Evaluate returns true if the given user's attributes match the condition
-func (c AudienceConditionEvaluator) Evaluate(audienceID string, condTreeParams *entities.TreeParameters) (bool, decide.DecisionReasons, error) {
-	reasons := decide.NewDecisionReasons(nil)
+func (c AudienceConditionEvaluator) Evaluate(audienceID string, condTreeParams *entities.TreeParameters, options *decide.Options) (bool, decide.DecisionReasons, error) {
+	reasons := decide.NewDecisionReasons(options)
 	if audience, ok := condTreeParams.AudienceMap[audienceID]; ok {
 		c.logger.Debug(fmt.Sprintf(logging.AudienceEvaluationStarted.String(), audienceID))
 		condTree := audience.ConditionTree
 		conditionTreeEvaluator := NewMixedTreeEvaluator(c.logger)
-		retValue, isValid, decisionReasons := conditionTreeEvaluator.Evaluate(condTree, condTreeParams)
+		retValue, isValid, decisionReasons := conditionTreeEvaluator.Evaluate(condTree, condTreeParams, options)
 		reasons.Append(decisionReasons)
 		if !isValid {
-			errorMessage := fmt.Sprintf(`an error occurred while evaluating nested tree for audience ID "%s"`, audienceID)
-			reasons.AddError(errorMessage)
+			errorMessage := reasons.AddInfo(`an error occurred while evaluating nested tree for audience ID "%s"`, audienceID)
 			return false, reasons, errors.New(errorMessage)
 		}
-		c.logger.Debug(fmt.Sprintf(logging.AudienceEvaluatedTo.String(), audienceID, retValue))
+		logMessage := fmt.Sprintf(logging.AudienceEvaluatedTo.String(), audienceID, retValue)
+		c.logger.Debug(logMessage)
 		return retValue, reasons, nil
 	}
 
-	errorMessage := fmt.Sprintf(`unable to evaluate nested tree for audience ID "%s"`, audienceID)
-	reasons.AddError(errorMessage)
+	errorMessage := reasons.AddInfo(`unable to evaluate nested tree for audience ID "%s"`, audienceID)
 	return false, reasons, errors.New(errorMessage)
 }

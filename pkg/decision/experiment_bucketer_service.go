@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -55,18 +55,19 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	if experiment.AudienceConditionTree != nil {
 		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
 		s.logger.Debug(fmt.Sprintf(logging.EvaluatingAudiencesForExperiment.String(), experiment.Key))
-		evalResult, _, decisionReasons := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams)
+		evalResult, _, decisionReasons := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams, options)
 		reasons.Append(decisionReasons)
-		s.logger.Debug(fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, evalResult))
+		logMessage := reasons.AddInfo(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, evalResult)
+		s.logger.Debug(logMessage)
 		if !evalResult {
-			logMessage := fmt.Sprintf(logging.UserNotInExperiment.String(), userContext.ID, experiment.Key)
+			logMessage := reasons.AddInfo(logging.UserNotInExperiment.String(), userContext.ID, experiment.Key)
 			s.logger.Debug(logMessage)
-			reasons.AddInfo(logMessage)
 			experimentDecision.Reason = pkgReasons.FailedAudienceTargeting
 			return experimentDecision, reasons, nil
 		}
 	} else {
-		s.logger.Debug(fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, true))
+		logMessage := reasons.AddInfo(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, true)
+		s.logger.Debug(logMessage)
 	}
 
 	var group entities.Group
@@ -77,7 +78,8 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	// bucket user into a variation
 	bucketingID, err := userContext.GetBucketingID()
 	if err != nil {
-		s.logger.Debug(fmt.Sprintf(`Error computing bucketing ID for experiment "%s": "%s"`, experiment.Key, err.Error()))
+		errorMessage := reasons.AddInfo(`Error computing bucketing ID for experiment "%s": "%s"`, experiment.Key, err.Error())
+		s.logger.Debug(errorMessage)
 	}
 
 	if bucketingID != userContext.ID {

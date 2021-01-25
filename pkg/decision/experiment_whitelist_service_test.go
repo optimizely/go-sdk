@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -48,9 +48,11 @@ func (s *ExperimentWhitelistServiceTestSuite) TestWhitelistIncludesDecision() {
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
 	}
-
-	decision, _, err := s.whitelistService.GetDecision(testDecisionContext, testUserContext, s.options)
-
+	s.options.IncludeReasons = true
+	decision, rsons, err := s.whitelistService.GetDecision(testDecisionContext, testUserContext, s.options)
+	messages := rsons.ToReport()
+	s.Len(messages, 1)
+	s.Equal(`User "test_user_1" is whitelisted into variation "var_2229" of experiment "test_experiment_whitelist".`, messages[0])
 	s.NoError(err)
 	s.NotNil(decision.Variation)
 }
@@ -102,7 +104,11 @@ func (s *ExperimentWhitelistServiceTestSuite) TestInvalidVariationInUserEntry() 
 		ID: "test_user_2",
 	}
 
-	decision, _, err := s.whitelistService.GetDecision(testDecisionContext, testUserContext, s.options)
+	s.options.IncludeReasons = true
+	decision, rsons, err := s.whitelistService.GetDecision(testDecisionContext, testUserContext, s.options)
+	messages := rsons.ToReport()
+	s.Len(messages, 1)
+	s.Equal(`User "test_user_2" is whitelisted into variation "var_2230", which is not in the datafile.`, messages[0])
 
 	s.NoError(err)
 	s.Nil(decision.Variation)

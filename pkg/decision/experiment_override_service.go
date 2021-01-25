@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -109,7 +109,9 @@ func (s ExperimentOverrideService) GetDecision(decisionContext ExperimentDecisio
 		if variation, ok := decisionContext.Experiment.Variations[variationID]; ok {
 			decision.Variation = &variation
 			decision.Reason = pkgReasons.OverrideVariationAssignmentFound
-			s.logger.Debug(fmt.Sprintf("Override variation %v found for user %v", variationKey, userContext.ID))
+
+			message := reasons.AddInfo(fmt.Sprintf("Override variation %v found for user %v", variationKey, userContext.ID))
+			s.logger.Debug(message)
 			return decision, reasons, nil
 		}
 	}

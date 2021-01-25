@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020, Optimizely, Inc. and contributors                        *
+ * Copyright 2020-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -23,19 +23,19 @@ import (
 
 // DefaultDecisionReasons provides the default implementation of DecisionReasons.
 type DefaultDecisionReasons struct {
-	errors, logs   []string
+	errors, infos  []string
 	includeReasons bool
 }
 
 // NewDecisionReasons returns a new instance of DecisionReasons.
 func NewDecisionReasons(options *Options) *DefaultDecisionReasons {
-	includeReasons := false
+	var includeReasons bool
 	if options != nil {
 		includeReasons = options.IncludeReasons
 	}
 	return &DefaultDecisionReasons{
 		errors:         []string{},
-		logs:           []string{},
+		infos:          []string{},
 		includeReasons: includeReasons,
 	}
 }
@@ -51,7 +51,7 @@ func (o *DefaultDecisionReasons) AddInfo(format string, arguments ...interface{}
 	if !o.includeReasons {
 		return message
 	}
-	o.logs = append(o.logs, message)
+	o.infos = append(o.infos, message)
 	return message
 }
 
@@ -60,7 +60,7 @@ func (o *DefaultDecisionReasons) Append(reasons DecisionReasons) {
 	if decisionReasons, ok := reasons.(*DefaultDecisionReasons); ok {
 		o.errors = append(o.errors, decisionReasons.errors...)
 		if o.includeReasons {
-			o.logs = append(o.logs, decisionReasons.logs...)
+			o.infos = append(o.infos, decisionReasons.infos...)
 		}
 	}
 }
@@ -71,5 +71,5 @@ func (o *DefaultDecisionReasons) ToReport() []string {
 	if !o.includeReasons {
 		return reasons
 	}
-	return append(reasons, o.logs...)
+	return append(reasons, o.infos...)
 }

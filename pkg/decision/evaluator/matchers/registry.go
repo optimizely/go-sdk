@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020, Optimizely, Inc. and contributors                        *
+ * Copyright 2020-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -20,13 +20,12 @@ package matchers
 import (
 	"sync"
 
-	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 // Matcher type is used to evaluate audience conditional primitives
-type Matcher func(entities.Condition, entities.UserContext, logging.OptimizelyLogProducer) (bool, decide.DecisionReasons, error)
+type Matcher func(entities.Condition, entities.UserContext, logging.OptimizelyLogProducer) (bool, error)
 
 const (
 	// ExactMatchType name for the "exact" matcher

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -52,9 +52,14 @@ func (s *ExperimentOverrideServiceTestSuite) TestOverridesIncludeVariation() {
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
 	}
+	s.options.IncludeReasons = true
 	s.overrides.SetVariation(ExperimentOverrideKey{ExperimentKey: testExp1111.Key, UserID: "test_user_1"}, testExp1111Var2222.Key)
-	decision, _, err := s.overrideService.GetDecision(testDecisionContext, testUserContext, s.options)
+	decision, rsons, err := s.overrideService.GetDecision(testDecisionContext, testUserContext, s.options)
+	messages := rsons.ToReport()
 	s.NoError(err)
+	s.Len(messages, 1)
+	s.Equal(`Override variation 2222 found for user test_user_1`, messages[0])
+
 	s.NotNil(decision.Variation)
 	s.Exactly(testExp1111Var2222.Key, decision.Variation.Key)
 	s.Exactly(reasons.OverrideVariationAssignmentFound, decision.Reason)
