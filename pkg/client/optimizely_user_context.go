@@ -26,7 +26,7 @@ import (
 
 // OptimizelyUserContext defines user contexts that the SDK will use to make decisions for.
 type OptimizelyUserContext struct {
-	UserID     string                 `json:"userID"`
+	UserID     string                 `json:"userId"`
 	Attributes map[string]interface{} `json:"attributes"`
 
 	optimizely *OptimizelyClient
