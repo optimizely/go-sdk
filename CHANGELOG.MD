@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.6.0] - February 16th, 2021
+## New Features
+-  Add new info and error messages to decide reasons ([#304](https://github.com/optimizely/go-sdk/pull/304))
+-  Refactor reasons for Decide API ([#303](https://github.com/optimizely/go-sdk/pull/303))
+-  Add decide, DecideAll and DecideForKeys API ([#299](https://github.com/optimizely/go-sdk/pull/299))
+-  Add support for decide options and decision reasons ([#298](https://github.com/optimizely/go-sdk/pull/298))
+-  Add UserContext ([#297](https://github.com/optimizely/go-sdk/pull/297))
+
 ## [1.5.1] - November 16th, 2020
 ## New Features
 - Add "enabled" field to decision metadata structure ([#301](https://github.com/optimizely/go-sdk/pull/301))
