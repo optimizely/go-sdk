@@ -9,7 +9,7 @@ Changes that have landed but are not yet released.	Changes that have landed but 
 
 ## [1.6.0] - February 16th, 2021
 ## New Features
-Introducing a new primary interface for retrieving feature flag status, configuration and associated experiment decisions for users ([#304](https://github.com/optimizely/go-sdk/pull/304), [#303](https://github.com/optimizely/go-sdk/pull/303), [#299](https://github.com/optimizely/go-sdk/pull/299), [#298](https://github.com/optimizely/go-sdk/pull/298), [#297](https://github.com/optimizely/go-sdk/pull/297))  The new `OptimizelyUserContext` class is instantiated with `CreateUserContext` and exposes the following APIs to get `OptimizelyDecision`:
+Introducing a new primary interface for retrieving feature flag status, configuration and associated experiment decisions for users ([#304](https://github.com/optimizely/go-sdk/pull/304), [#303](https://github.com/optimizely/go-sdk/pull/303), [#299](https://github.com/optimizely/go-sdk/pull/299), [#298](https://github.com/optimizely/go-sdk/pull/298), [#297](https://github.com/optimizely/go-sdk/pull/297)). The new `OptimizelyUserContext` class is instantiated with `CreateUserContext` and exposes the following APIs to get `OptimizelyDecision:
 
     - SetAttribute
     - Decide
