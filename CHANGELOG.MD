@@ -9,11 +9,15 @@ Changes that have landed but are not yet released.	Changes that have landed but 
 
 ## [1.6.0] - February 16th, 2021
 ## New Features
--  Add new info and error messages to decide reasons ([#304](https://github.com/optimizely/go-sdk/pull/304))
--  Refactor reasons for Decide API ([#303](https://github.com/optimizely/go-sdk/pull/303))
--  Add decide, DecideAll and DecideForKeys API ([#299](https://github.com/optimizely/go-sdk/pull/299))
--  Add support for decide options and decision reasons ([#298](https://github.com/optimizely/go-sdk/pull/298))
--  Add UserContext ([#297](https://github.com/optimizely/go-sdk/pull/297))
+Introducing a new primary interface for retrieving feature flag status, configuration and associated experiment decisions for users ([#304](https://github.com/optimizely/go-sdk/pull/304), [#303](https://github.com/optimizely/go-sdk/pull/303), [#299](https://github.com/optimizely/go-sdk/pull/299), [#298](https://github.com/optimizely/go-sdk/pull/298), [#297](https://github.com/optimizely/go-sdk/pull/297))  The new `OptimizelyUserContext` class is instantiated with `CreateUserContext` and exposes the following APIs to get `OptimizelyDecision`:
+
+    - SetAttribute
+    - Decide
+    - DecideAll
+    - DecideForKeys
+    - TrackEvent
+
+For details, refer to our documentation page: https://docs.developers.optimizely.com/full-stack/v4.0/docs/go-sdk.
 
 ## [1.5.1] - November 16th, 2020
 ## New Features
