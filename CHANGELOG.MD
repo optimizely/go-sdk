@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.6.0] - February 16th, 2021
+## New Features
+Introducing a new primary interface for retrieving feature flag status, configuration and associated experiment decisions for users ([#304](https://github.com/optimizely/go-sdk/pull/304), [#303](https://github.com/optimizely/go-sdk/pull/303), [#299](https://github.com/optimizely/go-sdk/pull/299), [#298](https://github.com/optimizely/go-sdk/pull/298), [#297](https://github.com/optimizely/go-sdk/pull/297)). The new `OptimizelyUserContext` class is instantiated with `CreateUserContext` and exposes the following APIs to get `OptimizelyDecision`:
+
+    - SetAttribute
+    - Decide
+    - DecideAll
+    - DecideForKeys
+    - TrackEvent
+
+For details, refer to our documentation page: https://docs.developers.optimizely.com/full-stack/v4.0/docs/go-sdk.
+
 ## [1.5.1] - November 16th, 2020
 ## New Features
 - Add "enabled" field to decision metadata structure ([#301](https://github.com/optimizely/go-sdk/pull/301))
