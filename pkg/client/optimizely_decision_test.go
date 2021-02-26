@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020, Optimizely, Inc. and contributors                        *
+ * Copyright 2020-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -67,7 +67,7 @@ func (s *OptimizelyDecisionTestSuite) TestNewErrorDecision() {
 
 	s.Equal("", decision.VariationKey)
 	s.Equal(false, decision.Enabled)
-	s.Equal(&optimizelyjson.OptimizelyJSON{}, decision.Variables)
+	s.Equal(optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{}), decision.Variables)
 	s.Equal("", decision.RuleKey)
 	s.Equal(flagKey, decision.FlagKey)
 	s.Equal(1, len(decision.Reasons))
