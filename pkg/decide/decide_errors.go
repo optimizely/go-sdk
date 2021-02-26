@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020, Optimizely, Inc. and contributors                        *
+ * Copyright 2020-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -34,10 +34,10 @@ const (
 
 // GetDecideMessage returns message for decide type
 func GetDecideMessage(messageType decideMessage, arguments ...interface{}) string {
-	return fmt.Sprintf(string(messageType), arguments)
+	return fmt.Sprintf(string(messageType), arguments...)
 }
 
 // GetDecideError returns error for decide type
 func GetDecideError(messageType decideMessage, arguments ...interface{}) error {
-	return fmt.Errorf(string(messageType), arguments)
+	return fmt.Errorf(string(messageType), arguments...)
 }

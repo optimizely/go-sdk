@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020, Optimizely, Inc. and contributors                        *
+ * Copyright 2020-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -50,7 +50,7 @@ func NewErrorDecision(key string, user OptimizelyUserContext, err error) Optimiz
 	return OptimizelyDecision{
 		FlagKey:     key,
 		UserContext: user,
-		Variables:   &optimizelyjson.OptimizelyJSON{},
+		Variables:   optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{}),
 		Reasons:     []string{err.Error()},
 	}
 }
