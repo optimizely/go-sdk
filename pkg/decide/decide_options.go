@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020, Optimizely, Inc. and contributors                        *
+ * Copyright 2020-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -14,8 +14,10 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package decide has option definitions for decide api
+// Package decide has option definitions and helper methods for decide api
 package decide
+
+import "errors"
 
 // OptimizelyDecideOptions controlling flag decisions.
 type OptimizelyDecideOptions int
@@ -40,4 +42,26 @@ type Options struct {
 	IgnoreUserProfileService bool
 	IncludeReasons           bool
 	ExcludeVariables         bool
+}
+
+// TranslateOptions converts string options array to array of OptimizelyDecideOptions
+func TranslateOptions(options []string) ([]OptimizelyDecideOptions, error) {
+	decideOptions := []OptimizelyDecideOptions{}
+	for _, val := range options {
+		switch val {
+		case "DISABLE_DECISION_EVENT":
+			decideOptions = append(decideOptions, DisableDecisionEvent)
+		case "ENABLED_FLAGS_ONLY":
+			decideOptions = append(decideOptions, EnabledFlagsOnly)
+		case "IGNORE_USER_PROFILE_SERVICE":
+			decideOptions = append(decideOptions, IgnoreUserProfileService)
+		case "EXCLUDE_VARIABLES":
+			decideOptions = append(decideOptions, ExcludeVariables)
+		case "INCLUDE_REASONS":
+			decideOptions = append(decideOptions, IncludeReasons)
+		default:
+			return []OptimizelyDecideOptions{}, errors.New("invalid option: " + val)
+		}
+	}
+	return decideOptions, nil
 }
