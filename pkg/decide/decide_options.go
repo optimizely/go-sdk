@@ -20,19 +20,19 @@ package decide
 import "errors"
 
 // OptimizelyDecideOptions controlling flag decisions.
-type OptimizelyDecideOptions int
+type OptimizelyDecideOptions string
 
 const (
 	// DisableDecisionEvent when set, disables decision event tracking.
-	DisableDecisionEvent OptimizelyDecideOptions = 1 + iota
+	DisableDecisionEvent OptimizelyDecideOptions = "DISABLE_DECISION_EVENT"
 	// EnabledFlagsOnly when set, returns decisions only for flags which are enabled.
-	EnabledFlagsOnly
+	EnabledFlagsOnly OptimizelyDecideOptions = "ENABLED_FLAGS_ONLY"
 	// IgnoreUserProfileService when set, skips user profile service for decision.
-	IgnoreUserProfileService
+	IgnoreUserProfileService OptimizelyDecideOptions = "IGNORE_USER_PROFILE_SERVICE"
 	// IncludeReasons when set, includes info and debug messages in the decision reasons.
-	IncludeReasons
+	IncludeReasons OptimizelyDecideOptions = "INCLUDE_REASONS"
 	// ExcludeVariables when set, excludes variable values from the decision result.
-	ExcludeVariables
+	ExcludeVariables OptimizelyDecideOptions = "EXCLUDE_VARIABLES"
 )
 
 // Options defines options for controlling flag decisions.
@@ -48,16 +48,16 @@ type Options struct {
 func TranslateOptions(options []string) ([]OptimizelyDecideOptions, error) {
 	decideOptions := []OptimizelyDecideOptions{}
 	for _, val := range options {
-		switch val {
-		case "DISABLE_DECISION_EVENT":
+		switch OptimizelyDecideOptions(val) {
+		case DisableDecisionEvent:
 			decideOptions = append(decideOptions, DisableDecisionEvent)
-		case "ENABLED_FLAGS_ONLY":
+		case EnabledFlagsOnly:
 			decideOptions = append(decideOptions, EnabledFlagsOnly)
-		case "IGNORE_USER_PROFILE_SERVICE":
+		case IgnoreUserProfileService:
 			decideOptions = append(decideOptions, IgnoreUserProfileService)
-		case "EXCLUDE_VARIABLES":
+		case ExcludeVariables:
 			decideOptions = append(decideOptions, ExcludeVariables)
-		case "INCLUDE_REASONS":
+		case IncludeReasons:
 			decideOptions = append(decideOptions, IncludeReasons)
 		default:
 			return []OptimizelyDecideOptions{}, errors.New("invalid option: " + val)

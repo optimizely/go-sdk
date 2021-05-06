@@ -17,19 +17,33 @@
 package decide
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTranslateOptions(t *testing.T) {
-	options := []string{"DISABLE_DECISION_EVENT", "ENABLED_FLAGS_ONLY"}
-	translatedOptions, err := TranslateOptions(options)
+func TestTranslateOptionsValidCases(t *testing.T) {
+	// Checking nil options
+	translatedOptions, err := TranslateOptions(nil)
+	assert.NoError(t, err)
+	assert.Len(t, translatedOptions, 0)
+
+	// Checking empty options
+	options := []string{}
+	translatedOptions, err = TranslateOptions(options)
+	assert.NoError(t, err)
+	assert.Len(t, translatedOptions, 0)
+
+	// Checking correct options
+	options = []string{"DISABLE_DECISION_EVENT", "ENABLED_FLAGS_ONLY"}
+	translatedOptions, err = TranslateOptions(options)
 	assert.NoError(t, err)
 	assert.Len(t, translatedOptions, 2)
 	assert.Equal(t, DisableDecisionEvent, translatedOptions[0])
 	assert.Equal(t, EnabledFlagsOnly, translatedOptions[1])
 
+	// Checking after appending further options
 	options = append(options, "IGNORE_USER_PROFILE_SERVICE", "EXCLUDE_VARIABLES", "INCLUDE_REASONS")
 	translatedOptions, err = TranslateOptions(options)
 	assert.NoError(t, err)
@@ -37,9 +51,20 @@ func TestTranslateOptions(t *testing.T) {
 	assert.Equal(t, IgnoreUserProfileService, translatedOptions[2])
 	assert.Equal(t, ExcludeVariables, translatedOptions[3])
 	assert.Equal(t, IncludeReasons, translatedOptions[4])
+}
 
-	options[2] = "INVALID"
+func TestTranslateOptionsInvalidCases(t *testing.T) {
+	// Checking empty value as option
+	options := []string{""}
+	translatedOptions, err := TranslateOptions(options)
+	assert.Error(t, err)
+	assert.Equal(t, fmt.Errorf("invalid option: %v", options[0]), err)
+	assert.Len(t, translatedOptions, 0)
+
+	// Checking invalid value as option
+	options[0] = "INVALID"
 	translatedOptions, err = TranslateOptions(options)
 	assert.Error(t, err)
+	assert.Equal(t, fmt.Errorf("invalid option: %v", options[0]), err)
 	assert.Len(t, translatedOptions, 0)
 }
