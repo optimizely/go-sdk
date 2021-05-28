@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -39,8 +39,8 @@ func TestNewDatafileProjectConfigNil(t *testing.T) {
 }
 
 func TestNewDatafileProjectConfigNotNil(t *testing.T) {
-	dpc := DatafileProjectConfig{accountID: "123", revision: "1", projectID: "12345"}
-	jsonDatafileStr := `{"accountID": "123", "revision": "1", "projectId": "12345", "version": "4"}`
+	dpc := DatafileProjectConfig{accountID: "123", revision: "1", projectID: "12345", sdkKey: "a", environment: "production"}
+	jsonDatafileStr := `{"accountID": "123", "revision": "1", "projectId": "12345", "version": "4", "sdkKey": "a", "environment": "production"}`
 	jsonDatafile := []byte(jsonDatafileStr)
 	projectConfig, err := NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", "DatafileProjectConfig"))
 	assert.Nil(t, err)
@@ -48,6 +48,8 @@ func TestNewDatafileProjectConfigNotNil(t *testing.T) {
 	assert.Equal(t, dpc.accountID, projectConfig.accountID)
 	assert.Equal(t, dpc.revision, projectConfig.revision)
 	assert.Equal(t, dpc.projectID, projectConfig.projectID)
+	assert.Equal(t, dpc.environment, projectConfig.environment)
+	assert.Equal(t, dpc.sdkKey, projectConfig.sdkKey)
 }
 
 func TestGetProjectID(t *testing.T) {
@@ -96,6 +98,21 @@ func TestGetAttributeID(t *testing.T) {
 	}
 
 	assert.Equal(t, id, config.GetAttributeID(key))
+}
+
+func TestGetSdkKey(t *testing.T) {
+	config := &DatafileProjectConfig{
+		sdkKey: "1",
+	}
+
+	assert.Equal(t, "1", config.GetSdkKey())
+}
+
+func TestGetEnvironment(t *testing.T) {
+	config := &DatafileProjectConfig{
+		environment: "production",
+	}
+	assert.Equal(t, "production", config.GetEnvironment())
 }
 
 func TestGetBotFiltering(t *testing.T) {

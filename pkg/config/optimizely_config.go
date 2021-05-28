@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -26,6 +26,8 @@ type OptimizelyConfig struct {
 	Revision       string                          `json:"revision"`
 	ExperimentsMap map[string]OptimizelyExperiment `json:"experimentsMap"`
 	FeaturesMap    map[string]OptimizelyFeature    `json:"featuresMap"`
+	SdkKey         string                          `json:"sdkKey,omitempty"`
+	Environment    string                          `json:"environment,omitempty"`
 	datafile       string
 }
 
@@ -167,6 +169,8 @@ func NewOptimizelyConfig(projConfig ProjectConfig) *OptimizelyConfig {
 	optimizelyConfig.ExperimentsMap = getExperimentMap(featuresList, experimentsList, variableByIDMap)
 	optimizelyConfig.FeaturesMap = getFeatureMap(featuresList, optimizelyConfig.ExperimentsMap)
 	optimizelyConfig.Revision = revision
+	optimizelyConfig.SdkKey = projConfig.GetSdkKey()
+	optimizelyConfig.Environment = projConfig.GetEnvironment()
 	optimizelyConfig.datafile = projConfig.GetDatafile()
 
 	return optimizelyConfig

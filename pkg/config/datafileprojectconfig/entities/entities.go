@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -122,4 +122,6 @@ type Datafile struct {
 	AnonymizeIP       bool          `json:"anonymizeIP"`
 	BotFiltering      bool          `json:"botFiltering"`
 	SendFlagDecisions bool          `json:"sendFlagDecisions"`
+	SDKKey            string        `json:"sdkKey,omitempty"`
+	Environment       string        `json:"environment,omitempty"`
 }

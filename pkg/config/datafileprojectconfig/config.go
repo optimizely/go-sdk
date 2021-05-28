@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -48,6 +48,8 @@ type DatafileProjectConfig struct {
 	anonymizeIP          bool
 	botFiltering         bool
 	sendFlagDecisions    bool
+	sdkKey               string
+	environment          string
 }
 
 // GetDatafile returns a string representation of the environment's datafile
@@ -80,9 +82,19 @@ func (c DatafileProjectConfig) GetAttributeID(key string) string {
 	return c.attributeKeyToIDMap[key]
 }
 
-// GetBotFiltering returns GetBotFiltering
+// GetBotFiltering returns botFiltering
 func (c DatafileProjectConfig) GetBotFiltering() bool {
 	return c.botFiltering
+}
+
+// GetSdkKey returns sdkKey
+func (c DatafileProjectConfig) GetSdkKey() string {
+	return c.sdkKey
+}
+
+// GetEnvironment returns environment
+func (c DatafileProjectConfig) GetEnvironment() string {
+	return c.environment
 }
 
 // GetEventByKey returns the event with the given key
@@ -215,6 +227,8 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		audienceMap:          mappers.MapAudiences(mergedAudiences),
 		attributeMap:         attributeMap,
 		botFiltering:         datafile.BotFiltering,
+		sdkKey:               datafile.SDKKey,
+		environment:          datafile.Environment,
 		experimentKeyToIDMap: experimentKeyMap,
 		experimentMap:        experimentMap,
 		groupMap:             groupMap,
