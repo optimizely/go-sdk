@@ -8,6 +8,7 @@ stages:
   - 'Source clear'
   - 'Lint markdown files'
   - 'Lint'
+  - 'Fmt'
   - 'Unit test'
   - 'Benchmark test'  
   - 'Integration tests'
@@ -26,6 +27,11 @@ jobs:
       env: GIMME_GO_VERSION=1.13.x GIMME_OS=linux GIMME_ARCH=amd64
       script:
         - make install lint
+
+
+    - stage: 'Fmt'
+      script:
+        - if [ -z "$(go fmt ./...)" ]; then true; esle false; fi
 
     - &test
       stage: 'Unit test'
