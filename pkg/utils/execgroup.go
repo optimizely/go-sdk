@@ -36,7 +36,7 @@ func NewExecGroup(ctx context.Context, logger logging.OptimizelyLogProducer) *Ex
 	nctx, cancelFn := context.WithCancel(ctx)
 	wg := sync.WaitGroup{}
 
-	return &ExecGroup{wg: &wg, ctx: nctx, cancelFunc: cancelFn, logger:logger}
+	return &ExecGroup{wg: &wg, ctx: nctx, cancelFunc: cancelFn, logger: logger}
 }
 
 // Go initiates a goroutine with the inputted function. Each invocation increments a shared WaitGroup

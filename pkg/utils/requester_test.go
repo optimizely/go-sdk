@@ -40,7 +40,7 @@ func TestHeaders(t *testing.T) {
 func TestAddHeaders(t *testing.T) {
 
 	req, _ := http.NewRequest("GET", "", nil)
-	requester := &HTTPRequester{logger:logging.GetLogger("", "")}
+	requester := &HTTPRequester{logger: logging.GetLogger("", "")}
 	headers := []Header{{"one", "1"}}
 
 	fn := Headers(Header{"two", "2"})

@@ -32,7 +32,7 @@ func Client(sdkKey string, options ...client.OptionFunc) (*client.OptimizelyClie
 // UserContext is a helper method for creating a user context
 func UserContext(userID string, attributes map[string]interface{}) entities.UserContext {
 	return entities.UserContext{
-		ID: userID,
+		ID:         userID,
 		Attributes: attributes,
 	}
 }

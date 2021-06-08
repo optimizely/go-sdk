@@ -43,7 +43,7 @@ type AtomicManager struct {
 // NewAtomicManager creates a new instance of the atomic manager
 func NewAtomicManager(logger logging.OptimizelyLogProducer) *AtomicManager {
 	return &AtomicManager{
-		logger: logger,
+		logger:   logger,
 		handlers: make(map[uint32]func(interface{})),
 	}
 }

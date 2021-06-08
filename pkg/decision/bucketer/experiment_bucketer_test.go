@@ -47,7 +47,7 @@ func TestBucketExclusionGroups(t *testing.T) {
 		},
 	}
 
-	bucketer := NewMurmurhashExperimentBucketer(logging.GetLogger("","TestBucketExclusionGroups" ), DefaultHashSeed)
+	bucketer := NewMurmurhashExperimentBucketer(logging.GetLogger("", "TestBucketExclusionGroups"), DefaultHashSeed)
 	// ppid2 + 1886780722 (groupId) will generate bucket value of 2434 which maps to experiment 1
 	bucketedVariation, reason, _ := bucketer.Bucket("ppid2", experiment1, exclusionGroup)
 	assert.Equal(t, experiment1.Variations["22222"], *bucketedVariation)

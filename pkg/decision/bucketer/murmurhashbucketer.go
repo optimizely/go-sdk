@@ -49,7 +49,7 @@ type MurmurhashBucketer struct {
 func NewMurmurhashBucketer(logger logging.OptimizelyLogProducer, hashSeed uint32) *MurmurhashBucketer {
 	return &MurmurhashBucketer{
 		hashSeed: hashSeed,
-		logger: logger,
+		logger:   logger,
 	}
 }
 
