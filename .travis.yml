@@ -28,10 +28,9 @@ jobs:
       script:
         - make install lint
 
-
     - stage: 'Fmt'
       script:
-        - if [ -z "$(go fmt ./...)" ]; then true; esle false; fi
+        - if [ -z "$(go fmt ./...)" ]; then true; else false; fi
 
     - &test
       stage: 'Unit test'
