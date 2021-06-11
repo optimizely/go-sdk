@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019, 2021 Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -32,7 +32,7 @@ func Client(sdkKey string, options ...client.OptionFunc) (*client.OptimizelyClie
 // UserContext is a helper method for creating a user context
 func UserContext(userID string, attributes map[string]interface{}) entities.UserContext {
 	return entities.UserContext{
-		ID: userID,
+		ID:         userID,
 		Attributes: attributes,
 	}
 }

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019, 2021 Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -46,7 +46,7 @@ func (l *FilteredLevelLogConsumer) Log(level LogLevel, message string, fields ma
 		sort.Strings(keys)
 
 		for _, k := range keys {
-			if s, ok := fields[k].(string);ok && s != "" {
+			if s, ok := fields[k].(string); ok && s != "" {
 				fmt.Fprintf(&messBuilder, "[%s]", s)
 			}
 		}
