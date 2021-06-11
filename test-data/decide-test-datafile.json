@@ -344,5 +344,5 @@
   ],
   "revision": "241",
   "sdkKey": "ValidProjectConfigV4",
-  "environment": "production"
+  "environmentKey": "production"
 }

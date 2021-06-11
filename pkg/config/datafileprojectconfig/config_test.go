@@ -39,8 +39,8 @@ func TestNewDatafileProjectConfigNil(t *testing.T) {
 }
 
 func TestNewDatafileProjectConfigNotNil(t *testing.T) {
-	dpc := DatafileProjectConfig{accountID: "123", revision: "1", projectID: "12345", sdkKey: "a", environment: "production"}
-	jsonDatafileStr := `{"accountID": "123", "revision": "1", "projectId": "12345", "version": "4", "sdkKey": "a", "environment": "production"}`
+	dpc := DatafileProjectConfig{accountID: "123", revision: "1", projectID: "12345", sdkKey: "a", environmentKey: "production"}
+	jsonDatafileStr := `{"accountID": "123", "revision": "1", "projectId": "12345", "version": "4", "sdkKey": "a", "environmentKey": "production"}`
 	jsonDatafile := []byte(jsonDatafileStr)
 	projectConfig, err := NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", "DatafileProjectConfig"))
 	assert.Nil(t, err)
@@ -48,7 +48,7 @@ func TestNewDatafileProjectConfigNotNil(t *testing.T) {
 	assert.Equal(t, dpc.accountID, projectConfig.accountID)
 	assert.Equal(t, dpc.revision, projectConfig.revision)
 	assert.Equal(t, dpc.projectID, projectConfig.projectID)
-	assert.Equal(t, dpc.environment, projectConfig.environment)
+	assert.Equal(t, dpc.environmentKey, projectConfig.environmentKey)
 	assert.Equal(t, dpc.sdkKey, projectConfig.sdkKey)
 }
 
@@ -108,11 +108,11 @@ func TestGetSdkKey(t *testing.T) {
 	assert.Equal(t, "1", config.GetSdkKey())
 }
 
-func TestGetEnvironment(t *testing.T) {
+func TestGetEnvironmentKey(t *testing.T) {
 	config := &DatafileProjectConfig{
-		environment: "production",
+		environmentKey: "production",
 	}
-	assert.Equal(t, "production", config.GetEnvironment())
+	assert.Equal(t, "production", config.GetEnvironmentKey())
 }
 
 func TestGetBotFiltering(t *testing.T) {

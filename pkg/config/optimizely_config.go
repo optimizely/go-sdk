@@ -27,7 +27,7 @@ type OptimizelyConfig struct {
 	ExperimentsMap map[string]OptimizelyExperiment `json:"experimentsMap"`
 	FeaturesMap    map[string]OptimizelyFeature    `json:"featuresMap"`
 	SdkKey         string                          `json:"sdkKey,omitempty"`
-	Environment    string                          `json:"environment,omitempty"`
+	EnvironmentKey string                          `json:"environmentKey,omitempty"`
 	datafile       string
 }
 
@@ -170,7 +170,7 @@ func NewOptimizelyConfig(projConfig ProjectConfig) *OptimizelyConfig {
 	optimizelyConfig.FeaturesMap = getFeatureMap(featuresList, optimizelyConfig.ExperimentsMap)
 	optimizelyConfig.Revision = revision
 	optimizelyConfig.SdkKey = projConfig.GetSdkKey()
-	optimizelyConfig.Environment = projConfig.GetEnvironment()
+	optimizelyConfig.EnvironmentKey = projConfig.GetEnvironmentKey()
 	optimizelyConfig.datafile = projConfig.GetDatafile()
 
 	return optimizelyConfig

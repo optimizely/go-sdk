@@ -65,17 +65,17 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 	s.Equal(s.expectedOptimizelyConfig.Revision, optimizelyConfig.Revision)
 	s.Equal(s.expectedOptimizelyConfig.datafile, optimizelyConfig.datafile)
 	s.Equal(s.expectedOptimizelyConfig.SdkKey, optimizelyConfig.SdkKey)
-	s.Equal(s.expectedOptimizelyConfig.Environment, optimizelyConfig.Environment)
+	s.Equal(s.expectedOptimizelyConfig.EnvironmentKey, optimizelyConfig.EnvironmentKey)
 
 	s.Equal(s.expectedOptimizelyConfig, *optimizelyConfig)
 }
 
-func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalEmptySDKKeyAndEnvironment() {
+func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalEmptySDKKeyAndEnvironmentKey() {
 	datafile := []byte(`{"version":"4"}`)
 	projectMgr := NewStaticProjectConfigManagerWithOptions("", WithInitialDatafile(datafile))
 	optimizelyConfig := NewOptimizelyConfig(projectMgr.projectConfig)
 	s.Equal("", optimizelyConfig.SdkKey)
-	s.Equal("", optimizelyConfig.Environment)
+	s.Equal("", optimizelyConfig.EnvironmentKey)
 
 	var jsonMap map[string]interface{}
 	bytesData, _ := json.Marshal(optimizelyConfig)
@@ -84,16 +84,16 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalEmptySDKKeyAndEnviro
 	_, keyExists := jsonMap["sdkKey"]
 	s.False(keyExists)
 
-	_, keyExists = jsonMap["environment"]
+	_, keyExists = jsonMap["environmentKey"]
 	s.False(keyExists)
 }
 
-func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalNonEmptySDKKeyAndEnvironment() {
-	datafile := []byte(`{"version":"4", "sdkKey":"a", "environment": "production"}`)
+func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalNonEmptySDKKeyAndEnvironmentKey() {
+	datafile := []byte(`{"version":"4", "sdkKey":"a", "environmentKey": "production"}`)
 	projectMgr := NewStaticProjectConfigManagerWithOptions("", WithInitialDatafile(datafile))
 	optimizelyConfig := NewOptimizelyConfig(projectMgr.projectConfig)
 	s.Equal("a", optimizelyConfig.SdkKey)
-	s.Equal("production", optimizelyConfig.Environment)
+	s.Equal("production", optimizelyConfig.EnvironmentKey)
 
 	var jsonMap map[string]interface{}
 	bytesData, _ := json.Marshal(optimizelyConfig)
@@ -102,7 +102,7 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalNonEmptySDKKeyAndEnv
 	_, keyExists := jsonMap["sdkKey"]
 	s.True(keyExists)
 
-	_, keyExists = jsonMap["environment"]
+	_, keyExists = jsonMap["environmentKey"]
 	s.True(keyExists)
 }
 

@@ -43,7 +43,7 @@ type ProjectConfig interface {
 	GetRevision() string
 	SendFlagDecisions() bool
 	GetSdkKey() string
-	GetEnvironment() string
+	GetEnvironmentKey() string
 }
 
 // ProjectConfigManager maintains an instance of the ProjectConfig

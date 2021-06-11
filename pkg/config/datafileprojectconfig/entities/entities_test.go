@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUnMarshalSdkKeyAndEnvironmentFromDatafile(t *testing.T) {
+func TestUnMarshalSdkKeyAndEnvironmentKeyFromDatafile(t *testing.T) {
 	datafile := Datafile{}
 	var jsonMap map[string]interface{}
 	bytesData, _ := json.Marshal(datafile)
@@ -32,17 +32,17 @@ func TestUnMarshalSdkKeyAndEnvironmentFromDatafile(t *testing.T) {
 	_, keyExists := jsonMap["sdkKey"]
 	assert.False(t, keyExists)
 
-	_, keyExists = jsonMap["environment"]
+	_, keyExists = jsonMap["environmentKey"]
 	assert.False(t, keyExists)
 
 	datafile.SDKKey = "a"
-	datafile.Environment = "production"
+	datafile.EnvironmentKey = "production"
 	bytesData, _ = json.Marshal(datafile)
 	json.Unmarshal(bytesData, &jsonMap)
 
 	_, keyExists = jsonMap["sdkKey"]
 	assert.True(t, keyExists)
 
-	_, keyExists = jsonMap["environment"]
+	_, keyExists = jsonMap["environmentKey"]
 	assert.True(t, keyExists)
 }

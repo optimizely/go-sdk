@@ -49,7 +49,7 @@ type DatafileProjectConfig struct {
 	botFiltering         bool
 	sendFlagDecisions    bool
 	sdkKey               string
-	environment          string
+	environmentKey       string
 }
 
 // GetDatafile returns a string representation of the environment's datafile
@@ -92,9 +92,9 @@ func (c DatafileProjectConfig) GetSdkKey() string {
 	return c.sdkKey
 }
 
-// GetEnvironment returns environment
-func (c DatafileProjectConfig) GetEnvironment() string {
-	return c.environment
+// GetEnvironmentKey returns environmentKey
+func (c DatafileProjectConfig) GetEnvironmentKey() string {
+	return c.environmentKey
 }
 
 // GetEventByKey returns the event with the given key
@@ -228,7 +228,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		attributeMap:         attributeMap,
 		botFiltering:         datafile.BotFiltering,
 		sdkKey:               datafile.SDKKey,
-		environment:          datafile.Environment,
+		environmentKey:       datafile.EnvironmentKey,
 		experimentKeyToIDMap: experimentKeyMap,
 		experimentMap:        experimentMap,
 		groupMap:             groupMap,

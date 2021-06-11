@@ -123,5 +123,5 @@ type Datafile struct {
 	BotFiltering      bool          `json:"botFiltering"`
 	SendFlagDecisions bool          `json:"sendFlagDecisions"`
 	SDKKey            string        `json:"sdkKey,omitempty"`
-	Environment       string        `json:"environment,omitempty"`
+	EnvironmentKey    string        `json:"environmentKey,omitempty"`
 }
