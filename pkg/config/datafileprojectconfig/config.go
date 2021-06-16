@@ -87,12 +87,12 @@ func (c DatafileProjectConfig) GetBotFiltering() bool {
 	return c.botFiltering
 }
 
-// GetSdkKey returns sdkKey
+// GetSdkKey returns sdkKey for specific environment.
 func (c DatafileProjectConfig) GetSdkKey() string {
 	return c.sdkKey
 }
 
-// GetEnvironmentKey returns environmentKey
+// GetEnvironmentKey returns current environment of the datafile.
 func (c DatafileProjectConfig) GetEnvironmentKey() string {
 	return c.environmentKey
 }
