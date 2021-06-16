@@ -342,5 +342,7 @@
       "key": "event_multiple_running_exp_attached"
     }
   ],
-  "revision": "241"
+  "revision": "241",
+  "sdkKey": "ValidProjectConfigV4",
+  "environmentKey": "production"
 }

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -42,6 +42,8 @@ type ProjectConfig interface {
 	GetProjectID() string
 	GetRevision() string
 	SendFlagDecisions() bool
+	GetSdkKey() string
+	GetEnvironmentKey() string
 }
 
 // ProjectConfigManager maintains an instance of the ProjectConfig
