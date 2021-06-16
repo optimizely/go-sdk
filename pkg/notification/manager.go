@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -43,7 +43,7 @@ type AtomicManager struct {
 // NewAtomicManager creates a new instance of the atomic manager
 func NewAtomicManager(logger logging.OptimizelyLogProducer) *AtomicManager {
 	return &AtomicManager{
-		logger: logger,
+		logger:   logger,
 		handlers: make(map[uint32]func(interface{})),
 	}
 }

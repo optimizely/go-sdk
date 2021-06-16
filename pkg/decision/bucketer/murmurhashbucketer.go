@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019, 2021 Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -49,7 +49,7 @@ type MurmurhashBucketer struct {
 func NewMurmurhashBucketer(logger logging.OptimizelyLogProducer, hashSeed uint32) *MurmurhashBucketer {
 	return &MurmurhashBucketer{
 		hashSeed: hashSeed,
-		logger: logger,
+		logger:   logger,
 	}
 }
 

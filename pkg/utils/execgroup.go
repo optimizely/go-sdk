@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019, 2021 Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -36,7 +36,7 @@ func NewExecGroup(ctx context.Context, logger logging.OptimizelyLogProducer) *Ex
 	nctx, cancelFn := context.WithCancel(ctx)
 	wg := sync.WaitGroup{}
 
-	return &ExecGroup{wg: &wg, ctx: nctx, cancelFunc: cancelFn, logger:logger}
+	return &ExecGroup{wg: &wg, ctx: nctx, cancelFunc: cancelFn, logger: logger}
 }
 
 // Go initiates a goroutine with the inputted function. Each invocation increments a shared WaitGroup
