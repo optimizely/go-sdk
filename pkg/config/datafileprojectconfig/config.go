@@ -82,6 +82,16 @@ func (c DatafileProjectConfig) GetAttributeID(key string) string {
 	return c.attributeKeyToIDMap[key]
 }
 
+// GetAttributes returns attributes map
+func (c DatafileProjectConfig) GetAttributes() map[string]entities.Attribute {
+	return c.attributeMap
+}
+
+// GetEvents returns events map
+func (c DatafileProjectConfig) GetEvents() map[string]entities.Event {
+	return c.eventMap
+}
+
 // GetBotFiltering returns botFiltering
 func (c DatafileProjectConfig) GetBotFiltering() bool {
 	return c.botFiltering

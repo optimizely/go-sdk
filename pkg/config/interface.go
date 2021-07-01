@@ -44,6 +44,8 @@ type ProjectConfig interface {
 	SendFlagDecisions() bool
 	GetSdkKey() string
 	GetEnvironmentKey() string
+	GetAttributes() map[string]entities.Attribute
+	GetEvents() map[string]entities.Event
 }
 
 // ProjectConfigManager maintains an instance of the ProjectConfig
