@@ -83,13 +83,21 @@ func (c DatafileProjectConfig) GetAttributeID(key string) string {
 }
 
 // GetAttributes returns attributes map
-func (c DatafileProjectConfig) GetAttributes() map[string]entities.Attribute {
-	return c.attributeMap
+func (c DatafileProjectConfig) GetAttributes() []entities.Attribute {
+	rt := make([]entities.Attribute, 0)
+	for _, attr := range c.attributeMap {
+		rt = append(rt, attr)
+	}
+	return rt
 }
 
 // GetEvents returns events map
-func (c DatafileProjectConfig) GetEvents() map[string]entities.Event {
-	return c.eventMap
+func (c DatafileProjectConfig) GetEvents() []entities.Event {
+	rt := make([]entities.Event, 0)
+	for _, event := range c.eventMap {
+		rt = append(rt, event)
+	}
+	return rt
 }
 
 // GetBotFiltering returns botFiltering

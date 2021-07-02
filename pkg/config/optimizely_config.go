@@ -28,8 +28,8 @@ type OptimizelyConfig struct {
 	FeaturesMap    map[string]OptimizelyFeature    `json:"featuresMap"`
 	SdkKey         string                          `json:"sdkKey,omitempty"`
 	EnvironmentKey string                          `json:"environmentKey,omitempty"`
-	AttributesMap  map[string]entities.Attribute   `json:"attributesMap"`
-	EventsMap      map[string]entities.Event       `json:"eventsMap"`
+	Attributes  []entities.Attribute   `json:"attributes"`
+	Events      []entities.Event       `json:"events"`
 	datafile       string
 }
 
@@ -173,8 +173,8 @@ func NewOptimizelyConfig(projConfig ProjectConfig) *OptimizelyConfig {
 	optimizelyConfig.Revision = revision
 	optimizelyConfig.SdkKey = projConfig.GetSdkKey()
 	optimizelyConfig.EnvironmentKey = projConfig.GetEnvironmentKey()
-	optimizelyConfig.AttributesMap = projConfig.GetAttributes()
-	optimizelyConfig.EventsMap = projConfig.GetEvents()
+	optimizelyConfig.Attributes = projConfig.GetAttributes()
+	optimizelyConfig.Events = projConfig.GetEvents()
 	optimizelyConfig.datafile = projConfig.GetDatafile()
 
 	return optimizelyConfig
