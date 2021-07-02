@@ -28,8 +28,8 @@ type OptimizelyConfig struct {
 	FeaturesMap    map[string]OptimizelyFeature    `json:"featuresMap"`
 	SdkKey         string                          `json:"sdkKey,omitempty"`
 	EnvironmentKey string                          `json:"environmentKey,omitempty"`
-	Attributes  []entities.Attribute   `json:"attributes"`
-	Events      []entities.Event       `json:"events"`
+	Attributes     []entities.Attribute            `json:"attributes"`
+	Events         []entities.Event                `json:"events"`
 	datafile       string
 }
 

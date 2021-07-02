@@ -21,9 +21,9 @@ import (
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
+	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
-	"github.com/optimizely/go-sdk/pkg/entities"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -58,7 +58,7 @@ func TestStaticGetOptimizelyConfig(t *testing.T) {
 
 	optimizelyConfig := configManager.GetOptimizelyConfig()
 	assert.NotNil(t, configManager.optimizelyConfig)
-	assert.Equal(t, &OptimizelyConfig{Attributes: make([]entities.Attribute, 0), Events: make([]entities.Event, 0),ExperimentsMap: map[string]OptimizelyExperiment{},
+	assert.Equal(t, &OptimizelyConfig{Attributes: make([]entities.Attribute, 0), Events: make([]entities.Event, 0), ExperimentsMap: map[string]OptimizelyExperiment{},
 		FeaturesMap: map[string]OptimizelyFeature{}, datafile: "{\"accountId\":\"42\",\"projectId\":\"123\",\"version\":\"4\"}"}, optimizelyConfig)
 }
 func TestNewStaticProjectConfigManagerFromURL(t *testing.T) {
