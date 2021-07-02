@@ -1,6 +1,19 @@
 {
-  "attributes":[],
-  "events":[],
+ "attributes": [
+    {
+      "id": "1042",
+      "key": "param"
+    }
+  ],
+  "events": [
+    {
+      "experimentIds": [
+        "42"
+      ],
+      "id": "123",
+      "key": "event123"
+    }
+  ],
   "experimentsMap":{
     "all_traffic_experiment":{
       "id":"12198292375",

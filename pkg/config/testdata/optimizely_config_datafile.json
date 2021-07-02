@@ -260,9 +260,23 @@
       "id": "12115595439"
     }
   ],
-  "attributes": [],
+  "attributes": [
+    {
+      "id": "1042",
+      "key": "param"
+    }
+  ],
   "botFiltering": false,
   "accountId": "8272261422",
-  "events": [],
+
+  "events": [
+    {
+      "experimentIds": [
+        "42"
+      ],
+      "id": "123",
+      "key": "event123"
+    }
+  ],
   "revision": "9"
 }
