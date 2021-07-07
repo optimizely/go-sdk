@@ -82,7 +82,7 @@ func (c DatafileProjectConfig) GetAttributeID(key string) string {
 	return c.attributeKeyToIDMap[key]
 }
 
-// GetAttributes returns attributes map
+// GetAttributes returns attributes slice
 func (c DatafileProjectConfig) GetAttributes() []entities.Attribute {
 	rt := make([]entities.Attribute, 0)
 	for _, attr := range c.attributeMap {
@@ -91,7 +91,7 @@ func (c DatafileProjectConfig) GetAttributes() []entities.Attribute {
 	return rt
 }
 
-// GetEvents returns events map
+// GetEvents returns events slice
 func (c DatafileProjectConfig) GetEvents() []entities.Event {
 	rt := make([]entities.Event, 0)
 	for _, event := range c.eventMap {
