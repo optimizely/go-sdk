@@ -84,20 +84,20 @@ func (c DatafileProjectConfig) GetAttributeID(key string) string {
 
 // GetAttributes returns attributes slice
 func (c DatafileProjectConfig) GetAttributes() []entities.Attribute {
-	rt := make([]entities.Attribute, 0)
+	attributes := make([]entities.Attribute, 0, len(c.attributeMap))
 	for _, attr := range c.attributeMap {
-		rt = append(rt, attr)
+		attributes = append(attributes, attr)
 	}
-	return rt
+	return attributes
 }
 
 // GetEvents returns events slice
 func (c DatafileProjectConfig) GetEvents() []entities.Event {
-	rt := make([]entities.Event, 0)
+	attributes := make([]entities.Event, 0, len(c.eventMap))
 	for _, event := range c.eventMap {
-		rt = append(rt, event)
+		attributes = append(attributes, event)
 	}
-	return rt
+	return attributes
 }
 
 // GetBotFiltering returns botFiltering
