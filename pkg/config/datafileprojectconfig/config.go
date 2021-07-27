@@ -93,11 +93,11 @@ func (c DatafileProjectConfig) GetAttributes() []entities.Attribute {
 
 // GetEvents returns events slice
 func (c DatafileProjectConfig) GetEvents() []entities.Event {
-	attributes := make([]entities.Event, 0, len(c.eventMap))
+	events := make([]entities.Event, 0, len(c.eventMap))
 	for _, event := range c.eventMap {
-		attributes = append(attributes, event)
+		events = append(events, event)
 	}
-	return attributes
+	return events
 }
 
 // GetBotFiltering returns botFiltering
