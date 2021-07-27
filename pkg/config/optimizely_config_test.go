@@ -120,6 +120,17 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfigGetDatafile() {
 	s.Equal(string(datafile), optimizelyConfig.GetDatafile())
 }
 
+func (s *OptimizelyConfigTestSuite) TestOptlyConfigGetDatafileLong() {
+	dataFileName := "testdata/optimizely_config_datafile.json"
+	dataFile, err := ioutil.ReadFile(dataFileName)
+	if err != nil {
+		s.Fail("error opening file " + dataFileName)
+	}
+	projectMgr := NewStaticProjectConfigManagerWithOptions("", WithInitialDatafile(dataFile))
+	optimizelyConfig := NewOptimizelyConfig(projectMgr.projectConfig)
+	s.Equal(string(dataFile), optimizelyConfig.GetDatafile())
+}
+
 func TestOptimizelyConfigTestSuite(t *testing.T) {
 	suite.Run(t, new(OptimizelyConfigTestSuite))
 }
