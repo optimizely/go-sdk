@@ -86,6 +86,7 @@ func (c DatafileProjectConfig) GetAttributeID(key string) string {
 func (c DatafileProjectConfig) GetAttributes() []entities.Attribute {
 	attributes := make([]entities.Attribute, 0, len(c.attributeMap))
 	for _, attr := range c.attributeMap {
+		fmt.Println("In GA")
 		attributes = append(attributes, attr)
 	}
 	return attributes
