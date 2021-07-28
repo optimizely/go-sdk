@@ -8,7 +8,7 @@ GOCMD=go
 GOPATH=$(shell $(GOCMD) env GOPATH)
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
-GOTEST=$(GOCMD) test -v
+GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
 GOLINT=$(GOPATH)/bin/golangci-lint
 
@@ -20,7 +20,7 @@ clean: ## runs `go clean` and removes the bin/ dir
 	rm -rf $(GOBIN)
 
 cover: ## run unit tests with coverage
-	GO111MODULE=$(GO111MODULE) $(GOTEST) -race ./pkg/config -coverprofile=profile.cov
+	GO111MODULE=$(GO111MODULE) $(GOTEST) -race ./pkg/... -coverprofile=profile.cov
 
 install: ## installs dev and ci dependencies
 	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(GOPATH)/bin v1.19.0

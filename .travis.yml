@@ -15,9 +15,6 @@ stages:
   - 'Readme-sync'
 jobs:
   include:
-    - stage: 'Block-merge'
-      script:
-        - false
     - stage: 'Lint markdown files'
       os: linux
       language: generic
