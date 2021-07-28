@@ -60,7 +60,7 @@ jobs:
       before_script:
         - go get github.com/mattn/goveralls
       after_success:
-        - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
+        - true
 
     - stage: 'Benchmark test'
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
