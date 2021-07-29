@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2021, Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -18,24 +18,8 @@
 package entities
 
 // Audience contains the audience definition
-type Audience struct {
+type OptimizelyAudience struct {
 	ID            string
 	Name          string
-	ConditionTree *TreeNode
-}
-
-// Condition has condition info
-type Condition struct {
-	Name                 string      `json:"name"`
-	Match                string      `json:"match"`
-	Type                 string      `json:"type"`
-	Value                interface{} `json:"value"`
-	StringRepresentation string
-}
-
-func (a Audience) ToOptimizelyAudience() OptimizelyAudience {
-	return OptimizelyAudience {
-			ID: a.ID,
-			Name: a.Name,
-			Conditions: "TODO"}
+	Conditions    string
 }

@@ -101,12 +101,12 @@ func (c DatafileProjectConfig) GetEvents() []entities.Event {
 }
 
 // GetAudiences returns audiences slice
-func (c DatafileProjectConfig) GetAudiences() []entities.Audience {
-	audiences := make([]entities.Audience, 0, len(c.audienceMap))
+func (c DatafileProjectConfig) GetOptimizelyAudiences() []entities.OptimizelyAudience {
+	optimizelyAudiences := make([]entities.OptimizelyAudience, 0, len(c.audienceMap))
 	for _, audience := range c.audienceMap {
-		audiences = append(audiences, audience)
+		optimizelyAudiences = append(optimizelyAudiences, audience.ToOptimizelyAudience())
 	}
-	return audiences
+	return optimizelyAudiences
 }
 
 // GetBotFiltering returns botFiltering

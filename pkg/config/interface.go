@@ -46,7 +46,7 @@ type ProjectConfig interface {
 	GetEnvironmentKey() string
 	GetAttributes() []entities.Attribute
 	GetEvents() []entities.Event
-	GetAudiences() []entities.Audience
+	GetOptimizelyAudiences() []entities.OptimizelyAudience
 }
 
 // ProjectConfigManager maintains an instance of the ProjectConfig
