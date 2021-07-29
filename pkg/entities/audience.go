@@ -34,8 +34,8 @@ type Condition struct {
 }
 
 func (a Audience) ToOptimizelyAudience() OptimizelyAudience {
-	return OptimizelyAudience {
-			ID: a.ID,
-			Name: a.Name,
-			Conditions: "TODO"}
+	return OptimizelyAudience{
+		ID:         a.ID,
+		Name:       a.Name,
+		Conditions: "TODO"}
 }

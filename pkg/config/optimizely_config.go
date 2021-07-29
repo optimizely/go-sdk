@@ -23,15 +23,15 @@ import (
 
 // OptimizelyConfig is a snapshot of the experiments and features in the project config
 type OptimizelyConfig struct {
-	Revision       string                          `json:"revision"`
-	ExperimentsMap map[string]OptimizelyExperiment `json:"experimentsMap"`
-	FeaturesMap    map[string]OptimizelyFeature    `json:"featuresMap"`
-	SdkKey         string                          `json:"sdkKey,omitempty"`
-	EnvironmentKey string                          `json:"environmentKey,omitempty"`
-	Attributes     []entities.Attribute            `json:"attributes"`
-	Events         []entities.Event                `json:"events"`
-	OptimizelyAudiences      []entities.OptimizelyAudience             `json:"optimizelyAudiences"`
-	datafile       string
+	Revision            string                          `json:"revision"`
+	ExperimentsMap      map[string]OptimizelyExperiment `json:"experimentsMap"`
+	FeaturesMap         map[string]OptimizelyFeature    `json:"featuresMap"`
+	SdkKey              string                          `json:"sdkKey,omitempty"`
+	EnvironmentKey      string                          `json:"environmentKey,omitempty"`
+	Attributes          []entities.Attribute            `json:"attributes"`
+	Events              []entities.Event                `json:"events"`
+	OptimizelyAudiences []entities.OptimizelyAudience   `json:"optimizelyAudiences"`
+	datafile            string
 }
 
 // GetDatafile returns a string representation of the environment's datafile

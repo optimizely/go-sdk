@@ -19,7 +19,7 @@ package entities
 
 // Audience contains the audience definition
 type OptimizelyAudience struct {
-	ID            string
-	Name          string
-	Conditions    string
+	ID         string
+	Name       string
+	Conditions string
 }
