@@ -21,6 +21,7 @@ package entities
 type Audience struct {
 	ID            string
 	Name          string
+	Conditions    string
 	ConditionTree *TreeNode
 }
 

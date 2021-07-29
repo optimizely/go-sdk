@@ -100,6 +100,15 @@ func (c DatafileProjectConfig) GetEvents() []entities.Event {
 	return events
 }
 
+// GetAudiences returns audiences slice
+func (c DatafileProjectConfig) GetAudiences() []entities.Audience {
+	audiences := make([]entities.Audience, 0, len(c.audienceMap))
+	for _, audience := range c.audienceMap {
+		audiences = append(audiences, audience)
+	}
+	return audiences
+}
+
 // GetBotFiltering returns botFiltering
 func (c DatafileProjectConfig) GetBotFiltering() bool {
 	return c.botFiltering

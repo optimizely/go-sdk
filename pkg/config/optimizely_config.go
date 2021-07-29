@@ -30,6 +30,7 @@ type OptimizelyConfig struct {
 	EnvironmentKey string                          `json:"environmentKey,omitempty"`
 	Attributes     []entities.Attribute            `json:"attributes"`
 	Events         []entities.Event                `json:"events"`
+	Audiences      []entities.Audience             `json:"audiences"`
 	datafile       string
 }
 
@@ -175,6 +176,7 @@ func NewOptimizelyConfig(projConfig ProjectConfig) *OptimizelyConfig {
 	optimizelyConfig.EnvironmentKey = projConfig.GetEnvironmentKey()
 	optimizelyConfig.Attributes = projConfig.GetAttributes()
 	optimizelyConfig.Events = projConfig.GetEvents()
+	optimizelyConfig.Audiences = projConfig.GetAudiences()
 	optimizelyConfig.datafile = projConfig.GetDatafile()
 
 	return optimizelyConfig
