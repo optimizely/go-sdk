@@ -356,6 +356,6 @@
       }
     }
   },
-  "optimizelyAudiences":[],
+  "audiences":[],
   "revision":"9"
 }
