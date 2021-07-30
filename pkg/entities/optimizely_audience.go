@@ -17,7 +17,7 @@
 // Package entities //
 package entities
 
-// Audience contains the audience definition
+// OptimizelyAudience contains the audience definition
 type OptimizelyAudience struct {
 	ID         string
 	Name       string

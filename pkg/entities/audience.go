@@ -33,6 +33,7 @@ type Condition struct {
 	StringRepresentation string
 }
 
+// ToOptimizelyAudience converts to OptimizelyAudience
 func (a Audience) ToOptimizelyAudience() OptimizelyAudience {
 	return OptimizelyAudience{
 		ID:         a.ID,
