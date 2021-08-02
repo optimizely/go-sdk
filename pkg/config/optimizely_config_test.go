@@ -109,10 +109,10 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalEmptySDKKeyAndEnviro
 	json.Unmarshal(bytesData, &jsonMap)
 
 	_, keyExists := jsonMap["sdkKey"]
-	s.False(keyExists)
+	s.True(keyExists)
 
 	_, keyExists = jsonMap["environmentKey"]
-	s.False(keyExists)
+	s.True(keyExists)
 }
 
 func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalNonEmptySDKKeyAndEnvironmentKey() {
