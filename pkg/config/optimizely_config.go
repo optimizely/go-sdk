@@ -26,8 +26,8 @@ type OptimizelyConfig struct {
 	Revision            string                          `json:"revision"`
 	ExperimentsMap      map[string]OptimizelyExperiment `json:"experimentsMap"`
 	FeaturesMap         map[string]OptimizelyFeature    `json:"featuresMap"`
-	SdkKey              string                          `json:"sdkKey,omitempty"`
-	EnvironmentKey      string                          `json:"environmentKey,omitempty"`
+	SdkKey              string                          `json:"sdkKey"`
+	EnvironmentKey      string                          `json:"environmentKey"`
 	Attributes          []entities.Attribute            `json:"attributes"`
 	Events              []entities.Event                `json:"events"`
 	OptimizelyAudiences []entities.OptimizelyAudience   `json:"audiences"`
