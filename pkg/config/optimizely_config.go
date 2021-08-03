@@ -41,6 +41,7 @@ func (c OptimizelyConfig) GetDatafile() string {
 
 // OptimizelyExperiment has experiment info
 type OptimizelyExperiment struct {
+	Audiences     string                         `json:"audiences"`
 	ID            string                         `json:"id"`
 	Key           string                         `json:"key"`
 	VariationsMap map[string]OptimizelyVariation `json:"variationsMap"`
@@ -124,7 +125,7 @@ func getExperimentMap(features []entities.Feature, experiments []entities.Experi
 			optVariation := OptimizelyVariation{ID: variation.ID, Key: variation.Key, VariablesMap: optlyVariablesMap, FeatureEnabled: variation.FeatureEnabled}
 			optlyVariationsMap[variation.Key] = optVariation
 		}
-		optlyExperiment := OptimizelyExperiment{ID: experiment.ID, Key: experiment.Key, VariationsMap: optlyVariationsMap}
+		optlyExperiment := OptimizelyExperiment{ID: experiment.ID, Key: experiment.Key, VariationsMap: optlyVariationsMap, Audiences: "OE audience todo"}
 		optlyExperimentMap[experiment.Key] = optlyExperiment
 	}
 	return optlyExperimentMap
