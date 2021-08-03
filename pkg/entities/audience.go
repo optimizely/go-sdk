@@ -22,6 +22,7 @@ type Audience struct {
 	ID            string
 	Name          string
 	ConditionTree *TreeNode
+	ConditionStr  string
 }
 
 // Condition has condition info
