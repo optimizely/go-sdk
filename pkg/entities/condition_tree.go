@@ -25,6 +25,11 @@ type TreeNode struct {
 	Nodes []*TreeNode
 }
 
+// GetAudienceString returns audience string
+func (tn *TreeNode) GetAudienceString() string {
+	return tn.Item.(string)
+}
+
 // TreeParameters represents parameters of a tree
 type TreeParameters struct {
 	User        *UserContext
