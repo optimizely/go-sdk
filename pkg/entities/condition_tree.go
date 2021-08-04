@@ -17,6 +17,8 @@
 // Package entities //
 package entities
 
+import "strings"
+
 // TreeNode in a condition tree
 type TreeNode struct {
 	Item     interface{} // can be a condition or a string
@@ -25,9 +27,23 @@ type TreeNode struct {
 	Nodes []*TreeNode
 }
 
+func _buildString(tn *TreeNode, in string) string {
+	if len(tn.Nodes) == 1 {
+		return _buildString(tn.Nodes[0], in)
+	}
+	for _, v := range tn.Nodes {
+		if in == "" {
+			in += `"` + v.Item.(string) + `"`
+		} else {
+			in += " " + strings.ToUpper(tn.Operator) + ` "` + v.Item.(string) + `"`
+		}
+	}
+	return in
+}
+
 // GetAudienceString returns audience string
 func (tn *TreeNode) GetAudienceString() string {
-	return tn.Item.(string)
+	return _buildString(tn, "")
 }
 
 // TreeParameters represents parameters of a tree
