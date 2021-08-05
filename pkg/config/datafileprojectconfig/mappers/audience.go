@@ -38,7 +38,6 @@ func MapAudiences(audiences []datafileEntities.Audience) map[string]entities.Aud
 				ID:            audience.ID,
 				Name:          audience.Name,
 				ConditionTree: conditionTree,
-				ConditionStr:  audience.StrConditions,
 			}
 		}
 	}

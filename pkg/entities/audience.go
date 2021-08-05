@@ -22,7 +22,6 @@ type Audience struct {
 	ID            string
 	Name          string
 	ConditionTree *TreeNode
-	ConditionStr  string
 }
 
 // Condition has condition info
@@ -39,5 +38,5 @@ func (a Audience) ToOptimizelyAudience() OptimizelyAudience {
 	return OptimizelyAudience{
 		ID:         a.ID,
 		Name:       a.Name,
-		Conditions: "TODO"}
+		Conditions: a.ConditionTree.GetAudienceString()}
 }

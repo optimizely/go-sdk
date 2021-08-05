@@ -30,7 +30,7 @@ type OptimizelyConfig struct {
 	EnvironmentKey      string                          `json:"environmentKey"`
 	Attributes          []entities.Attribute            `json:"attributes"`
 	Events              []entities.Event                `json:"events"`
-	OptimizelyAudiences []entities.OptimizelyAudience   `json:"audiences"`
+	OptimizelyAudiences []entities.OptimizelyAudience   `json:"optAudiences"`
 	datafile            string
 }
 

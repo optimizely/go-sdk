@@ -21,10 +21,9 @@ import "github.com/optimizely/go-sdk/pkg/entities"
 
 // Audience represents an Audience object from the Optimizely datafile
 type Audience struct {
-	ID            string      `json:"id"`
-	Name          string      `json:"name"`
-	Conditions    interface{} `json:"conditions"`
-	StrConditions string      `json:"sconditions"`
+	ID         string      `json:"id"`
+	Name       string      `json:"name"`
+	Conditions interface{} `json:"conditions"`
 }
 
 // Attribute represents an Attribute object from the Optimizely datafile
