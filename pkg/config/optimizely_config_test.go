@@ -88,7 +88,7 @@ func TestTemp(t *testing.T) {
 }
 
 func (s *OptimizelyConfigTestSuite) TestOptlyConfigExtended() {
-	outputFileName := "testdata/optimizely_config_expected2.json"
+	outputFileName := "testdata/optimizely_config_expectedV2.json"
 	expectedOutput, err := ioutil.ReadFile(outputFileName)
 	if err != nil {
 		s.Fail("error opening file " + outputFileName)
@@ -100,7 +100,7 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfigExtended() {
 		s.Fail("unable to parse expected file")
 	}
 
-	dataFileName := "testdata/optimizely_config_datafile2.json"
+	dataFileName := "testdata/optimizely_config_datafileV2.json"
 	dataFile, err := ioutil.ReadFile(dataFileName)
 	if err != nil {
 		s.Fail("error opening file " + dataFileName)
