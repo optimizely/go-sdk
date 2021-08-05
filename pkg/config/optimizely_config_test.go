@@ -71,7 +71,7 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 	s.Equal(s.expectedOptimizelyConfig, *optimizelyConfig)
 }
 
-func (s *OptimizelyConfigTestSuite) TestOptlyConfigExtended() {
+func (s *OptimizelyConfigTestSuite) TestOptlyConfigV2() {
 	outputFileName := "testdata/optimizely_config_expectedV2.json"
 	expectedOutput, err := ioutil.ReadFile(outputFileName)
 	if err != nil {
@@ -93,9 +93,10 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfigExtended() {
 
 	projectMgr := NewStaticProjectConfigManagerWithOptions("", WithInitialDatafile(dataFile))
 	optimizelyConfig := NewOptimizelyConfig(projectMgr.projectConfig)
-	_save(optimizelyConfig)
-	//s.Equal(expectedOptimizelyConfig, *optimizelyConfig)
 
+	_ = optimizelyConfig
+	//TODO: enable below and remove above
+	//s.Equal(expectedOptimizelyConfig, *optimizelyConfig)
 }
 
 func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalEmptySDKKeyAndEnvironmentKey() {
@@ -116,12 +117,23 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalEmptySDKKeyAndEnviro
 	s.True(keyExists)
 }
 
+func _TestTemp(t *testing.T) {
+	dataFileName := "testdata/optimizely_config_datafileV2.json"
+	dataFile, err := ioutil.ReadFile(dataFileName)
+	if err != nil {
+		panic(err)
+	}
+	projectMgr := NewStaticProjectConfigManagerWithOptions("", WithInitialDatafile(dataFile))
+	oc := NewOptimizelyConfig(projectMgr.projectConfig)
+	_save(oc)
+}
+
 func _save(o *OptimizelyConfig) {
 	ba, err := json.Marshal(o)
 	if err != nil {
 		panic(err)
 	}
-	ioutil.WriteFile("tmp.json", ba, 0644)
+	ioutil.WriteFile("oc.json", ba, 0644)
 }
 
 func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalNonEmptySDKKeyAndEnvironmentKey() {
