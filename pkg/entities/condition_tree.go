@@ -17,7 +17,8 @@
 // Package entities //
 package entities
 
-import "strings"
+// import "strings"
+import "fmt"
 
 // TreeNode in a condition tree
 type TreeNode struct {
@@ -27,23 +28,32 @@ type TreeNode struct {
 	Nodes []*TreeNode
 }
 
+func (t *TreeNode) String() string {
+	return fmt.Sprintf("type(%T) %+v %+v %+v\n", t.Item, t.Item, t.Operator, len(t.Nodes))
+}
+
 func _buildString(tn *TreeNode, in string) string {
+	_ = in
+	_ = tn
 	if len(tn.Nodes) == 1 {
-		return _buildString(tn.Nodes[0], in)
-	}
-	for _, v := range tn.Nodes {
-		if in == "" {
-			in += `"` + v.Item.(string) + `"`
-		} else {
-			in += " " + strings.ToUpper(tn.Operator) + ` "` + v.Item.(string) + `"`
+		in += `["`
+		switch x := tn.Item.(type) {
+		case Condition:
+			in += x.StringRepresentation
+		case nil:
+			in += tn.Operator
 		}
+		in += `", `
+		in = _buildString(tn.Nodes[0], in)
+		in += `]"`
 	}
 	return in
 }
 
 // GetAudienceString returns audience string
-func (tn *TreeNode) GetAudienceString() string {
-	return _buildString(tn, "")
+func (t *TreeNode) GetAudienceString() string {
+	rt := _buildString(t, "")
+	return rt
 }
 
 // TreeParameters represents parameters of a tree
