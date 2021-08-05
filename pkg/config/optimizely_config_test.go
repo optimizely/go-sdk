@@ -72,21 +72,6 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 	s.Equal(s.expectedOptimizelyConfig, *optimizelyConfig)
 }
 
-func TestTemp(t *testing.T) {
-	dataFileName := "testdata/optimizely_config_datafile2.json"
-	dataFile, err := ioutil.ReadFile(dataFileName)
-	if err != nil {
-		panic(err)
-	}
-	projectMgr := NewStaticProjectConfigManagerWithOptions("", WithInitialDatafile(dataFile))
-	oc := NewOptimizelyConfig(projectMgr.projectConfig)
-	mba, err := json.Marshal(oc)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(string(mba))
-}
-
 func (s *OptimizelyConfigTestSuite) TestOptlyConfigExtended() {
 	outputFileName := "testdata/optimizely_config_expectedV2.json"
 	expectedOutput, err := ioutil.ReadFile(outputFileName)
