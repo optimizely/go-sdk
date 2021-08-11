@@ -33,19 +33,14 @@ func (t *TreeNode) String() string {
 }
 
 func _buildString(tn *TreeNode, in string) string {
-	_ = in
-	_ = tn
 	if len(tn.Nodes) == 1 {
 		in += `["`
-		switch x := tn.Item.(type) {
-		case Condition:
-			in += x.StringRepresentation
-		case nil:
-			in += tn.Operator
-		}
+		in += tn.Operator
 		in += `", `
 		in = _buildString(tn.Nodes[0], in)
 		in += `]"`
+	} else if x, ok := tn.Item.(Condition); ok {
+		in += x.StringRepresentation
 	}
 	return in
 }
