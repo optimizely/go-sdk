@@ -44,7 +44,11 @@ func _buildString(tn *TreeNode, in string, m map[string]string) string {
 		in += `]`
 	} else if len(tn.Nodes) > 1 {
 		op := tn.Operator
-		in += tn.Nodes[0].Item.(string)
+		id := tn.Nodes[0].Item.(string)
+		if m[id] != "" {
+			id = `"` + m[id] + `"`
+		}
+		in += id
 		for _, v := range tn.Nodes[1:] {
 			id := v.Item.(string)
 			if m[id] != "" {
