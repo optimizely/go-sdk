@@ -119,8 +119,7 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalEmptySDKKeyAndEnviro
 
 func TestTemp(t *testing.T) {
 	return
-	//dataFileName := "testdata/optimizely_config_datafileV2.json"
-	dataFileName := "testdata/ball.json"
+	dataFileName := "../../dataV2.json"
 	dataFile, err := ioutil.ReadFile(dataFileName)
 	if err != nil {
 		panic(err)
@@ -135,7 +134,7 @@ func _save(o *OptimizelyConfig) {
 	if err != nil {
 		panic(err)
 	}
-	ioutil.WriteFile("oc.json", ba, 0644)
+	ioutil.WriteFile("../../oc.json", ba, 0644)
 }
 
 func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalNonEmptySDKKeyAndEnvironmentKey() {

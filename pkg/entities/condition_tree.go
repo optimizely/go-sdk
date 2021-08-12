@@ -29,16 +29,25 @@ type TreeNode struct {
 }
 
 func (t *TreeNode) String() string {
-	return fmt.Sprintf("type(%T) %+v %+v %+v\n", t.Item, t.Item, t.Operator, len(t.Nodes))
+	return fmt.Sprintf("type(%T)/ %+v/ %+v/ %+v\n", t.Item, t.Item, t.Operator, len(t.Nodes))
 }
 
 func _buildString(tn *TreeNode, in string) string {
+	if tn == nil {
+		return ""
+	}
 	if len(tn.Nodes) == 1 {
 		in += `["`
 		in += tn.Operator
 		in += `", `
 		in = _buildString(tn.Nodes[0], in)
-		in += `]"`
+		in += `]`
+	} else if len(tn.Nodes) > 1 {
+		op := tn.Operator
+		in += tn.Nodes[0].Item.(string)
+		for _, v := range tn.Nodes[1:] {
+			in += fmt.Sprintf(" %v %v", op, v.Item.(string))
+		}
 	} else if x, ok := tn.Item.(Condition); ok {
 		in += x.StringRepresentation
 	}
