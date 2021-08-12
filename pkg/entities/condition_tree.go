@@ -32,7 +32,7 @@ func (t *TreeNode) String() string {
 	return fmt.Sprintf("type(%T)/ %+v/ %+v/ %+v\n", t.Item, t.Item, t.Operator, len(t.Nodes))
 }
 
-func _buildString(tn *TreeNode, in string) string {
+func _buildString(tn *TreeNode, in string, m map[string]string) string {
 	if tn == nil {
 		return ""
 	}
@@ -40,13 +40,18 @@ func _buildString(tn *TreeNode, in string) string {
 		in += `["`
 		in += tn.Operator
 		in += `", `
-		in = _buildString(tn.Nodes[0], in)
+		in = _buildString(tn.Nodes[0], in, m)
 		in += `]`
 	} else if len(tn.Nodes) > 1 {
 		op := tn.Operator
 		in += tn.Nodes[0].Item.(string)
 		for _, v := range tn.Nodes[1:] {
-			in += fmt.Sprintf(" %v %v", op, v.Item.(string))
+			id := v.Item.(string)
+			if m[id] != "" {
+				id = m[id]
+			}
+
+			in += fmt.Sprintf(` %v "%v"`, op, id)
 		}
 	} else if x, ok := tn.Item.(Condition); ok {
 		in += x.StringRepresentation
@@ -55,8 +60,8 @@ func _buildString(tn *TreeNode, in string) string {
 }
 
 // GetAudienceString returns audience string
-func (t *TreeNode) GetAudienceString() string {
-	rt := _buildString(t, "")
+func (t *TreeNode) GetAudienceString(m map[string]string) string {
+	rt := _buildString(t, "", m)
 	return rt
 }
 

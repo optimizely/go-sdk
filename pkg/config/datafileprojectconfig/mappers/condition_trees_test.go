@@ -82,7 +82,7 @@ func TestBuildAudienceConditionTreeSimpleAudienceCondition(t *testing.T) {
 			},
 		},
 	}
-	expectedAudienceString := expectedConditionTree.GetAudienceString()
+	expectedAudienceString := expectedConditionTree.GetAudienceString(make(map[string]string))
 	assert.Equal(t, expectedConditionTree, conditionTree)
 	return
 	if audienceString != expectedAudienceString {

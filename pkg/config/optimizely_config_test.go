@@ -117,8 +117,7 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalEmptySDKKeyAndEnviro
 	s.True(keyExists)
 }
 
-func TestTemp(t *testing.T) {
-	return
+func _TestTemp(t *testing.T) {
 	dataFileName := "../../dataV2.json"
 	dataFile, err := ioutil.ReadFile(dataFileName)
 	if err != nil {
