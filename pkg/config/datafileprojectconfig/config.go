@@ -82,18 +82,18 @@ func (c DatafileProjectConfig) GetAttributeID(key string) string {
 	return c.attributeKeyToIDMap[key]
 }
 
-// GetAttributes returns attributes slice
+// GetAttributes returns attributes
 func (c DatafileProjectConfig) GetAttributes() []entities.Attribute {
-	attributes := make([]entities.Attribute, 0, len(c.attributeMap))
+	attributes := []entities.Attribute{}
 	for _, attr := range c.attributeMap {
 		attributes = append(attributes, attr)
 	}
 	return attributes
 }
 
-// GetEvents returns events slice
+// GetEvents returns events
 func (c DatafileProjectConfig) GetEvents() []entities.Event {
-	events := make([]entities.Event, 0, len(c.eventMap))
+	events := []entities.Event{}
 	for _, event := range c.eventMap {
 		events = append(events, event)
 	}

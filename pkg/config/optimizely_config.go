@@ -97,7 +97,7 @@ func getExperimentVariablesMap(features []entities.Feature) (experimentVariableM
 	return experimentVariableMap
 }
 
-func getExperimentMap(features []entities.Feature, experiments []entities.Experiment, variableByIDMap map[string]entities.Variable, m map[string]string) (optlyExperimentMap map[string]OptimizelyExperiment) {
+func getExperimentMap(features []entities.Feature, experiments []entities.Experiment, variableByIDMap map[string]entities.Variable, audienceMap map[string]string) (optlyExperimentMap map[string]OptimizelyExperiment) {
 
 	optlyExperimentMap = map[string]OptimizelyExperiment{}
 	experimentVariablesMap := getExperimentVariablesMap(features)
@@ -125,7 +125,7 @@ func getExperimentMap(features []entities.Feature, experiments []entities.Experi
 			optVariation := OptimizelyVariation{ID: variation.ID, Key: variation.Key, VariablesMap: optlyVariablesMap, FeatureEnabled: variation.FeatureEnabled}
 			optlyVariationsMap[variation.Key] = optVariation
 		}
-		optlyExperiment := OptimizelyExperiment{ID: experiment.ID, Key: experiment.Key, VariationsMap: optlyVariationsMap, Audiences: experiment.AudienceConditionTree.GetAudienceString(m)}
+		optlyExperiment := OptimizelyExperiment{ID: experiment.ID, Key: experiment.Key, VariationsMap: optlyVariationsMap, Audiences: experiment.AudienceConditionTree.GetAudienceString(audienceMap)}
 		optlyExperimentMap[experiment.Key] = optlyExperiment
 	}
 	return optlyExperimentMap
@@ -170,13 +170,13 @@ func NewOptimizelyConfig(projConfig ProjectConfig) *OptimizelyConfig {
 
 	variableByIDMap := getVariableByIDMap(featuresList)
 
-	audMap := make(map[string]string)
+	audienceMap := make(map[string]string)
 
 	optimizelyConfig.OptimizelyAudiences = projConfig.GetOptimizelyAudiences()
 	for _, v := range optimizelyConfig.OptimizelyAudiences {
-		audMap[v.ID] = v.Name
+		audienceMap[v.ID] = v.Name
 	}
-	optimizelyConfig.ExperimentsMap = getExperimentMap(featuresList, experimentsList, variableByIDMap, audMap)
+	optimizelyConfig.ExperimentsMap = getExperimentMap(featuresList, experimentsList, variableByIDMap, audienceMap)
 	optimizelyConfig.FeaturesMap = getFeatureMap(featuresList, optimizelyConfig.ExperimentsMap)
 	optimizelyConfig.Revision = revision
 	optimizelyConfig.SdkKey = projConfig.GetSdkKey()
