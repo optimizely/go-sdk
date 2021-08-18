@@ -125,7 +125,7 @@ func getExperimentMap(features []entities.Feature, experiments []entities.Experi
 			optVariation := OptimizelyVariation{ID: variation.ID, Key: variation.Key, VariablesMap: optlyVariablesMap, FeatureEnabled: variation.FeatureEnabled}
 			optlyVariationsMap[variation.Key] = optVariation
 		}
-		optlyExperiment := OptimizelyExperiment{ID: experiment.ID, Key: experiment.Key, VariationsMap: optlyVariationsMap, Audiences: experiment.AudienceConditionTree.GetAudienceString(audienceMap)}
+		optlyExperiment := OptimizelyExperiment{ID: experiment.ID, Key: experiment.Key, VariationsMap: optlyVariationsMap, Audiences: experiment.AudienceConditionTree.GetAudienceString(audienceMap, true)}
 		optlyExperimentMap[experiment.Key] = optlyExperiment
 	}
 	return optlyExperimentMap

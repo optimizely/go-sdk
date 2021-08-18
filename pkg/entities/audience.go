@@ -38,5 +38,5 @@ func (a Audience) ToOptimizelyAudience() OptimizelyAudience {
 	return OptimizelyAudience{
 		ID:         a.ID,
 		Name:       a.Name,
-		Conditions: a.ConditionTree.GetAudienceString(make(map[string]string))}
+		Conditions: a.ConditionTree.GetAudienceString(make(map[string]string), false)}
 }

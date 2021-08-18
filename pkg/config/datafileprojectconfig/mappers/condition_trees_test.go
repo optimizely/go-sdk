@@ -87,7 +87,7 @@ func TestConfigV2(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		aud := conditionTree.GetAudienceString(aMap)
+		aud := conditionTree.GetAudienceString(aMap, true)
 		fmt.Println(k, v, aud)
 		if audiences_output[k] != aud {
 			t.FailNow()
@@ -141,7 +141,7 @@ func TestBuildAudienceConditionTreeSimpleAudienceCondition(t *testing.T) {
 			},
 		},
 	}
-	expectedAudienceString := expectedConditionTree.GetAudienceString(make(map[string]string))
+	expectedAudienceString := expectedConditionTree.GetAudienceString(make(map[string]string), false)
 	assert.Equal(t, expectedConditionTree, conditionTree)
 	return
 	if audienceString != expectedAudienceString {

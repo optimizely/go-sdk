@@ -115,8 +115,13 @@ func _buildString(tn *TreeNode, in string, m map[string]string) string {
 }
 
 // GetAudienceString returns audience string
-func (t *TreeNode) GetAudienceString(m map[string]string) string {
-	rt := _buildStringFromStringTree(t, "", m)
+func (t *TreeNode) GetAudienceString(m map[string]string, isString bool) string {
+	var rt string
+	if isString {
+		rt = _buildStringFromStringTree(t, "", m)
+	} else {
+		rt = _buildString(t, "", make(map[string]string))
+	}
 	return rt
 }
 
