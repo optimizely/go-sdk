@@ -17,6 +17,8 @@
 // Package entities //
 package entities
 
+import "strings"
+
 // import "strings"
 import "fmt"
 
@@ -32,6 +34,55 @@ func (t *TreeNode) String() string {
 	return fmt.Sprintf("type(%T)/ %+v/ %+v/ %+v\n", t.Item, t.Item, t.Operator, len(t.Nodes))
 }
 
+func (t *TreeNode) isLeaf() bool {
+	return len(t.Nodes) == 0
+}
+
+func _mapAudience(s string, m map[string]string) string {
+	if m[s] != "" {
+		s = m[s]
+	}
+	return `"` + s + `"`
+}
+
+func _buildStringFromStringTree(tn *TreeNode, s string, m map[string]string) string {
+	fmt.Println(tn)
+	op := tn.Operator
+	if len(tn.Nodes) == 0 {
+		return s
+	}
+	if op == "not" {
+		s += "NOT "
+		if tn.Nodes[0].isLeaf() {
+			id := tn.Nodes[0].Item.(string)
+			s += _mapAudience(id, m)
+		} else {
+			s += "("
+			s = _buildStringFromStringTree(tn.Nodes[0], s, m)
+			s += ")"
+		}
+		return s
+	}
+	if !tn.Nodes[0].isLeaf() {
+		s += "("
+		s = _buildStringFromStringTree(tn.Nodes[0], s, m)
+		s += ")"
+	} else {
+		id := tn.Nodes[0].Item.(string)
+		s += _mapAudience(id, m)
+	}
+	for _, v := range tn.Nodes[1:] {
+		if !v.isLeaf() {
+			s += " " + strings.ToUpper(op) + " ("
+			s = _buildStringFromStringTree(v, s, m)
+			s += ")"
+			continue
+		}
+		id := _mapAudience(v.Item.(string), m)
+		s += fmt.Sprintf(` %v %v`, strings.ToUpper(op), id)
+	}
+	return s
+}
 func _buildString(tn *TreeNode, in string, m map[string]string) string {
 	if tn == nil {
 		return ""
@@ -65,7 +116,7 @@ func _buildString(tn *TreeNode, in string, m map[string]string) string {
 
 // GetAudienceString returns audience string
 func (t *TreeNode) GetAudienceString(m map[string]string) string {
-	rt := _buildString(t, "", m)
+	rt := _buildStringFromStringTree(t, "", m)
 	return rt
 }
 
