@@ -58,19 +58,16 @@ func (s *OptimizelyConfigTestSuite) SetupTest() {
 }
 
 func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
-	//optimizelyConfig := NewOptimizelyConfig(s.projectConfig)
-	return //TODO remove
+	optimizelyConfig := NewOptimizelyConfig(s.projectConfig)
 
-	/*
-		s.Equal(s.expectedOptimizelyConfig.FeaturesMap, optimizelyConfig.FeaturesMap)
-		s.Equal(s.expectedOptimizelyConfig.ExperimentsMap, optimizelyConfig.ExperimentsMap)
-		s.Equal(s.expectedOptimizelyConfig.Revision, optimizelyConfig.Revision)
-		s.Equal(s.expectedOptimizelyConfig.datafile, optimizelyConfig.datafile)
-		s.Equal(s.expectedOptimizelyConfig.SdkKey, optimizelyConfig.SdkKey)
-		s.Equal(s.expectedOptimizelyConfig.EnvironmentKey, optimizelyConfig.EnvironmentKey)
+	s.Equal(s.expectedOptimizelyConfig.FeaturesMap, optimizelyConfig.FeaturesMap)
+	s.Equal(s.expectedOptimizelyConfig.ExperimentsMap, optimizelyConfig.ExperimentsMap)
+	s.Equal(s.expectedOptimizelyConfig.Revision, optimizelyConfig.Revision)
+	s.Equal(s.expectedOptimizelyConfig.datafile, optimizelyConfig.datafile)
+	s.Equal(s.expectedOptimizelyConfig.SdkKey, optimizelyConfig.SdkKey)
+	s.Equal(s.expectedOptimizelyConfig.EnvironmentKey, optimizelyConfig.EnvironmentKey)
 
-		s.Equal(s.expectedOptimizelyConfig, *optimizelyConfig)
-	*/
+	s.Equal(s.expectedOptimizelyConfig, *optimizelyConfig)
 }
 
 func (s *OptimizelyConfigTestSuite) TestOptlyConfigV2() {
@@ -97,9 +94,7 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfigV2() {
 	projectMgr := NewStaticProjectConfigManagerWithOptions("", WithInitialDatafile(dataFile))
 	optimizelyConfig := NewOptimizelyConfig(projectMgr.projectConfig)
 
-	_ = optimizelyConfig
-	//TODO: enable below and remove above
-	//s.Equal(expectedOptimizelyConfig, *optimizelyConfig)
+	s.Equal(expectedOptimizelyConfig, *optimizelyConfig)
 }
 
 func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalEmptySDKKeyAndEnvironmentKey() {
@@ -128,11 +123,7 @@ func _TestTemp(t *testing.T) {
 	}
 	projectMgr := NewStaticProjectConfigManagerWithOptions("", WithInitialDatafile(dataFile))
 	oc := NewOptimizelyConfig(projectMgr.projectConfig)
-	_save(oc)
-}
-
-func _save(o *OptimizelyConfig) {
-	ba, err := json.Marshal(o)
+	ba, err := json.Marshal(oc)
 	if err != nil {
 		panic(err)
 	}
@@ -169,18 +160,6 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfigGetDatafile() {
 	optimizelyConfig := NewOptimizelyConfig(projectMgr.projectConfig)
 	s.NotNil(optimizelyConfig.datafile)
 	s.Equal(string(datafile), optimizelyConfig.GetDatafile())
-}
-
-func (s *OptimizelyConfigTestSuite) TestOptlyConfigGetDatafileLong() {
-	return //TODO remove
-	dataFileName := "testdata/optimizely_config_datafile.json"
-	dataFile, err := ioutil.ReadFile(dataFileName)
-	if err != nil {
-		s.Fail("error opening file " + dataFileName)
-	}
-	projectMgr := NewStaticProjectConfigManagerWithOptions("", WithInitialDatafile(dataFile))
-	optimizelyConfig := NewOptimizelyConfig(projectMgr.projectConfig)
-	s.Equal(string(dataFile), optimizelyConfig.GetDatafile())
 }
 
 func TestOptimizelyConfigTestSuite(t *testing.T) {

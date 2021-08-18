@@ -46,7 +46,9 @@ func _mapAudience(s string, m map[string]string) string {
 }
 
 func _buildStringFromStringTree(tn *TreeNode, s string, m map[string]string) string {
-	fmt.Println(tn)
+	if tn == nil {
+		return ""
+	}
 	op := tn.Operator
 	if len(tn.Nodes) == 0 {
 		return s
@@ -94,19 +96,14 @@ func _buildString(tn *TreeNode, in string, m map[string]string) string {
 		in = _buildString(tn.Nodes[0], in, m)
 		in += `]`
 	} else if len(tn.Nodes) > 1 {
-		op := tn.Operator
-		id := tn.Nodes[0].Item.(string)
-		if m[id] != "" {
-			id = `"` + m[id] + `"`
-		}
-		in += id
-		for _, v := range tn.Nodes[1:] {
-			id := v.Item.(string)
-			if m[id] != "" {
-				id = m[id]
+		in += `["`
+		in += tn.Operator
+		in += `", `
+		for k, v := range tn.Nodes {
+			in = _buildString(v, in, m)
+			if k < len(tn.Nodes)-1 {
+				in += `, `
 			}
-
-			in += fmt.Sprintf(` %v "%v"`, op, id)
 		}
 	} else if x, ok := tn.Item.(Condition); ok {
 		in += x.StringRepresentation
