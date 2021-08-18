@@ -65,7 +65,8 @@ jobs:
     - stage: 'Benchmark test'
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
       script:
-        - make benchmark
+#        - make benchmark
+        - true
 
     - &integrationtest
       stage: 'Integration tests'
