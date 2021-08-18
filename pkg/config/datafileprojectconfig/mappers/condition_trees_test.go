@@ -109,7 +109,6 @@ func TestBuildAudienceConditionTreeEmpty(t *testing.T) {
 
 func TestBuildAudienceConditionTreeSimpleAudienceCondition(t *testing.T) {
 	conditionString := "[ \"and\", [ \"or\", [ \"or\",  \"12\", \"123\", \"1234\"] ] ]"
-	audienceString := `"12" OR "123" OR "1234"`
 	var conditions interface{}
 	json.Unmarshal([]byte(conditionString), &conditions)
 	conditionTree, err := buildAudienceConditionTree(conditions)
@@ -141,12 +140,7 @@ func TestBuildAudienceConditionTreeSimpleAudienceCondition(t *testing.T) {
 			},
 		},
 	}
-	expectedAudienceString := expectedConditionTree.GetAudienceString(make(map[string]string), false)
 	assert.Equal(t, expectedConditionTree, conditionTree)
-	return
-	if audienceString != expectedAudienceString {
-		// t.Fatal(audienceString, "\n", expectedAudienceString)
-	}
 }
 
 func TestBuildAudienceConditionTreeNoOperators(t *testing.T) {

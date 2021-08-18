@@ -70,33 +70,6 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 	s.Equal(s.expectedOptimizelyConfig, *optimizelyConfig)
 }
 
-func (s *OptimizelyConfigTestSuite) TestOptlyConfigV2() {
-	return
-	outputFileName := "testdata/optimizely_config_expectedV2.json"
-	expectedOutput, err := ioutil.ReadFile(outputFileName)
-	if err != nil {
-		s.Fail("error opening file " + outputFileName)
-	}
-	expectedOptimizelyConfig := OptimizelyConfig{}
-
-	err = json.Unmarshal(expectedOutput, &expectedOptimizelyConfig)
-	if err != nil {
-		s.Fail("unable to parse expected file")
-	}
-
-	dataFileName := "testdata/optimizely_config_datafileV2.json"
-	dataFile, err := ioutil.ReadFile(dataFileName)
-	if err != nil {
-		s.Fail("error opening file " + dataFileName)
-	}
-	expectedOptimizelyConfig.datafile = string(dataFile)
-
-	projectMgr := NewStaticProjectConfigManagerWithOptions("", WithInitialDatafile(dataFile))
-	optimizelyConfig := NewOptimizelyConfig(projectMgr.projectConfig)
-
-	s.Equal(expectedOptimizelyConfig, *optimizelyConfig)
-}
-
 func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalEmptySDKKeyAndEnvironmentKey() {
 	datafile := []byte(`{"version":"4"}`)
 	projectMgr := NewStaticProjectConfigManagerWithOptions("", WithInitialDatafile(datafile))

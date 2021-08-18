@@ -18,8 +18,6 @@
 package entities
 
 import "strings"
-
-// import "strings"
 import "fmt"
 
 // TreeNode in a condition tree
