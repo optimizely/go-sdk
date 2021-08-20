@@ -53,6 +53,8 @@ type OptimizelyFeature struct {
 	Key            string                          `json:"key"`
 	ExperimentsMap map[string]OptimizelyExperiment `json:"experimentsMap"`
 	VariablesMap   map[string]OptimizelyVariable   `json:"variablesMap"`
+	ExperimentRules []OptimizelyExperiment
+	DeliverRules	[]OptimizelyExperiment
 }
 
 // OptimizelyVariation has variation info
