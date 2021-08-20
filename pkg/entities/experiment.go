@@ -38,6 +38,7 @@ type Experiment struct {
 	AudienceConditionTree *TreeNode
 	Whitelist             map[string]string
 	IsFeatureExperiment   bool
+	Audiences             string
 }
 
 // Range represents bucketing range that the specify entityID falls into

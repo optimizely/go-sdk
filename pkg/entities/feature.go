@@ -24,6 +24,8 @@ type Feature struct {
 	FeatureExperiments []Experiment
 	Rollout            Rollout
 	VariableMap        map[string]Variable
+	ExperimentRules    []Experiment
+	DeliveryRules      []Experiment
 }
 
 // Rollout represents a feature rollout
@@ -34,10 +36,11 @@ type Rollout struct {
 
 // Variable represents a feature variable
 type Variable struct {
-	DefaultValue string
-	ID           string
-	Key          string
-	Type         VariableType
+	DefaultValue   string
+	ID             string
+	Key            string
+	Type           VariableType
+	OptimizelyType string
 }
 
 // VariableType is the type of feature variable
