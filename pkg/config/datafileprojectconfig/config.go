@@ -100,9 +100,9 @@ func (c DatafileProjectConfig) GetEvents() []entities.Event {
 	return events
 }
 
-// GetOptimizelyAudiences returns audiences slice
+// GetOptimizelyAudiences returns audiences
 func (c DatafileProjectConfig) GetOptimizelyAudiences() []entities.OptimizelyAudience {
-	optimizelyAudiences := make([]entities.OptimizelyAudience, 0, len(c.audienceMap))
+	optimizelyAudiences := []entities.OptimizelyAudience{}
 	for _, audience := range c.audienceMap {
 		newOptimizelyAudience := audience.ToOptimizelyAudience()
 		if newOptimizelyAudience.ID != "$opt_dummy_audience" {
