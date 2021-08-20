@@ -147,11 +147,13 @@ func getFeatureMap(features []entities.Feature, experimentsMap map[string]Optimi
 		}
 
 		var optlyExperimentMap = map[string]OptimizelyExperiment{}
+		x := []OptimizelyExperiment{}
 		for _, experiment := range feature.FeatureExperiments {
 			optlyExperimentMap[experiment.Key] = experimentsMap[experiment.Key]
+			x = append (x, experimentsMap[experiment.Key])
 		}
 
-		optlyFeature := OptimizelyFeature{ID: feature.ID, Key: feature.Key, ExperimentsMap: optlyExperimentMap, VariablesMap: optlyFeatureVariablesMap}
+		optlyFeature := OptimizelyFeature{ID: feature.ID, Key: feature.Key, ExperimentsMap: optlyExperimentMap, VariablesMap: optlyFeatureVariablesMap, ExperimentRules: x}
 		optlyFeatureMap[feature.Key] = optlyFeature
 
 	}
