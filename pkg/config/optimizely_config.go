@@ -49,12 +49,12 @@ type OptimizelyExperiment struct {
 
 // OptimizelyFeature has feature info
 type OptimizelyFeature struct {
-	ID             string                          `json:"id"`
-	Key            string                          `json:"key"`
-	ExperimentsMap map[string]OptimizelyExperiment `json:"experimentsMap"`
-	VariablesMap   map[string]OptimizelyVariable   `json:"variablesMap"`
+	ID              string                          `json:"id"`
+	Key             string                          `json:"key"`
+	ExperimentsMap  map[string]OptimizelyExperiment `json:"experimentsMap"`
+	VariablesMap    map[string]OptimizelyVariable   `json:"variablesMap"`
 	ExperimentRules []OptimizelyExperiment
-	DeliverRules	[]OptimizelyExperiment
+	DeliverRules    []OptimizelyExperiment
 }
 
 // OptimizelyVariation has variation info
@@ -151,10 +151,10 @@ func getFeatureMap(features []entities.Feature, experimentsMap map[string]Optimi
 		y := []OptimizelyExperiment{}
 		for _, experiment := range feature.FeatureExperiments {
 			optlyExperimentMap[experiment.Key] = experimentsMap[experiment.Key]
-			x = append (x, experimentsMap[experiment.Key])
+			x = append(x, experimentsMap[experiment.Key])
 		}
 		for _, v := range feature.Rollout.Experiments {
-			y = append (y, experimentsMap[v.ID])
+			y = append(y, experimentsMap[v.Key])
 		}
 
 		optlyFeature := OptimizelyFeature{ID: feature.ID, Key: feature.Key, ExperimentsMap: optlyExperimentMap, VariablesMap: optlyFeatureVariablesMap, ExperimentRules: x}
