@@ -50,6 +50,7 @@ type DatafileProjectConfig struct {
 	sendFlagDecisions    bool
 	sdkKey               string
 	environmentKey       string
+	attributeSlice       []entities.Attribute
 }
 
 // GetDatafile returns a string representation of the environment's datafile
@@ -84,6 +85,8 @@ func (c DatafileProjectConfig) GetAttributeID(key string) string {
 
 // GetAttributes returns attributes
 func (c DatafileProjectConfig) GetAttributes() []entities.Attribute {
+	return c.attributeSlice
+
 	attributes := []entities.Attribute{}
 	for _, attr := range c.attributeMap {
 		attributes = append(attributes, attr)
@@ -240,7 +243,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		return nil, err
 	}
 
-	attributeMap, attributeKeyToIDMap := mappers.MapAttributes(datafile.Attributes)
+	attributeMap, attributeKeyToIDMap, attributeSlice := mappers.MapAttributes(datafile.Attributes)
 	allExperiments := mappers.MergeExperiments(datafile.Experiments, datafile.Groups)
 	groupMap, experimentGroupMap := mappers.MapGroups(datafile.Groups)
 	experimentMap, experimentKeyMap := mappers.MapExperiments(allExperiments, experimentGroupMap)
@@ -268,7 +271,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		revision:             datafile.Revision,
 		rolloutMap:           rolloutMap,
 		sendFlagDecisions:    datafile.SendFlagDecisions,
-	}
+		attributeSlice:       attributeSlice}
 
 	logger.Info("Datafile is valid.")
 	return config, nil

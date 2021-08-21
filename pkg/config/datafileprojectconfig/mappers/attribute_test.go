@@ -27,7 +27,7 @@ import (
 
 func TestMapAttributesWithEmptyList(t *testing.T) {
 
-	attributeMap, attributeKeyToIDMap := MapAttributes(nil)
+	attributeMap, attributeKeyToIDMap, _ := MapAttributes(nil)
 
 	expectedAttributeMap := map[string]entities.Attribute{}
 	expectedAttributeKeyToIDMap := map[string]string{}
@@ -40,7 +40,7 @@ func TestMapAttributes(t *testing.T) {
 	attrList := []datafileEntities.Attribute{{ID: "1", Key: "one"}, {ID: "2", Key: "two"},
 		{ID: "3", Key: "three"}, {ID: "2", Key: "four"}, {ID: "5", Key: "one"}}
 
-	attributeMap, attributeKeyToIDMap := MapAttributes(attrList)
+	attributeMap, attributeKeyToIDMap, _ := MapAttributes(attrList)
 
 	expectedAttributeMap := map[string]entities.Attribute{"1": {"1", "one"},
 		"2": {"2", "two"}, "3": {"3", "three"}, "5": {"5", "one"}}

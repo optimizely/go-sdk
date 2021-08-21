@@ -5,12 +5,12 @@ git:
 install:
   - eval "$(gimme)"
 stages:
+  - 'Integration tests'
   - 'Source clear'
   - 'Lint markdown files'
   - 'Lint'
   - 'Unit test'
   - 'Benchmark test'  
-  - 'Integration tests'
   - 'Production tests'
   - 'Readme-sync'
 jobs:
