@@ -85,7 +85,7 @@ func (c DatafileProjectConfig) GetAttributeID(key string) string {
 
 // GetAttributes returns attributes
 func (c DatafileProjectConfig) GetAttributes() []entities.Attribute {
-	return c.attributeSlice
+//	return c.attributeSlice
 
 	attributes := []entities.Attribute{}
 	for _, attr := range c.attributeMap {
