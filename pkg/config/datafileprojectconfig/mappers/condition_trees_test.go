@@ -17,7 +17,6 @@
 package mappers
 
 import (
-	"fmt"
 	"testing"
 
 	datafileConfig "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
@@ -25,15 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func _TestTemp(t *testing.T) {
-	jsons := `["1", "2"]`
-	jsons = `["1"]`
-	var cond interface{}
-	json.Unmarshal([]byte(jsons), &cond)
-	cTree, _ := buildAudienceConditionTree(cond)
-	fmt.Println(cTree)
-	t.FailNow()
-}
 func TestConfigV2(t *testing.T) {
 	aMap := map[string]string{
 		"1":  "us",
@@ -43,24 +33,23 @@ func TestConfigV2(t *testing.T) {
 		"12": "male",
 		"13": "kid",
 	}
-	_ = aMap
 
 	audience_input_json := []string{
-		`            []`,
-		`            ["or", "1", "2"]`,
-		`            ["and", "1", "2", "3"]`,
-		`            ["not", "1"]`,
-		`            ["or", "1"]`,
-		`            ["and", "1"]`,
-		`            ["1"]`,
-		`            ["1", "2"]`,
-		`            ["and", ["or", "1", "2"], "3"]`,
-		`            ["and", ["or", "1", ["and", "2", "3"]], ["and", "11", ["or", "12", "13"]]]`,
-		`            ["not", ["and", "1", "2"]]`,
-		`            ["or", "1", "100000"]`,
-		`            ["and", "and"]`,
-		`            ["and"]`,
-		`            ["and", ["or", "1", ["and", "2", "3"]], ["and", "11", ["or", "12", "3"]]]`}
+		`[]`,
+		`["or", "1", "2"]`,
+		`["and", "1", "2", "3"]`,
+		`["not", "1"]`,
+		`["or", "1"]`,
+		`["and", "1"]`,
+		`["1"]`,
+		`["1", "2"]`,
+		`["and", ["or", "1", "2"], "3"]`,
+		`["and", ["or", "1", ["and", "2", "3"]], ["and", "11", ["or", "12", "13"]]]`,
+		`["not", ["and", "1", "2"]]`,
+		`["or", "1", "100000"]`,
+		`["and", "and"]`,
+		`["and"]`,
+		`["and", ["or", "1", ["and", "2", "3"]], ["and", "11", ["or", "12", "3"]]]`}
 
 	audiences_output := []string{
 		``,
@@ -78,22 +67,18 @@ func TestConfigV2(t *testing.T) {
 		``,
 		``,
 		`("us" OR ("female" AND "adult")) AND ("fr" AND ("male" OR "adult"))`}
-	_ = audiences_output
 	for k, v := range audience_input_json {
 		var conditions interface{}
 		json.Unmarshal([]byte(v), &conditions)
-		fmt.Println("aud", v)
 		conditionTree, err := buildAudienceConditionTree(conditions)
 		if err != nil {
 			t.Fatal(err)
 		}
 		aud := conditionTree.GetAudienceString(aMap, true)
-		fmt.Println(k, v, aud)
 		if audiences_output[k] != aud {
 			t.FailNow()
 		}
 	}
-
 }
 
 func TestBuildAudienceConditionTreeEmpty(t *testing.T) {
