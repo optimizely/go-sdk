@@ -5,12 +5,12 @@ git:
 install:
   - eval "$(gimme)"
 stages:
-  - 'Integration tests'
   - 'Source clear'
   - 'Lint markdown files'
   - 'Lint'
   - 'Unit test'
   - 'Benchmark test'  
+  - 'Integration tests'
   - 'Production tests'
   - 'Readme-sync'
 jobs:
@@ -31,7 +31,7 @@ jobs:
       stage: 'Unit test'
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
       script:
-        - true
+        - make cover
 
     - <<: *test
       stage: 'Unit test'
@@ -60,13 +60,12 @@ jobs:
       before_script:
         - go get github.com/mattn/goveralls
       after_success:
-        - true
+        - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
 
     - stage: 'Benchmark test'
       env: GIMME_GO_VERSION=master GIMME_OS=linux GIMME_ARCH=amd64
       script:
-        - true
-#        - make benchmark
+        - make benchmark
 
     - &integrationtest
       stage: 'Integration tests'
