@@ -58,7 +58,6 @@ func (s *OptimizelyConfigTestSuite) SetupTest() {
 }
 
 func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
-	return
 	optimizelyConfig := NewOptimizelyConfig(s.projectConfig)
 
 	s.Equal(s.expectedOptimizelyConfig.FeaturesMap, optimizelyConfig.FeaturesMap)
@@ -87,21 +86,6 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalEmptySDKKeyAndEnviro
 
 	_, keyExists = jsonMap["environmentKey"]
 	s.True(keyExists)
-}
-
-func _TestTemp(t *testing.T) {
-	dataFileName := "../../dV2jt.json"
-	dataFile, err := ioutil.ReadFile(dataFileName)
-	if err != nil {
-		panic(err)
-	}
-	projectMgr := NewStaticProjectConfigManagerWithOptions("", WithInitialDatafile(dataFile))
-	oc := NewOptimizelyConfig(projectMgr.projectConfig)
-	ba, err := json.Marshal(oc)
-	if err != nil {
-		panic(err)
-	}
-	ioutil.WriteFile("../../oc.json", ba, 0644)
 }
 
 func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalNonEmptySDKKeyAndEnvironmentKey() {
