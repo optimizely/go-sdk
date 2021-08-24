@@ -181,6 +181,11 @@ func (c DatafileProjectConfig) GetExperimentList() (experimentList []entities.Ex
 	for _, experiment := range c.experimentMap {
 		experimentList = append(experimentList, experiment)
 	}
+	for _, rollout := range c.rolloutMap {
+		for _, experiment := range rollout.Experiments {
+			experimentList = append(experimentList, experiment)
+		}
+	}
 	return experimentList
 }
 
