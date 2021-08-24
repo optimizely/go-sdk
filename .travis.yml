@@ -8,9 +8,9 @@ stages:
   - 'Source clear'
   - 'Lint markdown files'
   - 'Lint'
-  - 'Unit test'
   - 'Benchmark test'  
   - 'Integration tests'
+  - 'Unit test'
   - 'Production tests'
   - 'Readme-sync'
 jobs:
