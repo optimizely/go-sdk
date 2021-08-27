@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -27,6 +27,11 @@ import (
 
 var errEmptyTree = errors.New("empty tree")
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
+
+// GetDefaultOperators returns default conditional operators
+func GetDefaultOperators() []string {
+	return []string{"and", "or", "not"}
+}
 
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
 func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, retErr error) {
@@ -135,7 +140,7 @@ func createLeafCondition(typedV map[string]interface{}, node *entities.TreeNode)
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
 func buildAudienceConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, err error) {
 
-	var operators = []string{"or", "and", "not"} // any other operators?
+	var operators = GetDefaultOperators()
 	value := reflect.ValueOf(conditions)
 	visited := make(map[interface{}]bool)
 

@@ -32,11 +32,13 @@ type ProjectConfig interface {
 	GetAudienceByID(string) (entities.Audience, error)
 	GetAudienceMap() map[string]entities.Audience
 	GetBotFiltering() bool
+	GetEvents() []entities.Event
 	GetEventByKey(string) (entities.Event, error)
 	GetExperimentByKey(string) (entities.Experiment, error)
 	GetFeatureByKey(string) (entities.Feature, error)
 	GetVariableByKey(featureKey string, variableKey string) (entities.Variable, error)
 	GetExperimentList() []entities.Experiment
+	GetRolloutList() (rolloutList []entities.Rollout)
 	GetFeatureList() []entities.Feature
 	GetGroupByID(string) (entities.Group, error)
 	GetProjectID() string
@@ -44,6 +46,7 @@ type ProjectConfig interface {
 	SendFlagDecisions() bool
 	GetSdkKey() string
 	GetEnvironmentKey() string
+	GetAttributes() []entities.Attribute
 }
 
 // ProjectConfigManager maintains an instance of the ProjectConfig

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -81,6 +81,7 @@ func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experimen
 
 	experiment := entities.Experiment{
 		AudienceIds:           rawExperiment.AudienceIds,
+		AudienceConditions:    rawExperiment.AudienceConditions,
 		ID:                    rawExperiment.ID,
 		LayerID:               rawExperiment.LayerID,
 		Key:                   rawExperiment.Key,

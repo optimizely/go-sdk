@@ -18,17 +18,32 @@
 package config
 
 import (
+	"encoding/json"
+	"fmt"
+	"sort"
+	"strings"
+
+	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/mappers"
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
 // OptimizelyConfig is a snapshot of the experiments and features in the project config
 type OptimizelyConfig struct {
-	Revision       string                          `json:"revision"`
+	EnvironmentKey string `json:"environmentKey"`
+	SdkKey         string `json:"sdkKey"`
+	Revision       string `json:"revision"`
+
+	// This experimentsMap is for experiments of legacy projects only.
+	// For flag projects, experiment keys are not guaranteed to be unique
+	// across multiple flags, so this map may not include all experiments
+	// when keys conflict.
 	ExperimentsMap map[string]OptimizelyExperiment `json:"experimentsMap"`
-	FeaturesMap    map[string]OptimizelyFeature    `json:"featuresMap"`
-	SdkKey         string                          `json:"sdkKey,omitempty"`
-	EnvironmentKey string                          `json:"environmentKey,omitempty"`
-	datafile       string
+
+	FeaturesMap map[string]OptimizelyFeature `json:"featuresMap"`
+	Attributes  []OptimizelyAttribute        `json:"attributes"`
+	Audiences   []OptimizelyAudience         `json:"audiences"`
+	Events      []OptimizelyEvent            `json:"events"`
+	datafile    string
 }
 
 // GetDatafile returns a string representation of the environment's datafile
@@ -40,15 +55,40 @@ func (c OptimizelyConfig) GetDatafile() string {
 type OptimizelyExperiment struct {
 	ID            string                         `json:"id"`
 	Key           string                         `json:"key"`
+	Audiences     string                         `json:"audiences"`
 	VariationsMap map[string]OptimizelyVariation `json:"variationsMap"`
+}
+
+// OptimizelyAttribute has attribute info
+type OptimizelyAttribute struct {
+	ID  string `json:"id"`
+	Key string `json:"key"`
+}
+
+// OptimizelyAudience has audience info
+type OptimizelyAudience struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Conditions string `json:"conditions"`
+}
+
+// OptimizelyEvent has event info
+type OptimizelyEvent struct {
+	ID            string   `json:"id"`
+	Key           string   `json:"key"`
+	ExperimentIds []string `json:"experimentIds"`
 }
 
 // OptimizelyFeature has feature info
 type OptimizelyFeature struct {
-	ID             string                          `json:"id"`
-	Key            string                          `json:"key"`
+	ID              string                        `json:"id"`
+	Key             string                        `json:"key"`
+	ExperimentRules []OptimizelyExperiment        `json:"experimentRules"`
+	DeliveryRules   []OptimizelyExperiment        `json:"deliveryRules"`
+	VariablesMap    map[string]OptimizelyVariable `json:"variablesMap"`
+
+	// Deprecated: Use experimentRules and deliveryRules
 	ExperimentsMap map[string]OptimizelyExperiment `json:"experimentsMap"`
-	VariablesMap   map[string]OptimizelyVariable   `json:"variablesMap"`
 }
 
 // OptimizelyVariation has variation info
@@ -67,6 +107,144 @@ type OptimizelyVariable struct {
 	Value string `json:"value"`
 }
 
+func getAudiences(audiencesMap map[string]entities.Audience) []OptimizelyAudience {
+	audiences := []OptimizelyAudience{}
+	for id, audience := range audiencesMap {
+		if id != "$opt_dummy_audience" {
+			optlyAudience := OptimizelyAudience{
+				ID:         audience.ID,
+				Name:       audience.Name,
+				Conditions: "",
+			}
+			switch item := audience.Conditions.(type) {
+			case string:
+				optlyAudience.Conditions = item
+			case interface{}:
+				jsonConditionsString, err := json.Marshal(item)
+				if err == nil {
+					optlyAudience.Conditions = string(jsonConditionsString)
+				}
+			}
+			audiences = append(audiences, optlyAudience)
+		}
+	}
+	return audiences
+}
+
+func getSerializedAudiences(conditions interface{}, audiencesByID map[string]entities.Audience) string {
+	operators := map[string]bool{}
+	for _, operator := range mappers.GetDefaultOperators() {
+		operators[operator] = true
+	}
+	var serializedAudience string
+
+	if conditions != nil {
+		var cond string
+		if conditionsList, ok := conditions.([]interface{}); ok {
+			for _, condition := range conditionsList {
+				var subAudience string
+				// Checks if item is list of conditions means it is sub audience
+				switch item := condition.(type) {
+				case []interface{}:
+					subAudience = getSerializedAudiences(item, audiencesByID)
+					subAudience = fmt.Sprintf("(%s)", subAudience)
+				case string:
+					if operators[item] {
+						cond = strings.ToUpper(item)
+					} else {
+						// Checks if item is audience id
+						var audienceName = item
+						if audience, ok := audiencesByID[item]; ok {
+							audienceName = audience.Name
+						}
+						// if audience condition is "NOT" then add "NOT" at start.
+						// Otherwise check if there is already audience id in serializedAudience
+						// then append condition between serializedAudience and item
+						if serializedAudience != "" || cond == "NOT" {
+							if cond == "" {
+								cond = "OR"
+							}
+							if serializedAudience == "" {
+								serializedAudience = fmt.Sprintf(`%s "%s"`, cond, audiencesByID[item].Name)
+							} else {
+								serializedAudience += fmt.Sprintf(` %s "%s"`, cond, audienceName)
+							}
+						} else {
+							serializedAudience = fmt.Sprintf(`"%s"`, audienceName)
+						}
+					}
+				default:
+				}
+				// Checks if sub audience is empty or not
+				if subAudience != "" {
+					if serializedAudience != "" || cond == "NOT" {
+						if cond == "" {
+							cond = "OR"
+						}
+						if serializedAudience == "" {
+							serializedAudience = fmt.Sprintf(`%s %s`, cond, subAudience)
+						} else {
+							serializedAudience += fmt.Sprintf(` %s %s`, cond, subAudience)
+						}
+					} else {
+						serializedAudience += subAudience
+					}
+				}
+			}
+		}
+	}
+	return serializedAudience
+}
+
+func getExperimentAudiences(experiment entities.Experiment, audiencesByID map[string]entities.Audience) string {
+	if experiment.AudienceConditions == nil {
+		return ""
+	}
+	return getSerializedAudiences(experiment.AudienceConditions, audiencesByID)
+}
+
+func mergeFeatureVariables(feature entities.Feature, variableIDMap map[string]entities.Variable, featureVariableUsages map[string]entities.VariationVariable, isFeatureEnabled bool) map[string]OptimizelyVariable {
+	variablesMap := map[string]OptimizelyVariable{}
+	for _, featureVariable := range feature.VariableMap {
+		variablesMap[featureVariable.Key] = OptimizelyVariable{
+			ID:    featureVariable.ID,
+			Key:   featureVariable.Key,
+			Type:  string(featureVariable.Type),
+			Value: featureVariable.DefaultValue,
+		}
+	}
+	if len(featureVariableUsages) > 0 {
+		for _, featureVariableUsage := range featureVariableUsages {
+			var defaultVariable = variableIDMap[featureVariableUsage.ID]
+			var value = defaultVariable.DefaultValue
+			if isFeatureEnabled {
+				value = featureVariableUsage.Value
+			}
+			variablesMap[defaultVariable.Key] = OptimizelyVariable{
+				ID:    featureVariableUsage.ID,
+				Key:   defaultVariable.Key,
+				Type:  string(defaultVariable.Type),
+				Value: value,
+			}
+		}
+	}
+	return variablesMap
+}
+
+func getVariationsMap(feature entities.Feature, variations map[string]entities.Variation, variableIDMap map[string]entities.Variable) map[string]OptimizelyVariation {
+	variationsMap := map[string]OptimizelyVariation{}
+	for _, variation := range variations {
+		variablesMap := mergeFeatureVariables(feature, variableIDMap, variation.Variables, variation.FeatureEnabled)
+		variationsMap[variation.Key] = OptimizelyVariation{
+			ID:             variation.ID,
+			Key:            variation.Key,
+			FeatureEnabled: variation.FeatureEnabled,
+			VariablesMap:   variablesMap,
+		}
+	}
+	return variationsMap
+}
+
 func getVariableByIDMap(features []entities.Feature) (variableByIDMap map[string]entities.Variable) {
 	variableByIDMap = map[string]entities.Variable{}
 	for _, feature := range features {
@@ -77,79 +255,128 @@ func getVariableByIDMap(features []entities.Feature) (variableByIDMap map[string
 	return variableByIDMap
 }
 
-func getExperimentVariablesMap(features []entities.Feature) (experimentVariableMap map[string]map[string]OptimizelyVariable) {
-	experimentVariableMap = map[string]map[string]OptimizelyVariable{}
-	for _, feature := range features {
-
-		var optimizelyVariableMap = map[string]OptimizelyVariable{}
-		for _, variable := range feature.VariableMap {
-			optimizelyVariableMap[variable.Key] = OptimizelyVariable{Key: variable.Key, ID: variable.ID, Value: variable.DefaultValue, Type: string(variable.Type)}
-
-		}
-		for _, experiment := range feature.FeatureExperiments {
-			experimentVariableMap[experiment.Key] = optimizelyVariableMap
-		}
+func getDeliveryRules(variableByIDMap map[string]entities.Variable, audiencesByID map[string]entities.Audience, feature entities.Feature, experiments []entities.Experiment) []OptimizelyExperiment {
+	optimizelyExpriments := []OptimizelyExperiment{}
+	for _, experiment := range experiments {
+		optimizelyExpriments = append(optimizelyExpriments, OptimizelyExperiment{
+			ID:            experiment.ID,
+			Key:           experiment.Key,
+			Audiences:     getExperimentAudiences(experiment, audiencesByID),
+			VariationsMap: getVariationsMap(feature, experiment.Variations, variableByIDMap),
+		})
 	}
-	return experimentVariableMap
+	return optimizelyExpriments
 }
 
-func getExperimentMap(features []entities.Feature, experiments []entities.Experiment, variableByIDMap map[string]entities.Variable) (optlyExperimentMap map[string]OptimizelyExperiment) {
+func getRolloutExperimentsIdsMap(rolloutIDMap map[string]entities.Rollout) map[string]bool {
+	var rolloutExperimentIdsMap = map[string]bool{}
+	for _, rollout := range rolloutIDMap {
+		for _, experiment := range rollout.Experiments {
+			rolloutExperimentIdsMap[experiment.ID] = true
+		}
+	}
+	return rolloutExperimentIdsMap
+}
 
-	optlyExperimentMap = map[string]OptimizelyExperiment{}
-	experimentVariablesMap := getExperimentVariablesMap(features)
+func getExperimentFeatureMap(features []entities.Feature) map[string][]string {
+	experimentFeatureMap := map[string][]string{}
+	for _, feat := range features {
+		for _, exp := range feat.FeatureExperiments {
+			if featureIds, ok := experimentFeatureMap[exp.ID]; ok {
+				featureIds = append(featureIds, feat.ID)
+				experimentFeatureMap[exp.ID] = featureIds
+			} else {
+				experimentFeatureMap[exp.ID] = []string{feat.ID}
+			}
+		}
+	}
+	return experimentFeatureMap
+}
+
+func getExperimentsMapByID(audiencesByID map[string]entities.Audience, experiments []entities.Experiment, features []entities.Feature, featuresMap map[string]entities.Feature, rolloutMap map[string]entities.Rollout) map[string]OptimizelyExperiment {
+	variableIDMap := getVariableByIDMap(features)
+	rolloutExperimentIdsMap := getRolloutExperimentsIdsMap(rolloutMap)
+	experimentFeaturesMap := getExperimentFeatureMap(features)
+	experimentsMap := map[string]OptimizelyExperiment{}
 
 	for _, experiment := range experiments {
-		var optlyVariationsMap = map[string]OptimizelyVariation{}
-		for _, variation := range experiment.Variations {
-			var optlyVariablesMap = map[string]OptimizelyVariable{}
-
-			if variableMap, ok := experimentVariablesMap[experiment.Key]; ok {
-				for index, element := range variableMap { // copy by value
-					optlyVariablesMap[index] = element
-				}
-			}
-
-			for _, variable := range variation.Variables {
-				if experiment.IsFeatureExperiment && variation.FeatureEnabled {
-					if convertedVariable, ok := variableByIDMap[variable.ID]; ok {
-						optlyVariable := OptimizelyVariable{Key: convertedVariable.Key, ID: convertedVariable.ID,
-							Type: string(convertedVariable.Type), Value: variable.Value}
-						optlyVariablesMap[convertedVariable.Key] = optlyVariable
-					}
-				}
-			}
-			optVariation := OptimizelyVariation{ID: variation.ID, Key: variation.Key, VariablesMap: optlyVariablesMap, FeatureEnabled: variation.FeatureEnabled}
-			optlyVariationsMap[variation.Key] = optVariation
+		if !rolloutExperimentIdsMap[experiment.ID] {
+			continue
 		}
-		optlyExperiment := OptimizelyExperiment{ID: experiment.ID, Key: experiment.Key, VariationsMap: optlyVariationsMap}
-		optlyExperimentMap[experiment.Key] = optlyExperiment
+		featureIds := experimentFeaturesMap[experiment.ID]
+		featureID := ""
+		if len(featureIds) > 0 {
+			featureID = featureIds[0]
+		}
+		variationsMap := getVariationsMap(featuresMap[featureID], experiment.Variations, variableIDMap)
+		experimentsMap[experiment.ID] = OptimizelyExperiment{
+			ID:            experiment.ID,
+			Key:           experiment.Key,
+			Audiences:     getExperimentAudiences(experiment, audiencesByID),
+			VariationsMap: variationsMap,
+		}
 	}
-	return optlyExperimentMap
+	return experimentsMap
 }
 
-func getFeatureMap(features []entities.Feature, experimentsMap map[string]OptimizelyExperiment) (optlyFeatureMap map[string]OptimizelyFeature) {
-
-	optlyFeatureMap = map[string]OptimizelyFeature{}
-
-	for _, feature := range features {
-
-		var optlyFeatureVariablesMap = map[string]OptimizelyVariable{}
-		for _, featureVarible := range feature.VariableMap {
-			optlyVariable := OptimizelyVariable{Key: featureVarible.Key, ID: featureVarible.ID,
-				Type: string(featureVarible.Type), Value: featureVarible.DefaultValue}
-			optlyFeatureVariablesMap[featureVarible.Key] = optlyVariable
-		}
-
-		var optlyExperimentMap = map[string]OptimizelyExperiment{}
-		for _, experiment := range feature.FeatureExperiments {
-			optlyExperimentMap[experiment.Key] = experimentsMap[experiment.Key]
-		}
-
-		optlyFeature := OptimizelyFeature{ID: feature.ID, Key: feature.Key, ExperimentsMap: optlyExperimentMap, VariablesMap: optlyFeatureVariablesMap}
-		optlyFeatureMap[feature.Key] = optlyFeature
-
+func getExperimentsKeyMap(experimentsMapByID map[string]OptimizelyExperiment) map[string]OptimizelyExperiment {
+	sortedExperimentIDs := make([]string, 0, len(experimentsMapByID))
+	for _, exp := range experimentsMapByID {
+		sortedExperimentIDs = append(sortedExperimentIDs, exp.ID)
 	}
-	return optlyFeatureMap
+	sort.Strings(sortedExperimentIDs)
+
+	experimentKeysMap := map[string]OptimizelyExperiment{}
+	for _, expID := range sortedExperimentIDs {
+		experiment := experimentsMapByID[expID]
+		experimentKeysMap[experiment.Key] = experiment
+	}
+	return experimentKeysMap
+}
+
+func getFeaturesMap(audiencesByID map[string]entities.Audience, experimentsMapByID map[string]OptimizelyExperiment, features []entities.Feature, rolloutIDMap map[string]entities.Rollout, variableByIDMap map[string]entities.Variable) map[string]OptimizelyFeature {
+	featuresMap := map[string]OptimizelyFeature{}
+	for _, featureFlag := range features {
+		featureExperimentMap := map[string]OptimizelyExperiment{}
+		experimentRules := []OptimizelyExperiment{}
+		for expID := range experimentsMapByID {
+			var contains bool
+			for _, id := range featureFlag.ExperimentIDs {
+				if expID == id {
+					contains = true
+					break
+				}
+			}
+			if contains {
+				if experiment, ok := experimentsMapByID[expID]; ok {
+					featureExperimentMap[experiment.Key] = experiment
+				}
+				experimentRules = append(experimentRules, experimentsMapByID[expID])
+			}
+		}
+		optimizelyFeatureVariablesMap := map[string]OptimizelyVariable{}
+		for _, variable := range featureFlag.VariableMap {
+			optimizelyFeatureVariablesMap[variable.Key] = OptimizelyVariable{
+				ID:    variable.ID,
+				Key:   variable.Key,
+				Type:  string(variable.Type),
+				Value: variable.DefaultValue,
+			}
+		}
+		deliveryRules := []OptimizelyExperiment{}
+		if rollout, ok := rolloutIDMap[featureFlag.Rollout.ID]; ok {
+			deliveryRules = getDeliveryRules(variableByIDMap, audiencesByID, featureFlag, rollout.Experiments)
+		}
+		featuresMap[featureFlag.Key] = OptimizelyFeature{
+			ID:              featureFlag.ID,
+			Key:             featureFlag.Key,
+			ExperimentRules: experimentRules,
+			DeliveryRules:   deliveryRules,
+			ExperimentsMap:  featureExperimentMap,
+			VariablesMap:    optimizelyFeatureVariablesMap,
+		}
+	}
+	return featuresMap
 }
 
 // NewOptimizelyConfig constructs OptimizelyConfig object
@@ -158,19 +385,45 @@ func NewOptimizelyConfig(projConfig ProjectConfig) *OptimizelyConfig {
 	if projConfig == nil {
 		return nil
 	}
-	featuresList := projConfig.GetFeatureList()
-	experimentsList := projConfig.GetExperimentList()
-	revision := projConfig.GetRevision()
-
 	optimizelyConfig := &OptimizelyConfig{}
-
-	variableByIDMap := getVariableByIDMap(featuresList)
-
-	optimizelyConfig.ExperimentsMap = getExperimentMap(featuresList, experimentsList, variableByIDMap)
-	optimizelyConfig.FeaturesMap = getFeatureMap(featuresList, optimizelyConfig.ExperimentsMap)
-	optimizelyConfig.Revision = revision
 	optimizelyConfig.SdkKey = projConfig.GetSdkKey()
 	optimizelyConfig.EnvironmentKey = projConfig.GetEnvironmentKey()
+	optimizelyAttributes := []OptimizelyAttribute{}
+	for _, attribute := range projConfig.GetAttributes() {
+		optimizelyAttributes = append(optimizelyAttributes, OptimizelyAttribute(attribute))
+	}
+	optimizelyConfig.Attributes = optimizelyAttributes
+	optimizelyConfig.Audiences = getAudiences(projConfig.GetAudienceMap())
+
+	optlyEvents := []OptimizelyEvent{}
+	for _, event := range projConfig.GetEvents() {
+		optlyEvents = append(optlyEvents, OptimizelyEvent{ID: event.ID, Key: event.Key, ExperimentIds: event.ExperimentIds})
+	}
+	optimizelyConfig.Events = optlyEvents
+	optimizelyConfig.Revision = projConfig.GetRevision()
+
+	featuresList := projConfig.GetFeatureList()
+	featuresIDMap := map[string]entities.Feature{}
+	for _, feature := range featuresList {
+		featuresIDMap[feature.ID] = feature
+	}
+
+	rolloutIDMap := map[string]entities.Rollout{}
+	for _, rollout := range projConfig.GetRolloutList() {
+		rolloutIDMap[rollout.ID] = rollout
+	}
+
+	experimentsIDMap := map[string]entities.Experiment{}
+	for _, experiment := range projConfig.GetExperimentList() {
+		experimentsIDMap[experiment.ID] = experiment
+	}
+
+	experimentsMapByID := getExperimentsMapByID(projConfig.GetAudienceMap(), projConfig.GetExperimentList(), projConfig.GetFeatureList(), featuresIDMap, rolloutIDMap)
+	optimizelyConfig.ExperimentsMap = getExperimentsKeyMap(experimentsMapByID)
+
+	variableByIDMap := getVariableByIDMap(featuresList)
+	optimizelyConfig.FeaturesMap = getFeaturesMap(projConfig.GetAudienceMap(), experimentsMapByID, featuresList, rolloutIDMap, variableByIDMap)
+
 	optimizelyConfig.datafile = projConfig.GetDatafile()
 
 	return optimizelyConfig

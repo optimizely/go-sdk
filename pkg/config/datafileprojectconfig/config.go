@@ -34,11 +34,13 @@ var datafileVersions = map[string]struct{}{
 type DatafileProjectConfig struct {
 	datafile             string
 	accountID            string
+	attributes           []entities.Attribute
 	projectID            string
 	revision             string
 	experimentKeyToIDMap map[string]string
 	audienceMap          map[string]entities.Audience
 	attributeMap         map[string]entities.Attribute
+	events               []entities.Event
 	eventMap             map[string]entities.Event
 	attributeKeyToIDMap  map[string]string
 	experimentMap        map[string]entities.Experiment
@@ -77,6 +79,11 @@ func (c DatafileProjectConfig) GetAnonymizeIP() bool {
 	return c.anonymizeIP
 }
 
+// GetAttributes returns attributes
+func (c DatafileProjectConfig) GetAttributes() []entities.Attribute {
+	return c.attributes
+}
+
 // GetAttributeID returns attributeID
 func (c DatafileProjectConfig) GetAttributeID(key string) string {
 	return c.attributeKeyToIDMap[key]
@@ -95,6 +102,11 @@ func (c DatafileProjectConfig) GetSdkKey() string {
 // GetEnvironmentKey returns current environment of the datafile.
 func (c DatafileProjectConfig) GetEnvironmentKey() string {
 	return c.environmentKey
+}
+
+// GetEvents returns all events
+func (c DatafileProjectConfig) GetEvents() []entities.Event {
+	return c.events
 }
 
 // GetEventByKey returns the event with the given key
@@ -157,6 +169,14 @@ func (c DatafileProjectConfig) GetExperimentList() (experimentList []entities.Ex
 	return experimentList
 }
 
+// GetRolloutList returns an array of all the rollouts
+func (c DatafileProjectConfig) GetRolloutList() (rolloutList []entities.Rollout) {
+	for _, rollout := range c.rolloutMap {
+		rolloutList = append(rolloutList, rollout)
+	}
+	return rolloutList
+}
+
 // GetAudienceByID returns the audience with the given ID
 func (c DatafileProjectConfig) GetAudienceByID(audienceID string) (entities.Audience, error) {
 	if audience, ok := c.audienceMap[audienceID]; ok {
@@ -216,12 +236,21 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	experimentMap, experimentKeyMap := mappers.MapExperiments(allExperiments, experimentGroupMap)
 
 	rolloutMap := mappers.MapRollouts(datafile.Rollouts)
+	events := []entities.Event{}
+	for _, event := range datafile.Events {
+		events = append(events, entities.Event(event))
+	}
 	eventMap := mappers.MapEvents(datafile.Events)
 	mergedAudiences := append(datafile.TypedAudiences, datafile.Audiences...)
 	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentMap)
+	attributes := []entities.Attribute{}
+	for _, attribute := range datafile.Attributes {
+		attributes = append(attributes, entities.Attribute(attribute))
+	}
 	config := &DatafileProjectConfig{
 		datafile:             string(jsonDatafile),
 		accountID:            datafile.AccountID,
+		attributes:           attributes,
 		anonymizeIP:          datafile.AnonymizeIP,
 		attributeKeyToIDMap:  attributeKeyToIDMap,
 		audienceMap:          mappers.MapAudiences(mergedAudiences),
@@ -232,6 +261,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		experimentKeyToIDMap: experimentKeyMap,
 		experimentMap:        experimentMap,
 		groupMap:             groupMap,
+		events:               events,
 		eventMap:             eventMap,
 		featureMap:           featureMap,
 		projectID:            datafile.ProjectID,
