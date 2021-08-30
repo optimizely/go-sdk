@@ -26,48 +26,108 @@ import (
 
 type OptimizelyConfigTestSuite struct {
 	suite.Suite
-	projectConfig            ProjectConfig
-	expectedOptimizelyConfig OptimizelyConfig
 }
 
-func (s *OptimizelyConfigTestSuite) SetupTest() {
+func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 
-	// reading expected json file validates public access for OptimizelyConfig and its members
-	outputFileName := "testdata/optimizely_config_expected.json"
-	expectedOutput, err := ioutil.ReadFile(outputFileName)
-	if err != nil {
-		s.Fail("error opening file " + outputFileName)
+	test := func(datafileOne string, datafileTwo string) {
+		// Cleaned here due to linter warning
+		folder := "testdata/"
+		dataFile, err := ioutil.ReadFile(folder + datafileOne)
+		if err != nil {
+			s.Fail("error opening file " + datafileOne)
+		}
+
+		projectMgr := NewStaticProjectConfigManagerWithOptions("", WithInitialDatafile(dataFile))
+		projConfig, err := projectMgr.GetConfig()
+		if err != nil {
+			s.Fail(err.Error())
+		}
+		optimizelyConfig := NewOptimizelyConfig(projConfig)
+
+		dataFile2, err := ioutil.ReadFile(folder + datafileTwo)
+		if err != nil {
+			s.Fail("error opening file " + datafileTwo)
+		}
+		var expectedConfig OptimizelyConfig
+		err = json.Unmarshal(dataFile2, &expectedConfig)
+		if err != nil {
+			s.Fail("unable to parse expected file")
+		}
+		expectedConfig.datafile = string(dataFile)
+
+		s.Equal(expectedConfig.Attributes, optimizelyConfig.Attributes)
+		s.Equal(expectedConfig.Audiences, optimizelyConfig.Audiences)
+		s.Equal(expectedConfig.FeaturesMap, optimizelyConfig.FeaturesMap)
+		s.Equal(expectedConfig.ExperimentsMap, optimizelyConfig.ExperimentsMap)
+		s.Equal(expectedConfig.Revision, optimizelyConfig.Revision)
+		s.Equal(expectedConfig.datafile, optimizelyConfig.datafile)
+		s.Equal(expectedConfig.SdkKey, optimizelyConfig.SdkKey)
+		s.Equal(expectedConfig.EnvironmentKey, optimizelyConfig.EnvironmentKey)
+		s.Equal(expectedConfig.Events, optimizelyConfig.Events)
+
+		s.Equal(expectedConfig, *optimizelyConfig)
 	}
 
-	err = json.Unmarshal(expectedOutput, &s.expectedOptimizelyConfig)
-	if err != nil {
-		s.Fail("unable to parse expected file")
-	}
+	// Simple datafile
+	test("optimizely_config_datafile.json", "optimizely_config_expected.json")
+	// Similar keys datafile
+	test("similar_exp_keys_datafile.json", "similar_exp_keys_expected.json")
+	// Similar rule keys bucketing datafile
+	test("similar_rule_keys_bucketing_datafile.json", "similar_rule_keys_bucketing_expected.json")
+}
 
-	dataFileName := "testdata/optimizely_config_datafile.json"
+func (s *OptimizelyConfigTestSuite) TestSerializeAudiences() {
+
+	dataFileName := "testdata/typed_audience_datafile.json"
 	dataFile, err := ioutil.ReadFile(dataFileName)
 	if err != nil {
 		s.Fail("error opening file " + dataFileName)
 	}
-	s.expectedOptimizelyConfig.datafile = string(dataFile)
 
 	projectMgr := NewStaticProjectConfigManagerWithOptions("", WithInitialDatafile(dataFile))
+	projConfig, err := projectMgr.GetConfig()
+	if err != nil {
+		s.Fail(err.Error())
+	}
 
-	s.projectConfig = projectMgr.projectConfig
+	conditions := []interface{}{
+		[]interface{}{"or", "3468206642", "3988293898"},
+		[]interface{}{"or", "3468206642", "3988293898", "3468206646"},
+		[]interface{}{"not", "3468206642"},
+		[]interface{}{"or", "3468206642"},
+		[]interface{}{"and", "3468206642"},
+		[]interface{}{"3468206642"},
+		[]interface{}{"3468206642", "3988293898"},
+		[]interface{}{"and", []interface{}{"or", "3468206642", "3988293898"}, "3468206646"},
+		[]interface{}{"and", []interface{}{"or", "3468206642", []interface{}{"and", "3988293898", "3468206646"}}, []interface{}{"and", "3988293899", []interface{}{"or", "3468206647", "3468206643"}}},
+		[]interface{}{"and", "and"},
+		[]interface{}{"not", []interface{}{"and", "3468206642", "3988293898"}},
+		[]interface{}{},
+		[]interface{}{"or", "3468206642", "999999999"},
+	}
 
-}
+	expectedOutputs := []string{
+		"\"exactString\" OR \"substringString\"",
+		"\"exactString\" OR \"substringString\" OR \"exactNumber\"",
+		"NOT \"exactString\"",
+		"\"exactString\"",
+		"\"exactString\"",
+		"\"exactString\"",
+		"\"exactString\" OR \"substringString\"",
+		"(\"exactString\" OR \"substringString\") AND \"exactNumber\"",
+		"(\"exactString\" OR (\"substringString\" AND \"exactNumber\")) AND (\"exists\" AND (\"gtNumber\" OR \"exactBoolean\"))",
+		"",
+		"NOT (\"exactString\" AND \"substringString\")",
+		"",
+		"\"exactString\" OR \"999999999\"",
+	}
 
-func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
-	optimizelyConfig := NewOptimizelyConfig(s.projectConfig)
+	for i, condition := range conditions {
+		result := getSerializedAudiences(condition, projConfig.GetAudienceMap())
+		s.Equal(expectedOutputs[i], result)
+	}
 
-	s.Equal(s.expectedOptimizelyConfig.FeaturesMap, optimizelyConfig.FeaturesMap)
-	s.Equal(s.expectedOptimizelyConfig.ExperimentsMap, optimizelyConfig.ExperimentsMap)
-	s.Equal(s.expectedOptimizelyConfig.Revision, optimizelyConfig.Revision)
-	s.Equal(s.expectedOptimizelyConfig.datafile, optimizelyConfig.datafile)
-	s.Equal(s.expectedOptimizelyConfig.SdkKey, optimizelyConfig.SdkKey)
-	s.Equal(s.expectedOptimizelyConfig.EnvironmentKey, optimizelyConfig.EnvironmentKey)
-
-	s.Equal(s.expectedOptimizelyConfig, *optimizelyConfig)
 }
 
 func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalEmptySDKKeyAndEnvironmentKey() {
@@ -81,11 +141,8 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalEmptySDKKeyAndEnviro
 	bytesData, _ := json.Marshal(optimizelyConfig)
 	json.Unmarshal(bytesData, &jsonMap)
 
-	_, keyExists := jsonMap["sdkKey"]
-	s.False(keyExists)
-
-	_, keyExists = jsonMap["environmentKey"]
-	s.False(keyExists)
+	s.Equal("", jsonMap["sdkKey"])
+	s.Equal("", jsonMap["environmentKey"])
 }
 
 func (s *OptimizelyConfigTestSuite) TestOptlyConfigUnMarshalNonEmptySDKKeyAndEnvironmentKey() {

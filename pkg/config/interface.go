@@ -29,6 +29,7 @@ type ProjectConfig interface {
 	GetAnonymizeIP() bool
 	GetAttributeID(id string) string // returns "" if there is no id
 	GetAttributeByKey(key string) (entities.Attribute, error)
+	GetAudienceList() (audienceList []entities.Audience)
 	GetAudienceByID(string) (entities.Audience, error)
 	GetAudienceMap() map[string]entities.Audience
 	GetBotFiltering() bool

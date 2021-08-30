@@ -277,10 +277,8 @@ func TestGetFeatureList(t *testing.T) {
 	feature := entities.Feature{
 		Key: key,
 	}
-	featureMap := make(map[string]entities.Feature)
-	featureMap[key] = feature
 	config := &DatafileProjectConfig{
-		featureMap: featureMap,
+		featureList: []entities.Feature{feature},
 	}
 
 	features := config.GetFeatureList()
@@ -290,20 +288,14 @@ func TestGetFeatureList(t *testing.T) {
 }
 
 func TestGetExperimentList(t *testing.T) {
-	id := "id"
 	key := "key"
-	experimentKeyToIDMap := make(map[string]string)
-	experimentKeyToIDMap[key] = id
 
 	experiment := entities.Experiment{
 		Key: key,
 	}
-	experimentMap := make(map[string]entities.Experiment)
-	experimentMap[id] = experiment
 
 	config := &DatafileProjectConfig{
-		experimentKeyToIDMap: experimentKeyToIDMap,
-		experimentMap:        experimentMap,
+		experimentList: []entities.Experiment{experiment},
 	}
 
 	experiments := config.GetExperimentList()

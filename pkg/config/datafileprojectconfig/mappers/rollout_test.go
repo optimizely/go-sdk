@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2021 Optimizely, Inc. and contributors                    *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -37,16 +37,17 @@ func TestMapRollouts(t *testing.T) {
 	json.Unmarshal([]byte(testRolloutString), &rawRollout)
 
 	rawRollouts := []datafileEntities.Rollout{rawRollout}
-	rolloutMap := MapRollouts(rawRollouts)
+	rolloutList, rolloutMap := MapRollouts(rawRollouts)
 	expectedRolloutMap := map[string]entities.Rollout{
-		"21111": entities.Rollout{
+		"21111": {
 			ID: "21111",
 			Experiments: []entities.Experiment{
-				entities.Experiment{ID: "11111", Key: "exp_11111", Variations: map[string]entities.Variation{}, VariationKeyToIDMap: map[string]string{}, TrafficAllocation: []entities.Range{}},
-				entities.Experiment{ID: "11112", Key: "exp_11112", Variations: map[string]entities.Variation{}, VariationKeyToIDMap: map[string]string{}, TrafficAllocation: []entities.Range{}},
+				{ID: "11111", Key: "exp_11111", Variations: map[string]entities.Variation{}, VariationKeyToIDMap: map[string]string{}, TrafficAllocation: []entities.Range{}},
+				{ID: "11112", Key: "exp_11112", Variations: map[string]entities.Variation{}, VariationKeyToIDMap: map[string]string{}, TrafficAllocation: []entities.Range{}},
 			},
 		},
 	}
 
+	assert.Equal(t, []entities.Rollout{expectedRolloutMap["21111"]}, rolloutList)
 	assert.Equal(t, expectedRolloutMap, rolloutMap)
 }

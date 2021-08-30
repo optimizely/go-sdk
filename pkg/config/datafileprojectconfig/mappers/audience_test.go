@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2021 Optimizely, Inc. and contributors                    *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -28,22 +28,26 @@ import (
 
 func TestMapAudiencesEmptyList(t *testing.T) {
 
-	audienceMap := MapAudiences(nil)
+	audienceList, audienceMap := MapAudiences(nil)
 
+	expectedAudienceList := []entities.Audience{}
 	expectedAudienceMap := map[string]entities.Audience{}
 
-	assert.Equal(t, audienceMap, expectedAudienceMap)
-
+	assert.Equal(t, expectedAudienceList, audienceList)
+	assert.Equal(t, expectedAudienceMap, audienceMap)
 }
 func TestMapAudiences(t *testing.T) {
 
 	audienceList := []datafileEntities.Audience{{ID: "1", Name: "one"}, {ID: "2", Name: "two"},
 		{ID: "3", Name: "three"}, {ID: "2", Name: "four"}, {ID: "5", Name: "one"}}
-
-	audienceMap := MapAudiences(audienceList)
+	audiences, audienceMap := MapAudiences(audienceList)
 
 	expectedAudienceMap := map[string]entities.Audience{"1": {ID: "1", Name: "one"}, "2": {ID: "2", Name: "two"},
 		"3": {ID: "3", Name: "three"}, "5": {ID: "5", Name: "one"}}
-
-	assert.Equal(t, audienceMap, expectedAudienceMap)
+	expectedAudienceList := []entities.Audience{}
+	for _, audience := range expectedAudienceMap {
+		expectedAudienceList = append(expectedAudienceList, audience)
+	}
+	assert.Equal(t, expectedAudienceList, audiences)
+	assert.Equal(t, expectedAudienceMap, audienceMap)
 }

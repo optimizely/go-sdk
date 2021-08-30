@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -67,7 +67,7 @@ func TestMapExperiments(t *testing.T) {
 	rawExperiments := []datafileEntities.Experiment{rawExperiment}
 	experimentGroupMap := map[string]string{"11111": "15"}
 
-	experiments, experimentKeyMap := MapExperiments(rawExperiments, experimentGroupMap)
+	experiments, experimentsId, experimentKeyMap := MapExperiments(rawExperiments, experimentGroupMap)
 	expectedExperiments := map[string]entities.Experiment{
 		"11111": {
 			AudienceIds: []string{"31111"},
@@ -102,6 +102,7 @@ func TestMapExperiments(t *testing.T) {
 					EndOfRange: 10000,
 				},
 			},
+			AudienceConditions: []interface{}{"or", "31111"},
 			AudienceConditionTree: &entities.TreeNode{
 				Operator: "or",
 				Nodes: []*entities.TreeNode{
@@ -117,7 +118,9 @@ func TestMapExperiments(t *testing.T) {
 		"test_experiment_11111": "11111",
 	}
 
-	assert.Equal(t, expectedExperiments, experiments)
+	assert.Len(t, experiments, 1)
+	assert.Equal(t, expectedExperiments["11111"], experiments[0])
+	assert.Equal(t, expectedExperiments, experimentsId)
 	assert.Equal(t, expectedExperimentKeyMap, experimentKeyMap)
 }
 
@@ -133,7 +136,7 @@ func TestMapExperimentsWithStringAudienceCondition(t *testing.T) {
 	rawExperiments := []datafileEntities.Experiment{rawExperiment}
 	experimentGroupMap := map[string]string{"11111": "15"}
 
-	experiments, experimentKeyMap := MapExperiments(rawExperiments, experimentGroupMap)
+	experiments, experimentsIdMap, experimentKeyMap := MapExperiments(rawExperiments, experimentGroupMap)
 	expectedExperiments := map[string]entities.Experiment{
 		"11111": {
 			AudienceIds:         []string{"31111"},
@@ -143,6 +146,7 @@ func TestMapExperimentsWithStringAudienceCondition(t *testing.T) {
 			Variations:          map[string]entities.Variation{},
 			VariationKeyToIDMap: map[string]string{},
 			TrafficAllocation:   []entities.Range{},
+			AudienceConditions:  "31111",
 			AudienceConditionTree: &entities.TreeNode{
 				Operator: "or",
 				Nodes: []*entities.TreeNode{
@@ -158,7 +162,9 @@ func TestMapExperimentsWithStringAudienceCondition(t *testing.T) {
 		"test_experiment_11111": "11111",
 	}
 
-	assert.Equal(t, expectedExperiments, experiments)
+	assert.Len(t, experiments, 1)
+	assert.Equal(t, expectedExperiments["11111"], experiments[0])
+	assert.Equal(t, expectedExperiments, experimentsIdMap)
 	assert.Equal(t, expectedExperimentKeyMap, experimentKeyMap)
 }
 
@@ -210,9 +216,12 @@ func TestMapExperimentsAudienceIdsOnly(t *testing.T) {
 	rawExperiment.ID = "22222"
 
 	expectedExperiment := entities.Experiment{
-		AudienceIds: rawExperiment.AudienceIds,
-		ID:          rawExperiment.ID,
-		Key:         rawExperiment.Key,
+		AudienceIds:         rawExperiment.AudienceIds,
+		ID:                  rawExperiment.ID,
+		Key:                 rawExperiment.Key,
+		Variations:          map[string]entities.Variation{},
+		VariationKeyToIDMap: map[string]string{},
+		TrafficAllocation:   make([]entities.Range, 0),
 		AudienceConditionTree: &entities.TreeNode{
 			Operator: "or",
 			Nodes: []*entities.TreeNode{
@@ -228,6 +237,8 @@ func TestMapExperimentsAudienceIdsOnly(t *testing.T) {
 		},
 	}
 
-	experiments, _ := MapExperiments([]datafileEntities.Experiment{rawExperiment}, map[string]string{})
-	assert.Equal(t, expectedExperiment.AudienceConditionTree, experiments[rawExperiment.ID].AudienceConditionTree)
+	experiments, experimentsIDMap, _ := MapExperiments([]datafileEntities.Experiment{rawExperiment}, map[string]string{})
+	assert.Len(t, experiments, 1)
+	assert.Equal(t, expectedExperiment, experiments[0])
+	assert.Equal(t, expectedExperiment.AudienceConditionTree, experimentsIDMap[rawExperiment.ID].AudienceConditionTree)
 }

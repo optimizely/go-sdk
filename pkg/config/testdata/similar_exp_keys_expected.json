@@ -1,0 +1,108 @@
+{
+  "environmentKey": "",
+  "sdkKey": "",
+  "revision": "25",
+  "experimentsMap": {
+    "targeted_delivery": {
+      "id": "9300000007573",
+      "key": "targeted_delivery",
+      "audiences": "\"test2\"",
+      "variationsMap": {
+        "variation2": {
+          "id": "8048",
+          "key": "variation2",
+          "featureEnabled": true,
+          "variablesMap": {}
+        }
+      }
+    }
+  },
+  "featuresMap": {
+    "flag1": {
+      "id": "3045",
+      "key": "flag1",
+      "experimentRules": [
+        {
+          "id": "9300000007569",
+          "key": "targeted_delivery",
+          "audiences": "\"test1\"",
+          "variationsMap": {
+            "variation1": {
+              "id": "8045",
+              "key": "variation1",
+              "featureEnabled": true,
+              "variablesMap": {}
+            }
+          }
+        }
+      ],
+      "deliveryRules": [],
+      "variablesMap": {},
+      "experimentsMap": {
+        "targeted_delivery": {
+          "id": "9300000007569",
+          "key": "targeted_delivery",
+          "audiences": "\"test1\"",
+          "variationsMap": {
+            "variation1": {
+              "id": "8045",
+              "key": "variation1",
+              "featureEnabled": true,
+              "variablesMap": {}
+            }
+          }
+        }
+      }
+    },
+    "flag2": {
+      "id": "3046",
+      "key": "flag2",
+      "experimentRules": [
+        {
+          "id": "9300000007573",
+          "key": "targeted_delivery",
+          "audiences": "\"test2\"",
+          "variationsMap": {
+            "variation2": {
+              "id": "8048",
+              "key": "variation2",
+              "featureEnabled": true,
+              "variablesMap": {}
+            }
+          }
+        }
+      ],
+      "deliveryRules": [],
+      "variablesMap": {},
+      "experimentsMap": {
+        "targeted_delivery": {
+          "id": "9300000007573",
+          "key": "targeted_delivery",
+          "audiences": "\"test2\"",
+          "variationsMap": {
+            "variation2": {
+              "id": "8048",
+              "key": "variation2",
+              "featureEnabled": true,
+              "variablesMap": {}
+            }
+          }
+        }
+      }
+    }
+  },
+  "attributes": [{ "id": "20408641883", "key": "hiddenLiveEnabled" }],
+  "audiences": [
+    {
+      "id": "20415611520",
+      "name": "test1",
+      "conditions": "[\"and\",[\"or\",[\"or\",{\"match\":\"exact\",\"name\":\"hiddenLiveEnabled\",\"type\":\"custom_attribute\",\"value\":true}]]]"
+    },
+    {
+      "id": "20406066925",
+      "name": "test2",
+      "conditions": "[\"and\",[\"or\",[\"or\",{\"match\":\"exact\",\"name\":\"hiddenLiveEnabled\",\"type\":\"custom_attribute\",\"value\":false}]]]"
+    }
+  ],
+  "events": []
+}

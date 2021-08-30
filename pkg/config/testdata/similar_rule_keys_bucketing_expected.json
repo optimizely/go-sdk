@@ -1,0 +1,116 @@
+{
+  "environmentKey": "",
+  "sdkKey": "",
+  "revision": "11",
+  "experimentsMap": {},
+  "featuresMap": {
+    "flag_1": {
+      "id": "2027",
+      "key": "flag_1",
+      "experimentRules": [],
+      "deliveryRules": [
+        {
+          "id": "9300000004977",
+          "key": "targeted_delivery",
+          "audiences": "",
+          "variationsMap": {
+            "on": {
+              "id": "5448",
+              "key": "on",
+              "featureEnabled": true,
+              "variablesMap": {}
+            }
+          }
+        },
+        {
+          "id": "default-rollout-2027-20301771717",
+          "key": "default-rollout-2027-20301771717",
+          "audiences": "",
+          "variationsMap": {
+            "off": {
+              "id": "5447",
+              "key": "off",
+              "featureEnabled": false,
+              "variablesMap": {}
+            }
+          }
+        }
+      ],
+      "variablesMap": {},
+      "experimentsMap": {}
+    },
+    "flag_2": {
+      "id": "2028",
+      "key": "flag_2",
+      "experimentRules": [],
+      "deliveryRules": [
+        {
+          "id": "9300000004979",
+          "key": "targeted_delivery",
+          "audiences": "",
+          "variationsMap": {
+            "on": {
+              "id": "5450",
+              "key": "on",
+              "featureEnabled": true,
+              "variablesMap": {}
+            }
+          }
+        },
+        {
+          "id": "default-rollout-2028-20301771717",
+          "key": "default-rollout-2028-20301771717",
+          "audiences": "",
+          "variationsMap": {
+            "off": {
+              "id": "5449",
+              "key": "off",
+              "featureEnabled": false,
+              "variablesMap": {}
+            }
+          }
+        }
+      ],
+      "variablesMap": {},
+      "experimentsMap": {}
+    },
+    "flag_3": {
+      "id": "2029",
+      "key": "flag_3",
+      "experimentRules": [],
+      "deliveryRules": [
+        {
+          "id": "9300000004981",
+          "key": "targeted_delivery",
+          "audiences": "",
+          "variationsMap": {
+            "on": {
+              "id": "5452",
+              "key": "on",
+              "featureEnabled": true,
+              "variablesMap": {}
+            }
+          }
+        },
+        {
+          "id": "default-rollout-2029-20301771717",
+          "key": "default-rollout-2029-20301771717",
+          "audiences": "",
+          "variationsMap": {
+            "off": {
+              "id": "5451",
+              "key": "off",
+              "featureEnabled": false,
+              "variablesMap": {}
+            }
+          }
+        }
+      ],
+      "variablesMap": {},
+      "experimentsMap": {}
+    }
+  },
+  "attributes": [],
+  "audiences": [],
+  "events": []
+}

@@ -23,9 +23,10 @@ import (
 )
 
 // MapAudiences maps the raw datafile audience entities to SDK Audience entities
-func MapAudiences(audiences []datafileEntities.Audience) map[string]entities.Audience {
+func MapAudiences(audiences []datafileEntities.Audience) (audienceList []entities.Audience, audienceMap map[string]entities.Audience) {
 
-	audienceMap := make(map[string]entities.Audience)
+	audienceList = []entities.Audience{}
+	audienceMap = make(map[string]entities.Audience)
 	for _, audience := range audiences {
 		_, ok := audienceMap[audience.ID]
 		if !ok {
@@ -34,13 +35,15 @@ func MapAudiences(audiences []datafileEntities.Audience) map[string]entities.Aud
 				// @TODO: handle error
 				func() {}() // cheat the linters
 			}
-			audienceMap[audience.ID] = entities.Audience{
+			audience := entities.Audience{
 				ID:            audience.ID,
 				Name:          audience.Name,
 				ConditionTree: conditionTree,
 				Conditions:    audience.Conditions,
 			}
+			audienceMap[audience.ID] = audience
+			audienceList = append(audienceList, audience)
 		}
 	}
-	return audienceMap
+	return audienceList, audienceMap
 }

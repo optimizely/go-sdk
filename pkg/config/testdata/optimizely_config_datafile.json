@@ -1,268 +1,111 @@
 {
   "version": "4",
   "rollouts": [],
-  "typedAudiences": [],
   "anonymizeIP": true,
-  "projectId": "12254210345",
+  "projectId": "10431130345",
   "variables": [],
   "featureFlags": [
     {
-      "_comment": "trafficAllocation: 4000 and 8000, respectively",
-      "experimentIds": ["12198292373", "12198292374"],
-      "id": "4482920077",
-      "key": "mutex_group_feature",
+      "experimentIds": ["10390977673"],
+      "key": "ab_running_exp_single_exact_match_string_untypedaudience",
       "rolloutId": "",
-      "variables": [
-        {
-          "defaultValue": "42",
-          "id": "2687470094",
-          "key": "i_42",
-          "type": "integer"
-        },
-        {
-          "defaultValue": "42.2",
-          "id": "2687470095",
-          "key": "d_4_2",
-          "type": "double"
-        },
-        {
-          "defaultValue": "true",
-          "id": "2687470096",
-          "key": "b_true",
-          "type": "boolean"
-        },
-        {
-          "defaultValue": "foo",
-          "id": "2687470097",
-          "key": "s_foo",
-          "type": "string"
-        }
-      ]
+      "variables": [],
+      "id": "1000000016"
     },
     {
-      "experimentIds": ["12198292376"],
-      "id": "4482920079",
-      "key": "feature_exp_no_traffic",
+      "experimentIds": ["10390977674"],
+      "key": "ab_running_exp_single_exact_match_string_typedaudience",
       "rolloutId": "",
-      "variables": []
+      "variables": [],
+      "id": "1000000017"
     }
   ],
   "experiments": [
     {
       "status": "Running",
-      "key": "exp_with_audience",
+      "key": "ab_running_exp_single_exact_match_string_untypedaudience",
       "layerId": "10420273888",
       "trafficAllocation": [
         {
-          "entityId": "10389729780",
+          "entityId": "10416523121",
           "endOfRange": 10000
         }
       ],
-      "audienceIds": [],
+      "audienceIds": ["10413101794"],
       "variations": [
         {
           "variables": [],
-          "featureEnabled": true,
-          "id": "10389729780",
-          "key": "a"
-        },
-        {
-          "variables": [],
           "id": "10416523121",
-          "key": "b"
+          "key": "all_traffic_variation"
         }
       ],
       "forcedVariations": {},
       "id": "10390977673"
-    }
-  ],
-  "audiences": [],
-  "groups": [
-    {
-      "policy": "random",
-      "trafficAllocation": [
-        {
-          "entityId": "12198292373",
-          "endOfRange": 4000
-        },
-        {
-          "entityId": "12198292374",
-          "endOfRange": 8000
-        }
-      ],
-      "experiments": [
-        {
-          "status": "Running",
-          "key": "experiment_4000",
-          "layerId": "12235440722",
-          "trafficAllocation": [
-            {
-              "entityId": "12098126626",
-              "endOfRange": 10000
-            }
-          ],
-          "audienceIds": [],
-          "variations": [
-            {
-              "variables": [
-                {
-                  "value": "50",
-                  "id": "2687470094"
-                },
-                {
-                  "value": "50.5",
-                  "id": "2687470095"
-                },
-                {
-                  "value": "false",
-                  "id": "2687470096"
-                },
-                {
-                  "value": "s1",
-                  "id": "2687470097"
-                }
-              ],
-              "featureEnabled": true,
-              "id": "12098126626",
-              "key": "all_traffic_variation_exp_1"
-            },
-            {
-              "variables": [],
-              "id": "12107729995",
-              "featureEnabled": true,
-              "key": "no_traffic_variation_exp_1"
-            }
-          ],
-          "forcedVariations": {},
-          "id": "12198292373"
-        },
-        {
-          "status": "Running",
-          "key": "experiment_8000",
-          "layerId": "12187694825",
-          "trafficAllocation": [
-            {
-              "entityId": "12232050369",
-              "endOfRange": 10000
-            }
-          ],
-          "audienceIds": [],
-          "variations": [
-            {
-              "variables": [
-                {
-                  "value": "50",
-                  "id": "2687470094"
-                },
-                {
-                  "value": "50.5",
-                  "id": "2687470095"
-                }
-              ],
-              "id": "12252360417",
-              "featureEnabled": false,
-              "key": "no_traffic_variation_exp_2"
-            }
-          ],
-          "forcedVariations": {},
-          "id": "12198292374"
-        }
-      ],
-      "id": "12115595438"
     },
     {
-      "policy": "random",
+      "status": "Running",
+      "key": "ab_running_exp_single_exact_match_string_typedaudience",
+      "layerId": "10420273888",
       "trafficAllocation": [
         {
-          "entityId": "12198292375",
+          "entityId": "10416523121",
           "endOfRange": 10000
         }
       ],
-      "experiments": [
+      "audienceIds": ["20413101794"],
+      "variations": [
         {
-          "status": "Running",
-          "key": "all_traffic_experiment",
-          "layerId": "12235440723",
-          "trafficAllocation": [
-            {
-              "entityId": "12098126627",
-              "endOfRange": 10000
-            }
-          ],
-          "audienceIds": [],
-          "variations": [
-            {
-              "variables": [
-                {
-                  "value": "4",
-                  "id": "2687470094"
-                },
-                {
-                  "value": "10.6",
-                  "id": "2687470095"
-                },
-                {
-                  "value": "true",
-                  "id": "2687470096"
-                },
-                {
-                  "value": "s1 foo",
-                  "id": "2687470097"
-                }
-              ],
-              "id": "12098126627",
-              "featureEnabled": true,
-              "key": "all_traffic_variation"
-            },
-            {
-              "variables": [],
-              "id": "12098126628",
-              "featureEnabled": true,
-              "key": "no_traffic_variation"
-            }
-          ],
-          "forcedVariations": {},
-          "id": "12198292375"
-        },
-        {
-          "status": "Running",
-          "key": "no_traffic_experiment",
-          "layerId": "12187694826",
-          "trafficAllocation": [
-            {
-              "entityId": "12098126629",
-              "endOfRange": 5000
-            },
-            {
-              "entityId": "12098126630",
-              "endOfRange": 10000
-            }
-          ],
-          "audienceIds": [],
-          "variations": [
-            {
-              "variables": [],
-              "id": "12098126629",
-              "featureEnabled": true,
-              "key": "variation_5000"
-            },
-            {
-              "variables": [],
-              "id": "12098126630",
-              "featureEnabled": true,
-              "key": "variation_10000"
-            }
-          ],
-          "forcedVariations": {},
-          "id": "12198292376"
+          "variables": [],
+          "id": "10416523121",
+          "key": "all_traffic_variation"
         }
       ],
-      "id": "12115595439"
+      "forcedVariations": {},
+      "id": "10390977674"
     }
   ],
-  "attributes": [],
-  "botFiltering": false,
-  "accountId": "8272261422",
-  "events": [],
-  "revision": "9"
+  "audiences": [
+    {
+      "id": "10413101794",
+      "conditions": "[\"and\", [\"or\", [\"or\", {\"type\": \"custom_attribute\", \"name\": \"string_attribute\", \"value\": \"exact_match\"}]]]",
+      "name": "untyped_single_condition_exact_string_match"
+    }
+  ],
+  "typedAudiences": [
+    {
+      "id": "20413101794",
+      "conditions": {
+        "type": "custom_attribute",
+        "name": "s_foo",
+        "match": "exact",
+        "value": "leaf_root"
+      },
+      "name": "single_condition_leaf_root"
+    }
+  ],
+  "groups": [],
+  "attributes": [
+    {
+      "id": "10401066170",
+      "key": "string_attribute"
+    },
+    {
+      "id": "10401066171",
+      "key": "s_foo"
+    }
+  ],
+  "accountId": "10367498574",
+  "events": [
+    {
+      "experimentIds": ["10390977673"],
+      "id": "10404198135",
+      "key": "event_single_targeted_exp"
+    },
+    {
+      "experimentIds": ["10390977674"],
+      "id": "10404198136",
+      "key": "event_single_untargeted_exp"
+    }
+  ],
+  "revision": "242"
 }

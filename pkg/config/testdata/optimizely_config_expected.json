@@ -1,345 +1,135 @@
 {
-  "experimentsMap":{
-    "all_traffic_experiment":{
-      "id":"12198292375",
-      "key":"all_traffic_experiment",
-      "variationsMap":{
-        "all_traffic_variation":{
-          "featureEnabled":true,
-          "id":"12098126627",
-          "key":"all_traffic_variation",
-          "variablesMap":{
-          }
-        },
-        "no_traffic_variation":{
-          "featureEnabled":true,
-          "id":"12098126628",
-          "key":"no_traffic_variation",
-          "variablesMap":{
-
-          }
+  "environmentKey": "",
+  "sdkKey": "",
+  "revision": "242",
+  "experimentsMap": {
+    "ab_running_exp_single_exact_match_string_typedaudience": {
+      "id": "10390977674",
+      "key": "ab_running_exp_single_exact_match_string_typedaudience",
+      "audiences": "",
+      "variationsMap": {
+        "all_traffic_variation": {
+          "id": "10416523121",
+          "key": "all_traffic_variation",
+          "featureEnabled": false,
+          "variablesMap": {}
         }
       }
     },
-    "exp_with_audience":{
-      "id":"10390977673",
-      "key":"exp_with_audience",
-      "variationsMap":{
-        "a":{
-          "featureEnabled":true,
-          "id":"10389729780",
-          "key":"a",
-          "variablesMap":{
-
-          }
-        },
-        "b":{
-          "featureEnabled":false,
-          "id":"10416523121",
-          "key":"b",
-          "variablesMap":{
-
-          }
+    "ab_running_exp_single_exact_match_string_untypedaudience": {
+      "id": "10390977673",
+      "key": "ab_running_exp_single_exact_match_string_untypedaudience",
+      "audiences": "",
+      "variationsMap": {
+        "all_traffic_variation": {
+          "id": "10416523121",
+          "key": "all_traffic_variation",
+          "featureEnabled": false,
+          "variablesMap": {}
         }
       }
-    },
-    "experiment_4000":{
-      "id":"12198292373",
-      "key":"experiment_4000",
-      "variationsMap":{
-        "all_traffic_variation_exp_1":{
-          "featureEnabled":true,
-          "id":"12098126626",
-          "key":"all_traffic_variation_exp_1",
-          "variablesMap":{
-            "b_true":{
-              "id":"2687470096",
-              "key":"b_true",
-              "type":"boolean",
-              "value":"false"
-            },
-            "d_4_2":{
-              "id":"2687470095",
-              "key":"d_4_2",
-              "type":"double",
-              "value":"50.5"
-            },
-            "i_42":{
-              "id":"2687470094",
-              "key":"i_42",
-              "type":"integer",
-              "value":"50"
-            },
-            "s_foo":{
-              "id":"2687470097",
-              "key":"s_foo",
-              "type":"string",
-              "value":"s1"
+    }
+  },
+  "featuresMap": {
+    "ab_running_exp_single_exact_match_string_typedaudience": {
+      "id": "1000000017",
+      "key": "ab_running_exp_single_exact_match_string_typedaudience",
+      "experimentRules": [
+        {
+          "id": "10390977674",
+          "key": "ab_running_exp_single_exact_match_string_typedaudience",
+          "audiences": "",
+          "variationsMap": {
+            "all_traffic_variation": {
+              "id": "10416523121",
+              "key": "all_traffic_variation",
+              "featureEnabled": false,
+              "variablesMap": {}
             }
           }
-        },
-        "no_traffic_variation_exp_1":{
-          "featureEnabled":true,
-          "id":"12107729995",
-          "key":"no_traffic_variation_exp_1",
-          "variablesMap":{
-            "b_true":{
-              "id":"2687470096",
-              "key":"b_true",
-              "type":"boolean",
-              "value":"true"
-            },
-            "d_4_2":{
-              "id":"2687470095",
-              "key":"d_4_2",
-              "type":"double",
-              "value":"42.2"
-            },
-            "i_42":{
-              "id":"2687470094",
-              "key":"i_42",
-              "type":"integer",
-              "value":"42"
-            },
-            "s_foo":{
-              "id":"2687470097",
-              "key":"s_foo",
-              "type":"string",
-              "value":"foo"
+        }
+      ],
+      "deliveryRules": [],
+      "variablesMap": {},
+      "experimentsMap": {
+        "ab_running_exp_single_exact_match_string_typedaudience": {
+          "id": "10390977674",
+          "key": "ab_running_exp_single_exact_match_string_typedaudience",
+          "audiences": "",
+          "variationsMap": {
+            "all_traffic_variation": {
+              "id": "10416523121",
+              "key": "all_traffic_variation",
+              "featureEnabled": false,
+              "variablesMap": {}
             }
           }
         }
       }
     },
-    "experiment_8000":{
-      "id":"12198292374",
-      "key":"experiment_8000",
-      "variationsMap":{
-        "no_traffic_variation_exp_2":{
-          "featureEnabled":false,
-          "id":"12252360417",
-          "key":"no_traffic_variation_exp_2",
-          "variablesMap":{
-            "b_true":{
-              "id":"2687470096",
-              "key":"b_true",
-              "type":"boolean",
-              "value":"true"
-            },
-            "d_4_2":{
-              "id":"2687470095",
-              "key":"d_4_2",
-              "type":"double",
-              "value":"42.2"
-            },
-            "i_42":{
-              "id":"2687470094",
-              "key":"i_42",
-              "type":"integer",
-              "value":"42"
-            },
-            "s_foo":{
-              "id":"2687470097",
-              "key":"s_foo",
-              "type":"string",
-              "value":"foo"
+    "ab_running_exp_single_exact_match_string_untypedaudience": {
+      "id": "1000000016",
+      "key": "ab_running_exp_single_exact_match_string_untypedaudience",
+      "experimentRules": [
+        {
+          "id": "10390977673",
+          "key": "ab_running_exp_single_exact_match_string_untypedaudience",
+          "audiences": "",
+          "variationsMap": {
+            "all_traffic_variation": {
+              "id": "10416523121",
+              "key": "all_traffic_variation",
+              "featureEnabled": false,
+              "variablesMap": {}
             }
           }
         }
-      }
-    },
-    "no_traffic_experiment":{
-      "id":"12198292376",
-      "key":"no_traffic_experiment",
-      "variationsMap":{
-        "variation_5000":{
-          "featureEnabled":true,
-          "id":"12098126629",
-          "key":"variation_5000",
-          "variablesMap":{
-
-          }
-        },
-        "variation_10000":{
-          "featureEnabled":true,
-          "id":"12098126630",
-          "key":"variation_10000",
-          "variablesMap":{
-
+      ],
+      "deliveryRules": [],
+      "variablesMap": {},
+      "experimentsMap": {
+        "ab_running_exp_single_exact_match_string_untypedaudience": {
+          "id": "10390977673",
+          "key": "ab_running_exp_single_exact_match_string_untypedaudience",
+          "audiences": "",
+          "variationsMap": {
+            "all_traffic_variation": {
+              "id": "10416523121",
+              "key": "all_traffic_variation",
+              "featureEnabled": false,
+              "variablesMap": {}
+            }
           }
         }
       }
     }
   },
-  "featuresMap":{
-    "feature_exp_no_traffic":{
-      "experimentsMap":{
-        "no_traffic_experiment":{
-          "id":"12198292376",
-          "key":"no_traffic_experiment",
-          "variationsMap":{
-            "variation_5000":{
-              "featureEnabled":true,
-              "id":"12098126629",
-              "key":"variation_5000",
-              "variablesMap":{
-
-              }
-            },
-            "variation_10000":{
-              "featureEnabled":true,
-              "id":"12098126630",
-              "key":"variation_10000",
-              "variablesMap":{
-
-              }
-            }
-          }
-        }
-      },
-      "id":"4482920079",
-      "key":"feature_exp_no_traffic",
-      "variablesMap":{
-
-      }
+  "attributes": [
+    { "id": "10401066170", "key": "string_attribute" },
+    { "id": "10401066171", "key": "s_foo" }
+  ],
+  "audiences": [
+    {
+      "id": "20413101794",
+      "name": "single_condition_leaf_root",
+      "conditions": "{\"match\":\"exact\",\"name\":\"s_foo\",\"type\":\"custom_attribute\",\"value\":\"leaf_root\"}"
     },
-    "mutex_group_feature":{
-      "experimentsMap":{
-        "experiment_4000":{
-          "id":"12198292373",
-          "key":"experiment_4000",
-          "variationsMap":{
-            "all_traffic_variation_exp_1":{
-              "featureEnabled":true,
-              "id":"12098126626",
-              "key":"all_traffic_variation_exp_1",
-              "variablesMap":{
-                "b_true":{
-                  "id":"2687470096",
-                  "key":"b_true",
-                  "type":"boolean",
-                  "value":"false"
-                },
-                "d_4_2":{
-                  "id":"2687470095",
-                  "key":"d_4_2",
-                  "type":"double",
-                  "value":"50.5"
-                },
-                "i_42":{
-                  "id":"2687470094",
-                  "key":"i_42",
-                  "type":"integer",
-                  "value":"50"
-                },
-                "s_foo":{
-                  "id":"2687470097",
-                  "key":"s_foo",
-                  "type":"string",
-                  "value":"s1"
-                }
-              }
-            },
-            "no_traffic_variation_exp_1":{
-              "featureEnabled":true,
-              "id":"12107729995",
-              "key":"no_traffic_variation_exp_1",
-              "variablesMap":{
-                "b_true":{
-                  "id":"2687470096",
-                  "key":"b_true",
-                  "type":"boolean",
-                  "value":"true"
-                },
-                "d_4_2":{
-                  "id":"2687470095",
-                  "key":"d_4_2",
-                  "type":"double",
-                  "value":"42.2"
-                },
-                "i_42":{
-                  "id":"2687470094",
-                  "key":"i_42",
-                  "type":"integer",
-                  "value":"42"
-                },
-                "s_foo":{
-                  "id":"2687470097",
-                  "key":"s_foo",
-                  "type":"string",
-                  "value":"foo"
-                }
-              }
-            }
-          }
-        },
-        "experiment_8000":{
-          "id":"12198292374",
-          "key":"experiment_8000",
-          "variationsMap":{
-            "no_traffic_variation_exp_2":{
-              "featureEnabled":false,
-              "id":"12252360417",
-              "key":"no_traffic_variation_exp_2",
-              "variablesMap":{
-                "b_true":{
-                  "id":"2687470096",
-                  "key":"b_true",
-                  "type":"boolean",
-                  "value":"true"
-                },
-                "d_4_2":{
-                  "id":"2687470095",
-                  "key":"d_4_2",
-                  "type":"double",
-                  "value":"42.2"
-                },
-                "i_42":{
-                  "id":"2687470094",
-                  "key":"i_42",
-                  "type":"integer",
-                  "value":"42"
-                },
-                "s_foo":{
-                  "id":"2687470097",
-                  "key":"s_foo",
-                  "type":"string",
-                  "value":"foo"
-                }
-              }
-            }
-          }
-        }
-      },
-      "id":"4482920077",
-      "key":"mutex_group_feature",
-      "variablesMap":{
-        "b_true":{
-          "id":"2687470096",
-          "key":"b_true",
-          "type":"boolean",
-          "value":"true"
-        },
-        "d_4_2":{
-          "id":"2687470095",
-          "key":"d_4_2",
-          "type":"double",
-          "value":"42.2"
-        },
-        "i_42":{
-          "id":"2687470094",
-          "key":"i_42",
-          "type":"integer",
-          "value":"42"
-        },
-        "s_foo":{
-          "id":"2687470097",
-          "key":"s_foo",
-          "type":"string",
-          "value":"foo"
-        }
-      }
+    {
+      "id": "10413101794",
+      "name": "untyped_single_condition_exact_string_match",
+      "conditions": "[\"and\", [\"or\", [\"or\", {\"type\": \"custom_attribute\", \"name\": \"string_attribute\", \"value\": \"exact_match\"}]]]"
     }
-  },
-  "revision":"9"
+  ],
+  "events": [
+    {
+      "id": "10404198135",
+      "key": "event_single_targeted_exp",
+      "experimentIds": ["10390977673"]
+    },
+    {
+      "id": "10404198136",
+      "key": "event_single_untargeted_exp",
+      "experimentIds": ["10390977674"]
+    }
+  ]
 }

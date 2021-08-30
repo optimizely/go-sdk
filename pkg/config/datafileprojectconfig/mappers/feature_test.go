@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2021 Optimizely, Inc. and contributors                    *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -49,7 +49,7 @@ func TestMapFeatures(t *testing.T) {
 		"31111": experiment31111,
 		"31112": experiment31112,
 	}
-	featureMap := MapFeatures(rawFeatureFlags, rolloutMap, experimentMap)
+	featuresList, featureMap := MapFeatures(rawFeatureFlags, rolloutMap, experimentMap)
 
 	// Test MapFeatures should only change IsFeatureExperiment to true for experiment31111 since it belongs to a featureflag
 	experiment31111.IsFeatureExperiment = true
@@ -63,6 +63,7 @@ func TestMapFeatures(t *testing.T) {
 		"test_feature_21111": entities.Feature{
 			ID:                 "21111",
 			Key:                "test_feature_21111",
+			ExperimentIDs:      []string{"31111"},
 			Rollout:            rollout,
 			FeatureExperiments: []entities.Experiment{experiment31111},
 			VariableMap:        map[string]entities.Variable{variable.Key: variable},
@@ -73,6 +74,7 @@ func TestMapFeatures(t *testing.T) {
 		"31112": experiment31112,
 	}
 
+	assert.Equal(t, []entities.Feature{featureMap["test_feature_21111"]}, featuresList)
 	assert.Equal(t, expectedFeatureMap, featureMap)
 	assert.Equal(t, expectedExperimentMap, experimentMap)
 }

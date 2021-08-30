@@ -20,7 +20,6 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/mappers"
@@ -107,10 +106,10 @@ type OptimizelyVariable struct {
 	Value string `json:"value"`
 }
 
-func getAudiences(audiencesMap map[string]entities.Audience) []OptimizelyAudience {
+func getAudiences(audiencesList []entities.Audience) []OptimizelyAudience {
 	audiences := []OptimizelyAudience{}
-	for id, audience := range audiencesMap {
-		if id != "$opt_dummy_audience" {
+	for _, audience := range audiencesList {
+		if audience.ID != "$opt_dummy_audience" {
 			optlyAudience := OptimizelyAudience{
 				ID:         audience.ID,
 				Name:       audience.Name,
@@ -293,14 +292,14 @@ func getExperimentFeatureMap(features []entities.Feature) map[string][]string {
 	return experimentFeatureMap
 }
 
-func getExperimentsMapByID(audiencesByID map[string]entities.Audience, experiments []entities.Experiment, features []entities.Feature, featuresMap map[string]entities.Feature, rolloutMap map[string]entities.Rollout) map[string]OptimizelyExperiment {
+func getMappedExperiments(audiencesByID map[string]entities.Audience, experiments []entities.Experiment, features []entities.Feature, featuresMap map[string]entities.Feature, rolloutMap map[string]entities.Rollout) []OptimizelyExperiment {
+	mappedExperiments := []OptimizelyExperiment{}
 	variableIDMap := getVariableByIDMap(features)
 	rolloutExperimentIdsMap := getRolloutExperimentsIdsMap(rolloutMap)
 	experimentFeaturesMap := getExperimentFeatureMap(features)
-	experimentsMap := map[string]OptimizelyExperiment{}
 
 	for _, experiment := range experiments {
-		if !rolloutExperimentIdsMap[experiment.ID] {
+		if rolloutExperimentIdsMap[experiment.ID] {
 			continue
 		}
 		featureIds := experimentFeaturesMap[experiment.ID]
@@ -309,49 +308,40 @@ func getExperimentsMapByID(audiencesByID map[string]entities.Audience, experimen
 			featureID = featureIds[0]
 		}
 		variationsMap := getVariationsMap(featuresMap[featureID], experiment.Variations, variableIDMap)
-		experimentsMap[experiment.ID] = OptimizelyExperiment{
+		mappedExperiments = append(mappedExperiments, OptimizelyExperiment{
 			ID:            experiment.ID,
 			Key:           experiment.Key,
 			Audiences:     getExperimentAudiences(experiment, audiencesByID),
 			VariationsMap: variationsMap,
-		}
+		})
 	}
-	return experimentsMap
+	return mappedExperiments
 }
 
-func getExperimentsKeyMap(experimentsMapByID map[string]OptimizelyExperiment) map[string]OptimizelyExperiment {
-	sortedExperimentIDs := make([]string, 0, len(experimentsMapByID))
-	for _, exp := range experimentsMapByID {
-		sortedExperimentIDs = append(sortedExperimentIDs, exp.ID)
-	}
-	sort.Strings(sortedExperimentIDs)
-
+func getExperimentsKeyMap(mappedExperiments []OptimizelyExperiment) map[string]OptimizelyExperiment {
 	experimentKeysMap := map[string]OptimizelyExperiment{}
-	for _, expID := range sortedExperimentIDs {
-		experiment := experimentsMapByID[expID]
-		experimentKeysMap[experiment.Key] = experiment
+	for _, exp := range mappedExperiments {
+		experimentKeysMap[exp.Key] = exp
 	}
 	return experimentKeysMap
 }
 
-func getFeaturesMap(audiencesByID map[string]entities.Audience, experimentsMapByID map[string]OptimizelyExperiment, features []entities.Feature, rolloutIDMap map[string]entities.Rollout, variableByIDMap map[string]entities.Variable) map[string]OptimizelyFeature {
+func getFeaturesMap(audiencesByID map[string]entities.Audience, mappedExperiments []OptimizelyExperiment, features []entities.Feature, rolloutIDMap map[string]entities.Rollout, variableByIDMap map[string]entities.Variable) map[string]OptimizelyFeature {
 	featuresMap := map[string]OptimizelyFeature{}
 	for _, featureFlag := range features {
 		featureExperimentMap := map[string]OptimizelyExperiment{}
 		experimentRules := []OptimizelyExperiment{}
-		for expID := range experimentsMapByID {
+		for _, exp := range mappedExperiments {
 			var contains bool
 			for _, id := range featureFlag.ExperimentIDs {
-				if expID == id {
+				if exp.ID == id {
 					contains = true
 					break
 				}
 			}
 			if contains {
-				if experiment, ok := experimentsMapByID[expID]; ok {
-					featureExperimentMap[experiment.Key] = experiment
-				}
-				experimentRules = append(experimentRules, experimentsMapByID[expID])
+				featureExperimentMap[exp.Key] = exp
+				experimentRules = append(experimentRules, exp)
 			}
 		}
 		optimizelyFeatureVariablesMap := map[string]OptimizelyVariable{}
@@ -393,7 +383,7 @@ func NewOptimizelyConfig(projConfig ProjectConfig) *OptimizelyConfig {
 		optimizelyAttributes = append(optimizelyAttributes, OptimizelyAttribute(attribute))
 	}
 	optimizelyConfig.Attributes = optimizelyAttributes
-	optimizelyConfig.Audiences = getAudiences(projConfig.GetAudienceMap())
+	optimizelyConfig.Audiences = getAudiences(projConfig.GetAudienceList())
 
 	optlyEvents := []OptimizelyEvent{}
 	for _, event := range projConfig.GetEvents() {
@@ -413,16 +403,11 @@ func NewOptimizelyConfig(projConfig ProjectConfig) *OptimizelyConfig {
 		rolloutIDMap[rollout.ID] = rollout
 	}
 
-	experimentsIDMap := map[string]entities.Experiment{}
-	for _, experiment := range projConfig.GetExperimentList() {
-		experimentsIDMap[experiment.ID] = experiment
-	}
-
-	experimentsMapByID := getExperimentsMapByID(projConfig.GetAudienceMap(), projConfig.GetExperimentList(), projConfig.GetFeatureList(), featuresIDMap, rolloutIDMap)
-	optimizelyConfig.ExperimentsMap = getExperimentsKeyMap(experimentsMapByID)
+	mappedExperiments := getMappedExperiments(projConfig.GetAudienceMap(), projConfig.GetExperimentList(), projConfig.GetFeatureList(), featuresIDMap, rolloutIDMap)
+	optimizelyConfig.ExperimentsMap = getExperimentsKeyMap(mappedExperiments)
 
 	variableByIDMap := getVariableByIDMap(featuresList)
-	optimizelyConfig.FeaturesMap = getFeaturesMap(projConfig.GetAudienceMap(), experimentsMapByID, featuresList, rolloutIDMap, variableByIDMap)
+	optimizelyConfig.FeaturesMap = getFeaturesMap(projConfig.GetAudienceMap(), mappedExperiments, featuresList, rolloutIDMap, variableByIDMap)
 
 	optimizelyConfig.datafile = projConfig.GetDatafile()
 

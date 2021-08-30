@@ -38,14 +38,18 @@ type DatafileProjectConfig struct {
 	projectID            string
 	revision             string
 	experimentKeyToIDMap map[string]string
+	audienceList         []entities.Audience
 	audienceMap          map[string]entities.Audience
 	attributeMap         map[string]entities.Attribute
 	events               []entities.Event
 	eventMap             map[string]entities.Event
 	attributeKeyToIDMap  map[string]string
+	experimentList       []entities.Experiment
 	experimentMap        map[string]entities.Experiment
+	featureList          []entities.Feature
 	featureMap           map[string]entities.Feature
 	groupMap             map[string]entities.Group
+	rolloutList          []entities.Rollout
 	rolloutMap           map[string]entities.Rollout
 	anonymizeIP          bool
 	botFiltering         bool
@@ -155,26 +159,22 @@ func (c DatafileProjectConfig) GetAttributeByKey(key string) (entities.Attribute
 
 // GetFeatureList returns an array of all the features
 func (c DatafileProjectConfig) GetFeatureList() (featureList []entities.Feature) {
-	for _, feature := range c.featureMap {
-		featureList = append(featureList, feature)
-	}
-	return featureList
+	return c.featureList
 }
 
 // GetExperimentList returns an array of all the experiments
 func (c DatafileProjectConfig) GetExperimentList() (experimentList []entities.Experiment) {
-	for _, experiment := range c.experimentMap {
-		experimentList = append(experimentList, experiment)
-	}
-	return experimentList
+	return c.experimentList
 }
 
 // GetRolloutList returns an array of all the rollouts
 func (c DatafileProjectConfig) GetRolloutList() (rolloutList []entities.Rollout) {
-	for _, rollout := range c.rolloutMap {
-		rolloutList = append(rolloutList, rollout)
-	}
-	return rolloutList
+	return c.rolloutList
+}
+
+// GetAudienceList returns an array of all the audiences
+func (c DatafileProjectConfig) GetAudienceList() (audienceList []entities.Audience) {
+	return c.audienceList
 }
 
 // GetAudienceByID returns the audience with the given ID
@@ -233,39 +233,45 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	attributeMap, attributeKeyToIDMap := mappers.MapAttributes(datafile.Attributes)
 	allExperiments := mappers.MergeExperiments(datafile.Experiments, datafile.Groups)
 	groupMap, experimentGroupMap := mappers.MapGroups(datafile.Groups)
-	experimentMap, experimentKeyMap := mappers.MapExperiments(allExperiments, experimentGroupMap)
+	experiments, experimentMap, experimentKeyMap := mappers.MapExperiments(allExperiments, experimentGroupMap)
 
-	rolloutMap := mappers.MapRollouts(datafile.Rollouts)
+	rolloutList, rolloutMap := mappers.MapRollouts(datafile.Rollouts)
 	events := []entities.Event{}
 	for _, event := range datafile.Events {
 		events = append(events, entities.Event(event))
 	}
 	eventMap := mappers.MapEvents(datafile.Events)
 	mergedAudiences := append(datafile.TypedAudiences, datafile.Audiences...)
-	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentMap)
+	featureList, featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentMap)
 	attributes := []entities.Attribute{}
 	for _, attribute := range datafile.Attributes {
 		attributes = append(attributes, entities.Attribute(attribute))
 	}
+	audienceList, audienceMap := mappers.MapAudiences(mergedAudiences)
+
 	config := &DatafileProjectConfig{
 		datafile:             string(jsonDatafile),
 		accountID:            datafile.AccountID,
 		attributes:           attributes,
 		anonymizeIP:          datafile.AnonymizeIP,
 		attributeKeyToIDMap:  attributeKeyToIDMap,
-		audienceMap:          mappers.MapAudiences(mergedAudiences),
+		audienceList:         audienceList,
+		audienceMap:          audienceMap,
 		attributeMap:         attributeMap,
 		botFiltering:         datafile.BotFiltering,
 		sdkKey:               datafile.SDKKey,
 		environmentKey:       datafile.EnvironmentKey,
+		experimentList:       experiments,
 		experimentKeyToIDMap: experimentKeyMap,
 		experimentMap:        experimentMap,
 		groupMap:             groupMap,
 		events:               events,
 		eventMap:             eventMap,
+		featureList:          featureList,
 		featureMap:           featureMap,
 		projectID:            datafile.ProjectID,
 		revision:             datafile.Revision,
+		rolloutList:          rolloutList,
 		rolloutMap:           rolloutMap,
 		sendFlagDecisions:    datafile.SendFlagDecisions,
 	}
