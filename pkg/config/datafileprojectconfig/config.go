@@ -38,18 +38,18 @@ type DatafileProjectConfig struct {
 	projectID            string
 	revision             string
 	experimentKeyToIDMap map[string]string
-	audienceList         []entities.Audience
+	audiences            []entities.Audience
 	audienceMap          map[string]entities.Audience
 	attributeMap         map[string]entities.Attribute
 	events               []entities.Event
 	eventMap             map[string]entities.Event
 	attributeKeyToIDMap  map[string]string
-	experimentList       []entities.Experiment
+	experiments          []entities.Experiment
 	experimentMap        map[string]entities.Experiment
-	featureList          []entities.Feature
+	features             []entities.Feature
 	featureMap           map[string]entities.Feature
 	groupMap             map[string]entities.Group
-	rolloutList          []entities.Rollout
+	rollouts             []entities.Rollout
 	rolloutMap           map[string]entities.Rollout
 	anonymizeIP          bool
 	botFiltering         bool
@@ -159,22 +159,22 @@ func (c DatafileProjectConfig) GetAttributeByKey(key string) (entities.Attribute
 
 // GetFeatureList returns an array of all the features
 func (c DatafileProjectConfig) GetFeatureList() (featureList []entities.Feature) {
-	return c.featureList
+	return c.features
 }
 
 // GetExperimentList returns an array of all the experiments
 func (c DatafileProjectConfig) GetExperimentList() (experimentList []entities.Experiment) {
-	return c.experimentList
+	return c.experiments
 }
 
 // GetRolloutList returns an array of all the rollouts
 func (c DatafileProjectConfig) GetRolloutList() (rolloutList []entities.Rollout) {
-	return c.rolloutList
+	return c.rollouts
 }
 
 // GetAudienceList returns an array of all the audiences
 func (c DatafileProjectConfig) GetAudienceList() (audienceList []entities.Audience) {
-	return c.audienceList
+	return c.audiences
 }
 
 // GetAudienceByID returns the audience with the given ID
@@ -235,19 +235,19 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	groupMap, experimentGroupMap := mappers.MapGroups(datafile.Groups)
 	experiments, experimentMap, experimentKeyMap := mappers.MapExperiments(allExperiments, experimentGroupMap)
 
-	rolloutList, rolloutMap := mappers.MapRollouts(datafile.Rollouts)
+	rollouts, rolloutMap := mappers.MapRollouts(datafile.Rollouts)
 	events := []entities.Event{}
 	for _, event := range datafile.Events {
 		events = append(events, entities.Event(event))
 	}
 	eventMap := mappers.MapEvents(datafile.Events)
 	mergedAudiences := append(datafile.TypedAudiences, datafile.Audiences...)
-	featureList, featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentMap)
+	features, featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentMap)
 	attributes := []entities.Attribute{}
 	for _, attribute := range datafile.Attributes {
 		attributes = append(attributes, entities.Attribute(attribute))
 	}
-	audienceList, audienceMap := mappers.MapAudiences(mergedAudiences)
+	audiences, audienceMap := mappers.MapAudiences(mergedAudiences)
 
 	config := &DatafileProjectConfig{
 		datafile:             string(jsonDatafile),
@@ -255,23 +255,23 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		attributes:           attributes,
 		anonymizeIP:          datafile.AnonymizeIP,
 		attributeKeyToIDMap:  attributeKeyToIDMap,
-		audienceList:         audienceList,
+		audiences:            audiences,
 		audienceMap:          audienceMap,
 		attributeMap:         attributeMap,
 		botFiltering:         datafile.BotFiltering,
 		sdkKey:               datafile.SDKKey,
 		environmentKey:       datafile.EnvironmentKey,
-		experimentList:       experiments,
+		experiments:          experiments,
 		experimentKeyToIDMap: experimentKeyMap,
 		experimentMap:        experimentMap,
 		groupMap:             groupMap,
 		events:               events,
 		eventMap:             eventMap,
-		featureList:          featureList,
+		features:             features,
 		featureMap:           featureMap,
 		projectID:            datafile.ProjectID,
 		revision:             datafile.Revision,
-		rolloutList:          rolloutList,
+		rollouts:             rollouts,
 		rolloutMap:           rolloutMap,
 		sendFlagDecisions:    datafile.SendFlagDecisions,
 	}

@@ -174,25 +174,30 @@ func getSerializedAudiences(conditions interface{}, audiencesByID map[string]ent
 					}
 				default:
 				}
-				// Checks if sub audience is empty or not
-				if subAudience != "" {
-					if serializedAudience != "" || cond == "NOT" {
-						if cond == "" {
-							cond = "OR"
-						}
-						if serializedAudience == "" {
-							serializedAudience = fmt.Sprintf(`%s %s`, cond, subAudience)
-						} else {
-							serializedAudience += fmt.Sprintf(` %s %s`, cond, subAudience)
-						}
-					} else {
-						serializedAudience += subAudience
-					}
-				}
+				// Had to create a different method to reduce cyclomatic complexity
+				evaluateSubAudience(&subAudience, &serializedAudience, &cond)
 			}
 		}
 	}
 	return serializedAudience
+}
+
+func evaluateSubAudience(subAudience, serializedAudience, cond *string) {
+	// Checks if sub audience is empty or not
+	if *subAudience != "" {
+		if *serializedAudience != "" || *cond == "NOT" {
+			if *cond == "" {
+				*cond = "OR"
+			}
+			if *serializedAudience == "" {
+				*serializedAudience = fmt.Sprintf(`%s %s`, *cond, *subAudience)
+			} else {
+				*serializedAudience += fmt.Sprintf(` %s %s`, *cond, *subAudience)
+			}
+		} else {
+			*serializedAudience += *subAudience
+		}
+	}
 }
 
 func getExperimentAudiences(experiment entities.Experiment, audiencesByID map[string]entities.Audience) string {

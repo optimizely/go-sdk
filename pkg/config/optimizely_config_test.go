@@ -30,10 +30,9 @@ type OptimizelyConfigTestSuite struct {
 
 func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 
+	rootDirectory := "testdata/"
 	test := func(datafileOne string, datafileTwo string) {
-		// Cleaned here due to linter warning
-		folder := "testdata/"
-		dataFile, err := ioutil.ReadFile(folder + datafileOne)
+		dataFile, err := ioutil.ReadFile(rootDirectory + datafileOne)
 		if err != nil {
 			s.Fail("error opening file " + datafileOne)
 		}
@@ -45,7 +44,7 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 		}
 		optimizelyConfig := NewOptimizelyConfig(projConfig)
 
-		dataFile2, err := ioutil.ReadFile(folder + datafileTwo)
+		dataFile2, err := ioutil.ReadFile(rootDirectory + datafileTwo)
 		if err != nil {
 			s.Fail("error opening file " + datafileTwo)
 		}

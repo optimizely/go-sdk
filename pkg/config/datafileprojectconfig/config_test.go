@@ -278,7 +278,7 @@ func TestGetFeatureList(t *testing.T) {
 		Key: key,
 	}
 	config := &DatafileProjectConfig{
-		featureList: []entities.Feature{feature},
+		features: []entities.Feature{feature},
 	}
 
 	features := config.GetFeatureList()
@@ -295,7 +295,7 @@ func TestGetExperimentList(t *testing.T) {
 	}
 
 	config := &DatafileProjectConfig{
-		experimentList: []entities.Experiment{experiment},
+		experiments: []entities.Experiment{experiment},
 	}
 
 	experiments := config.GetExperimentList()
