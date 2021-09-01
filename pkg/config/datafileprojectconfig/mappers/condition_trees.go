@@ -28,10 +28,14 @@ import (
 var errEmptyTree = errors.New("empty tree")
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
-// GetDefaultOperators returns default conditional operators
-func GetDefaultOperators() []string {
-	return []string{"and", "or", "not"}
-}
+type OperatorType string
+
+// Default conditional operators
+const (
+	And OperatorType = "and"
+	Or  OperatorType = "or"
+	Not OperatorType = "not"
+)
 
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
 func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, retErr error) {
@@ -140,7 +144,6 @@ func createLeafCondition(typedV map[string]interface{}, node *entities.TreeNode)
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
 func buildAudienceConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, err error) {
 
-	var operators = GetDefaultOperators()
 	value := reflect.ValueOf(conditions)
 	visited := make(map[interface{}]bool)
 
@@ -166,7 +169,7 @@ func buildAudienceConditionTree(conditions interface{}) (conditionTree *entities
 				n := &entities.TreeNode{}
 				typedV := v.Index(i).Interface()
 				if value, ok := typedV.(string); ok {
-					if stringInSlice(value, operators) {
+					if isValidOperator(value) {
 						n.Operator = typedV.(string)
 						root.Operator = n.Operator
 						continue
@@ -193,11 +196,11 @@ func buildAudienceConditionTree(conditions interface{}) (conditionTree *entities
 	return conditionTree, err
 }
 
-func stringInSlice(str string, list []string) bool {
-	for _, v := range list {
-		if v == str {
-			return true
-		}
+func isValidOperator(op string) bool {
+	operator := OperatorType(op)
+	switch operator {
+	case And, Or, Not:
+		return true
 	}
 	return false
 }

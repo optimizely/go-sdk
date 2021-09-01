@@ -132,8 +132,9 @@ func getAudiences(audiencesList []entities.Audience) []OptimizelyAudience {
 
 func getSerializedAudiences(conditions interface{}, audiencesByID map[string]entities.Audience) string {
 	operators := map[string]bool{}
-	for _, operator := range mappers.GetDefaultOperators() {
-		operators[operator] = true
+	defaultOperators := []mappers.OperatorType{mappers.And, mappers.Or, mappers.Not}
+	for _, operator := range defaultOperators {
+		operators[string(operator)] = true
 	}
 	var serializedAudience string
 
@@ -159,9 +160,9 @@ func getSerializedAudiences(conditions interface{}, audiencesByID map[string]ent
 						// if audience condition is "NOT" then add "NOT" at start.
 						// Otherwise check if there is already audience id in serializedAudience
 						// then append condition between serializedAudience and item
-						if serializedAudience != "" || cond == "NOT" {
+						if serializedAudience != "" || cond == (strings.ToUpper(string(mappers.Not))) {
 							if cond == "" {
-								cond = "OR"
+								cond = strings.ToUpper(string(mappers.Or))
 							}
 							if serializedAudience == "" {
 								serializedAudience = fmt.Sprintf(`%s "%s"`, cond, audiencesByID[item].Name)
@@ -185,9 +186,9 @@ func getSerializedAudiences(conditions interface{}, audiencesByID map[string]ent
 func evaluateSubAudience(subAudience, serializedAudience, cond *string) {
 	// Checks if sub audience is empty or not
 	if *subAudience != "" {
-		if *serializedAudience != "" || *cond == "NOT" {
+		if *serializedAudience != "" || *cond == (strings.ToUpper(string(mappers.Not))) {
 			if *cond == "" {
-				*cond = "OR"
+				*cond = (strings.ToUpper(string(mappers.Or)))
 			}
 			if *serializedAudience == "" {
 				*serializedAudience = fmt.Sprintf(`%s %s`, *cond, *subAudience)
@@ -201,9 +202,6 @@ func evaluateSubAudience(subAudience, serializedAudience, cond *string) {
 }
 
 func getExperimentAudiences(experiment entities.Experiment, audiencesByID map[string]entities.Audience) string {
-	if experiment.AudienceConditions == nil {
-		return ""
-	}
 	return getSerializedAudiences(experiment.AudienceConditions, audiencesByID)
 }
 
@@ -297,8 +295,8 @@ func getExperimentFeatureMap(features []entities.Feature) map[string][]string {
 	return experimentFeatureMap
 }
 
-func getMappedExperiments(audiencesByID map[string]entities.Audience, experiments []entities.Experiment, features []entities.Feature, featuresMap map[string]entities.Feature, rolloutMap map[string]entities.Rollout) []OptimizelyExperiment {
-	mappedExperiments := []OptimizelyExperiment{}
+func getMappedExperiments(audiencesByID map[string]entities.Audience, experiments []entities.Experiment, features []entities.Feature, featuresMap map[string]entities.Feature, rolloutMap map[string]entities.Rollout) map[string]OptimizelyExperiment {
+	mappedExperiments := map[string]OptimizelyExperiment{}
 	variableIDMap := getVariableByIDMap(features)
 	rolloutExperimentIdsMap := getRolloutExperimentsIdsMap(rolloutMap)
 	experimentFeaturesMap := getExperimentFeatureMap(features)
@@ -313,17 +311,17 @@ func getMappedExperiments(audiencesByID map[string]entities.Audience, experiment
 			featureID = featureIds[0]
 		}
 		variationsMap := getVariationsMap(featuresMap[featureID], experiment.Variations, variableIDMap)
-		mappedExperiments = append(mappedExperiments, OptimizelyExperiment{
+		mappedExperiments[experiment.ID] = OptimizelyExperiment{
 			ID:            experiment.ID,
 			Key:           experiment.Key,
 			Audiences:     getExperimentAudiences(experiment, audiencesByID),
 			VariationsMap: variationsMap,
-		})
+		}
 	}
 	return mappedExperiments
 }
 
-func getExperimentsKeyMap(mappedExperiments []OptimizelyExperiment) map[string]OptimizelyExperiment {
+func getExperimentsKeyMap(mappedExperiments map[string]OptimizelyExperiment) map[string]OptimizelyExperiment {
 	experimentKeysMap := map[string]OptimizelyExperiment{}
 	for _, exp := range mappedExperiments {
 		experimentKeysMap[exp.Key] = exp
@@ -331,20 +329,13 @@ func getExperimentsKeyMap(mappedExperiments []OptimizelyExperiment) map[string]O
 	return experimentKeysMap
 }
 
-func getFeaturesMap(audiencesByID map[string]entities.Audience, mappedExperiments []OptimizelyExperiment, features []entities.Feature, rolloutIDMap map[string]entities.Rollout, variableByIDMap map[string]entities.Variable) map[string]OptimizelyFeature {
+func getFeaturesMap(audiencesByID map[string]entities.Audience, mappedExperiments map[string]OptimizelyExperiment, features []entities.Feature, rolloutIDMap map[string]entities.Rollout, variableByIDMap map[string]entities.Variable) map[string]OptimizelyFeature {
 	featuresMap := map[string]OptimizelyFeature{}
 	for _, featureFlag := range features {
 		featureExperimentMap := map[string]OptimizelyExperiment{}
 		experimentRules := []OptimizelyExperiment{}
-		for _, exp := range mappedExperiments {
-			var contains bool
-			for _, id := range featureFlag.ExperimentIDs {
-				if exp.ID == id {
-					contains = true
-					break
-				}
-			}
-			if contains {
+		for _, expID := range featureFlag.ExperimentIDs {
+			if exp, ok := mappedExperiments[expID]; ok {
 				featureExperimentMap[exp.Key] = exp
 				experimentRules = append(experimentRules, exp)
 			}

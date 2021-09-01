@@ -27,20 +27,21 @@ func MapAudiences(audiences []datafileEntities.Audience) (audienceList []entitie
 
 	audienceList = []entities.Audience{}
 	audienceMap = make(map[string]entities.Audience)
+	// Since typed audiences were added prior to audiences,
+	// they will be given priority in the audienceMap and list
 	for _, audience := range audiences {
 		_, ok := audienceMap[audience.ID]
 		if !ok {
-			conditionTree, err := buildConditionTree(audience.Conditions)
-			if err != nil {
-				// @TODO: handle error
-				func() {}() // cheat the linters
-			}
 			audience := entities.Audience{
-				ID:            audience.ID,
-				Name:          audience.Name,
-				ConditionTree: conditionTree,
-				Conditions:    audience.Conditions,
+				ID:         audience.ID,
+				Name:       audience.Name,
+				Conditions: audience.Conditions,
 			}
+			conditionTree, err := buildConditionTree(audience.Conditions)
+			if err == nil {
+				audience.ConditionTree = conditionTree
+			}
+
 			audienceMap[audience.ID] = audience
 			audienceList = append(audienceList, audience)
 		}

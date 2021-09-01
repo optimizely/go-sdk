@@ -44,9 +44,7 @@ type DatafileProjectConfig struct {
 	events               []entities.Event
 	eventMap             map[string]entities.Event
 	attributeKeyToIDMap  map[string]string
-	experiments          []entities.Experiment
 	experimentMap        map[string]entities.Experiment
-	features             []entities.Feature
 	featureMap           map[string]entities.Feature
 	groupMap             map[string]entities.Group
 	rollouts             []entities.Rollout
@@ -159,12 +157,18 @@ func (c DatafileProjectConfig) GetAttributeByKey(key string) (entities.Attribute
 
 // GetFeatureList returns an array of all the features
 func (c DatafileProjectConfig) GetFeatureList() (featureList []entities.Feature) {
-	return c.features
+	for _, feature := range c.featureMap {
+		featureList = append(featureList, feature)
+	}
+	return featureList
 }
 
 // GetExperimentList returns an array of all the experiments
 func (c DatafileProjectConfig) GetExperimentList() (experimentList []entities.Experiment) {
-	return c.experiments
+	for _, experiment := range c.experimentMap {
+		experimentList = append(experimentList, experiment)
+	}
+	return experimentList
 }
 
 // GetRolloutList returns an array of all the rollouts
@@ -230,23 +234,15 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		return nil, err
 	}
 
-	attributeMap, attributeKeyToIDMap := mappers.MapAttributes(datafile.Attributes)
+	attributes, attributeMap, attributeKeyToIDMap := mappers.MapAttributes(datafile.Attributes)
 	allExperiments := mappers.MergeExperiments(datafile.Experiments, datafile.Groups)
 	groupMap, experimentGroupMap := mappers.MapGroups(datafile.Groups)
-	experiments, experimentMap, experimentKeyMap := mappers.MapExperiments(allExperiments, experimentGroupMap)
+	experimentMap, experimentKeyMap := mappers.MapExperiments(allExperiments, experimentGroupMap)
 
 	rollouts, rolloutMap := mappers.MapRollouts(datafile.Rollouts)
-	events := []entities.Event{}
-	for _, event := range datafile.Events {
-		events = append(events, entities.Event(event))
-	}
-	eventMap := mappers.MapEvents(datafile.Events)
+	events, eventMap := mappers.MapEvents(datafile.Events)
 	mergedAudiences := append(datafile.TypedAudiences, datafile.Audiences...)
-	features, featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentMap)
-	attributes := []entities.Attribute{}
-	for _, attribute := range datafile.Attributes {
-		attributes = append(attributes, entities.Attribute(attribute))
-	}
+	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentMap)
 	audiences, audienceMap := mappers.MapAudiences(mergedAudiences)
 
 	config := &DatafileProjectConfig{
@@ -261,13 +257,11 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		botFiltering:         datafile.BotFiltering,
 		sdkKey:               datafile.SDKKey,
 		environmentKey:       datafile.EnvironmentKey,
-		experiments:          experiments,
 		experimentKeyToIDMap: experimentKeyMap,
 		experimentMap:        experimentMap,
 		groupMap:             groupMap,
 		events:               events,
 		eventMap:             eventMap,
-		features:             features,
 		featureMap:           featureMap,
 		projectID:            datafile.ProjectID,
 		revision:             datafile.Revision,

@@ -49,7 +49,7 @@ func TestMapFeatures(t *testing.T) {
 		"31111": experiment31111,
 		"31112": experiment31112,
 	}
-	featuresList, featureMap := MapFeatures(rawFeatureFlags, rolloutMap, experimentMap)
+	featureMap := MapFeatures(rawFeatureFlags, rolloutMap, experimentMap)
 
 	// Test MapFeatures should only change IsFeatureExperiment to true for experiment31111 since it belongs to a featureflag
 	experiment31111.IsFeatureExperiment = true
@@ -60,7 +60,7 @@ func TestMapFeatures(t *testing.T) {
 		Type:         "json",
 	}
 	expectedFeatureMap := map[string]entities.Feature{
-		"test_feature_21111": entities.Feature{
+		"test_feature_21111": {
 			ID:                 "21111",
 			Key:                "test_feature_21111",
 			ExperimentIDs:      []string{"31111"},
@@ -74,7 +74,6 @@ func TestMapFeatures(t *testing.T) {
 		"31112": experiment31112,
 	}
 
-	assert.Equal(t, []entities.Feature{featureMap["test_feature_21111"]}, featuresList)
 	assert.Equal(t, expectedFeatureMap, featureMap)
 	assert.Equal(t, expectedExperimentMap, experimentMap)
 }

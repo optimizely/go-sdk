@@ -19,6 +19,7 @@ package config
 import (
 	"encoding/json"
 	"io/ioutil"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -57,15 +58,21 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 
 		s.Equal(expectedConfig.Attributes, optimizelyConfig.Attributes)
 		s.Equal(expectedConfig.Audiences, optimizelyConfig.Audiences)
-		s.Equal(expectedConfig.FeaturesMap, optimizelyConfig.FeaturesMap)
-		s.Equal(expectedConfig.ExperimentsMap, optimizelyConfig.ExperimentsMap)
+
+		// DeepEqual required here since normal equal was flaky with comparison of complex objects inside map
+		result := reflect.DeepEqual(expectedConfig.FeaturesMap, optimizelyConfig.FeaturesMap)
+		s.True(result)
+		result = reflect.DeepEqual(expectedConfig.ExperimentsMap, optimizelyConfig.ExperimentsMap)
+		s.True(result)
+
 		s.Equal(expectedConfig.Revision, optimizelyConfig.Revision)
 		s.Equal(expectedConfig.datafile, optimizelyConfig.datafile)
 		s.Equal(expectedConfig.SdkKey, optimizelyConfig.SdkKey)
 		s.Equal(expectedConfig.EnvironmentKey, optimizelyConfig.EnvironmentKey)
 		s.Equal(expectedConfig.Events, optimizelyConfig.Events)
 
-		s.Equal(expectedConfig, *optimizelyConfig)
+		result = reflect.DeepEqual(expectedConfig, *optimizelyConfig)
+		s.True(result)
 	}
 
 	// Simple datafile

@@ -67,7 +67,7 @@ func TestMapExperiments(t *testing.T) {
 	rawExperiments := []datafileEntities.Experiment{rawExperiment}
 	experimentGroupMap := map[string]string{"11111": "15"}
 
-	experiments, experimentsId, experimentKeyMap := MapExperiments(rawExperiments, experimentGroupMap)
+	experimentsId, experimentKeyMap := MapExperiments(rawExperiments, experimentGroupMap)
 	expectedExperiments := map[string]entities.Experiment{
 		"11111": {
 			AudienceIds: []string{"31111"},
@@ -77,13 +77,13 @@ func TestMapExperiments(t *testing.T) {
 			Variations: map[string]entities.Variation{
 				"21111": {
 					ID:             "21111",
-					Variables:      map[string]entities.VariationVariable{"1": entities.VariationVariable{ID: "1", Value: "1"}},
+					Variables:      map[string]entities.VariationVariable{"1": {ID: "1", Value: "1"}},
 					Key:            "variation_1",
 					FeatureEnabled: true,
 				},
 				"21112": {
 					ID:             "21112",
-					Variables:      map[string]entities.VariationVariable{"2": entities.VariationVariable{ID: "2", Value: "2"}},
+					Variables:      map[string]entities.VariationVariable{"2": {ID: "2", Value: "2"}},
 					Key:            "variation_2",
 					FeatureEnabled: false,
 				},
@@ -118,8 +118,6 @@ func TestMapExperiments(t *testing.T) {
 		"test_experiment_11111": "11111",
 	}
 
-	assert.Len(t, experiments, 1)
-	assert.Equal(t, expectedExperiments["11111"], experiments[0])
 	assert.Equal(t, expectedExperiments, experimentsId)
 	assert.Equal(t, expectedExperimentKeyMap, experimentKeyMap)
 }
@@ -136,7 +134,7 @@ func TestMapExperimentsWithStringAudienceCondition(t *testing.T) {
 	rawExperiments := []datafileEntities.Experiment{rawExperiment}
 	experimentGroupMap := map[string]string{"11111": "15"}
 
-	experiments, experimentsIdMap, experimentKeyMap := MapExperiments(rawExperiments, experimentGroupMap)
+	experimentsIdMap, experimentKeyMap := MapExperiments(rawExperiments, experimentGroupMap)
 	expectedExperiments := map[string]entities.Experiment{
 		"11111": {
 			AudienceIds:         []string{"31111"},
@@ -162,8 +160,6 @@ func TestMapExperimentsWithStringAudienceCondition(t *testing.T) {
 		"test_experiment_11111": "11111",
 	}
 
-	assert.Len(t, experiments, 1)
-	assert.Equal(t, expectedExperiments["11111"], experiments[0])
 	assert.Equal(t, expectedExperiments, experimentsIdMap)
 	assert.Equal(t, expectedExperimentKeyMap, experimentKeyMap)
 }
@@ -177,17 +173,17 @@ func TestMergeExperiments(t *testing.T) {
 		Policy: "random",
 		ID:     "11112",
 		TrafficAllocation: []datafileEntities.TrafficAllocation{
-			datafileEntities.TrafficAllocation{
+			{
 				EntityID:   "21113",
 				EndOfRange: 7000,
 			},
-			datafileEntities.TrafficAllocation{
+			{
 				EntityID:   "21114",
 				EndOfRange: 10000,
 			},
 		},
 		Experiments: []datafileEntities.Experiment{
-			datafileEntities.Experiment{
+			{
 				ID: "11112",
 			},
 		},
@@ -237,8 +233,6 @@ func TestMapExperimentsAudienceIdsOnly(t *testing.T) {
 		},
 	}
 
-	experiments, experimentsIDMap, _ := MapExperiments([]datafileEntities.Experiment{rawExperiment}, map[string]string{})
-	assert.Len(t, experiments, 1)
-	assert.Equal(t, expectedExperiment, experiments[0])
+	experimentsIDMap, _ := MapExperiments([]datafileEntities.Experiment{rawExperiment}, map[string]string{})
 	assert.Equal(t, expectedExperiment.AudienceConditionTree, experimentsIDMap[rawExperiment.ID].AudienceConditionTree)
 }

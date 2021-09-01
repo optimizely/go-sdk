@@ -40,15 +40,13 @@ func TestMapAudiencesEmptyList(t *testing.T) {
 func TestMapAudiences(t *testing.T) {
 
 	audienceList := []datafileEntities.Audience{{ID: "1", Name: "one"}, {ID: "2", Name: "two"},
-		{ID: "3", Name: "three"}, {ID: "4", Name: "four"}, {ID: "5", Name: "one"}}
+		{ID: "3", Name: "three"}, {ID: "2", Name: "four"}, {ID: "1", Name: "one"}}
 	audiences, audienceMap := MapAudiences(audienceList)
 
 	expectedAudienceMap := map[string]entities.Audience{"1": {ID: "1", Name: "one"}, "2": {ID: "2", Name: "two"},
-		"3": {ID: "3", Name: "three"}, "4": {ID: "4", Name: "four"}, "5": {ID: "5", Name: "one"}}
-	expectedAudienceList := []entities.Audience{}
-	for _, audience := range audienceList {
-		expectedAudienceList = append(expectedAudienceList, expectedAudienceMap[audience.ID])
-	}
+		"3": {ID: "3", Name: "three"}}
+	expectedAudienceList := []entities.Audience{{ID: "1", Name: "one"}, {ID: "2", Name: "two"},
+		{ID: "3", Name: "three"}}
 	assert.Equal(t, expectedAudienceList, audiences)
 	assert.Equal(t, expectedAudienceMap, audienceMap)
 }

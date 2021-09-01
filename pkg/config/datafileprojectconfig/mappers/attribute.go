@@ -23,19 +23,22 @@ import (
 )
 
 // MapAttributes maps the raw datafile attribute entities to SDK Attribute entities
-func MapAttributes(attributes []datafileEntities.Attribute) (attributeMap map[string]entities.Attribute, attributeKeyToIDMap map[string]string) {
+func MapAttributes(attributes []datafileEntities.Attribute) (attributesList []entities.Attribute, attributeMap map[string]entities.Attribute, attributeKeyToIDMap map[string]string) {
 
+	attributesList = []entities.Attribute{}
 	attributeMap = make(map[string]entities.Attribute)
 	attributeKeyToIDMap = make(map[string]string)
 	for _, attribute := range attributes {
 		_, ok := attributeMap[attribute.ID]
 		if !ok {
-			attributeMap[attribute.ID] = entities.Attribute{
+			tmpAttribute := entities.Attribute{
 				ID:  attribute.ID,
 				Key: attribute.Key,
 			}
+			attributesList = append(attributesList, tmpAttribute)
+			attributeMap[attribute.ID] = tmpAttribute
 			attributeKeyToIDMap[attribute.Key] = attribute.ID
 		}
 	}
-	return attributeMap, attributeKeyToIDMap
+	return attributesList, attributeMap, attributeKeyToIDMap
 }

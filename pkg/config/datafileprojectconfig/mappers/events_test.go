@@ -35,14 +35,16 @@ func TestMapEvents(t *testing.T) {
 	json.Unmarshal([]byte(testEventString), &rawEvent)
 
 	rawEvents := []datafileEntities.Event{rawEvent}
-	eventsMap := MapEvents(rawEvents)
+	eventList, eventsMap := MapEvents(rawEvents)
 	expectedEventMap := map[string]entities.Event{
-		"event1": entities.Event{
+		"event1": {
 			ID:            "some_id",
 			Key:           "event1",
 			ExperimentIds: []string{"11111", "11112"},
 		},
 	}
 
+	assert.Len(t, eventList, 1)
+	assert.Equal(t, expectedEventMap["event1"], eventList[0])
 	assert.Equal(t, expectedEventMap, eventsMap)
 }
