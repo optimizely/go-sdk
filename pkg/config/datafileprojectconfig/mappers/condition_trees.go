@@ -28,6 +28,7 @@ import (
 var errEmptyTree = errors.New("empty tree")
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
+// OperatorType defines logical operator for conditions
 type OperatorType string
 
 // Default conditional operators
