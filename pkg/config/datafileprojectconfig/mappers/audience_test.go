@@ -39,14 +39,39 @@ func TestMapAudiencesEmptyList(t *testing.T) {
 
 func TestMapAudiences(t *testing.T) {
 
-	audienceList := []datafileEntities.Audience{{ID: "1", Name: "one"}, {ID: "2", Name: "two"},
+	expectedConditions := "[\"and\", [\"or\", [\"or\", {\"name\": \"s_foo\", \"type\": \"custom_attribute\", \"value\": \"foo\"}]]]"
+	audienceList := []datafileEntities.Audience{{ID: "1", Name: "one", Conditions: expectedConditions}, {ID: "2", Name: "two"},
 		{ID: "3", Name: "three"}, {ID: "2", Name: "four"}, {ID: "1", Name: "one"}}
 	audiences, audienceMap := MapAudiences(audienceList)
 
-	expectedAudienceMap := map[string]entities.Audience{"1": {ID: "1", Name: "one"}, "2": {ID: "2", Name: "two"},
+	expectedConditionTree := &entities.TreeNode{
+		Operator: "and",
+		Nodes: []*entities.TreeNode{
+			{
+				Operator: "or",
+				Nodes: []*entities.TreeNode{
+					{
+						Operator: "or",
+						Nodes: []*entities.TreeNode{
+							{
+								Item: entities.Condition{
+									Name:                 "s_foo",
+									Type:                 "custom_attribute",
+									Value:                "foo",
+									StringRepresentation: `{"name":"s_foo","type":"custom_attribute","value":"foo"}`,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	expectedAudienceMap := map[string]entities.Audience{"1": {ID: "1", Name: "one", ConditionTree: expectedConditionTree, Conditions: expectedConditions}, "2": {ID: "2", Name: "two"},
 		"3": {ID: "3", Name: "three"}}
-	expectedAudienceList := []entities.Audience{{ID: "1", Name: "one"}, {ID: "2", Name: "two"},
+	expectedAudienceList := []entities.Audience{{ID: "1", Name: "one", ConditionTree: expectedConditionTree, Conditions: expectedConditions}, {ID: "2", Name: "two"},
 		{ID: "3", Name: "three"}}
+
 	assert.Equal(t, expectedAudienceList, audiences)
 	assert.Equal(t, expectedAudienceMap, audienceMap)
 }

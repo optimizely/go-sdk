@@ -9,14 +9,60 @@
       "experimentIds": ["10390977673"],
       "key": "ab_running_exp_single_exact_match_string_untypedaudience",
       "rolloutId": "",
-      "variables": [],
+      "variables": [{
+        "defaultValue": "42",
+        "id": "26874700941",
+        "key": "i_42",
+        "type": "integer"
+      },
+      {
+        "defaultValue": "42.2",
+        "id": "26874700951",
+        "key": "d_4_2",
+        "type": "double"
+      },
+      {
+        "defaultValue": "true",
+        "id": "26874700961",
+        "key": "b_true",
+        "type": "boolean"
+      },
+      {
+        "defaultValue": "foo",
+        "id": "26874700971",
+        "key": "s_foo",
+        "type": "string"
+      }],
       "id": "1000000016"
     },
     {
       "experimentIds": ["10390977674"],
       "key": "ab_running_exp_single_exact_match_string_typedaudience",
       "rolloutId": "",
-      "variables": [],
+      "variables": [{
+        "defaultValue": "42",
+        "id": "26874700941",
+        "key": "i_42",
+        "type": "integer"
+      },
+      {
+        "defaultValue": "42.2",
+        "id": "26874700951",
+        "key": "d_4_2",
+        "type": "double"
+      },
+      {
+        "defaultValue": "true",
+        "id": "26874700961",
+        "key": "b_true",
+        "type": "boolean"
+      },
+      {
+        "defaultValue": "foo",
+        "id": "26874700971",
+        "key": "s_foo",
+        "type": "string"
+      }],
       "id": "1000000017"
     }
   ],
@@ -34,7 +80,24 @@
       "audienceIds": ["10413101794"],
       "variations": [
         {
-          "variables": [],
+          "variables": [
+            {
+              "value": "50",
+              "id": "26874700941"
+            },
+            {
+              "value": "50.5",
+              "id": "26874700951"
+            },
+            {
+              "value": "false",
+              "id": "26874700961"
+            },
+            {
+              "value": "s1",
+              "id": "26874700971"
+            }
+          ],
           "id": "10416523121",
           "key": "all_traffic_variation"
         }
@@ -55,7 +118,24 @@
       "audienceIds": ["20413101794"],
       "variations": [
         {
-          "variables": [],
+          "variables": [
+            {
+              "value": "43",
+              "id": "26874700941"
+            },
+            {
+              "value": "43.2",
+              "id": "26874700951"
+            },
+            {
+              "value": "true",
+              "id": "26874700961"
+            },
+            {
+              "value": "so far",
+              "id": "26874700971"
+            }
+          ],
           "id": "10416523121",
           "key": "all_traffic_variation"
         }

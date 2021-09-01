@@ -102,7 +102,7 @@ func TestGetAnonymizeIP(t *testing.T) {
 
 func TestGetAttributes(t *testing.T) {
 	config := &DatafileProjectConfig{
-		attributes: []entities.Attribute{{ID: "id", Key: "key"}},
+		attributes: []entities.Attribute{{ID: "id1", Key: "key"}, {ID: "id1", Key: "key"}},
 	}
 
 	assert.Equal(t, config.attributes, config.GetAttributes())
@@ -348,7 +348,7 @@ func TestGetRolloutList(t *testing.T) {
 
 func TestGetAudienceList(t *testing.T) {
 	config := &DatafileProjectConfig{
-		audiences: []entities.Audience{{ID: "5"}},
+		audiences: []entities.Audience{{ID: "5", Name: "one"}, {ID: "5", Name: "two"}},
 	}
 	assert.Equal(t, config.audiences, config.GetAudienceList())
 }

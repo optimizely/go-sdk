@@ -12,7 +12,32 @@
           "id": "10416523121",
           "key": "all_traffic_variation",
           "featureEnabled": false,
-          "variablesMap": {}
+          "variablesMap": {
+            "b_true": {
+              "id": "26874700961",
+              "key": "b_true",
+              "type": "boolean",
+              "value": "true"
+            },
+            "d_4_2": {
+              "id": "26874700951",
+              "key": "d_4_2",
+              "type": "double",
+              "value": "42.2"
+            },
+            "i_42": {
+              "id": "26874700941",
+              "key": "i_42",
+              "type": "integer",
+              "value": "42"
+            },
+            "s_foo": {
+              "id": "26874700971",
+              "key": "s_foo",
+              "type": "string",
+              "value": "foo"
+            }
+          }
         }
       }
     },
@@ -25,7 +50,32 @@
           "id": "10416523121",
           "key": "all_traffic_variation",
           "featureEnabled": false,
-          "variablesMap": {}
+          "variablesMap": {
+            "b_true": {
+              "id": "26874700961",
+              "key": "b_true",
+              "type": "boolean",
+              "value": "true"
+            },
+            "d_4_2": {
+              "id": "26874700951",
+              "key": "d_4_2",
+              "type": "double",
+              "value": "42.2"
+            },
+            "i_42": {
+              "id": "26874700941",
+              "key": "i_42",
+              "type": "integer",
+              "value": "42"
+            },
+            "s_foo": {
+              "id": "26874700971",
+              "key": "s_foo",
+              "type": "string",
+              "value": "foo"
+            }
+          }
         }
       }
     }
@@ -44,13 +94,63 @@
               "id": "10416523121",
               "key": "all_traffic_variation",
               "featureEnabled": false,
-              "variablesMap": {}
+              "variablesMap": {
+                "b_true": {
+                  "id": "26874700961",
+                  "key": "b_true",
+                  "type": "boolean",
+                  "value": "true"
+                },
+                "d_4_2": {
+                  "id": "26874700951",
+                  "key": "d_4_2",
+                  "type": "double",
+                  "value": "42.2"
+                },
+                "i_42": {
+                  "id": "26874700941",
+                  "key": "i_42",
+                  "type": "integer",
+                  "value": "42"
+                },
+                "s_foo": {
+                  "id": "26874700971",
+                  "key": "s_foo",
+                  "type": "string",
+                  "value": "foo"
+                }
+              }
             }
           }
         }
       ],
       "deliveryRules": [],
-      "variablesMap": {},
+      "variablesMap": {
+        "b_true": {
+          "id": "26874700961",
+          "key": "b_true",
+          "type": "boolean",
+          "value": "true"
+        },
+        "d_4_2": {
+          "id": "26874700951",
+          "key": "d_4_2",
+          "type": "double",
+          "value": "42.2"
+        },
+        "i_42": {
+          "id": "26874700941",
+          "key": "i_42",
+          "type": "integer",
+          "value": "42"
+        },
+        "s_foo": {
+          "id": "26874700971",
+          "key": "s_foo",
+          "type": "string",
+          "value": "foo"
+        }
+      },
       "experimentsMap": {
         "ab_running_exp_single_exact_match_string_typedaudience": {
           "id": "10390977674",
@@ -61,7 +161,32 @@
               "id": "10416523121",
               "key": "all_traffic_variation",
               "featureEnabled": false,
-              "variablesMap": {}
+              "variablesMap": {
+                "b_true": {
+                  "id": "26874700961",
+                  "key": "b_true",
+                  "type": "boolean",
+                  "value": "true"
+                },
+                "d_4_2": {
+                  "id": "26874700951",
+                  "key": "d_4_2",
+                  "type": "double",
+                  "value": "42.2"
+                },
+                "i_42": {
+                  "id": "26874700941",
+                  "key": "i_42",
+                  "type": "integer",
+                  "value": "42"
+                },
+                "s_foo": {
+                  "id": "26874700971",
+                  "key": "s_foo",
+                  "type": "string",
+                  "value": "foo"
+                }
+              }
             }
           }
         }
@@ -80,13 +205,63 @@
               "id": "10416523121",
               "key": "all_traffic_variation",
               "featureEnabled": false,
-              "variablesMap": {}
+              "variablesMap": {
+                "b_true": {
+                  "id": "26874700961",
+                  "key": "b_true",
+                  "type": "boolean",
+                  "value": "true"
+                },
+                "d_4_2": {
+                  "id": "26874700951",
+                  "key": "d_4_2",
+                  "type": "double",
+                  "value": "42.2"
+                },
+                "i_42": {
+                  "id": "26874700941",
+                  "key": "i_42",
+                  "type": "integer",
+                  "value": "42"
+                },
+                "s_foo": {
+                  "id": "26874700971",
+                  "key": "s_foo",
+                  "type": "string",
+                  "value": "foo"
+                }
+              }
             }
           }
         }
       ],
       "deliveryRules": [],
-      "variablesMap": {},
+      "variablesMap": {
+        "b_true": {
+          "id": "26874700961",
+          "key": "b_true",
+          "type": "boolean",
+          "value": "true"
+        },
+        "d_4_2": {
+          "id": "26874700951",
+          "key": "d_4_2",
+          "type": "double",
+          "value": "42.2"
+        },
+        "i_42": {
+          "id": "26874700941",
+          "key": "i_42",
+          "type": "integer",
+          "value": "42"
+        },
+        "s_foo": {
+          "id": "26874700971",
+          "key": "s_foo",
+          "type": "string",
+          "value": "foo"
+        }
+      },
       "experimentsMap": {
         "ab_running_exp_single_exact_match_string_untypedaudience": {
           "id": "10390977673",
@@ -97,7 +272,32 @@
               "id": "10416523121",
               "key": "all_traffic_variation",
               "featureEnabled": false,
-              "variablesMap": {}
+              "variablesMap": {
+                "b_true": {
+                  "id": "26874700961",
+                  "key": "b_true",
+                  "type": "boolean",
+                  "value": "true"
+                },
+                "d_4_2": {
+                  "id": "26874700951",
+                  "key": "d_4_2",
+                  "type": "double",
+                  "value": "42.2"
+                },
+                "i_42": {
+                  "id": "26874700941",
+                  "key": "i_42",
+                  "type": "integer",
+                  "value": "42"
+                },
+                "s_foo": {
+                  "id": "26874700971",
+                  "key": "s_foo",
+                  "type": "string",
+                  "value": "foo"
+                }
+              }
             }
           }
         }
