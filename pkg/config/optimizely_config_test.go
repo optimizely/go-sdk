@@ -56,8 +56,9 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 		}
 		expectedConfig.datafile = string(dataFile)
 
-		s.Equal(expectedConfig.Attributes, optimizelyConfig.Attributes)
-		s.Equal(expectedConfig.Audiences, optimizelyConfig.Audiences)
+		s.ElementsMatch(expectedConfig.Attributes, optimizelyConfig.Attributes)
+		s.ElementsMatch(expectedConfig.Audiences, optimizelyConfig.Audiences)
+		s.ElementsMatch(expectedConfig.Events, optimizelyConfig.Events)
 
 		// DeepEqual required here since normal equal was flaky with comparison of complex objects inside map
 		result := reflect.DeepEqual(expectedConfig.FeaturesMap, optimizelyConfig.FeaturesMap)
@@ -69,10 +70,6 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 		s.Equal(expectedConfig.datafile, optimizelyConfig.datafile)
 		s.Equal(expectedConfig.SdkKey, optimizelyConfig.SdkKey)
 		s.Equal(expectedConfig.EnvironmentKey, optimizelyConfig.EnvironmentKey)
-		s.Equal(expectedConfig.Events, optimizelyConfig.Events)
-
-		result = reflect.DeepEqual(expectedConfig, *optimizelyConfig)
-		s.True(result)
 	}
 
 	// Simple datafile

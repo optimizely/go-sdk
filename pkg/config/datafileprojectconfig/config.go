@@ -34,14 +34,11 @@ var datafileVersions = map[string]struct{}{
 type DatafileProjectConfig struct {
 	datafile             string
 	accountID            string
-	attributes           []entities.Attribute
 	projectID            string
 	revision             string
 	experimentKeyToIDMap map[string]string
-	audiences            []entities.Audience
 	audienceMap          map[string]entities.Audience
 	attributeMap         map[string]entities.Attribute
-	events               []entities.Event
 	eventMap             map[string]entities.Event
 	attributeKeyToIDMap  map[string]string
 	experimentMap        map[string]entities.Experiment
@@ -82,8 +79,11 @@ func (c DatafileProjectConfig) GetAnonymizeIP() bool {
 }
 
 // GetAttributes returns attributes
-func (c DatafileProjectConfig) GetAttributes() []entities.Attribute {
-	return c.attributes
+func (c DatafileProjectConfig) GetAttributes() (attributeList []entities.Attribute) {
+	for _, attribute := range c.attributeMap {
+		attributeList = append(attributeList, attribute)
+	}
+	return attributeList
 }
 
 // GetAttributeID returns attributeID
@@ -107,8 +107,11 @@ func (c DatafileProjectConfig) GetEnvironmentKey() string {
 }
 
 // GetEvents returns all events
-func (c DatafileProjectConfig) GetEvents() []entities.Event {
-	return c.events
+func (c DatafileProjectConfig) GetEvents() (eventList []entities.Event) {
+	for _, event := range c.eventMap {
+		eventList = append(eventList, event)
+	}
+	return eventList
 }
 
 // GetEventByKey returns the event with the given key
@@ -178,7 +181,10 @@ func (c DatafileProjectConfig) GetRolloutList() (rolloutList []entities.Rollout)
 
 // GetAudienceList returns an array of all the audiences
 func (c DatafileProjectConfig) GetAudienceList() (audienceList []entities.Audience) {
-	return c.audiences
+	for _, audience := range c.audienceMap {
+		audienceList = append(audienceList, audience)
+	}
+	return audienceList
 }
 
 // GetAudienceByID returns the audience with the given ID
@@ -234,24 +240,22 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		return nil, err
 	}
 
-	attributes, attributeMap, attributeKeyToIDMap := mappers.MapAttributes(datafile.Attributes)
+	attributeMap, attributeKeyToIDMap := mappers.MapAttributes(datafile.Attributes)
 	allExperiments := mappers.MergeExperiments(datafile.Experiments, datafile.Groups)
 	groupMap, experimentGroupMap := mappers.MapGroups(datafile.Groups)
 	experimentMap, experimentKeyMap := mappers.MapExperiments(allExperiments, experimentGroupMap)
 
 	rollouts, rolloutMap := mappers.MapRollouts(datafile.Rollouts)
-	events, eventMap := mappers.MapEvents(datafile.Events)
+	eventMap := mappers.MapEvents(datafile.Events)
 	mergedAudiences := append(datafile.TypedAudiences, datafile.Audiences...)
 	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentMap)
-	audiences, audienceMap := mappers.MapAudiences(mergedAudiences)
+	audienceMap := mappers.MapAudiences(mergedAudiences)
 
 	config := &DatafileProjectConfig{
 		datafile:             string(jsonDatafile),
 		accountID:            datafile.AccountID,
-		attributes:           attributes,
 		anonymizeIP:          datafile.AnonymizeIP,
 		attributeKeyToIDMap:  attributeKeyToIDMap,
-		audiences:            audiences,
 		audienceMap:          audienceMap,
 		attributeMap:         attributeMap,
 		botFiltering:         datafile.BotFiltering,
@@ -260,7 +264,6 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		experimentKeyToIDMap: experimentKeyMap,
 		experimentMap:        experimentMap,
 		groupMap:             groupMap,
-		events:               events,
 		eventMap:             eventMap,
 		featureMap:           featureMap,
 		projectID:            datafile.ProjectID,

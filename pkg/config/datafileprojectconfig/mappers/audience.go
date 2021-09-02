@@ -23,9 +23,8 @@ import (
 )
 
 // MapAudiences maps the raw datafile audience entities to SDK Audience entities
-func MapAudiences(audiences []datafileEntities.Audience) (audienceList []entities.Audience, audienceMap map[string]entities.Audience) {
+func MapAudiences(audiences []datafileEntities.Audience) (audienceMap map[string]entities.Audience) {
 
-	audienceList = []entities.Audience{}
 	audienceMap = make(map[string]entities.Audience)
 	// Since typed audiences were added prior to audiences,
 	// they will be given priority in the audienceMap and list
@@ -43,8 +42,7 @@ func MapAudiences(audiences []datafileEntities.Audience) (audienceList []entitie
 			}
 
 			audienceMap[audience.ID] = audience
-			audienceList = append(audienceList, audience)
 		}
 	}
-	return audienceList, audienceMap
+	return audienceMap
 }

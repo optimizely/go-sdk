@@ -39,7 +39,7 @@ func TestNewDatafileProjectConfigNil(t *testing.T) {
 }
 
 func TestNewDatafileProjectConfigNotNil(t *testing.T) {
-	dpc := DatafileProjectConfig{accountID: "123", revision: "1", projectID: "12345", sdkKey: "a", environmentKey: "production", events: []entities.Event{{Key: "event_single_targeted_exp"}}, attributes: []entities.Attribute{{ID: "10401066170"}}}
+	dpc := DatafileProjectConfig{accountID: "123", revision: "1", projectID: "12345", sdkKey: "a", environmentKey: "production", eventMap: map[string]entities.Event{"event_single_targeted_exp": {Key: "event_single_targeted_exp"}}, attributeMap: map[string]entities.Attribute{"10401066170": {ID: "10401066170"}}}
 	jsonDatafileStr := `{"accountID":"123","revision":"1","projectId":"12345","version":"4","sdkKey":"a","environmentKey":"production","events":[{"key":"event_single_targeted_exp"}],"attributes":[{"id":"10401066170"}]}`
 	jsonDatafile := []byte(jsonDatafileStr)
 	projectConfig, err := NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", "DatafileProjectConfig"))
@@ -50,8 +50,6 @@ func TestNewDatafileProjectConfigNotNil(t *testing.T) {
 	assert.Equal(t, dpc.projectID, projectConfig.projectID)
 	assert.Equal(t, dpc.environmentKey, projectConfig.environmentKey)
 	assert.Equal(t, dpc.sdkKey, projectConfig.sdkKey)
-	assert.Equal(t, dpc.events, projectConfig.events)
-	assert.Equal(t, dpc.attributes, projectConfig.attributes)
 }
 
 func TestGetDatafile(t *testing.T) {
@@ -102,10 +100,10 @@ func TestGetAnonymizeIP(t *testing.T) {
 
 func TestGetAttributes(t *testing.T) {
 	config := &DatafileProjectConfig{
-		attributes: []entities.Attribute{{ID: "id1", Key: "key"}, {ID: "id1", Key: "key"}},
+		attributeMap: map[string]entities.Attribute{"id1": {ID: "id1", Key: "key"}, "id2": {ID: "id1", Key: "key"}},
 	}
 
-	assert.Equal(t, config.attributes, config.GetAttributes())
+	assert.Equal(t, []entities.Attribute{config.attributeMap["id1"], config.attributeMap["id2"]}, config.GetAttributes())
 }
 
 func TestGetAttributeID(t *testing.T) {
@@ -137,9 +135,9 @@ func TestGetEnvironmentKey(t *testing.T) {
 
 func TestGetEvents(t *testing.T) {
 	config := &DatafileProjectConfig{
-		events: []entities.Event{{ID: "5"}},
+		eventMap: map[string]entities.Event{"key": {ID: "5", Key: "key"}},
 	}
-	assert.Equal(t, config.events, config.GetEvents())
+	assert.Equal(t, []entities.Event{config.eventMap["key"]}, config.GetEvents())
 }
 
 func TestGetBotFiltering(t *testing.T) {
@@ -348,9 +346,9 @@ func TestGetRolloutList(t *testing.T) {
 
 func TestGetAudienceList(t *testing.T) {
 	config := &DatafileProjectConfig{
-		audiences: []entities.Audience{{ID: "5", Name: "one"}, {ID: "5", Name: "two"}},
+		audienceMap: map[string]entities.Audience{"5": {ID: "5", Name: "one"}, "6": {ID: "6", Name: "two"}},
 	}
-	assert.Equal(t, config.audiences, config.GetAudienceList())
+	assert.ElementsMatch(t, []entities.Audience{config.audienceMap["5"], config.audienceMap["6"]}, config.GetAudienceList())
 }
 
 func TestGetAudienceByID(t *testing.T) {

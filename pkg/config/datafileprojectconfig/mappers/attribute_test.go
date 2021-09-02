@@ -27,13 +27,11 @@ import (
 
 func TestMapAttributesWithEmptyList(t *testing.T) {
 
-	attributes, attributeMap, attributeKeyToIDMap := MapAttributes(nil)
+	attributeMap, attributeKeyToIDMap := MapAttributes(nil)
 
-	attributesList := []entities.Attribute{}
 	expectedAttributeMap := map[string]entities.Attribute{}
 	expectedAttributeKeyToIDMap := map[string]string{}
 
-	assert.Equal(t, attributesList, attributes)
 	assert.Equal(t, attributeMap, expectedAttributeMap)
 	assert.Equal(t, attributeKeyToIDMap, expectedAttributeKeyToIDMap)
 }
@@ -42,15 +40,12 @@ func TestMapAttributes(t *testing.T) {
 	attrList := []datafileEntities.Attribute{{ID: "1", Key: "one"}, {ID: "2", Key: "two"},
 		{ID: "3", Key: "three"}, {ID: "2", Key: "four"}, {ID: "5", Key: "one"}}
 
-	attributes, attributeMap, attributeKeyToIDMap := MapAttributes(attrList)
+	attributeMap, attributeKeyToIDMap := MapAttributes(attrList)
 
 	expectedAttributeMap := map[string]entities.Attribute{"1": {ID: "1", Key: "one"},
 		"2": {ID: "2", Key: "two"}, "3": {ID: "3", Key: "three"}, "5": {ID: "5", Key: "one"}}
 	expectedAttributeKeyToIDMap := map[string]string{"one": "5", "three": "3", "two": "2"}
 
-	for _, attr := range attributes {
-		assert.Equal(t, entities.Attribute{ID: attr.ID, Key: attr.Key}, attr)
-	}
 	assert.Equal(t, attributeMap, expectedAttributeMap)
 	assert.Equal(t, attributeKeyToIDMap, expectedAttributeKeyToIDMap)
 }

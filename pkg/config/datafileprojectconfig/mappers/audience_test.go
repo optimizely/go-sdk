@@ -28,12 +28,9 @@ import (
 
 func TestMapAudiencesEmptyList(t *testing.T) {
 
-	audienceList, audienceMap := MapAudiences(nil)
-
-	expectedAudienceList := []entities.Audience{}
+	audienceMap := MapAudiences(nil)
 	expectedAudienceMap := map[string]entities.Audience{}
 
-	assert.Equal(t, expectedAudienceList, audienceList)
 	assert.Equal(t, expectedAudienceMap, audienceMap)
 }
 
@@ -42,7 +39,7 @@ func TestMapAudiences(t *testing.T) {
 	expectedConditions := "[\"and\", [\"or\", [\"or\", {\"name\": \"s_foo\", \"type\": \"custom_attribute\", \"value\": \"foo\"}]]]"
 	audienceList := []datafileEntities.Audience{{ID: "1", Name: "one", Conditions: expectedConditions}, {ID: "2", Name: "two"},
 		{ID: "3", Name: "three"}, {ID: "2", Name: "four"}, {ID: "1", Name: "one"}}
-	audiences, audienceMap := MapAudiences(audienceList)
+	audienceMap := MapAudiences(audienceList)
 
 	expectedConditionTree := &entities.TreeNode{
 		Operator: "and",
@@ -69,9 +66,6 @@ func TestMapAudiences(t *testing.T) {
 	}
 	expectedAudienceMap := map[string]entities.Audience{"1": {ID: "1", Name: "one", ConditionTree: expectedConditionTree, Conditions: expectedConditions}, "2": {ID: "2", Name: "two"},
 		"3": {ID: "3", Name: "three"}}
-	expectedAudienceList := []entities.Audience{{ID: "1", Name: "one", ConditionTree: expectedConditionTree, Conditions: expectedConditions}, {ID: "2", Name: "two"},
-		{ID: "3", Name: "three"}}
 
-	assert.Equal(t, expectedAudienceList, audiences)
 	assert.Equal(t, expectedAudienceMap, audienceMap)
 }
