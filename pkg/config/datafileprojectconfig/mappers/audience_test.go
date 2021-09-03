@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2021 Optimizely, Inc. and contributors                    *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -29,21 +29,43 @@ import (
 func TestMapAudiencesEmptyList(t *testing.T) {
 
 	audienceMap := MapAudiences(nil)
-
 	expectedAudienceMap := map[string]entities.Audience{}
 
-	assert.Equal(t, audienceMap, expectedAudienceMap)
-
+	assert.Equal(t, expectedAudienceMap, audienceMap)
 }
+
 func TestMapAudiences(t *testing.T) {
 
-	audienceList := []datafileEntities.Audience{{ID: "1", Name: "one"}, {ID: "2", Name: "two"},
-		{ID: "3", Name: "three"}, {ID: "2", Name: "four"}, {ID: "5", Name: "one"}}
-
+	expectedConditions := "[\"and\", [\"or\", [\"or\", {\"name\": \"s_foo\", \"type\": \"custom_attribute\", \"value\": \"foo\"}]]]"
+	audienceList := []datafileEntities.Audience{{ID: "1", Name: "one", Conditions: expectedConditions}, {ID: "2", Name: "two"},
+		{ID: "3", Name: "three"}, {ID: "2", Name: "four"}, {ID: "1", Name: "one"}}
 	audienceMap := MapAudiences(audienceList)
 
-	expectedAudienceMap := map[string]entities.Audience{"1": {ID: "1", Name: "one"}, "2": {ID: "2", Name: "two"},
-		"3": {ID: "3", Name: "three"}, "5": {ID: "5", Name: "one"}}
+	expectedConditionTree := &entities.TreeNode{
+		Operator: "and",
+		Nodes: []*entities.TreeNode{
+			{
+				Operator: "or",
+				Nodes: []*entities.TreeNode{
+					{
+						Operator: "or",
+						Nodes: []*entities.TreeNode{
+							{
+								Item: entities.Condition{
+									Name:                 "s_foo",
+									Type:                 "custom_attribute",
+									Value:                "foo",
+									StringRepresentation: `{"name":"s_foo","type":"custom_attribute","value":"foo"}`,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	expectedAudienceMap := map[string]entities.Audience{"1": {ID: "1", Name: "one", ConditionTree: expectedConditionTree, Conditions: expectedConditions}, "2": {ID: "2", Name: "two"},
+		"3": {ID: "3", Name: "three"}}
 
-	assert.Equal(t, audienceMap, expectedAudienceMap)
+	assert.Equal(t, expectedAudienceMap, audienceMap)
 }

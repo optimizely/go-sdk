@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -27,6 +27,16 @@ import (
 
 var errEmptyTree = errors.New("empty tree")
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
+
+// OperatorType defines logical operator for conditions
+type OperatorType string
+
+// Default conditional operators
+const (
+	And OperatorType = "and"
+	Or  OperatorType = "or"
+	Not OperatorType = "not"
+)
 
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
 func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, retErr error) {
@@ -135,7 +145,6 @@ func createLeafCondition(typedV map[string]interface{}, node *entities.TreeNode)
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
 func buildAudienceConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, err error) {
 
-	var operators = []string{"or", "and", "not"} // any other operators?
 	value := reflect.ValueOf(conditions)
 	visited := make(map[interface{}]bool)
 
@@ -161,7 +170,7 @@ func buildAudienceConditionTree(conditions interface{}) (conditionTree *entities
 				n := &entities.TreeNode{}
 				typedV := v.Index(i).Interface()
 				if value, ok := typedV.(string); ok {
-					if stringInSlice(value, operators) {
+					if isValidOperator(value) {
 						n.Operator = typedV.(string)
 						root.Operator = n.Operator
 						continue
@@ -188,11 +197,11 @@ func buildAudienceConditionTree(conditions interface{}) (conditionTree *entities
 	return conditionTree, err
 }
 
-func stringInSlice(str string, list []string) bool {
-	for _, v := range list {
-		if v == str {
-			return true
-		}
+func isValidOperator(op string) bool {
+	operator := OperatorType(op)
+	switch operator {
+	case And, Or, Not:
+		return true
 	}
 	return false
 }

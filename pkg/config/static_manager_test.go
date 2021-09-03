@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -57,8 +57,9 @@ func TestStaticGetOptimizelyConfig(t *testing.T) {
 
 	optimizelyConfig := configManager.GetOptimizelyConfig()
 	assert.NotNil(t, configManager.optimizelyConfig)
+
 	assert.Equal(t, &OptimizelyConfig{ExperimentsMap: map[string]OptimizelyExperiment{},
-		FeaturesMap: map[string]OptimizelyFeature{}, datafile: "{\"accountId\":\"42\",\"projectId\":\"123\",\"version\":\"4\"}"}, optimizelyConfig)
+		FeaturesMap: map[string]OptimizelyFeature{}, Attributes: []OptimizelyAttribute{}, Audiences: []OptimizelyAudience{}, Events: []OptimizelyEvent{}, datafile: "{\"accountId\":\"42\",\"projectId\":\"123\",\"version\":\"4\"}"}, optimizelyConfig)
 }
 func TestNewStaticProjectConfigManagerFromURL(t *testing.T) {
 

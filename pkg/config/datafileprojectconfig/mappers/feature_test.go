@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2021 Optimizely, Inc. and contributors                    *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -60,9 +60,10 @@ func TestMapFeatures(t *testing.T) {
 		Type:         "json",
 	}
 	expectedFeatureMap := map[string]entities.Feature{
-		"test_feature_21111": entities.Feature{
+		"test_feature_21111": {
 			ID:                 "21111",
 			Key:                "test_feature_21111",
+			ExperimentIDs:      []string{"31111"},
 			Rollout:            rollout,
 			FeatureExperiments: []entities.Experiment{experiment31111},
 			VariableMap:        map[string]entities.Variable{variable.Key: variable},

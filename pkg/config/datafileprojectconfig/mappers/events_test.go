@@ -37,7 +37,7 @@ func TestMapEvents(t *testing.T) {
 	rawEvents := []datafileEntities.Event{rawEvent}
 	eventsMap := MapEvents(rawEvents)
 	expectedEventMap := map[string]entities.Event{
-		"event1": entities.Event{
+		"event1": {
 			ID:            "some_id",
 			Key:           "event1",
 			ExperimentIds: []string{"11111", "11112"},

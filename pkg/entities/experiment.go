@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -28,6 +28,7 @@ type Variation struct {
 // Experiment represents an experiment
 type Experiment struct {
 	AudienceIds           []string
+	AudienceConditions    interface{}
 	ID                    string
 	LayerID               string
 	Key                   string

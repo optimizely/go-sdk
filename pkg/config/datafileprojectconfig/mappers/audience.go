@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -23,22 +23,25 @@ import (
 )
 
 // MapAudiences maps the raw datafile audience entities to SDK Audience entities
-func MapAudiences(audiences []datafileEntities.Audience) map[string]entities.Audience {
+func MapAudiences(audiences []datafileEntities.Audience) (audienceMap map[string]entities.Audience) {
 
-	audienceMap := make(map[string]entities.Audience)
+	audienceMap = make(map[string]entities.Audience)
+	// Since typed audiences were added prior to audiences,
+	// they will be given priority in the audienceMap and list
 	for _, audience := range audiences {
 		_, ok := audienceMap[audience.ID]
 		if !ok {
+			audience := entities.Audience{
+				ID:         audience.ID,
+				Name:       audience.Name,
+				Conditions: audience.Conditions,
+			}
 			conditionTree, err := buildConditionTree(audience.Conditions)
-			if err != nil {
-				// @TODO: handle error
-				func() {}() // cheat the linters
+			if err == nil {
+				audience.ConditionTree = conditionTree
 			}
-			audienceMap[audience.ID] = entities.Audience{
-				ID:            audience.ID,
-				Name:          audience.Name,
-				ConditionTree: conditionTree,
-			}
+
+			audienceMap[audience.ID] = audience
 		}
 	}
 	return audienceMap

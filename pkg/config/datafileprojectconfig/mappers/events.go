@@ -23,10 +23,10 @@ import (
 )
 
 // MapEvents maps the raw datafile event entities to SDK Event entities
-func MapEvents(events []datafileEntities.Event) map[string]entities.Event {
-	eventMap := make(map[string]entities.Event)
+func MapEvents(events []datafileEntities.Event) (eventMap map[string]entities.Event) {
+	eventMap = make(map[string]entities.Event)
 	for _, event := range events {
-		entityEvent := entities.Event{ID: event.ID, Key: event.Key, ExperimentIds: event.ExperimentIds}
+		entityEvent := entities.Event(event)
 		eventMap[entityEvent.Key] = entityEvent
 	}
 

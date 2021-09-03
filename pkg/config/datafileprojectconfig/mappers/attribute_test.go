@@ -42,8 +42,8 @@ func TestMapAttributes(t *testing.T) {
 
 	attributeMap, attributeKeyToIDMap := MapAttributes(attrList)
 
-	expectedAttributeMap := map[string]entities.Attribute{"1": {"1", "one"},
-		"2": {"2", "two"}, "3": {"3", "three"}, "5": {"5", "one"}}
+	expectedAttributeMap := map[string]entities.Attribute{"1": {ID: "1", Key: "one"},
+		"2": {ID: "2", Key: "two"}, "3": {ID: "3", Key: "three"}, "5": {ID: "5", Key: "one"}}
 	expectedAttributeKeyToIDMap := map[string]string{"one": "5", "three": "3", "two": "2"}
 
 	assert.Equal(t, attributeMap, expectedAttributeMap)

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2021 Optimizely, Inc. and contributors                    *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -23,13 +23,16 @@ import (
 )
 
 // MapRollouts maps the raw datafile rollout entities to SDK Rollout entities
-func MapRollouts(rollouts []datafileEntities.Rollout) map[string]entities.Rollout {
-	rolloutMap := make(map[string]entities.Rollout)
+func MapRollouts(rollouts []datafileEntities.Rollout) (rolloutList []entities.Rollout, rolloutMap map[string]entities.Rollout) {
+	rolloutList = []entities.Rollout{}
+	rolloutMap = make(map[string]entities.Rollout)
 	for _, rollout := range rollouts {
-		rolloutMap[rollout.ID] = mapRollout(rollout)
+		mappedRollout := mapRollout(rollout)
+		rolloutList = append(rolloutList, mappedRollout)
+		rolloutMap[rollout.ID] = mappedRollout
 	}
 
-	return rolloutMap
+	return rolloutList, rolloutMap
 }
 
 func mapRollout(datafileRollout datafileEntities.Rollout) entities.Rollout {
