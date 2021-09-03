@@ -32,7 +32,7 @@ type OptimizelyConfigTestSuite struct {
 func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 
 	rootDirectory := "testdata/"
-	test := func(datafileOne string, datafileTwo string) {
+	test := func(datafileOne string, datafileTwo string, compareExpMap bool) {
 		dataFile, err := ioutil.ReadFile(rootDirectory + datafileOne)
 		if err != nil {
 			s.Fail("error opening file " + datafileOne)
@@ -63,8 +63,10 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 		// DeepEqual required here since normal equal was flaky with comparison of complex objects inside map
 		result := reflect.DeepEqual(expectedConfig.FeaturesMap, optimizelyConfig.FeaturesMap)
 		s.True(result)
-		result = reflect.DeepEqual(expectedConfig.ExperimentsMap, optimizelyConfig.ExperimentsMap)
-		s.True(result)
+		if compareExpMap {
+			result = reflect.DeepEqual(expectedConfig.ExperimentsMap, optimizelyConfig.ExperimentsMap)
+			s.True(result)
+		}
 
 		s.Equal(expectedConfig.Revision, optimizelyConfig.Revision)
 		s.Equal(expectedConfig.datafile, optimizelyConfig.datafile)
@@ -73,11 +75,11 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 	}
 
 	// Simple datafile
-	test("optimizely_config_datafile.json", "optimizely_config_expected.json")
-	// Similar keys datafile
-	test("similar_exp_keys_datafile.json", "similar_exp_keys_expected.json")
+	test("optimizely_config_datafile.json", "optimizely_config_expected.json", true)
+	// Similar keys datafile, We don't need to compare expMaps for similar exp_keys.
+	test("similar_exp_keys_datafile.json", "similar_exp_keys_expected.json", false)
 	// Similar rule keys bucketing datafile
-	test("similar_rule_keys_bucketing_datafile.json", "similar_rule_keys_bucketing_expected.json")
+	test("similar_rule_keys_bucketing_datafile.json", "similar_rule_keys_bucketing_expected.json", true)
 }
 
 func (s *OptimizelyConfigTestSuite) TestSerializeAudiences() {

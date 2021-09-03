@@ -67,7 +67,7 @@ func TestMapExperiments(t *testing.T) {
 	rawExperiments := []datafileEntities.Experiment{rawExperiment}
 	experimentGroupMap := map[string]string{"11111": "15"}
 
-	experimentsId, experimentKeyMap := MapExperiments(rawExperiments, experimentGroupMap)
+	experimentsIDMap, experimentKeyMap := MapExperiments(rawExperiments, experimentGroupMap)
 	expectedExperiments := map[string]entities.Experiment{
 		"11111": {
 			AudienceIds: []string{"31111"},
@@ -118,7 +118,7 @@ func TestMapExperiments(t *testing.T) {
 		"test_experiment_11111": "11111",
 	}
 
-	assert.Equal(t, expectedExperiments, experimentsId)
+	assert.Equal(t, expectedExperiments, experimentsIDMap)
 	assert.Equal(t, expectedExperimentKeyMap, experimentKeyMap)
 }
 
@@ -134,7 +134,7 @@ func TestMapExperimentsWithStringAudienceCondition(t *testing.T) {
 	rawExperiments := []datafileEntities.Experiment{rawExperiment}
 	experimentGroupMap := map[string]string{"11111": "15"}
 
-	experimentsIdMap, experimentKeyMap := MapExperiments(rawExperiments, experimentGroupMap)
+	experimentsIDMap, experimentKeyMap := MapExperiments(rawExperiments, experimentGroupMap)
 	expectedExperiments := map[string]entities.Experiment{
 		"11111": {
 			AudienceIds:         []string{"31111"},
@@ -160,7 +160,7 @@ func TestMapExperimentsWithStringAudienceCondition(t *testing.T) {
 		"test_experiment_11111": "11111",
 	}
 
-	assert.Equal(t, expectedExperiments, experimentsIdMap)
+	assert.Equal(t, expectedExperiments, experimentsIDMap)
 	assert.Equal(t, expectedExperimentKeyMap, experimentKeyMap)
 }
 

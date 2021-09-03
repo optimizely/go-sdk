@@ -243,12 +243,12 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	attributeMap, attributeKeyToIDMap := mappers.MapAttributes(datafile.Attributes)
 	allExperiments := mappers.MergeExperiments(datafile.Experiments, datafile.Groups)
 	groupMap, experimentGroupMap := mappers.MapGroups(datafile.Groups)
-	experimentMap, experimentKeyMap := mappers.MapExperiments(allExperiments, experimentGroupMap)
+	experimentIDMap, experimentKeyMap := mappers.MapExperiments(allExperiments, experimentGroupMap)
 
 	rollouts, rolloutMap := mappers.MapRollouts(datafile.Rollouts)
 	eventMap := mappers.MapEvents(datafile.Events)
 	mergedAudiences := append(datafile.TypedAudiences, datafile.Audiences...)
-	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentMap)
+	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentIDMap)
 	audienceMap := mappers.MapAudiences(mergedAudiences)
 
 	config := &DatafileProjectConfig{
@@ -262,7 +262,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		sdkKey:               datafile.SDKKey,
 		environmentKey:       datafile.EnvironmentKey,
 		experimentKeyToIDMap: experimentKeyMap,
-		experimentMap:        experimentMap,
+		experimentMap:        experimentIDMap,
 		groupMap:             groupMap,
 		eventMap:             eventMap,
 		featureMap:           featureMap,

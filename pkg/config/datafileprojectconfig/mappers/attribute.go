@@ -28,13 +28,12 @@ func MapAttributes(attributes []datafileEntities.Attribute) (attributeMap map[st
 	attributeMap = make(map[string]entities.Attribute)
 	attributeKeyToIDMap = make(map[string]string)
 	for _, attribute := range attributes {
-		tmpAttribute := entities.Attribute{
-			ID:  attribute.ID,
-			Key: attribute.Key,
-		}
 		_, ok := attributeMap[attribute.ID]
 		if !ok {
-			attributeMap[attribute.ID] = tmpAttribute
+			attributeMap[attribute.ID] = entities.Attribute{
+				ID:  attribute.ID,
+				Key: attribute.Key,
+			}
 			attributeKeyToIDMap[attribute.Key] = attribute.ID
 		}
 	}

@@ -23,19 +23,19 @@ import (
 )
 
 // MapExperiments maps the raw experiments entities from the datafile to SDK Experiment entities and also returns a map of experiment key to experiment ID
-func MapExperiments(rawExperiments []datafileEntities.Experiment, experimentGroupMap map[string]string) (experimentMap map[string]entities.Experiment, experimentKeyMap map[string]string) {
+func MapExperiments(rawExperiments []datafileEntities.Experiment, experimentGroupMap map[string]string) (experimentIDMap map[string]entities.Experiment, experimentKeyMap map[string]string) {
 
-	experimentMap = make(map[string]entities.Experiment)
+	experimentIDMap = make(map[string]entities.Experiment)
 	experimentKeyMap = make(map[string]string)
 	for _, rawExperiment := range rawExperiments {
 
 		experiment := mapExperiment(rawExperiment)
 		experiment.GroupID = experimentGroupMap[experiment.ID]
-		experimentMap[experiment.ID] = experiment
+		experimentIDMap[experiment.ID] = experiment
 		experimentKeyMap[experiment.Key] = experiment.ID
 	}
 
-	return experimentMap, experimentKeyMap
+	return experimentIDMap, experimentKeyMap
 }
 
 // Maps the raw variation entity from the datafile to an SDK Variation entity
