@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020, Optimizely, Inc. and contributors                        *
+ * Copyright 2020-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -24,13 +24,19 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
+type forcedDecision struct {
+	flagKey string
+	ruleKey string
+}
+
 // OptimizelyUserContext defines user contexts that the SDK will use to make decisions for.
 type OptimizelyUserContext struct {
 	UserID     string                 `json:"userId"`
 	Attributes map[string]interface{} `json:"attributes"`
 
-	optimizely *OptimizelyClient
-	mutex      *sync.RWMutex
+	forcedDecisions map[forcedDecision]string
+	optimizely      *OptimizelyClient
+	mutex           *sync.RWMutex
 }
 
 // returns an instance of the optimizely user context.
@@ -42,10 +48,11 @@ func newOptimizelyUserContext(optimizely *OptimizelyClient, userID string, attri
 	attributesCopy := copyUserAttributes(attributes)
 
 	return OptimizelyUserContext{
-		UserID:     userID,
-		Attributes: attributesCopy,
-		optimizely: optimizely,
-		mutex:      new(sync.RWMutex),
+		UserID:          userID,
+		Attributes:      attributesCopy,
+		forcedDecisions: map[forcedDecision]string{},
+		optimizely:      optimizely,
+		mutex:           new(sync.RWMutex),
 	}
 }
 
@@ -106,6 +113,92 @@ func (o *OptimizelyUserContext) TrackEvent(eventKey string, eventTags map[string
 		Attributes: o.GetUserAttributes(),
 	}
 	return o.optimizely.Track(eventKey, userContext, eventTags)
+}
+
+// SetForcedDecision sets the forced decision (variation key) for a given flag and an optional rule.
+// returns true if the forced decision has been set successfully.
+func (o *OptimizelyUserContext) SetForcedDecision(flagKey, ruleKey, variationKey string) bool {
+	if _, err := o.optimizely.getProjectConfig(); err != nil {
+		o.optimizely.logger.Error("Optimizely instance is not valid, failing setForcedDecision call.", err)
+		return false
+	}
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	if o.forcedDecisions == nil {
+		o.forcedDecisions = map[forcedDecision]string{}
+	}
+	o.forcedDecisions[forcedDecision{flagKey: flagKey, ruleKey: ruleKey}] = variationKey
+	return true
+}
+
+// GetForcedDecision returns the forced decision for a given flag and an optional rule
+func (o *OptimizelyUserContext) GetForcedDecision(flagKey, ruleKey string) string {
+	if _, err := o.optimizely.getProjectConfig(); err != nil {
+		o.optimizely.logger.Error("Optimizely instance is not valid, failing getForcedDecision call.", err)
+		return ""
+	}
+	return o.findForcedDecision(flagKey, ruleKey)
+}
+
+// RemoveForcedDecision removes the forced decision for a given flag and an optional rule.
+func (o *OptimizelyUserContext) RemoveForcedDecision(flagKey, ruleKey string) bool {
+	if _, err := o.optimizely.getProjectConfig(); err != nil {
+		o.optimizely.logger.Error("Optimizely instance is not valid, failing removeForcedDecision call.", err)
+		return false
+	}
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	decision := forcedDecision{flagKey: flagKey, ruleKey: ruleKey}
+	if o.forcedDecisions[decision] != "" {
+		o.forcedDecisions[decision] = ""
+		return true
+	}
+	return false
+}
+
+// RemoveAllForcedDecisions removes all forced decisions bound to this user context.
+func (o *OptimizelyUserContext) RemoveAllForcedDecisions(flagKey, ruleKey string) bool {
+	if _, err := o.optimizely.getProjectConfig(); err != nil {
+		o.optimizely.logger.Error("Optimizely instance is not valid, failing removeForcedDecision call.", err)
+		return false
+	}
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	o.forcedDecisions = map[forcedDecision]string{}
+	return true
+}
+
+func (o *OptimizelyUserContext) findForcedDecision(flagKey, ruleKey string) string {
+	o.mutex.RLock()
+	defer o.mutex.RUnlock()
+	if len(o.forcedDecisions) == 0 {
+		return ""
+	}
+	if variationKey, ok := o.forcedDecisions[forcedDecision{flagKey: flagKey, ruleKey: ruleKey}]; ok {
+		return variationKey
+	}
+	return ""
+}
+
+func (o *OptimizelyUserContext) findValidatedForcedDecision(flagKey, ruleKey string, options *decide.Options) (variation entities.Variation, reasons decide.DecisionReasons) {
+	decisionReasons := decide.NewDecisionReasons(options)
+	variationKey := o.findForcedDecision(flagKey, ruleKey)
+	if variationKey == "" {
+		return entities.Variation{}, decisionReasons
+	}
+
+	variation, err := o.optimizely.getFlagVariationByKey(flagKey, variationKey)
+	target := "flag " + flagKey
+	if ruleKey != "" {
+		target += ", rule " + ruleKey
+	}
+
+	if err != nil {
+		decisionReasons.AddInfo("Invalid variation is mapped to %s and user (%s) in the forced decision map.", target, o.GetUserID())
+		return entities.Variation{}, decisionReasons
+	}
+	decisionReasons.AddInfo("Variation (%s) is mapped to %s and user (%s) in the forced decision map.", variationKey, target, o.GetUserID())
+	return variation, decisionReasons
 }
 
 func copyUserAttributes(attributes map[string]interface{}) (attributesCopy map[string]interface{}) {

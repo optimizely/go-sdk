@@ -51,6 +51,9 @@ type DatafileProjectConfig struct {
 	sendFlagDecisions    bool
 	sdkKey               string
 	environmentKey       string
+
+	flagRulesMap      map[string][]entities.Experiment
+	flagVariationsMap map[string][]entities.Variation
 }
 
 // GetDatafile returns a string representation of the environment's datafile
@@ -226,6 +229,11 @@ func (c DatafileProjectConfig) SendFlagDecisions() bool {
 	return c.sendFlagDecisions
 }
 
+// GetFlagVariationsMap returns map containing all variations for each flag
+func (c DatafileProjectConfig) GetFlagVariationsMap() map[string][]entities.Variation {
+	return c.flagVariationsMap
+}
+
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser
 func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogProducer) (*DatafileProjectConfig, error) {
 	datafile, err := Parse(jsonDatafile)
@@ -250,6 +258,8 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	mergedAudiences := append(datafile.TypedAudiences, datafile.Audiences...)
 	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentIDMap)
 	audienceMap := mappers.MapAudiences(mergedAudiences)
+	flagRulesMap := mappers.MapFlagRules(datafile.FeatureFlags, experimentIDMap, rolloutMap)
+	flagVariationsMap := mappers.MapFlagVariations(flagRulesMap)
 
 	config := &DatafileProjectConfig{
 		datafile:             string(jsonDatafile),
@@ -271,6 +281,8 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		rollouts:             rollouts,
 		rolloutMap:           rolloutMap,
 		sendFlagDecisions:    datafile.SendFlagDecisions,
+		flagRulesMap:         flagRulesMap,
+		flagVariationsMap:    flagVariationsMap,
 	}
 
 	logger.Info("Datafile is valid.")
