@@ -100,9 +100,10 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	// check forced-decisions first
 	variation, reasons := userContext.findValidatedForcedDecision(key, "", &allOptions)
 	decisionReasons.Append(reasons)
-	if variation.Key == "" {
+	if variation.Key != "" {
 		featureDecision = decision.FeatureDecision{Variation: &variation, Source: decision.FeatureTest}
 	} else {
+		// regular decision
 		featureDecision, reasons, err = o.DecisionService.GetFeatureDecision(decisionContext, usrContext, &allOptions)
 		decisionReasons.Append(reasons)
 	}

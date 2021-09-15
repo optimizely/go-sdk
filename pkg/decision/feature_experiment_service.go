@@ -45,6 +45,7 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 	reasons := decide.NewDecisionReasons(options)
 	// @TODO this can be improved by getting group ID first and determining experiment and then bucketing in experiment
 	for _, featureExperiment := range feature.FeatureExperiments {
+
 		experiment := featureExperiment
 		experimentDecisionContext := ExperimentDecisionContext{
 			Experiment:    &experiment,
