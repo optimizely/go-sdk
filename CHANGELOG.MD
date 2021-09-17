@@ -22,7 +22,7 @@ Changes that have landed but are not yet released.	Changes that have landed but 
 
 ### Deprecated
 
-* `OptimizelyFeature.ExperimentsMap` of `OptimizelyConfig` is deprecated as of this release. Please use `OptimizelyFeature.ExperimentRules` and `OptimizelyFeature.DeliveryRules`. ([#418](https://github.com/optimizely/swift-sdk/pull/418))
+* `OptimizelyFeature.ExperimentsMap` of `OptimizelyConfig` is deprecated as of this release. Please use `OptimizelyFeature.ExperimentRules` and `OptimizelyFeature.DeliveryRules`. ([#322](https://github.com/optimizely/go-sdk/pull/322))
 
 ## [1.6.1] - March 2, 2021
 ## Bug Fix
