@@ -21,6 +21,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/forceddecision"
 )
 
 // ExperimentDecisionContext contains the information needed to be able to make a decision for a given experiment
@@ -31,9 +32,10 @@ type ExperimentDecisionContext struct {
 
 // FeatureDecisionContext contains the information needed to be able to make a decision for a given feature
 type FeatureDecisionContext struct {
-	Feature       *entities.Feature
-	ProjectConfig config.ProjectConfig
-	Variable      entities.Variable
+	Feature               *entities.Feature
+	ProjectConfig         config.ProjectConfig
+	Variable              entities.Variable
+	ForcedDecisionService *forceddecision.ForcedDecisionService
 }
 
 // UnsafeFeatureDecisionInfo represents response for GetDetailedFeatureDecisionUnsafe api

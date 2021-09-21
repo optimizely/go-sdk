@@ -22,21 +22,17 @@ import (
 
 	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/pkg/forceddecision"
 )
-
-type forcedDecision struct {
-	flagKey string
-	ruleKey string
-}
 
 // OptimizelyUserContext defines user contexts that the SDK will use to make decisions for.
 type OptimizelyUserContext struct {
 	UserID     string                 `json:"userId"`
 	Attributes map[string]interface{} `json:"attributes"`
 
-	forcedDecisions map[forcedDecision]string
-	optimizely      *OptimizelyClient
-	mutex           *sync.RWMutex
+	optimizely            *OptimizelyClient
+	forcedDecisionService *forceddecision.ForcedDecisionService
+	mutex                 *sync.RWMutex
 }
 
 // returns an instance of the optimizely user context.
@@ -46,13 +42,12 @@ func newOptimizelyUserContext(optimizely *OptimizelyClient, userID string, attri
 		attributes = map[string]interface{}{}
 	}
 	attributesCopy := copyUserAttributes(attributes)
-
 	return OptimizelyUserContext{
-		UserID:          userID,
-		Attributes:      attributesCopy,
-		forcedDecisions: map[forcedDecision]string{},
-		optimizely:      optimizely,
-		mutex:           new(sync.RWMutex),
+		UserID:                userID,
+		Attributes:            attributesCopy,
+		optimizely:            optimizely,
+		forcedDecisionService: forceddecision.NewForcedDecisionService(userID),
+		mutex:                 new(sync.RWMutex),
 	}
 }
 
@@ -122,13 +117,7 @@ func (o *OptimizelyUserContext) SetForcedDecision(flagKey, ruleKey, variationKey
 		o.optimizely.logger.Error("Optimizely instance is not valid, failing setForcedDecision call.", err)
 		return false
 	}
-	o.mutex.Lock()
-	defer o.mutex.Unlock()
-	if o.forcedDecisions == nil {
-		o.forcedDecisions = map[forcedDecision]string{}
-	}
-	o.forcedDecisions[forcedDecision{flagKey: flagKey, ruleKey: ruleKey}] = variationKey
-	return true
+	return o.forcedDecisionService.SetForcedDecision(flagKey, ruleKey, variationKey)
 }
 
 // GetForcedDecision returns the forced decision for a given flag and an optional rule
@@ -137,7 +126,7 @@ func (o *OptimizelyUserContext) GetForcedDecision(flagKey, ruleKey string) strin
 		o.optimizely.logger.Error("Optimizely instance is not valid, failing getForcedDecision call.", err)
 		return ""
 	}
-	return o.findForcedDecision(flagKey, ruleKey)
+	return o.forcedDecisionService.GetForcedDecision(flagKey, ruleKey)
 }
 
 // RemoveForcedDecision removes the forced decision for a given flag and an optional rule.
@@ -146,59 +135,16 @@ func (o *OptimizelyUserContext) RemoveForcedDecision(flagKey, ruleKey string) bo
 		o.optimizely.logger.Error("Optimizely instance is not valid, failing removeForcedDecision call.", err)
 		return false
 	}
-	o.mutex.Lock()
-	defer o.mutex.Unlock()
-	decision := forcedDecision{flagKey: flagKey, ruleKey: ruleKey}
-	if o.forcedDecisions[decision] != "" {
-		o.forcedDecisions[decision] = ""
-		return true
-	}
-	return false
+	return o.forcedDecisionService.RemoveForcedDecision(flagKey, ruleKey)
 }
 
 // RemoveAllForcedDecisions removes all forced decisions bound to this user context.
-func (o *OptimizelyUserContext) RemoveAllForcedDecisions(flagKey, ruleKey string) bool {
+func (o *OptimizelyUserContext) RemoveAllForcedDecisions() bool {
 	if _, err := o.optimizely.getProjectConfig(); err != nil {
 		o.optimizely.logger.Error("Optimizely instance is not valid, failing removeForcedDecision call.", err)
 		return false
 	}
-	o.mutex.Lock()
-	defer o.mutex.Unlock()
-	o.forcedDecisions = map[forcedDecision]string{}
-	return true
-}
-
-func (o *OptimizelyUserContext) findForcedDecision(flagKey, ruleKey string) string {
-	o.mutex.RLock()
-	defer o.mutex.RUnlock()
-	if len(o.forcedDecisions) == 0 {
-		return ""
-	}
-	if variationKey, ok := o.forcedDecisions[forcedDecision{flagKey: flagKey, ruleKey: ruleKey}]; ok {
-		return variationKey
-	}
-	return ""
-}
-
-func (o *OptimizelyUserContext) findValidatedForcedDecision(flagKey, ruleKey string, options *decide.Options) (variation entities.Variation, reasons decide.DecisionReasons) {
-	decisionReasons := decide.NewDecisionReasons(options)
-	variationKey := o.findForcedDecision(flagKey, ruleKey)
-	if variationKey == "" {
-		return entities.Variation{}, decisionReasons
-	}
-
-	variation, err := o.optimizely.getFlagVariationByKey(flagKey, variationKey)
-	target := "flag " + flagKey
-	if ruleKey != "" {
-		target += ", rule " + ruleKey
-	}
-
-	if err != nil {
-		decisionReasons.AddInfo("Invalid variation is mapped to %s and user (%s) in the forced decision map.", target, o.GetUserID())
-		return entities.Variation{}, decisionReasons
-	}
-	decisionReasons.AddInfo("Variation (%s) is mapped to %s and user (%s) in the forced decision map.", variationKey, target, o.GetUserID())
-	return variation, decisionReasons
+	return o.forcedDecisionService.RemoveAllForcedDecisions()
 }
 
 func copyUserAttributes(attributes map[string]interface{}) (attributesCopy map[string]interface{}) {

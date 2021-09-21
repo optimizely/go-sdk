@@ -106,6 +106,18 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	for index := 0; index < numberOfExperiments-1; index++ {
 		loggingKey := strconv.Itoa(index + 1)
 		experiment := &rollout.Experiments[index]
+
+		// Checking for forced decision
+		if decisionContext.ForcedDecisionService != nil {
+			forcedDecision, _reasons, err := decisionContext.ForcedDecisionService.FindValidatedForcedDecision(decisionContext.ProjectConfig, decisionContext.Feature.Key, experiment.Key, options)
+			reasons.Append(_reasons)
+			if err == nil {
+				return getFeatureDecision(experiment, &ExperimentDecision{
+					Variation: forcedDecision,
+				}), reasons, nil
+			}
+		}
+
 		experimentDecisionContext := getExperimentDecisionContext(experiment)
 		// Move to next evaluation if condition tree is available and evaluation fails
 

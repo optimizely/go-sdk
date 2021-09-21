@@ -46,6 +46,20 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 	// @TODO this can be improved by getting group ID first and determining experiment and then bucketing in experiment
 	for _, featureExperiment := range feature.FeatureExperiments {
 
+		// Checking for forced decision
+		if decisionContext.ForcedDecisionService != nil {
+			forcedDecision, reasons, err := decisionContext.ForcedDecisionService.FindValidatedForcedDecision(decisionContext.ProjectConfig, feature.Key, featureExperiment.Key, options)
+			if err == nil {
+				featureDecision := FeatureDecision{
+					Experiment: featureExperiment,
+					Variation:  forcedDecision,
+					Source:     FeatureTest,
+				}
+
+				return featureDecision, reasons, nil
+			}
+		}
+
 		experiment := featureExperiment
 		experimentDecisionContext := ExperimentDecisionContext{
 			Experiment:    &experiment,

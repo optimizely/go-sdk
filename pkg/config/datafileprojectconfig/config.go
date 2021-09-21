@@ -52,7 +52,6 @@ type DatafileProjectConfig struct {
 	sdkKey               string
 	environmentKey       string
 
-	flagRulesMap      map[string][]entities.Experiment
 	flagVariationsMap map[string][]entities.Variation
 }
 
@@ -258,8 +257,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	mergedAudiences := append(datafile.TypedAudiences, datafile.Audiences...)
 	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentIDMap)
 	audienceMap := mappers.MapAudiences(mergedAudiences)
-	flagRulesMap := mappers.MapFlagRules(datafile.FeatureFlags, experimentIDMap, rolloutMap)
-	flagVariationsMap := mappers.MapFlagVariations(flagRulesMap)
+	flagVariationsMap := mappers.MapFlagVariations(featureMap)
 
 	config := &DatafileProjectConfig{
 		datafile:             string(jsonDatafile),
@@ -281,7 +279,6 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		rollouts:             rollouts,
 		rolloutMap:           rolloutMap,
 		sendFlagDecisions:    datafile.SendFlagDecisions,
-		flagRulesMap:         flagRulesMap,
 		flagVariationsMap:    flagVariationsMap,
 	}
 

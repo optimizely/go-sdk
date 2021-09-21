@@ -42,13 +42,18 @@ func MapFlagRules(featureFlags []datafileprojectconfig.FeatureFlag, experimentID
 // MapFlagVariations all variations for each flag
 // datafile does not contain a separate entity for this
 // we collect variations used in each rule (experiment rules and delivery rules)
-func MapFlagVariations(flagRulesMap map[string][]entities.Experiment) (flagVariationsMap map[string][]entities.Variation) {
+func MapFlagVariations(featureMap map[string]entities.Feature) (flagVariationsMap map[string][]entities.Variation) {
 	flagVariationsMap = map[string][]entities.Variation{}
-	for flagKey, rules := range flagRulesMap {
+	for _, flag := range featureMap {
 		// To track if variation was already added to list
 		variationsTracker := map[string]bool{}
 		variations := []entities.Variation{}
-		for _, rule := range rules {
+
+		allRulesForFlag := []entities.Experiment{}
+		allRulesForFlag = append(allRulesForFlag, flag.FeatureExperiments...)
+		allRulesForFlag = append(allRulesForFlag, flag.Rollout.Experiments...)
+
+		for _, rule := range allRulesForFlag {
 			for _, variation := range rule.Variations {
 				if !variationsTracker[variation.ID] {
 					variationsTracker[variation.ID] = true
@@ -56,8 +61,7 @@ func MapFlagVariations(flagRulesMap map[string][]entities.Experiment) (flagVaria
 				}
 			}
 		}
-		flagVariationsMap[flagKey] = variations
+		flagVariationsMap[flag.Key] = variations
 	}
-
 	return flagVariationsMap
 }

@@ -73,7 +73,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 		}
 	}()
 
-	decisionContext := decision.FeatureDecisionContext{}
+	decisionContext := decision.FeatureDecisionContext{ForcedDecisionService: &(*userContext.forcedDecisionService)}
 	projectConfig, err := o.getProjectConfig()
 	if err != nil {
 		return NewErrorDecision(key, userContext, decide.GetDecideError(decide.SDKNotReady))
@@ -98,10 +98,10 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	var featureDecision decision.FeatureDecision
 
 	// check forced-decisions first
-	variation, reasons := userContext.findValidatedForcedDecision(key, "", &allOptions)
+	variation, reasons, err := userContext.forcedDecisionService.FindValidatedForcedDecision(projectConfig, key, "", &allOptions)
 	decisionReasons.Append(reasons)
-	if variation.Key != "" {
-		featureDecision = decision.FeatureDecision{Variation: &variation, Source: decision.FeatureTest}
+	if err == nil {
+		featureDecision = decision.FeatureDecision{Variation: variation, Source: decision.FeatureTest}
 	} else {
 		// regular decision
 		featureDecision, reasons, err = o.DecisionService.GetFeatureDecision(decisionContext, usrContext, &allOptions)
