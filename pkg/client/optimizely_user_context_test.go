@@ -57,7 +57,7 @@ func (s *OptimizelyUserContextTestSuite) SetupTest() {
 
 func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextWithAttributes() {
 	attributes := map[string]interface{}{"key1": 1212, "key2": 1213}
-	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes)
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes, nil)
 
 	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 	s.Equal(s.userID, optimizelyUserContext.GetUserID())
@@ -66,7 +66,7 @@ func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextWithAttributes
 
 func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextNoAttributes() {
 	attributes := map[string]interface{}{}
-	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes)
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes, nil)
 
 	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 	s.Equal(s.userID, optimizelyUserContext.GetUserID())
@@ -75,7 +75,7 @@ func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextNoAttributes()
 
 func (s *OptimizelyUserContextTestSuite) TestUpatingProvidedUserContextHasNoImpactOnOptimizelyUserContext() {
 	attributes := map[string]interface{}{"k1": "v1", "k2": false}
-	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes)
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes, nil)
 
 	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 	s.Equal(s.userID, optimizelyUserContext.GetUserID())
@@ -99,7 +99,7 @@ func (s *OptimizelyUserContextTestSuite) TestSetAttribute() {
 	userID := "1212121"
 	var attributes map[string]interface{}
 
-	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes)
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes, nil)
 	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 
 	var wg sync.WaitGroup
@@ -125,7 +125,7 @@ func (s *OptimizelyUserContextTestSuite) TestSetAttribute() {
 func (s *OptimizelyUserContextTestSuite) TestSetAttributeOverride() {
 	userID := "1212121"
 	attributes := map[string]interface{}{"k1": "v1", "k2": false}
-	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes)
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes, nil)
 
 	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 	s.Equal(userID, optimizelyUserContext.GetUserID())
@@ -141,7 +141,7 @@ func (s *OptimizelyUserContextTestSuite) TestSetAttributeOverride() {
 func (s *OptimizelyUserContextTestSuite) TestSetAttributeNullValue() {
 	userID := "1212121"
 	attributes := map[string]interface{}{"k1": nil}
-	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes)
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes, nil)
 
 	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 	s.Equal(userID, optimizelyUserContext.GetUserID())

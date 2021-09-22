@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package forceddecision //
-package forceddecision
+// Package decision //
+package decision
 
 import (
 	"errors"
@@ -54,6 +54,8 @@ func (f *ForcedDecisionService) SetForcedDecision(flagKey, ruleKey, variationKey
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 	f.forcedDecisions[forcedDecision{flagKey: flagKey, ruleKey: ruleKey}] = variationKey
+	currentKey := f.forcedDecisions[forcedDecision{flagKey: flagKey, ruleKey: ruleKey}]
+	print(currentKey)
 	return true
 }
 

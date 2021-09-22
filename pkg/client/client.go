@@ -52,7 +52,7 @@ type OptimizelyClient struct {
 // CreateUserContext creates a context of the user for which decision APIs will be called.
 // A user context will be created successfully even when the SDK is not fully configured yet.
 func (o *OptimizelyClient) CreateUserContext(userID string, attributes map[string]interface{}) OptimizelyUserContext {
-	return newOptimizelyUserContext(o, userID, attributes)
+	return newOptimizelyUserContext(o, userID, attributes, nil)
 }
 
 func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string, options *decide.Options) OptimizelyDecision {
@@ -955,21 +955,6 @@ func (o *OptimizelyClient) getAllOptions(options *decide.Options) decide.Options
 		IgnoreUserProfileService: o.defaultDecideOptions.IgnoreUserProfileService || options.IgnoreUserProfileService,
 		IncludeReasons:           o.defaultDecideOptions.IncludeReasons || options.IncludeReasons,
 	}
-}
-
-func (o *OptimizelyClient) getFlagVariationByKey(flagKey, variationKey string) (entities.Variation, error) {
-	projectConfig, err := o.getProjectConfig()
-	if err != nil {
-		return entities.Variation{}, err
-	}
-	if variations, ok := projectConfig.GetFlagVariationsMap()[flagKey]; ok {
-		for _, variation := range variations {
-			if variation.Key == variationKey {
-				return variation, nil
-			}
-		}
-	}
-	return entities.Variation{}, errors.New("variation not found")
 }
 
 // GetOptimizelyConfig returns OptimizelyConfig object

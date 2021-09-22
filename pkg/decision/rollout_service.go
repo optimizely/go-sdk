@@ -108,14 +108,12 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		experiment := &rollout.Experiments[index]
 
 		// Checking for forced decision
-		if decisionContext.ForcedDecisionService != nil {
-			forcedDecision, _reasons, err := decisionContext.ForcedDecisionService.FindValidatedForcedDecision(decisionContext.ProjectConfig, decisionContext.Feature.Key, experiment.Key, options)
-			reasons.Append(_reasons)
-			if err == nil {
-				return getFeatureDecision(experiment, &ExperimentDecision{
-					Variation: forcedDecision,
-				}), reasons, nil
-			}
+		forcedDecision, _reasons := r.getForcedDecision(decisionContext, *experiment, options)
+		reasons.Append(_reasons)
+		if forcedDecision != nil {
+			return getFeatureDecision(experiment, &ExperimentDecision{
+				Variation: forcedDecision,
+			}), reasons, nil
 		}
 
 		experimentDecisionContext := getExperimentDecisionContext(experiment)
@@ -159,4 +157,14 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	}
 
 	return featureDecision, reasons, nil
+}
+
+func (r RolloutService) getForcedDecision(decisionContext FeatureDecisionContext, experiment entities.Experiment, options *decide.Options) (variation *entities.Variation, reasons decide.DecisionReasons) {
+	if decisionContext.ForcedDecisionService != nil {
+		forcedDecision, _reasons, err := decisionContext.ForcedDecisionService.FindValidatedForcedDecision(decisionContext.ProjectConfig, decisionContext.Feature.Key, experiment.Key, options)
+		if err == nil {
+			return forcedDecision, _reasons
+		}
+	}
+	return nil, reasons
 }
