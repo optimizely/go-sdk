@@ -65,25 +65,6 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		return evalResult
 	}
 
-	getFeatureDecision := func(experiment *entities.Experiment, decision *ExperimentDecision) FeatureDecision {
-		// translate the experiment reason into a more rollouts-appropriate reason
-		switch decision.Reason {
-		case pkgReasons.NotBucketedIntoVariation:
-			featureDecision.Decision = Decision{Reason: pkgReasons.FailedRolloutBucketing}
-		case pkgReasons.BucketedIntoVariation:
-			featureDecision.Decision = Decision{Reason: pkgReasons.BucketedIntoRollout}
-		default:
-			featureDecision.Decision = decision.Decision
-		}
-
-		featureDecision.Variation = decision.Variation
-		if featureDecision.Variation != nil {
-			featureDecision.Experiment = *experiment
-		}
-		r.logger.Debug(fmt.Sprintf(`Decision made for user "%s" for feature rollout with key "%s": %s.`, userContext.ID, feature.Key, featureDecision.Reason))
-		return featureDecision
-	}
-
 	getExperimentDecisionContext := func(experiment *entities.Experiment) ExperimentDecisionContext {
 		return ExperimentDecisionContext{
 			Experiment:    experiment,
@@ -111,7 +92,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		forcedDecision, _reasons := r.getForcedDecision(decisionContext, *experiment, options)
 		reasons.Append(_reasons)
 		if forcedDecision != nil {
-			return getFeatureDecision(experiment, &ExperimentDecision{
+			return r.getFeatureDecision(&featureDecision, userContext, *feature, experiment, &ExperimentDecision{
 				Variation: forcedDecision,
 			}), reasons, nil
 		}
@@ -134,12 +115,22 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 			// Evaluate fall back rule / last rule now
 			break
 		}
-		finalFeatureDecision := getFeatureDecision(experiment, &decision)
+		finalFeatureDecision := r.getFeatureDecision(&featureDecision, userContext, *feature, experiment, &decision)
 		return finalFeatureDecision, reasons, nil
 	}
 
 	// fall back rule / last rule
 	experiment := &rollout.Experiments[numberOfExperiments-1]
+
+	// Checking for forced decision
+	forcedDecision, _reasons := r.getForcedDecision(decisionContext, *experiment, options)
+	reasons.Append(_reasons)
+	if forcedDecision != nil {
+		return r.getFeatureDecision(&featureDecision, userContext, *feature, experiment, &ExperimentDecision{
+			Variation: forcedDecision,
+		}), reasons, nil
+	}
+
 	experimentDecisionContext := getExperimentDecisionContext(experiment)
 	// Move to bucketing if conditionTree is unavailable or evaluation passes
 	evaluationResult := experiment.AudienceConditionTree == nil || evaluateConditionTree(experiment, "Everyone Else")
@@ -152,11 +143,30 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 			logMessage := reasons.AddInfo(logging.UserInEveryoneElse.String(), userContext.ID)
 			r.logger.Debug(logMessage)
 		}
-		finalFeatureDecision := getFeatureDecision(experiment, &decision)
+		finalFeatureDecision := r.getFeatureDecision(&featureDecision, userContext, *feature, experiment, &decision)
 		return finalFeatureDecision, reasons, nil
 	}
 
 	return featureDecision, reasons, nil
+}
+
+func (r RolloutService) getFeatureDecision(featureDecision *FeatureDecision, userContext entities.UserContext, feature entities.Feature, experiment *entities.Experiment, decision *ExperimentDecision) FeatureDecision {
+	// translate the experiment reason into a more rollouts-appropriate reason
+	switch decision.Reason {
+	case pkgReasons.NotBucketedIntoVariation:
+		featureDecision.Decision = Decision{Reason: pkgReasons.FailedRolloutBucketing}
+	case pkgReasons.BucketedIntoVariation:
+		featureDecision.Decision = Decision{Reason: pkgReasons.BucketedIntoRollout}
+	default:
+		featureDecision.Decision = decision.Decision
+	}
+
+	featureDecision.Variation = decision.Variation
+	if featureDecision.Variation != nil {
+		featureDecision.Experiment = *experiment
+	}
+	r.logger.Debug(fmt.Sprintf(`Decision made for user "%s" for feature rollout with key "%s": %s.`, userContext.ID, feature.Key, featureDecision.Reason))
+	return *featureDecision
 }
 
 func (r RolloutService) getForcedDecision(decisionContext FeatureDecisionContext, experiment entities.Experiment, options *decide.Options) (variation *entities.Variation, reasons decide.DecisionReasons) {
