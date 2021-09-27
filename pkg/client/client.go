@@ -28,6 +28,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/decision"
+	pkgReasons "github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
@@ -101,7 +102,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	variation, reasons, err := userContext.forcedDecisionService.FindValidatedForcedDecision(projectConfig, key, "", &allOptions)
 	decisionReasons.Append(reasons)
 	if err == nil {
-		featureDecision = decision.FeatureDecision{Variation: variation, Source: decision.FeatureTest}
+		featureDecision = decision.FeatureDecision{Decision: decision.Decision{Reason: pkgReasons.ForcedDecisionFound}, Variation: variation, Source: decision.FeatureTest}
 	} else {
 		// regular decision
 		featureDecision, reasons, err = o.DecisionService.GetFeatureDecision(decisionContext, usrContext, &allOptions)

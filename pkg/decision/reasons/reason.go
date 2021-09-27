@@ -41,6 +41,8 @@ const (
 	NoRolloutForFeature Reason = "No rollout for feature"
 	// RolloutHasNoExperiments - the rollout has no assigned experiments
 	RolloutHasNoExperiments Reason = "Rollout has no experiments"
+	// ForcedDecisionFound - forced decision was found for provided flag and ruleKey against the user
+	ForcedDecisionFound Reason = "Forced decision found"
 	// NotBucketedIntoVariation - the user is not bucketed into a variation for the given experiment
 	NotBucketedIntoVariation Reason = "Not bucketed into a variation"
 	// NotInGroup - the user is not bucketed into the mutex group

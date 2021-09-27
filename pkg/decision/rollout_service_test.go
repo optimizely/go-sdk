@@ -54,8 +54,9 @@ func (s *RolloutServiceTestSuite) SetupTest() {
 		ProjectConfig: s.mockConfig,
 	}
 	s.testFeatureDecisionContext = FeatureDecisionContext{
-		Feature:       &testFeatRollout3334,
-		ProjectConfig: s.mockConfig,
+		Feature:               &testFeatRollout3334,
+		ProjectConfig:         s.mockConfig,
+		ForcedDecisionService: NewForcedDecisionService("test_user"),
 	}
 
 	testAudienceMap := map[string]entities.Audience{
@@ -146,6 +147,32 @@ func (s *RolloutServiceTestSuite) TestGetDecisionHappyPath() {
 	s.mockLogger.AssertExpectations(s.T())
 }
 
+func (s *RolloutServiceTestSuite) TestGetDecisionHappyPathWithForcedDecision() {
+	testRolloutService := RolloutService{
+		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
+		experimentBucketerService: s.mockExperimentService,
+		logger:                    s.mockLogger,
+	}
+	expectedFeatureDecision := FeatureDecision{
+		Experiment: testExp1112,
+		Variation:  &testExp1112Var2222,
+		Source:     Rollout,
+		Decision:   Decision{Reason: reasons.ForcedDecisionFound},
+	}
+
+	flagVariationsMap := map[string][]entities.Variation{
+		s.testFeatureDecisionContext.Feature.Key: {
+			testExp1112Var2222,
+		},
+	}
+	s.mockConfig.On("GetFlagVariationsMap").Return(flagVariationsMap)
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "1"))
+	s.mockLogger.On("Debug", `Decision made for user "test_user" for feature rollout with key "test_feature_rollout_3334_key": Forced decision found.`)
+	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(s.testFeatureDecisionContext.Feature.Key, testExp1112.Key, testExp1112Var2222.Key)
+	decision, _, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
+	s.Equal(expectedFeatureDecision, decision)
+}
+
 func (s *RolloutServiceTestSuite) TestGetDecisionFallbacksToLastWhenFailsBucketing() {
 	testExperiment1112BucketerDecision := ExperimentDecision{
 		Decision: Decision{
@@ -192,6 +219,49 @@ func (s *RolloutServiceTestSuite) TestGetDecisionFallbacksToLastWhenFailsBucketi
 	s.mockAudienceTreeEvaluator.AssertExpectations(s.T())
 	s.mockExperimentService.AssertExpectations(s.T())
 	s.mockLogger.AssertExpectations(s.T())
+}
+
+func (s *RolloutServiceTestSuite) TestFallbackRuleWithForcedDecision() {
+	testExperiment1112BucketerDecision := ExperimentDecision{
+		Decision: Decision{
+			Reason: reasons.NotBucketedIntoVariation,
+		},
+	}
+	s.mockAudienceTreeEvaluator.On("Evaluate", testExp1112.AudienceConditionTree, s.testConditionTreeParams, mock.Anything).Return(true, true, s.reasons)
+	s.mockExperimentService.On("GetDecision", s.testExperiment1112DecisionContext, s.testUserContext, s.options, mock.Anything).Return(testExperiment1112BucketerDecision, s.reasons, nil)
+
+	testRolloutService := RolloutService{
+		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
+		experimentBucketerService: s.mockExperimentService,
+		logger:                    s.mockLogger,
+	}
+	expectedFeatureDecision := FeatureDecision{
+		Experiment: testExp1118,
+		Variation:  &testExp1118Var2224,
+		Source:     Rollout,
+		Decision:   Decision{Reason: reasons.ForcedDecisionFound},
+	}
+	flagVariationsMap := map[string][]entities.Variation{
+		s.testFeatureDecisionContext.Feature.Key: {
+			testExp1118Var2224,
+		},
+	}
+	s.mockConfig.On("GetFlagVariationsMap").Return(flagVariationsMap)
+	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(s.testFeatureDecisionContext.Feature.Key, testExp1118.Key, testExp1118Var2224.Key)
+
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "1"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "1", true))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "Everyone Else"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "Everyone Else", true))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.UserInEveryoneElse.String(), "test_user"))
+	s.mockLogger.On("Debug", `Decision made for user "test_user" for feature rollout with key "test_feature_rollout_3334_key": Forced decision found.`)
+	s.options.IncludeReasons = true
+	decision, rsons, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
+	messages := rsons.ToReport()
+	s.Len(messages, 1)
+	s.Equal(`Variation (2224) is mapped to flag test_feature_rollout_3334_key, rule test_experiment_1118 and user (test_user) in the forced decision map.`, messages[0])
+
+	s.Equal(expectedFeatureDecision, decision)
 }
 
 func (s *RolloutServiceTestSuite) TestGetDecisionWhenFallbackBucketingFails() {

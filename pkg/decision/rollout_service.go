@@ -92,9 +92,11 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		forcedDecision, _reasons := r.getForcedDecision(decisionContext, *experiment, options)
 		reasons.Append(_reasons)
 		if forcedDecision != nil {
-			return r.getFeatureDecision(&featureDecision, userContext, *feature, experiment, &ExperimentDecision{
+			experimentDecision := &ExperimentDecision{
 				Variation: forcedDecision,
-			}), reasons, nil
+				Decision:  Decision{Reason: pkgReasons.ForcedDecisionFound},
+			}
+			return r.getFeatureDecision(&featureDecision, userContext, *feature, experiment, experimentDecision), reasons, nil
 		}
 
 		experimentDecisionContext := getExperimentDecisionContext(experiment)
@@ -126,9 +128,11 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	forcedDecision, _reasons := r.getForcedDecision(decisionContext, *experiment, options)
 	reasons.Append(_reasons)
 	if forcedDecision != nil {
-		return r.getFeatureDecision(&featureDecision, userContext, *feature, experiment, &ExperimentDecision{
+		experimentDecision := &ExperimentDecision{
 			Variation: forcedDecision,
-		}), reasons, nil
+			Decision:  Decision{Reason: pkgReasons.ForcedDecisionFound},
+		}
+		return r.getFeatureDecision(&featureDecision, userContext, *feature, experiment, experimentDecision), reasons, nil
 	}
 
 	experimentDecisionContext := getExperimentDecisionContext(experiment)
@@ -150,6 +154,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	return featureDecision, reasons, nil
 }
 
+// creating this sub method to avoid cyco-complexity warning
 func (r RolloutService) getFeatureDecision(featureDecision *FeatureDecision, userContext entities.UserContext, feature entities.Feature, experiment *entities.Experiment, decision *ExperimentDecision) FeatureDecision {
 	// translate the experiment reason into a more rollouts-appropriate reason
 	switch decision.Reason {

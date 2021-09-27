@@ -38,9 +38,10 @@ type FeatureExperimentServiceTestSuite struct {
 func (s *FeatureExperimentServiceTestSuite) SetupTest() {
 	s.mockConfig = new(mockProjectConfig)
 	s.testFeatureDecisionContext = FeatureDecisionContext{
-		Feature:       &testFeat3335,
-		ProjectConfig: s.mockConfig,
-		Variable:      testVariable,
+		Feature:               &testFeat3335,
+		ProjectConfig:         s.mockConfig,
+		Variable:              testVariable,
+		ForcedDecisionService: NewForcedDecisionService("test_user"),
 	}
 	s.mockExperimentService = new(MockExperimentDecisionService)
 	s.options = &decide.Options{}
@@ -76,6 +77,42 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecision() {
 	s.Equal(expectedFeatureDecision, decision)
 	s.NoError(err)
 	s.mockExperimentService.AssertExpectations(s.T())
+}
+
+func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithForcedDecision() {
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	expectedVariation := testExp1113.Variations["2223"]
+	flagVariationsMap := map[string][]entities.Variation{
+		s.testFeatureDecisionContext.Feature.Key: {
+			expectedVariation,
+		},
+	}
+	s.mockConfig.On("GetFlagVariationsMap").Return(flagVariationsMap)
+	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(s.testFeatureDecisionContext.Feature.Key, testExp1113Key, expectedVariation.Key)
+
+	testExperimentDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1113,
+		ProjectConfig: s.mockConfig,
+	}
+
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	expectedFeatureDecision := FeatureDecision{
+		Experiment: *testExperimentDecisionContext.Experiment,
+		Variation:  &expectedVariation,
+		Source:     FeatureTest,
+	}
+	decision, _, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options)
+	s.Equal(expectedFeatureDecision, decision)
+	s.NoError(err)
+	// Makes sure that decision returned was a forcedDecision
+	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision", testExperimentDecisionContext, testUserContext, s.options)
 }
 
 func (s *FeatureExperimentServiceTestSuite) TestGetDecisionMutex() {

@@ -19,6 +19,8 @@ package datafileprojectconfig
 
 import (
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/entities"
@@ -461,4 +463,26 @@ func TestGetGroupByIDMissingIDError(t *testing.T) {
 	if assert.Error(t, err) {
 		assert.Equal(t, fmt.Errorf(`group with ID "id" not found`), err)
 	}
+}
+
+func TestGetFlagVariationsMap(t *testing.T) {
+	absPath, _ := filepath.Abs("../../../test-data/decide-test-datafile.json")
+	datafile, err := ioutil.ReadFile(absPath)
+	assert.NoError(t, err)
+	config, err := NewDatafileProjectConfig(datafile, logging.GetLogger("", ""))
+	assert.NoError(t, err)
+	flagVariationsMap := config.GetFlagVariationsMap()
+
+	variationsMap := map[string]bool{"a": true, "b": true, "3324490633": true, "3324490562": true, "18257766532": true}
+	for _, variation := range flagVariationsMap["feature_1"] {
+		assert.True(t, variationsMap[variation.Key])
+	}
+
+	variationsMap = map[string]bool{"variation_with_traffic": true, "variation_no_traffic": true}
+	for _, variation := range flagVariationsMap["feature_2"] {
+		assert.True(t, variationsMap[variation.Key])
+	}
+
+	assert.NotNil(t, flagVariationsMap["feature_3"])
+	assert.Len(t, flagVariationsMap["feature_3"], 0)
 }

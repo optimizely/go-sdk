@@ -59,7 +59,15 @@ func (f *ForcedDecisionService) SetForcedDecision(flagKey, ruleKey, variationKey
 
 // GetForcedDecision returns the forced decision for a given flag and an optional rule
 func (f *ForcedDecisionService) GetForcedDecision(flagKey, ruleKey string) string {
-	return f.findForcedDecision(flagKey, ruleKey)
+	f.mutex.RLock()
+	defer f.mutex.RUnlock()
+	if len(f.forcedDecisions) == 0 {
+		return ""
+	}
+	if variationKey, ok := f.forcedDecisions[forcedDecision{flagKey: flagKey, ruleKey: ruleKey}]; ok {
+		return variationKey
+	}
+	return ""
 }
 
 // RemoveForcedDecision removes the forced decision for a given flag and an optional rule.
@@ -82,22 +90,10 @@ func (f *ForcedDecisionService) RemoveAllForcedDecisions() bool {
 	return true
 }
 
-func (f *ForcedDecisionService) findForcedDecision(flagKey, ruleKey string) string {
-	f.mutex.RLock()
-	defer f.mutex.RUnlock()
-	if len(f.forcedDecisions) == 0 {
-		return ""
-	}
-	if variationKey, ok := f.forcedDecisions[forcedDecision{flagKey: flagKey, ruleKey: ruleKey}]; ok {
-		return variationKey
-	}
-	return ""
-}
-
 // FindValidatedForcedDecision returns validated forced decision.
 func (f *ForcedDecisionService) FindValidatedForcedDecision(projectConfig config.ProjectConfig, flagKey, ruleKey string, options *decide.Options) (variation *entities.Variation, reasons decide.DecisionReasons, err error) {
 	decisionReasons := decide.NewDecisionReasons(options)
-	variationKey := f.findForcedDecision(flagKey, ruleKey)
+	variationKey := f.GetForcedDecision(flagKey, ruleKey)
 	if variationKey == "" {
 		return nil, decisionReasons, errors.New("decision not found")
 	}

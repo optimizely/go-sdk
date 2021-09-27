@@ -199,6 +199,40 @@ func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTest() {
 	s.Equal("10418551353", impressionEvent.VariationID)
 }
 
+func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTestWithForcedDecision() {
+	flagKey := "feature_1"
+	ruleKey := "exp_with_audience"
+	variationKey := "b"
+	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
+	s.Nil(err)
+
+	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
+	user.forcedDecisionService.SetForcedDecision(flagKey, ruleKey, variationKey)
+	decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+
+	s.Equal(variationKey, decision.VariationKey)
+	s.Equal(false, decision.Enabled)
+	s.Equal(variablesExpected.ToMap(), decision.Variables.ToMap())
+	s.Equal(ruleKey, decision.RuleKey)
+	s.Equal(flagKey, decision.FlagKey)
+	s.Equal(user, decision.UserContext)
+	reasons := decision.Reasons
+	s.Len(reasons, 1)
+	s.Equal(`Variation (b) is mapped to flag feature_1, rule exp_with_audience and user (tester) in the forced decision map.`, reasons[0])
+
+	s.True(len(s.eventProcessor.Events) == 1)
+	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
+
+	impressionEvent := s.eventProcessor.Events[0].Impression
+	s.Equal(flagKey, impressionEvent.Metadata.FlagKey)
+	s.Equal(ruleKey, impressionEvent.Metadata.RuleKey)
+	s.Equal("feature-test", impressionEvent.Metadata.RuleType)
+	s.Equal(variationKey, impressionEvent.Metadata.VariationKey)
+	s.Equal(false, impressionEvent.Metadata.Enabled)
+	s.Equal("10390977673", impressionEvent.ExperimentID)
+	s.Equal("10416523121", impressionEvent.VariationID)
+}
+
 func (s *OptimizelyUserContextTestSuite) TestDecideRollout() {
 	flagKey := "feature_1"
 	ruleKey := "18322080788"
@@ -245,6 +279,50 @@ func (s *OptimizelyUserContextTestSuite) TestDecideRollout() {
 	s.Equal(true, impressionEvent.Metadata.Enabled)
 	s.Equal("18322080788", impressionEvent.ExperimentID)
 	s.Equal("18257766532", impressionEvent.VariationID)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecideRolloutWithForcedDecision() {
+	flagKey := "feature_1"
+	ruleKey := "3332020515"
+	variationKey := "3324490633"
+	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
+	s.Nil(err)
+
+	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
+	user.forcedDecisionService.SetForcedDecision(flagKey, ruleKey, variationKey)
+	decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+
+	s.Equal(variationKey, decision.VariationKey)
+	s.Equal(true, decision.Enabled)
+	s.Equal(variablesExpected.ToMap(), decision.Variables.ToMap())
+	s.Equal(ruleKey, decision.RuleKey)
+	s.Equal(flagKey, decision.FlagKey)
+	s.Equal(user, decision.UserContext)
+	reasons := decision.Reasons
+	s.Len(reasons, 4)
+
+	expectedLogs := []string{
+		`an error occurred while evaluating nested tree for audience ID "13389141123"`,
+		`Audiences for experiment exp_with_audience collectively evaluated to false.`,
+		`User "tester" does not meet conditions to be in experiment "exp_with_audience".`,
+		`Variation (3324490633) is mapped to flag feature_1, rule 3332020515 and user (tester) in the forced decision map.`,
+	}
+
+	for index, log := range expectedLogs {
+		s.Equal(log, reasons[index])
+	}
+
+	s.True(len(s.eventProcessor.Events) == 1)
+	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
+
+	impressionEvent := s.eventProcessor.Events[0].Impression
+	s.Equal(flagKey, impressionEvent.Metadata.FlagKey)
+	s.Equal(ruleKey, impressionEvent.Metadata.RuleKey)
+	s.Equal("rollout", impressionEvent.Metadata.RuleType)
+	s.Equal(variationKey, impressionEvent.Metadata.VariationKey)
+	s.Equal(true, impressionEvent.Metadata.Enabled)
+	s.Equal("3332020515", impressionEvent.ExperimentID)
+	s.Equal("3324490633", impressionEvent.VariationID)
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDecideNullVariation() {

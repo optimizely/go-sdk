@@ -54,6 +54,11 @@ func (c *mockProjectConfig) GetAudienceMap() map[string]entities.Audience {
 	return args.Get(0).(map[string]entities.Audience)
 }
 
+func (c *mockProjectConfig) GetFlagVariationsMap() map[string][]entities.Variation {
+	args := c.Called()
+	return args.Get(0).(map[string][]entities.Variation)
+}
+
 type MockExperimentDecisionService struct {
 	mock.Mock
 }
@@ -98,6 +103,10 @@ func (m *MockAudienceTreeEvaluator) Evaluate(node *entities.TreeNode, condTreePa
 // Single variation experiment
 const testExp1111Key = "test_experiment_1111"
 
+const testExp1112Key = "test_experiment_1112"
+const testExp1117Key = "test_experiment_1117"
+const testExp1118Key = "test_experiment_1118"
+
 var testExp1111Var2222 = entities.Variation{ID: "2222", Key: "2222"}
 var testExp1111 = entities.Experiment{
 	ID:  "1111",
@@ -140,7 +149,7 @@ var testExp1112 = entities.Experiment{
 		},
 	},
 	ID:  "1112",
-	Key: testExp1111Key,
+	Key: testExp1112Key,
 	Variations: map[string]entities.Variation{
 		"2222": testExp1111Var2222,
 	},
@@ -161,7 +170,7 @@ var testExp1117 = entities.Experiment{
 		},
 	},
 	ID:  "1117",
-	Key: testExp1111Key,
+	Key: testExp1117Key,
 	Variations: map[string]entities.Variation{
 		"2223": testExp1117Var2223,
 	},
@@ -182,7 +191,7 @@ var testExp1118 = entities.Experiment{
 		},
 	},
 	ID:  "1118",
-	Key: testExp1111Key,
+	Key: testExp1118Key,
 	Variations: map[string]entities.Variation{
 		"2224": testExp1118Var2224,
 	},
