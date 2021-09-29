@@ -99,6 +99,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	var featureDecision decision.FeatureDecision
 
 	// check forced-decisions first
+	// Passing empty rule-key because checking mapping with flagKey only
 	variation, reasons, err := userContext.forcedDecisionService.FindValidatedForcedDecision(projectConfig, key, "", &allOptions)
 	decisionReasons.Append(reasons)
 	if err == nil {

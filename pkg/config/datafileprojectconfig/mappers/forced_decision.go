@@ -23,8 +23,8 @@ import (
 )
 
 // MapFlagRules maps all rules (experiment rules and delivery rules) for each flag
-func MapFlagRules(featureFlags []datafileprojectconfig.FeatureFlag, experimentIDMap map[string]entities.Experiment, rolloutIDMap map[string]entities.Rollout) (flagRulesMap map[string][]entities.Experiment) {
-	flagRulesMap = map[string][]entities.Experiment{}
+func MapFlagRules(featureFlags []datafileprojectconfig.FeatureFlag, experimentIDMap map[string]entities.Experiment, rolloutIDMap map[string]entities.Rollout) map[string][]entities.Experiment {
+	flagRulesMap := map[string][]entities.Experiment{}
 	experiments := []entities.Experiment{}
 	for _, flag := range featureFlags {
 		for _, experimentID := range flag.ExperimentIDs {
@@ -35,7 +35,6 @@ func MapFlagRules(featureFlags []datafileprojectconfig.FeatureFlag, experimentID
 			flagRulesMap[flag.Key] = experiments
 		}
 	}
-
 	return flagRulesMap
 }
 
