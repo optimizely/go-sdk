@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
 
+## [1.7.0] - September 17, 2021
+
+### New Features
+* Add new public properties to `OptimizelyConfig`. ([#322](https://github.com/optimizely/go-sdk/pull/322), [#312](https://github.com/optimizely/go-sdk/pull/312))
+	- SdkKey
+ 	- EnvironmentKey
+	- Attributes
+	- Audiences
+	- Events
+	- ExperimentRules and DeliveryRules to `OptimizelyFeature`
+	- Audiences to `OptimizelyExperiment`
+* For details, refer to our documentation page: [https://docs.developers.optimizely.com/full-stack/v4.0/docs/optimizelyconfig-go](https://docs.developers.optimizely.com/full-stack/v4.0/docs/optimizelyconfig-go).
+
+### Deprecated
+
+* `OptimizelyFeature.ExperimentsMap` of `OptimizelyConfig` is deprecated as of this release. Please use `OptimizelyFeature.ExperimentRules` and `OptimizelyFeature.DeliveryRules`. ([#322](https://github.com/optimizely/go-sdk/pull/322))
+
 ## [1.6.1] - March 2, 2021
 ## Bug Fix
 - Fix issues for decision variables and reasons. [#309](https://github.com/optimizely/go-sdk/pull/309)
