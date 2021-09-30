@@ -52,12 +52,12 @@ func (s *ForcedDecisionServiceTestSuite) SetupTest() {
 func (s *ForcedDecisionServiceTestSuite) TestSetForcedDecision() {
 	s.True(s.forcedDecisionService.SetForcedDecision("1", "2", "3"))
 	s.True(s.forcedDecisionService.SetForcedDecision("1", "2", ""))
-	s.True(s.forcedDecisionService.SetForcedDecision("", "2", "3"))
+	s.False(s.forcedDecisionService.SetForcedDecision("", "2", "3"))
 	s.True(s.forcedDecisionService.SetForcedDecision("1", "", "3"))
 	s.True(s.forcedDecisionService.SetForcedDecision("1", "", ""))
-	s.True(s.forcedDecisionService.SetForcedDecision("", "2", ""))
-	s.True(s.forcedDecisionService.SetForcedDecision("", "", "3"))
-	s.True(s.forcedDecisionService.SetForcedDecision("", "", ""))
+	s.False(s.forcedDecisionService.SetForcedDecision("", "2", ""))
+	s.False(s.forcedDecisionService.SetForcedDecision("", "", "3"))
+	s.False(s.forcedDecisionService.SetForcedDecision("", "", ""))
 }
 
 func (s *ForcedDecisionServiceTestSuite) TestGetForcedDecision() {
@@ -72,9 +72,9 @@ func (s *ForcedDecisionServiceTestSuite) TestGetForcedDecision() {
 	forcedDecision = s.forcedDecisionService.GetForcedDecision("1", "2")
 	s.Equal("", forcedDecision)
 
-	s.True(s.forcedDecisionService.SetForcedDecision("", "2", "3"))
+	s.False(s.forcedDecisionService.SetForcedDecision("", "2", "3"))
 	forcedDecision = s.forcedDecisionService.GetForcedDecision("", "2")
-	s.Equal("3", forcedDecision)
+	s.Equal("", forcedDecision)
 
 	s.True(s.forcedDecisionService.SetForcedDecision("1", "", "3"))
 	forcedDecision = s.forcedDecisionService.GetForcedDecision("1", "")
@@ -84,15 +84,15 @@ func (s *ForcedDecisionServiceTestSuite) TestGetForcedDecision() {
 	forcedDecision = s.forcedDecisionService.GetForcedDecision("1", "")
 	s.Equal("", forcedDecision)
 
-	s.True(s.forcedDecisionService.SetForcedDecision("", "2", ""))
+	s.False(s.forcedDecisionService.SetForcedDecision("", "2", ""))
 	forcedDecision = s.forcedDecisionService.GetForcedDecision("", "2")
 	s.Equal("", forcedDecision)
 
-	s.True(s.forcedDecisionService.SetForcedDecision("", "", "3"))
+	s.False(s.forcedDecisionService.SetForcedDecision("", "", "3"))
 	forcedDecision = s.forcedDecisionService.GetForcedDecision("", "")
-	s.Equal("3", forcedDecision)
+	s.Equal("", forcedDecision)
 
-	s.True(s.forcedDecisionService.SetForcedDecision("", "", ""))
+	s.False(s.forcedDecisionService.SetForcedDecision("", "", ""))
 	forcedDecision = s.forcedDecisionService.GetForcedDecision("", "")
 	s.Equal("", forcedDecision)
 }
@@ -105,33 +105,31 @@ func (s *ForcedDecisionServiceTestSuite) TestRemoveForcedDecision() {
 	s.True(s.forcedDecisionService.RemoveForcedDecision("1", "2"))
 	s.Equal("", s.forcedDecisionService.GetForcedDecision("1", "2"))
 
-	s.True(s.forcedDecisionService.SetForcedDecision("", "2", "3"))
-	s.True(s.forcedDecisionService.RemoveForcedDecision("", "2"))
+	s.False(s.forcedDecisionService.SetForcedDecision("", "2", "3"))
+	s.False(s.forcedDecisionService.RemoveForcedDecision("", "2"))
 	s.Equal("", s.forcedDecisionService.GetForcedDecision("", "2"))
 
 	s.True(s.forcedDecisionService.SetForcedDecision("1", "", "3"))
 	s.True(s.forcedDecisionService.RemoveForcedDecision("1", ""))
 	s.Equal("", s.forcedDecisionService.GetForcedDecision("1", ""))
 
-	s.True(s.forcedDecisionService.SetForcedDecision("", "", "3"))
-	s.True(s.forcedDecisionService.RemoveForcedDecision("", ""))
+	s.False(s.forcedDecisionService.SetForcedDecision("", "", "3"))
+	s.False(s.forcedDecisionService.RemoveForcedDecision("", ""))
 	s.Equal("", s.forcedDecisionService.GetForcedDecision("", ""))
 }
 
 func (s *ForcedDecisionServiceTestSuite) TestRemoveAllForcedDecision() {
 	s.True(s.forcedDecisionService.SetForcedDecision("1", "a", "b"))
 	s.True(s.forcedDecisionService.SetForcedDecision("2", "", "b"))
-	s.True(s.forcedDecisionService.SetForcedDecision("", "a", "b"))
-	s.True(s.forcedDecisionService.SetForcedDecision("", "", "b"))
+	s.False(s.forcedDecisionService.SetForcedDecision("", "a", "b"))
+	s.False(s.forcedDecisionService.SetForcedDecision("", "", "b"))
 
-	s.Len(s.forcedDecisionService.forcedDecisions, 4)
+	s.Len(s.forcedDecisionService.forcedDecisions, 2)
 	s.True(s.forcedDecisionService.RemoveAllForcedDecisions())
 	s.Len(s.forcedDecisionService.forcedDecisions, 0)
 
 	s.Equal("", s.forcedDecisionService.GetForcedDecision("1", "a"))
 	s.Equal("", s.forcedDecisionService.GetForcedDecision("2", ""))
-	s.Equal("", s.forcedDecisionService.GetForcedDecision("", "a"))
-	s.Equal("", s.forcedDecisionService.GetForcedDecision("", ""))
 }
 
 func (s *ForcedDecisionServiceTestSuite) TestFindValidatedForcedDecision() {

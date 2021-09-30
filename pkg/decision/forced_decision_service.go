@@ -48,9 +48,12 @@ func NewForcedDecisionService(userID string) *ForcedDecisionService {
 }
 
 // SetForcedDecision sets the forced decision (variation key) for a given flag and an optional rule.
+// if rule key is empty, forced decision will be mapped against the flagKey.
 // returns true if the forced decision has been set successfully.
 func (f *ForcedDecisionService) SetForcedDecision(flagKey, ruleKey, variationKey string) bool {
-
+	if flagKey == "" {
+		return false
+	}
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 	f.forcedDecisions[forcedDecision{flagKey: flagKey, ruleKey: ruleKey}] = variationKey
@@ -58,6 +61,7 @@ func (f *ForcedDecisionService) SetForcedDecision(flagKey, ruleKey, variationKey
 }
 
 // GetForcedDecision returns the forced decision for a given flag and an optional rule
+// if rule key is empty, forced decision will be returned for the flagKey.
 func (f *ForcedDecisionService) GetForcedDecision(flagKey, ruleKey string) string {
 	f.mutex.RLock()
 	defer f.mutex.RUnlock()
@@ -71,6 +75,7 @@ func (f *ForcedDecisionService) GetForcedDecision(flagKey, ruleKey string) strin
 }
 
 // RemoveForcedDecision removes the forced decision for a given flag and an optional rule.
+// if rule key is empty, forced decision will be removed for the flagKey.
 func (f *ForcedDecisionService) RemoveForcedDecision(flagKey, ruleKey string) bool {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()

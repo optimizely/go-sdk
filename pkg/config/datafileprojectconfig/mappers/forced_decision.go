@@ -18,25 +18,8 @@
 package mappers
 
 import (
-	datafileprojectconfig "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
-
-// MapFlagRules maps all rules (experiment rules and delivery rules) for each flag
-func MapFlagRules(featureFlags []datafileprojectconfig.FeatureFlag, experimentIDMap map[string]entities.Experiment, rolloutIDMap map[string]entities.Rollout) map[string][]entities.Experiment {
-	flagRulesMap := map[string][]entities.Experiment{}
-	experiments := []entities.Experiment{}
-	for _, flag := range featureFlags {
-		for _, experimentID := range flag.ExperimentIDs {
-			experiments = append(experiments, experimentIDMap[experimentID])
-			if rollout, ok := rolloutIDMap[flag.RolloutID]; ok {
-				experiments = append(experiments, rollout.Experiments...)
-			}
-			flagRulesMap[flag.Key] = experiments
-		}
-	}
-	return flagRulesMap
-}
 
 // MapFlagVariations all variations for each flag
 // datafile does not contain a separate entity for this

@@ -84,19 +84,27 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		return featureDecision, reasons, nil
 	}
 
-	for index := 0; index < numberOfExperiments-1; index++ {
-		loggingKey := strconv.Itoa(index + 1)
-		experiment := &rollout.Experiments[index]
-
-		// Checking for forced decision
-		forcedDecision, _reasons := r.getForcedDecision(decisionContext, *experiment, options)
+	checkForForcedDecision := func(exp *entities.Experiment) *FeatureDecision {
+		forcedDecision, _reasons := r.getForcedDecision(decisionContext, *exp, options)
 		reasons.Append(_reasons)
 		if forcedDecision != nil {
 			experimentDecision := &ExperimentDecision{
 				Variation: forcedDecision,
 				Decision:  Decision{Reason: pkgReasons.ForcedDecisionFound},
 			}
-			return r.getFeatureDecision(&featureDecision, userContext, *feature, experiment, experimentDecision), reasons, nil
+			decision := r.getFeatureDecision(&featureDecision, userContext, *feature, exp, experimentDecision)
+			return &decision
+		}
+		return nil
+	}
+
+	for index := 0; index < numberOfExperiments-1; index++ {
+		loggingKey := strconv.Itoa(index + 1)
+		experiment := &rollout.Experiments[index]
+
+		// Checking for forced decision
+		if forcedDecision := checkForForcedDecision(experiment); forcedDecision != nil {
+			return *forcedDecision, reasons, nil
 		}
 
 		experimentDecisionContext := getExperimentDecisionContext(experiment)
@@ -125,14 +133,8 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	experiment := &rollout.Experiments[numberOfExperiments-1]
 
 	// Checking for forced decision
-	forcedDecision, _reasons := r.getForcedDecision(decisionContext, *experiment, options)
-	reasons.Append(_reasons)
-	if forcedDecision != nil {
-		experimentDecision := &ExperimentDecision{
-			Variation: forcedDecision,
-			Decision:  Decision{Reason: pkgReasons.ForcedDecisionFound},
-		}
-		return r.getFeatureDecision(&featureDecision, userContext, *feature, experiment, experimentDecision), reasons, nil
+	if forcedDecision := checkForForcedDecision(experiment); forcedDecision != nil {
+		return *forcedDecision, reasons, nil
 	}
 
 	experimentDecisionContext := getExperimentDecisionContext(experiment)

@@ -200,8 +200,75 @@ func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTest() {
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTestWithForcedDecision() {
+	numberOfNotifications := 0
+	testForcedDecision := func(flagKey, ruleKey, experimentID, variationKey, reason string, expectedEventCount int) {
+		variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
+		s.Nil(err)
+
+		note := notification.DecisionNotification{}
+		callback := func(notification notification.DecisionNotification) {
+			note = notification
+			numberOfNotifications++
+		}
+		notificationID, err := s.OptimizelyClient.DecisionService.OnDecision(callback)
+		s.NoError(err)
+
+		user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
+		user.forcedDecisionService.SetForcedDecision(flagKey, ruleKey, variationKey)
+		decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+		s.OptimizelyClient.DecisionService.RemoveOnDecision(notificationID)
+
+		s.Equal(variationKey, decision.VariationKey)
+		s.Equal(false, decision.Enabled)
+		s.Equal(variablesExpected.ToMap(), decision.Variables.ToMap())
+		s.Equal(ruleKey, decision.RuleKey)
+		s.Equal(flagKey, decision.FlagKey)
+		s.Equal(user, decision.UserContext)
+		reasons := decision.Reasons
+		s.Len(reasons, 1)
+		s.Equal(reason, reasons[0])
+
+		s.True(len(s.eventProcessor.Events) == expectedEventCount)
+		s.Equal(s.userID, s.eventProcessor.Events[expectedEventCount-1].VisitorID)
+
+		impressionEvent := s.eventProcessor.Events[expectedEventCount-1].Impression
+		s.Equal(flagKey, impressionEvent.Metadata.FlagKey)
+		s.Equal(ruleKey, impressionEvent.Metadata.RuleKey)
+		s.Equal("feature-test", impressionEvent.Metadata.RuleType)
+		s.Equal(variationKey, impressionEvent.Metadata.VariationKey)
+		s.Equal(false, impressionEvent.Metadata.Enabled)
+		s.Equal(experimentID, impressionEvent.ExperimentID)
+		s.Equal("10416523121", impressionEvent.VariationID)
+
+		// Checking notification data
+		s.Equal(note.DecisionInfo["flagKey"], impressionEvent.Metadata.FlagKey)
+		s.Equal(note.DecisionInfo["ruleKey"], impressionEvent.Metadata.RuleKey)
+		s.Equal(note.DecisionInfo["enabled"], impressionEvent.Metadata.Enabled)
+		s.Equal(note.DecisionInfo["variationKey"], impressionEvent.Metadata.VariationKey)
+	}
+
+	// valid rule key
+	expectedEventCount := 1
 	flagKey := "feature_1"
 	ruleKey := "exp_with_audience"
+	experimentID := "10390977673"
+	variationKey := "b"
+	reason := `Variation (b) is mapped to flag feature_1, rule exp_with_audience and user (tester) in the forced decision map.`
+	testForcedDecision(flagKey, ruleKey, experimentID, variationKey, reason, expectedEventCount)
+
+	// empty rule key
+	expectedEventCount = 2
+	ruleKey = ""
+	experimentID = ""
+	reason = `Variation (b) is mapped to flag feature_1 and user (tester) in the forced decision map.`
+	testForcedDecision(flagKey, ruleKey, experimentID, variationKey, reason, expectedEventCount)
+
+	s.Equal(2, numberOfNotifications)
+}
+
+func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTestWithForcedDecisionEmptyRuleKey() {
+	flagKey := "feature_1"
+	ruleKey := ""
 	variationKey := "b"
 	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
 	s.Nil(err)
@@ -218,7 +285,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTestWithForcedDecision
 	s.Equal(user, decision.UserContext)
 	reasons := decision.Reasons
 	s.Len(reasons, 1)
-	s.Equal(`Variation (b) is mapped to flag feature_1, rule exp_with_audience and user (tester) in the forced decision map.`, reasons[0])
+	s.Equal(`Variation (b) is mapped to flag feature_1 and user (tester) in the forced decision map.`, reasons[0])
 
 	s.True(len(s.eventProcessor.Events) == 1)
 	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
@@ -229,7 +296,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTestWithForcedDecision
 	s.Equal("feature-test", impressionEvent.Metadata.RuleType)
 	s.Equal(variationKey, impressionEvent.Metadata.VariationKey)
 	s.Equal(false, impressionEvent.Metadata.Enabled)
-	s.Equal("10390977673", impressionEvent.ExperimentID)
+	s.Equal("", impressionEvent.ExperimentID)
 	s.Equal("10416523121", impressionEvent.VariationID)
 }
 

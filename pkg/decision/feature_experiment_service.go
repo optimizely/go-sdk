@@ -48,14 +48,14 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 
 		// Checking for forced decision
 		if decisionContext.ForcedDecisionService != nil {
-			forcedDecision, reasons, err := decisionContext.ForcedDecisionService.FindValidatedForcedDecision(decisionContext.ProjectConfig, feature.Key, featureExperiment.Key, options)
+			forcedDecision, _reasons, err := decisionContext.ForcedDecisionService.FindValidatedForcedDecision(decisionContext.ProjectConfig, feature.Key, featureExperiment.Key, options)
 			if err == nil {
 				featureDecision := FeatureDecision{
 					Experiment: featureExperiment,
 					Variation:  forcedDecision,
 					Source:     FeatureTest,
 				}
-
+				reasons.Append(_reasons)
 				return featureDecision, reasons, nil
 			}
 		}
