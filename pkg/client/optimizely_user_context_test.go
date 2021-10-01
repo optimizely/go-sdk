@@ -62,6 +62,7 @@ func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextWithAttributes
 	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 	s.Equal(s.userID, optimizelyUserContext.GetUserID())
 	s.Equal(attributes, optimizelyUserContext.GetUserAttributes())
+	s.Equal(nil, optimizelyUserContext.forcedDecisionService)
 }
 
 func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextNoAttributes() {
@@ -1049,6 +1050,32 @@ func (s *OptimizelyUserContextTestSuite) TestDecideForKeysErrorDecisionIncluded(
 	reasons = decision.Reasons
 	s.Len(reasons, 1)
 	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey2), reasons[0])
+}
+
+func (s *OptimizelyUserContextTestSuite) TestForcedDecision() {
+	flagKeyA := "feature_1"
+	flagKeyB := "feature_2"
+	ruleKey := ""
+	variationKeyA := "a"
+	variationKeyB := "b"
+
+	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
+	s.Nil(user.forcedDecisionService)
+
+	s.True(user.SetForcedDecision(flagKeyA, ruleKey, variationKeyA))
+	s.NotNil(user.forcedDecisionService)
+
+	s.True(user.SetForcedDecision(flagKeyB, ruleKey, variationKeyB))
+	s.Equal(variationKeyA, user.GetForcedDecision(flagKeyA, ruleKey))
+	s.Equal(variationKeyB, user.GetForcedDecision(flagKeyB, ruleKey))
+
+	s.True(user.RemoveForcedDecision(flagKeyA, ruleKey))
+	s.Equal("", user.GetForcedDecision(flagKeyA, ruleKey))
+	s.Equal(variationKeyB, user.GetForcedDecision(flagKeyB, ruleKey))
+
+	s.True(user.RemoveAllForcedDecisions())
+	s.Equal("", user.GetForcedDecision(flagKeyA, ruleKey))
+	s.Equal("", user.GetForcedDecision(flagKeyB, ruleKey))
 }
 
 func TestOptimizelyUserContextTestSuite(t *testing.T) {

@@ -127,3 +127,18 @@ func (f *ForcedDecisionService) getFlagVariationByKey(projectConfig config.Proje
 	}
 	return nil, errors.New("variation not found")
 }
+
+// CreateCopy creates and returns a copy of the forced decision service.
+func (f *ForcedDecisionService) CreateCopy() *ForcedDecisionService {
+	f.mutex.RLock()
+	defer f.mutex.RUnlock()
+	forceDecisions := map[forcedDecision]string{}
+	for k, v := range f.forcedDecisions {
+		forceDecisions[k] = v
+	}
+	return &ForcedDecisionService{
+		UserID:          f.UserID,
+		forcedDecisions: forceDecisions,
+		mutex:           new(sync.RWMutex),
+	}
+}

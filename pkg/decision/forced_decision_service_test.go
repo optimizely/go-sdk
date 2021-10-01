@@ -167,6 +167,17 @@ func (s *ForcedDecisionServiceTestSuite) TestFindValidatedForcedDecision() {
 	s.Nil(variation)
 }
 
+func (s *ForcedDecisionServiceTestSuite) TestCreateCopy() {
+	s.True(s.forcedDecisionService.SetForcedDecision("1", "2", "3"))
+	s.True(s.forcedDecisionService.SetForcedDecision("1", "2", ""))
+
+	ucCopy := s.forcedDecisionService.CreateCopy()
+	s.Equal(len(s.forcedDecisionService.forcedDecisions), len(ucCopy.forcedDecisions))
+
+	ucCopy.RemoveAllForcedDecisions()
+	s.NotEqual(len(s.forcedDecisionService.forcedDecisions), len(ucCopy.forcedDecisions))
+}
+
 func (s *ForcedDecisionServiceTestSuite) TestAsyncBehaviour() {
 	var wg sync.WaitGroup
 	wg.Add(2)
