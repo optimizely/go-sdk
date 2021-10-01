@@ -74,7 +74,9 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 		}
 	}()
 
-	decisionContext := decision.FeatureDecisionContext{ForcedDecisionService: &(*userContext.forcedDecisionService)}
+	decisionContext := decision.FeatureDecisionContext{
+		ForcedDecisionService: userContext.forcedDecisionService,
+	}
 	projectConfig, err := o.getProjectConfig()
 	if err != nil {
 		return NewErrorDecision(key, userContext, decide.GetDecideError(decide.SDKNotReady))
@@ -97,17 +99,28 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	decisionReasons := decide.NewDecisionReasons(&allOptions)
 	decisionContext.Variable = entities.Variable{}
 	var featureDecision decision.FeatureDecision
+	var reasons decide.DecisionReasons
 
-	// check forced-decisions first
-	// Passing empty rule-key because checking mapping with flagKey only
-	variation, reasons, err := userContext.forcedDecisionService.FindValidatedForcedDecision(projectConfig, key, "", &allOptions)
-	decisionReasons.Append(reasons)
-	if err == nil {
-		featureDecision = decision.FeatureDecision{Decision: decision.Decision{Reason: pkgReasons.ForcedDecisionFound}, Variation: variation, Source: decision.FeatureTest}
-	} else {
+	// To avoid cyclo-complexity warning
+	findRegularDecision := func() {
 		// regular decision
 		featureDecision, reasons, err = o.DecisionService.GetFeatureDecision(decisionContext, usrContext, &allOptions)
 		decisionReasons.Append(reasons)
+	}
+
+	// check forced-decisions first
+	// Passing empty rule-key because checking mapping with flagKey only
+	if userContext.forcedDecisionService != nil {
+		var variation *entities.Variation
+		variation, reasons, err = userContext.forcedDecisionService.FindValidatedForcedDecision(projectConfig, key, "", &allOptions)
+		decisionReasons.Append(reasons)
+		if err != nil {
+			findRegularDecision()
+		} else {
+			featureDecision = decision.FeatureDecision{Decision: decision.Decision{Reason: pkgReasons.ForcedDecisionFound}, Variation: variation, Source: decision.FeatureTest}
+		}
+	} else {
+		findRegularDecision()
 	}
 
 	if err != nil {

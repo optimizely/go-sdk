@@ -62,7 +62,7 @@ func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextWithAttributes
 	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 	s.Equal(s.userID, optimizelyUserContext.GetUserID())
 	s.Equal(attributes, optimizelyUserContext.GetUserAttributes())
-	s.Equal(nil, optimizelyUserContext.forcedDecisionService)
+	s.Nil(optimizelyUserContext.forcedDecisionService)
 }
 
 func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextNoAttributes() {
@@ -215,7 +215,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTestWithForcedDecision
 		s.NoError(err)
 
 		user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-		user.forcedDecisionService.SetForcedDecision(flagKey, ruleKey, variationKey)
+		user.SetForcedDecision(flagKey, ruleKey, variationKey)
 		decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 		s.OptimizelyClient.DecisionService.RemoveOnDecision(notificationID)
 
@@ -275,7 +275,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTestWithForcedDecision
 	s.Nil(err)
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-	user.forcedDecisionService.SetForcedDecision(flagKey, ruleKey, variationKey)
+	user.SetForcedDecision(flagKey, ruleKey, variationKey)
 	decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 
 	s.Equal(variationKey, decision.VariationKey)
@@ -357,7 +357,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideRolloutWithForcedDecision() {
 	s.Nil(err)
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-	user.forcedDecisionService.SetForcedDecision(flagKey, ruleKey, variationKey)
+	user.SetForcedDecision(flagKey, ruleKey, variationKey)
 	decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 
 	s.Equal(variationKey, decision.VariationKey)
@@ -1059,9 +1059,14 @@ func (s *OptimizelyUserContextTestSuite) TestForcedDecision() {
 	variationKeyA := "a"
 	variationKeyB := "b"
 
+	// checking with nil forcedDecisionService
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 	s.Nil(user.forcedDecisionService)
+	s.Equal("", user.GetForcedDecision(flagKeyA, ruleKey))
+	s.False(user.RemoveForcedDecision(flagKeyA, ruleKey))
+	s.False(user.RemoveAllForcedDecisions())
 
+	// checking if forcedDecisionService was created using SetForcedDecision
 	s.True(user.SetForcedDecision(flagKeyA, ruleKey, variationKeyA))
 	s.NotNil(user.forcedDecisionService)
 

@@ -43,10 +43,11 @@ func newOptimizelyUserContext(optimizely *OptimizelyClient, userID string, attri
 	}
 	attributesCopy := copyUserAttributes(attributes)
 	return OptimizelyUserContext{
-		UserID:     userID,
-		Attributes: attributesCopy,
-		optimizely: optimizely,
-		mutex:      new(sync.RWMutex),
+		UserID:                userID,
+		Attributes:            attributesCopy,
+		optimizely:            optimizely,
+		forcedDecisionService: forcedDecisionService,
+		mutex:                 new(sync.RWMutex),
 	}
 }
 
@@ -67,6 +68,13 @@ func (o OptimizelyUserContext) GetUserAttributes() map[string]interface{} {
 	return copyUserAttributes(o.Attributes)
 }
 
+func (o OptimizelyUserContext) getForcedDecisionService() *decision.ForcedDecisionService {
+	if o.forcedDecisionService != nil {
+		return o.forcedDecisionService.CreateCopy()
+	}
+	return nil
+}
+
 // SetAttribute sets an attribute for a given key.
 func (o *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
 	o.mutex.Lock()
@@ -81,21 +89,21 @@ func (o *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
 // all data required to deliver the flag or experiment.
 func (o *OptimizelyUserContext) Decide(key string, options []decide.OptimizelyDecideOptions) OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
-	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.forcedDecisionService.CreateCopy())
+	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService())
 	return o.optimizely.decide(userContextCopy, key, convertDecideOptions(options))
 }
 
 // DecideAll returns a key-map of decision results for all active flag keys with options.
 func (o *OptimizelyUserContext) DecideAll(options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
-	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.forcedDecisionService.CreateCopy())
+	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService())
 	return o.optimizely.decideAll(userContextCopy, convertDecideOptions(options))
 }
 
 // DecideForKeys returns a key-map of decision results for multiple flag keys and options.
 func (o *OptimizelyUserContext) DecideForKeys(keys []string, options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
-	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.forcedDecisionService.CreateCopy())
+	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService())
 	return o.optimizely.decideForKeys(userContextCopy, keys, convertDecideOptions(options))
 }
 
@@ -128,6 +136,9 @@ func (o *OptimizelyUserContext) GetForcedDecision(flagKey, ruleKey string) strin
 		o.optimizely.logger.Error("Optimizely instance is not valid, failing getForcedDecision call.", err)
 		return ""
 	}
+	if o.forcedDecisionService == nil {
+		return ""
+	}
 	return o.forcedDecisionService.GetForcedDecision(flagKey, ruleKey)
 }
 
@@ -137,6 +148,9 @@ func (o *OptimizelyUserContext) RemoveForcedDecision(flagKey, ruleKey string) bo
 		o.optimizely.logger.Error("Optimizely instance is not valid, failing removeForcedDecision call.", err)
 		return false
 	}
+	if o.forcedDecisionService == nil {
+		return false
+	}
 	return o.forcedDecisionService.RemoveForcedDecision(flagKey, ruleKey)
 }
 
@@ -144,6 +158,9 @@ func (o *OptimizelyUserContext) RemoveForcedDecision(flagKey, ruleKey string) bo
 func (o *OptimizelyUserContext) RemoveAllForcedDecisions() bool {
 	if _, err := o.optimizely.getProjectConfig(); err != nil {
 		o.optimizely.logger.Error("Optimizely instance is not valid, failing removeForcedDecision call.", err)
+		return false
+	}
+	if o.forcedDecisionService == nil {
 		return false
 	}
 	return o.forcedDecisionService.RemoveAllForcedDecisions()
