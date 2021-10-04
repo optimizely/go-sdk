@@ -161,7 +161,7 @@ func (o *OptimizelyUserContext) RemoveAllForcedDecisions() bool {
 		return false
 	}
 	if o.forcedDecisionService == nil {
-		return false
+		return true
 	}
 	return o.forcedDecisionService.RemoveAllForcedDecisions()
 }

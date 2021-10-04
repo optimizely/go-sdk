@@ -1064,7 +1064,7 @@ func (s *OptimizelyUserContextTestSuite) TestForcedDecision() {
 	s.Nil(user.forcedDecisionService)
 	s.Equal("", user.GetForcedDecision(flagKeyA, ruleKey))
 	s.False(user.RemoveForcedDecision(flagKeyA, ruleKey))
-	s.False(user.RemoveAllForcedDecisions())
+	s.True(user.RemoveAllForcedDecisions())
 
 	// checking if forcedDecisionService was created using SetForcedDecision
 	s.True(user.SetForcedDecision(flagKeyA, ruleKey, variationKeyA))
