@@ -272,7 +272,6 @@ func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.U
 
 // IsFeatureEnabled returns true if the feature is enabled for the given user. If the user is part of a feature test
 // then an impression event will be queued up to be sent to the Optimizely log endpoint for results processing.
-// Deprecated: Use 'decide' methods of 'OptimizelyUserContext' instead.
 func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entities.UserContext) (result bool, err error) {
 
 	defer func() {
@@ -327,7 +326,6 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 
 // GetEnabledFeatures returns an array containing the keys of all features in the project that are enabled for the given
 // user. For features tests, impression events will be queued up to be sent to the Optimizely log endpoint for results processing.
-// Deprecated: Use 'decide' methods of 'OptimizelyUserContext' instead.
 func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) (enabledFeatures []string, err error) {
 
 	defer func() {
@@ -362,7 +360,6 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 }
 
 // GetFeatureVariableBoolean returns the feature variable value of type bool associated with the given feature and variable keys.
-// Deprecated: Use 'decide' methods of 'OptimizelyUserContext' instead.
 func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey, variableKey string, userContext entities.UserContext) (convertedValue bool, err error) {
 
 	stringValue, variableType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
@@ -396,7 +393,6 @@ func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey, variableKey str
 }
 
 // GetFeatureVariableDouble returns the feature variable value of type double associated with the given feature and variable keys.
-// Deprecated: Use 'decide' methods of 'OptimizelyUserContext' instead.
 func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey, variableKey string, userContext entities.UserContext) (convertedValue float64, err error) {
 
 	stringValue, variableType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
@@ -430,7 +426,6 @@ func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey, variableKey stri
 }
 
 // GetFeatureVariableInteger returns the feature variable value of type int associated with the given feature and variable keys.
-// Deprecated: Use 'decide' methods of 'OptimizelyUserContext' instead.
 func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey, variableKey string, userContext entities.UserContext) (convertedValue int, err error) {
 
 	stringValue, variableType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
@@ -464,7 +459,6 @@ func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey, variableKey str
 }
 
 // GetFeatureVariableString returns the feature variable value of type string associated with the given feature and variable keys.
-// Deprecated: Use 'decide' methods of 'OptimizelyUserContext' instead.
 func (o *OptimizelyClient) GetFeatureVariableString(featureKey, variableKey string, userContext entities.UserContext) (stringValue string, err error) {
 
 	stringValue, variableType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
@@ -496,7 +490,6 @@ func (o *OptimizelyClient) GetFeatureVariableString(featureKey, variableKey stri
 }
 
 // GetFeatureVariableJSON returns the feature variable value of type json associated with the given feature and variable keys.
-// Deprecated: Use 'decide' methods of 'OptimizelyUserContext' instead.
 func (o *OptimizelyClient) GetFeatureVariableJSON(featureKey, variableKey string, userContext entities.UserContext) (optlyJSON *optimizelyjson.OptimizelyJSON, err error) {
 
 	stringVal, variableType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
@@ -594,7 +587,6 @@ func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, us
 }
 
 // GetAllFeatureVariablesWithDecision returns all the variables for a given feature along with the enabled state.
-// Deprecated: Use 'decide' methods of 'OptimizelyUserContext' instead.
 func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]interface{}, err error) {
 
 	variableMap = make(map[string]interface{})
@@ -712,7 +704,6 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 }
 
 // GetAllFeatureVariables returns all the variables as OptimizelyJSON object for a given feature.
-// Deprecated: Use 'decide' methods of 'OptimizelyUserContext' instead.
 func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext entities.UserContext) (optlyJSON *optimizelyjson.OptimizelyJSON, err error) {
 	_, variableMap, err := o.GetAllFeatureVariablesWithDecision(featureKey, userContext)
 	if err != nil {
