@@ -1052,6 +1052,25 @@ func (s *OptimizelyUserContextTestSuite) TestDecideForKeysErrorDecisionIncluded(
 	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey2), reasons[0])
 }
 
+func (s *OptimizelyUserContextTestSuite) TestForcedDecisionWithNilConfig() {
+	s.OptimizelyClient.ConfigManager = nil
+
+	flagKeyA := "feature_1"
+	ruleKey := ""
+	variationKeyA := "a"
+
+	// checking with nil forcedDecisionService
+	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
+	s.Nil(user.forcedDecisionService)
+
+	s.False(user.SetForcedDecision(flagKeyA, ruleKey, variationKeyA))
+	s.Nil(user.forcedDecisionService)
+
+	s.Equal("", user.GetForcedDecision(flagKeyA, ruleKey))
+	s.False(user.RemoveForcedDecision(flagKeyA, ruleKey))
+	s.False(user.RemoveAllForcedDecisions())
+}
+
 func (s *OptimizelyUserContextTestSuite) TestForcedDecision() {
 	flagKeyA := "feature_1"
 	flagKeyB := "feature_2"
