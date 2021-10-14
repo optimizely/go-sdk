@@ -104,9 +104,9 @@ func (f *ForcedDecisionService) FindValidatedForcedDecision(projectConfig config
 	}
 
 	_variation, err := f.getFlagVariationByKey(projectConfig, flagKey, variationKey)
-	target := "flag " + flagKey
+	target := "flag (" + flagKey + ")"
 	if ruleKey != "" {
-		target += ", rule " + ruleKey
+		target += ", rule (" + ruleKey + ")"
 	}
 
 	if err != nil {

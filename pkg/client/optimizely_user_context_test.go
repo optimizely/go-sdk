@@ -254,14 +254,14 @@ func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTestWithForcedDecision
 	ruleKey := "exp_with_audience"
 	experimentID := "10390977673"
 	variationKey := "b"
-	reason := `Variation (b) is mapped to flag feature_1, rule exp_with_audience and user (tester) in the forced decision map.`
+	reason := `Variation (b) is mapped to flag (feature_1), rule (exp_with_audience) and user (tester) in the forced decision map.`
 	testForcedDecision(flagKey, ruleKey, experimentID, variationKey, reason, expectedEventCount)
 
 	// empty rule key
 	expectedEventCount = 2
 	ruleKey = ""
 	experimentID = ""
-	reason = `Variation (b) is mapped to flag feature_1 and user (tester) in the forced decision map.`
+	reason = `Variation (b) is mapped to flag (feature_1) and user (tester) in the forced decision map.`
 	testForcedDecision(flagKey, ruleKey, experimentID, variationKey, reason, expectedEventCount)
 
 	s.Equal(2, numberOfNotifications)
@@ -286,7 +286,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTestWithForcedDecision
 	s.Equal(user, decision.UserContext)
 	reasons := decision.Reasons
 	s.Len(reasons, 1)
-	s.Equal(`Variation (b) is mapped to flag feature_1 and user (tester) in the forced decision map.`, reasons[0])
+	s.Equal(`Variation (b) is mapped to flag (feature_1) and user (tester) in the forced decision map.`, reasons[0])
 
 	s.True(len(s.eventProcessor.Events) == 1)
 	s.Equal(s.userID, s.eventProcessor.Events[0].VisitorID)
@@ -373,7 +373,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideRolloutWithForcedDecision() {
 		`an error occurred while evaluating nested tree for audience ID "13389141123"`,
 		`Audiences for experiment exp_with_audience collectively evaluated to false.`,
 		`User "tester" does not meet conditions to be in experiment "exp_with_audience".`,
-		`Variation (3324490633) is mapped to flag feature_1, rule 3332020515 and user (tester) in the forced decision map.`,
+		`Variation (3324490633) is mapped to flag (feature_1), rule (3332020515) and user (tester) in the forced decision map.`,
 	}
 
 	for index, log := range expectedLogs {

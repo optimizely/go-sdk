@@ -259,7 +259,7 @@ func (s *RolloutServiceTestSuite) TestFallbackRuleWithForcedDecision() {
 	decision, rsons, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
 	messages := rsons.ToReport()
 	s.Len(messages, 1)
-	s.Equal(`Variation (2224) is mapped to flag test_feature_rollout_3334_key, rule test_experiment_1118 and user (test_user) in the forced decision map.`, messages[0])
+	s.Equal(`Variation (2224) is mapped to flag (test_feature_rollout_3334_key), rule (test_experiment_1118) and user (test_user) in the forced decision map.`, messages[0])
 
 	s.Equal(expectedFeatureDecision, decision)
 }
