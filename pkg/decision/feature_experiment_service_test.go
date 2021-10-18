@@ -108,11 +108,28 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithForcedDecision() 
 		Variation:  &expectedVariation,
 		Source:     FeatureTest,
 	}
-	decision, _, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options)
+	options := &decide.Options{IncludeReasons: true}
+	decision, reasons, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, options)
 	s.Equal(expectedFeatureDecision, decision)
+	s.Equal(expectedFeatureDecision, decision)
+	s.Equal("Variation (2223) is mapped to flag (test_feature_3335_key), rule (test_experiment_1113) and user (test_user) in the forced decision map.", reasons.ToReport()[0])
 	s.NoError(err)
 	// Makes sure that decision returned was a forcedDecision
-	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision", testExperimentDecisionContext, testUserContext, s.options)
+	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision", testExperimentDecisionContext, testUserContext, options)
+
+	// invalid forced decision
+	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(s.testFeatureDecisionContext.Feature.Key, testExp1113Key, "invalid")
+
+	expectedVariation = testExp1113.Variations["2223"]
+	returnExperimentDecision := ExperimentDecision{
+		Variation: &expectedVariation,
+	}
+	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext, testUserContext, options).Return(returnExperimentDecision, s.reasons, nil)
+	decision, reasons, err = featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, options)
+	s.Equal(expectedFeatureDecision, decision)
+	s.Equal("Invalid variation is mapped to flag (test_feature_3335_key), rule (test_experiment_1113) and user (test_user) in the forced decision map.", reasons.ToReport()[0])
+	s.NoError(err)
+	s.mockExperimentService.AssertExpectations(s.T())
 }
 
 func (s *FeatureExperimentServiceTestSuite) TestGetDecisionMutex() {

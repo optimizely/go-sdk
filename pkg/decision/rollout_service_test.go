@@ -165,12 +165,14 @@ func (s *RolloutServiceTestSuite) TestGetDecisionHappyPathWithForcedDecision() {
 			testExp1112Var2222,
 		},
 	}
+	s.options.IncludeReasons = true
 	s.mockConfig.On("GetFlagVariationsMap").Return(flagVariationsMap)
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "1"))
 	s.mockLogger.On("Debug", `Decision made for user "test_user" for feature rollout with key "test_feature_rollout_3334_key": Forced decision found.`)
 	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(s.testFeatureDecisionContext.Feature.Key, testExp1112.Key, testExp1112Var2222.Key)
-	decision, _, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
+	decision, rsons, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
 	s.Equal(expectedFeatureDecision, decision)
+	s.Equal("Variation (2222) is mapped to flag (test_feature_rollout_3334_key), rule (test_experiment_1112) and user (test_user) in the forced decision map.", rsons.ToReport()[0])
 }
 
 func (s *RolloutServiceTestSuite) TestGetDecisionFallbacksToLastWhenFailsBucketing() {
@@ -247,6 +249,9 @@ func (s *RolloutServiceTestSuite) TestFallbackRuleWithForcedDecision() {
 		},
 	}
 	s.mockConfig.On("GetFlagVariationsMap").Return(flagVariationsMap)
+
+	// Adding invalid forced decision to verify reasons
+	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(s.testFeatureDecisionContext.Feature.Key, testExp1112.Key, "invalid")
 	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(s.testFeatureDecisionContext.Feature.Key, testExp1118.Key, testExp1118Var2224.Key)
 
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "1"))
@@ -258,8 +263,9 @@ func (s *RolloutServiceTestSuite) TestFallbackRuleWithForcedDecision() {
 	s.options.IncludeReasons = true
 	decision, rsons, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
 	messages := rsons.ToReport()
-	s.Len(messages, 1)
-	s.Equal(`Variation (2224) is mapped to flag (test_feature_rollout_3334_key), rule (test_experiment_1118) and user (test_user) in the forced decision map.`, messages[0])
+	s.Len(messages, 2)
+	s.Equal(`Invalid variation is mapped to flag (test_feature_rollout_3334_key), rule (test_experiment_1112) and user (test_user) in the forced decision map.`, messages[0])
+	s.Equal(`Variation (2224) is mapped to flag (test_feature_rollout_3334_key), rule (test_experiment_1118) and user (test_user) in the forced decision map.`, messages[1])
 
 	s.Equal(expectedFeatureDecision, decision)
 }
