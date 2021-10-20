@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -25,8 +25,8 @@ import (
 
 // Service interface is used to make a decision for a given feature or experiment
 type Service interface {
-	GetFeatureDecision(FeatureDecisionContext, entities.UserContext, *decide.Options) (FeatureDecision, decide.DecisionReasons, error)
 	GetExperimentDecision(ExperimentDecisionContext, entities.UserContext, *decide.Options) (ExperimentDecision, decide.DecisionReasons, error)
+	GetFeatureDecision(FeatureDecisionContext, entities.UserContext, *decide.Options) (FeatureDecision, decide.DecisionReasons, error)
 	OnDecision(func(notification.DecisionNotification)) (int, error)
 	RemoveOnDecision(id int) error
 }

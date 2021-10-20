@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -31,9 +31,10 @@ type ExperimentDecisionContext struct {
 
 // FeatureDecisionContext contains the information needed to be able to make a decision for a given feature
 type FeatureDecisionContext struct {
-	Feature       *entities.Feature
-	ProjectConfig config.ProjectConfig
-	Variable      entities.Variable
+	Feature               *entities.Feature
+	ProjectConfig         config.ProjectConfig
+	Variable              entities.Variable
+	ForcedDecisionService *ForcedDecisionService
 }
 
 // UnsafeFeatureDecisionInfo represents response for GetDetailedFeatureDecisionUnsafe api

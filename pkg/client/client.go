@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -28,6 +28,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/decision"
+	pkgReasons "github.com/optimizely/go-sdk/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
@@ -52,7 +53,7 @@ type OptimizelyClient struct {
 // CreateUserContext creates a context of the user for which decision APIs will be called.
 // A user context will be created successfully even when the SDK is not fully configured yet.
 func (o *OptimizelyClient) CreateUserContext(userID string, attributes map[string]interface{}) OptimizelyUserContext {
-	return newOptimizelyUserContext(o, userID, attributes)
+	return newOptimizelyUserContext(o, userID, attributes, nil)
 }
 
 func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string, options *decide.Options) OptimizelyDecision {
@@ -73,7 +74,9 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 		}
 	}()
 
-	decisionContext := decision.FeatureDecisionContext{}
+	decisionContext := decision.FeatureDecisionContext{
+		ForcedDecisionService: userContext.forcedDecisionService,
+	}
 	projectConfig, err := o.getProjectConfig()
 	if err != nil {
 		return NewErrorDecision(key, userContext, decide.GetDecideError(decide.SDKNotReady))
@@ -95,9 +98,30 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	allOptions := o.getAllOptions(options)
 	decisionReasons := decide.NewDecisionReasons(&allOptions)
 	decisionContext.Variable = entities.Variable{}
+	var featureDecision decision.FeatureDecision
+	var reasons decide.DecisionReasons
 
-	featureDecision, reasons, err := o.DecisionService.GetFeatureDecision(decisionContext, usrContext, &allOptions)
-	decisionReasons.Append(reasons)
+	// To avoid cyclo-complexity warning
+	findRegularDecision := func() {
+		// regular decision
+		featureDecision, reasons, err = o.DecisionService.GetFeatureDecision(decisionContext, usrContext, &allOptions)
+		decisionReasons.Append(reasons)
+	}
+
+	// check forced-decisions first
+	// Passing empty rule-key because checking mapping with flagKey only
+	if userContext.forcedDecisionService != nil {
+		var variation *entities.Variation
+		variation, reasons, err = userContext.forcedDecisionService.FindValidatedForcedDecision(projectConfig, key, "", &allOptions)
+		decisionReasons.Append(reasons)
+		if err != nil {
+			findRegularDecision()
+		} else {
+			featureDecision = decision.FeatureDecision{Decision: decision.Decision{Reason: pkgReasons.ForcedDecisionFound}, Variation: variation, Source: decision.FeatureTest}
+		}
+	} else {
+		findRegularDecision()
+	}
 
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature "%s": %s`, key, err))

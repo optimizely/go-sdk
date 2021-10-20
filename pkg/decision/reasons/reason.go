@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                        *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -41,6 +41,8 @@ const (
 	NoRolloutForFeature Reason = "No rollout for feature"
 	// RolloutHasNoExperiments - the rollout has no assigned experiments
 	RolloutHasNoExperiments Reason = "Rollout has no experiments"
+	// ForcedDecisionFound - forced decision was found for provided flag and ruleKey against the user
+	ForcedDecisionFound Reason = "Forced decision found"
 	// NotBucketedIntoVariation - the user is not bucketed into a variation for the given experiment
 	NotBucketedIntoVariation Reason = "Not bucketed into a variation"
 	// NotInGroup - the user is not bucketed into the mutex group

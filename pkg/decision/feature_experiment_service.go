@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -45,6 +45,21 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 	reasons := decide.NewDecisionReasons(options)
 	// @TODO this can be improved by getting group ID first and determining experiment and then bucketing in experiment
 	for _, featureExperiment := range feature.FeatureExperiments {
+
+		// Checking for forced decision
+		if decisionContext.ForcedDecisionService != nil {
+			forcedDecision, _reasons, err := decisionContext.ForcedDecisionService.FindValidatedForcedDecision(decisionContext.ProjectConfig, feature.Key, featureExperiment.Key, options)
+			reasons.Append(_reasons)
+			if err == nil {
+				featureDecision := FeatureDecision{
+					Experiment: featureExperiment,
+					Variation:  forcedDecision,
+					Source:     FeatureTest,
+				}
+				return featureDecision, reasons, nil
+			}
+		}
+
 		experiment := featureExperiment
 		experimentDecisionContext := ExperimentDecisionContext{
 			Experiment:    &experiment,

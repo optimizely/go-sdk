@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -38,9 +38,10 @@ type FeatureExperimentServiceTestSuite struct {
 func (s *FeatureExperimentServiceTestSuite) SetupTest() {
 	s.mockConfig = new(mockProjectConfig)
 	s.testFeatureDecisionContext = FeatureDecisionContext{
-		Feature:       &testFeat3335,
-		ProjectConfig: s.mockConfig,
-		Variable:      testVariable,
+		Feature:               &testFeat3335,
+		ProjectConfig:         s.mockConfig,
+		Variable:              testVariable,
+		ForcedDecisionService: NewForcedDecisionService("test_user"),
 	}
 	s.mockExperimentService = new(MockExperimentDecisionService)
 	s.options = &decide.Options{}
@@ -74,6 +75,59 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecision() {
 	}
 	decision, _, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options)
 	s.Equal(expectedFeatureDecision, decision)
+	s.NoError(err)
+	s.mockExperimentService.AssertExpectations(s.T())
+}
+
+func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithForcedDecision() {
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	expectedVariation := testExp1113.Variations["2223"]
+	flagVariationsMap := map[string][]entities.Variation{
+		s.testFeatureDecisionContext.Feature.Key: {
+			expectedVariation,
+		},
+	}
+	s.mockConfig.On("GetFlagVariationsMap").Return(flagVariationsMap)
+	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(s.testFeatureDecisionContext.Feature.Key, testExp1113Key, expectedVariation.Key)
+
+	testExperimentDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1113,
+		ProjectConfig: s.mockConfig,
+	}
+
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	expectedFeatureDecision := FeatureDecision{
+		Experiment: *testExperimentDecisionContext.Experiment,
+		Variation:  &expectedVariation,
+		Source:     FeatureTest,
+	}
+	options := &decide.Options{IncludeReasons: true}
+	decision, reasons, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, options)
+	s.Equal(expectedFeatureDecision, decision)
+	s.Equal(expectedFeatureDecision, decision)
+	s.Equal("Variation (2223) is mapped to flag (test_feature_3335_key), rule (test_experiment_1113) and user (test_user) in the forced decision map.", reasons.ToReport()[0])
+	s.NoError(err)
+	// Makes sure that decision returned was a forcedDecision
+	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision", testExperimentDecisionContext, testUserContext, options)
+
+	// invalid forced decision
+	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(s.testFeatureDecisionContext.Feature.Key, testExp1113Key, "invalid")
+
+	expectedVariation = testExp1113.Variations["2223"]
+	returnExperimentDecision := ExperimentDecision{
+		Variation: &expectedVariation,
+	}
+	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext, testUserContext, options).Return(returnExperimentDecision, s.reasons, nil)
+	decision, reasons, err = featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, options)
+	s.Equal(expectedFeatureDecision, decision)
+	s.Equal("Invalid variation is mapped to flag (test_feature_3335_key), rule (test_experiment_1113) and user (test_user) in the forced decision map.", reasons.ToReport()[0])
 	s.NoError(err)
 	s.mockExperimentService.AssertExpectations(s.T())
 }

@@ -36,6 +36,7 @@ jobs:
     - <<: *test
       stage: 'Unit test'
       env: GIMME_GO_VERSION=1.10.x
+      dist: focal
       before_script:
         # GO module was not introduced earlier. need symlink to search in GOPATH
         - mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely optimizely && popd
