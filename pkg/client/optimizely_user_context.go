@@ -131,15 +131,15 @@ func (o *OptimizelyUserContext) SetForcedDecision(context pkgDecision.Optimizely
 }
 
 // GetForcedDecision returns the forced decision for a given flag and an optional rule
-func (o *OptimizelyUserContext) GetForcedDecision(context pkgDecision.OptimizelyDecisionContext) string {
+func (o *OptimizelyUserContext) GetForcedDecision(context pkgDecision.OptimizelyDecisionContext) pkgDecision.OptimizelyForcedDecision {
 	if _, err := o.optimizely.getProjectConfig(); err != nil {
 		o.optimizely.logger.Error("Optimizely instance is not valid, failing getForcedDecision call.", err)
-		return ""
+		return pkgDecision.OptimizelyForcedDecision{}
 	}
 	if o.forcedDecisionService == nil {
-		return ""
+		return pkgDecision.OptimizelyForcedDecision{}
 	}
-	return o.forcedDecisionService.GetForcedDecision(context).Variation
+	return o.forcedDecisionService.GetForcedDecision(context)
 }
 
 // RemoveForcedDecision removes the forced decision for a given flag and an optional rule.
