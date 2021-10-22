@@ -26,15 +26,21 @@ import (
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
-type forcedDecision struct {
-	flagKey string
-	ruleKey string
+// OptimizelyDecisionContext defines Decision Context
+type OptimizelyDecisionContext struct {
+	FlagKey string
+	RuleKey string
+}
+
+// OptimizelyForcedDecision defines Forced Decision
+type OptimizelyForcedDecision struct {
+	Variation string
 }
 
 // ForcedDecisionService defines user contexts that the SDK will use to make decisions for.
 type ForcedDecisionService struct {
 	UserID          string
-	forcedDecisions map[forcedDecision]string
+	forcedDecisions map[OptimizelyDecisionContext]OptimizelyForcedDecision
 	mutex           *sync.RWMutex
 }
 
@@ -42,7 +48,7 @@ type ForcedDecisionService struct {
 func NewForcedDecisionService(userID string) *ForcedDecisionService {
 	return &ForcedDecisionService{
 		UserID:          userID,
-		forcedDecisions: map[forcedDecision]string{},
+		forcedDecisions: map[OptimizelyDecisionContext]OptimizelyForcedDecision{},
 		mutex:           new(sync.RWMutex),
 	}
 }
@@ -50,38 +56,38 @@ func NewForcedDecisionService(userID string) *ForcedDecisionService {
 // SetForcedDecision sets the forced decision (variation key) for a given flag and an optional rule.
 // if rule key is empty, forced decision will be mapped against the flagKey.
 // returns true if the forced decision has been set successfully.
-func (f *ForcedDecisionService) SetForcedDecision(flagKey, ruleKey, variationKey string) bool {
-	if flagKey == "" {
+func (f *ForcedDecisionService) SetForcedDecision(context OptimizelyDecisionContext, decision OptimizelyForcedDecision) bool {
+	if context.FlagKey == "" {
 		return false
 	}
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
-	f.forcedDecisions[forcedDecision{flagKey: flagKey, ruleKey: ruleKey}] = variationKey
+	f.forcedDecisions[context] = decision
 	return true
 }
 
 // GetForcedDecision returns the forced decision for a given flag and an optional rule
 // if rule key is empty, forced decision will be returned for the flagKey.
-func (f *ForcedDecisionService) GetForcedDecision(flagKey, ruleKey string) string {
+func (f *ForcedDecisionService) GetForcedDecision(context OptimizelyDecisionContext) OptimizelyForcedDecision {
 	f.mutex.RLock()
 	defer f.mutex.RUnlock()
+	decision := OptimizelyForcedDecision{}
 	if len(f.forcedDecisions) == 0 {
-		return ""
+		return decision
 	}
-	if variationKey, ok := f.forcedDecisions[forcedDecision{flagKey: flagKey, ruleKey: ruleKey}]; ok {
-		return variationKey
+	if forcedDecision, ok := f.forcedDecisions[context]; ok {
+		decision.Variation = forcedDecision.Variation
 	}
-	return ""
+	return decision
 }
 
 // RemoveForcedDecision removes the forced decision for a given flag and an optional rule.
 // if rule key is empty, forced decision will be removed for the flagKey.
-func (f *ForcedDecisionService) RemoveForcedDecision(flagKey, ruleKey string) bool {
+func (f *ForcedDecisionService) RemoveForcedDecision(context OptimizelyDecisionContext) bool {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
-	decision := forcedDecision{flagKey: flagKey, ruleKey: ruleKey}
-	if f.forcedDecisions[decision] != "" {
-		f.forcedDecisions[decision] = ""
+	if f.forcedDecisions[context].Variation != "" {
+		f.forcedDecisions[context] = OptimizelyForcedDecision{}
 		return true
 	}
 	return false
@@ -91,29 +97,29 @@ func (f *ForcedDecisionService) RemoveForcedDecision(flagKey, ruleKey string) bo
 func (f *ForcedDecisionService) RemoveAllForcedDecisions() bool {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
-	f.forcedDecisions = map[forcedDecision]string{}
+	f.forcedDecisions = map[OptimizelyDecisionContext]OptimizelyForcedDecision{}
 	return true
 }
 
 // FindValidatedForcedDecision returns validated forced decision.
-func (f *ForcedDecisionService) FindValidatedForcedDecision(projectConfig config.ProjectConfig, flagKey, ruleKey string, options *decide.Options) (variation *entities.Variation, reasons decide.DecisionReasons, err error) {
+func (f *ForcedDecisionService) FindValidatedForcedDecision(projectConfig config.ProjectConfig, context OptimizelyDecisionContext, options *decide.Options) (variation *entities.Variation, reasons decide.DecisionReasons, err error) {
 	decisionReasons := decide.NewDecisionReasons(options)
-	variationKey := f.GetForcedDecision(flagKey, ruleKey)
-	if variationKey == "" {
+	forcedDecision := f.GetForcedDecision(context)
+	if forcedDecision.Variation == "" {
 		return nil, decisionReasons, errors.New("decision not found")
 	}
 
-	_variation, err := f.getFlagVariationByKey(projectConfig, flagKey, variationKey)
-	target := "flag (" + flagKey + ")"
-	if ruleKey != "" {
-		target += ", rule (" + ruleKey + ")"
+	_variation, err := f.getFlagVariationByKey(projectConfig, context.FlagKey, forcedDecision.Variation)
+	target := "flag (" + context.FlagKey + ")"
+	if context.RuleKey != "" {
+		target += ", rule (" + context.RuleKey + ")"
 	}
 
 	if err != nil {
 		decisionReasons.AddInfo("Invalid variation is mapped to %s and user (%s) in the forced decision map.", target, f.UserID)
 		return nil, decisionReasons, err
 	}
-	decisionReasons.AddInfo("Variation (%s) is mapped to %s and user (%s) in the forced decision map.", variationKey, target, f.UserID)
+	decisionReasons.AddInfo("Variation (%s) is mapped to %s and user (%s) in the forced decision map.", forcedDecision.Variation, target, f.UserID)
 	return _variation, decisionReasons, nil
 }
 
@@ -132,7 +138,7 @@ func (f *ForcedDecisionService) getFlagVariationByKey(projectConfig config.Proje
 func (f *ForcedDecisionService) CreateCopy() *ForcedDecisionService {
 	f.mutex.RLock()
 	defer f.mutex.RUnlock()
-	forceDecisions := map[forcedDecision]string{}
+	forceDecisions := map[OptimizelyDecisionContext]OptimizelyForcedDecision{}
 	for k, v := range f.forcedDecisions {
 		forceDecisions[k] = v
 	}

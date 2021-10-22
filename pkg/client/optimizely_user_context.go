@@ -21,7 +21,7 @@ import (
 	"sync"
 
 	"github.com/optimizely/go-sdk/pkg/decide"
-	"github.com/optimizely/go-sdk/pkg/decision"
+	pkgDecision "github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
@@ -31,12 +31,12 @@ type OptimizelyUserContext struct {
 	Attributes map[string]interface{} `json:"attributes"`
 
 	optimizely            *OptimizelyClient
-	forcedDecisionService *decision.ForcedDecisionService
+	forcedDecisionService *pkgDecision.ForcedDecisionService
 	mutex                 *sync.RWMutex
 }
 
 // returns an instance of the optimizely user context.
-func newOptimizelyUserContext(optimizely *OptimizelyClient, userID string, attributes map[string]interface{}, forcedDecisionService *decision.ForcedDecisionService) OptimizelyUserContext {
+func newOptimizelyUserContext(optimizely *OptimizelyClient, userID string, attributes map[string]interface{}, forcedDecisionService *pkgDecision.ForcedDecisionService) OptimizelyUserContext {
 	// store a copy of the provided attributes so it isn't affected by changes made afterwards.
 	if attributes == nil {
 		attributes = map[string]interface{}{}
@@ -68,7 +68,7 @@ func (o OptimizelyUserContext) GetUserAttributes() map[string]interface{} {
 	return copyUserAttributes(o.Attributes)
 }
 
-func (o OptimizelyUserContext) getForcedDecisionService() *decision.ForcedDecisionService {
+func (o OptimizelyUserContext) getForcedDecisionService() *pkgDecision.ForcedDecisionService {
 	if o.forcedDecisionService != nil {
 		return o.forcedDecisionService.CreateCopy()
 	}
@@ -119,19 +119,19 @@ func (o *OptimizelyUserContext) TrackEvent(eventKey string, eventTags map[string
 
 // SetForcedDecision sets the forced decision (variation key) for a given flag and an optional rule.
 // returns true if the forced decision has been set successfully.
-func (o *OptimizelyUserContext) SetForcedDecision(flagKey, ruleKey, variationKey string) bool {
+func (o *OptimizelyUserContext) SetForcedDecision(context pkgDecision.OptimizelyDecisionContext, decision pkgDecision.OptimizelyForcedDecision) bool {
 	if _, err := o.optimizely.getProjectConfig(); err != nil {
 		o.optimizely.logger.Error("Optimizely instance is not valid, failing setForcedDecision call.", err)
 		return false
 	}
 	if o.forcedDecisionService == nil {
-		o.forcedDecisionService = decision.NewForcedDecisionService(o.GetUserID())
+		o.forcedDecisionService = pkgDecision.NewForcedDecisionService(o.GetUserID())
 	}
-	return o.forcedDecisionService.SetForcedDecision(flagKey, ruleKey, variationKey)
+	return o.forcedDecisionService.SetForcedDecision(context, decision)
 }
 
 // GetForcedDecision returns the forced decision for a given flag and an optional rule
-func (o *OptimizelyUserContext) GetForcedDecision(flagKey, ruleKey string) string {
+func (o *OptimizelyUserContext) GetForcedDecision(context pkgDecision.OptimizelyDecisionContext) string {
 	if _, err := o.optimizely.getProjectConfig(); err != nil {
 		o.optimizely.logger.Error("Optimizely instance is not valid, failing getForcedDecision call.", err)
 		return ""
@@ -139,11 +139,11 @@ func (o *OptimizelyUserContext) GetForcedDecision(flagKey, ruleKey string) strin
 	if o.forcedDecisionService == nil {
 		return ""
 	}
-	return o.forcedDecisionService.GetForcedDecision(flagKey, ruleKey)
+	return o.forcedDecisionService.GetForcedDecision(context).Variation
 }
 
 // RemoveForcedDecision removes the forced decision for a given flag and an optional rule.
-func (o *OptimizelyUserContext) RemoveForcedDecision(flagKey, ruleKey string) bool {
+func (o *OptimizelyUserContext) RemoveForcedDecision(context pkgDecision.OptimizelyDecisionContext) bool {
 	if _, err := o.optimizely.getProjectConfig(); err != nil {
 		o.optimizely.logger.Error("Optimizely instance is not valid, failing removeForcedDecision call.", err)
 		return false
@@ -151,7 +151,7 @@ func (o *OptimizelyUserContext) RemoveForcedDecision(flagKey, ruleKey string) bo
 	if o.forcedDecisionService == nil {
 		return false
 	}
-	return o.forcedDecisionService.RemoveForcedDecision(flagKey, ruleKey)
+	return o.forcedDecisionService.RemoveForcedDecision(context)
 }
 
 // RemoveAllForcedDecisions removes all forced decisions bound to this user context.

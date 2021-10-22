@@ -112,7 +112,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	// Passing empty rule-key because checking mapping with flagKey only
 	if userContext.forcedDecisionService != nil {
 		var variation *entities.Variation
-		variation, reasons, err = userContext.forcedDecisionService.FindValidatedForcedDecision(projectConfig, key, "", &allOptions)
+		variation, reasons, err = userContext.forcedDecisionService.FindValidatedForcedDecision(projectConfig, decision.OptimizelyDecisionContext{FlagKey: key, RuleKey: ""}, &allOptions)
 		decisionReasons.Append(reasons)
 		if err != nil {
 			findRegularDecision()
