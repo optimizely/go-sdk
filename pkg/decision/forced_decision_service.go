@@ -68,17 +68,18 @@ func (f *ForcedDecisionService) SetForcedDecision(context OptimizelyDecisionCont
 
 // GetForcedDecision returns the forced decision for a given flag and an optional rule
 // if rule key is empty, forced decision will be returned for the flagKey.
-func (f *ForcedDecisionService) GetForcedDecision(context OptimizelyDecisionContext) OptimizelyForcedDecision {
+func (f *ForcedDecisionService) GetForcedDecision(context OptimizelyDecisionContext) (OptimizelyForcedDecision, error) {
 	f.mutex.RLock()
 	defer f.mutex.RUnlock()
 	decision := OptimizelyForcedDecision{}
+	err := errors.New("decision not found")
 	if len(f.forcedDecisions) == 0 {
-		return decision
+		return decision, err
 	}
 	if forcedDecision, ok := f.forcedDecisions[context]; ok {
-		decision.Variation = forcedDecision.Variation
+		return forcedDecision, nil
 	}
-	return decision
+	return decision, err
 }
 
 // RemoveForcedDecision removes the forced decision for a given flag and an optional rule.
@@ -86,8 +87,11 @@ func (f *ForcedDecisionService) GetForcedDecision(context OptimizelyDecisionCont
 func (f *ForcedDecisionService) RemoveForcedDecision(context OptimizelyDecisionContext) bool {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
-	if f.forcedDecisions[context].Variation != "" {
-		f.forcedDecisions[context] = OptimizelyForcedDecision{}
+	if forcedDecision, ok := f.forcedDecisions[context]; ok && forcedDecision.Variation != "" {
+		// modify the copy
+		forcedDecision.Variation = ""
+		// reassign map entry
+		f.forcedDecisions[context] = forcedDecision
 		return true
 	}
 	return false
@@ -104,9 +108,9 @@ func (f *ForcedDecisionService) RemoveAllForcedDecisions() bool {
 // FindValidatedForcedDecision returns validated forced decision.
 func (f *ForcedDecisionService) FindValidatedForcedDecision(projectConfig config.ProjectConfig, context OptimizelyDecisionContext, options *decide.Options) (variation *entities.Variation, reasons decide.DecisionReasons, err error) {
 	decisionReasons := decide.NewDecisionReasons(options)
-	forcedDecision := f.GetForcedDecision(context)
-	if forcedDecision.Variation == "" {
-		return nil, decisionReasons, errors.New("decision not found")
+	forcedDecision, err := f.GetForcedDecision(context)
+	if err != nil {
+		return nil, decisionReasons, err
 	}
 
 	_variation, err := f.getFlagVariationByKey(projectConfig, context.FlagKey, forcedDecision.Variation)

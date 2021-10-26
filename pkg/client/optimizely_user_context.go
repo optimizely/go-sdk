@@ -18,6 +18,7 @@
 package client
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/optimizely/go-sdk/pkg/decide"
@@ -131,13 +132,14 @@ func (o *OptimizelyUserContext) SetForcedDecision(context pkgDecision.Optimizely
 }
 
 // GetForcedDecision returns the forced decision for a given flag and an optional rule
-func (o *OptimizelyUserContext) GetForcedDecision(context pkgDecision.OptimizelyDecisionContext) pkgDecision.OptimizelyForcedDecision {
+func (o *OptimizelyUserContext) GetForcedDecision(context pkgDecision.OptimizelyDecisionContext) (pkgDecision.OptimizelyForcedDecision, error) {
+	forcedDecision := pkgDecision.OptimizelyForcedDecision{}
 	if _, err := o.optimizely.getProjectConfig(); err != nil {
 		o.optimizely.logger.Error("Optimizely instance is not valid, failing getForcedDecision call.", err)
-		return pkgDecision.OptimizelyForcedDecision{}
+		return forcedDecision, err
 	}
 	if o.forcedDecisionService == nil {
-		return pkgDecision.OptimizelyForcedDecision{}
+		return forcedDecision, errors.New("decision not found")
 	}
 	return o.forcedDecisionService.GetForcedDecision(context)
 }
