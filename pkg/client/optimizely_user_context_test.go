@@ -215,7 +215,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTestWithForcedDecision
 		s.NoError(err)
 
 		user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-		user.SetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKey, RuleKey: ruleKey}, decision.OptimizelyForcedDecision{Variation: variationKey})
+		user.SetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKey, RuleKey: ruleKey}, decision.OptimizelyForcedDecision{VariationKey: variationKey})
 		decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 		s.OptimizelyClient.DecisionService.RemoveOnDecision(notificationID)
 
@@ -275,7 +275,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTestWithForcedDecision
 	s.Nil(err)
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-	user.SetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKey, RuleKey: ruleKey}, decision.OptimizelyForcedDecision{Variation: variationKey})
+	user.SetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKey, RuleKey: ruleKey}, decision.OptimizelyForcedDecision{VariationKey: variationKey})
 	decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 
 	s.Equal(variationKey, decision.VariationKey)
@@ -357,7 +357,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideRolloutWithForcedDecision() {
 	s.Nil(err)
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-	user.SetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKey, RuleKey: ruleKey}, decision.OptimizelyForcedDecision{Variation: variationKey})
+	user.SetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKey, RuleKey: ruleKey}, decision.OptimizelyForcedDecision{VariationKey: variationKey})
 	decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 
 	s.Equal(variationKey, decision.VariationKey)
@@ -1063,11 +1063,11 @@ func (s *OptimizelyUserContextTestSuite) TestForcedDecisionWithNilConfig() {
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 	s.Nil(user.forcedDecisionService)
 
-	s.False(user.SetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyA, RuleKey: ruleKey}, decision.OptimizelyForcedDecision{Variation: variationKeyA}))
+	s.False(user.SetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyA, RuleKey: ruleKey}, decision.OptimizelyForcedDecision{VariationKey: variationKeyA}))
 	s.Nil(user.forcedDecisionService)
 
 	forcedDecision, err := user.GetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyA, RuleKey: ruleKey})
-	s.Equal("", forcedDecision.Variation)
+	s.Equal("", forcedDecision.VariationKey)
 	s.Error(err)
 	s.False(user.RemoveForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyA, RuleKey: ruleKey}))
 	s.False(user.RemoveAllForcedDecisions())
@@ -1084,37 +1084,37 @@ func (s *OptimizelyUserContextTestSuite) TestForcedDecision() {
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 	s.Nil(user.forcedDecisionService)
 	forcedDecision, err := user.GetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyA, RuleKey: ruleKey})
-	s.Equal("", forcedDecision.Variation)
+	s.Equal("", forcedDecision.VariationKey)
 	s.Error(err)
 	s.False(user.RemoveForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyA, RuleKey: ruleKey}))
 	s.True(user.RemoveAllForcedDecisions())
 
 	// checking if forcedDecisionService was created using SetForcedDecision
-	s.True(user.SetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyA, RuleKey: ruleKey}, decision.OptimizelyForcedDecision{Variation: variationKeyA}))
+	s.True(user.SetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyA, RuleKey: ruleKey}, decision.OptimizelyForcedDecision{VariationKey: variationKeyA}))
 	s.NotNil(user.forcedDecisionService)
 
-	s.True(user.SetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyB, RuleKey: ruleKey}, decision.OptimizelyForcedDecision{Variation: variationKeyB}))
+	s.True(user.SetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyB, RuleKey: ruleKey}, decision.OptimizelyForcedDecision{VariationKey: variationKeyB}))
 	forcedDecision, err = user.GetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyA, RuleKey: ruleKey})
-	s.Equal(variationKeyA, forcedDecision.Variation)
+	s.Equal(variationKeyA, forcedDecision.VariationKey)
 	s.NoError(err)
 	forcedDecision, err = user.GetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyB, RuleKey: ruleKey})
-	s.Equal(variationKeyB, forcedDecision.Variation)
+	s.Equal(variationKeyB, forcedDecision.VariationKey)
 	s.NoError(err)
 
 	s.True(user.RemoveForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyA, RuleKey: ruleKey}))
 	forcedDecision, err = user.GetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyA, RuleKey: ruleKey})
-	s.Equal("", forcedDecision.Variation)
+	s.Equal("", forcedDecision.VariationKey)
 	s.NoError(err)
 	forcedDecision, err = user.GetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyB, RuleKey: ruleKey})
-	s.Equal(variationKeyB, forcedDecision.Variation)
+	s.Equal(variationKeyB, forcedDecision.VariationKey)
 	s.NoError(err)
 
 	s.True(user.RemoveAllForcedDecisions())
 	forcedDecision, err = user.GetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyA, RuleKey: ruleKey})
-	s.Equal("", forcedDecision.Variation)
+	s.Equal("", forcedDecision.VariationKey)
 	s.Error(err)
 	forcedDecision, err = user.GetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyB, RuleKey: ruleKey})
-	s.Equal("", forcedDecision.Variation)
+	s.Equal("", forcedDecision.VariationKey)
 	s.Error(err)
 }
 

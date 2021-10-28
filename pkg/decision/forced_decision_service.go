@@ -34,7 +34,7 @@ type OptimizelyDecisionContext struct {
 
 // OptimizelyForcedDecision defines Forced Decision
 type OptimizelyForcedDecision struct {
-	Variation string
+	VariationKey string
 }
 
 // ForcedDecisionService defines user contexts that the SDK will use to make decisions for.
@@ -87,9 +87,9 @@ func (f *ForcedDecisionService) GetForcedDecision(context OptimizelyDecisionCont
 func (f *ForcedDecisionService) RemoveForcedDecision(context OptimizelyDecisionContext) bool {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
-	if forcedDecision, ok := f.forcedDecisions[context]; ok && forcedDecision.Variation != "" {
+	if forcedDecision, ok := f.forcedDecisions[context]; ok && forcedDecision.VariationKey != "" {
 		// modify the copy
-		forcedDecision.Variation = ""
+		forcedDecision.VariationKey = ""
 		// reassign map entry
 		f.forcedDecisions[context] = forcedDecision
 		return true
@@ -113,7 +113,7 @@ func (f *ForcedDecisionService) FindValidatedForcedDecision(projectConfig config
 		return nil, decisionReasons, err
 	}
 
-	_variation, err := f.getFlagVariationByKey(projectConfig, context.FlagKey, forcedDecision.Variation)
+	_variation, err := f.getFlagVariationByKey(projectConfig, context.FlagKey, forcedDecision.VariationKey)
 	target := "flag (" + context.FlagKey + ")"
 	if context.RuleKey != "" {
 		target += ", rule (" + context.RuleKey + ")"
@@ -123,7 +123,7 @@ func (f *ForcedDecisionService) FindValidatedForcedDecision(projectConfig config
 		decisionReasons.AddInfo("Invalid variation is mapped to %s and user (%s) in the forced decision map.", target, f.UserID)
 		return nil, decisionReasons, err
 	}
-	decisionReasons.AddInfo("Variation (%s) is mapped to %s and user (%s) in the forced decision map.", forcedDecision.Variation, target, f.UserID)
+	decisionReasons.AddInfo("Variation (%s) is mapped to %s and user (%s) in the forced decision map.", forcedDecision.VariationKey, target, f.UserID)
 	return _variation, decisionReasons, nil
 }
 

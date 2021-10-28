@@ -169,7 +169,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionHappyPathWithForcedDecision() {
 	s.mockConfig.On("GetFlagVariationsMap").Return(flagVariationsMap)
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "1"))
 	s.mockLogger.On("Debug", `Decision made for user "test_user" for feature rollout with key "test_feature_rollout_3334_key": Forced decision found.`)
-	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: s.testFeatureDecisionContext.Feature.Key, RuleKey: testExp1112.Key}, OptimizelyForcedDecision{Variation: testExp1112Var2222.Key})
+	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: s.testFeatureDecisionContext.Feature.Key, RuleKey: testExp1112.Key}, OptimizelyForcedDecision{VariationKey: testExp1112Var2222.Key})
 	decision, rsons, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
 	s.Equal(expectedFeatureDecision, decision)
 	s.Equal("Variation (2222) is mapped to flag (test_feature_rollout_3334_key), rule (test_experiment_1112) and user (test_user) in the forced decision map.", rsons.ToReport()[0])
@@ -251,8 +251,8 @@ func (s *RolloutServiceTestSuite) TestFallbackRuleWithForcedDecision() {
 	s.mockConfig.On("GetFlagVariationsMap").Return(flagVariationsMap)
 
 	// Adding invalid forced decision to verify reasons
-	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: s.testFeatureDecisionContext.Feature.Key, RuleKey: testExp1112.Key}, OptimizelyForcedDecision{Variation: "invalid"})
-	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: s.testFeatureDecisionContext.Feature.Key, RuleKey: testExp1118.Key}, OptimizelyForcedDecision{Variation: testExp1118Var2224.Key})
+	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: s.testFeatureDecisionContext.Feature.Key, RuleKey: testExp1112.Key}, OptimizelyForcedDecision{VariationKey: "invalid"})
+	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: s.testFeatureDecisionContext.Feature.Key, RuleKey: testExp1118.Key}, OptimizelyForcedDecision{VariationKey: testExp1118Var2224.Key})
 
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "1"))
 	s.mockLogger.On("Debug", fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "1", true))

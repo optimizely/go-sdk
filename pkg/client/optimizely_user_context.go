@@ -118,7 +118,7 @@ func (o *OptimizelyUserContext) TrackEvent(eventKey string, eventTags map[string
 	return o.optimizely.Track(eventKey, userContext, eventTags)
 }
 
-// SetForcedDecision sets the forced decision (variation key) for a given flag and an optional rule.
+// SetForcedDecision sets the forced decision (variation key) for a given decision context (flag key and optional rule key).
 // returns true if the forced decision has been set successfully.
 func (o *OptimizelyUserContext) SetForcedDecision(context pkgDecision.OptimizelyDecisionContext, decision pkgDecision.OptimizelyForcedDecision) bool {
 	if _, err := o.optimizely.getProjectConfig(); err != nil {

@@ -91,7 +91,7 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithForcedDecision() 
 		},
 	}
 	s.mockConfig.On("GetFlagVariationsMap").Return(flagVariationsMap)
-	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: s.testFeatureDecisionContext.Feature.Key, RuleKey: testExp1113Key}, OptimizelyForcedDecision{Variation: expectedVariation.Key})
+	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: s.testFeatureDecisionContext.Feature.Key, RuleKey: testExp1113Key}, OptimizelyForcedDecision{VariationKey: expectedVariation.Key})
 
 	testExperimentDecisionContext := ExperimentDecisionContext{
 		Experiment:    &testExp1113,
@@ -118,7 +118,7 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithForcedDecision() 
 	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision", testExperimentDecisionContext, testUserContext, options)
 
 	// invalid forced decision
-	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: s.testFeatureDecisionContext.Feature.Key, RuleKey: testExp1113Key}, OptimizelyForcedDecision{Variation: "invalid"})
+	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: s.testFeatureDecisionContext.Feature.Key, RuleKey: testExp1113Key}, OptimizelyForcedDecision{VariationKey: "invalid"})
 
 	expectedVariation = testExp1113.Variations["2223"]
 	returnExperimentDecision := ExperimentDecision{
