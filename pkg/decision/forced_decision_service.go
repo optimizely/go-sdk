@@ -57,9 +57,6 @@ func NewForcedDecisionService(userID string) *ForcedDecisionService {
 // if rule key is empty, forced decision will be mapped against the flagKey.
 // returns true if the forced decision has been set successfully.
 func (f *ForcedDecisionService) SetForcedDecision(context OptimizelyDecisionContext, decision OptimizelyForcedDecision) bool {
-	if context.FlagKey == "" {
-		return false
-	}
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 	f.forcedDecisions[context] = decision

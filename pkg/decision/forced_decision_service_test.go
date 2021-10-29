@@ -52,12 +52,12 @@ func (s *ForcedDecisionServiceTestSuite) SetupTest() {
 func (s *ForcedDecisionServiceTestSuite) TestSetForcedDecision() {
 	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "1", RuleKey: "2"}, OptimizelyForcedDecision{VariationKey: "3"}))
 	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "1", RuleKey: "2"}, OptimizelyForcedDecision{VariationKey: ""}))
-	s.False(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: "2"}, OptimizelyForcedDecision{VariationKey: "3"}))
+	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: "2"}, OptimizelyForcedDecision{VariationKey: "3"}))
 	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "1", RuleKey: ""}, OptimizelyForcedDecision{VariationKey: "3"}))
 	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "1", RuleKey: ""}, OptimizelyForcedDecision{VariationKey: ""}))
-	s.False(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: "2"}, OptimizelyForcedDecision{VariationKey: ""}))
-	s.False(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: ""}, OptimizelyForcedDecision{VariationKey: "3"}))
-	s.False(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: ""}, OptimizelyForcedDecision{VariationKey: ""}))
+	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: "2"}, OptimizelyForcedDecision{VariationKey: ""}))
+	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: ""}, OptimizelyForcedDecision{VariationKey: "3"}))
+	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: ""}, OptimizelyForcedDecision{VariationKey: ""}))
 }
 
 func (s *ForcedDecisionServiceTestSuite) TestGetForcedDecision() {
@@ -81,10 +81,10 @@ func (s *ForcedDecisionServiceTestSuite) TestGetForcedDecision() {
 	s.Equal("", forcedDecision.VariationKey)
 	s.NoError(err)
 
-	s.False(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: "2"}, OptimizelyForcedDecision{VariationKey: "3"}))
+	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: "2"}, OptimizelyForcedDecision{VariationKey: "3"}))
 	forcedDecision, err = s.forcedDecisionService.GetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: "2"})
-	s.Equal("", forcedDecision.VariationKey)
-	s.Error(err)
+	s.Equal("3", forcedDecision.VariationKey)
+	s.NoError(err)
 
 	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "1", RuleKey: ""}, OptimizelyForcedDecision{VariationKey: "3"}))
 	forcedDecision, err = s.forcedDecisionService.GetForcedDecision(OptimizelyDecisionContext{FlagKey: "1", RuleKey: ""})
@@ -96,20 +96,20 @@ func (s *ForcedDecisionServiceTestSuite) TestGetForcedDecision() {
 	s.Equal("", forcedDecision.VariationKey)
 	s.NoError(err)
 
-	s.False(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: "2"}, OptimizelyForcedDecision{VariationKey: ""}))
+	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: "2"}, OptimizelyForcedDecision{VariationKey: ""}))
 	forcedDecision, err = s.forcedDecisionService.GetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: "2"})
 	s.Equal("", forcedDecision.VariationKey)
-	s.Error(err)
+	s.NoError(err)
 
-	s.False(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: ""}, OptimizelyForcedDecision{VariationKey: "3"}))
+	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: ""}, OptimizelyForcedDecision{VariationKey: "3"}))
+	forcedDecision, err = s.forcedDecisionService.GetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: ""})
+	s.Equal("3", forcedDecision.VariationKey)
+	s.NoError(err)
+
+	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: ""}, OptimizelyForcedDecision{VariationKey: ""}))
 	forcedDecision, err = s.forcedDecisionService.GetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: ""})
 	s.Equal("", forcedDecision.VariationKey)
-	s.Error(err)
-
-	s.False(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: ""}, OptimizelyForcedDecision{VariationKey: ""}))
-	forcedDecision, err = s.forcedDecisionService.GetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: ""})
-	s.Equal("", forcedDecision.VariationKey)
-	s.Error(err)
+	s.NoError(err)
 }
 
 func (s *ForcedDecisionServiceTestSuite) TestRemoveForcedDecision() {
@@ -123,11 +123,11 @@ func (s *ForcedDecisionServiceTestSuite) TestRemoveForcedDecision() {
 	s.Equal("", forcedDecision.VariationKey)
 	s.NoError(err)
 
-	s.False(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: "2"}, OptimizelyForcedDecision{VariationKey: "3"}))
-	s.False(s.forcedDecisionService.RemoveForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: "2"}))
+	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: "2"}, OptimizelyForcedDecision{VariationKey: "3"}))
+	s.True(s.forcedDecisionService.RemoveForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: "2"}))
 	forcedDecision, err = s.forcedDecisionService.GetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: "2"})
 	s.Equal("", forcedDecision.VariationKey)
-	s.Error(err)
+	s.NoError(err)
 
 	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "1", RuleKey: ""}, OptimizelyForcedDecision{VariationKey: "3"}))
 	s.True(s.forcedDecisionService.RemoveForcedDecision(OptimizelyDecisionContext{FlagKey: "1", RuleKey: ""}))
@@ -135,20 +135,20 @@ func (s *ForcedDecisionServiceTestSuite) TestRemoveForcedDecision() {
 	s.Equal("", forcedDecision.VariationKey)
 	s.NoError(err)
 
-	s.False(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: ""}, OptimizelyForcedDecision{VariationKey: "3"}))
-	s.False(s.forcedDecisionService.RemoveForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: ""}))
+	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: ""}, OptimizelyForcedDecision{VariationKey: "3"}))
+	s.True(s.forcedDecisionService.RemoveForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: ""}))
 	forcedDecision, err = s.forcedDecisionService.GetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: ""})
 	s.Equal("", forcedDecision.VariationKey)
-	s.Error(err)
+	s.NoError(err)
 }
 
 func (s *ForcedDecisionServiceTestSuite) TestRemoveAllForcedDecision() {
 	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "1", RuleKey: "a"}, OptimizelyForcedDecision{VariationKey: "b"}))
 	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "2", RuleKey: ""}, OptimizelyForcedDecision{VariationKey: "b"}))
-	s.False(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: "a"}, OptimizelyForcedDecision{VariationKey: "b"}))
-	s.False(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: ""}, OptimizelyForcedDecision{VariationKey: "b"}))
+	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: "a"}, OptimizelyForcedDecision{VariationKey: "b"}))
+	s.True(s.forcedDecisionService.SetForcedDecision(OptimizelyDecisionContext{FlagKey: "", RuleKey: ""}, OptimizelyForcedDecision{VariationKey: "b"}))
 
-	s.Len(s.forcedDecisionService.forcedDecisions, 2)
+	s.Len(s.forcedDecisionService.forcedDecisions, 4)
 	s.True(s.forcedDecisionService.RemoveAllForcedDecisions())
 	s.Len(s.forcedDecisionService.forcedDecisions, 0)
 
