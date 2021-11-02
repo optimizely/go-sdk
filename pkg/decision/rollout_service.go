@@ -179,7 +179,7 @@ func (r RolloutService) getFeatureDecision(featureDecision *FeatureDecision, use
 func (r RolloutService) getForcedDecision(decisionContext FeatureDecisionContext, experiment entities.Experiment, options *decide.Options) (variation *entities.Variation, reasons decide.DecisionReasons) {
 	reasons = decide.NewDecisionReasons(options)
 	if decisionContext.ForcedDecisionService != nil {
-		forcedDecision, _reasons, err := decisionContext.ForcedDecisionService.FindValidatedForcedDecision(decisionContext.ProjectConfig, decisionContext.Feature.Key, experiment.Key, options)
+		forcedDecision, _reasons, err := decisionContext.ForcedDecisionService.FindValidatedForcedDecision(decisionContext.ProjectConfig, OptimizelyDecisionContext{FlagKey: decisionContext.Feature.Key, RuleKey: experiment.Key}, options)
 		reasons.Append(_reasons)
 		if err == nil {
 			return forcedDecision, reasons
