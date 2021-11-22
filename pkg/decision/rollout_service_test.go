@@ -117,6 +117,52 @@ func (s *RolloutServiceTestSuite) TestGetDecisionWithNoExperiments() {
 	s.Equal(expectedFeatureDecision, decision)
 }
 
+func (s *RolloutServiceTestSuite) TestGetDecisionWithPausedExperiment() {
+	// Test experiment passes targeting and bucketing
+	testExperimentBucketerDecision := ExperimentDecision{
+		Variation: &testExp1117Var2223,
+		Decision:  Decision{Reason: reasons.BucketedIntoVariation},
+	}
+
+	// Pausing first rollout experiment
+	featureRollout := &testFeatRollout3334
+	featureRollout.Rollout.Experiments[0].IsExperimentRunning = false
+
+	s.testFeatureDecisionContext = FeatureDecisionContext{
+		Feature:               featureRollout,
+		ProjectConfig:         s.mockConfig,
+		ForcedDecisionService: NewForcedDecisionService("test_user"),
+	}
+
+	testExperiment1117DecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1117,
+		ProjectConfig: s.mockConfig,
+	}
+
+	s.mockAudienceTreeEvaluator.On("Evaluate", testExp1117.AudienceConditionTree, s.testConditionTreeParams, mock.Anything).Return(true, true, s.reasons)
+	s.mockExperimentService.On("GetDecision", testExperiment1117DecisionContext, s.testUserContext, s.options, mock.Anything).Return(testExperimentBucketerDecision, s.reasons, nil)
+
+	testRolloutService := RolloutService{
+		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
+		experimentBucketerService: s.mockExperimentService,
+		logger:                    s.mockLogger,
+	}
+	expectedFeatureDecision := FeatureDecision{
+		Experiment: testExp1117,
+		Variation:  &testExp1117Var2223,
+		Source:     Rollout,
+		Decision:   Decision{Reason: reasons.BucketedIntoRollout},
+	}
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.EvaluatingAudiencesForRollout.String(), "2"))
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "2", true))
+	s.mockLogger.On("Debug", `Decision made for user "test_user" for feature rollout with key "test_feature_rollout_3334_key": Bucketed into feature rollout.`)
+	decision, _, _ := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
+	s.Equal(expectedFeatureDecision, decision)
+	s.mockAudienceTreeEvaluator.AssertExpectations(s.T())
+	s.mockExperimentService.AssertExpectations(s.T())
+	s.mockLogger.AssertExpectations(s.T())
+}
+
 func (s *RolloutServiceTestSuite) TestGetDecisionHappyPath() {
 	// Test experiment passes targeting and bucketing
 	testExperimentBucketerDecision := ExperimentDecision{

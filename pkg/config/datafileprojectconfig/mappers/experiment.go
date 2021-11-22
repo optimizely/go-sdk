@@ -83,6 +83,7 @@ func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experimen
 		AudienceIds:           rawExperiment.AudienceIds,
 		AudienceConditions:    rawExperiment.AudienceConditions,
 		ID:                    rawExperiment.ID,
+		IsExperimentRunning:   rawExperiment.Status == "Running",
 		LayerID:               rawExperiment.LayerID,
 		Key:                   rawExperiment.Key,
 		Variations:            make(map[string]entities.Variation),

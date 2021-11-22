@@ -30,6 +30,7 @@ type Experiment struct {
 	AudienceIds           []string
 	AudienceConditions    interface{}
 	ID                    string
+	IsExperimentRunning   bool
 	LayerID               string
 	Key                   string
 	Variations            map[string]Variation // keyed by variation ID

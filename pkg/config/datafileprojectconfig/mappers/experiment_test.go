@@ -29,6 +29,7 @@ func TestMapExperiments(t *testing.T) {
 	const testExperimentString = `{
 		"audienceIds": ["31111"],
 		"id": "11111",
+		"status": "Running",
 		"key": "test_experiment_11111",
 		"variations": [
 			{
@@ -70,10 +71,11 @@ func TestMapExperiments(t *testing.T) {
 	experimentsIDMap, experimentKeyMap := MapExperiments(rawExperiments, experimentGroupMap)
 	expectedExperiments := map[string]entities.Experiment{
 		"11111": {
-			AudienceIds: []string{"31111"},
-			ID:          "11111",
-			GroupID:     "15",
-			Key:         "test_experiment_11111",
+			AudienceIds:         []string{"31111"},
+			ID:                  "11111",
+			IsExperimentRunning: true,
+			GroupID:             "15",
+			Key:                 "test_experiment_11111",
 			Variations: map[string]entities.Variation{
 				"21111": {
 					ID:             "21111",
@@ -129,6 +131,7 @@ func TestMapExperimentsWithStringAudienceCondition(t *testing.T) {
 		AudienceIds:        []string{"31111"},
 		Key:                "test_experiment_11111",
 		AudienceConditions: "31111",
+		Status:             "Paused",
 	}
 
 	rawExperiments := []datafileEntities.Experiment{rawExperiment}
@@ -139,6 +142,7 @@ func TestMapExperimentsWithStringAudienceCondition(t *testing.T) {
 		"11111": {
 			AudienceIds:         []string{"31111"},
 			ID:                  "11111",
+			IsExperimentRunning: false,
 			GroupID:             "15",
 			Key:                 "test_experiment_11111",
 			Variations:          map[string]entities.Variation{},

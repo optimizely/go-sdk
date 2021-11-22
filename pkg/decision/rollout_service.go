@@ -102,6 +102,11 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		loggingKey := strconv.Itoa(index + 1)
 		experiment := &rollout.Experiments[index]
 
+		// Only evaluate if experiment is running
+		if !experiment.IsExperimentRunning {
+			continue
+		}
+
 		// Checking for forced decision
 		if forcedDecision := checkForForcedDecision(experiment); forcedDecision != nil {
 			return *forcedDecision, reasons, nil

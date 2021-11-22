@@ -28,8 +28,9 @@ func TestMapRollouts(t *testing.T) {
 	const testRolloutString = `{
 		 "id": "21111",
 		 "experiments": [
-			 { "id": "11111", "key": "exp_11111" },
-			 { "id": "11112", "key": "exp_11112" }
+			 { "id": "11111", "key": "exp_11111", "status": "Running"},
+			 { "id": "11112", "key": "exp_11112", "status": "Paused"},
+			 { "id": "11113", "key": "exp_11113", "status": ""}
 		 ]
 	 }`
 
@@ -42,8 +43,9 @@ func TestMapRollouts(t *testing.T) {
 		"21111": {
 			ID: "21111",
 			Experiments: []entities.Experiment{
-				{ID: "11111", Key: "exp_11111", Variations: map[string]entities.Variation{}, VariationKeyToIDMap: map[string]string{}, TrafficAllocation: []entities.Range{}},
-				{ID: "11112", Key: "exp_11112", Variations: map[string]entities.Variation{}, VariationKeyToIDMap: map[string]string{}, TrafficAllocation: []entities.Range{}},
+				{ID: "11111", Key: "exp_11111", Variations: map[string]entities.Variation{}, VariationKeyToIDMap: map[string]string{}, TrafficAllocation: []entities.Range{}, IsExperimentRunning: true},
+				{ID: "11112", Key: "exp_11112", Variations: map[string]entities.Variation{}, VariationKeyToIDMap: map[string]string{}, TrafficAllocation: []entities.Range{}, IsExperimentRunning: false},
+				{ID: "11113", Key: "exp_11113", Variations: map[string]entities.Variation{}, VariationKeyToIDMap: map[string]string{}, TrafficAllocation: []entities.Range{}, IsExperimentRunning: false},
 			},
 		},
 	}
