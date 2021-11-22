@@ -31,6 +31,7 @@ type Experiment struct {
 	AudienceConditions    interface{}
 	ID                    string
 	IsExperimentRunning   bool
+	IsFeatureExperiment   bool
 	LayerID               string
 	Key                   string
 	Variations            map[string]Variation // keyed by variation ID
@@ -39,7 +40,6 @@ type Experiment struct {
 	GroupID               string
 	AudienceConditionTree *TreeNode
 	Whitelist             map[string]string
-	IsFeatureExperiment   bool
 }
 
 // Range represents bucketing range that the specify entityID falls into
