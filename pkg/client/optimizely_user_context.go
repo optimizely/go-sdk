@@ -121,10 +121,6 @@ func (o *OptimizelyUserContext) TrackEvent(eventKey string, eventTags map[string
 // SetForcedDecision sets the forced decision (variation key) for a given decision context (flag key and optional rule key).
 // returns true if the forced decision has been set successfully.
 func (o *OptimizelyUserContext) SetForcedDecision(context pkgDecision.OptimizelyDecisionContext, decision pkgDecision.OptimizelyForcedDecision) bool {
-	if _, err := o.optimizely.getProjectConfig(); err != nil {
-		o.optimizely.logger.Error("Optimizely instance is not valid, failing setForcedDecision call.", err)
-		return false
-	}
 	if o.forcedDecisionService == nil {
 		o.forcedDecisionService = pkgDecision.NewForcedDecisionService(o.GetUserID())
 	}
@@ -133,23 +129,14 @@ func (o *OptimizelyUserContext) SetForcedDecision(context pkgDecision.Optimizely
 
 // GetForcedDecision returns the forced decision for a given flag and an optional rule
 func (o *OptimizelyUserContext) GetForcedDecision(context pkgDecision.OptimizelyDecisionContext) (pkgDecision.OptimizelyForcedDecision, error) {
-	forcedDecision := pkgDecision.OptimizelyForcedDecision{}
-	if _, err := o.optimizely.getProjectConfig(); err != nil {
-		o.optimizely.logger.Error("Optimizely instance is not valid, failing getForcedDecision call.", err)
-		return forcedDecision, err
-	}
 	if o.forcedDecisionService == nil {
-		return forcedDecision, errors.New("decision not found")
+		return pkgDecision.OptimizelyForcedDecision{}, errors.New("decision not found")
 	}
 	return o.forcedDecisionService.GetForcedDecision(context)
 }
 
 // RemoveForcedDecision removes the forced decision for a given flag and an optional rule.
 func (o *OptimizelyUserContext) RemoveForcedDecision(context pkgDecision.OptimizelyDecisionContext) bool {
-	if _, err := o.optimizely.getProjectConfig(); err != nil {
-		o.optimizely.logger.Error("Optimizely instance is not valid, failing removeForcedDecision call.", err)
-		return false
-	}
 	if o.forcedDecisionService == nil {
 		return false
 	}
@@ -158,10 +145,6 @@ func (o *OptimizelyUserContext) RemoveForcedDecision(context pkgDecision.Optimiz
 
 // RemoveAllForcedDecisions removes all forced decisions bound to this user context.
 func (o *OptimizelyUserContext) RemoveAllForcedDecisions() bool {
-	if _, err := o.optimizely.getProjectConfig(); err != nil {
-		o.optimizely.logger.Error("Optimizely instance is not valid, failing removeForcedDecision call.", err)
-		return false
-	}
 	if o.forcedDecisionService == nil {
 		return true
 	}
