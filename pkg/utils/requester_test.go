@@ -171,12 +171,36 @@ func TestPostObj(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestGetBad(t *testing.T) {
+// mockLogger exists to check that the logged error is what we expected
+type mockLogger struct {
+	Errors []error
+}
 
-	httpreq := NewHTTPRequester(logging.GetLogger("", ""))
-	_, _, _, err := httpreq.Get("blah12345/good")
-	_, ok := err.(*url.Error)
+func (t *mockLogger) Debug(message string)   {}
+func (t *mockLogger) Info(message string)    {}
+func (t *mockLogger) Warning(message string) {}
+func (t *mockLogger) Error(message string, err interface{}) {
+	t.Errors = append(t.Errors, err.(error))
+}
+
+func TestGetBad(t *testing.T) {
+	// Using a mockLogger to ensure we're logging the expected error message
+	mlog := &mockLogger{}
+	httpreq := NewHTTPRequester(mlog)
+
+	badURL := "blah12345/good"
+	_, _, _, err := httpreq.Get(badURL)
+	returnedErr, ok := err.(*url.Error)
 	assert.True(t, ok, "url error")
+
+	// Did we "log" the error?
+	assert.NotNil(t, mlog.Errors)
+	assert.Len(t, mlog.Errors, 1, "logged error")
+	// Check to make sure the error that was logged is the same as what was returned
+	loggedErr, ok := mlog.Errors[0].(*url.Error)
+	assert.True(t, ok, "is URL error")
+	assert.Equal(t, returnedErr, loggedErr, "expected same error")
+	assert.Equal(t, badURL, loggedErr.URL, "expected the URL we requested")
 }
 
 func TestGetBadWithResponse(t *testing.T) {
