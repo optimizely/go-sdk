@@ -135,7 +135,7 @@ func (r HTTPRequester) Do(url, method string, body io.Reader, headers []Header) 
 	single := func(request *http.Request) (response []byte, responseHeaders http.Header, code int, e error) {
 		resp, doErr := r.client.Do(request)
 		if doErr != nil {
-			r.logger.Error(fmt.Sprintf("failed to send request %v", request), e)
+			r.logger.Error(fmt.Sprintf("failed to send request %v", request), doErr)
 			return nil, http.Header{}, 0, doErr
 		}
 		defer func() {
