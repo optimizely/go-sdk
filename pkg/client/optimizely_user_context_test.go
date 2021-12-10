@@ -1063,14 +1063,14 @@ func (s *OptimizelyUserContextTestSuite) TestForcedDecisionWithNilConfig() {
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 	s.Nil(user.forcedDecisionService)
 
-	s.False(user.SetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyA, RuleKey: ruleKey}, decision.OptimizelyForcedDecision{VariationKey: variationKeyA}))
-	s.Nil(user.forcedDecisionService)
+	s.True(user.SetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyA, RuleKey: ruleKey}, decision.OptimizelyForcedDecision{VariationKey: variationKeyA}))
+	s.NotNil(user.forcedDecisionService)
 
 	forcedDecision, err := user.GetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyA, RuleKey: ruleKey})
-	s.Equal("", forcedDecision.VariationKey)
-	s.Error(err)
-	s.False(user.RemoveForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyA, RuleKey: ruleKey}))
-	s.False(user.RemoveAllForcedDecisions())
+	s.Equal(variationKeyA, forcedDecision.VariationKey)
+	s.NoError(err)
+	s.True(user.RemoveForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKeyA, RuleKey: ruleKey}))
+	s.True(user.RemoveAllForcedDecisions())
 }
 
 func (s *OptimizelyUserContextTestSuite) TestForcedDecision() {
