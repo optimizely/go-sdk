@@ -5,7 +5,18 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-Changes that have landed but are not yet released.	Changes that have landed but are not yet released.
+Changes that have landed but are not yet released.
+
+## [1.8.0] - January 6, 2022
+
+### New Features
+* Add a set of new APIs for overriding and managing user-level flag, experiment and delivery rule decisions. These methods can be used for QA and automated testing purposes. They are an extension of the OptimizelyUserContext interface ([#324](https://github.com/optimizely/go-sdk/pull/324), [#326](https://github.com/optimizely/go-sdk/pull/326), [#328](https://github.com/optimizely/go-sdk/pull/328)):
+	- setForcedDecision
+	- getForcedDecision
+	- removeForcedDecision
+	- removeAllForcedDecisions
+
+* For details, refer to our documentation pages: [OptimizelyUserContext](https://docs.developers.optimizely.com/full-stack/v4.0/docs/optimizelyusercontext-go) and [Forced Decision methods](https://docs.developers.optimizely.com/full-stack/v4.0/docs/forced-decision-methods-go).
 
 ## [1.7.0] - September 17, 2021
 
