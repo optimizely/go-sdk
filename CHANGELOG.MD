@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.
 
-## [1.8.0] - January 6, 2022
+## [1.8.0] - January 12, 2022
 
 ### New Features
 * Add a set of new APIs for overriding and managing user-level flag, experiment and delivery rule decisions. These methods can be used for QA and automated testing purposes. They are an extension of the OptimizelyUserContext interface ([#324](https://github.com/optimizely/go-sdk/pull/324), [#326](https://github.com/optimizely/go-sdk/pull/326), [#328](https://github.com/optimizely/go-sdk/pull/328)):
