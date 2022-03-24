@@ -49,6 +49,58 @@ jobs:
         go-version: '1.18'
         check-latest: true
     - run: make cover
+
+  unit_test:
+    runs-on: ubuntu-latest
+    env: 
+      BUILD_DIR: ${{ github.workspace }}
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '1.10.8'
+        check-latest: false
+    - run: |
+        # GO module was not introduced earlier. need symlink to search in GOPATH
+        mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely optimizely && popd
+        # Need to download packages explicitly
+        mkdir $GOPATH/src/github.com/twmb && cd $GOPATH/src/github.com/twmb && git clone https://github.com/twmb/murmur3.git && cd $BUILD_DIR
+        pushd $GOPATH/src/github.com/twmb/murmur3 && git checkout v1.0.0 && popd
+        mkdir $GOPATH/src/github.com/hashicorp && cd $GOPATH/src/github.com/hashicorp && git clone https://github.com/hashicorp/go-multierror.git && cd $BUILD_DIR
+        pushd $GOPATH/src/github.com/hashicorp/go-multierror && git checkout v1.0.0 && popd
+        mkdir $GOPATH/src/gopkg.in && cd $GOPATH/src/gopkg.in && git clone https://github.com/go-yaml/yaml.git && cd $BUILD_DIR
+        mv $GOPATH/src/gopkg.in/yaml $GOPATH/src/gopkg.in/yaml.v2 && pushd $GOPATH/src/gopkg.in/yaml.v2  && git checkout v2.2.2 && popd
+        go get -v -d ./...
+        # This pkg not in go 1.10
+        go get -d -v github.com/stretchr/testify
+        pushd $GOPATH/src/github.com/stretchr/testify && git checkout v1.4.0 && popd
+        # -coverprofile was not introduced in 1.10
+        make test
+  
+  unit_test:
+    runs-on: ubuntu-latest
+    env: 
+      COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '1.14.15'
+        check-latest: false
+    - run: |
+        go get github.com/mattn/goveralls
+        make cover
+        $GOPATH/bin/goveralls -coverprofile=profile.cov -service=github
+
+  benchmark_test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '1.18'
+        check-latest: true
+    - run: make benchmark
   
   # build:
   #   runs-on: ubuntu-latest
