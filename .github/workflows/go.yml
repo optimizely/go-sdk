@@ -62,7 +62,7 @@ jobs:
         go-version: '1.10.8'
         check-latest: false
     - run: |
-        mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely optimizely && popd
+        mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $GOPATH optimizely/go-sdk && popd
         mkdir $GOPATH/src/github.com/twmb && cd $GOPATH/src/github.com/twmb && git clone https://github.com/twmb/murmur3.git && cd $BUILD_DIR
         pushd $GOPATH/src/github.com/twmb/murmur3 && git checkout v1.0.0 && popd
         mkdir $GOPATH/src/github.com/hashicorp && cd $GOPATH/src/github.com/hashicorp && git clone https://github.com/hashicorp/go-multierror.git && cd $BUILD_DIR
