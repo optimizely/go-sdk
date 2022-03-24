@@ -77,8 +77,7 @@ jobs:
   unit_test_coverage:
     runs-on: ubuntu-latest
     env: 
-      COVERALLS_TOKEN: ${{ secrets.CI_USER_TOKEN }}
-      GOBIN: ${{ github.workspace }}/bin
+      COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-go@v2
@@ -86,9 +85,10 @@ jobs:
         go-version: '1.14.15'
         check-latest: false
     - run: |
-        go get github.com/mattn/goveralls
-        make cover
-        $GOBIN/goveralls -coverprofile=profile.cov -service=github
+        go mod download
+        go test -race -covermode atomic -coverprofile=covprofile ./...
+        go install github.com/mattn/goveralls@latest
+        goveralls -coverprofile=covprofile -service=github
 
   benchmark_test:
     runs-on: ubuntu-latest
