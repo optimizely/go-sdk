@@ -34,11 +34,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Lint
-      uses: actions/setup-go@v2
+    - uses: actions/setup-go@v2
       with:
-        go-version: '^1.13.1'
+        go-version: '1.13.15'
+        check-latest: false
     - run: make install lint
+
+  unit_test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '1.18'
+        check-latest: true
+    - run: make cover
+  
   # build:
   #   runs-on: ubuntu-latest
   #   steps:
