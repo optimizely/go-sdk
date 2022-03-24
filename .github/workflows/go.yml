@@ -40,26 +40,27 @@ jobs:
         check-latest: false
     - run: make install lint
 
-  unit_test:
+  unit_test_latest:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-
-    - name: test go latest
-      uses: actions/setup-go@v2
+    - uses: actions/setup-go@v2
       with:
         go-version: '1.18'
         check-latest: true
-      run: make cover
+    - run: make cover
 
-    - name: test go 1.10.8
-      env: 
-        BUILD_DIR: ${{ github.workspace }}
-      uses: actions/setup-go@v2
+  unit_test_legacy:
+    runs-on: ubuntu-latest
+    env: 
+      BUILD_DIR: ${{ github.workspace }}
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v2
       with:
         go-version: '1.10.8'
         check-latest: false
-      run: |
+    - run: |
         # GO module was not introduced earlier. need symlink to search in GOPATH
         mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $HOME/build/optimizely optimizely && popd
         # Need to download packages explicitly
@@ -76,14 +77,17 @@ jobs:
         # -coverprofile was not introduced in 1.10
         make test
           
-    - name: test go 1.14.15 with code coverage
-      env: 
-        COVERALLS_TOKEN: ${{ secrets.CI_USER_TOKEN }}
-      uses: actions/setup-go@v2
+  unit_test_coverage:
+    runs-on: ubuntu-latest
+    env: 
+      COVERALLS_TOKEN: ${{ secrets.CI_USER_TOKEN }}
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v2
       with:
         go-version: '1.14.15'
         check-latest: false
-      run: |
+    - run: |
         go get github.com/mattn/goveralls
         make cover
         $GOPATH/bin/goveralls -coverprofile=profile.cov -service=github
