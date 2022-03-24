@@ -85,10 +85,9 @@ jobs:
         go-version: '1.14.15'
         check-latest: false
     - run: |
-        go mod download
-        go test -race -covermode atomic -coverprofile=covprofile ./...
-        go install github.com/mattn/goveralls@latest
-        goveralls -coverprofile=covprofile -service=github
+        make cover
+        go get github.com/mattn/goveralls
+        goveralls -coverprofile=profile.cov -service=github
 
   benchmark_test:
     runs-on: ubuntu-latest
