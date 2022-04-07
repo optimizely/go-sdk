@@ -3,6 +3,9 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/optimizely/go-sdk)](https://goreportcard.com/report/github.com/optimizely/go-sdk)
 [![Coverage Status](https://coveralls.io/repos/github/optimizely/go-sdk/badge.svg?branch=master)](https://coveralls.io/github/optimizely/go-sdk?branch=master)
 
+## Introduction
+This repository houses the Go SDK for use with Optimizely Full Stack and Optimizely Rollouts. For more information, visit our [developer documentation](https://docs.developers.optimizely.com/experimentation/v4.0.0-full-stack/docs/go-sdk).
+
 ## Installation
 
 ### Install from github:
