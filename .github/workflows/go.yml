@@ -5,11 +5,6 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
-  workflow_dispatch:
-    inputs:
-      SNAPSHOT:
-        type: boolean
-        description: Set SNAPSHOT true to publish
 
 env:
   GO111MODULE: on
@@ -37,7 +32,6 @@ jobs:
     - uses: actions/setup-go@v2
       with:
         go-version: '1.13.15'
-        check-latest: false
     - run: make install lint
 
   unit_test_latest:
@@ -60,7 +54,6 @@ jobs:
     - uses: actions/setup-go@v2
       with:
         go-version: '1.10.8'
-        check-latest: false
     - run: |
         mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $GOPATH optimizely/go-sdk && popd
         mkdir $GOPATH/src/github.com/twmb && cd $GOPATH/src/github.com/twmb && git clone https://github.com/twmb/murmur3.git && cd $BUILD_DIR
@@ -83,7 +76,6 @@ jobs:
     - uses: actions/setup-go@v2
       with:
         go-version: '1.14.15'
-        check-latest: false
     - run: |
         make cover
         go get github.com/mattn/goveralls
