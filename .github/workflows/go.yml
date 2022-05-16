@@ -1,0 +1,94 @@
+name: Go
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  GO111MODULE: on
+
+jobs:
+  lint_markdown_files:
+    uses: optimizely/go-sdk/.github/workflows/lint_markdown.yml@master
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '1.13.15'
+    - run: make install lint
+
+  unit_test_latest:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '1.18'
+        check-latest: true
+    - run: make cover
+
+  unit_test_legacy:
+    runs-on: ubuntu-latest
+    env: 
+      BUILD_DIR: ${{ github.workspace }}
+      GOPATH: ${{ github.workspace }}
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '1.10.8'
+    - run: |
+        mkdir -p $GOPATH/src/github.com && pushd $GOPATH/src/github.com && ln -s $GOPATH optimizely/go-sdk && popd
+        mkdir $GOPATH/src/github.com/twmb && cd $GOPATH/src/github.com/twmb && git clone https://github.com/twmb/murmur3.git && cd $BUILD_DIR
+        pushd $GOPATH/src/github.com/twmb/murmur3 && git checkout v1.0.0 && popd
+        mkdir $GOPATH/src/github.com/hashicorp && cd $GOPATH/src/github.com/hashicorp && git clone https://github.com/hashicorp/go-multierror.git && cd $BUILD_DIR
+        pushd $GOPATH/src/github.com/hashicorp/go-multierror && git checkout v1.0.0 && popd
+        mkdir $GOPATH/src/gopkg.in && cd $GOPATH/src/gopkg.in && git clone https://github.com/go-yaml/yaml.git && cd $BUILD_DIR
+        mv $GOPATH/src/gopkg.in/yaml $GOPATH/src/gopkg.in/yaml.v2 && pushd $GOPATH/src/gopkg.in/yaml.v2  && git checkout v2.2.2 && popd
+        go get -v -d ./...
+        go get -d -v github.com/stretchr/testify
+        pushd $GOPATH/src/github.com/stretchr/testify && git checkout v1.4.0 && popd
+        make test
+          
+  unit_test_coverage:
+    runs-on: ubuntu-latest
+    env: 
+      COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '1.14.15'
+    - run: |
+        make cover
+        go get github.com/mattn/goveralls
+        goveralls -coverprofile=profile.cov -service=github
+
+  benchmark_test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '1.18'
+        check-latest: true
+    - run: make benchmark
+
+  integration_tests:
+    uses: optimizely/go-sdk/.github/workflows/integration_test.yml@master
+    secrets:
+      CI_USER_TOKEN: ${{ secrets.CI_USER_TOKEN }}
+      TRAVIS_COM_TOKEN: ${{ secrets.TRAVIS_COM_TOKEN }}
+
+  fullstack_production_suite:
+    uses: optimizely/go-sdk/.github/workflows/integration_test.yml@master
+    with:
+      FULLSTACK_TEST_REPO: ProdTesting
+    secrets:
+      CI_USER_TOKEN: ${{ secrets.CI_USER_TOKEN }}
+      TRAVIS_COM_TOKEN: ${{ secrets.TRAVIS_COM_TOKEN }}
