@@ -50,6 +50,13 @@ type Header struct {
 	Name, Value string
 }
 
+// Client sets http client
+func Client(client http.Client) func(r *HTTPRequester) {
+	return func(r *HTTPRequester) {
+		r.client = client
+	}
+}
+
 // Timeout sets http client timeout
 func Timeout(timeout time.Duration) func(r *HTTPRequester) {
 	return func(r *HTTPRequester) {
