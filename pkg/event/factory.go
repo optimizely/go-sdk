@@ -243,7 +243,7 @@ func getEventAttributes(projectConfig config.ProjectConfig, attributes map[strin
 	var eventAttributes = []VisitorAttribute{}
 
 	for key, value := range attributes {
-		if value == nil {
+		if !isValidAttribute(value) {
 			continue
 		}
 		visitorAttribute := VisitorAttribute{}
@@ -290,4 +290,24 @@ func getTagValue(eventTags map[string]interface{}) (float64, error) {
 	}
 
 	return 0, errors.New("no event tag found for value")
+}
+
+// check if attribute value is valid
+func isValidAttribute(value interface{}) bool {
+	if value == nil {
+		return false
+	}
+	if _, ok := value.(string); ok {
+		return true
+	}
+	if _, ok := value.(float64); ok {
+		return true
+	}
+	if _, ok := value.(int); ok {
+		return true
+	}
+	if _, ok := value.(bool); ok {
+		return true
+	}
+	return false
 }

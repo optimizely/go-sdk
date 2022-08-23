@@ -234,3 +234,15 @@ func TestCreateImpressionUserEvent(t *testing.T) {
 		}
 	}
 }
+
+func TestIsValidAttribute(t *testing.T) {
+	assert.False(t, isValidAttribute(nil))
+	assert.False(t, isValidAttribute(map[string]interface{}{}))
+	assert.False(t, isValidAttribute([]string{}))
+	assert.False(t, isValidAttribute([]interface{}{}))
+	assert.False(t, isValidAttribute(make(chan int)))
+	assert.True(t, isValidAttribute("123"))
+	assert.True(t, isValidAttribute(1.11))
+	assert.True(t, isValidAttribute(1))
+	assert.True(t, isValidAttribute(true))
+}
