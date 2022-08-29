@@ -18,7 +18,7 @@
 package event
 
 // Version is the current version of the client
-var Version = "1.8.0"
+var Version = "1.8.1"
 
 // ClientName is the name of the client
 var ClientName = "go-sdk"
