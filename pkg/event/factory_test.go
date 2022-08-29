@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2022 Optimizely, Inc. and contributors                    *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -233,4 +233,16 @@ func TestCreateImpressionUserEvent(t *testing.T) {
 			assert.Equal(t, true, metaData.Enabled)
 		}
 	}
+}
+
+func TestIsValidAttribute(t *testing.T) {
+	assert.False(t, isValidAttribute(nil))
+	assert.False(t, isValidAttribute(map[string]interface{}{}))
+	assert.False(t, isValidAttribute([]string{}))
+	assert.False(t, isValidAttribute([]interface{}{}))
+	assert.False(t, isValidAttribute(make(chan int)))
+	assert.True(t, isValidAttribute("123"))
+	assert.True(t, isValidAttribute(1.11))
+	assert.True(t, isValidAttribute(1))
+	assert.True(t, isValidAttribute(true))
 }
