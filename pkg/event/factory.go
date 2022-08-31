@@ -297,17 +297,10 @@ func isValidAttribute(value interface{}) bool {
 	if value == nil {
 		return false
 	}
-	if _, ok := value.(string); ok {
+	switch value.(type) {
+	case string, float64, int, bool:
 		return true
+	default:
+		return false
 	}
-	if _, ok := value.(float64); ok {
-		return true
-	}
-	if _, ok := value.(int); ok {
-		return true
-	}
-	if _, ok := value.(bool); ok {
-		return true
-	}
-	return false
 }
