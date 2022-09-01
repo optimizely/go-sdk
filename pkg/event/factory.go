@@ -19,6 +19,9 @@ package event
 
 import (
 	"errors"
+	"fmt"
+	"math"
+	"reflect"
 	"strings"
 	"time"
 
@@ -292,22 +295,76 @@ func getTagValue(eventTags map[string]interface{}) (float64, error) {
 	return 0, errors.New("no event tag found for value")
 }
 
+// Validates if the type of provided value is numeric.
+func isNumericType(value interface{}) (float64, error) {
+	switch i := value.(type) {
+	case int:
+		return float64(i), nil
+	case int8:
+		return float64(i), nil
+	case int16:
+		return float64(i), nil
+	case int32:
+		return float64(i), nil
+	case int64:
+		return float64(i), nil
+	case uint:
+		return float64(i), nil
+	case uint8:
+		return float64(i), nil
+	case uint16:
+		return float64(i), nil
+	case uint32:
+		return float64(i), nil
+	case uint64:
+		return float64(i), nil
+	case uintptr:
+		return float64(i), nil
+	case float32:
+		return float64(i), nil
+	case float64:
+		return i, nil
+	default:
+		v := reflect.ValueOf(value)
+		v = reflect.Indirect(v)
+		return math.NaN(), fmt.Errorf("can't convert %v to float64", v.Type())
+	}
+}
+
+// Validates if the provided value is a valid numeric value.
+func isValidNumericValue(value interface{}) bool {
+	if floatValue, err := isNumericType(value); err == nil {
+		if math.IsNaN(floatValue) {
+			return false
+		}
+		if math.IsInf(floatValue, 1) {
+			return false
+		}
+		if math.IsInf(floatValue, -1) {
+			return false
+		}
+		if math.IsInf(floatValue, 0) {
+			return false
+		}
+		if math.Abs(floatValue) > math.Pow(2, 53) {
+			return false
+		}
+		return true
+	}
+	return false
+}
+
 // check if attribute value is valid
 func isValidAttribute(value interface{}) bool {
 	if value == nil {
 		return false
 	}
-	if _, ok := value.(string); ok {
+
+	switch value.(type) {
+	// https://go.dev/tour/basics/11
+	case bool, string:
 		return true
+	default:
+		return isValidNumericValue(value)
 	}
-	if _, ok := value.(float64); ok {
-		return true
-	}
-	if _, ok := value.(int); ok {
-		return true
-	}
-	if _, ok := value.(bool); ok {
-		return true
-	}
-	return false
 }
