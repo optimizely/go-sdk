@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.
 
+## [1.8.2] - September 1, 2022
+
+### Bug Fix
+* Add additional validation for numeric attribute types when building an event object. ([#341](https://github.com/optimizely/go-sdk/pull/341))
+
 ## [1.8.1] - August 29, 2022
 
 ### Bug Fix
