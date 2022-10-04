@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, 2021 Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2021-2022 Optimizely, Inc. and contributors               *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -19,7 +19,6 @@ package utils
 import (
 	"errors"
 	"fmt"
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -27,8 +26,28 @@ import (
 	"testing"
 	"time"
 
+	"github.com/optimizely/go-sdk/pkg/logging"
+
 	"github.com/stretchr/testify/assert"
 )
+
+func TestClientFunction(t *testing.T) {
+	requester := &HTTPRequester{}
+	fn := Client(http.Client{Timeout: 125})
+	fn(requester)
+	assert.Equal(t, time.Duration(125), requester.client.Timeout)
+}
+
+func TestNewHTTPRequesterWithClient(t *testing.T) {
+	fn := Client(http.Client{Timeout: 125})
+	requester := NewHTTPRequester(logging.GetLogger("", ""), fn)
+	assert.Equal(t, time.Duration(125), requester.client.Timeout)
+}
+
+func TestNewHTTPRequesterWithoutClient(t *testing.T) {
+	requester := NewHTTPRequester(logging.GetLogger("", ""))
+	assert.Equal(t, defaultTTL, requester.client.Timeout)
+}
 
 func TestHeaders(t *testing.T) {
 	requester := &HTTPRequester{}
