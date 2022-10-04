@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2022 Optimizely, Inc. and contributors                    *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -19,6 +19,7 @@ package event
 
 import (
 	"context"
+	"math"
 	"math/rand"
 	"testing"
 	"time"
@@ -114,6 +115,12 @@ func BuildTestConversionEvent() UserEvent {
 	return conversionUserEvent
 }
 
+func TestVisitorTimestampMatchesUserEventTimestamp(t *testing.T) {
+	impressionUserEvent := BuildTestImpressionEvent()
+	visitor := createVisitorFromUserEvent(impressionUserEvent)
+	assert.Equal(t, impressionUserEvent.Timestamp, visitor.Snapshots[0].Events[0].Timestamp)
+}
+
 func TestCreateEmptyEvent(t *testing.T) {
 	impressionUserEvent := BuildTestImpressionEvent()
 
@@ -176,6 +183,7 @@ func TestCreateConversionEventRevenue(t *testing.T) {
 	assert.Equal(t, 25.1, *conversionUserEvent.Conversion.Value)
 
 	batch := createBatchEvent(conversionUserEvent, createVisitorFromUserEvent(conversionUserEvent))
+	assert.Equal(t, conversionUserEvent.Timestamp, batch.Visitors[0].Snapshots[0].Events[0].Timestamp)
 	assert.Equal(t, int64(55), *batch.Visitors[0].Snapshots[0].Events[0].Revenue)
 	assert.Equal(t, 25.1, *batch.Visitors[0].Snapshots[0].Events[0].Value)
 
@@ -233,4 +241,44 @@ func TestCreateImpressionUserEvent(t *testing.T) {
 			assert.Equal(t, true, metaData.Enabled)
 		}
 	}
+}
+
+func TestIsValidAttribute(t *testing.T) {
+	assert.False(t, isValidAttribute(nil))
+	assert.False(t, isValidAttribute(map[string]interface{}{}))
+	assert.False(t, isValidAttribute([]string{}))
+	assert.False(t, isValidAttribute([]interface{}{}))
+	assert.False(t, isValidAttribute(make(chan int)))
+	assert.False(t, isValidAttribute(complex64(1234.1231)))
+	assert.False(t, isValidAttribute(complex128(123446.123123)))
+	assert.False(t, isValidAttribute(math.Pow(2, 54)))
+
+	assert.False(t, isValidAttribute(math.NaN()))
+	posInf := math.Inf(1)
+	assert.False(t, isValidAttribute(posInf))
+	posInf += 12.2 // infinite value will still propagate after add operation
+	assert.False(t, isValidAttribute(posInf))
+	negInf := math.Inf(-1)
+	assert.False(t, isValidAttribute(negInf))
+	negInf /= negInf // will turn infinite into NaN
+	assert.False(t, isValidAttribute(negInf))
+	assert.False(t, isValidAttribute(math.Inf(0)))
+
+	assert.True(t, isValidAttribute(bool(true)))
+	assert.True(t, isValidAttribute(string("abcd")))
+	assert.True(t, isValidAttribute(int(1)))
+	assert.True(t, isValidAttribute(int8(-12)))
+	assert.True(t, isValidAttribute(int16(-123)))
+	assert.True(t, isValidAttribute(int32(1234)))
+	assert.True(t, isValidAttribute(int64(123446)))
+	assert.True(t, isValidAttribute(uint(1)))
+	assert.True(t, isValidAttribute(uint8(12)))
+	assert.True(t, isValidAttribute(uint16(123)))
+	assert.True(t, isValidAttribute(uint32(1234)))
+	assert.True(t, isValidAttribute(uint64(123446)))
+	assert.True(t, isValidAttribute(uintptr(1)))
+	assert.True(t, isValidAttribute(float32(12.11)))
+	assert.True(t, isValidAttribute(float64(123.1231)))
+	assert.True(t, isValidAttribute(byte(134)))
+	assert.True(t, isValidAttribute(rune(123446)))
 }

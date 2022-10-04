@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2020,2022 Optimizely, Inc. and contributors               *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -19,6 +19,9 @@ package event
 
 import (
 	"errors"
+	"fmt"
+	"math"
+	"reflect"
 	"strings"
 	"time"
 
@@ -122,7 +125,7 @@ func createImpressionVisitor(userEvent UserEvent) Visitor {
 	decision.Metadata = userEvent.Impression.Metadata
 
 	dispatchEvent := SnapshotEvent{}
-	dispatchEvent.Timestamp = makeTimestamp()
+	dispatchEvent.Timestamp = userEvent.Timestamp
 	dispatchEvent.Key = userEvent.Impression.Key
 	dispatchEvent.EntityID = userEvent.Impression.EntityID
 	dispatchEvent.UUID = guuid.New().String()
@@ -186,7 +189,7 @@ func createVisitorFromUserEvent(event UserEvent) Visitor {
 func createConversionVisitor(userEvent UserEvent) Visitor {
 
 	dispatchEvent := SnapshotEvent{}
-	dispatchEvent.Timestamp = makeTimestamp()
+	dispatchEvent.Timestamp = userEvent.Timestamp
 	dispatchEvent.Key = userEvent.Conversion.Key
 	dispatchEvent.EntityID = userEvent.Conversion.EntityID
 	dispatchEvent.UUID = userEvent.UUID
@@ -243,7 +246,7 @@ func getEventAttributes(projectConfig config.ProjectConfig, attributes map[strin
 	var eventAttributes = []VisitorAttribute{}
 
 	for key, value := range attributes {
-		if value == nil {
+		if !isValidAttribute(value) {
 			continue
 		}
 		visitorAttribute := VisitorAttribute{}
@@ -290,4 +293,78 @@ func getTagValue(eventTags map[string]interface{}) (float64, error) {
 	}
 
 	return 0, errors.New("no event tag found for value")
+}
+
+// Validates if the type of provided value is numeric.
+func isNumericType(value interface{}) (float64, error) {
+	switch i := value.(type) {
+	case int:
+		return float64(i), nil
+	case int8:
+		return float64(i), nil
+	case int16:
+		return float64(i), nil
+	case int32:
+		return float64(i), nil
+	case int64:
+		return float64(i), nil
+	case uint:
+		return float64(i), nil
+	case uint8:
+		return float64(i), nil
+	case uint16:
+		return float64(i), nil
+	case uint32:
+		return float64(i), nil
+	case uint64:
+		return float64(i), nil
+	case uintptr:
+		return float64(i), nil
+	case float32:
+		return float64(i), nil
+	case float64:
+		return i, nil
+	default:
+		v := reflect.ValueOf(value)
+		v = reflect.Indirect(v)
+		return math.NaN(), fmt.Errorf("can't convert %v to float64", v.Type())
+	}
+}
+
+// Validates if the provided value is a valid numeric value.
+func isValidNumericValue(value interface{}) bool {
+	if floatValue, err := isNumericType(value); err == nil {
+		if math.IsNaN(floatValue) {
+			return false
+		}
+		if math.IsInf(floatValue, 1) {
+			return false
+		}
+		if math.IsInf(floatValue, -1) {
+			return false
+		}
+		if math.IsInf(floatValue, 0) {
+			return false
+		}
+		if math.Abs(floatValue) > math.Pow(2, 53) {
+			return false
+		}
+		return true
+	}
+	return false
+}
+
+// check if attribute value is valid
+func isValidAttribute(value interface{}) bool {
+	if value == nil {
+		return false
+	}
+
+	switch value.(type) {
+	// https://go.dev/tour/basics/11
+	case bool, string:
+		return true
+	default:
+		return isValidNumericValue(value)
+	}
 }
