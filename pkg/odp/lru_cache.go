@@ -23,6 +23,13 @@ import (
 	"time"
 )
 
+// Cache is used for caching ODP segments
+type Cache interface {
+	Save(key string, value interface{})
+	Lookup(key string) interface{}
+	Reset()
+}
+
 type cacheElement struct {
 	data   interface{}
 	time   int64
