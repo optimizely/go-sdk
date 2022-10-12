@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.
 
-## [1.8.3] - October 11, 2022
+## [1.8.3] - October 12, 2022
 
 ### New Features
 * Add option to set custom http.Client on HTTPRequester. ([#335](https://github.com/optimizely/go-sdk/pull/335))
