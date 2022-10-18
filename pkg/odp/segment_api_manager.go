@@ -132,14 +132,14 @@ func NewSegmentAPIManager(sdkKey string, requester utils.Requester, logger loggi
 func (s *SegmentAPIManager) FetchSegments(apiKey, apiHost, userKey, userValue string, segmentsToCheck []string, handler func([]string, error)) {
 
 	// Creating query for odp request
-	query := s.createRequestQuery(userKey, userValue, segmentsToCheck)
+	requestQuery := s.createRequestQuery(userKey, userValue, segmentsToCheck)
 
 	// Creating request
 	apiEndpoint := apiHost + "/v3/graphql"
 	headers := []utils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: "x-api-key", Value: apiKey}}
 
 	// handling edge cases
-	response, _, statusCode, err := s.requester.Post(apiEndpoint, map[string]string{"query": query}, headers...)
+	response, _, statusCode, err := s.requester.Post(apiEndpoint, requestQuery, headers...)
 	if response == nil {
 		if err != nil {
 			handler(nil, fmt.Errorf(fetchSegmentsFailedError, "invalid response"))
@@ -206,43 +206,16 @@ func (s *SegmentAPIManager) FetchSegments(apiKey, apiHost, userKey, userValue st
 }
 
 // Creates graphql query
-func (s SegmentAPIManager) createRequestQuery(userKey, userValue string, segmentsToCheck []string) string {
-	return fmt.Sprintf(`query %s`, s.getCustomerFilter(userKey, userValue, segmentsToCheck))
-}
-
-// Creates filter for customer
-func (s SegmentAPIManager) getCustomerFilter(userKey, userValue string, segmentsToCheck []string) string {
-	return fmt.Sprintf(`{customer(%s: %q) %s}`, userKey, userValue, s.getAudiencesFilter(segmentsToCheck))
-}
-
-// Creates filter for audiences
-func (s SegmentAPIManager) getAudiencesFilter(segmentsToCheck []string) string {
-	subsetFilter := s.makeSubsetFilter(segmentsToCheck)
-	return fmt.Sprintf(`{audiences%s %s}`, subsetFilter, s.getEdgesFilter())
-}
-
-// Creates filter for edges
-func (s SegmentAPIManager) getEdgesFilter() string {
-	return fmt.Sprintf(`{edges %s}`, s.getNodesFilter())
-}
-
-// Creates filter for nodes
-func (s SegmentAPIManager) getNodesFilter() string {
-	return `{node {name state}}`
-}
-
-// Creates filter for subset
-func (s SegmentAPIManager) makeSubsetFilter(segmentsToCheck []string) string {
-	// segments = []: (fetch none)
-	//   --> subsetFilter = "(subset:[])"
-	// segments = ["a"]: (fetch one segment)
-	//   --> subsetFilter = "(subset:[\"a\"])"
-
-	escapedSegments := []string{}
-	for _, v := range segmentsToCheck {
-		escapedSegments = append(escapedSegments, fmt.Sprintf(`%q`, v))
+func (s SegmentAPIManager) createRequestQuery(userKey, userValue string, segmentsToCheck []string) map[string]interface{} {
+	query := fmt.Sprintf(`query($userId: String, $audiences: [String]) {customer(%s: $userId){audiences(subset: $audiences) {edges {node {name state}}}}}`, userKey)
+	requestQuery := map[string]interface{}{
+		"query": query,
+		"variables": map[string]interface{}{
+			"userId":    userValue,
+			"audiences": segmentsToCheck,
+		},
 	}
-	return fmt.Sprintf("(subset:[%s])", strings.Join(escapedSegments, ","))
+	return requestQuery
 }
 
 // Extract deep-json contents with keypath "a.b.c"
