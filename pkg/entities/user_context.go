@@ -1,11 +1,11 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2020,2022 Optimizely, Inc. and contributors               *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -27,8 +27,20 @@ const bucketingIDAttributeName = "$opt_bucketing_id"
 
 // UserContext holds information about a user
 type UserContext struct {
-	ID         string
-	Attributes map[string]interface{}
+	ID                string
+	Attributes        map[string]interface{}
+	QualifiedSegments []string
+}
+
+// IsQualifiedFor returns whether the segment exists in the QualifiedSegments.
+func (u UserContext) IsQualifiedFor(segment string) bool {
+	for _, q := range u.QualifiedSegments {
+		if q == segment {
+			return true
+		}
+	}
+
+	return false
 }
 
 // CheckAttributeExists returns whether the specified attribute name exists in the attributes map.

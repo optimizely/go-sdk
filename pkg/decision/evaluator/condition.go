@@ -1,11 +1,11 @@
 /****************************************************************************
- * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2022, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -45,9 +45,15 @@ func NewCustomAttributeConditionEvaluator(logger logging.OptimizelyLogProducer) 
 // Evaluate returns true if the given user's attributes match the condition
 func (c CustomAttributeConditionEvaluator) Evaluate(condition entities.Condition, condTreeParams *entities.TreeParameters, options *decide.Options) (bool, decide.DecisionReasons, error) {
 	// We should only be evaluating custom attributes
-
 	reasons := decide.NewDecisionReasons(options)
-	if condition.Type != customAttributeType {
+	isValid := false
+	for _, validType := range validTypes {
+		if validType == condition.Type {
+			isValid = true
+			break
+		}
+	}
+	if !isValid {
 		c.logger.Warning(fmt.Sprintf(logging.UnknownConditionType.String(), condition.StringRepresentation))
 		errorMessage := reasons.AddInfo(`unable to evaluate condition of type "%s"`, condition.Type)
 		return false, reasons, errors.New(errorMessage)

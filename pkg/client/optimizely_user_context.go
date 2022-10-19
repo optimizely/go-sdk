@@ -1,11 +1,11 @@
 /****************************************************************************
- * Copyright 2020-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2020-2022, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -31,6 +31,7 @@ type OptimizelyUserContext struct {
 	UserID     string                 `json:"userId"`
 	Attributes map[string]interface{} `json:"attributes"`
 
+	qualifiedSegments     []string
 	optimizely            *OptimizelyClient
 	forcedDecisionService *pkgDecision.ForcedDecisionService
 	mutex                 *sync.RWMutex
@@ -46,6 +47,7 @@ func newOptimizelyUserContext(optimizely *OptimizelyClient, userID string, attri
 	return OptimizelyUserContext{
 		UserID:                userID,
 		Attributes:            attributesCopy,
+		qualifiedSegments:     []string{},
 		optimizely:            optimizely,
 		forcedDecisionService: forcedDecisionService,
 		mutex:                 new(sync.RWMutex),
@@ -69,6 +71,13 @@ func (o OptimizelyUserContext) GetUserAttributes() map[string]interface{} {
 	return copyUserAttributes(o.Attributes)
 }
 
+// GetQualifiedSegments returns qualified segments for Optimizely user context
+func (o OptimizelyUserContext) GetQualifiedSegments() []string {
+	o.mutex.RLock()
+	defer o.mutex.RUnlock()
+	return copyQualifiedSegments(o.qualifiedSegments)
+}
+
 func (o OptimizelyUserContext) getForcedDecisionService() *pkgDecision.ForcedDecisionService {
 	if o.forcedDecisionService != nil {
 		return o.forcedDecisionService.CreateCopy()
@@ -84,6 +93,26 @@ func (o *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
 		o.Attributes = make(map[string]interface{})
 	}
 	o.Attributes[key] = value
+}
+
+// SetQualifiedSegments clears and adds qualified segments for Optimizely user context
+func (o *OptimizelyUserContext) SetQualifiedSegments(qualifiedSegments []string) {
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	if qualifiedSegments == nil {
+		qualifiedSegments = []string{}
+	}
+	o.qualifiedSegments = qualifiedSegments
+}
+
+// IsQualifiedFor returns true if the user is qualified for the given segment name
+func (o OptimizelyUserContext) IsQualifiedFor(segment string) bool {
+	userContext := entities.UserContext{
+		ID:                o.GetUserID(),
+		Attributes:        o.GetUserAttributes(),
+		QualifiedSegments: o.GetQualifiedSegments(),
+	}
+	return userContext.IsQualifiedFor(segment)
 }
 
 // Decide returns a decision result for a given flag key and a user context, which contains
@@ -159,4 +188,12 @@ func copyUserAttributes(attributes map[string]interface{}) (attributesCopy map[s
 		}
 	}
 	return attributesCopy
+}
+
+func copyQualifiedSegments(qualifiedSegments []string) (qualifiedSegmentsCopy []string) {
+	if qualifiedSegments != nil {
+		qualifiedSegmentsCopy = make([]string, len(qualifiedSegments))
+		copy(qualifiedSegmentsCopy, qualifiedSegments)
+	}
+	return qualifiedSegmentsCopy
 }

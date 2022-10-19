@@ -1,11 +1,11 @@
 /****************************************************************************
- * Copyright 2020-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2020-2022, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -17,7 +17,7 @@
 package client
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -46,7 +46,7 @@ type OptimizelyUserContextTestSuite struct {
 func (s *OptimizelyUserContextTestSuite) SetupTest() {
 	doOnce.Do(func() {
 		absPath, _ := filepath.Abs("../../test-data/decide-test-datafile.json")
-		datafile, _ = ioutil.ReadFile(absPath)
+		datafile, _ = os.ReadFile(absPath)
 	})
 	s.eventProcessor = new(MockProcessor)
 	s.eventProcessor.On("ProcessEvent", mock.AnythingOfType("event.UserEvent")).Return(true)
@@ -62,6 +62,7 @@ func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextWithAttributes
 	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 	s.Equal(s.userID, optimizelyUserContext.GetUserID())
 	s.Equal(attributes, optimizelyUserContext.GetUserAttributes())
+	s.Equal([]string{}, optimizelyUserContext.GetQualifiedSegments())
 	s.Nil(optimizelyUserContext.forcedDecisionService)
 }
 
@@ -72,28 +73,35 @@ func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextNoAttributes()
 	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 	s.Equal(s.userID, optimizelyUserContext.GetUserID())
 	s.Equal(attributes, optimizelyUserContext.GetUserAttributes())
+	s.Equal([]string{}, optimizelyUserContext.GetQualifiedSegments())
 }
 
 func (s *OptimizelyUserContextTestSuite) TestUpatingProvidedUserContextHasNoImpactOnOptimizelyUserContext() {
 	attributes := map[string]interface{}{"k1": "v1", "k2": false}
+	segments := []string{}
 	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes, nil)
 
 	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 	s.Equal(s.userID, optimizelyUserContext.GetUserID())
 	s.Equal(attributes, optimizelyUserContext.GetUserAttributes())
+	s.Equal(segments, optimizelyUserContext.GetQualifiedSegments())
 
 	attributes["k1"] = "v2"
 	attributes["k2"] = true
 
 	s.Equal("v1", optimizelyUserContext.GetUserAttributes()["k1"])
 	s.Equal(false, optimizelyUserContext.GetUserAttributes()["k2"])
+	s.Equal(segments, optimizelyUserContext.GetQualifiedSegments())
 
 	attributes = optimizelyUserContext.GetUserAttributes()
+	segments = optimizelyUserContext.GetQualifiedSegments()
 	attributes["k1"] = "v2"
 	attributes["k2"] = true
+	segments = append(segments, "abc")
 
 	s.Equal("v1", optimizelyUserContext.GetUserAttributes()["k1"])
 	s.Equal(false, optimizelyUserContext.GetUserAttributes()["k2"])
+	s.NotEqual(segments, optimizelyUserContext.GetQualifiedSegments())
 }
 
 func (s *OptimizelyUserContextTestSuite) TestSetAttribute() {
@@ -121,6 +129,79 @@ func (s *OptimizelyUserContextTestSuite) TestSetAttribute() {
 	s.Equal(true, optimizelyUserContext.GetUserAttributes()["k2"])
 	s.Equal(100, optimizelyUserContext.GetUserAttributes()["k3"])
 	s.Equal(3.5, optimizelyUserContext.GetUserAttributes()["k4"])
+}
+
+func (s *OptimizelyUserContextTestSuite) TestSetAndGetQualifiedSegments() {
+	userID := "1212121"
+	var attributes map[string]interface{}
+	qualifiedSegments := []string{"1", "2", "3"}
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes, nil)
+
+	optimizelyUserContext.SetQualifiedSegments(qualifiedSegments)
+	s.Equal(qualifiedSegments, optimizelyUserContext.GetQualifiedSegments())
+
+	optimizelyUserContext.SetQualifiedSegments(nil)
+	s.Equal([]string{}, optimizelyUserContext.GetQualifiedSegments())
+
+	optimizelyUserContext.SetQualifiedSegments(qualifiedSegments)
+	s.Equal(qualifiedSegments, optimizelyUserContext.GetQualifiedSegments())
+}
+
+func (s *OptimizelyUserContextTestSuite) TestSetAndGetQualifiedSegmentsRaceCondition() {
+	userID := "1212121"
+	qualifiedSegments := []string{"1", "2", "3"}
+	var attributes map[string]interface{}
+
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes, nil)
+	var wg sync.WaitGroup
+	wg.Add(8)
+
+	addInsideGoRoutine := func(value []string, wg *sync.WaitGroup) {
+		optimizelyUserContext.SetQualifiedSegments(value)
+		wg.Done()
+	}
+	getInsideGoRoutine := func(wg *sync.WaitGroup) {
+		optimizelyUserContext.GetQualifiedSegments()
+		wg.Done()
+	}
+
+	go addInsideGoRoutine(qualifiedSegments, &wg)
+	go addInsideGoRoutine(qualifiedSegments, &wg)
+	go addInsideGoRoutine(qualifiedSegments, &wg)
+	go addInsideGoRoutine(qualifiedSegments, &wg)
+	go getInsideGoRoutine(&wg)
+	go getInsideGoRoutine(&wg)
+	go getInsideGoRoutine(&wg)
+	go getInsideGoRoutine(&wg)
+
+	wg.Wait()
+
+	s.Equal(qualifiedSegments, optimizelyUserContext.GetQualifiedSegments())
+}
+
+func (s *OptimizelyUserContextTestSuite) TestIsQualifiedFor() {
+	userID := "1212121"
+	qualifiedSegments := []string{"1", "2", "3"}
+	var attributes map[string]interface{}
+
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes, nil)
+	optimizelyUserContext.SetQualifiedSegments(qualifiedSegments)
+
+	var wg sync.WaitGroup
+	wg.Add(6)
+	testInsideGoRoutine := func(value string, result bool, wg *sync.WaitGroup) {
+		s.Equal(result, optimizelyUserContext.IsQualifiedFor(value))
+		wg.Done()
+	}
+
+	go testInsideGoRoutine("1", true, &wg)
+	go testInsideGoRoutine("2", true, &wg)
+	go testInsideGoRoutine("3", true, &wg)
+	go testInsideGoRoutine("4", false, &wg)
+	go testInsideGoRoutine("5", false, &wg)
+	go testInsideGoRoutine("6", false, &wg)
+
+	wg.Wait()
 }
 
 func (s *OptimizelyUserContextTestSuite) TestSetAttributeOverride() {
