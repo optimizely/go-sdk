@@ -78,8 +78,9 @@ func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextNoAttributes()
 
 func (s *OptimizelyUserContextTestSuite) TestUpatingProvidedUserContextHasNoImpactOnOptimizelyUserContext() {
 	attributes := map[string]interface{}{"k1": "v1", "k2": false}
-	segments := []string{}
+	segments := []string{"123"}
 	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes, nil)
+	optimizelyUserContext.SetQualifiedSegments(segments)
 
 	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 	s.Equal(s.userID, optimizelyUserContext.GetUserID())
@@ -88,23 +89,24 @@ func (s *OptimizelyUserContextTestSuite) TestUpatingProvidedUserContextHasNoImpa
 
 	attributes["k1"] = "v2"
 	attributes["k2"] = true
+	segments[0] = "456"
 
 	s.Equal("v1", optimizelyUserContext.GetUserAttributes()["k1"])
 	s.Equal(false, optimizelyUserContext.GetUserAttributes()["k2"])
-	s.Equal(segments, optimizelyUserContext.GetQualifiedSegments())
+	s.Equal([]string{"123"}, optimizelyUserContext.GetQualifiedSegments())
 
 	attributes = optimizelyUserContext.GetUserAttributes()
 	segments = optimizelyUserContext.GetQualifiedSegments()
 	attributes["k1"] = "v2"
 	attributes["k2"] = true
-	segments = append(segments, "abc")
+	segments[0] = "456"
 
 	s.Equal("v1", optimizelyUserContext.GetUserAttributes()["k1"])
 	s.Equal(false, optimizelyUserContext.GetUserAttributes()["k2"])
-	s.NotEqual(segments, optimizelyUserContext.GetQualifiedSegments())
+	s.Equal([]string{"123"}, optimizelyUserContext.GetQualifiedSegments())
 }
 
-func (s *OptimizelyUserContextTestSuite) TestSetAttribute() {
+func (s *OptimizelyUserContextTestSuite) TestSetAndGetUserAttributesRaceCondition() {
 	userID := "1212121"
 	var attributes map[string]interface{}
 
@@ -112,9 +114,13 @@ func (s *OptimizelyUserContextTestSuite) TestSetAttribute() {
 	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 
 	var wg sync.WaitGroup
-	wg.Add(4)
+	wg.Add(8)
 	addInsideGoRoutine := func(key string, value interface{}, wg *sync.WaitGroup) {
 		optimizelyUserContext.SetAttribute(key, value)
+		wg.Done()
+	}
+	getInsideGoRoutine := func(wg *sync.WaitGroup) {
+		optimizelyUserContext.GetUserAttributes()
 		wg.Done()
 	}
 
@@ -122,6 +128,10 @@ func (s *OptimizelyUserContextTestSuite) TestSetAttribute() {
 	go addInsideGoRoutine("k2", true, &wg)
 	go addInsideGoRoutine("k3", 100, &wg)
 	go addInsideGoRoutine("k4", 3.5, &wg)
+	go getInsideGoRoutine(&wg)
+	go getInsideGoRoutine(&wg)
+	go getInsideGoRoutine(&wg)
+	go getInsideGoRoutine(&wg)
 	wg.Wait()
 
 	s.Equal(userID, optimizelyUserContext.GetUserID())
@@ -129,79 +139,6 @@ func (s *OptimizelyUserContextTestSuite) TestSetAttribute() {
 	s.Equal(true, optimizelyUserContext.GetUserAttributes()["k2"])
 	s.Equal(100, optimizelyUserContext.GetUserAttributes()["k3"])
 	s.Equal(3.5, optimizelyUserContext.GetUserAttributes()["k4"])
-}
-
-func (s *OptimizelyUserContextTestSuite) TestSetAndGetQualifiedSegments() {
-	userID := "1212121"
-	var attributes map[string]interface{}
-	qualifiedSegments := []string{"1", "2", "3"}
-	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes, nil)
-
-	optimizelyUserContext.SetQualifiedSegments(qualifiedSegments)
-	s.Equal(qualifiedSegments, optimizelyUserContext.GetQualifiedSegments())
-
-	optimizelyUserContext.SetQualifiedSegments(nil)
-	s.Equal([]string{}, optimizelyUserContext.GetQualifiedSegments())
-
-	optimizelyUserContext.SetQualifiedSegments(qualifiedSegments)
-	s.Equal(qualifiedSegments, optimizelyUserContext.GetQualifiedSegments())
-}
-
-func (s *OptimizelyUserContextTestSuite) TestSetAndGetQualifiedSegmentsRaceCondition() {
-	userID := "1212121"
-	qualifiedSegments := []string{"1", "2", "3"}
-	var attributes map[string]interface{}
-
-	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes, nil)
-	var wg sync.WaitGroup
-	wg.Add(8)
-
-	addInsideGoRoutine := func(value []string, wg *sync.WaitGroup) {
-		optimizelyUserContext.SetQualifiedSegments(value)
-		wg.Done()
-	}
-	getInsideGoRoutine := func(wg *sync.WaitGroup) {
-		optimizelyUserContext.GetQualifiedSegments()
-		wg.Done()
-	}
-
-	go addInsideGoRoutine(qualifiedSegments, &wg)
-	go addInsideGoRoutine(qualifiedSegments, &wg)
-	go addInsideGoRoutine(qualifiedSegments, &wg)
-	go addInsideGoRoutine(qualifiedSegments, &wg)
-	go getInsideGoRoutine(&wg)
-	go getInsideGoRoutine(&wg)
-	go getInsideGoRoutine(&wg)
-	go getInsideGoRoutine(&wg)
-
-	wg.Wait()
-
-	s.Equal(qualifiedSegments, optimizelyUserContext.GetQualifiedSegments())
-}
-
-func (s *OptimizelyUserContextTestSuite) TestIsQualifiedFor() {
-	userID := "1212121"
-	qualifiedSegments := []string{"1", "2", "3"}
-	var attributes map[string]interface{}
-
-	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes, nil)
-	optimizelyUserContext.SetQualifiedSegments(qualifiedSegments)
-
-	var wg sync.WaitGroup
-	wg.Add(6)
-	testInsideGoRoutine := func(value string, result bool, wg *sync.WaitGroup) {
-		s.Equal(result, optimizelyUserContext.IsQualifiedFor(value))
-		wg.Done()
-	}
-
-	go testInsideGoRoutine("1", true, &wg)
-	go testInsideGoRoutine("2", true, &wg)
-	go testInsideGoRoutine("3", true, &wg)
-	go testInsideGoRoutine("4", false, &wg)
-	go testInsideGoRoutine("5", false, &wg)
-	go testInsideGoRoutine("6", false, &wg)
-
-	wg.Wait()
 }
 
 func (s *OptimizelyUserContextTestSuite) TestSetAttributeOverride() {
@@ -236,6 +173,86 @@ func (s *OptimizelyUserContextTestSuite) TestSetAttributeNullValue() {
 	s.Equal(nil, optimizelyUserContext.GetUserAttributes()["k1"])
 }
 
+func (s *OptimizelyUserContextTestSuite) TestSetAndGetQualifiedSegments() {
+	userID := "1212121"
+	var attributes map[string]interface{}
+	qualifiedSegments := []string{"1", "2", "3"}
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes, nil)
+
+	optimizelyUserContext.SetQualifiedSegments(qualifiedSegments)
+	s.Equal(qualifiedSegments, optimizelyUserContext.GetQualifiedSegments())
+
+	optimizelyUserContext.SetQualifiedSegments(nil)
+	s.Equal([]string{}, optimizelyUserContext.GetQualifiedSegments())
+
+	optimizelyUserContext.SetQualifiedSegments(qualifiedSegments)
+	s.Equal(qualifiedSegments, optimizelyUserContext.GetQualifiedSegments())
+}
+
+func (s *OptimizelyUserContextTestSuite) TestQualifiedSegmentsRaceCondition() {
+	userID := "1212121"
+	qualifiedSegments := []string{"1", "2", "3"}
+	segment := "1"
+	var attributes map[string]interface{}
+
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes, nil)
+	var wg sync.WaitGroup
+	wg.Add(9)
+
+	setQualifiedSegments := func(value []string, wg *sync.WaitGroup) {
+		optimizelyUserContext.SetQualifiedSegments(value)
+		wg.Done()
+	}
+	getQualifiedSegments := func(wg *sync.WaitGroup) {
+		optimizelyUserContext.GetQualifiedSegments()
+		wg.Done()
+	}
+
+	IsQualifiedFor := func(segment string, wg *sync.WaitGroup) {
+		optimizelyUserContext.IsQualifiedFor(segment)
+		wg.Done()
+	}
+
+	go setQualifiedSegments(qualifiedSegments, &wg)
+	go setQualifiedSegments(qualifiedSegments, &wg)
+	go setQualifiedSegments(qualifiedSegments, &wg)
+	go getQualifiedSegments(&wg)
+	go getQualifiedSegments(&wg)
+	go getQualifiedSegments(&wg)
+	go IsQualifiedFor(segment, &wg)
+	go IsQualifiedFor(segment, &wg)
+	go IsQualifiedFor(segment, &wg)
+
+	wg.Wait()
+
+	s.Equal(qualifiedSegments, optimizelyUserContext.GetQualifiedSegments())
+}
+
+func (s *OptimizelyUserContextTestSuite) TestIsQualifiedFor() {
+	userID := "1212121"
+	qualifiedSegments := []string{"1", "2", "3"}
+	var attributes map[string]interface{}
+
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes, nil)
+	optimizelyUserContext.SetQualifiedSegments(qualifiedSegments)
+
+	var wg sync.WaitGroup
+	wg.Add(6)
+	testInsideGoRoutine := func(value string, result bool, wg *sync.WaitGroup) {
+		s.Equal(result, optimizelyUserContext.IsQualifiedFor(value))
+		wg.Done()
+	}
+
+	go testInsideGoRoutine("1", true, &wg)
+	go testInsideGoRoutine("2", true, &wg)
+	go testInsideGoRoutine("3", true, &wg)
+	go testInsideGoRoutine("4", false, &wg)
+	go testInsideGoRoutine("5", false, &wg)
+	go testInsideGoRoutine("6", false, &wg)
+
+	wg.Wait()
+}
+
 func (s *OptimizelyUserContextTestSuite) TestDecideResponseContainsUserContextCopy() {
 	flagKey := "feature_2"
 	userContext := s.OptimizelyClient.CreateUserContext(s.userID, nil)
@@ -244,8 +261,11 @@ func (s *OptimizelyUserContextTestSuite) TestDecideResponseContainsUserContextCo
 
 	// Change attributes for user context
 	userContext.SetAttribute("test", 123)
-	// Attributes should not update for the userContext returned inside decision
+	// Change qualifiedSegments for user context
+	userContext.SetQualifiedSegments([]string{"123"})
+	// Attributes and qualifiedSegments should not update for the userContext returned inside decision
 	s.Nil(decisionUserContext.Attributes["test"])
+	s.Len(decisionUserContext.qualifiedSegments, 0)
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTest() {

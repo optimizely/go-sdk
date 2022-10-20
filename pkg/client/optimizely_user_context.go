@@ -72,7 +72,7 @@ func (o OptimizelyUserContext) GetUserAttributes() map[string]interface{} {
 }
 
 // GetQualifiedSegments returns qualified segments for Optimizely user context
-func (o OptimizelyUserContext) GetQualifiedSegments() []string {
+func (o *OptimizelyUserContext) GetQualifiedSegments() []string {
 	o.mutex.RLock()
 	defer o.mutex.RUnlock()
 	return copyQualifiedSegments(o.qualifiedSegments)
@@ -102,7 +102,7 @@ func (o *OptimizelyUserContext) SetQualifiedSegments(qualifiedSegments []string)
 	if qualifiedSegments == nil {
 		qualifiedSegments = []string{}
 	}
-	o.qualifiedSegments = qualifiedSegments
+	o.qualifiedSegments = copyQualifiedSegments(qualifiedSegments)
 }
 
 // IsQualifiedFor returns true if the user is qualified for the given segment name
