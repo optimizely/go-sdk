@@ -17,7 +17,7 @@
 package client
 
 import (
-	"os"
+	"io/ioutil"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -46,7 +46,7 @@ type OptimizelyUserContextTestSuite struct {
 func (s *OptimizelyUserContextTestSuite) SetupTest() {
 	doOnce.Do(func() {
 		absPath, _ := filepath.Abs("../../test-data/decide-test-datafile.json")
-		datafile, _ = os.ReadFile(absPath)
+		datafile, _ = ioutil.ReadFile(absPath)
 	})
 	s.eventProcessor = new(MockProcessor)
 	s.eventProcessor.On("ProcessEvent", mock.AnythingOfType("event.UserEvent")).Return(true)
