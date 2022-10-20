@@ -266,11 +266,11 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	}
 
 	var hostForODP, publicKeyForODP string
-	if len(datafile.Integrations) > 0 {
-		integration := datafile.Integrations[0]
+	for _, integration := range datafile.Integrations {
 		if integration.Key == "odp" {
 			hostForODP = integration.Host
 			publicKeyForODP = integration.PublicKey
+			break
 		}
 	}
 
@@ -280,11 +280,13 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	experimentIDMap, experimentKeyMap := mappers.MapExperiments(allExperiments, experimentGroupMap)
 
 	rollouts, rolloutMap := mappers.MapRollouts(datafile.Rollouts)
-	integrations := mappers.MapIntegrations(datafile.Integrations)
+	integrations := []entities.Integration{}
+	for _, integration := range datafile.Integrations {
+		integrations = append(integrations, entities.Integration{Key: integration.Key, Host: integration.Host, PublicKey: integration.PublicKey})
+	}
 	eventMap := mappers.MapEvents(datafile.Events)
-	mergedAudiences := append(datafile.TypedAudiences, datafile.Audiences...)
 	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentIDMap)
-	audienceMap := mappers.MapAudiences(mergedAudiences)
+	audienceMap := mappers.MapAudiences(append(datafile.TypedAudiences, datafile.Audiences...))
 	flagVariationsMap := mappers.MapFlagVariations(featureMap)
 
 	config := &DatafileProjectConfig{
