@@ -33,7 +33,7 @@ type UserContext struct {
 }
 
 // IsQualifiedFor returns whether the segment exists in the QualifiedSegments.
-func (u UserContext) IsQualifiedFor(segment string) bool {
+func (u *UserContext) IsQualifiedFor(segment string) bool {
 	for _, q := range u.QualifiedSegments {
 		if q == segment {
 			return true

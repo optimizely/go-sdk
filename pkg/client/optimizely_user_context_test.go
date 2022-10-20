@@ -226,6 +226,7 @@ func (s *OptimizelyUserContextTestSuite) TestQualifiedSegmentsRaceCondition() {
 	wg.Wait()
 
 	s.Equal(qualifiedSegments, optimizelyUserContext.GetQualifiedSegments())
+	s.Equal(true, optimizelyUserContext.IsQualifiedFor(segment))
 }
 
 func (s *OptimizelyUserContextTestSuite) TestIsQualifiedFor() {
