@@ -58,11 +58,13 @@ func (l *LRUCache) Save(key string, value interface{}) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 	if item, ok := l.items[key]; !ok {
+		// remove the last object if queue is full
 		if l.maxSize == len(l.items) {
 			back := l.queue.Back()
 			l.queue.Remove(back)
 			delete(l.items, back.Value.(string))
 		}
+		// push the new object to the front of the queue
 		l.items[key] = &cacheElement{data: value, keyPtr: l.queue.PushFront(key), time: time.Now().Unix()}
 	} else {
 		item.data = value
