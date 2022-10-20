@@ -106,7 +106,7 @@ func (o *OptimizelyUserContext) SetQualifiedSegments(qualifiedSegments []string)
 }
 
 // IsQualifiedFor returns true if the user is qualified for the given segment name
-func (o OptimizelyUserContext) IsQualifiedFor(segment string) bool {
+func (o *OptimizelyUserContext) IsQualifiedFor(segment string) bool {
 	userContext := entities.UserContext{
 		ID:                o.GetUserID(),
 		Attributes:        o.GetUserAttributes(),
