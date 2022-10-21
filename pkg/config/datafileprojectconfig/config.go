@@ -48,6 +48,7 @@ type DatafileProjectConfig struct {
 	groupMap             map[string]entities.Group
 	rollouts             []entities.Rollout
 	integrations         []entities.Integration
+	segments             []string
 	rolloutMap           map[string]entities.Rollout
 	anonymizeIP          bool
 	botFiltering         bool
@@ -194,6 +195,11 @@ func (c DatafileProjectConfig) GetIntegrationList() (integrationList []entities.
 	return c.integrations
 }
 
+// GetSegmentList returns an array of all the segments
+func (c DatafileProjectConfig) GetSegmentList() (segmentList []string) {
+	return c.segments
+}
+
 // GetRolloutList returns an array of all the rollouts
 func (c DatafileProjectConfig) GetRolloutList() (rolloutList []entities.Rollout) {
 	return c.rollouts
@@ -286,7 +292,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	}
 	eventMap := mappers.MapEvents(datafile.Events)
 	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentIDMap)
-	audienceMap := mappers.MapAudiences(append(datafile.TypedAudiences, datafile.Audiences...))
+	audienceMap, audienceSegmentList := mappers.MapAudiences(append(datafile.TypedAudiences, datafile.Audiences...))
 	flagVariationsMap := mappers.MapFlagVariations(featureMap)
 
 	config := &DatafileProjectConfig{
@@ -310,6 +316,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		revision:             datafile.Revision,
 		rollouts:             rollouts,
 		integrations:         integrations,
+		segments:             audienceSegmentList,
 		rolloutMap:           rolloutMap,
 		sendFlagDecisions:    datafile.SendFlagDecisions,
 		flagVariationsMap:    flagVariationsMap,

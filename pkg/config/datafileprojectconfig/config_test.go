@@ -415,6 +415,15 @@ func TestGetIntegrationListODP(t *testing.T) {
 	assert.Equal(t, expectedIntegrations, config.GetIntegrationList())
 }
 
+func TestGetSegmentList(t *testing.T) {
+	jsonDatafileStr := `{"version": "4","typedAudiences": [{"id": "22290411365", "conditions": ["and", ["or", ["or", {"value": "order_last_7_days", "type": "third_party_dimension", "name": "odp.audiences", "match": "qualified"}, {"value": "favoritecolorred", "type": "third_party_dimension", "name": "odp.audiences", "match": "qualified"}]]], "name": "sohail"}, {"id": "22282671333", "conditions": ["and", ["or", ["or", {"value": "has_email_or_phone_opted_in", "type": "third_party_dimension", "name": "odp.audiences", "match": "qualified"}]]], "name": "audience_age"}]}`
+	jsonDatafile := []byte(jsonDatafileStr)
+	expectedSegmentList := []string{"order_last_7_days", "favoritecolorred", "has_email_or_phone_opted_in"}
+	config, err := NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", ""))
+	assert.NoError(t, err)
+	assert.Equal(t, expectedSegmentList, config.GetSegmentList())
+}
+
 func TestGetAudienceList(t *testing.T) {
 	config := &DatafileProjectConfig{
 		audienceMap: map[string]entities.Audience{"5": {ID: "5", Name: "one"}, "6": {ID: "6", Name: "two"}},

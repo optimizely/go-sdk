@@ -1,11 +1,11 @@
 /****************************************************************************
- * Copyright 2019,2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019,2021-2022, Optimizely, Inc. and contributors              *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -23,9 +23,12 @@ import (
 )
 
 // MapAudiences maps the raw datafile audience entities to SDK Audience entities
-func MapAudiences(audiences []datafileEntities.Audience) (audienceMap map[string]entities.Audience) {
+func MapAudiences(audiences []datafileEntities.Audience) (audienceMap map[string]entities.Audience, audienceSegmentList []string) {
 
 	audienceMap = make(map[string]entities.Audience)
+	// To keep unique segments only
+	odpSegmentsMap := map[string]bool{}
+	audienceSegmentList = []string{}
 	// Since typed audiences were added prior to audiences,
 	// they will be given priority in the audienceMap and list
 	for _, audience := range audiences {
@@ -36,13 +39,18 @@ func MapAudiences(audiences []datafileEntities.Audience) (audienceMap map[string
 				Name:       audience.Name,
 				Conditions: audience.Conditions,
 			}
-			conditionTree, err := buildConditionTree(audience.Conditions)
+			conditionTree, fSegments, err := buildConditionTree(audience.Conditions)
 			if err == nil {
 				audience.ConditionTree = conditionTree
 			}
-
+			for _, s := range fSegments {
+				if !odpSegmentsMap[s] {
+					odpSegmentsMap[s] = true
+					audienceSegmentList = append(audienceSegmentList, s)
+				}
+			}
 			audienceMap[audience.ID] = audience
 		}
 	}
-	return audienceMap
+	return audienceMap, audienceSegmentList
 }
