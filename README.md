@@ -26,17 +26,17 @@ We practice trunk-based development, and as such our default branch, `master` mi
 ```
 module mymodule
 
-go 1.12
+go 1.13
 
 require (
-	github.com/optimizely/go-sdk v1.0.0-rc1
+	github.com/optimizely/go-sdk v1.8.3
 )
 ```
 
 If you are already using `go.mod` in your application you can run the following:
 
 ```
-go mod edit -require github.com/optimizely/go-sdk@v1.0.0-rc1
+go mod edit -require github.com/optimizely/go-sdk@v1.8.3
 ```
 
 NOTE:
