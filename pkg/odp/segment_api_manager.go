@@ -125,18 +125,15 @@ type SegmentAPIManager struct {
 }
 
 // NewSegmentAPIManager creates and returns a new instance SegmentAPIManager.
-func NewSegmentAPIManager(sdkKey string, requester utils.Requester, logger logging.OptimizelyLogProducer) *SegmentAPIManager {
+func NewSegmentAPIManager(requester utils.Requester) *SegmentAPIManager {
 	if requester == nil {
-		if logger == nil {
-			logger = logging.GetLogger(sdkKey, "SegmentAPIManager")
-		}
-		requester = utils.NewHTTPRequester(logger)
+		requester = utils.NewHTTPRequester(logging.GetLogger("", "SegmentAPIManager"))
 	}
 	return &SegmentAPIManager{requester: requester}
 }
 
 // FetchSegments returns qualified ODP segments
-func (s *SegmentAPIManager) FetchSegments(apiKey, apiHost, userKey, userValue string, segmentsToCheck []string, handler func([]string, error)) {
+func (s *SegmentAPIManager) FetchSegments(apiKey, apiHost, userKey, userValue string, segmentsToCheck []string) ([]string, error) {
 
 	// Creating query for odp request
 	requestQuery := s.createRequestQuery(userKey, userValue, segmentsToCheck)
@@ -149,24 +146,20 @@ func (s *SegmentAPIManager) FetchSegments(apiKey, apiHost, userKey, userValue st
 	response, _, statusCode, err := s.requester.Post(apiEndpoint, requestQuery, headers...)
 	if response == nil {
 		if err != nil {
-			handler(nil, fmt.Errorf(fetchSegmentsFailedError, "invalid response"))
-			return
+			return nil, fmt.Errorf(fetchSegmentsFailedError, "invalid response")
 		}
 	}
 	if err != nil {
-		handler(nil, fmt.Errorf(fetchSegmentsFailedError, err.Error()))
-		return
+		return nil, fmt.Errorf(fetchSegmentsFailedError, err.Error())
 	}
 	if statusCode >= 400 {
-		handler(nil, fmt.Errorf(fetchSegmentsFailedError, fmt.Sprintf("%d", statusCode)))
-		return
+		return nil, fmt.Errorf(fetchSegmentsFailedError, fmt.Sprintf("%d", statusCode))
 	}
 
 	// Checking if response is decodable
 	responseMap := map[string]interface{}{}
 	if err = json.Unmarshal(response, &responseMap); err != nil {
-		handler(nil, fmt.Errorf(fetchSegmentsFailedError, "decode error"))
-		return
+		return nil, fmt.Errorf(fetchSegmentsFailedError, "decode error")
 	}
 
 	// most meaningful ODP errors are returned in 200 success JSON under {"errors": ...}
@@ -174,22 +167,18 @@ func (s *SegmentAPIManager) FetchSegments(apiKey, apiHost, userKey, userValue st
 		if odpError, ok := odpErrors[0].(map[string]interface{}); ok {
 			if errorClass, ok := s.extractComponent("extensions.classification", odpError).(string); ok {
 				if errorClass == "InvalidIdentifierException" {
-					handler(nil, errors.New(invalidSegmentIdentifier))
-					return
+					return nil, errors.New(invalidSegmentIdentifier)
 				}
-				handler(nil, fmt.Errorf(fetchSegmentsFailedError, errorClass))
-				return
+				return nil, fmt.Errorf(fetchSegmentsFailedError, errorClass)
 			}
 		}
-		handler(nil, fmt.Errorf(fetchSegmentsFailedError, "decode error"))
-		return
+		return nil, fmt.Errorf(fetchSegmentsFailedError, "decode error")
 	}
 
 	// Retrieving audience edges from response
 	audienceDictionaries, ok := s.extractComponent("data.customer.audiences.edges", responseMap).([]interface{})
 	if !ok {
-		handler(nil, fmt.Errorf(fetchSegmentsFailedError, "decode error"))
-		return
+		return nil, fmt.Errorf(fetchSegmentsFailedError, "decode error")
 	}
 
 	// Parsing and returning qualified segments
@@ -209,7 +198,7 @@ func (s *SegmentAPIManager) FetchSegments(apiKey, apiHost, userKey, userValue st
 			}
 		}
 	}
-	handler(returnSegments, nil)
+	return returnSegments, nil
 }
 
 // Creates graphql query
