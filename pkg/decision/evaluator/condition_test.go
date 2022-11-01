@@ -1,11 +1,11 @@
 /****************************************************************************
- * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2022, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/decide"
+	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/stretchr/testify/suite"
@@ -43,10 +44,10 @@ func (s *ConditionTestSuite) SetupTest() {
 
 func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluator() {
 	condition := entities.Condition{
-		Match: "exact",
+		Match: matchers.ExactMatchType,
 		Value: "foo",
 		Name:  "string_foo",
-		Type:  "custom_attribute",
+		Type:  customAttributeType,
 	}
 
 	// Test condition passes
@@ -74,7 +75,7 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorWithoutMatchTy
 	condition := entities.Condition{
 		Value: "foo",
 		Name:  "string_foo",
-		Type:  "custom_attribute",
+		Type:  customAttributeType,
 	}
 
 	// Test condition passes
@@ -102,7 +103,7 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorWithInvalidMat
 	condition := entities.Condition{
 		Value: "foo",
 		Name:  "string_foo",
-		Type:  "custom_attribute",
+		Type:  customAttributeType,
 		Match: "invalid",
 	}
 
@@ -149,13 +150,83 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorWithUnknownTyp
 	s.mockLogger.AssertExpectations(s.T())
 }
 
+func (s *ConditionTestSuite) TestThirdPartyDimensionConditionEvaluator() {
+	condition := entities.Condition{
+		Match: matchers.QualifiedMatchType,
+		Value: "1",
+		Type:  thirdPartyDimension,
+	}
+
+	// Test condition passes
+	user := entities.UserContext{
+		QualifiedSegments: []string{"1", "2", "3"},
+	}
+
+	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
+	result, _, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams, &s.options)
+	s.Equal(result, true)
+
+	// Test condition fails
+	user = entities.UserContext{
+		QualifiedSegments: []string{"4", "5", "6"},
+	}
+	result, _, _ = s.conditionEvaluator.Evaluate(condition, condTreeParams, &s.options)
+	s.Equal(result, false)
+}
+
+func (s *ConditionTestSuite) TestThirdPartyDimensionConditionEvaluatorWithInvalidMatchType() {
+	condition := entities.Condition{
+		Value: "1",
+		Type:  thirdPartyDimension,
+		Match: "invalid",
+	}
+
+	// Test condition fails
+	user := entities.UserContext{
+		QualifiedSegments: []string{"1", "2", "3"},
+	}
+
+	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
+	s.mockLogger.On("Warning", fmt.Sprintf(logging.UnknownMatchType.String(), ""))
+	s.options.IncludeReasons = true
+	result, reasons, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams, &s.options)
+	s.Equal(result, false)
+	messages := reasons.ToReport()
+	s.Len(messages, 1)
+	s.Equal(`invalid Condition matcher "invalid"`, messages[0])
+	s.mockLogger.AssertExpectations(s.T())
+}
+
+func (s *ConditionTestSuite) TestThirdPartyDimensionConditionEvaluatorWithUnknownType() {
+	condition := entities.Condition{
+		Match: matchers.QualifiedMatchType,
+		Value: "1",
+		Type:  "",
+	}
+
+	// Test condition fails
+	user := entities.UserContext{
+		QualifiedSegments: []string{"1", "2", "3"},
+	}
+
+	condTreeParams := entities.NewTreeParameters(&user, map[string]entities.Audience{})
+	s.mockLogger.On("Warning", fmt.Sprintf(logging.UnknownConditionType.String(), ""))
+	s.options.IncludeReasons = true
+	result, reasons, _ := s.conditionEvaluator.Evaluate(condition, condTreeParams, &s.options)
+	s.Equal(result, false)
+	messages := reasons.ToReport()
+	s.Len(messages, 1)
+	s.Equal(`unable to evaluate condition of type ""`, messages[0])
+	s.mockLogger.AssertExpectations(s.T())
+}
+
 func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorForGeSemver() {
 	conditionEvaluator := CustomAttributeConditionEvaluator{}
 	condition := entities.Condition{
-		Match: "semver_ge",
+		Match: matchers.SemverGeMatchType,
 		Value: "2.9",
 		Name:  "string_foo",
-		Type:  "custom_attribute",
+		Type:  customAttributeType,
 	}
 
 	// Test condition passes
@@ -173,10 +244,10 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorForGeSemver() 
 func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorForGeSemverBeta() {
 	conditionEvaluator := CustomAttributeConditionEvaluator{}
 	condition := entities.Condition{
-		Match: "semver_ge",
+		Match: matchers.SemverGeMatchType,
 		Value: "3.7.0",
 		Name:  "string_foo",
-		Type:  "custom_attribute",
+		Type:  customAttributeType,
 	}
 
 	// Test condition passes
@@ -194,10 +265,10 @@ func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorForGeSemverBet
 func (s *ConditionTestSuite) TestCustomAttributeConditionEvaluatorForGeSemverInvalid() {
 	conditionEvaluator := CustomAttributeConditionEvaluator{}
 	condition := entities.Condition{
-		Match: "semver_ge",
+		Match: matchers.SemverGeMatchType,
 		Value: "3.7.0",
 		Name:  "string_foo",
-		Type:  "custom_attribute",
+		Type:  customAttributeType,
 	}
 
 	// Test condition passes

@@ -1,11 +1,11 @@
 /****************************************************************************
- * Copyright 2019,2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019,2021-2022, Optimizely, Inc. and contributors              *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -104,6 +104,13 @@ type Rollout struct {
 	Experiments []Experiment `json:"experiments"`
 }
 
+// Integration represents a integration from the Optimizely datafile
+type Integration struct {
+	Key       string `json:"key"`
+	Host      string `json:"host"`
+	PublicKey string `json:"publicKey"`
+}
+
 // Datafile represents the datafile we get from Optimizely
 type Datafile struct {
 	Attributes        []Attribute   `json:"attributes"`
@@ -113,6 +120,7 @@ type Datafile struct {
 	FeatureFlags      []FeatureFlag `json:"featureFlags"`
 	Events            []Event       `json:"events"`
 	Rollouts          []Rollout     `json:"rollouts"`
+	Integrations      []Integration `json:"integrations"`
 	TypedAudiences    []Audience    `json:"typedAudiences"`
 	Variables         []string      `json:"variables"`
 	AccountID         string        `json:"accountId"`

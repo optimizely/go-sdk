@@ -1,11 +1,11 @@
 /****************************************************************************
- * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2022, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -22,6 +22,7 @@ import (
 	"reflect"
 
 	jsoniter "github.com/json-iterator/go"
+	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers"
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
@@ -39,13 +40,13 @@ const (
 )
 
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
-func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, retErr error) {
+func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, odpSegments []string, retErr error) {
 
 	parsedConditions, retErr := parseConditions(conditions)
 	if retErr != nil {
 		return
 	}
-
+	odpSegments = []string{}
 	value := reflect.ValueOf(parsedConditions)
 	visited := make(map[interface{}]bool)
 
@@ -82,6 +83,7 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 						retErr = err
 						return
 					}
+					extractSegment(&odpSegments, n)
 				}
 
 				root.Nodes = append(root.Nodes, n)
@@ -100,6 +102,7 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 				retErr = err
 				return
 			}
+			extractSegment(&odpSegments, n)
 			conditionTree.Operator = "or"
 			conditionTree.Nodes = append(conditionTree.Nodes, n)
 		}
@@ -111,7 +114,7 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 		retErr = errEmptyTree
 		conditionTree = nil
 	}
-	return conditionTree, retErr
+	return conditionTree, odpSegments, retErr
 }
 
 // Parses conditions for audience in the datafile
@@ -204,4 +207,16 @@ func isValidOperator(op string) bool {
 		return true
 	}
 	return false
+}
+
+func extractSegment(odpSegments *[]string, node *entities.TreeNode) {
+	condition, ok := node.Item.(entities.Condition)
+	if !ok {
+		return
+	}
+	if condition.Match == matchers.QualifiedMatchType {
+		if segment, ok := condition.Value.(string); ok && segment != "" {
+			*odpSegments = append(*odpSegments, segment)
+		}
+	}
 }

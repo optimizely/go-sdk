@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/optimizely/go-sdk"
+	optimizely "github.com/optimizely/go-sdk"
 	"github.com/optimizely/go-sdk/pkg/client"
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/event"
