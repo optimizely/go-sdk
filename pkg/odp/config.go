@@ -40,7 +40,7 @@ type Config struct {
 	apiKey, apiHost      string
 	segmentsToCheck      []string
 	odpServiceIntegrated ConfigState
-	lock                 *sync.RWMutex
+	lock                 sync.RWMutex
 }
 
 // NewConfig creates and returns a new instance of Config.
@@ -50,7 +50,6 @@ func NewConfig(apiKey, apiHost string, segmentsToCheck []string) *Config {
 		apiHost:              apiHost,
 		segmentsToCheck:      segmentsToCheck,
 		odpServiceIntegrated: NotDetermined, // initially queueing allowed until the first datafile is parsed
-		lock:                 new(sync.RWMutex),
 	}
 }
 
@@ -75,30 +74,33 @@ func (s *Config) Update(apiKey, apiHost string, segmentsToCheck []string) bool {
 }
 
 // GetAPIKey returns value for APIKey.
-func (s Config) GetAPIKey() string {
+func (s *Config) GetAPIKey() string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return s.apiKey
 }
 
 // GetAPIHost returns value for APIHost.
-func (s Config) GetAPIHost() string {
+func (s *Config) GetAPIHost() string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return s.apiHost
 }
 
 // GetSegmentsToCheck returns value for SegmentsToCheck.
-func (s Config) GetSegmentsToCheck() []string {
+func (s *Config) GetSegmentsToCheck() []string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
-	var segmentsToCheck []string
+	if s.segmentsToCheck == nil {
+		return nil
+	}
+	segmentsToCheck := make([]string, len(s.segmentsToCheck))
 	copy(segmentsToCheck, s.segmentsToCheck)
 	return segmentsToCheck
 }
 
 // IsEventQueueingAllowed returns true if event queueing is allowed
-func (s Config) IsEventQueueingAllowed() bool {
+func (s *Config) IsEventQueueingAllowed() bool {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	value := true

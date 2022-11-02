@@ -143,17 +143,9 @@ func (s *SegmentAPIManager) FetchSegments(apiKey, apiHost, userKey, userValue st
 	headers := []utils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: "x-api-key", Value: apiKey}}
 
 	// handling edge cases
-	response, _, statusCode, err := s.requester.Post(apiEndpoint, requestQuery, headers...)
-	if response == nil {
-		if err != nil {
-			return nil, fmt.Errorf(fetchSegmentsFailedError, "invalid response")
-		}
-	}
+	response, _, _, err := s.requester.Post(apiEndpoint, requestQuery, headers...)
 	if err != nil {
 		return nil, fmt.Errorf(fetchSegmentsFailedError, err.Error())
-	}
-	if statusCode >= 400 {
-		return nil, fmt.Errorf(fetchSegmentsFailedError, fmt.Sprintf("%d", statusCode))
 	}
 
 	// Checking if response is decodable
@@ -203,7 +195,7 @@ func (s *SegmentAPIManager) FetchSegments(apiKey, apiHost, userKey, userValue st
 
 // Creates graphql query
 func (s SegmentAPIManager) createRequestQuery(userKey, userValue string, segmentsToCheck []string) map[string]interface{} {
-	query := fmt.Sprintf(`query($userId: String, $audiences: [String]) {customer(%s: $userId){audiences(subset: $audiences) {edges {node {name state}}}}}`, userKey)
+	query := fmt.Sprintf(`query($userId: String, $audiences: [String]) {customer(%s: $userId) {audiences(subset: $audiences) {edges {node {name state}}}}}`, userKey)
 	requestQuery := map[string]interface{}{
 		"query": query,
 		"variables": map[string]interface{}{
@@ -220,8 +212,9 @@ func (s SegmentAPIManager) extractComponent(keyPath string, dict map[string]inte
 	var current interface{} = dict
 	paths := strings.Split(keyPath, ".")
 	for _, path := range paths {
-		if v, ok := current.(map[string]interface{})[path]; ok {
-			current = v
+		v, ok := current.(map[string]interface{})
+		if ok {
+			current = v[path]
 			continue
 		}
 		current = nil
