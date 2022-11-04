@@ -27,6 +27,11 @@ import (
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
+// SegmentAPIManagerInterface represents the segment API manager.
+type SegmentAPIManagerInterface interface {
+	FetchSegments(apiKey, apiHost, userKey, userValue string, segmentsToCheck []string) ([]string, error)
+}
+
 // ODP GraphQL API
 // - https://api.zaius.com/v3/graphql
 // - test ODP public API key = "W4WzcEs-ABgXorzY7h1LCQ"

@@ -37,6 +37,7 @@ type SegmentAPIManagerTestSuite struct {
 	goodResponseData, goodEmptyResponseData                                                              string
 	invalidIdentifierResponseData, invalidErrorResponseData, otherExceptionResponseData, badResponseData string
 	invalidEdgeResponseData, invalidNodeResponseData                                                     string
+	liveOdpAPIKey, liveOdpAPIHost, liveOdpValidUserID                                                    string
 }
 
 func (s *SegmentAPIManagerTestSuite) SetupTest() {
@@ -45,6 +46,9 @@ func (s *SegmentAPIManagerTestSuite) SetupTest() {
 	s.apiKey = "test-api-key"
 	s.userValue = "test-user-value"
 	s.userKey = "vuid"
+	s.liveOdpAPIKey = "W4WzcEs-ABgXorzY7h1LCQ"
+	s.liveOdpAPIHost = "https://api.zaius.com"
+	s.liveOdpValidUserID = "tester-101"
 	s.goodResponseData = `{
 		"data": {
 			"customer": {
@@ -288,6 +292,21 @@ func (s *SegmentAPIManagerTestSuite) TestCreateRequestQuery() {
 		expected := expectedBody[i]
 		s.True(reflect.DeepEqual(expected, query))
 	}
+}
+
+// Tests with live ODP server
+func (s *SegmentAPIManagerTestSuite) TestLiveOdpGraphQL() {
+	segmentsToCheck := []string{"segment-1"}
+	segments, err := s.segmentAPIManager.FetchSegments(s.liveOdpAPIKey, s.liveOdpAPIHost, "fs_user_id", s.liveOdpValidUserID, segmentsToCheck)
+	s.NoError(err)
+	s.Empty(segments, "none of the test segments in the live ODP server")
+}
+
+func (s *SegmentAPIManagerTestSuite) TestLiveOdpGraphQLDefaultParametersUserNotRegistered() {
+	segmentsToCheck := []string{"segment-1"}
+	segments, err := s.segmentAPIManager.FetchSegments(s.liveOdpAPIKey, s.liveOdpAPIHost, "fs_user_id", "not-registered-user-1", segmentsToCheck)
+	s.Error(err)
+	s.Nil(segments)
 }
 
 func (s *SegmentAPIManagerTestSuite) getTestServer(statusCode int, response string) *httptest.Server {

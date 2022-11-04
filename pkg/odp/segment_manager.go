@@ -27,11 +27,11 @@ import (
 type SegmentManager struct {
 	odpConfig         *Config
 	segmentsCache     Cache
-	segmentAPIManager *SegmentAPIManager
+	segmentAPIManager SegmentAPIManagerInterface
 }
 
 // NewSegmentManager creates and returns a new instance of SegmentManager.
-func NewSegmentManager(cacheSize int, cacheTimeoutInSecs int64, odpConfig *Config, apiManager *SegmentAPIManager) SegmentManager {
+func NewSegmentManager(cacheSize int, cacheTimeoutInSecs int64, odpConfig *Config, apiManager SegmentAPIManagerInterface) *SegmentManager {
 	segmentManager := SegmentManager{
 		odpConfig:         odpConfig,
 		segmentAPIManager: apiManager,
@@ -43,7 +43,7 @@ func NewSegmentManager(cacheSize int, cacheTimeoutInSecs int64, odpConfig *Confi
 	if segmentManager.segmentAPIManager == nil {
 		segmentManager.segmentAPIManager = NewSegmentAPIManager(nil)
 	}
-	return segmentManager
+	return &segmentManager
 }
 
 // FetchQualifiedSegments fetches and returns qualified segments
