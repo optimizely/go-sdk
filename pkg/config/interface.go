@@ -1,11 +1,11 @@
 /****************************************************************************
- * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2022, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -25,6 +25,8 @@ import (
 // ProjectConfig represents the project's experiments and feature flags and contains methods for accessing the them.
 type ProjectConfig interface {
 	GetDatafile() string
+	GetHostForODP() string
+	GetPublicKeyForODP() string
 	GetAccountID() string
 	GetAnonymizeIP() bool
 	GetAttributeID(id string) string // returns "" if there is no id
@@ -39,6 +41,8 @@ type ProjectConfig interface {
 	GetFeatureByKey(string) (entities.Feature, error)
 	GetVariableByKey(featureKey string, variableKey string) (entities.Variable, error)
 	GetExperimentList() []entities.Experiment
+	GetSegmentList() []string
+	GetIntegrationList() []entities.Integration
 	GetRolloutList() (rolloutList []entities.Rollout)
 	GetFeatureList() []entities.Feature
 	GetGroupByID(string) (entities.Group, error)

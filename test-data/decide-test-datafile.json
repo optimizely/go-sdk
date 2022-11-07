@@ -78,6 +78,13 @@
   "botFiltering": true,
   "projectId": "10431130345",
   "variables": [],
+  "integrations": [
+    {
+      "publicKey": "ax6UV2223fD-jpOXID0BMg", 
+      "host": "https://api.zaius.com", 
+      "key": "odp"
+    }
+  ],
   "featureFlags": [
       {
           "experimentIds": ["10390977673"],
