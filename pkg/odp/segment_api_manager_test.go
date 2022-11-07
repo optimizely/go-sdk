@@ -32,7 +32,7 @@ import (
 
 type SegmentAPIManagerTestSuite struct {
 	suite.Suite
-	segmentAPIManager                                                                                    *SegmentAPIManager
+	segmentAPIManager                                                                                    *DefaultSegmentAPIManager
 	apiHost, apiKey, userValue, userKey                                                                  string
 	goodResponseData, goodEmptyResponseData                                                              string
 	invalidIdentifierResponseData, invalidErrorResponseData, otherExceptionResponseData, badResponseData string

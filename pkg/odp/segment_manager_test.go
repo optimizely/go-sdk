@@ -28,8 +28,8 @@ import (
 
 type SegmentManagerTestSuite struct {
 	suite.Suite
-	segmentManager     *SegmentManager
-	config             *Config
+	segmentManager     *DefaultSegmentManager
+	config             Config
 	segmentAPIManager  *MockSegmentAPIManager
 	userValue, userKey string
 }

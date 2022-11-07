@@ -23,16 +23,22 @@ import (
 	"github.com/optimizely/go-sdk/pkg/odp/utils"
 )
 
-// SegmentManager is used to represent odp segment manager
-type SegmentManager struct {
-	odpConfig         *Config
-	segmentsCache     Cache
-	segmentAPIManager SegmentAPIManagerInterface
+// SegmentManager represents the odp segment manager.
+type SegmentManager interface {
+	FetchQualifiedSegments(userKey, userValue string, options []SegmentOption) (segments []string, err error)
+	Reset()
 }
 
-// NewSegmentManager creates and returns a new instance of SegmentManager.
-func NewSegmentManager(cacheSize int, cacheTimeoutInSecs int64, odpConfig *Config, apiManager SegmentAPIManagerInterface) *SegmentManager {
-	segmentManager := SegmentManager{
+// DefaultSegmentManager represents default implementation of odp segment manager
+type DefaultSegmentManager struct {
+	odpConfig         Config
+	segmentsCache     Cache
+	segmentAPIManager SegmentAPIManager
+}
+
+// NewSegmentManager creates and returns a new instance of DefaultSegmentManager.
+func NewSegmentManager(cacheSize int, cacheTimeoutInSecs int64, odpConfig Config, apiManager SegmentAPIManager) *DefaultSegmentManager {
+	segmentManager := DefaultSegmentManager{
 		odpConfig:         odpConfig,
 		segmentAPIManager: apiManager,
 		segmentsCache:     NewLRUCache(cacheSize, cacheTimeoutInSecs),
@@ -47,13 +53,13 @@ func NewSegmentManager(cacheSize int, cacheTimeoutInSecs int64, odpConfig *Confi
 }
 
 // FetchQualifiedSegments fetches and returns qualified segments
-func (s *SegmentManager) FetchQualifiedSegments(userKey, userValue string, options []SegmentOption) (segments []string, err error) {
-	if s.odpConfig == nil || s.odpConfig.apiHost == "" || s.odpConfig.apiKey == "" {
+func (s *DefaultSegmentManager) FetchQualifiedSegments(userKey, userValue string, options []SegmentOption) (segments []string, err error) {
+	if s.odpConfig == nil || s.odpConfig.GetAPIHost() == "" || s.odpConfig.GetAPIKey() == "" {
 		return nil, fmt.Errorf(fetchSegmentsFailedError, "apiKey/apiHost not defined")
 	}
 
 	// empty segmentsToCheck (no ODP audiences found in datafile) is not an error. return immediately without checking with the ODP server.
-	if len(s.odpConfig.segmentsToCheck) == 0 {
+	if len(s.odpConfig.GetSegmentsToCheck()) == 0 {
 		return []string{}, nil
 	}
 
@@ -80,7 +86,7 @@ func (s *SegmentManager) FetchQualifiedSegments(userKey, userValue string, optio
 		}
 	}
 
-	segments, err = s.segmentAPIManager.FetchSegments(s.odpConfig.apiKey, s.odpConfig.apiHost, userKey, userValue, s.odpConfig.segmentsToCheck)
+	segments, err = s.segmentAPIManager.FetchSegments(s.odpConfig.GetAPIKey(), s.odpConfig.GetAPIHost(), userKey, userValue, s.odpConfig.GetSegmentsToCheck())
 	if err == nil && len(segments) > 0 && !ignoreCache {
 		s.segmentsCache.Save(cacheKey, segments)
 	}
@@ -88,6 +94,6 @@ func (s *SegmentManager) FetchQualifiedSegments(userKey, userValue string, optio
 }
 
 // Reset resets segmentsCache.
-func (s *SegmentManager) Reset() {
+func (s *DefaultSegmentManager) Reset() {
 	s.segmentsCache.Reset()
 }

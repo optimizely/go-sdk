@@ -27,8 +27,8 @@ import (
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
-// SegmentAPIManagerInterface represents the segment API manager.
-type SegmentAPIManagerInterface interface {
+// SegmentAPIManager represents the segment API manager.
+type SegmentAPIManager interface {
 	FetchSegments(apiKey, apiHost, userKey, userValue string, segmentsToCheck []string) ([]string, error)
 }
 
@@ -124,21 +124,21 @@ func (s Audience) isQualified() bool {
 	return s.State == "qualified"
 }
 
-// SegmentAPIManager is used to fetch qualified ODP segments
-type SegmentAPIManager struct {
+// DefaultSegmentAPIManager represents default implementation of Segment API Manager
+type DefaultSegmentAPIManager struct {
 	requester utils.Requester
 }
 
-// NewSegmentAPIManager creates and returns a new instance SegmentAPIManager.
-func NewSegmentAPIManager(requester utils.Requester) *SegmentAPIManager {
+// NewSegmentAPIManager creates and returns a new instance of DefaultSegmentAPIManager.
+func NewSegmentAPIManager(requester utils.Requester) *DefaultSegmentAPIManager {
 	if requester == nil {
 		requester = utils.NewHTTPRequester(logging.GetLogger("", "SegmentAPIManager"))
 	}
-	return &SegmentAPIManager{requester: requester}
+	return &DefaultSegmentAPIManager{requester: requester}
 }
 
 // FetchSegments returns qualified ODP segments
-func (s *SegmentAPIManager) FetchSegments(apiKey, apiHost, userKey, userValue string, segmentsToCheck []string) ([]string, error) {
+func (s *DefaultSegmentAPIManager) FetchSegments(apiKey, apiHost, userKey, userValue string, segmentsToCheck []string) ([]string, error) {
 
 	// Creating query for odp request
 	requestQuery := s.createRequestQuery(userKey, userValue, segmentsToCheck)
@@ -199,7 +199,7 @@ func (s *SegmentAPIManager) FetchSegments(apiKey, apiHost, userKey, userValue st
 }
 
 // Creates graphql query
-func (s SegmentAPIManager) createRequestQuery(userKey, userValue string, segmentsToCheck []string) map[string]interface{} {
+func (s DefaultSegmentAPIManager) createRequestQuery(userKey, userValue string, segmentsToCheck []string) map[string]interface{} {
 	query := fmt.Sprintf(`query($userId: String, $audiences: [String]) {customer(%s: $userId) {audiences(subset: $audiences) {edges {node {name state}}}}}`, userKey)
 	requestQuery := map[string]interface{}{
 		"query": query,
@@ -213,7 +213,7 @@ func (s SegmentAPIManager) createRequestQuery(userKey, userValue string, segment
 
 // Extract deep-json contents with keypath "a.b.c"
 // { "a": { "b": { "c": "contents" } } }
-func (s SegmentAPIManager) extractComponent(keyPath string, dict map[string]interface{}) interface{} {
+func (s DefaultSegmentAPIManager) extractComponent(keyPath string, dict map[string]interface{}) interface{} {
 	var current interface{} = dict
 	paths := strings.Split(keyPath, ".")
 	for _, path := range paths {

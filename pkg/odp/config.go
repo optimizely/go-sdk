@@ -36,16 +36,25 @@ const (
 )
 
 // Config is used to represent odp config
-type Config struct {
+type Config interface {
+	Update(apiKey, apiHost string, segmentsToCheck []string) bool
+	GetAPIKey() string
+	GetAPIHost() string
+	GetSegmentsToCheck() []string
+	IsEventQueueingAllowed() bool
+}
+
+// DefaultConfig represents default implementation of odp config
+type DefaultConfig struct {
 	apiKey, apiHost      string
 	segmentsToCheck      []string
 	odpServiceIntegrated ConfigState
 	lock                 sync.RWMutex
 }
 
-// NewConfig creates and returns a new instance of Config.
-func NewConfig(apiKey, apiHost string, segmentsToCheck []string) *Config {
-	return &Config{
+// NewConfig creates and returns a new instance of DefaultConfig.
+func NewConfig(apiKey, apiHost string, segmentsToCheck []string) *DefaultConfig {
+	return &DefaultConfig{
 		apiKey:               apiKey,
 		apiHost:              apiHost,
 		segmentsToCheck:      segmentsToCheck,
@@ -54,7 +63,7 @@ func NewConfig(apiKey, apiHost string, segmentsToCheck []string) *Config {
 }
 
 // Update updates config.
-func (s *Config) Update(apiKey, apiHost string, segmentsToCheck []string) bool {
+func (s *DefaultConfig) Update(apiKey, apiHost string, segmentsToCheck []string) bool {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -74,21 +83,21 @@ func (s *Config) Update(apiKey, apiHost string, segmentsToCheck []string) bool {
 }
 
 // GetAPIKey returns value for APIKey.
-func (s *Config) GetAPIKey() string {
+func (s *DefaultConfig) GetAPIKey() string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return s.apiKey
 }
 
 // GetAPIHost returns value for APIHost.
-func (s *Config) GetAPIHost() string {
+func (s *DefaultConfig) GetAPIHost() string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return s.apiHost
 }
 
 // GetSegmentsToCheck returns value for SegmentsToCheck.
-func (s *Config) GetSegmentsToCheck() []string {
+func (s *DefaultConfig) GetSegmentsToCheck() []string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	if s.segmentsToCheck == nil {
@@ -100,7 +109,7 @@ func (s *Config) GetSegmentsToCheck() []string {
 }
 
 // IsEventQueueingAllowed returns true if event queueing is allowed
-func (s *Config) IsEventQueueingAllowed() bool {
+func (s *DefaultConfig) IsEventQueueingAllowed() bool {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	value := true

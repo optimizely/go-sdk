@@ -29,7 +29,7 @@ type ConfigTestSuite struct {
 	suite.Suite
 	apiHost, apiKey string
 	segmentsToCheck []string
-	config          *Config
+	config          *DefaultConfig
 }
 
 func (c *ConfigTestSuite) SetupTest() {
