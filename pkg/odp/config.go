@@ -23,42 +23,28 @@ import (
 	"github.com/optimizely/go-sdk/pkg/odp/utils"
 )
 
-// ConfigState is used to represent state of odp
-type ConfigState int64
-
-const (
-	// NotDetermined represents that odp service state is currently not determined
-	NotDetermined ConfigState = iota
-	// Integrated represents that odp service is integrated
-	Integrated
-	// NotIntegrated represents that odp service is not integrated
-	NotIntegrated
-)
-
 // Config is used to represent odp config
 type Config interface {
 	Update(apiKey, apiHost string, segmentsToCheck []string) bool
 	GetAPIKey() string
 	GetAPIHost() string
 	GetSegmentsToCheck() []string
-	IsEventQueueingAllowed() bool
+	IsOdpServiceIntegrated() bool
 }
 
 // DefaultConfig represents default implementation of odp config
 type DefaultConfig struct {
-	apiKey, apiHost      string
-	segmentsToCheck      []string
-	odpServiceIntegrated ConfigState
-	lock                 sync.RWMutex
+	apiKey, apiHost string
+	segmentsToCheck []string
+	lock            sync.RWMutex
 }
 
 // NewConfig creates and returns a new instance of DefaultConfig.
 func NewConfig(apiKey, apiHost string, segmentsToCheck []string) *DefaultConfig {
 	return &DefaultConfig{
-		apiKey:               apiKey,
-		apiHost:              apiHost,
-		segmentsToCheck:      segmentsToCheck,
-		odpServiceIntegrated: NotDetermined, // initially queueing allowed until the first datafile is parsed
+		apiKey:          apiKey,
+		apiHost:         apiHost,
+		segmentsToCheck: segmentsToCheck,
 	}
 }
 
@@ -66,12 +52,6 @@ func NewConfig(apiKey, apiHost string, segmentsToCheck []string) *DefaultConfig 
 func (s *DefaultConfig) Update(apiKey, apiHost string, segmentsToCheck []string) bool {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-
-	// disable future event queueing if datafile has no ODP integrations.
-	s.odpServiceIntegrated = NotIntegrated
-	if apiKey != "" && apiHost != "" {
-		s.odpServiceIntegrated = Integrated
-	}
 
 	if s.apiKey == apiKey && s.apiHost == apiHost && utils.Equal(s.segmentsToCheck, segmentsToCheck) {
 		return false
@@ -108,13 +88,7 @@ func (s *DefaultConfig) GetSegmentsToCheck() []string {
 	return segmentsToCheck
 }
 
-// IsEventQueueingAllowed returns true if event queueing is allowed
-func (s *DefaultConfig) IsEventQueueingAllowed() bool {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-	value := true
-	if s.odpServiceIntegrated == NotIntegrated {
-		value = false
-	}
-	return value
+// IsOdpServiceIntegrated returns true if odp service is integrated
+func (s *DefaultConfig) IsOdpServiceIntegrated() bool {
+	return s.GetAPIHost() != "" && s.GetAPIKey() != ""
 }

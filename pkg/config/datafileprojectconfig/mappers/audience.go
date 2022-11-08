@@ -43,6 +43,7 @@ func MapAudiences(audiences []datafileEntities.Audience) (audienceMap map[string
 			if err == nil {
 				audience.ConditionTree = conditionTree
 			}
+			// Only add unique segments to the list
 			for _, s := range fSegments {
 				if !odpSegmentsMap[s] {
 					odpSegmentsMap[s] = true

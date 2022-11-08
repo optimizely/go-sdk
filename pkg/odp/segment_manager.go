@@ -25,7 +25,7 @@ import (
 
 // SegmentManager represents the odp segment manager.
 type SegmentManager interface {
-	FetchQualifiedSegments(userKey, userValue string, options []SegmentOption) (segments []string, err error)
+	FetchQualifiedSegments(userKey, userValue string, options []OptimizelySegmentOption) (segments []string, err error)
 	Reset()
 }
 
@@ -37,11 +37,14 @@ type DefaultSegmentManager struct {
 }
 
 // NewSegmentManager creates and returns a new instance of DefaultSegmentManager.
-func NewSegmentManager(cacheSize int, cacheTimeoutInSecs int64, odpConfig Config, apiManager SegmentAPIManager) *DefaultSegmentManager {
+func NewSegmentManager(cache Cache, cacheSize int, cacheTimeoutInSecs int64, odpConfig Config, apiManager SegmentAPIManager) *DefaultSegmentManager {
 	segmentManager := DefaultSegmentManager{
 		odpConfig:         odpConfig,
 		segmentAPIManager: apiManager,
-		segmentsCache:     NewLRUCache(cacheSize, cacheTimeoutInSecs),
+		segmentsCache:     cache,
+	}
+	if segmentManager.segmentsCache == nil {
+		segmentManager.segmentsCache = NewLRUCache(cacheSize, cacheTimeoutInSecs)
 	}
 	if segmentManager.odpConfig == nil {
 		segmentManager.odpConfig = NewConfig("", "", nil)
@@ -53,8 +56,8 @@ func NewSegmentManager(cacheSize int, cacheTimeoutInSecs int64, odpConfig Config
 }
 
 // FetchQualifiedSegments fetches and returns qualified segments
-func (s *DefaultSegmentManager) FetchQualifiedSegments(userKey, userValue string, options []SegmentOption) (segments []string, err error) {
-	if s.odpConfig == nil || s.odpConfig.GetAPIHost() == "" || s.odpConfig.GetAPIKey() == "" {
+func (s *DefaultSegmentManager) FetchQualifiedSegments(userKey, userValue string, options []OptimizelySegmentOption) (segments []string, err error) {
+	if s.odpConfig == nil || !s.odpConfig.IsOdpServiceIntegrated() {
 		return nil, fmt.Errorf(fetchSegmentsFailedError, "apiKey/apiHost not defined")
 	}
 

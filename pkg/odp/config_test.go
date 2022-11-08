@@ -43,8 +43,7 @@ func (c *ConfigTestSuite) TestNewConfigWithValidValues() {
 	c.Equal(c.apiHost, c.config.GetAPIHost())
 	c.Equal(c.apiKey, c.config.GetAPIKey())
 	c.Equal(c.segmentsToCheck, c.config.GetSegmentsToCheck())
-	c.True(c.config.IsEventQueueingAllowed())
-	c.Equal(NotDetermined, c.config.odpServiceIntegrated)
+	c.True(c.config.IsOdpServiceIntegrated())
 }
 
 func (c *ConfigTestSuite) TestNewConfigWithEmptyValues() {
@@ -52,7 +51,7 @@ func (c *ConfigTestSuite) TestNewConfigWithEmptyValues() {
 	c.Equal("", c.config.GetAPIHost())
 	c.Equal("", c.config.GetAPIKey())
 	c.Nil(c.config.GetSegmentsToCheck())
-	c.True(c.config.IsEventQueueingAllowed())
+	c.False(c.config.IsOdpServiceIntegrated())
 }
 
 func (c *ConfigTestSuite) TestUpdateWithValidValues() {
@@ -63,8 +62,7 @@ func (c *ConfigTestSuite) TestUpdateWithValidValues() {
 	c.Equal(expectedAPIKey, c.config.GetAPIKey())
 	c.Equal(expectedAPIHost, c.config.GetAPIHost())
 	c.Equal(expectedSegmentsList, c.config.GetSegmentsToCheck())
-	c.Equal(Integrated, c.config.odpServiceIntegrated)
-	c.True(c.config.IsEventQueueingAllowed())
+	c.True(c.config.IsOdpServiceIntegrated())
 }
 
 func (c *ConfigTestSuite) TestUpdateWithEmptyValues() {
@@ -75,8 +73,7 @@ func (c *ConfigTestSuite) TestUpdateWithEmptyValues() {
 	c.Equal(expectedAPIKey, c.config.GetAPIKey())
 	c.Equal(expectedAPIHost, c.config.GetAPIHost())
 	c.Equal(expectedSegmentsList, c.config.GetSegmentsToCheck())
-	c.Equal(NotIntegrated, c.config.odpServiceIntegrated)
-	c.False(c.config.IsEventQueueingAllowed())
+	c.False(c.config.IsOdpServiceIntegrated())
 }
 
 func (c *ConfigTestSuite) TestUpdateWithSameValues() {
@@ -84,8 +81,7 @@ func (c *ConfigTestSuite) TestUpdateWithSameValues() {
 	c.Equal(c.apiKey, c.config.GetAPIKey())
 	c.Equal(c.apiHost, c.config.GetAPIHost())
 	c.Equal(c.segmentsToCheck, c.config.GetSegmentsToCheck())
-	c.Equal(Integrated, c.config.odpServiceIntegrated)
-	c.True(c.config.IsEventQueueingAllowed())
+	c.True(c.config.IsOdpServiceIntegrated())
 }
 
 func (c *ConfigTestSuite) TestRaceCondition() {
@@ -111,8 +107,8 @@ func (c *ConfigTestSuite) TestRaceCondition() {
 		wg.Done()
 	}
 
-	isEventQueueingAllowed := func() {
-		c.config.IsEventQueueingAllowed()
+	isOdpServiceIntegrated := func() {
+		c.config.IsOdpServiceIntegrated()
 		wg.Done()
 	}
 
@@ -124,7 +120,7 @@ func (c *ConfigTestSuite) TestRaceCondition() {
 		go getAPIKey()
 		go getAPIHost()
 		go getSegmentsToCheck()
-		go isEventQueueingAllowed()
+		go isOdpServiceIntegrated()
 	}
 	wg.Wait()
 }

@@ -17,12 +17,12 @@
 // Package odp //
 package odp
 
-// SegmentOption represents options controlling audience segments.
-type SegmentOption int64
+// OptimizelySegmentOption represents options controlling audience segments.
+type OptimizelySegmentOption int
 
 const (
 	// IgnoreCache ignores cache (save/lookup)
-	IgnoreCache SegmentOption = iota
+	IgnoreCache OptimizelySegmentOption = iota
 	// ResetCache resets cache
 	ResetCache
 )

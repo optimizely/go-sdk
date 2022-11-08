@@ -187,3 +187,14 @@ func TestTimeout(t *testing.T) {
 	assert.Equal(t, 200, cache2.Lookup("2"))
 	assert.Equal(t, 300, cache2.Lookup("3"))
 }
+
+type TestCache struct {
+}
+
+func (l *TestCache) Save(key string, value interface{}) {
+}
+func (l *TestCache) Lookup(key string) interface{} {
+	return nil
+}
+func (l *TestCache) Reset() {
+}
