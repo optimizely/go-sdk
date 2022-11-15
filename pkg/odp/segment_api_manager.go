@@ -29,7 +29,7 @@ import (
 
 // SegmentAPIManager represents the segment API manager.
 type SegmentAPIManager interface {
-	FetchQualifiedSegments(userKey, userValue string) ([]string, error)
+	FetchQualifiedSegments(config Config, userKey, userValue string) ([]string, error)
 }
 
 // ODP GraphQL API
@@ -126,30 +126,26 @@ func (s Audience) isQualified() bool {
 
 // DefaultSegmentAPIManager represents default implementation of Segment API Manager
 type DefaultSegmentAPIManager struct {
-	config    Config
 	requester utils.Requester
 }
 
 // NewSegmentAPIManager creates and returns a new instance of DefaultSegmentAPIManager.
-func NewSegmentAPIManager(config Config, requester utils.Requester) *DefaultSegmentAPIManager {
-	if config == nil {
-		config = NewConfig("", "", nil)
-	}
+func NewSegmentAPIManager(requester utils.Requester) *DefaultSegmentAPIManager {
 	if requester == nil {
 		requester = utils.NewHTTPRequester(logging.GetLogger("", "SegmentAPIManager"))
 	}
-	return &DefaultSegmentAPIManager{config: config, requester: requester}
+	return &DefaultSegmentAPIManager{requester: requester}
 }
 
 // FetchQualifiedSegments returns qualified ODP segments
-func (sm *DefaultSegmentAPIManager) FetchQualifiedSegments(userKey, userValue string) ([]string, error) {
+func (sm *DefaultSegmentAPIManager) FetchQualifiedSegments(config Config, userKey, userValue string) ([]string, error) {
 
 	// Creating query for odp request
-	requestQuery := sm.createRequestQuery(userKey, userValue, sm.config.GetSegmentsToCheck())
+	requestQuery := sm.createRequestQuery(userKey, userValue, config.GetSegmentsToCheck())
 
 	// Creating request
-	apiEndpoint := sm.config.GetAPIHost() + "/v3/graphql"
-	headers := []utils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: "x-api-key", Value: sm.config.GetAPIKey()}}
+	apiEndpoint := config.GetAPIHost() + "/v3/graphql"
+	headers := []utils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: "x-api-key", Value: config.GetAPIKey()}}
 
 	// handling edge cases
 	response, _, _, err := sm.requester.Post(apiEndpoint, requestQuery, headers...)

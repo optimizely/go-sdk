@@ -32,6 +32,7 @@ import (
 
 type SegmentAPIManagerTestSuite struct {
 	suite.Suite
+	config                                                                                               Config
 	segmentAPIManager                                                                                    *DefaultSegmentAPIManager
 	userValue, userKey                                                                                   string
 	goodResponseData, goodEmptyResponseData                                                              string
@@ -41,7 +42,8 @@ type SegmentAPIManagerTestSuite struct {
 }
 
 func (s *SegmentAPIManagerTestSuite) SetupTest() {
-	s.segmentAPIManager = NewSegmentAPIManager(NewConfig("test-api-key", "test-host", nil), nil)
+	s.config = NewConfig("test-api-key", "test-host", nil)
+	s.segmentAPIManager = NewSegmentAPIManager(nil)
 	s.userValue = "test-user-value"
 	s.userKey = "vuid"
 	s.liveOdpAPIKey = "W4WzcEs-ABgXorzY7h1LCQ"
@@ -154,22 +156,19 @@ func (s *SegmentAPIManagerTestSuite) SetupTest() {
 	}`
 }
 
-func (s *SegmentAPIManagerTestSuite) TestSegmentManagerWithRequesterAndConfig() {
+func (s *SegmentAPIManagerTestSuite) TestSegmentManagerWithRequester() {
 	requester := utils.NewHTTPRequester(logging.GetLogger("", ""))
-	config := NewConfig("", "", nil)
-	segmentManager := NewSegmentAPIManager(config, requester)
+	segmentManager := NewSegmentAPIManager(requester)
 	s.Equal(requester, segmentManager.requester)
-	s.Equal(config, segmentManager.config)
 }
 
 func (s *SegmentAPIManagerTestSuite) TestFetchQualifiedSegmentsSuccess() {
 	s.NotNil(s.segmentAPIManager.requester)
-	s.NotNil(s.segmentAPIManager.config)
 	ts := s.getTestServer(0, s.goodResponseData)
 	defer ts.Close()
 	segmentsToCheck := []string{"a", "b", "c"}
-	s.segmentAPIManager.config.Update(s.segmentAPIManager.config.GetAPIKey(), ts.URL, segmentsToCheck)
-	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.userKey, s.userValue)
+	s.config = NewConfig(s.config.GetAPIKey(), ts.URL, segmentsToCheck)
+	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.config, s.userKey, s.userValue)
 	s.NoError(err)
 	s.Len(segments, 1)
 	s.Equal("a", segments[0])
@@ -179,8 +178,8 @@ func (s *SegmentAPIManagerTestSuite) TestFetchQualifiedSegmentsSuccessWithEmptyS
 	ts := s.getTestServer(0, s.goodEmptyResponseData)
 	defer ts.Close()
 	segmentsToCheck := []string{"a", "b", "c"}
-	s.segmentAPIManager.config.Update(s.segmentAPIManager.config.GetAPIKey(), ts.URL, segmentsToCheck)
-	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.userKey, s.userValue)
+	s.config = NewConfig(s.config.GetAPIKey(), ts.URL, segmentsToCheck)
+	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.config, s.userKey, s.userValue)
 	s.NoError(err)
 	s.Len(segments, 0)
 }
@@ -189,8 +188,8 @@ func (s *SegmentAPIManagerTestSuite) TestFetchQualifiedSegmentsInvalidIdentifier
 	ts := s.getTestServer(0, s.invalidIdentifierResponseData)
 	defer ts.Close()
 	segmentsToCheck := []string{}
-	s.segmentAPIManager.config.Update(s.segmentAPIManager.config.GetAPIKey(), ts.URL, segmentsToCheck)
-	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.userKey, s.userValue)
+	s.config = NewConfig(s.config.GetAPIKey(), ts.URL, segmentsToCheck)
+	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.config, s.userKey, s.userValue)
 	s.Nil(segments)
 	s.Equal(errors.New(invalidSegmentIdentifier), err)
 }
@@ -199,8 +198,8 @@ func (s *SegmentAPIManagerTestSuite) TestFetchQualifiedSegmentsInvalidError() {
 	ts := s.getTestServer(0, s.invalidErrorResponseData)
 	defer ts.Close()
 	segmentsToCheck := []string{}
-	s.segmentAPIManager.config.Update(s.segmentAPIManager.config.GetAPIKey(), ts.URL, segmentsToCheck)
-	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.userKey, s.userValue)
+	s.config = NewConfig(s.config.GetAPIKey(), ts.URL, segmentsToCheck)
+	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.config, s.userKey, s.userValue)
 	s.Nil(segments)
 	s.Equal(fmt.Errorf(fetchSegmentsFailedError, "decode error"), err)
 }
@@ -209,8 +208,8 @@ func (s *SegmentAPIManagerTestSuite) TestFetchQualifiedSegmentsOtherException() 
 	ts := s.getTestServer(0, s.otherExceptionResponseData)
 	defer ts.Close()
 	segmentsToCheck := []string{}
-	s.segmentAPIManager.config.Update(s.segmentAPIManager.config.GetAPIKey(), ts.URL, segmentsToCheck)
-	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.userKey, s.userValue)
+	s.config = NewConfig(s.config.GetAPIKey(), ts.URL, segmentsToCheck)
+	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.config, s.userKey, s.userValue)
 	s.Nil(segments)
 	s.Equal(fmt.Errorf(fetchSegmentsFailedError, "TestExceptionClass"), err)
 }
@@ -219,8 +218,8 @@ func (s *SegmentAPIManagerTestSuite) TestFetchQualifiedSegmentsArrayResponse() {
 	ts := s.getTestServer(0, `[]`)
 	defer ts.Close()
 	segmentsToCheck := []string{}
-	s.segmentAPIManager.config.Update(s.segmentAPIManager.config.GetAPIKey(), ts.URL, segmentsToCheck)
-	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.userKey, s.userValue)
+	s.config = NewConfig(s.config.GetAPIKey(), ts.URL, segmentsToCheck)
+	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.config, s.userKey, s.userValue)
 	s.Nil(segments)
 	s.Equal(fmt.Errorf(fetchSegmentsFailedError, "decode error"), err)
 }
@@ -229,8 +228,8 @@ func (s *SegmentAPIManagerTestSuite) TestFetchQualifiedSegmentsInvalidEdgeRespon
 	ts := s.getTestServer(0, s.invalidEdgeResponseData)
 	defer ts.Close()
 	segmentsToCheck := []string{}
-	s.segmentAPIManager.config.Update(s.segmentAPIManager.config.GetAPIKey(), ts.URL, segmentsToCheck)
-	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.userKey, s.userValue)
+	s.config = NewConfig(s.config.GetAPIKey(), ts.URL, segmentsToCheck)
+	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.config, s.userKey, s.userValue)
 	s.Empty(segments)
 	s.Nil(err)
 }
@@ -239,8 +238,8 @@ func (s *SegmentAPIManagerTestSuite) TestFetchQualifiedSegmentsInvalidNodeRespon
 	ts := s.getTestServer(0, s.invalidNodeResponseData)
 	defer ts.Close()
 	segmentsToCheck := []string{}
-	s.segmentAPIManager.config.Update(s.segmentAPIManager.config.GetAPIKey(), ts.URL, segmentsToCheck)
-	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.userKey, s.userValue)
+	s.config = NewConfig(s.config.GetAPIKey(), ts.URL, segmentsToCheck)
+	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.config, s.userKey, s.userValue)
 	s.Empty(segments)
 	s.Nil(err)
 }
@@ -249,8 +248,8 @@ func (s *SegmentAPIManagerTestSuite) TestFetchQualifiedSegmentsBadResponse() {
 	ts := s.getTestServer(0, s.badResponseData)
 	defer ts.Close()
 	segmentsToCheck := []string{}
-	s.segmentAPIManager.config.Update(s.segmentAPIManager.config.GetAPIKey(), ts.URL, segmentsToCheck)
-	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.userKey, s.userValue)
+	s.config = NewConfig(s.config.GetAPIKey(), ts.URL, segmentsToCheck)
+	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.config, s.userKey, s.userValue)
 	s.Nil(segments)
 	s.Equal(fmt.Errorf(fetchSegmentsFailedError, "decode error"), err)
 }
@@ -259,8 +258,8 @@ func (s *SegmentAPIManagerTestSuite) TestFetchQualifiedSegments400() {
 	ts := s.getTestServer(403, "")
 	defer ts.Close()
 	segmentsToCheck := []string{}
-	s.segmentAPIManager.config.Update(s.segmentAPIManager.config.GetAPIKey(), ts.URL, segmentsToCheck)
-	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.userKey, s.userValue)
+	s.config = NewConfig(s.config.GetAPIKey(), ts.URL, segmentsToCheck)
+	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.config, s.userKey, s.userValue)
 	s.Nil(segments)
 	s.Equal(fmt.Errorf(fetchSegmentsFailedError, "403 Forbidden"), err)
 }
@@ -269,8 +268,8 @@ func (s *SegmentAPIManagerTestSuite) TestFetchQualifiedSegments500() {
 	ts := s.getTestServer(500, "")
 	defer ts.Close()
 	segmentsToCheck := []string{}
-	s.segmentAPIManager.config.Update(s.segmentAPIManager.config.GetAPIKey(), ts.URL, segmentsToCheck)
-	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.userKey, s.userValue)
+	s.config = NewConfig(s.config.GetAPIKey(), ts.URL, segmentsToCheck)
+	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.config, s.userKey, s.userValue)
 	s.Nil(segments)
 	s.Equal(fmt.Errorf(fetchSegmentsFailedError, "500 Internal Server Error"), err)
 }
@@ -309,16 +308,16 @@ func (s *SegmentAPIManagerTestSuite) TestCreateRequestQuery() {
 // Tests with live ODP server
 func (s *SegmentAPIManagerTestSuite) TestLiveOdpGraphQL() {
 	segmentsToCheck := []string{"segment-1"}
-	s.segmentAPIManager.config.Update(s.liveOdpAPIKey, s.liveOdpAPIHost, segmentsToCheck)
-	segments, err := s.segmentAPIManager.FetchQualifiedSegments("fs_user_id", s.liveOdpValidUserID)
+	s.config = NewConfig(s.liveOdpAPIKey, s.liveOdpAPIHost, segmentsToCheck)
+	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.config, "fs_user_id", s.liveOdpValidUserID)
 	s.NoError(err)
 	s.Empty(segments, "none of the test segments in the live ODP server")
 }
 
 func (s *SegmentAPIManagerTestSuite) TestLiveOdpGraphQLDefaultParametersUserNotRegistered() {
 	segmentsToCheck := []string{"segment-1"}
-	s.segmentAPIManager.config.Update(s.liveOdpAPIKey, s.liveOdpAPIHost, segmentsToCheck)
-	segments, err := s.segmentAPIManager.FetchQualifiedSegments("fs_user_id", "not-registered-user-1")
+	s.config = NewConfig(s.liveOdpAPIKey, s.liveOdpAPIHost, segmentsToCheck)
+	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.config, "fs_user_id", "not-registered-user-1")
 	s.Error(err)
 	s.Nil(segments)
 }
@@ -328,7 +327,7 @@ func (s *SegmentAPIManagerTestSuite) getTestServer(statusCode int, response stri
 		if r.URL.String() == "/v3/graphql" {
 			s.Equal("POST", r.Method)
 			s.Equal("application/json", r.Header.Get("Content-Type"))
-			s.Equal(s.segmentAPIManager.config.GetAPIKey(), r.Header.Get("x-api-key"))
+			s.Equal(s.config.GetAPIKey(), r.Header.Get("x-api-key"))
 			if response != "" {
 				jsonData := []byte(response)
 				if code, err := w.Write(jsonData); err != nil {

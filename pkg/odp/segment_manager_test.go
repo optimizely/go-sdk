@@ -36,7 +36,7 @@ type SegmentManagerTestSuite struct {
 
 func (s *SegmentManagerTestSuite) SetupTest() {
 	s.config = NewConfig("", "", nil)
-	s.segmentAPIManager = &MockSegmentAPIManager{config: s.config}
+	s.segmentAPIManager = &MockSegmentAPIManager{}
 	s.segmentManager = NewSegmentManager(nil, 10, 10, s.config, s.segmentAPIManager)
 	s.userValue = "test-user"
 	s.userKey = "vuid"
@@ -136,14 +136,13 @@ func (s *SegmentManagerTestSuite) setCache(userKey, userValue string, value []st
 
 type MockSegmentAPIManager struct {
 	mock.Mock
-	config Config
 }
 
-func (s *MockSegmentAPIManager) FetchQualifiedSegments(userKey, userValue string) ([]string, error) {
-	if s.config.GetAPIKey() == "invalid-key" {
+func (s *MockSegmentAPIManager) FetchQualifiedSegments(config Config, userKey, userValue string) ([]string, error) {
+	if config.GetAPIKey() == "invalid-key" {
 		return nil, fmt.Errorf(fetchSegmentsFailedError, "403 Forbidden")
 	}
-	return s.config.GetSegmentsToCheck(), nil
+	return config.GetSegmentsToCheck(), nil
 }
 
 func TestSegmentManagerTestSuite(t *testing.T) {
