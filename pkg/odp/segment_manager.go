@@ -50,7 +50,7 @@ func NewSegmentManager(cache Cache, cacheSize int, cacheTimeoutInSecs int64, odp
 		segmentManager.odpConfig = NewConfig("", "", nil)
 	}
 	if segmentManager.segmentAPIManager == nil {
-		segmentManager.segmentAPIManager = NewSegmentAPIManager(nil)
+		segmentManager.segmentAPIManager = NewSegmentAPIManager(odpConfig, nil)
 	}
 	return &segmentManager
 }
@@ -89,7 +89,7 @@ func (s *DefaultSegmentManager) FetchQualifiedSegments(userKey, userValue string
 		}
 	}
 
-	segments, err = s.segmentAPIManager.FetchSegments(s.odpConfig.GetAPIKey(), s.odpConfig.GetAPIHost(), userKey, userValue, s.odpConfig.GetSegmentsToCheck())
+	segments, err = s.segmentAPIManager.FetchSegments(userKey, userValue)
 	if err == nil && len(segments) > 0 && !ignoreCache {
 		s.segmentsCache.Save(cacheKey, segments)
 	}

@@ -76,7 +76,7 @@ func (s *DefaultConfig) GetAPIHost() string {
 	return s.apiHost
 }
 
-// GetSegmentsToCheck returns value for SegmentsToCheck.
+// GetSegmentsToCheck returns an array of all ODP segments used in the current datafile (associated with apiHost/apiKey).
 func (s *DefaultConfig) GetSegmentsToCheck() []string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()

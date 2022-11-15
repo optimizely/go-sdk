@@ -29,7 +29,7 @@ import (
 
 // SegmentAPIManager represents the segment API manager.
 type SegmentAPIManager interface {
-	FetchSegments(apiKey, apiHost, userKey, userValue string, segmentsToCheck []string) ([]string, error)
+	FetchSegments(userKey, userValue string) ([]string, error)
 }
 
 // ODP GraphQL API
@@ -126,29 +126,33 @@ func (s Audience) isQualified() bool {
 
 // DefaultSegmentAPIManager represents default implementation of Segment API Manager
 type DefaultSegmentAPIManager struct {
+	config    Config
 	requester utils.Requester
 }
 
 // NewSegmentAPIManager creates and returns a new instance of DefaultSegmentAPIManager.
-func NewSegmentAPIManager(requester utils.Requester) *DefaultSegmentAPIManager {
+func NewSegmentAPIManager(config Config, requester utils.Requester) *DefaultSegmentAPIManager {
+	if config == nil {
+		config = NewConfig("", "", nil)
+	}
 	if requester == nil {
 		requester = utils.NewHTTPRequester(logging.GetLogger("", "SegmentAPIManager"))
 	}
-	return &DefaultSegmentAPIManager{requester: requester}
+	return &DefaultSegmentAPIManager{config: config, requester: requester}
 }
 
 // FetchSegments returns qualified ODP segments
-func (s *DefaultSegmentAPIManager) FetchSegments(apiKey, apiHost, userKey, userValue string, segmentsToCheck []string) ([]string, error) {
+func (sm *DefaultSegmentAPIManager) FetchSegments(userKey, userValue string) ([]string, error) {
 
 	// Creating query for odp request
-	requestQuery := s.createRequestQuery(userKey, userValue, segmentsToCheck)
+	requestQuery := sm.createRequestQuery(userKey, userValue, sm.config.GetSegmentsToCheck())
 
 	// Creating request
-	apiEndpoint := apiHost + "/v3/graphql"
-	headers := []utils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: "x-api-key", Value: apiKey}}
+	apiEndpoint := sm.config.GetAPIHost() + "/v3/graphql"
+	headers := []utils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: "x-api-key", Value: sm.config.GetAPIKey()}}
 
 	// handling edge cases
-	response, _, _, err := s.requester.Post(apiEndpoint, requestQuery, headers...)
+	response, _, _, err := sm.requester.Post(apiEndpoint, requestQuery, headers...)
 	if err != nil {
 		return nil, fmt.Errorf(fetchSegmentsFailedError, err.Error())
 	}
@@ -160,9 +164,9 @@ func (s *DefaultSegmentAPIManager) FetchSegments(apiKey, apiHost, userKey, userV
 	}
 
 	// most meaningful ODP errors are returned in 200 success JSON under {"errors": ...}
-	if odpErrors, ok := s.extractComponent("errors", responseMap).([]interface{}); ok {
+	if odpErrors, ok := sm.extractComponent("errors", responseMap).([]interface{}); ok {
 		if odpError, ok := odpErrors[0].(map[string]interface{}); ok {
-			if errorClass, ok := s.extractComponent("extensions.classification", odpError).(string); ok {
+			if errorClass, ok := sm.extractComponent("extensions.classification", odpError).(string); ok {
 				if errorClass == "InvalidIdentifierException" {
 					return nil, errors.New(invalidSegmentIdentifier)
 				}
@@ -173,7 +177,7 @@ func (s *DefaultSegmentAPIManager) FetchSegments(apiKey, apiHost, userKey, userV
 	}
 
 	// Retrieving audience edges from response
-	audienceDictionaries, ok := s.extractComponent("data.customer.audiences.edges", responseMap).([]interface{})
+	audienceDictionaries, ok := sm.extractComponent("data.customer.audiences.edges", responseMap).([]interface{})
 	if !ok {
 		return nil, fmt.Errorf(fetchSegmentsFailedError, "decode error")
 	}
@@ -199,8 +203,10 @@ func (s *DefaultSegmentAPIManager) FetchSegments(apiKey, apiHost, userKey, userV
 }
 
 // Creates graphql query
-func (s DefaultSegmentAPIManager) createRequestQuery(userKey, userValue string, segmentsToCheck []string) map[string]interface{} {
-	query := fmt.Sprintf(`query($userId: String, $audiences: [String]) {customer(%s: $userId) {audiences(subset: $audiences) {edges {node {name state}}}}}`, userKey)
+func (sm DefaultSegmentAPIManager) createRequestQuery(userKey, userValue string, segmentsToCheck []string) map[string]interface{} {
+	query := fmt.Sprintf(
+		`query($userId: String, $audiences: [String]) {customer(%s: $userId) {audiences(subset: $audiences) {edges {node {name state}}}}}`,
+		userKey)
 	requestQuery := map[string]interface{}{
 		"query": query,
 		"variables": map[string]interface{}{
@@ -213,7 +219,7 @@ func (s DefaultSegmentAPIManager) createRequestQuery(userKey, userValue string, 
 
 // Extract deep-json contents with keypath "a.b.c"
 // { "a": { "b": { "c": "contents" } } }
-func (s DefaultSegmentAPIManager) extractComponent(keyPath string, dict map[string]interface{}) interface{} {
+func (sm DefaultSegmentAPIManager) extractComponent(keyPath string, dict map[string]interface{}) interface{} {
 	var current interface{} = dict
 	paths := strings.Split(keyPath, ".")
 	for _, path := range paths {
