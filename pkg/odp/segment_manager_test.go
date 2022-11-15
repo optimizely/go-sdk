@@ -139,7 +139,7 @@ type MockSegmentAPIManager struct {
 	config Config
 }
 
-func (s *MockSegmentAPIManager) FetchSegments(userKey, userValue string) ([]string, error) {
+func (s *MockSegmentAPIManager) FetchQualifiedSegments(userKey, userValue string) ([]string, error) {
 	if s.config.GetAPIKey() == "invalid-key" {
 		return nil, fmt.Errorf(fetchSegmentsFailedError, "403 Forbidden")
 	}

@@ -89,7 +89,7 @@ func (s *DefaultSegmentManager) FetchQualifiedSegments(userKey, userValue string
 		}
 	}
 
-	segments, err = s.segmentAPIManager.FetchSegments(userKey, userValue)
+	segments, err = s.segmentAPIManager.FetchQualifiedSegments(userKey, userValue)
 	if err == nil && len(segments) > 0 && !ignoreCache {
 		s.segmentsCache.Save(cacheKey, segments)
 	}

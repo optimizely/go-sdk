@@ -29,7 +29,7 @@ import (
 
 // SegmentAPIManager represents the segment API manager.
 type SegmentAPIManager interface {
-	FetchSegments(userKey, userValue string) ([]string, error)
+	FetchQualifiedSegments(userKey, userValue string) ([]string, error)
 }
 
 // ODP GraphQL API
@@ -141,8 +141,8 @@ func NewSegmentAPIManager(config Config, requester utils.Requester) *DefaultSegm
 	return &DefaultSegmentAPIManager{config: config, requester: requester}
 }
 
-// FetchSegments returns qualified ODP segments
-func (sm *DefaultSegmentAPIManager) FetchSegments(userKey, userValue string) ([]string, error) {
+// FetchQualifiedSegments returns qualified ODP segments
+func (sm *DefaultSegmentAPIManager) FetchQualifiedSegments(userKey, userValue string) ([]string, error) {
 
 	// Creating query for odp request
 	requestQuery := sm.createRequestQuery(userKey, userValue, sm.config.GetSegmentsToCheck())
