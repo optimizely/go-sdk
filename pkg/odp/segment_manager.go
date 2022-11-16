@@ -19,9 +19,10 @@ package odp
 
 import (
 	"fmt"
-
-	"github.com/optimizely/go-sdk/pkg/odp/utils"
 )
+
+// SMOptionConfig are the SegmentManager options that give you the ability to add one more more options before the segment manager is initialized.
+type SMOptionConfig func(em *DefaultSegmentManager)
 
 // SegmentManager represents the odp segment manager.
 type SegmentManager interface {
@@ -36,23 +37,42 @@ type DefaultSegmentManager struct {
 	segmentAPIManager SegmentAPIManager
 }
 
-// NewSegmentManager creates and returns a new instance of DefaultSegmentManager.
-func NewSegmentManager(cache Cache, cacheSize int, cacheTimeoutInSecs int64, odpConfig Config, apiManager SegmentAPIManager) *DefaultSegmentManager {
-	segmentManager := DefaultSegmentManager{
-		odpConfig:         odpConfig,
-		segmentAPIManager: apiManager,
-		segmentsCache:     cache,
+// WithSegmentsCache sets cache option to be passed into the NewSegmentManager method
+func WithSegmentsCache(cache Cache) SMOptionConfig {
+	return func(sm *DefaultSegmentManager) {
+		sm.segmentsCache = cache
 	}
+}
+
+// WithODPConfig sets odpConfig option to be passed into the NewSegmentManager method
+func WithODPConfig(odpConfig Config) SMOptionConfig {
+	return func(sm *DefaultSegmentManager) {
+		sm.odpConfig = odpConfig
+	}
+}
+
+// WithAPIManager sets segmentAPIManager as a config option to be passed into the NewSegmentManager method
+func WithAPIManager(segmentAPIManager SegmentAPIManager) SMOptionConfig {
+	return func(sm *DefaultSegmentManager) {
+		sm.segmentAPIManager = segmentAPIManager
+	}
+}
+
+// NewSegmentManager creates and returns a new instance of DefaultSegmentManager.
+func NewSegmentManager(sdkKey string, cacheSize int, cacheTimeoutInSecs int64, options ...SMOptionConfig) *DefaultSegmentManager {
+	segmentManager := &DefaultSegmentManager{}
+	for _, opt := range options {
+		opt(segmentManager)
+	}
+
 	if segmentManager.segmentsCache == nil {
 		segmentManager.segmentsCache = NewLRUCache(cacheSize, cacheTimeoutInSecs)
 	}
-	if segmentManager.odpConfig == nil {
-		segmentManager.odpConfig = NewConfig("", "", nil)
-	}
+
 	if segmentManager.segmentAPIManager == nil {
-		segmentManager.segmentAPIManager = NewSegmentAPIManager(nil)
+		segmentManager.segmentAPIManager = NewSegmentAPIManager(sdkKey, nil)
 	}
-	return &segmentManager
+	return segmentManager
 }
 
 // FetchQualifiedSegments fetches and returns qualified segments
@@ -66,7 +86,7 @@ func (s *DefaultSegmentManager) FetchQualifiedSegments(userKey, userValue string
 		return []string{}, nil
 	}
 
-	cacheKey := utils.MakeCacheKey(userKey, userValue)
+	cacheKey := MakeCacheKey(userKey, userValue)
 	var ignoreCache = false
 	var resetCache = false
 	for _, v := range options {
@@ -99,4 +119,9 @@ func (s *DefaultSegmentManager) FetchQualifiedSegments(userKey, userValue string
 // Reset resets segmentsCache.
 func (s *DefaultSegmentManager) Reset() {
 	s.segmentsCache.Reset()
+}
+
+// MakeCacheKey creates and returns cacheKey
+func MakeCacheKey(userKey, userValue string) string {
+	return userKey + "-$-" + userValue
 }

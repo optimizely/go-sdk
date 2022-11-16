@@ -14,23 +14,13 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package utils //
-package utils
+// Package odp //
+package odp
 
-// Equal determines if two string slices are equal
-func Equal(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i, v := range a {
-		if v != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
-// MakeCacheKey creates and returns cacheKey
-func MakeCacheKey(userKey, userValue string) string {
-	return userKey + "-$-" + userValue
+// Event represents a event to be sent and stored in the Optimizely Data Platform
+type Event struct {
+	Type        string                 `json:"type"`
+	Action      string                 `json:"action"`
+	Identifiers map[string]string      `json:"identifiers"`
+	Data        map[string]interface{} `json:"data"`
 }

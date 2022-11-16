@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -37,33 +36,32 @@ type SegmentManagerTestSuite struct {
 func (s *SegmentManagerTestSuite) SetupTest() {
 	s.config = NewConfig("", "", nil)
 	s.segmentAPIManager = &MockSegmentAPIManager{}
-	s.segmentManager = NewSegmentManager(nil, 10, 10, s.config, s.segmentAPIManager)
+	s.segmentManager = NewSegmentManager("", 10, 10, WithODPConfig(s.config), WithAPIManager(s.segmentAPIManager))
 	s.userValue = "test-user"
 	s.userKey = "vuid"
 }
 
 func (s *SegmentManagerTestSuite) TestNewSegmentManagerNilParameters() {
-	segmentManager := NewSegmentManager(nil, 0, 0, nil, nil)
+	segmentManager := NewSegmentManager("", 0, 0)
 	s.NotNil(segmentManager.segmentAPIManager)
 	s.NotNil(segmentManager.segmentsCache)
-	s.NotNil(segmentManager.odpConfig)
 }
 
 func (s *SegmentManagerTestSuite) TestNewSegmentManagerCustomCache() {
 	customCache := &TestCache{}
-	segmentManager := NewSegmentManager(customCache, 0, 0, nil, nil)
+	segmentManager := NewSegmentManager("", 0, 0, WithSegmentsCache(customCache))
 	s.Equal(customCache, segmentManager.segmentsCache)
 }
 
 func (s *SegmentManagerTestSuite) TestFetchSegmentsNilConfig() {
-	segmentManager := NewSegmentManager(nil, 0, 0, nil, nil)
+	segmentManager := NewSegmentManager("", 0, 0)
 	segments, err := segmentManager.FetchQualifiedSegments(s.userKey, s.userValue, nil)
 	s.Nil(segments)
 	s.Error(err)
 }
 
 func (s *SegmentManagerTestSuite) TestFetchSegmentsNoSegmentsToCheckInConfig() {
-	segmentManager := NewSegmentManager(nil, 0, 0, NewConfig("a", "b", nil), nil)
+	segmentManager := NewSegmentManager("", 0, 0, WithODPConfig(NewConfig("a", "b", nil)))
 	segments, err := segmentManager.FetchQualifiedSegments(s.userKey, s.userValue, nil)
 	s.Empty(segments)
 	s.Nil(err)
@@ -125,12 +123,12 @@ func (s *SegmentManagerTestSuite) TestOptionsResetCache() {
 }
 
 func (s *SegmentManagerTestSuite) TestMakeCacheKey() {
-	s.Equal("vuid-$-test-user", utils.MakeCacheKey(s.userKey, s.userValue))
+	s.Equal("vuid-$-test-user", MakeCacheKey(s.userKey, s.userValue))
 }
 
 // Helper methods
 func (s *SegmentManagerTestSuite) setCache(userKey, userValue string, value []string) {
-	cacheKey := utils.MakeCacheKey(userKey, userValue)
+	cacheKey := MakeCacheKey(userKey, userValue)
 	s.segmentManager.segmentsCache.Save(cacheKey, value)
 }
 

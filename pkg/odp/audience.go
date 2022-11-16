@@ -17,7 +17,13 @@
 // Package odp //
 package odp
 
-const invalidSegmentIdentifier = "audience segments fetch failed (invalid identifier)"
-const fetchSegmentsFailedError = "audience segments fetch failed (%s)"
-const odpEventFailed = "ODP event send failed (%s)"
-const odpInvalidData = "ODP data is not valid"
+// Audience represents an ODP Audience
+type Audience struct {
+	Name        string `json:"name"`
+	State       string `json:"state"`
+	Description string `json:"description,omitempty"`
+}
+
+func (s Audience) isQualified() bool {
+	return s.State == "qualified"
+}

@@ -14,10 +14,42 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package odp //
-package odp
+package utils
 
-const invalidSegmentIdentifier = "audience segments fetch failed (invalid identifier)"
-const fetchSegmentsFailedError = "audience segments fetch failed (%s)"
-const odpEventFailed = "ODP event send failed (%s)"
-const odpInvalidData = "ODP data is not valid"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestCompareSlices(t *testing.T) {
+	assert.True(t, CompareSlices(nil, nil))
+	assert.True(t, CompareSlices([]string{}, []string{}))
+	assert.True(t, CompareSlices([]string{"a", "b"}, []string{"a", "b"}))
+	assert.False(t, CompareSlices([]string{"a"}, []string{}))
+	assert.False(t, CompareSlices([]string{}, []string{"a"}))
+	assert.False(t, CompareSlices([]string{}, nil))
+	assert.False(t, CompareSlices(nil, []string{}))
+}
+
+func TestIsValidODPData(t *testing.T) {
+
+	validData := map[string]interface{}{
+		"key11": "value-1",
+		"key12": true,
+		"key13": 3.5,
+		"key14": nil,
+		"key15": 1,
+	}
+
+	invalidData1 := map[string]interface{}{
+		"key11": []string{},
+	}
+	invalidData2 := map[string]interface{}{
+		"key11": map[string]interface{}{},
+	}
+
+	assert.True(t, IsValidODPData(validData))
+	assert.False(t, IsValidODPData(invalidData1))
+	assert.False(t, IsValidODPData(invalidData2))
+}
