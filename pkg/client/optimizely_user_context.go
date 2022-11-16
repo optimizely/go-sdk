@@ -38,7 +38,7 @@ type OptimizelyUserContext struct {
 }
 
 // returns an instance of the optimizely user context.
-func newOptimizelyUserContext(optimizely *OptimizelyClient, userID string, attributes map[string]interface{}, qualifiedSegments []string, forcedDecisionService *pkgDecision.ForcedDecisionService) OptimizelyUserContext {
+func newOptimizelyUserContext(optimizely *OptimizelyClient, userID string, attributes map[string]interface{}, forcedDecisionService *pkgDecision.ForcedDecisionService, qualifiedSegments []string) OptimizelyUserContext {
 	// store a copy of the provided attributes so it isn't affected by changes made afterwards.
 	if attributes == nil {
 		attributes = map[string]interface{}{}
@@ -115,21 +115,21 @@ func (o *OptimizelyUserContext) IsQualifiedFor(segment string) bool {
 // all data required to deliver the flag or experiment.
 func (o *OptimizelyUserContext) Decide(key string, options []decide.OptimizelyDecideOptions) OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
-	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.GetQualifiedSegments(), o.getForcedDecisionService())
+	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
 	return o.optimizely.decide(userContextCopy, key, convertDecideOptions(options))
 }
 
 // DecideAll returns a key-map of decision results for all active flag keys with options.
 func (o *OptimizelyUserContext) DecideAll(options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
-	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.GetQualifiedSegments(), o.getForcedDecisionService())
+	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
 	return o.optimizely.decideAll(userContextCopy, convertDecideOptions(options))
 }
 
 // DecideForKeys returns a key-map of decision results for multiple flag keys and options.
 func (o *OptimizelyUserContext) DecideForKeys(keys []string, options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
-	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.GetQualifiedSegments(), o.getForcedDecisionService())
+	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
 	return o.optimizely.decideForKeys(userContextCopy, keys, convertDecideOptions(options))
 }
 
@@ -192,5 +192,5 @@ func copyQualifiedSegments(qualifiedSegments []string) (qualifiedSegmentsCopy []
 	}
 	qualifiedSegmentsCopy = make([]string, len(qualifiedSegments))
 	copy(qualifiedSegmentsCopy, qualifiedSegments)
-	return qualifiedSegmentsCopy
+	return
 }

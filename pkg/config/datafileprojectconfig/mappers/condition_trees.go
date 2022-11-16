@@ -83,6 +83,7 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 						retErr = err
 						return
 					}
+					// Extract odp segment from leaf node if applicable
 					extractSegment(&odpSegments, n)
 				}
 
@@ -102,6 +103,7 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 				retErr = err
 				return
 			}
+			// Extract odp segment from leaf node if applicable
 			extractSegment(&odpSegments, n)
 			conditionTree.Operator = "or"
 			conditionTree.Nodes = append(conditionTree.Nodes, n)
@@ -209,11 +211,13 @@ func isValidOperator(op string) bool {
 	return false
 }
 
+// Extracts odpSegment from leaf node and adds it to odpSegments array
 func extractSegment(odpSegments *[]string, node *entities.TreeNode) {
 	condition, ok := node.Item.(entities.Condition)
 	if !ok {
 		return
 	}
+	// Add segment to list only if match type is qualified and value is a non-empty string
 	if condition.Match == matchers.QualifiedMatchType {
 		if segment, ok := condition.Value.(string); ok && segment != "" {
 			*odpSegments = append(*odpSegments, segment)

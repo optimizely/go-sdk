@@ -58,7 +58,7 @@ func (s *OptimizelyUserContextTestSuite) SetupTest() {
 func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextWithAttributesAndSegments() {
 	attributes := map[string]interface{}{"key1": 1212, "key2": 1213}
 	segments := []string{"123"}
-	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes, segments, nil)
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes, nil, segments)
 
 	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 	s.Equal(s.userID, optimizelyUserContext.GetUserID())
@@ -80,7 +80,7 @@ func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextNoAttributesAn
 func (s *OptimizelyUserContextTestSuite) TestUpatingProvidedUserContextHasNoImpactOnOptimizelyUserContext() {
 	attributes := map[string]interface{}{"k1": "v1", "k2": false}
 	segments := []string{"123"}
-	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes, segments, nil)
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes, nil, segments)
 
 	s.Equal(s.OptimizelyClient, optimizelyUserContext.GetOptimizely())
 	s.Equal(s.userID, optimizelyUserContext.GetUserID())
@@ -177,7 +177,7 @@ func (s *OptimizelyUserContextTestSuite) TestSetAndGetQualifiedSegments() {
 	userID := "1212121"
 	var attributes map[string]interface{}
 	qualifiedSegments := []string{"1", "2", "3"}
-	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes, []string{}, nil)
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, userID, attributes, nil, []string{})
 	s.Len(optimizelyUserContext.GetQualifiedSegments(), 0)
 
 	optimizelyUserContext.SetQualifiedSegments(nil)

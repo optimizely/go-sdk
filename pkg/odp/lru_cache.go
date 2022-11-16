@@ -46,8 +46,8 @@ type LRUCache struct {
 }
 
 // NewLRUCache returns a new instance of Least Recently Used in-memory cache
-func NewLRUCache(size int, timeoutInSecs int64) LRUCache {
-	return LRUCache{queue: list.New(), items: make(map[string]*cacheElement), maxSize: size, timeoutInSecs: timeoutInSecs, lock: new(sync.RWMutex)}
+func NewLRUCache(size int, timeoutInSecs int64) *LRUCache {
+	return &LRUCache{queue: list.New(), items: make(map[string]*cacheElement), maxSize: size, timeoutInSecs: timeoutInSecs, lock: new(sync.RWMutex)}
 }
 
 // Save stores a new element into the cache
