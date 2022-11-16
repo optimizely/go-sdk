@@ -36,7 +36,7 @@ type EventAPIManager interface {
 // - test ODP public API key = "W4WzcEs-ABgXorzY7h1LCQ"
 /*
  [Event Request]
- curl -i -H 'Content-Type: application/json' -H 'x-api-key: W4WzcEs-ABgXorzY7h1LCQ' -X POST -d '{"type":"fullstack","action":"identified","identifiers":{"vuid": "123","fs_user_id": "abc"},"data":{"idempotence_id":"xyz","source":"swift-sdk"}}' https://api.zaius.com/v3/events
+ curl -i -H 'Content-Type: application/json' -H 'x-api-key: W4WzcEs-ABgXorzY7h1LCQ' -X POST -d '{"type":"fullstack","action":"identified","identifiers":{"fs_user_id": "abc"},"data":{"idempotence_id":"xyz","source":"go-sdk","data_source_type":"sdk","data_source_version":"1.8.3"}}' https://api.zaius.com/v3/events
  [Event Response]
  {"title":"Accepted","status":202,"timestamp":"2022-06-30T20:59:52.046Z"}
 */

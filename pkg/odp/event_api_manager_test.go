@@ -96,6 +96,25 @@ func (e *EventAPIManagerTestSuite) TestSuggestRetryForNetworkTimeout() {
 	e.True(canRetry)
 }
 
+// func (e *EventAPIManagerTestSuite) TestLiveEvent() {
+// 	config := NewConfig("W4WzcEs-ABgXorzY7h1LCQ", "https://api.zaius.com", nil)
+// 	identifiers := map[string]string{ODPFSUserIDKey: "abc"}
+// 	events := []Event{{
+// 		Type:        ODPEventType,
+// 		Action:      ODPActionIdentified,
+// 		Identifiers: identifiers,
+// 		Data: map[string]interface{}{
+// 			"idempotence_id":      "xyz",
+// 			"source":              "go-sdk",
+// 			"data_source_type":    "sdk",
+// 			"data_source_version": "1.8.3",
+// 		},
+// 	}}
+// 	canRetry, err := e.eventAPIManager.SendODPEvents(config, events)
+// 	e.NoError(err)
+// 	e.False(canRetry)
+// }
+
 func (e *EventAPIManagerTestSuite) getTestServer(statusCode, timeout int) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.String() == eventsAPIEndpointPath {
