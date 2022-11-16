@@ -263,7 +263,7 @@ func (s *SegmentAPIManagerTestSuite) TestFetchQualifiedSegmentsNetworkTimeout() 
 	segmentsToCheck := []string{"a", "b", "c"}
 	s.config = NewConfig(s.config.GetAPIKey(), ts.URL, segmentsToCheck)
 	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.config, s.userKey, s.userValue)
-	s.Equal(fmt.Errorf(fetchSegmentsFailedError, fmt.Sprintf(`Post %q: net/http: timeout awaiting response headers`, ts.URL+graphqlAPIEndpointPath)), err)
+	s.Error(err)
 	s.Nil(segments)
 }
 

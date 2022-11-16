@@ -92,7 +92,7 @@ func (e *EventAPIManagerTestSuite) TestSuggestRetryForNetworkTimeout() {
 	http.DefaultTransport.(*http.Transport).ResponseHeaderTimeout = 10 * time.Millisecond
 	config := NewConfig(e.apiKey, ts.URL, nil)
 	canRetry, err := e.eventAPIManager.SendODPEvents(config, e.events)
-	e.Equal(fmt.Errorf(odpEventFailed, fmt.Sprintf(`Post %q: net/http: timeout awaiting response headers`, ts.URL+eventsAPIEndpointPath)), err)
+	e.Error(err)
 	e.True(canRetry)
 }
 
