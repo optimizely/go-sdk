@@ -319,12 +319,13 @@ func (bm *BatchEventManager) flushEvents() {
 
 // IsOdpServiceIntegrated returns true if odp service is integrated
 func (bm *BatchEventManager) IsOdpServiceIntegrated() bool {
-	if bm.odpConfig.IsOdpServiceIntegrated() {
-		return true
+	if bm.odpConfig == nil || !bm.odpConfig.IsOdpServiceIntegrated() {
+		// ensure empty queue
+		bm.eventQueue.Remove(bm.eventQueue.Size())
+		return false
 	}
-	// ensure empty queue
-	bm.eventQueue.Remove(bm.eventQueue.Size())
-	return false
+
+	return true
 }
 
 func (bm *BatchEventManager) addCommonData(odpEvent *Event) {
