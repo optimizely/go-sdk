@@ -47,7 +47,7 @@ const DefaultBatchSize = 10
 const DefaultEventQueueSize = 10000
 
 // DefaultEventFlushInterval holds the default value for the event flush interval
-const DefaultEventFlushInterval = 30 * time.Second
+const DefaultEventFlushInterval = 1 * time.Second
 
 // EMOptionConfig are the EventManager options that give you the ability to add one more more options before the event manager is initialized.
 type EMOptionConfig func(em *BatchEventManager)
@@ -329,11 +329,15 @@ func (bm *BatchEventManager) IsOdpServiceIntegrated() bool {
 }
 
 func (bm *BatchEventManager) addCommonData(odpEvent *Event) {
-	if odpEvent.Data == nil {
-		odpEvent.Data = map[string]interface{}{}
+	commonData := map[string]interface{}{
+		"idempotence_id":      guuid.New().String(),
+		"data_source_type":    "sdk",
+		"data_source":         event.ClientName,
+		"data_source_version": event.Version,
 	}
-	odpEvent.Data["idempotence_id"] = guuid.New().String()
-	odpEvent.Data["data_source_type"] = "sdk"
-	odpEvent.Data["data_source"] = event.ClientName
-	odpEvent.Data["data_source_version"] = event.Version
+	// Override common data with user provided data
+	for k, v := range odpEvent.Data {
+		commonData[k] = v
+	}
+	odpEvent.Data = commonData
 }

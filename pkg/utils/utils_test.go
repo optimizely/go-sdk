@@ -25,9 +25,19 @@ import (
 func TestCompareSlices(t *testing.T) {
 	assert.True(t, CompareSlices(nil, nil))
 	assert.True(t, CompareSlices([]string{}, []string{}))
+	// ordered
 	assert.True(t, CompareSlices([]string{"a", "b"}, []string{"a", "b"}))
+	// unordered
+	assert.True(t, CompareSlices([]string{"a", "c", "b"}, []string{"b", "c", "a"}))
+	// unordered with repetition
+	assert.True(t, CompareSlices([]string{"a", "c", "c", "b", "a"}, []string{"b", "c", "a", "a", "c"}))
+	// unordered with repetition and not equal
+	assert.False(t, CompareSlices([]string{"a", "c", "c", "b", "a"}, []string{"b", "c", "a", "a", "c", "b"}))
+	// not equal
 	assert.False(t, CompareSlices([]string{"a"}, []string{}))
 	assert.False(t, CompareSlices([]string{}, []string{"a"}))
+	assert.False(t, CompareSlices([]string{"a", "b"}, []string{"a"}))
+	// array and nil
 	assert.False(t, CompareSlices([]string{}, nil))
 	assert.False(t, CompareSlices(nil, []string{}))
 }

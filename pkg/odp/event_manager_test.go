@@ -344,13 +344,30 @@ func (e *EventManagerTestSuite) TestEventManagerAsyncBehaviour() {
 }
 
 func (e *EventManagerTestSuite) TestAddCommonData() {
-	tmpEvent := Event{}
-	e.eventManager.addCommonData(&tmpEvent)
-	e.NotNil(tmpEvent.Data)
-	e.NotEmpty(tmpEvent.Data["idempotence_id"])
-	e.NotEmpty(tmpEvent.Data["data_source_type"])
-	e.NotEmpty(tmpEvent.Data["data_source"])
-	e.NotEmpty(tmpEvent.Data["data_source_version"])
+	userEvent := Event{}
+	e.eventManager.addCommonData(&userEvent)
+	e.NotNil(userEvent.Data)
+	e.NotEmpty(userEvent.Data["idempotence_id"])
+	e.Equal("sdk", userEvent.Data["data_source_type"])
+	e.Equal(event.ClientName, userEvent.Data["data_source"])
+	e.Equal(event.Version, userEvent.Data["data_source_version"])
+}
+
+func (e *EventManagerTestSuite) TestUserDataOverridesCommonData() {
+	userEvent := Event{Data: map[string]interface{}{
+		"abc":                 nil,
+		"idempotence_id":      234,
+		"data_source_type":    "456",
+		"data_source":         true,
+		"data_source_version": 6.78,
+	}}
+	e.eventManager.addCommonData(&userEvent)
+	e.NotNil(userEvent.Data)
+	e.Equal(nil, userEvent.Data["abc"])
+	e.Equal(234, userEvent.Data["idempotence_id"])
+	e.Equal("456", userEvent.Data["data_source_type"])
+	e.Equal(true, userEvent.Data["data_source"])
+	e.Equal(6.78, userEvent.Data["data_source_version"])
 }
 
 func (e *EventManagerTestSuite) TestIsOdpServiceIntegrated() {

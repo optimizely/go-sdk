@@ -19,6 +19,7 @@ package utils
 
 // CompareSlices determines if two string slices are equal
 func CompareSlices(a, b []string) bool {
+
 	// Required in case a nil value and an empty array is given
 	isFirstValueNil := a == nil
 	isSecondValueNil := b == nil
@@ -27,12 +28,25 @@ func CompareSlices(a, b []string) bool {
 		if len(a) != len(b) {
 			return false
 		}
-		for i, v := range a {
-			if v != b[i] {
+
+		// create a map of string -> int
+		diff := make(map[string]int, len(a))
+		for _, _x := range a {
+			diff[_x]++
+		}
+		for _, _y := range b {
+			// check if both arrays contain the same elements
+			if _, ok := diff[_y]; !ok {
 				return false
 			}
+			// remove count for already checked values
+			diff[_y]--
+			// delete key from map if count is zero
+			if diff[_y] == 0 {
+				delete(diff, _y)
+			}
 		}
-		return true
+		return len(diff) == 0
 	}
 	return isFirstValueNil && isSecondValueNil
 }
