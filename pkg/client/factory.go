@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2020,2022 Optimizely, Inc. and contributors               *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -28,6 +28,9 @@ import (
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/metrics"
+	"github.com/optimizely/go-sdk/pkg/notification"
+	"github.com/optimizely/go-sdk/pkg/odp"
+	pkgOdpConfig "github.com/optimizely/go-sdk/pkg/odp/config"
 	"github.com/optimizely/go-sdk/pkg/registry"
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
@@ -38,15 +41,17 @@ type OptimizelyFactory struct {
 	Datafile            []byte
 	DatafileAccessToken string
 
-	configManager        config.ProjectConfigManager
-	ctx                  context.Context
-	decisionService      decision.Service
-	defaultDecideOptions *decide.Options
-	eventDispatcher      event.Dispatcher
-	eventProcessor       event.Processor
-	userProfileService   decision.UserProfileService
-	overrideStore        decision.ExperimentOverrideStore
-	metricsRegistry      metrics.Registry
+	odpManager            odp.Manager
+	configManager         config.ProjectConfigManager
+	ctx                   context.Context
+	decisionService       decision.Service
+	defaultDecideOptions  *decide.Options
+	optimizelySDKSettings OptimizelySdkSettings
+	eventDispatcher       event.Dispatcher
+	eventProcessor        event.Processor
+	userProfileService    decision.UserProfileService
+	overrideStore         decision.ExperimentOverrideStore
+	metricsRegistry       metrics.Registry
 }
 
 // OptionFunc is used to provide custom client configuration to the OptimizelyFactory.
@@ -102,6 +107,9 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		)
 	}
 
+	// Needed a separate function for this to avoid cyclo-complexity warning
+	f.initializeOdpManager(appClient)
+
 	if f.eventProcessor != nil {
 		appClient.EventProcessor = f.eventProcessor
 	} else {
@@ -139,6 +147,9 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		eg.Go(batchProcessor.Start)
 	}
 
+	// Start odp manager if possible
+	f.startOdpManager(eg, appClient, false)
+
 	return appClient, nil
 }
 
@@ -162,6 +173,20 @@ func WithPollingConfigManagerDatafileAccessToken(pollingInterval time.Duration, 
 	return func(f *OptimizelyFactory) {
 		f.configManager = config.NewPollingProjectConfigManager(f.SDKKey, config.WithInitialDatafile(initDataFile),
 			config.WithPollingInterval(pollingInterval), config.WithDatafileAccessToken(datafileAccessToken))
+	}
+}
+
+// WithOptimizelySdkSettings sets optimizelySdkSettings on a client.
+func WithOptimizelySdkSettings(optimizelySdkSettings OptimizelySdkSettings) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.optimizelySDKSettings = optimizelySdkSettings
+	}
+}
+
+// WithOdpManager sets odp manager on a client.
+func WithOdpManager(odpManager odp.Manager) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.odpManager = odpManager
 	}
 }
 
@@ -250,7 +275,53 @@ func (f *OptimizelyFactory) StaticClient() (optlyClient *OptimizelyClient, err e
 		WithBatchEventProcessor(event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
 	)
 
+	// Initialize and Start odp manager
+	ctx := context.Background()
+	eg := utils.NewExecGroup(ctx, logging.GetLogger(f.SDKKey, "ExecGroup"))
+	optlyClient.execGroup = eg
+
+	f.initializeOdpManager(optlyClient)
+	f.startOdpManager(eg, optlyClient, true)
+
 	return optlyClient, err
+}
+
+func (f *OptimizelyFactory) initializeOdpManager(appClient *OptimizelyClient) {
+	if f.odpManager != nil {
+		appClient.OdpManager = f.odpManager
+	} else {
+		options := []odp.OMOptionConfig{}
+		// Add ODP Config if its already available
+		if conf, err := appClient.ConfigManager.GetConfig(); err == nil {
+			options = append(options, odp.WithOdpConfig(pkgOdpConfig.NewConfig(conf.GetPublicKeyForODP(), conf.GetHostForODP(), conf.GetSegmentList())))
+		}
+		appClient.OdpManager = odp.NewOdpManager(f.SDKKey, f.optimizelySDKSettings.DisableOdp, f.optimizelySDKSettings.SegmentsCacheSize, f.optimizelySDKSettings.SegmentsCacheTimeoutInSecs, options...)
+	}
+}
+
+func (f *OptimizelyFactory) startOdpManager(eg *utils.ExecGroup, appClient *OptimizelyClient, staticConfigManager bool) {
+	// Only start service if odp is enabled
+	if !f.optimizelySDKSettings.DisableOdp {
+		if OdpManager, ok := appClient.OdpManager.(*odp.DefaultOdpManager); ok {
+			// Start odp ticker
+			eg.Go(OdpManager.EventManager.Start)
+			// Only check for changes if ConfigManager is non static
+			if !staticConfigManager {
+				// listen to ProjectConfigUpdateNotification to update odp config accordingly
+				callback := func(notification notification.ProjectConfigUpdateNotification) {
+					if conf, err := appClient.ConfigManager.GetConfig(); err == nil {
+						// Update odp manager with new changes and start service if not already started
+						eg.Go(func(ctx context.Context) {
+							OdpManager.Update(conf.GetPublicKeyForODP(), conf.GetHostForODP(), conf.GetSegmentList())
+							OdpManager.EventManager.Start(ctx)
+						})
+					}
+				}
+				// Add callback for config update
+				_, _ = appClient.ConfigManager.OnProjectConfigUpdate(callback)
+			}
+		}
+	}
 }
 
 func convertDecideOptions(options []decide.OptimizelyDecideOptions) *decide.Options {

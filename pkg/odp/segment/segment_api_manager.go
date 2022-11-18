@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package odp //
-package odp
+// Package segment //
+package segment
 
 import (
 	"encoding/json"
@@ -24,17 +24,16 @@ import (
 	"strings"
 
 	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/utils"
+	"github.com/optimizely/go-sdk/pkg/odp/config"
+	"github.com/optimizely/go-sdk/pkg/odp/utils"
+	pkgUtils "github.com/optimizely/go-sdk/pkg/utils"
 )
 
 const graphqlAPIEndpointPath = "/v3/graphql"
 
-// ODPAPIKeyHeader defines key for designating the ODP API public key
-const ODPAPIKeyHeader = "x-api-key"
-
-// SegmentAPIManager represents the segment API manager.
-type SegmentAPIManager interface {
-	FetchQualifiedSegments(config Config, userKey, userValue string) ([]string, error)
+// APIManager represents the segment API manager.
+type APIManager interface {
+	FetchQualifiedSegments(odpConfig config.Config, userID string) ([]string, error)
 }
 
 // ODP GraphQL API
@@ -120,37 +119,37 @@ type SegmentAPIManager interface {
 
 // DefaultSegmentAPIManager represents default implementation of Segment API Manager
 type DefaultSegmentAPIManager struct {
-	requester utils.Requester
+	requester pkgUtils.Requester
 }
 
 // NewSegmentAPIManager creates and returns a new instance of DefaultSegmentAPIManager.
-func NewSegmentAPIManager(sdkKey string, requester utils.Requester) *DefaultSegmentAPIManager {
+func NewSegmentAPIManager(sdkKey string, requester pkgUtils.Requester) *DefaultSegmentAPIManager {
 	if requester == nil {
-		requester = utils.NewHTTPRequester(logging.GetLogger(sdkKey, "SegmentAPIManager"))
+		requester = pkgUtils.NewHTTPRequester(logging.GetLogger(sdkKey, "SegmentAPIManager"))
 	}
 	return &DefaultSegmentAPIManager{requester: requester}
 }
 
 // FetchQualifiedSegments returns qualified ODP segments
-func (sm *DefaultSegmentAPIManager) FetchQualifiedSegments(config Config, userKey, userValue string) ([]string, error) {
+func (sm *DefaultSegmentAPIManager) FetchQualifiedSegments(odpConfig config.Config, userID string) ([]string, error) {
 
 	// Creating query for odp request
-	requestQuery := sm.createRequestQuery(userKey, userValue, config.GetSegmentsToCheck())
+	requestQuery := sm.createRequestQuery(userID, odpConfig.GetSegmentsToCheck())
 
 	// Creating request
-	apiEndpoint := config.GetAPIHost() + graphqlAPIEndpointPath
-	headers := []utils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: ODPAPIKeyHeader, Value: config.GetAPIKey()}}
+	apiEndpoint := odpConfig.GetAPIHost() + graphqlAPIEndpointPath
+	headers := []pkgUtils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: utils.OdpAPIKeyHeader, Value: odpConfig.GetAPIKey()}}
 
 	// handling edge cases
 	response, _, _, err := sm.requester.Post(apiEndpoint, requestQuery, headers...)
 	if err != nil {
-		return nil, fmt.Errorf(fetchSegmentsFailedError, err.Error())
+		return nil, fmt.Errorf(utils.FetchSegmentsFailedError, err.Error())
 	}
 
 	// Checking if response is decodable
 	responseMap := map[string]interface{}{}
 	if err = json.Unmarshal(response, &responseMap); err != nil {
-		return nil, fmt.Errorf(fetchSegmentsFailedError, "decode error")
+		return nil, fmt.Errorf(utils.FetchSegmentsFailedError, "decode error")
 	}
 
 	// most meaningful ODP errors are returned in 200 success JSON under {"errors": ...}
@@ -158,18 +157,18 @@ func (sm *DefaultSegmentAPIManager) FetchQualifiedSegments(config Config, userKe
 		if odpError, ok := odpErrors[0].(map[string]interface{}); ok {
 			if errorClass, ok := sm.extractComponent("extensions.classification", odpError).(string); ok {
 				if errorClass == "InvalidIdentifierException" {
-					return nil, errors.New(invalidSegmentIdentifier)
+					return nil, errors.New(utils.InvalidSegmentIdentifier)
 				}
-				return nil, fmt.Errorf(fetchSegmentsFailedError, errorClass)
+				return nil, fmt.Errorf(utils.FetchSegmentsFailedError, errorClass)
 			}
 		}
-		return nil, fmt.Errorf(fetchSegmentsFailedError, "decode error")
+		return nil, fmt.Errorf(utils.FetchSegmentsFailedError, "decode error")
 	}
 
 	// Retrieving audience edges from response
 	audienceDictionaries, ok := sm.extractComponent("data.customer.audiences.edges", responseMap).([]interface{})
 	if !ok {
-		return nil, fmt.Errorf(fetchSegmentsFailedError, "decode error")
+		return nil, fmt.Errorf(utils.FetchSegmentsFailedError, "decode error")
 	}
 
 	// Parsing and returning qualified segments
@@ -193,14 +192,14 @@ func (sm *DefaultSegmentAPIManager) FetchQualifiedSegments(config Config, userKe
 }
 
 // Creates graphql query
-func (sm DefaultSegmentAPIManager) createRequestQuery(userKey, userValue string, segmentsToCheck []string) map[string]interface{} {
+func (sm DefaultSegmentAPIManager) createRequestQuery(userID string, segmentsToCheck []string) map[string]interface{} {
 	query := fmt.Sprintf(
 		`query($userId: String, $audiences: [String]) {customer(%s: $userId) {audiences(subset: $audiences) {edges {node {name state}}}}}`,
-		userKey)
+		utils.OdpFSUserIDKey)
 	requestQuery := map[string]interface{}{
 		"query": query,
 		"variables": map[string]interface{}{
-			"userId":    userValue,
+			"userId":    userID,
 			"audiences": segmentsToCheck,
 		},
 	}

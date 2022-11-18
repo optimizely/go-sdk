@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2022, Optimizely, Inc. and contributors                        *
+ * Copyright 2022, Optimizely, Inc. and contributors                   		*
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -14,13 +14,15 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package odp //
-package odp
+// Package client //
+package client
 
-// Event represents a event to be sent and stored in the Optimizely Data Platform
-type Event struct {
-	Type        string                 `json:"type"`
-	Action      string                 `json:"action"`
-	Identifiers map[string]string      `json:"identifiers"`
-	Data        map[string]interface{} `json:"data"`
+// OptimizelySdkSettings represents options controlling odp manager.
+type OptimizelySdkSettings struct {
+	// The maximum size of audience segments cache - cache is disabled if this is set to zero.
+	SegmentsCacheSize int
+	// The timeout in seconds of audience segments cache - timeout is disabled if this is set to zero.
+	SegmentsCacheTimeoutInSecs int64
+	// ODP features are disabled if this is set to true.
+	DisableOdp bool
 }

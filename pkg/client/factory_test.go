@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2020,2022 Optimizely, Inc. and contributors               *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -123,6 +123,8 @@ func TestClientWithCustomCtx(t *testing.T) {
 	factory := OptimizelyFactory{}
 	ctx, cancel := context.WithCancel(context.Background())
 	mockConfigManager := new(MockProjectConfigManager)
+	mockConfig := new(MockProjectConfig)
+	mockConfigManager.On("GetConfig").Return(mockConfig, errors.New("no project config available"))
 	client, err := factory.Client(
 		WithConfigManager(mockConfigManager),
 		WithContext(ctx),

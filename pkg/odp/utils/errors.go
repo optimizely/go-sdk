@@ -14,10 +14,29 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package odp //
-package odp
+// Package utils //
+package utils
 
-const invalidSegmentIdentifier = "audience segments fetch failed (invalid identifier)"
-const fetchSegmentsFailedError = "audience segments fetch failed (%s)"
-const odpEventFailed = "ODP event send failed (%s)"
-const odpInvalidData = "ODP data is not valid"
+// InvalidSegmentIdentifier error string when fetch failed with invalid identifier
+const InvalidSegmentIdentifier = "audience segments fetch failed (invalid identifier)"
+
+// FetchSegmentsFailedError error string when fetch failed with provided reason
+const FetchSegmentsFailedError = "audience segments fetch failed (%s)"
+
+// OdpNotEnabled error string when odp is not enabled
+const OdpNotEnabled = "ODP is not enabled"
+
+// IdentityOdpDisabled error string when odp event is not dispatched as odp is disabled
+const IdentityOdpDisabled = "ODP identify event is not dispatched (ODP disabled)"
+
+// IdentityOdpNotIntegrated error string when odp event is not dispatched as odp is not integrated
+const IdentityOdpNotIntegrated = "ODP identify event is not dispatched (ODP not integrated)"
+
+// OdpNotIntegrated error string when odp is not integrated
+const OdpNotIntegrated = "ODP not integrated"
+
+// OdpEventFailed error string when odp event failed with provided reason
+const OdpEventFailed = "ODP event send failed (%s)"
+
+// OdpInvalidData error string when odp event data is invalid
+const OdpInvalidData = "ODP data is not valid"

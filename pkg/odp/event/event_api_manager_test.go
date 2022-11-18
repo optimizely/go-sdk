@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package odp //
-package odp
+// Package event //
+package event
 
 import (
 	"encoding/json"
@@ -26,6 +26,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/optimizely/go-sdk/pkg/odp/config"
+	"github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -62,8 +64,8 @@ func (e *EventAPIManagerTestSuite) SetupTest() {
 func (e *EventAPIManagerTestSuite) TestShouldSendEventsSuccessfullyAndNotSuggestRetry() {
 	ts := e.getTestServer(202, 0)
 	defer ts.Close()
-	config := NewConfig(e.apiKey, ts.URL, nil)
-	canRetry, err := e.eventAPIManager.SendODPEvents(config, e.events)
+	conf := config.NewConfig(e.apiKey, ts.URL, nil)
+	canRetry, err := e.eventAPIManager.SendOdpEvents(conf, e.events)
 	e.NoError(err)
 	e.False(canRetry)
 }
@@ -71,18 +73,18 @@ func (e *EventAPIManagerTestSuite) TestShouldSendEventsSuccessfullyAndNotSuggest
 func (e *EventAPIManagerTestSuite) TestShouldNotSuggestRetryFor400HttpResponse() {
 	ts := e.getTestServer(400, 0)
 	defer ts.Close()
-	config := NewConfig(e.apiKey, ts.URL, nil)
-	canRetry, err := e.eventAPIManager.SendODPEvents(config, e.events)
-	e.Equal(fmt.Errorf(odpEventFailed, "400 Bad Request"), err)
+	conf := config.NewConfig(e.apiKey, ts.URL, nil)
+	canRetry, err := e.eventAPIManager.SendOdpEvents(conf, e.events)
+	e.Equal(fmt.Errorf(utils.OdpEventFailed, "400 Bad Request"), err)
 	e.False(canRetry)
 }
 
 func (e *EventAPIManagerTestSuite) TestShouldSuggestRetryFor500HttpResponse() {
 	ts := e.getTestServer(500, 0)
 	defer ts.Close()
-	config := NewConfig(e.apiKey, ts.URL, nil)
-	canRetry, err := e.eventAPIManager.SendODPEvents(config, e.events)
-	e.Equal(fmt.Errorf(odpEventFailed, "500 Internal Server Error"), err)
+	conf := config.NewConfig(e.apiKey, ts.URL, nil)
+	canRetry, err := e.eventAPIManager.SendOdpEvents(conf, e.events)
+	e.Equal(fmt.Errorf(utils.OdpEventFailed, "500 Internal Server Error"), err)
 	e.True(canRetry)
 }
 
@@ -90,18 +92,18 @@ func (e *EventAPIManagerTestSuite) TestSuggestRetryForNetworkTimeout() {
 	ts := e.getTestServer(202, 100)
 	defer ts.Close()
 	http.DefaultTransport.(*http.Transport).ResponseHeaderTimeout = 10 * time.Millisecond
-	config := NewConfig(e.apiKey, ts.URL, nil)
-	canRetry, err := e.eventAPIManager.SendODPEvents(config, e.events)
+	conf := config.NewConfig(e.apiKey, ts.URL, nil)
+	canRetry, err := e.eventAPIManager.SendOdpEvents(conf, e.events)
 	e.Error(err)
 	e.True(canRetry)
 }
 
 // func (e *EventAPIManagerTestSuite) TestLiveEvent() {
-// 	config := NewConfig("W4WzcEs-ABgXorzY7h1LCQ", "https://api.zaius.com", nil)
-// 	identifiers := map[string]string{ODPFSUserIDKey: "abc"}
+// 	conf := NewConfig("W4WzcEs-ABgXorzY7h1LCQ", "https://api.zaius.com", nil)
+// 	identifiers := map[string]string{OdpFSUserIDKey: "abc"}
 // 	events := []Event{{
-// 		Type:        ODPEventType,
-// 		Action:      ODPActionIdentified,
+// 		Type:        OdpEventType,
+// 		Action:      OdpActionIdentified,
 // 		Identifiers: identifiers,
 // 		Data: map[string]interface{}{
 // 			"idempotence_id":      "xyz",
@@ -110,7 +112,7 @@ func (e *EventAPIManagerTestSuite) TestSuggestRetryForNetworkTimeout() {
 // 			"data_source_version": "1.8.3",
 // 		},
 // 	}}
-// 	canRetry, err := e.eventAPIManager.SendODPEvents(config, events)
+// 	canRetry, err := e.eventAPIManager.SendOdpEvents(config, events)
 // 	e.NoError(err)
 // 	e.False(canRetry)
 // }
@@ -120,7 +122,7 @@ func (e *EventAPIManagerTestSuite) getTestServer(statusCode, timeout int) *httpt
 		if r.URL.String() == eventsAPIEndpointPath {
 			e.Equal("POST", r.Method)
 			e.Equal("application/json", r.Header.Get("Content-Type"))
-			e.Equal(e.apiKey, r.Header.Get(ODPAPIKeyHeader))
+			e.Equal(e.apiKey, r.Header.Get(utils.OdpAPIKeyHeader))
 			var requestData []Event
 			e.NoError(json.NewDecoder(r.Body).Decode(&requestData))
 			reflect.DeepEqual(e.events, requestData)

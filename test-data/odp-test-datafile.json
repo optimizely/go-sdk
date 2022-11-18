@@ -1,0 +1,146 @@
+{
+  "groups": [],
+  "environmentKey": "production",
+  "rollouts": [
+    {
+      "experiments": [
+        {
+          "status": "Running",
+          "audienceConditions": ["or", "21838524434", "21889322672"],
+          "audienceIds": ["21838524434", "21889322672"],
+          "variations": [
+            {
+              "variables": [],
+              "id": "60392",
+              "key": "on",
+              "featureEnabled": true
+            }
+          ],
+          "forcedVariations": {},
+          "key": "odp-flag-1_targeted_delivery",
+          "layerId": "9300000070871",
+          "trafficAllocation": [{ "entityId": "60392", "endOfRange": 10000 }],
+          "id": "9300000093191"
+        },
+        {
+          "status": "Running",
+          "audienceConditions": [],
+          "audienceIds": [],
+          "variations": [
+            {
+              "variables": [],
+              "id": "60391",
+              "key": "off",
+              "featureEnabled": false
+            }
+          ],
+          "forcedVariations": {},
+          "key": "default-rollout-20137-21880701330",
+          "layerId": "rollout-20137-21880701330",
+          "trafficAllocation": [{ "entityId": "60391", "endOfRange": 10000 }],
+          "id": "default-rollout-20137-21880701330"
+        }
+      ],
+      "id": "rollout-20137-21880701330"
+    }
+  ],
+  "typedAudiences": [
+    {
+      "id": "21889322672",
+      "conditions": [
+        "and",
+        [
+          "or",
+          [
+            "or",
+            {
+              "value": "has_email",
+              "type": "third_party_dimension",
+              "name": "odp.audiences",
+              "match": "qualified"
+            },
+            {
+              "value": "has_email_opted_in",
+              "type": "third_party_dimension",
+              "name": "odp.audiences",
+              "match": "qualified"
+            }
+          ],
+          [
+            "or",
+            {
+              "value": "considering_purchase",
+              "type": "third_party_dimension",
+              "name": "odp.audiences",
+              "match": "qualified"
+            }
+          ]
+        ]
+      ],
+      "name": "odp-aud1"
+    },
+    {
+      "id": "21838524434",
+      "conditions": [
+        "and",
+        [
+          "or",
+          [
+            "or",
+            {
+              "value": 20,
+              "type": "custom_attribute",
+              "name": "age",
+              "match": "lt"
+            }
+          ]
+        ]
+      ],
+      "name": "kids"
+    }
+  ],
+  "projectId": "21864693735",
+  "variables": [],
+  "featureFlags": [
+    {
+      "experimentIds": [],
+      "rolloutId": "rollout-20137-21880701330",
+      "variables": [],
+      "id": "20137",
+      "key": "odp-flag-1"
+    }
+  ],
+  "integrations": [
+    {
+      "publicKey": "W4WzcEs-ABgXorzY7h1LCQ",
+      "host": "https://api.zaius.com",
+      "key": "odp"
+    }
+  ],
+  "experiments": [],
+  "version": "4",
+  "audiences": [
+    {
+      "id": "21889322672",
+      "conditions": "[\"or\", {\"match\": \"exact\", \"name\": \"$opt_dummy_attribute\", \"type\": \"custom_attribute\", \"value\": \"$opt_dummy_value\"}]",
+      "name": "odp-aud1"
+    },
+    {
+      "id": "21838524434",
+      "conditions": "[\"or\", {\"match\": \"exact\", \"name\": \"$opt_dummy_attribute\", \"type\": \"custom_attribute\", \"value\": \"$opt_dummy_value\"}]",
+      "name": "kids"
+    },
+    {
+      "conditions": "[\"or\", {\"match\": \"exact\", \"name\": \"$opt_dummy_attribute\", \"type\": \"custom_attribute\", \"value\": \"$opt_dummy_value\"}]",
+      "id": "$opt_dummy_audience",
+      "name": "Optimizely-Generated Audience for Backwards Compatibility"
+    }
+  ],
+  "anonymizeIP": true,
+  "sdkKey": "VivZyCGPHY369D4z8T9yG",
+  "attributes": [{ "id": "21883620768", "key": "age" }],
+  "botFiltering": false,
+  "accountId": "12122875164",
+  "events": [],
+  "revision": "31"
+}

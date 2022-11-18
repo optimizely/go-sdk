@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package odp //
-package odp
+// Package config //
+package config
 
 import (
 	"fmt"

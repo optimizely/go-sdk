@@ -33,6 +33,8 @@ import (
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
+	"github.com/optimizely/go-sdk/pkg/odp"
+	pkgOdpUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/optimizely/go-sdk/pkg/optimizelyjson"
 	"github.com/optimizely/go-sdk/pkg/utils"
 
@@ -42,6 +44,7 @@ import (
 // OptimizelyClient is the entry point to the Optimizely SDK
 type OptimizelyClient struct {
 	ConfigManager        config.ProjectConfigManager
+	OdpManager           odp.Manager
 	DecisionService      decision.Service
 	EventProcessor       event.Processor
 	notificationCenter   notification.Center
@@ -232,6 +235,15 @@ func (o *OptimizelyClient) decideAll(userContext OptimizelyUserContext, options 
 	}
 
 	return o.decideForKeys(userContext, allFlagKeys, options)
+}
+
+// SendOdpEvent sends an event to the ODP server.
+func (o *OptimizelyClient) SendOdpEvent(eventType, action string, identifiers map[string]string, data map[string]interface{}) bool {
+	// the event type (default = "fullstack").
+	if eventType == "" {
+		eventType = pkgOdpUtils.OdpEventType
+	}
+	return o.OdpManager.SendOdpEvent(eventType, action, identifiers, data)
 }
 
 // Activate returns the key of the variation the user is bucketed into and queues up an impression event to be sent to

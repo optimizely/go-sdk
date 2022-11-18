@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package odp //
-package odp
+// Package segment //
+package segment
 
 // Audience represents an ODP Audience
 type Audience struct {

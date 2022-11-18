@@ -14,15 +14,34 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package odp //
-package odp
+// Package utils //
+package utils
 
-// OptimizelySegmentOption represents options controlling audience segments.
-type OptimizelySegmentOption int
+import "time"
 
-const (
-	// IgnoreCache ignores cache (save/lookup)
-	IgnoreCache OptimizelySegmentOption = iota
-	// ResetCache resets cache
-	ResetCache
-)
+// OdpAPIKeyHeader defines key for designating the ODP API public key
+const OdpAPIKeyHeader = "x-api-key"
+
+// OdpEventType holds the value for the odp event type
+const OdpEventType = "fullstack"
+
+// OdpFSUserIDKey holds the key for the odp fullstack userID
+const OdpFSUserIDKey = "fs_user_id"
+
+// OdpActionIdentified holds the value for identified action type
+const OdpActionIdentified = "identified"
+
+// DefaultBatchSize holds the default value for the batch size
+const DefaultBatchSize = 10
+
+// DefaultEventQueueSize holds the default value for the event queue size
+const DefaultEventQueueSize = 10000
+
+// DefaultEventFlushInterval holds the default value for the event flush interval
+const DefaultEventFlushInterval = 1 * time.Second
+
+// DefaultSegmentsCacheSize holds the default value for the segments cache size
+const DefaultSegmentsCacheSize = 10000
+
+// DefaultSegmentsCacheTimeout holds the default value for the segments cache timeout
+const DefaultSegmentsCacheTimeout time.Duration = 600000000000 // 10 minutes

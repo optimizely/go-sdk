@@ -51,8 +51,8 @@ func CompareSlices(a, b []string) bool {
 	return isFirstValueNil && isSecondValueNil
 }
 
-// IsValidODPData validates if data has all valid types only (string, integer, float, boolean, and nil),
-func IsValidODPData(data map[string]interface{}) bool {
+// IsValidOdpData validates if data has all valid types only (string, integer, float, boolean, and nil),
+func IsValidOdpData(data map[string]interface{}) bool {
 	for _, v := range data {
 		if v != nil && !IsValidAttribute(v) {
 			return false

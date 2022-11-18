@@ -14,21 +14,23 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package odp //
-package odp
+// Package event //
+package event
 
 import (
 	"fmt"
 
 	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/utils"
+	"github.com/optimizely/go-sdk/pkg/odp/config"
+	"github.com/optimizely/go-sdk/pkg/odp/utils"
+	pkgUtils "github.com/optimizely/go-sdk/pkg/utils"
 )
 
 const eventsAPIEndpointPath = "/v3/events"
 
-// EventAPIManager represents the event API manager.
-type EventAPIManager interface {
-	SendODPEvents(config Config, events []Event) (canRetry bool, err error)
+// APIManager represents the event API manager.
+type APIManager interface {
+	SendOdpEvents(odpConfig config.Config, events []Event) (canRetry bool, err error)
 }
 
 // ODP REST Events API
@@ -43,23 +45,23 @@ type EventAPIManager interface {
 
 // DefaultEventAPIManager represents default implementation of Event API Manager
 type DefaultEventAPIManager struct {
-	requester utils.Requester
+	requester pkgUtils.Requester
 }
 
 // NewEventAPIManager creates and returns a new instance of DefaultEventAPIManager.
-func NewEventAPIManager(sdkKey string, requester utils.Requester) *DefaultEventAPIManager {
+func NewEventAPIManager(sdkKey string, requester pkgUtils.Requester) *DefaultEventAPIManager {
 	if requester == nil {
-		requester = utils.NewHTTPRequester(logging.GetLogger(sdkKey, "EventAPIManager"))
+		requester = pkgUtils.NewHTTPRequester(logging.GetLogger(sdkKey, "EventAPIManager"))
 	}
 	return &DefaultEventAPIManager{requester: requester}
 }
 
-// SendODPEvents sends events to ODP's RESTful API
-func (s *DefaultEventAPIManager) SendODPEvents(config Config, events []Event) (canRetry bool, err error) {
+// SendOdpEvents sends events to ODP's RESTful API
+func (s *DefaultEventAPIManager) SendOdpEvents(odpConfig config.Config, events []Event) (canRetry bool, err error) {
 
 	// Creating request
-	apiEndpoint := config.GetAPIHost() + eventsAPIEndpointPath
-	headers := []utils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: ODPAPIKeyHeader, Value: config.GetAPIKey()}}
+	apiEndpoint := odpConfig.GetAPIHost() + eventsAPIEndpointPath
+	headers := []pkgUtils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: utils.OdpAPIKeyHeader, Value: odpConfig.GetAPIKey()}}
 
 	_, _, status, err := s.requester.Post(apiEndpoint, events, headers...)
 	// handling edge cases
@@ -67,7 +69,7 @@ func (s *DefaultEventAPIManager) SendODPEvents(config Config, events []Event) (c
 		return false, nil
 	}
 	if status >= 400 && status < 500 { // no retry (client error)
-		return false, fmt.Errorf(odpEventFailed, err.Error())
+		return false, fmt.Errorf(utils.OdpEventFailed, err.Error())
 	}
-	return true, fmt.Errorf(odpEventFailed, err.Error())
+	return true, fmt.Errorf(utils.OdpEventFailed, err.Error())
 }

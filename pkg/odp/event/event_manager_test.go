@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package odp //
-package odp
+// Package event //
+package event
 
 import (
 	"context"
@@ -27,7 +27,9 @@ import (
 
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/utils"
+	"github.com/optimizely/go-sdk/pkg/odp/config"
+	"github.com/optimizely/go-sdk/pkg/odp/utils"
+	pkgUtils "github.com/optimizely/go-sdk/pkg/utils"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -40,7 +42,7 @@ type EventManagerTestSuite struct {
 
 func (e *EventManagerTestSuite) SetupTest() {
 	e.eventAPIManager = &MockEventAPIManager{}
-	e.eventManager = NewBatchEventManager(WithEventAPIManager(e.eventAPIManager), WithBatchSize(2), WithConfig(NewConfig("a", "b", []string{"c"})))
+	e.eventManager = NewBatchEventManager(WithAPIManager(e.eventAPIManager), WithBatchSize(2), WithOdpConfig(config.NewConfig("a", "b", []string{"c"})))
 }
 
 func (e *EventManagerTestSuite) TestEventManagerWithOptions() {
@@ -49,32 +51,32 @@ func (e *EventManagerTestSuite) TestEventManagerWithOptions() {
 	flushInterval := 3 * time.Second
 	sdkKey := "abc"
 	eventAPIManager := NewEventAPIManager(sdkKey, nil)
-	config := NewConfig("", "", nil)
+	conf := config.NewConfig("", "", nil)
 	eventQueue := event.NewInMemoryQueue(queueSize)
 	em := NewBatchEventManager(WithBatchSize(batchSize), WithQueueSize(queueSize), WithFlushInterval(flushInterval), WithSDKKey(sdkKey),
-		WithEventAPIManager(eventAPIManager), WithConfig(config), WithQueue(eventQueue))
+		WithAPIManager(eventAPIManager), WithOdpConfig(conf), WithQueue(eventQueue))
 	e.Equal(batchSize, em.batchSize)
 	e.Equal(queueSize, em.maxQueueSize)
 	e.Equal(flushInterval, em.flushInterval)
 	e.Equal(sdkKey, em.sdkKey)
-	e.Equal(eventAPIManager, em.eventAPIManager)
-	e.Equal(config, em.odpConfig)
+	e.Equal(eventAPIManager, em.apiManager)
+	e.Equal(conf, em.odpConfig)
 	e.Equal(eventQueue, em.eventQueue)
 }
 
 func (e *EventManagerTestSuite) TestEventManagerWithoutOptions() {
 	em := NewBatchEventManager()
-	e.Equal(DefaultBatchSize, em.batchSize)
-	e.Equal(DefaultEventQueueSize, em.maxQueueSize)
-	e.Equal(DefaultEventFlushInterval, em.flushInterval)
+	e.Equal(utils.DefaultBatchSize, em.batchSize)
+	e.Equal(utils.DefaultEventQueueSize, em.maxQueueSize)
+	e.Equal(utils.DefaultEventFlushInterval, em.flushInterval)
 	e.Equal("", em.sdkKey)
-	e.NotNil(em.eventAPIManager)
+	e.NotNil(em.apiManager)
 	e.NotNil(em.eventQueue)
 }
 
 func (e *EventManagerTestSuite) TestTickerNotStartedIfODPNotIntegrated() {
 	eg := newExecutionContext()
-	e.eventManager.odpConfig = NewConfig("", "", nil)
+	e.eventManager.odpConfig = config.NewConfig("", "", nil)
 	eg.Go(e.eventManager.Start)
 	eg.TerminateAndWait()
 	e.Nil(e.eventManager.ticker)
@@ -125,7 +127,7 @@ func (e *EventManagerTestSuite) TestEventsDispatchedWhenFlushIntervalReached() {
 }
 
 func (e *EventManagerTestSuite) TestIdentifyUserWhenODPNotIntegrated() {
-	e.eventManager.odpConfig = NewConfig("", "", nil)
+	e.eventManager.odpConfig = config.NewConfig("", "", nil)
 	e.False(e.eventManager.IdentifyUser("123"))
 	e.Nil(e.eventManager.ticker)
 	e.Equal(0, e.eventAPIManager.timesSendEventsCalled)
@@ -133,7 +135,7 @@ func (e *EventManagerTestSuite) TestIdentifyUserWhenODPNotIntegrated() {
 
 func (e *EventManagerTestSuite) TestIdentifyUserWhenODPIntegrated() {
 	userID := "123"
-	expectedEvent := Event{Identifiers: map[string]string{ODPFSUserIDKey: userID}, Type: ODPEventType, Action: ODPActionIdentified}
+	expectedEvent := Event{Identifiers: map[string]string{utils.OdpFSUserIDKey: userID}, Type: utils.OdpEventType, Action: utils.OdpActionIdentified}
 	e.eventManager.addCommonData(&expectedEvent)
 	e.eventAPIManager.wg.Add(1)
 	e.eventManager.batchSize = 1
@@ -149,7 +151,7 @@ func (e *EventManagerTestSuite) TestIdentifyUserWhenODPIntegrated() {
 }
 
 func (e *EventManagerTestSuite) TestProcessEventWithInvalidODPConfig() {
-	em := NewBatchEventManager(WithEventAPIManager(&MockEventAPIManager{}), WithBatchSize(2), WithConfig(NewConfig("", "", nil)))
+	em := NewBatchEventManager(WithAPIManager(&MockEventAPIManager{}), WithBatchSize(2), WithOdpConfig(config.NewConfig("", "", nil)))
 	e.False(em.ProcessEvent(Event{}))
 	e.Equal(0, em.eventQueue.Size())
 }
@@ -194,7 +196,7 @@ func (e *EventManagerTestSuite) TestProcessEventDiscardsEventExceedingMaxQueueSi
 }
 
 func (e *EventManagerTestSuite) TestProcessEventWithBatchSizeNotReached() {
-	em := NewBatchEventManager(WithEventAPIManager(&MockEventAPIManager{}), WithBatchSize(2), WithConfig(NewConfig("a", "b", []string{"c"})))
+	em := NewBatchEventManager(WithAPIManager(&MockEventAPIManager{}), WithBatchSize(2), WithOdpConfig(config.NewConfig("a", "b", []string{"c"})))
 	e.True(em.ProcessEvent(Event{}))
 	e.Equal(1, em.eventQueue.Size())
 	e.Equal(0, e.eventAPIManager.timesSendEventsCalled)
@@ -280,7 +282,7 @@ func (e *EventManagerTestSuite) TestProcessEventSecondEventFailsWithRetriesLater
 	e.eventAPIManager.wg.Wait()
 	// Since second batch of 1 event failed, queue should be contain 1 event
 	e.Equal(1, e.eventManager.eventQueue.Size())
-	// SendODPEvents should be called 4 times with 1 success and 3 failures
+	// SendOdpEvents should be called 4 times with 1 success and 3 failures
 	e.Equal(4, e.eventAPIManager.timesSendEventsCalled)
 
 	// Wait for lock to be released
@@ -292,7 +294,7 @@ func (e *EventManagerTestSuite) TestProcessEventSecondEventFailsWithRetriesLater
 	e.eventAPIManager.wg.Wait()
 	// Queue should be empty since remaining event was sent now
 	e.Equal(0, e.eventManager.eventQueue.Size())
-	// SendODPEvents should be called 5 times with 2 success and 3 failures
+	// SendOdpEvents should be called 5 times with 2 success and 3 failures
 	e.Equal(5, e.eventAPIManager.timesSendEventsCalled)
 }
 
@@ -318,7 +320,7 @@ func (e *EventManagerTestSuite) TestProcessEventFirstEventPassesWithRetries() {
 
 func (e *EventManagerTestSuite) TestEventManagerAsyncBehaviour() {
 	eventAPIManager := &MockEventAPIManager{}
-	eventManager := NewBatchEventManager(WithEventAPIManager(eventAPIManager), WithBatchSize(2), WithConfig(NewConfig("-1", "-1", []string{"-1"})))
+	eventManager := NewBatchEventManager(WithAPIManager(eventAPIManager), WithBatchSize(2), WithOdpConfig(config.NewConfig("-1", "-1", []string{"-1"})))
 
 	iterations := 100
 	eventAPIManager.shouldNotInformWaitgroup = true
@@ -375,7 +377,7 @@ func (e *EventManagerTestSuite) TestIsOdpServiceIntegrated() {
 	e.eventManager.eventQueue.Add(Event{})
 	e.Equal(1, e.eventManager.eventQueue.Size())
 
-	e.eventManager.odpConfig = NewConfig("", "", nil)
+	e.eventManager.odpConfig = config.NewConfig("", "", nil)
 	e.False(e.eventManager.IsOdpServiceIntegrated())
 	e.Equal(0, e.eventManager.eventQueue.Size())
 }
@@ -406,12 +408,12 @@ type MockEventAPIManager struct {
 	wg                       sync.WaitGroup
 	retryResponses           []bool  // retry responses to return
 	errResponses             []error // errors to return
-	timesSendEventsCalled    int     // To assert the number of times SendODPEvents was called
+	timesSendEventsCalled    int     // To assert the number of times SendOdpEvents was called
 	eventsSent               []Event // To assert number of events successfully sent
 	shouldNotInformWaitgroup bool    // Should not call done to inform waitgroup
 }
 
-func (m *MockEventAPIManager) SendODPEvents(config Config, events []Event) (canRetry bool, err error) {
+func (m *MockEventAPIManager) SendOdpEvents(odpConfig config.Config, events []Event) (canRetry bool, err error) {
 	if len(m.retryResponses) > m.timesSendEventsCalled {
 		canRetry = m.retryResponses[m.timesSendEventsCalled]
 	}
@@ -435,6 +437,6 @@ func (m *MockEventAPIManager) SendODPEvents(config Config, events []Event) (canR
 	return
 }
 
-func newExecutionContext() *utils.ExecGroup {
-	return utils.NewExecGroup(context.Background(), logging.GetLogger("", "NewExecGroup"))
+func newExecutionContext() *pkgUtils.ExecGroup {
+	return pkgUtils.NewExecGroup(context.Background(), logging.GetLogger("", "NewExecGroup"))
 }

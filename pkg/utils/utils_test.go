@@ -42,7 +42,7 @@ func TestCompareSlices(t *testing.T) {
 	assert.False(t, CompareSlices(nil, []string{}))
 }
 
-func TestIsValidODPData(t *testing.T) {
+func TestIsValidOdpData(t *testing.T) {
 
 	validData := map[string]interface{}{
 		"key11": "value-1",
@@ -59,7 +59,7 @@ func TestIsValidODPData(t *testing.T) {
 		"key11": map[string]interface{}{},
 	}
 
-	assert.True(t, IsValidODPData(validData))
-	assert.False(t, IsValidODPData(invalidData1))
-	assert.False(t, IsValidODPData(invalidData2))
+	assert.True(t, IsValidOdpData(validData))
+	assert.False(t, IsValidOdpData(invalidData1))
+	assert.False(t, IsValidOdpData(invalidData2))
 }
