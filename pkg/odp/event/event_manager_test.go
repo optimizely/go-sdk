@@ -30,7 +30,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/odp/config"
 	"github.com/optimizely/go-sdk/pkg/odp/utils"
 	pkgUtils "github.com/optimizely/go-sdk/pkg/utils"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -60,7 +59,7 @@ func (e *EventManagerTestSuite) TestEventManagerWithOptions() {
 	e.Equal(flushInterval, em.flushInterval)
 	e.Equal(sdkKey, em.sdkKey)
 	e.Equal(eventAPIManager, em.apiManager)
-	e.Equal(conf, em.odpConfig)
+	e.Equal(conf, em.OdpConfig)
 	e.Equal(eventQueue, em.eventQueue)
 }
 
@@ -76,7 +75,7 @@ func (e *EventManagerTestSuite) TestEventManagerWithoutOptions() {
 
 func (e *EventManagerTestSuite) TestTickerNotStartedIfODPNotIntegrated() {
 	eg := newExecutionContext()
-	e.eventManager.odpConfig = config.NewConfig("", "", nil)
+	e.eventManager.OdpConfig = config.NewConfig("", "", nil)
 	eg.Go(e.eventManager.Start)
 	eg.TerminateAndWait()
 	e.Nil(e.eventManager.ticker)
@@ -127,7 +126,7 @@ func (e *EventManagerTestSuite) TestEventsDispatchedWhenFlushIntervalReached() {
 }
 
 func (e *EventManagerTestSuite) TestIdentifyUserWhenODPNotIntegrated() {
-	e.eventManager.odpConfig = config.NewConfig("", "", nil)
+	e.eventManager.OdpConfig = config.NewConfig("", "", nil)
 	e.False(e.eventManager.IdentifyUser("123"))
 	e.Nil(e.eventManager.ticker)
 	e.Equal(0, e.eventAPIManager.timesSendEventsCalled)
@@ -377,7 +376,7 @@ func (e *EventManagerTestSuite) TestIsOdpServiceIntegrated() {
 	e.eventManager.eventQueue.Add(Event{})
 	e.Equal(1, e.eventManager.eventQueue.Size())
 
-	e.eventManager.odpConfig = config.NewConfig("", "", nil)
+	e.eventManager.OdpConfig = config.NewConfig("", "", nil)
 	e.False(e.eventManager.IsOdpServiceIntegrated())
 	e.Equal(0, e.eventManager.eventQueue.Size())
 }
@@ -404,7 +403,6 @@ func TestEventManagerTestSuite(t *testing.T) {
 }
 
 type MockEventAPIManager struct {
-	mock.Mock
 	wg                       sync.WaitGroup
 	retryResponses           []bool  // retry responses to return
 	errResponses             []error // errors to return

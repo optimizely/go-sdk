@@ -148,7 +148,7 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 	}
 
 	// Start odp manager if possible
-	f.startOdpManager(eg, appClient, false)
+	f.startOdpManager(eg, appClient)
 
 	return appClient, nil
 }
@@ -281,7 +281,7 @@ func (f *OptimizelyFactory) StaticClient() (optlyClient *OptimizelyClient, err e
 	optlyClient.execGroup = eg
 
 	f.initializeOdpManager(optlyClient)
-	f.startOdpManager(eg, optlyClient, true)
+	f.startOdpManager(eg, optlyClient)
 
 	return optlyClient, err
 }
@@ -299,14 +299,14 @@ func (f *OptimizelyFactory) initializeOdpManager(appClient *OptimizelyClient) {
 	}
 }
 
-func (f *OptimizelyFactory) startOdpManager(eg *utils.ExecGroup, appClient *OptimizelyClient, staticConfigManager bool) {
+func (f *OptimizelyFactory) startOdpManager(eg *utils.ExecGroup, appClient *OptimizelyClient) {
 	// Only start service if odp is enabled
 	if !f.optimizelySDKSettings.DisableOdp {
 		if OdpManager, ok := appClient.OdpManager.(*odp.DefaultOdpManager); ok {
 			// Start odp ticker
 			eg.Go(OdpManager.EventManager.Start)
 			// Only check for changes if ConfigManager is non static
-			if !staticConfigManager {
+			if _, ok := appClient.ConfigManager.(*config.StaticProjectConfigManager); !ok {
 				// listen to ProjectConfigUpdateNotification to update odp config accordingly
 				callback := func(notification notification.ProjectConfigUpdateNotification) {
 					if conf, err := appClient.ConfigManager.GetConfig(); err == nil {

@@ -239,6 +239,24 @@ func (o *OptimizelyClient) decideAll(userContext OptimizelyUserContext, options 
 
 // SendOdpEvent sends an event to the ODP server.
 func (o *OptimizelyClient) SendOdpEvent(eventType, action string, identifiers map[string]string, data map[string]interface{}) bool {
+
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			switch t := r.(type) {
+			case error:
+				err = t
+			case string:
+				err = errors.New(t)
+			default:
+				err = errors.New("unexpected error")
+			}
+			errorMessage := fmt.Sprintf("SendOdpEvent call, optimizely SDK is panicking with the error:")
+			o.logger.Error(errorMessage, err)
+			o.logger.Debug(string(debug.Stack()))
+		}
+	}()
+
 	// the event type (default = "fullstack").
 	if eventType == "" {
 		eventType = pkgOdpUtils.OdpEventType

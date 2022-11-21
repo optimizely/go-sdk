@@ -44,4 +44,4 @@ const DefaultEventFlushInterval = 1 * time.Second
 const DefaultSegmentsCacheSize = 10000
 
 // DefaultSegmentsCacheTimeout holds the default value for the segments cache timeout
-const DefaultSegmentsCacheTimeout time.Duration = 600000000000 // 10 minutes
+const DefaultSegmentsCacheTimeout int64 = 600 // 10 minutes

@@ -57,7 +57,7 @@ type BatchEventManager struct {
 	flushLock     sync.Mutex
 	ticker        *time.Ticker
 	apiManager    APIManager
-	odpConfig     config.Config
+	OdpConfig     config.Config
 	processing    *semaphore.Weighted
 	logger        logging.OptimizelyLogProducer
 }
@@ -107,7 +107,7 @@ func WithAPIManager(apiManager APIManager) EMOptionConfig {
 // WithOdpConfig sets odpConfig option to be passed into the NewBatchEventManager method
 func WithOdpConfig(odpConfig config.Config) EMOptionConfig {
 	return func(bm *BatchEventManager) {
-		bm.odpConfig = odpConfig
+		bm.OdpConfig = odpConfig
 	}
 }
 
@@ -284,7 +284,7 @@ func (bm *BatchEventManager) FlushEvents() {
 			// Retry till maxRetries reached
 			for retryCount < maxRetries {
 				failedToSend = true
-				shouldRetry, err := bm.apiManager.SendOdpEvents(bm.odpConfig, batchEvent)
+				shouldRetry, err := bm.apiManager.SendOdpEvents(bm.OdpConfig, batchEvent)
 				// Remove events from queue if dispatch failed and retrying is not suggested
 				if !shouldRetry {
 					bm.eventQueue.Remove(batchEventCount)
@@ -306,7 +306,7 @@ func (bm *BatchEventManager) FlushEvents() {
 
 // IsOdpServiceIntegrated returns true if odp service is integrated
 func (bm *BatchEventManager) IsOdpServiceIntegrated() bool {
-	if bm.odpConfig == nil || !bm.odpConfig.IsOdpServiceIntegrated() {
+	if bm.OdpConfig == nil || !bm.OdpConfig.IsOdpServiceIntegrated() {
 		// ensure empty queue
 		bm.eventQueue.Remove(bm.eventQueue.Size())
 		return false

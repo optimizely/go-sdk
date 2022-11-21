@@ -46,7 +46,7 @@ type Manager interface {
 type DefaultOdpManager struct {
 	enabled        bool
 	segmentsCache  cache.Cache
-	odpConfig      config.Config
+	OdpConfig      config.Config
 	logger         logging.OptimizelyLogProducer
 	processing     *semaphore.Weighted
 	SegmentManager segment.Manager
@@ -56,7 +56,7 @@ type DefaultOdpManager struct {
 // WithOdpConfig sets odpConfig option to be passed into the NewOdpManager method
 func WithOdpConfig(odpConfig config.Config) OMOptionConfig {
 	return func(om *DefaultOdpManager) {
-		om.odpConfig = odpConfig
+		om.OdpConfig = odpConfig
 	}
 }
 
@@ -102,20 +102,24 @@ func NewOdpManager(sdkKey string, disable bool, cacheSize int, cacheTimeoutInSec
 		cacheSize = utils.DefaultSegmentsCacheSize
 	}
 	if cacheTimeoutInSecs < 0 {
-		cacheTimeoutInSecs = int64(utils.DefaultSegmentsCacheTimeout)
+		cacheTimeoutInSecs = utils.DefaultSegmentsCacheTimeout
 	}
 
-	if odpManager.odpConfig == nil {
-		odpManager.odpConfig = config.NewConfig("", "", nil)
+	if odpManager.OdpConfig == nil {
+		odpManager.OdpConfig = config.NewConfig("", "", nil)
+	}
+
+	if odpManager.segmentsCache == nil {
+		odpManager.segmentsCache = cache.NewLRUCache(cacheSize, cacheTimeoutInSecs)
 	}
 
 	if odpManager.SegmentManager == nil {
-		options := []segment.SMOptionConfig{segment.WithSegmentsCache(odpManager.segmentsCache), segment.WithOdpConfig(odpManager.odpConfig)}
+		options := []segment.SMOptionConfig{segment.WithSegmentsCache(odpManager.segmentsCache), segment.WithOdpConfig(odpManager.OdpConfig)}
 		odpManager.SegmentManager = segment.NewSegmentManager(sdkKey, cacheSize, cacheTimeoutInSecs, options...)
 	}
 
 	if odpManager.EventManager == nil {
-		odpManager.EventManager = event.NewBatchEventManager(event.WithSDKKey(sdkKey), event.WithOdpConfig(odpManager.odpConfig))
+		odpManager.EventManager = event.NewBatchEventManager(event.WithSDKKey(sdkKey), event.WithOdpConfig(odpManager.OdpConfig))
 	}
 	return odpManager
 }
@@ -164,15 +168,13 @@ func (om *DefaultOdpManager) Update(apiKey, apiHost string, segmentsToCheck []st
 	//       Try to send all old events with the previous public key.
 	//       If it fails to flush all the old events here (network error), remaning events will be discarded.
 
-	// we just want to start one go routine when update is called, subsequent calls will have to wait.
+	// All other subsequent calls will have to wait.
 	if om.processing.TryAcquire(1) {
-		go func() {
-			om.EventManager.FlushEvents()
-			if om.odpConfig.Update(apiKey, apiHost, segmentsToCheck) {
-				// reset segments cache when odp integration or segmentsToCheck are changed
-				om.SegmentManager.Reset()
-			}
-			om.processing.Release(1)
-		}()
+		om.EventManager.FlushEvents()
+		if om.OdpConfig.Update(apiKey, apiHost, segmentsToCheck) {
+			// reset segments cache when odp integration or segmentsToCheck are changed
+			om.SegmentManager.Reset()
+		}
+		om.processing.Release(1)
 	}
 }

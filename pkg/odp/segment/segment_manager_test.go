@@ -23,7 +23,6 @@ import (
 
 	"github.com/optimizely/go-sdk/pkg/odp/config"
 	"github.com/optimizely/go-sdk/pkg/odp/utils"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -72,7 +71,6 @@ func (s *SegmentManagerTestSuite) TestFetchSegmentsSuccessCacheMiss() {
 	expectedSegments := []string{"new-customer"}
 	s.config.Update("valid", "host", expectedSegments)
 	s.setCache("123", []string{"a"})
-	s.segmentAPIManager.On("FetchSegments", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
 
 	segments, err := s.segmentManager.FetchQualifiedSegments(s.userID, nil)
 	s.Nil(err)
@@ -83,7 +81,6 @@ func (s *SegmentManagerTestSuite) TestFetchSegmentsSuccessCacheHit() {
 	expectedSegments := []string{"a"}
 	s.config.Update("valid", "host", []string{"new-customer"})
 	s.setCache(s.userID, expectedSegments)
-	s.segmentAPIManager.On("FetchSegments", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
 
 	segments, err := s.segmentManager.FetchQualifiedSegments(s.userID, nil)
 	s.Nil(err)
@@ -92,7 +89,6 @@ func (s *SegmentManagerTestSuite) TestFetchSegmentsSuccessCacheHit() {
 
 func (s *SegmentManagerTestSuite) TestFetchSegmentsSegmentsError() {
 	s.config.Update("invalid-key", "host", []string{"new-customer"})
-	s.segmentAPIManager.On("FetchSegments", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
 
 	segments, err := s.segmentManager.FetchQualifiedSegments(s.userID, nil)
 	s.Error(err)
@@ -103,7 +99,6 @@ func (s *SegmentManagerTestSuite) TestOptionsIgnoreCache() {
 	expectedSegments := []string{"new-customer"}
 	s.config.Update("valid", "host", expectedSegments)
 	s.setCache(s.userID, []string{"a"})
-	s.segmentAPIManager.On("FetchSegments", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
 
 	segments, err := s.segmentManager.FetchQualifiedSegments(s.userID, []OptimizelySegmentOption{IgnoreCache})
 	s.Nil(err)
@@ -116,7 +111,6 @@ func (s *SegmentManagerTestSuite) TestOptionsResetCache() {
 	s.setCache(s.userID, []string{"a"})
 	s.setCache("123", []string{"a"})
 	s.setCache("456", []string{"a"})
-	s.segmentAPIManager.On("FetchSegments", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
 
 	segments, err := s.segmentManager.FetchQualifiedSegments(s.userID, []OptimizelySegmentOption{ResetCache})
 	s.Nil(err)
@@ -134,7 +128,6 @@ func (s *SegmentManagerTestSuite) setCache(userID string, value []string) {
 }
 
 type MockSegmentAPIManager struct {
-	mock.Mock
 }
 
 func (s *MockSegmentAPIManager) FetchQualifiedSegments(odpConfig config.Config, userID string) ([]string, error) {
