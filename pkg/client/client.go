@@ -51,12 +51,17 @@ type OptimizelyClient struct {
 	execGroup            *utils.ExecGroup
 	logger               logging.OptimizelyLogProducer
 	defaultDecideOptions *decide.Options
+	identify             bool
 }
 
 // CreateUserContext creates a context of the user for which decision APIs will be called.
 // A user context will be created successfully even when the SDK is not fully configured yet.
 func (o *OptimizelyClient) CreateUserContext(userID string, attributes map[string]interface{}) OptimizelyUserContext {
 	// Passing qualified segments as nil initially since they will be fetched later
+	if o.identify {
+		// Identify userID to odp server
+		o.OdpManager.IdentifyUser(userID)
+	}
 	return newOptimizelyUserContext(o, userID, attributes, nil, nil)
 }
 

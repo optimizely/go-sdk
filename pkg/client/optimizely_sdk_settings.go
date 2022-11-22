@@ -20,9 +20,12 @@ package client
 // OptimizelySdkSettings represents options controlling odp manager.
 type OptimizelySdkSettings struct {
 	// The maximum size of audience segments cache - cache is disabled if this is set to zero.
+	// Default value is 10000
 	SegmentsCacheSize int
 	// The timeout in seconds of audience segments cache - timeout is disabled if this is set to zero.
+	// Default value is 600s
 	SegmentsCacheTimeoutInSecs int64
 	// ODP features are disabled if this is set to true.
+	// Default value is false
 	DisableOdp bool
 }

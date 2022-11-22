@@ -31,6 +31,9 @@ import (
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
+	"github.com/optimizely/go-sdk/pkg/odp"
+	"github.com/optimizely/go-sdk/pkg/odp/segment"
+	pkgOdpUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/optimizely/go-sdk/pkg/utils"
 
 	"github.com/stretchr/testify/assert"
@@ -170,6 +173,86 @@ func (TestConfig) GetClientName() string {
 }
 func (TestConfig) GetClientVersion() string {
 	return "1.0.0"
+}
+
+type MockODPManager struct {
+	odp.Manager
+	mock.Mock
+}
+
+func (m *MockODPManager) FetchQualifiedSegments(userID string, options []segment.OptimizelySegmentOption) (segments []string, err error) {
+	args := m.Called(userID, options)
+	if segArray, ok := args.Get(0).([]string); ok {
+		segments = segArray
+	}
+	return segments, args.Error(1)
+}
+
+func (m *MockODPManager) IdentifyUser(userID string) {
+	m.Called(userID)
+}
+
+func (m *MockODPManager) SendOdpEvent(eventType, action string, identifiers map[string]string, data map[string]interface{}) bool {
+	return m.Called(eventType, action, identifiers, data).Get(0).(bool)
+}
+
+func (m *MockODPManager) Update(apiKey, apiHost string, segmentsToCheck []string) {
+	m.Called(apiKey, apiHost, segmentsToCheck)
+}
+
+func TestSendODPEventWhenODPDisabled(t *testing.T) {
+	factory := OptimizelyFactory{SDKKey: "1212"}
+	sdkSettings := &OptimizelySdkSettings{
+		SegmentsCacheSize:          1,
+		SegmentsCacheTimeoutInSecs: 1,
+		DisableOdp:                 true,
+	}
+	optimizelyClient, err := factory.Client(WithOptimizelySdkSettings(sdkSettings))
+	assert.NoError(t, err)
+	success := optimizelyClient.SendOdpEvent("123", "456", map[string]string{
+		"abc": "123",
+	}, map[string]interface{}{
+		"abc":                 nil,
+		"idempotence_id":      234,
+		"data_source_type":    "456",
+		"data_source":         true,
+		"data_source_version": 6.78,
+	})
+	assert.False(t, success)
+}
+
+func TestSendODPEventEmptyType(t *testing.T) {
+	eventType := pkgOdpUtils.OdpEventType
+	action := "456"
+	identifiers := map[string]string{
+		"abc": "123",
+	}
+	data := map[string]interface{}{
+		"abc":                 nil,
+		"idempotence_id":      234,
+		"data_source_type":    "456",
+		"data_source":         true,
+		"data_source_version": 6.78,
+	}
+	mockOdpManager := &MockODPManager{}
+	mockOdpManager.On("SendOdpEvent", eventType, action, identifiers, data).Return(true)
+	optimizelyClient := OptimizelyClient{
+		OdpManager: mockOdpManager,
+	}
+	success := optimizelyClient.SendOdpEvent("", action, identifiers, data)
+	assert.True(t, success)
+	mockOdpManager.AssertExpectations(t)
+}
+
+func TestSendODPEvent(t *testing.T) {
+	mockOdpManager := &MockODPManager{}
+	mockOdpManager.On("SendOdpEvent", "123", "", mock.Anything, mock.Anything).Return(true)
+	optimizelyClient := OptimizelyClient{
+		OdpManager: mockOdpManager,
+	}
+	success := optimizelyClient.SendOdpEvent("123", "", nil, nil)
+	assert.True(t, success)
+	mockOdpManager.AssertExpectations(t)
 }
 
 func TestTrack(t *testing.T) {
@@ -2455,6 +2538,35 @@ func TestCreateUserContext(t *testing.T) {
 	optimizelyUserContext := client.CreateUserContext(userID, userAttributes)
 
 	assert.Equal(t, client, *optimizelyUserContext.GetOptimizely())
+	assert.Equal(t, userID, optimizelyUserContext.GetUserID())
+	assert.Equal(t, userAttributes, optimizelyUserContext.GetUserAttributes())
+}
+
+func TestCreateUserContextAndIdentifyDefaultValueTrue(t *testing.T) {
+	userID := "1212121"
+	userAttributes := map[string]interface{}{"key": 1212}
+	factory := OptimizelyFactory{SDKKey: "1212"}
+	mockOdpManager := &MockODPManager{}
+	mockOdpManager.On("IdentifyUser", userID)
+	client, err := factory.Client(WithOdpManager(mockOdpManager))
+	assert.NoError(t, err)
+	optimizelyUserContext := client.CreateUserContext(userID, userAttributes)
+	mockOdpManager.AssertExpectations(t)
+	assert.True(t, optimizelyUserContext.optimizely.identify)
+	assert.Equal(t, userID, optimizelyUserContext.GetUserID())
+	assert.Equal(t, userAttributes, optimizelyUserContext.GetUserAttributes())
+}
+
+func TestCreateUserContextWithIdentifyFalse(t *testing.T) {
+	userID := "1212121"
+	userAttributes := map[string]interface{}{"key": 1212}
+	factory := OptimizelyFactory{SDKKey: "1212"}
+	mockOdpManager := &MockODPManager{}
+	client, err := factory.Client(WithOdpManager(mockOdpManager), WithOdpIdentification(false))
+	assert.NoError(t, err)
+	optimizelyUserContext := client.CreateUserContext(userID, userAttributes)
+	mockOdpManager.AssertNotCalled(t, "IdentifyUser", userID)
+	assert.False(t, optimizelyUserContext.optimizely.identify)
 	assert.Equal(t, userID, optimizelyUserContext.GetUserID())
 	assert.Equal(t, userAttributes, optimizelyUserContext.GetUserAttributes())
 }

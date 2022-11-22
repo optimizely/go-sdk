@@ -31,6 +31,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/odp"
 	pkgOdpConfig "github.com/optimizely/go-sdk/pkg/odp/config"
+	pkgOdpUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/optimizely/go-sdk/pkg/registry"
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
@@ -41,12 +42,13 @@ type OptimizelyFactory struct {
 	Datafile            []byte
 	DatafileAccessToken string
 
+	identify              *bool
 	odpManager            odp.Manager
 	configManager         config.ProjectConfigManager
 	ctx                   context.Context
 	decisionService       decision.Service
 	defaultDecideOptions  *decide.Options
-	optimizelySDKSettings OptimizelySdkSettings
+	optimizelySDKSettings *OptimizelySdkSettings
 	eventDispatcher       event.Dispatcher
 	eventProcessor        event.Processor
 	userProfileService    decision.UserProfileService
@@ -177,7 +179,7 @@ func WithPollingConfigManagerDatafileAccessToken(pollingInterval time.Duration, 
 }
 
 // WithOptimizelySdkSettings sets optimizelySdkSettings on a client.
-func WithOptimizelySdkSettings(optimizelySdkSettings OptimizelySdkSettings) OptionFunc {
+func WithOptimizelySdkSettings(optimizelySdkSettings *OptimizelySdkSettings) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.optimizelySDKSettings = optimizelySdkSettings
 	}
@@ -187,6 +189,13 @@ func WithOptimizelySdkSettings(optimizelySdkSettings OptimizelySdkSettings) Opti
 func WithOdpManager(odpManager odp.Manager) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.odpManager = odpManager
+	}
+}
+
+// WithOdpIdentification sets odp identify property on a client.
+func WithOdpIdentification(identify bool) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.identify = &identify
 	}
 }
 
@@ -275,18 +284,24 @@ func (f *OptimizelyFactory) StaticClient() (optlyClient *OptimizelyClient, err e
 		WithBatchEventProcessor(event.DefaultBatchSize, event.DefaultEventQueueSize, event.DefaultEventFlushInterval),
 	)
 
-	// Initialize and Start odp manager
-	ctx := context.Background()
-	eg := utils.NewExecGroup(ctx, logging.GetLogger(f.SDKKey, "ExecGroup"))
-	optlyClient.execGroup = eg
-
-	f.initializeOdpManager(optlyClient)
-	f.startOdpManager(eg, optlyClient)
-
 	return optlyClient, err
 }
 
 func (f *OptimizelyFactory) initializeOdpManager(appClient *OptimizelyClient) {
+	// Default value for odp identify call
+	identify := true
+	if f.identify != nil {
+		identify = *f.identify
+	}
+	f.identify = &identify
+	appClient.identify = identify
+
+	if f.optimizelySDKSettings == nil {
+		f.optimizelySDKSettings = &OptimizelySdkSettings{
+			SegmentsCacheSize:          pkgOdpUtils.DefaultSegmentsCacheSize,
+			SegmentsCacheTimeoutInSecs: pkgOdpUtils.DefaultSegmentsCacheTimeout,
+		}
+	}
 	if f.odpManager != nil {
 		appClient.OdpManager = f.odpManager
 	} else {

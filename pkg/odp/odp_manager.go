@@ -37,7 +37,7 @@ const maxUpdateWorkers = 1
 // Manager represents the odp manager.
 type Manager interface {
 	FetchQualifiedSegments(userID string, options []segment.OptimizelySegmentOption) (segments []string, err error)
-	IdentifyUser(userID string) bool
+	IdentifyUser(userID string)
 	SendOdpEvent(eventType, action string, identifiers map[string]string, data map[string]interface{}) bool
 	Update(apiKey, apiHost string, segmentsToCheck []string)
 }
@@ -134,12 +134,12 @@ func (om *DefaultOdpManager) FetchQualifiedSegments(userID string, options []seg
 }
 
 // IdentifyUser associates a full-stack userid with an established VUID
-func (om *DefaultOdpManager) IdentifyUser(userID string) bool {
+func (om *DefaultOdpManager) IdentifyUser(userID string) {
 	if !om.enabled {
 		om.logger.Debug(utils.IdentityOdpDisabled)
-		return false
+		return
 	}
-	return om.EventManager.IdentifyUser(userID)
+	om.EventManager.IdentifyUser(userID)
 }
 
 // SendOdpEvent sends an event to the ODP server.

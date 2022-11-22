@@ -30,6 +30,69 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+type MockEventManager struct {
+	mock.Mock
+	event.Manager
+}
+
+func (m *MockEventManager) Start(ctx context.Context) {
+	m.Called(ctx)
+}
+
+func (m *MockEventManager) IdentifyUser(userID string) {
+	m.Called(userID)
+}
+
+func (m *MockEventManager) ProcessEvent(odpEvent event.Event) bool {
+	return m.Called(odpEvent).Get(0).(bool)
+}
+
+func (m *MockEventManager) FlushEvents() {
+	m.Called()
+}
+
+type MockSegmentManager struct {
+	mock.Mock
+	segment.Manager
+}
+
+func (m *MockSegmentManager) FetchQualifiedSegments(userID string, options []segment.OptimizelySegmentOption) (segments []string, err error) {
+	args := m.Called(userID, options)
+	if segArray, ok := args.Get(0).([]string); ok {
+		segments = segArray
+	}
+	return segments, args.Error(1)
+}
+
+func (m *MockSegmentManager) Reset() {
+	m.Called()
+}
+
+type MockConfig struct {
+	mock.Mock
+	config.Config
+}
+
+func (m *MockConfig) Update(apiKey, apiHost string, segmentsToCheck []string) bool {
+	return m.Called(apiKey, apiHost, segmentsToCheck).Get(0).(bool)
+}
+
+func (m *MockConfig) GetAPIKey() string {
+	return m.Called().Get(0).(string)
+}
+
+func (m *MockConfig) GetAPIHost() string {
+	return m.Called().Get(0).(string)
+}
+
+func (m *MockConfig) GetSegmentsToCheck() []string {
+	return m.Called().Get(0).([]string)
+}
+
+func (m *MockConfig) IsOdpServiceIntegrated() bool {
+	return m.Called().Get(0).(bool)
+}
+
 type ODPManagerTestSuite struct {
 	suite.Suite
 	config         *MockConfig
@@ -125,8 +188,8 @@ func (o *ODPManagerTestSuite) TestFetchQualifiedSegments() {
 }
 
 func (o *ODPManagerTestSuite) TestIdentifyUser() {
-	o.eventManager.On("IdentifyUser", o.userID).Return(true)
-	o.True(o.odpManager.IdentifyUser(o.userID))
+	o.eventManager.On("IdentifyUser", o.userID)
+	o.odpManager.IdentifyUser(o.userID)
 	o.segmentManager.AssertExpectations(o.T())
 }
 
@@ -164,67 +227,4 @@ func (o *ODPManagerTestSuite) TestUpdate() {
 
 func TestODPManagerTestSuite(t *testing.T) {
 	suite.Run(t, new(ODPManagerTestSuite))
-}
-
-type MockEventManager struct {
-	mock.Mock
-	event.Manager
-}
-
-func (m *MockEventManager) Start(ctx context.Context) {
-	m.Called(ctx)
-}
-
-func (m *MockEventManager) IdentifyUser(userID string) bool {
-	return m.Called(userID).Get(0).(bool)
-}
-
-func (m *MockEventManager) ProcessEvent(odpEvent event.Event) bool {
-	return m.Called(odpEvent).Get(0).(bool)
-}
-
-func (m *MockEventManager) FlushEvents() {
-	m.Called()
-}
-
-type MockSegmentManager struct {
-	mock.Mock
-	segment.Manager
-}
-
-func (m *MockSegmentManager) FetchQualifiedSegments(userID string, options []segment.OptimizelySegmentOption) (segments []string, err error) {
-	args := m.Called(userID, options)
-	if segArray, ok := args.Get(0).([]string); ok {
-		segments = segArray
-	}
-	return segments, args.Error(1)
-}
-
-func (m *MockSegmentManager) Reset() {
-	m.Called()
-}
-
-type MockConfig struct {
-	mock.Mock
-	config.Config
-}
-
-func (m *MockConfig) Update(apiKey, apiHost string, segmentsToCheck []string) bool {
-	return m.Called(apiKey, apiHost, segmentsToCheck).Get(0).(bool)
-}
-
-func (m *MockConfig) GetAPIKey() string {
-	return m.Called().Get(0).(string)
-}
-
-func (m *MockConfig) GetAPIHost() string {
-	return m.Called().Get(0).(string)
-}
-
-func (m *MockConfig) GetSegmentsToCheck() []string {
-	return m.Called().Get(0).([]string)
-}
-
-func (m *MockConfig) IsOdpServiceIntegrated() bool {
-	return m.Called().Get(0).(bool)
 }

@@ -127,7 +127,7 @@ func (e *EventManagerTestSuite) TestEventsDispatchedWhenFlushIntervalReached() {
 
 func (e *EventManagerTestSuite) TestIdentifyUserWhenODPNotIntegrated() {
 	e.eventManager.OdpConfig = config.NewConfig("", "", nil)
-	e.False(e.eventManager.IdentifyUser("123"))
+	e.eventManager.IdentifyUser("123")
 	e.Nil(e.eventManager.ticker)
 	e.Equal(0, e.eventAPIManager.timesSendEventsCalled)
 }
@@ -138,7 +138,7 @@ func (e *EventManagerTestSuite) TestIdentifyUserWhenODPIntegrated() {
 	e.eventManager.addCommonData(&expectedEvent)
 	e.eventAPIManager.wg.Add(1)
 	e.eventManager.batchSize = 1
-	e.True(e.eventManager.IdentifyUser(userID))
+	e.eventManager.IdentifyUser(userID)
 	e.eventAPIManager.wg.Wait()
 	e.Equal(1, e.eventAPIManager.timesSendEventsCalled)
 

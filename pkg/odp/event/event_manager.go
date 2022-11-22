@@ -42,7 +42,7 @@ const maxRetries = 3
 // Manager represents the event manager.
 type Manager interface {
 	Start(ctx context.Context)
-	IdentifyUser(userID string) bool
+	IdentifyUser(userID string)
 	ProcessEvent(odpEvent Event) bool
 	FlushEvents()
 }
@@ -162,10 +162,9 @@ func (bm *BatchEventManager) Start(ctx context.Context) {
 }
 
 // IdentifyUser associates a full-stack userid with an established VUID
-func (bm *BatchEventManager) IdentifyUser(userID string) bool {
+func (bm *BatchEventManager) IdentifyUser(userID string) {
 	if !bm.IsOdpServiceIntegrated() {
 		bm.logger.Debug(utils.IdentityOdpNotIntegrated)
-		return false
 	}
 	identifiers := map[string]string{utils.OdpFSUserIDKey: userID}
 	odpEvent := Event{
@@ -173,7 +172,7 @@ func (bm *BatchEventManager) IdentifyUser(userID string) bool {
 		Action:      utils.OdpActionIdentified,
 		Identifiers: identifiers,
 	}
-	return bm.ProcessEvent(odpEvent)
+	bm.ProcessEvent(odpEvent)
 }
 
 // ProcessEvent takes the given odp event and queues it up to be dispatched.

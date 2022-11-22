@@ -35,6 +35,7 @@ import (
 	pkgOdpConfig "github.com/optimizely/go-sdk/pkg/odp/config"
 	pkgOdpEvent "github.com/optimizely/go-sdk/pkg/odp/event"
 	pkgOdpSegment "github.com/optimizely/go-sdk/pkg/odp/segment"
+	pkgOdpUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/optimizely/go-sdk/pkg/registry"
 	"github.com/optimizely/go-sdk/pkg/utils"
 
@@ -157,7 +158,7 @@ func TestClientWithOdpManagerAndSDKSettingsInOptions(t *testing.T) {
 	odpConfig := pkgOdpConfig.NewConfig("123", "456", []string{"1"})
 	eventManager := pkgOdpEvent.NewBatchEventManager()
 	segmentManager := pkgOdpSegment.NewSegmentManager("1212", 0, 0)
-	sdkSettings := OptimizelySdkSettings{
+	sdkSettings := &OptimizelySdkSettings{
 		SegmentsCacheSize:          1,
 		SegmentsCacheTimeoutInSecs: 1,
 		DisableOdp:                 false,
@@ -165,15 +166,44 @@ func TestClientWithOdpManagerAndSDKSettingsInOptions(t *testing.T) {
 	segmentCache := cache.NewLRUCache(0, 0)
 	odpManager := odp.NewOdpManager("1212", false, 0, 0, odp.WithOdpConfig(odpConfig), odp.WithEventManager(eventManager), odp.WithSegmentManager(segmentManager), odp.WithSegmentsCache(segmentCache))
 	optimizelyClient, err := factory.Client(WithOdpManager(odpManager), WithOptimizelySdkSettings(sdkSettings))
+	assert.Equal(t, sdkSettings.SegmentsCacheSize, factory.optimizelySDKSettings.SegmentsCacheSize)
+	assert.Equal(t, sdkSettings.SegmentsCacheTimeoutInSecs, factory.optimizelySDKSettings.SegmentsCacheTimeoutInSecs)
+	assert.Equal(t, sdkSettings.DisableOdp, factory.optimizelySDKSettings.DisableOdp)
 	assert.NoError(t, err)
 	assert.Equal(t, odpManager, optimizelyClient.OdpManager)
+}
+
+func TestClientWithDefaultODPIdentificationTrue(t *testing.T) {
+	factory := OptimizelyFactory{SDKKey: "1212"}
+	optimizelyClient, err := factory.Client()
+	assert.NoError(t, err)
+	assert.Equal(t, true, *factory.identify)
+	assert.Equal(t, *factory.identify, optimizelyClient.identify)
+}
+
+func TestClientWithOdpIdentificationFalse(t *testing.T) {
+	factory := OptimizelyFactory{SDKKey: "1212"}
+	optimizelyClient, err := factory.Client(WithOdpIdentification(false))
+	assert.NoError(t, err)
+	assert.Equal(t, false, *factory.identify)
+	assert.Equal(t, *factory.identify, optimizelyClient.identify)
+}
+
+func TestClientWithDefaultSDKSettings(t *testing.T) {
+	factory := OptimizelyFactory{SDKKey: "1212"}
+	optimizelyClient, err := factory.Client()
+	assert.NoError(t, err)
+	assert.Equal(t, pkgOdpUtils.DefaultSegmentsCacheSize, factory.optimizelySDKSettings.SegmentsCacheSize)
+	assert.Equal(t, pkgOdpUtils.DefaultSegmentsCacheTimeout, factory.optimizelySDKSettings.SegmentsCacheTimeoutInSecs)
+	assert.Equal(t, false, factory.optimizelySDKSettings.DisableOdp)
+	assert.NotNil(t, optimizelyClient.OdpManager)
 }
 
 func TestODPManagerDoesNotStartIfOdpDisabled(t *testing.T) {
 	factory := OptimizelyFactory{}
 	mockDatafile := []byte(`{"version":"4","integrations": [{"publicKey": "123", "host": "www.123.com", "key": "odp"}]}`)
 	configManager := config.NewStaticProjectConfigManagerWithOptions("", config.WithInitialDatafile(mockDatafile))
-	sdkSettings := OptimizelySdkSettings{
+	sdkSettings := &OptimizelySdkSettings{
 		SegmentsCacheSize:          1,
 		SegmentsCacheTimeoutInSecs: 1,
 		DisableOdp:                 true,
@@ -201,7 +231,7 @@ func TestODPManagerInitializesWithLatestProjectConfig(t *testing.T) {
 	assert.Equal(t, "123", odpManager.OdpConfig.GetAPIKey())
 }
 
-func TestODPManagerListensToConfigManagerChangesAndUpdateODPConfigAccordingly(t *testing.T) {
+func TestODPManagerListensToConfigManagerChangesAndUpdatesODPConfigAccordingly(t *testing.T) {
 	sdkKey := "abcd"
 	mockDatafile1 := []byte(`{"version":"4","integrations": [{"publicKey": "123", "host": "www.123.com", "key": "odp"}]}`)
 	factory := OptimizelyFactory{SDKKey: sdkKey}
@@ -265,6 +295,7 @@ func TestStaticClient(t *testing.T) {
 	factory := OptimizelyFactory{Datafile: []byte(`{"revision": "42", "version": "4"}`)}
 	optlyClient, err := factory.StaticClient()
 	assert.NoError(t, err)
+	assert.NotNil(t, optlyClient.OdpManager)
 
 	parsedConfig, _ := optlyClient.ConfigManager.GetConfig()
 	assert.Equal(t, "42", parsedConfig.GetRevision())
