@@ -21,8 +21,8 @@ import (
 	"fmt"
 )
 
-// SMOptionConfig are the SegmentManager options that give you the ability to add one more more options before the segment manager is initialized.
-type SMOptionConfig func(em *DefaultSegmentManager)
+// SMOptionFunc are the SegmentManager options that give you the ability to add one more more options before the segment manager is initialized.
+type SMOptionFunc func(em *DefaultSegmentManager)
 
 // SegmentManager represents the odp segment manager.
 type SegmentManager interface {
@@ -38,28 +38,28 @@ type DefaultSegmentManager struct {
 }
 
 // WithSegmentsCache sets cache option to be passed into the NewSegmentManager method
-func WithSegmentsCache(cache Cache) SMOptionConfig {
+func WithSegmentsCache(cache Cache) SMOptionFunc {
 	return func(sm *DefaultSegmentManager) {
 		sm.segmentsCache = cache
 	}
 }
 
 // WithODPConfig sets odpConfig option to be passed into the NewSegmentManager method
-func WithODPConfig(odpConfig Config) SMOptionConfig {
+func WithODPConfig(odpConfig Config) SMOptionFunc {
 	return func(sm *DefaultSegmentManager) {
 		sm.odpConfig = odpConfig
 	}
 }
 
 // WithAPIManager sets segmentAPIManager as a config option to be passed into the NewSegmentManager method
-func WithAPIManager(segmentAPIManager SegmentAPIManager) SMOptionConfig {
+func WithAPIManager(segmentAPIManager SegmentAPIManager) SMOptionFunc {
 	return func(sm *DefaultSegmentManager) {
 		sm.segmentAPIManager = segmentAPIManager
 	}
 }
 
 // NewSegmentManager creates and returns a new instance of DefaultSegmentManager.
-func NewSegmentManager(sdkKey string, cacheSize int, cacheTimeoutInSecs int64, options ...SMOptionConfig) *DefaultSegmentManager {
+func NewSegmentManager(sdkKey string, cacheSize int, cacheTimeoutInSecs int64, options ...SMOptionFunc) *DefaultSegmentManager {
 	segmentManager := &DefaultSegmentManager{}
 	for _, opt := range options {
 		opt(segmentManager)

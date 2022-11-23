@@ -49,8 +49,8 @@ const DefaultEventQueueSize = 10000
 // DefaultEventFlushInterval holds the default value for the event flush interval
 const DefaultEventFlushInterval = 1 * time.Second
 
-// EMOptionConfig are the EventManager options that give you the ability to add one more more options before the event manager is initialized.
-type EMOptionConfig func(em *BatchEventManager)
+// EMOptionFunc are the EventManager options that give you the ability to add one more more options before the event manager is initialized.
+type EMOptionFunc func(em *BatchEventManager)
 
 const maxFlushWorkers = 1
 const maxRetries = 3
@@ -78,56 +78,56 @@ type BatchEventManager struct {
 }
 
 // WithBatchSize sets the batch size as a config option to be passed into the NewBatchEventManager method
-func WithBatchSize(bsize int) EMOptionConfig {
+func WithBatchSize(bsize int) EMOptionFunc {
 	return func(bm *BatchEventManager) {
 		bm.batchSize = bsize
 	}
 }
 
 // WithQueueSize sets the queue size as a config option to be passed into the NewBatchEventManager method
-func WithQueueSize(qsize int) EMOptionConfig {
+func WithQueueSize(qsize int) EMOptionFunc {
 	return func(bm *BatchEventManager) {
 		bm.maxQueueSize = qsize
 	}
 }
 
 // WithFlushInterval sets the flush interval as a config option to be passed into the NewBatchEventManager method
-func WithFlushInterval(flushInterval time.Duration) EMOptionConfig {
+func WithFlushInterval(flushInterval time.Duration) EMOptionFunc {
 	return func(bm *BatchEventManager) {
 		bm.flushInterval = flushInterval
 	}
 }
 
 // WithQueue sets the Queue as a config option to be passed into the NewBatchEventManager method
-func WithQueue(q event.Queue) EMOptionConfig {
+func WithQueue(q event.Queue) EMOptionFunc {
 	return func(bm *BatchEventManager) {
 		bm.eventQueue = q
 	}
 }
 
 // WithSDKKey sets the SDKKey used for logging
-func WithSDKKey(sdkKey string) EMOptionConfig {
+func WithSDKKey(sdkKey string) EMOptionFunc {
 	return func(bm *BatchEventManager) {
 		bm.sdkKey = sdkKey
 	}
 }
 
 // WithEventAPIManager sets eventAPIManager as a config option to be passed into the NewBatchEventManager method
-func WithEventAPIManager(eventAPIManager EventAPIManager) EMOptionConfig {
+func WithEventAPIManager(eventAPIManager EventAPIManager) EMOptionFunc {
 	return func(bm *BatchEventManager) {
 		bm.eventAPIManager = eventAPIManager
 	}
 }
 
 // WithConfig sets odpConfig option to be passed into the NewBatchEventManager method
-func WithConfig(odpConfig Config) EMOptionConfig {
+func WithConfig(odpConfig Config) EMOptionFunc {
 	return func(bm *BatchEventManager) {
 		bm.odpConfig = odpConfig
 	}
 }
 
 // NewBatchEventManager returns a new instance of BatchEventManager with options
-func NewBatchEventManager(options ...EMOptionConfig) *BatchEventManager {
+func NewBatchEventManager(options ...EMOptionFunc) *BatchEventManager {
 	bm := &BatchEventManager{processing: semaphore.NewWeighted(int64(maxFlushWorkers))}
 
 	for _, opt := range options {

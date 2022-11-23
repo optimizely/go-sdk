@@ -287,6 +287,13 @@ func (s *SegmentAPIManagerTestSuite) TestFetchQualifiedSegments500() {
 	s.Equal(fmt.Errorf(fetchSegmentsFailedError, "500 Internal Server Error"), err)
 }
 
+func (s *SegmentAPIManagerTestSuite) TestFetchQualifiedSegmentsInvalidURL() {
+	s.config = NewConfig("123", "456", nil)
+	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.config, s.userKey, s.userValue)
+	s.Nil(segments)
+	s.Equal(fmt.Errorf(fetchSegmentsFailedError, `parse "456/v3/graphql": invalid URI for request`), err)
+}
+
 func (s *SegmentAPIManagerTestSuite) TestExtractComponent() {
 	testMap := map[string]interface{}{
 		"a": map[string]interface{}{
@@ -339,7 +346,7 @@ func (s *SegmentAPIManagerTestSuite) getTestServer(statusCode, timeout int, resp
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.String() == graphqlAPIEndpointPath {
 			s.Equal("POST", r.Method)
-			s.Equal("application/json", r.Header.Get("Content-Type"))
+			s.Equal(utils.ContentTypeJSON, r.Header.Get(utils.HeaderContentType))
 			s.Equal(s.config.GetAPIKey(), r.Header.Get(ODPAPIKeyHeader))
 			if timeout > 0 {
 				time.Sleep(time.Duration(timeout) * time.Millisecond)

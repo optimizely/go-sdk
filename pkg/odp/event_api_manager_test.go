@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/optimizely/go-sdk/pkg/utils"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -77,6 +78,13 @@ func (e *EventAPIManagerTestSuite) TestShouldNotSuggestRetryFor400HttpResponse()
 	e.False(canRetry)
 }
 
+func (e *EventAPIManagerTestSuite) TestShouldNotSuggestRetryForInvalidURL() {
+	config := NewConfig("123", "456", nil)
+	canRetry, err := e.eventAPIManager.SendODPEvents(config, e.events)
+	e.Equal(fmt.Errorf(odpEventFailed, `parse "456/v3/events": invalid URI for request`), err)
+	e.False(canRetry)
+}
+
 func (e *EventAPIManagerTestSuite) TestShouldSuggestRetryFor500HttpResponse() {
 	ts := e.getTestServer(500, 0)
 	defer ts.Close()
@@ -119,7 +127,7 @@ func (e *EventAPIManagerTestSuite) getTestServer(statusCode, timeout int) *httpt
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.String() == eventsAPIEndpointPath {
 			e.Equal("POST", r.Method)
-			e.Equal("application/json", r.Header.Get("Content-Type"))
+			e.Equal(utils.ContentTypeJSON, r.Header.Get(utils.HeaderContentType))
 			e.Equal(e.apiKey, r.Header.Get(ODPAPIKeyHeader))
 			var requestData []Event
 			e.NoError(json.NewDecoder(r.Body).Decode(&requestData))

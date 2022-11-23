@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2020,2022 Optimizely, Inc. and contributors               *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -199,8 +199,8 @@ func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
 
 func (cm *PollingProjectConfigManager) setAuthHeaderIfDatafileAccessTokenPresent() {
 	if cm.datafileAccessToken != "" {
-		headers := []utils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: "Accept", Value: "application/json"}}
-		headers = append(headers, utils.Header{Name: "Authorization", Value: "Bearer " + cm.datafileAccessToken})
+		headers := []utils.Header{{Name: utils.HeaderContentType, Value: utils.ContentTypeJSON}, {Name: utils.HeaderAccept, Value: utils.ContentTypeJSON}}
+		headers = append(headers, utils.Header{Name: utils.HeaderAuthorization, Value: "Bearer " + cm.datafileAccessToken})
 		cm.requester = utils.NewHTTPRequester(logging.GetLogger(cm.sdkKey, "HTTPRequester"), utils.Headers(headers...))
 	}
 }
