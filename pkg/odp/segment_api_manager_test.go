@@ -291,7 +291,7 @@ func (s *SegmentAPIManagerTestSuite) TestFetchQualifiedSegmentsInvalidURL() {
 	s.config = NewConfig("123", "456", nil)
 	segments, err := s.segmentAPIManager.FetchQualifiedSegments(s.config, s.userKey, s.userValue)
 	s.Nil(segments)
-	s.Equal(fmt.Errorf(fetchSegmentsFailedError, `parse "456/v3/graphql": invalid URI for request`), err)
+	s.Error(err)
 }
 
 func (s *SegmentAPIManagerTestSuite) TestExtractComponent() {

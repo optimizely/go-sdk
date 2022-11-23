@@ -81,7 +81,7 @@ func (e *EventAPIManagerTestSuite) TestShouldNotSuggestRetryFor400HttpResponse()
 func (e *EventAPIManagerTestSuite) TestShouldNotSuggestRetryForInvalidURL() {
 	config := NewConfig("123", "456", nil)
 	canRetry, err := e.eventAPIManager.SendODPEvents(config, e.events)
-	e.Equal(fmt.Errorf(odpEventFailed, `parse "456/v3/events": invalid URI for request`), err)
+	e.Error(err)
 	e.False(canRetry)
 }
 
