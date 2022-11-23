@@ -19,6 +19,7 @@ package event
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/odp/config"
@@ -60,10 +61,13 @@ func NewEventAPIManager(sdkKey string, requester pkgUtils.Requester) *DefaultEve
 func (s *DefaultEventAPIManager) SendOdpEvents(odpConfig config.Config, events []Event) (canRetry bool, err error) {
 
 	// Creating request
-	apiEndpoint := odpConfig.GetAPIHost() + eventsAPIEndpointPath
-	headers := []pkgUtils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: utils.OdpAPIKeyHeader, Value: odpConfig.GetAPIKey()}}
+	apiEndpoint, err := url.ParseRequestURI(fmt.Sprintf("%s%s", odpConfig.GetAPIHost(), eventsAPIEndpointPath))
+	if err != nil {
+		return false, fmt.Errorf(utils.OdpEventFailed, err.Error())
+	}
+	headers := []pkgUtils.Header{{Name: pkgUtils.HeaderContentType, Value: pkgUtils.ContentTypeJSON}, {Name: utils.OdpAPIKeyHeader, Value: odpConfig.GetAPIKey()}}
 
-	_, _, status, err := s.requester.Post(apiEndpoint, events, headers...)
+	_, _, status, err := s.requester.Post(apiEndpoint.String(), events, headers...)
 	// handling edge cases
 	if err == nil {
 		return false, nil

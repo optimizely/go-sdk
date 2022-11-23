@@ -25,6 +25,7 @@ import (
 func TestCompareSlices(t *testing.T) {
 	assert.True(t, CompareSlices(nil, nil))
 	assert.True(t, CompareSlices([]string{}, []string{}))
+	assert.True(t, CompareSlices(make([]string, 0), []string{}))
 	// ordered
 	assert.True(t, CompareSlices([]string{"a", "b"}, []string{"a", "b"}))
 	// unordered

@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/optimizely/go-sdk/pkg/logging"
@@ -137,11 +138,14 @@ func (sm *DefaultSegmentAPIManager) FetchQualifiedSegments(odpConfig config.Conf
 	requestQuery := sm.createRequestQuery(userID, odpConfig.GetSegmentsToCheck())
 
 	// Creating request
-	apiEndpoint := odpConfig.GetAPIHost() + graphqlAPIEndpointPath
-	headers := []pkgUtils.Header{{Name: "Content-Type", Value: "application/json"}, {Name: utils.OdpAPIKeyHeader, Value: odpConfig.GetAPIKey()}}
+	apiEndpoint, err := url.ParseRequestURI(fmt.Sprintf("%s%s", odpConfig.GetAPIHost(), graphqlAPIEndpointPath))
+	if err != nil {
+		return nil, fmt.Errorf(utils.FetchSegmentsFailedError, err.Error())
+	}
+	headers := []pkgUtils.Header{{Name: pkgUtils.HeaderContentType, Value: pkgUtils.ContentTypeJSON}, {Name: utils.OdpAPIKeyHeader, Value: odpConfig.GetAPIKey()}}
 
 	// handling edge cases
-	response, _, _, err := sm.requester.Post(apiEndpoint, requestQuery, headers...)
+	response, _, _, err := sm.requester.Post(apiEndpoint.String(), requestQuery, headers...)
 	if err != nil {
 		return nil, fmt.Errorf(utils.FetchSegmentsFailedError, err.Error())
 	}

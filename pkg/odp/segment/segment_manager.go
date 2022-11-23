@@ -25,8 +25,8 @@ import (
 	"github.com/optimizely/go-sdk/pkg/odp/utils"
 )
 
-// SMOptionConfig are the SegmentManager options that give you the ability to add one more more options before the segment manager is initialized.
-type SMOptionConfig func(em *DefaultSegmentManager)
+// SMOptionFunc are the SegmentManager options that give you the ability to add one more more options before the segment manager is initialized.
+type SMOptionFunc func(em *DefaultSegmentManager)
 
 // Manager represents the odp segment manager.
 type Manager interface {
@@ -42,28 +42,28 @@ type DefaultSegmentManager struct {
 }
 
 // WithSegmentsCache sets cache option to be passed into the NewSegmentManager method
-func WithSegmentsCache(segmentsCache cache.Cache) SMOptionConfig {
+func WithSegmentsCache(segmentsCache cache.Cache) SMOptionFunc {
 	return func(sm *DefaultSegmentManager) {
 		sm.segmentsCache = segmentsCache
 	}
 }
 
 // WithOdpConfig sets odpConfig option to be passed into the NewSegmentManager method
-func WithOdpConfig(odpConfig config.Config) SMOptionConfig {
+func WithOdpConfig(odpConfig config.Config) SMOptionFunc {
 	return func(sm *DefaultSegmentManager) {
 		sm.OdpConfig = odpConfig
 	}
 }
 
 // WithAPIManager sets segmentAPIManager as a config option to be passed into the NewSegmentManager method
-func WithAPIManager(segmentAPIManager APIManager) SMOptionConfig {
+func WithAPIManager(segmentAPIManager APIManager) SMOptionFunc {
 	return func(sm *DefaultSegmentManager) {
 		sm.apiManager = segmentAPIManager
 	}
 }
 
 // NewSegmentManager creates and returns a new instance of DefaultSegmentManager.
-func NewSegmentManager(sdkKey string, cacheSize int, cacheTimeoutInSecs int64, options ...SMOptionConfig) *DefaultSegmentManager {
+func NewSegmentManager(sdkKey string, cacheSize int, cacheTimeoutInSecs int64, options ...SMOptionFunc) *DefaultSegmentManager {
 	segmentManager := &DefaultSegmentManager{}
 	for _, opt := range options {
 		opt(segmentManager)

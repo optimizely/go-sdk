@@ -114,7 +114,7 @@ func NewOdpManager(sdkKey string, disable bool, cacheSize int, cacheTimeoutInSec
 	}
 
 	if odpManager.SegmentManager == nil {
-		options := []segment.SMOptionConfig{segment.WithSegmentsCache(odpManager.segmentsCache), segment.WithOdpConfig(odpManager.OdpConfig)}
+		options := []segment.SMOptionFunc{segment.WithSegmentsCache(odpManager.segmentsCache), segment.WithOdpConfig(odpManager.OdpConfig)}
 		odpManager.SegmentManager = segment.NewSegmentManager(sdkKey, cacheSize, cacheTimeoutInSecs, options...)
 	}
 
