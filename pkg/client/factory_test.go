@@ -181,9 +181,9 @@ func TestClientWithDefaultODPIdentificationTrue(t *testing.T) {
 	assert.Equal(t, *factory.identify, optimizelyClient.identify)
 }
 
-func TestClientWithOdpIdentificationFalse(t *testing.T) {
+func TestClientWithOdpUserIdentificationFalse(t *testing.T) {
 	factory := OptimizelyFactory{SDKKey: "1212"}
-	optimizelyClient, err := factory.Client(WithOdpIdentification(false))
+	optimizelyClient, err := factory.Client(WithOdpUserIdentification(false))
 	assert.NoError(t, err)
 	assert.Equal(t, false, *factory.identify)
 	assert.Equal(t, *factory.identify, optimizelyClient.identify)

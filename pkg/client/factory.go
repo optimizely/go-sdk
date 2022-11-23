@@ -192,8 +192,8 @@ func WithOdpManager(odpManager odp.Manager) OptionFunc {
 	}
 }
 
-// WithOdpIdentification sets odp identify property on a client.
-func WithOdpIdentification(identify bool) OptionFunc {
+// WithOdpUserIdentification confirms whether to call IdentifyUser API on userContext initialization.
+func WithOdpUserIdentification(identify bool) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.identify = &identify
 	}

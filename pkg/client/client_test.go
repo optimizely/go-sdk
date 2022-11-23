@@ -2562,7 +2562,7 @@ func TestCreateUserContextWithIdentifyFalse(t *testing.T) {
 	userAttributes := map[string]interface{}{"key": 1212}
 	factory := OptimizelyFactory{SDKKey: "1212"}
 	mockOdpManager := &MockODPManager{}
-	client, err := factory.Client(WithOdpManager(mockOdpManager), WithOdpIdentification(false))
+	client, err := factory.Client(WithOdpManager(mockOdpManager), WithOdpUserIdentification(false))
 	assert.NoError(t, err)
 	optimizelyUserContext := client.CreateUserContext(userID, userAttributes)
 	mockOdpManager.AssertNotCalled(t, "IdentifyUser", userID)
