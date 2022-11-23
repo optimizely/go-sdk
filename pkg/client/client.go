@@ -34,6 +34,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/odp"
+	pkgSegment "github.com/optimizely/go-sdk/pkg/odp/segment"
 	pkgOdpUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/optimizely/go-sdk/pkg/optimizelyjson"
 	"github.com/optimizely/go-sdk/pkg/utils"
@@ -240,6 +241,44 @@ func (o *OptimizelyClient) decideAll(userContext OptimizelyUserContext, options 
 	}
 
 	return o.decideForKeys(userContext, allFlagKeys, options)
+}
+
+func (o *OptimizelyClient) fetchQualifiedSegments(userContext *OptimizelyUserContext, options []pkgSegment.OptimizelySegmentOption, callback func(segments []string, err error)) {
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			switch t := r.(type) {
+			case error:
+				err = t
+			case string:
+				err = errors.New(t)
+			default:
+				err = errors.New("unexpected error")
+			}
+			o.logger.Error("fetchQualifiedSegments call, optimizely SDK is panicking with the error:", err)
+			o.logger.Debug(string(debug.Stack()))
+		}
+	}()
+
+	// on failure, qualifiedSegments should be reset if a previous value exists.
+	userContext.SetQualifiedSegments(nil)
+
+	_, err = o.getProjectConfig()
+	if err != nil {
+		if callback != nil {
+			callback(nil, decide.GetDecideError(decide.SDKNotReady))
+		}
+		return
+	}
+	go func() {
+		qualifiedSegments, err := o.OdpManager.FetchQualifiedSegments(userContext.GetUserID(), options)
+		if err == nil {
+			userContext.SetQualifiedSegments(qualifiedSegments)
+		}
+		if callback != nil {
+			callback(qualifiedSegments, err)
+		}
+	}()
 }
 
 // SendOdpEvent sends an event to the ODP server.

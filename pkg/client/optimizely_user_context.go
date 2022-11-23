@@ -99,15 +99,7 @@ func (o *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
 
 // FetchQualifiedSegments fetches all qualified segments for the user context.
 func (o *OptimizelyUserContext) FetchQualifiedSegments(options []pkgSegment.OptimizelySegmentOption, callback func(segments []string, err error)) {
-	go func() {
-		qualifiedSegments, err := o.optimizely.OdpManager.FetchQualifiedSegments(o.GetUserID(), options)
-		if err == nil {
-			o.SetQualifiedSegments(qualifiedSegments)
-		}
-		if callback != nil {
-			callback(qualifiedSegments, err)
-		}
-	}()
+	o.optimizely.fetchQualifiedSegments(o, options, callback)
 }
 
 // SetQualifiedSegments clears and adds qualified segments for Optimizely user context

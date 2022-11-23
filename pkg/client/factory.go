@@ -302,16 +302,25 @@ func (f *OptimizelyFactory) initializeOdpManager(appClient *OptimizelyClient) {
 			SegmentsCacheTimeoutInSecs: pkgOdpUtils.DefaultSegmentsCacheTimeout,
 		}
 	}
+
+	projectConfig, err := appClient.ConfigManager.GetConfig()
+
 	if f.odpManager != nil {
 		appClient.OdpManager = f.odpManager
-	} else {
-		options := []odp.OMOptionConfig{}
-		// Add ODP Config if its already available
-		if conf, err := appClient.ConfigManager.GetConfig(); err == nil {
-			options = append(options, odp.WithOdpConfig(pkgOdpConfig.NewConfig(conf.GetPublicKeyForODP(), conf.GetHostForODP(), conf.GetSegmentList())))
+		// Update odp config with latest changes
+		if err == nil {
+			appClient.OdpManager.Update(projectConfig.GetPublicKeyForODP(), projectConfig.GetHostForODP(), projectConfig.GetSegmentList())
 		}
-		appClient.OdpManager = odp.NewOdpManager(f.SDKKey, f.optimizelySDKSettings.DisableOdp, f.optimizelySDKSettings.SegmentsCacheSize, f.optimizelySDKSettings.SegmentsCacheTimeoutInSecs, options...)
+		return
 	}
+
+	options := []odp.OMOptionConfig{}
+	if err == nil {
+		// Add odp Config with latest changes
+		options = append(options, odp.WithOdpConfig(pkgOdpConfig.NewConfig(projectConfig.GetPublicKeyForODP(), projectConfig.GetHostForODP(), projectConfig.GetSegmentList())))
+	}
+	// Create ODP Manager
+	appClient.OdpManager = odp.NewOdpManager(f.SDKKey, f.optimizelySDKSettings.DisableOdp, f.optimizelySDKSettings.SegmentsCacheSize, f.optimizelySDKSettings.SegmentsCacheTimeoutInSecs, options...)
 }
 
 func (f *OptimizelyFactory) startOdpManager(eg *utils.ExecGroup, appClient *OptimizelyClient) {
