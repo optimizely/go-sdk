@@ -20,7 +20,7 @@ package odp
 import (
 	"sync"
 
-	"github.com/optimizely/go-sdk/pkg/odp/utils"
+	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
 // Config is used to represent odp config
@@ -53,7 +53,7 @@ func (s *DefaultConfig) Update(apiKey, apiHost string, segmentsToCheck []string)
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	if s.apiKey == apiKey && s.apiHost == apiHost && utils.Equal(s.segmentsToCheck, segmentsToCheck) {
+	if s.apiKey == apiKey && s.apiHost == apiHost && utils.CompareSlices(s.segmentsToCheck, segmentsToCheck) {
 		return false
 	}
 	s.apiKey = apiKey

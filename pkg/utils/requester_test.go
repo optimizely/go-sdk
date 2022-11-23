@@ -84,7 +84,7 @@ func TestGet(t *testing.T) {
 	var httpreq Requester
 	httpreq = NewHTTPRequester(logging.GetLogger("", ""))
 	resp, headers, code, err := httpreq.Get(ts.URL + "/good")
-	assert.NotEqual(t, headers.Get("Content-Type"), "")
+	assert.NotEqual(t, headers.Get(HeaderContentType), "")
 	assert.Nil(t, err)
 	assert.Equal(t, "Hello, client\n", string(resp))
 
@@ -148,7 +148,7 @@ func TestPost(t *testing.T) {
 	resp, headers, code, err := httpreq.Post(ts.URL+"/good", b)
 
 	assert.Nil(t, err)
-	assert.NotEqual(t, headers.Get("Content-Type"), "")
+	assert.NotEqual(t, headers.Get(HeaderContentType), "")
 	assert.Equal(t, "Hello, client\n", string(resp))
 	assert.Equal(t, code, http.StatusOK)
 
