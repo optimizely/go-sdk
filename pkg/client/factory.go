@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -314,7 +314,7 @@ func (f *OptimizelyFactory) initializeOdpManager(appClient *OptimizelyClient) {
 		return
 	}
 
-	options := []odp.OMOptionConfig{}
+	options := []odp.OMOptionFunc{}
 	if err == nil {
 		// Add odp Config with latest changes
 		options = append(options, odp.WithOdpConfig(pkgOdpConfig.NewConfig(projectConfig.GetPublicKeyForODP(), projectConfig.GetHostForODP(), projectConfig.GetSegmentList())))
@@ -337,6 +337,7 @@ func (f *OptimizelyFactory) startOdpManager(eg *utils.ExecGroup, appClient *Opti
 						// Update odp manager with new changes and start service if not already started
 						eg.Go(func(ctx context.Context) {
 							OdpManager.Update(conf.GetPublicKeyForODP(), conf.GetHostForODP(), conf.GetSegmentList())
+							// Start config if not already started
 							OdpManager.EventManager.Start(ctx)
 						})
 					}

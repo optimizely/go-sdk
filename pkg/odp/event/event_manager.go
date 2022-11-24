@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -29,7 +29,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/odp/config"
 	"github.com/optimizely/go-sdk/pkg/odp/utils"
-	pkgUtils "github.com/optimizely/go-sdk/pkg/utils"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -184,7 +183,7 @@ func (bm *BatchEventManager) ProcessEvent(odpEvent Event) bool {
 		return false
 	}
 
-	if !pkgUtils.IsValidOdpData(odpEvent.Data) {
+	if !utils.IsValidOdpData(odpEvent.Data) {
 		bm.logger.Error(utils.OdpInvalidData, errors.New("invalid event data"))
 		return false
 	}

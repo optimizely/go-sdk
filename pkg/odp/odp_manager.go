@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -26,13 +26,10 @@ import (
 	"github.com/optimizely/go-sdk/pkg/odp/event"
 	"github.com/optimizely/go-sdk/pkg/odp/segment"
 	"github.com/optimizely/go-sdk/pkg/odp/utils"
-	"golang.org/x/sync/semaphore"
 )
 
-// OMOptionConfig are the ODPManager options that give you the ability to add one more more options before the odp manager is initialized.
-type OMOptionConfig func(em *DefaultOdpManager)
-
-const maxUpdateWorkers = 1
+// OMOptionFunc are the ODPManager options that give you the ability to add one more more options before the odp manager is initialized.
+type OMOptionFunc func(em *DefaultOdpManager)
 
 // Manager represents the odp manager.
 type Manager interface {
@@ -48,41 +45,40 @@ type DefaultOdpManager struct {
 	segmentsCache  cache.Cache
 	OdpConfig      config.Config
 	logger         logging.OptimizelyLogProducer
-	processing     *semaphore.Weighted
 	SegmentManager segment.Manager
 	EventManager   event.Manager
 }
 
 // WithOdpConfig sets odpConfig option to be passed into the NewOdpManager method
-func WithOdpConfig(odpConfig config.Config) OMOptionConfig {
+func WithOdpConfig(odpConfig config.Config) OMOptionFunc {
 	return func(om *DefaultOdpManager) {
 		om.OdpConfig = odpConfig
 	}
 }
 
 // WithSegmentsCache sets cache option to be passed into the NewOdpManager method
-func WithSegmentsCache(segmentsCache cache.Cache) OMOptionConfig {
+func WithSegmentsCache(segmentsCache cache.Cache) OMOptionFunc {
 	return func(om *DefaultOdpManager) {
 		om.segmentsCache = segmentsCache
 	}
 }
 
 // WithSegmentManager sets segmentManager option to be passed into the NewOdpManager method
-func WithSegmentManager(segmentManager segment.Manager) OMOptionConfig {
+func WithSegmentManager(segmentManager segment.Manager) OMOptionFunc {
 	return func(om *DefaultOdpManager) {
 		om.SegmentManager = segmentManager
 	}
 }
 
 // WithEventManager sets eventManager option to be passed into the NewOdpManager method
-func WithEventManager(eventManager event.Manager) OMOptionConfig {
+func WithEventManager(eventManager event.Manager) OMOptionFunc {
 	return func(om *DefaultOdpManager) {
 		om.EventManager = eventManager
 	}
 }
 
 // NewOdpManager creates and returns a new instance of DefaultOdpManager.
-func NewOdpManager(sdkKey string, disable bool, cacheSize int, cacheTimeoutInSecs int64, options ...OMOptionConfig) *DefaultOdpManager {
+func NewOdpManager(sdkKey string, disable bool, cacheSize int, cacheTimeoutInSecs int64, options ...OMOptionFunc) *DefaultOdpManager {
 	odpManager := &DefaultOdpManager{enabled: !disable,
 		logger: logging.GetLogger(sdkKey, "ODPManager"),
 	}
@@ -95,8 +91,6 @@ func NewOdpManager(sdkKey string, disable bool, cacheSize int, cacheTimeoutInSec
 	for _, opt := range options {
 		opt(odpManager)
 	}
-
-	odpManager.processing = semaphore.NewWeighted(int64(maxUpdateWorkers))
 
 	if cacheSize < 0 {
 		cacheSize = utils.DefaultSegmentsCacheSize
@@ -168,13 +162,9 @@ func (om *DefaultOdpManager) Update(apiKey, apiHost string, segmentsToCheck []st
 	//       Try to send all old events with the previous public key.
 	//       If it fails to flush all the old events here (network error), remaning events will be discarded.
 
-	// All other subsequent calls will have to wait.
-	if om.processing.TryAcquire(1) {
-		om.EventManager.FlushEvents()
-		if om.OdpConfig.Update(apiKey, apiHost, segmentsToCheck) {
-			// reset segments cache when odp integration or segmentsToCheck are changed
-			om.SegmentManager.Reset()
-		}
-		om.processing.Release(1)
+	om.EventManager.FlushEvents()
+	if om.OdpConfig.Update(apiKey, apiHost, segmentsToCheck) {
+		// reset segments cache when odp integration or segmentsToCheck are changed
+		om.SegmentManager.Reset()
 	}
 }

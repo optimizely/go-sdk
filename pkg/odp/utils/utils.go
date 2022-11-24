@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -16,6 +16,8 @@
 
 // Package utils //
 package utils
+
+import "github.com/optimizely/go-sdk/pkg/utils"
 
 // CompareSlices determines if two string slices are equal
 func CompareSlices(a, b []string) bool {
@@ -54,7 +56,7 @@ func CompareSlices(a, b []string) bool {
 // IsValidOdpData validates if data has all valid types only (string, integer, float, boolean, and nil),
 func IsValidOdpData(data map[string]interface{}) bool {
 	for _, v := range data {
-		if v != nil && !IsValidAttribute(v) {
+		if v != nil && !utils.IsValidAttribute(v) {
 			return false
 		}
 	}

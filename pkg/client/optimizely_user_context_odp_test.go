@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2022, Optimizely, Inc. and contributors                   		*
+ * Copyright 2022, Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -101,7 +101,7 @@ func (o *OptimizelyUserContextODPTestSuite) TestIsQualifiedFor() {
 	o.False(userContext.IsQualifiedFor("a"))
 }
 
-func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSuccessDefaultUser() {
+func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSuccessDefaultUserAsync() {
 	segmentManager := &MockSegmentManager{}
 	segmentManager.On("Reset")
 	segmentManager.On("FetchQualifiedSegments", o.userID, mock.Anything).Return([]string{"odp-segment-1"}, nil)
@@ -118,6 +118,20 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSuccessDef
 		wg.Done()
 	})
 	wg.Wait()
+	segmentManager.AssertExpectations(o.T())
+}
+
+func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSuccessDefaultUserSync() {
+	segmentManager := &MockSegmentManager{}
+	segmentManager.On("Reset")
+	segmentManager.On("FetchQualifiedSegments", o.userID, mock.Anything).Return([]string{"odp-segment-1"}, nil)
+	odpManager := odp.NewOdpManager("", false, 1, 1, odp.WithSegmentManager(segmentManager))
+	factory := OptimizelyFactory{Datafile: o.datafile, odpManager: odpManager}
+	optimizelyClient, _ := factory.Client()
+	userContext := optimizelyClient.CreateUserContext(o.userID, nil)
+	o.Nil(userContext.GetQualifiedSegments())
+	userContext.FetchQualifiedSegments(nil, nil)
+	o.Equal(userContext.GetQualifiedSegments(), []string{"odp-segment-1"})
 	segmentManager.AssertExpectations(o.T())
 }
 
@@ -194,6 +208,7 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsParameters
 	wg.Add(1)
 	userContext.FetchQualifiedSegments([]segment.OptimizelySegmentOption{segment.IgnoreCache}, func(segments []string, err error) {
 		o.NoError(err)
+		o.Equal([]string{"odp-segment-1"}, segments)
 		o.Equal([]string{"odp-segment-1", "odp-segment-2", "odp-segment-3"}, odpManager.OdpConfig.GetSegmentsToCheck())
 		wg.Done()
 	})
@@ -227,12 +242,12 @@ func (o *OptimizelyUserContextODPTestSuite) TestOdpEventsEarlyEventsDispatched()
 // Tests with live ODP server
 // func (o *OptimizelyUserContextODPTestSuite) TestLiveOdpGraphQL() {
 // 	o.userID = "tester-101"
-// 	o.factory = OptimizelyFactory{Datafile: o.datafile}
-// 	o.optimizelyClient, _ = o.factory.Client()
-// 	o.userContext = o.optimizelyClient.CreateUserContext(o.userID, nil)
+// 	factory := OptimizelyFactory{Datafile: o.datafile}
+// 	optimizelyClient, _ := factory.Client()
+// 	userContext := optimizelyClient.CreateUserContext(o.userID, nil)
 // 	var wg sync.WaitGroup
 // 	wg.Add(1)
-// 	o.userContext.FetchQualifiedSegments(nil, func(segments []string, err error) {
+// 	userContext.FetchQualifiedSegments(nil, func(segments []string, err error) {
 // 		o.NoError(err)
 // 		o.Equal([]string{}, segments)
 // 		wg.Done()

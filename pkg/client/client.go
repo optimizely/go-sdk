@@ -34,7 +34,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/odp"
-	pkgSegment "github.com/optimizely/go-sdk/pkg/odp/segment"
+	pkgOdpSegment "github.com/optimizely/go-sdk/pkg/odp/segment"
 	pkgOdpUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/optimizely/go-sdk/pkg/optimizelyjson"
 	"github.com/optimizely/go-sdk/pkg/utils"
@@ -45,14 +45,14 @@ import (
 // OptimizelyClient is the entry point to the Optimizely SDK
 type OptimizelyClient struct {
 	ConfigManager        config.ProjectConfigManager
-	OdpManager           odp.Manager
 	DecisionService      decision.Service
 	EventProcessor       event.Processor
+	OdpManager           odp.Manager
+	identify             bool
 	notificationCenter   notification.Center
 	execGroup            *utils.ExecGroup
 	logger               logging.OptimizelyLogProducer
 	defaultDecideOptions *decide.Options
-	identify             bool
 }
 
 // CreateUserContext creates a context of the user for which decision APIs will be called.
@@ -60,7 +60,7 @@ type OptimizelyClient struct {
 func (o *OptimizelyClient) CreateUserContext(userID string, attributes map[string]interface{}) OptimizelyUserContext {
 	// Passing qualified segments as nil initially since they will be fetched later
 	if o.identify {
-		// Identify userID to odp server
+		// Identify user to odp server
 		o.OdpManager.IdentifyUser(userID)
 	}
 	return newOptimizelyUserContext(o, userID, attributes, nil, nil)
@@ -243,7 +243,7 @@ func (o *OptimizelyClient) decideAll(userContext OptimizelyUserContext, options 
 	return o.decideForKeys(userContext, allFlagKeys, options)
 }
 
-func (o *OptimizelyClient) fetchQualifiedSegments(userContext *OptimizelyUserContext, options []pkgSegment.OptimizelySegmentOption, callback func(segments []string, err error)) {
+func (o *OptimizelyClient) fetchQualifiedSegments(userContext *OptimizelyUserContext, options []pkgOdpSegment.OptimizelySegmentOption, callback func(segments []string, err error)) {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
@@ -270,15 +270,24 @@ func (o *OptimizelyClient) fetchQualifiedSegments(userContext *OptimizelyUserCon
 		}
 		return
 	}
-	go func() {
-		qualifiedSegments, err := o.OdpManager.FetchQualifiedSegments(userContext.GetUserID(), options)
-		if err == nil {
+
+	fetchAndSetSegments := func() (segments []string, err error) {
+		qualifiedSegments, segmentsError := o.OdpManager.FetchQualifiedSegments(userContext.GetUserID(), options)
+		if segmentsError == nil {
 			userContext.SetQualifiedSegments(qualifiedSegments)
 		}
-		if callback != nil {
-			callback(qualifiedSegments, err)
-		}
-	}()
+		return qualifiedSegments, segmentsError
+	}
+
+	// Async
+	if callback != nil {
+		go func() {
+			callback(fetchAndSetSegments())
+		}()
+		return
+	}
+	// Sync
+	_, _ = fetchAndSetSegments()
 }
 
 // SendOdpEvent sends an event to the ODP server.

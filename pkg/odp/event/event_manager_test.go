@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -342,6 +342,32 @@ func (e *EventManagerTestSuite) TestEventManagerAsyncBehaviour() {
 	// This is because there might be odd number of events in queue when flush is called in which case
 	// Flush will send the last incomplete batch too
 	e.True(eventAPIManager.timesSendEventsCalled >= iterations)
+}
+
+func (e *EventManagerTestSuite) TestFlushEventsAsyncBehaviour() {
+	eventAPIManager := &MockEventAPIManager{}
+	batchSize := 2
+	eventManager := NewBatchEventManager(WithAPIManager(eventAPIManager), WithBatchSize(batchSize), WithOdpConfig(config.NewConfig("-1", "-1", []string{"-1"})))
+	iterations := 100
+	eventAPIManager.wg.Add(50)
+	// Add 100 events to queue
+	for i := 0; i < iterations; i++ {
+		eventManager.eventQueue.Add(Event{Type: fmt.Sprintf("%d", i)})
+	}
+
+	callAllMethods := func() {
+		eventManager.FlushEvents()
+	}
+	// Call flushEvents on different go routines
+	for i := 0; i < iterations; i++ {
+		go callAllMethods()
+	}
+	// Wait for all go routines to complete
+	eventAPIManager.wg.Wait()
+
+	e.Equal(0, eventManager.eventQueue.Size())
+	e.Equal(iterations/batchSize, eventAPIManager.timesSendEventsCalled)
+	e.Equal(iterations, len(eventAPIManager.eventsSent))
 }
 
 func (e *EventManagerTestSuite) TestAddCommonData() {

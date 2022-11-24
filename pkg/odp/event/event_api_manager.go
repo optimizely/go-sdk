@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -26,8 +26,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/odp/utils"
 	pkgUtils "github.com/optimizely/go-sdk/pkg/utils"
 )
-
-const eventsAPIEndpointPath = "/v3/events"
 
 // APIManager represents the event API manager.
 type APIManager interface {
@@ -61,7 +59,7 @@ func NewEventAPIManager(sdkKey string, requester pkgUtils.Requester) *DefaultEve
 func (s *DefaultEventAPIManager) SendOdpEvents(odpConfig config.Config, events []Event) (canRetry bool, err error) {
 
 	// Creating request
-	apiEndpoint, err := url.ParseRequestURI(fmt.Sprintf("%s%s", odpConfig.GetAPIHost(), eventsAPIEndpointPath))
+	apiEndpoint, err := url.ParseRequestURI(fmt.Sprintf("%s%s", odpConfig.GetAPIHost(), utils.ODPEventsAPIEndpointPath))
 	if err != nil {
 		return false, fmt.Errorf(utils.OdpEventFailed, err.Error())
 	}

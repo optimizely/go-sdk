@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -127,7 +127,7 @@ func (e *EventAPIManagerTestSuite) TestSuggestRetryForNetworkTimeout() {
 
 func (e *EventAPIManagerTestSuite) getTestServer(statusCode, timeout int) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.String() == eventsAPIEndpointPath {
+		if r.URL.String() == utils.ODPEventsAPIEndpointPath {
 			e.Equal("POST", r.Method)
 			e.Equal(pkgUtils.ContentTypeJSON, r.Header.Get(pkgUtils.HeaderContentType))
 			e.Equal(e.apiKey, r.Header.Get(utils.OdpAPIKeyHeader))

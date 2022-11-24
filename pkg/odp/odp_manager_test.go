@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -115,7 +115,6 @@ func (o *ODPManagerTestSuite) TestNewODPManagerNilParametersWithDisableFalse() {
 	o.NotNil(odpManager.segmentsCache)
 	o.NotNil(odpManager.OdpConfig)
 	o.NotNil(odpManager.logger)
-	o.NotNil(odpManager.processing)
 	o.NotNil(odpManager.SegmentManager)
 	o.NotNil(odpManager.EventManager)
 }
@@ -131,7 +130,6 @@ func (o *ODPManagerTestSuite) TestNewODPManagerWithOptionssWithDisableFalse() {
 	o.Equal(segmentManager, odpManager.SegmentManager)
 	o.Equal(eventManager, odpManager.EventManager)
 	o.NotNil(odpManager.logger)
-	o.NotNil(odpManager.processing)
 }
 
 func (o *ODPManagerTestSuite) TestNewODPManagersWithDisableTrue() {
@@ -140,7 +138,6 @@ func (o *ODPManagerTestSuite) TestNewODPManagersWithDisableTrue() {
 	o.False(odpManager.enabled)
 	o.Nil(odpManager.segmentsCache)
 	o.Nil(odpManager.OdpConfig)
-	o.Nil(odpManager.processing)
 	o.Nil(odpManager.SegmentManager)
 	o.Nil(odpManager.EventManager)
 }
