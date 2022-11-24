@@ -109,9 +109,6 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		)
 	}
 
-	// Needed a separate function for this to avoid cyclo-complexity warning
-	f.initializeOdpManager(appClient)
-
 	if f.eventProcessor != nil {
 		appClient.EventProcessor = f.eventProcessor
 	} else {
@@ -149,7 +146,9 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		eg.Go(batchProcessor.Start)
 	}
 
-	// Start odp manager if possible
+	// Initialize and Start odp manager if possible
+	// Needed a separate functions for this to avoid cyclo-complexity warning
+	f.initializeOdpManager(appClient)
 	f.startOdpManager(eg, appClient)
 
 	return appClient, nil
@@ -304,49 +303,62 @@ func (f *OptimizelyFactory) initializeOdpManager(appClient *OptimizelyClient) {
 	}
 
 	projectConfig, err := appClient.ConfigManager.GetConfig()
+	// For cases when project config is not fetched yet
+	isProjectConfigAvailable := err == nil && projectConfig != nil
 
-	if f.odpManager != nil {
-		appClient.OdpManager = f.odpManager
-		// Update odp config with latest changes
-		if err == nil {
-			appClient.OdpManager.Update(projectConfig.GetPublicKeyForODP(), projectConfig.GetHostForODP(), projectConfig.GetSegmentList())
+	// Create new odp manaager with latest config
+	if f.odpManager == nil {
+		options := []odp.OMOptionFunc{}
+		if isProjectConfigAvailable {
+			// Add odp Config with latest config
+			options = append(options, odp.WithOdpConfig(pkgOdpConfig.NewConfig(projectConfig.GetPublicKeyForODP(), projectConfig.GetHostForODP(), projectConfig.GetSegmentList())))
 		}
+		// Create ODP Manager
+		appClient.OdpManager = odp.NewOdpManager(f.SDKKey, f.optimizelySDKSettings.DisableOdp, f.optimizelySDKSettings.SegmentsCacheSize, f.optimizelySDKSettings.SegmentsCacheTimeoutInSecs, options...)
 		return
 	}
 
-	options := []odp.OMOptionFunc{}
-	if err == nil {
-		// Add odp Config with latest changes
-		options = append(options, odp.WithOdpConfig(pkgOdpConfig.NewConfig(projectConfig.GetPublicKeyForODP(), projectConfig.GetHostForODP(), projectConfig.GetSegmentList())))
+	// Update user given odp manager with latest config
+	if f.odpManager != nil {
+		appClient.OdpManager = f.odpManager
+		// Update odp config with latest config
+		if isProjectConfigAvailable {
+			appClient.OdpManager.Update(projectConfig.GetPublicKeyForODP(), projectConfig.GetHostForODP(), projectConfig.GetSegmentList())
+		}
 	}
-	// Create ODP Manager
-	appClient.OdpManager = odp.NewOdpManager(f.SDKKey, f.optimizelySDKSettings.DisableOdp, f.optimizelySDKSettings.SegmentsCacheSize, f.optimizelySDKSettings.SegmentsCacheTimeoutInSecs, options...)
 }
 
 func (f *OptimizelyFactory) startOdpManager(eg *utils.ExecGroup, appClient *OptimizelyClient) {
 	// Only start service if odp is enabled
-	if !f.optimizelySDKSettings.DisableOdp {
-		if OdpManager, ok := appClient.OdpManager.(*odp.DefaultOdpManager); ok {
-			// Start odp ticker
-			eg.Go(OdpManager.EventManager.Start)
-			// Only check for changes if ConfigManager is non static
-			if _, ok := appClient.ConfigManager.(*config.StaticProjectConfigManager); !ok {
-				// listen to ProjectConfigUpdateNotification to update odp config accordingly
-				callback := func(notification notification.ProjectConfigUpdateNotification) {
-					if conf, err := appClient.ConfigManager.GetConfig(); err == nil {
-						// Update odp manager with new changes and start service if not already started
-						eg.Go(func(ctx context.Context) {
-							OdpManager.Update(conf.GetPublicKeyForODP(), conf.GetHostForODP(), conf.GetSegmentList())
-							// Start config if not already started
-							OdpManager.EventManager.Start(ctx)
-						})
-					}
-				}
-				// Add callback for config update
-				_, _ = appClient.ConfigManager.OnProjectConfigUpdate(callback)
-			}
+	if f.optimizelySDKSettings.DisableOdp {
+		return
+	}
+
+	odpManager, ok := appClient.OdpManager.(*odp.DefaultOdpManager)
+	if !ok {
+		return
+	}
+	// Start odp ticker
+	eg.Go(odpManager.EventManager.Start)
+
+	// Only check for changes if ConfigManager is non static
+	_, ok = appClient.ConfigManager.(*config.StaticProjectConfigManager)
+	if ok {
+		return
+	}
+
+	// listen to ProjectConfigUpdateNotification to update odp config accordingly
+	callback := func(notification notification.ProjectConfigUpdateNotification) {
+		if conf, err := appClient.ConfigManager.GetConfig(); err == nil && conf != nil {
+			// Update odp manager with new changes and start service if not already started
+			eg.Go(func(ctx context.Context) {
+				odpManager.Update(conf.GetPublicKeyForODP(), conf.GetHostForODP(), conf.GetSegmentList())
+				odpManager.EventManager.Start(ctx)
+			})
 		}
 	}
+	// Add callback for config update
+	_, _ = appClient.ConfigManager.OnProjectConfigUpdate(callback)
 }
 
 func convertDecideOptions(options []decide.OptimizelyDecideOptions) *decide.Options {
