@@ -273,7 +273,12 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 
 	var hostForODP, publicKeyForODP string
 	for _, integration := range datafile.Integrations {
-		if integration.Key == "odp" {
+		if integration.Key == nil {
+			err = errors.New("unsupported key in integrations")
+			logger.Error("Error parsing datafile", err)
+			return nil, err
+		}
+		if *integration.Key == "odp" {
 			hostForODP = integration.Host
 			publicKeyForODP = integration.PublicKey
 			break
@@ -288,7 +293,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	rollouts, rolloutMap := mappers.MapRollouts(datafile.Rollouts)
 	integrations := []entities.Integration{}
 	for _, integration := range datafile.Integrations {
-		integrations = append(integrations, entities.Integration{Key: integration.Key, Host: integration.Host, PublicKey: integration.PublicKey})
+		integrations = append(integrations, entities.Integration{Key: *integration.Key, Host: integration.Host, PublicKey: integration.PublicKey})
 	}
 	eventMap := mappers.MapEvents(datafile.Events)
 	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentIDMap)

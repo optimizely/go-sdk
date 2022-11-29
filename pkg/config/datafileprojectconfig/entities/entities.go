@@ -106,9 +106,9 @@ type Rollout struct {
 
 // Integration represents a integration from the Optimizely datafile
 type Integration struct {
-	Key       string `json:"key"`
-	Host      string `json:"host"`
-	PublicKey string `json:"publicKey"`
+	Key       *string `json:"key"`
+	Host      string  `json:"host"`
+	PublicKey string  `json:"publicKey"`
 }
 
 // Datafile represents the datafile we get from Optimizely
