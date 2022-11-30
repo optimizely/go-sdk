@@ -42,8 +42,6 @@ type OptimizelyFactory struct {
 	Datafile            []byte
 	DatafileAccessToken string
 
-	identify              *bool
-	odpManager            odp.Manager
 	configManager         config.ProjectConfigManager
 	ctx                   context.Context
 	decisionService       decision.Service
@@ -51,9 +49,11 @@ type OptimizelyFactory struct {
 	optimizelySDKSettings *OptimizelySdkSettings
 	eventDispatcher       event.Dispatcher
 	eventProcessor        event.Processor
-	userProfileService    decision.UserProfileService
-	overrideStore         decision.ExperimentOverrideStore
+	identify              *bool
 	metricsRegistry       metrics.Registry
+	odpManager            odp.Manager
+	overrideStore         decision.ExperimentOverrideStore
+	userProfileService    decision.UserProfileService
 }
 
 // OptionFunc is used to provide custom client configuration to the OptimizelyFactory.

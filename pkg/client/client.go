@@ -58,11 +58,11 @@ type OptimizelyClient struct {
 // CreateUserContext creates a context of the user for which decision APIs will be called.
 // A user context will be created successfully even when the SDK is not fully configured yet.
 func (o *OptimizelyClient) CreateUserContext(userID string, attributes map[string]interface{}) OptimizelyUserContext {
-	// Passing qualified segments as nil initially since they will be fetched later
 	if o.identify {
 		// Identify user to odp server
 		o.OdpManager.IdentifyUser(userID)
 	}
+	// Passing qualified segments as nil initially since they will be fetched later
 	return newOptimizelyUserContext(o, userID, attributes, nil, nil)
 }
 
@@ -243,6 +243,8 @@ func (o *OptimizelyClient) decideAll(userContext OptimizelyUserContext, options 
 	return o.decideForKeys(userContext, allFlagKeys, options)
 }
 
+// fetchQualifiedSegments fetches all qualified segments for the user context.
+// request is performed asynchronously only when callback is provided
 func (o *OptimizelyClient) fetchQualifiedSegments(userContext *OptimizelyUserContext, options []pkgOdpSegment.OptimizelySegmentOption, callback func(segments []string, err error)) {
 	var err error
 	defer func() {
@@ -263,8 +265,7 @@ func (o *OptimizelyClient) fetchQualifiedSegments(userContext *OptimizelyUserCon
 	// on failure, qualifiedSegments should be reset if a previous value exists.
 	userContext.SetQualifiedSegments(nil)
 
-	_, err = o.getProjectConfig()
-	if err != nil {
+	if _, err = o.getProjectConfig(); err != nil {
 		if callback != nil {
 			callback(nil, decide.GetDecideError(decide.SDKNotReady))
 		}
