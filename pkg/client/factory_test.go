@@ -32,7 +32,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/odp"
 	"github.com/optimizely/go-sdk/pkg/odp/cache"
-	pkgOdpConfig "github.com/optimizely/go-sdk/pkg/odp/config"
 	pkgOdpEvent "github.com/optimizely/go-sdk/pkg/odp/event"
 	pkgOdpSegment "github.com/optimizely/go-sdk/pkg/odp/segment"
 	pkgOdpUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
@@ -155,60 +154,48 @@ func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 
 func TestClientWithOdpManagerAndSDKSettingsInOptions(t *testing.T) {
 	factory := OptimizelyFactory{SDKKey: "1212"}
-	odpConfig := pkgOdpConfig.NewConfig("123", "456", []string{"1"})
 	eventManager := pkgOdpEvent.NewBatchEventManager()
-	segmentManager := pkgOdpSegment.NewSegmentManager("1212", 0, 0)
-	sdkSettings := &OptimizelySdkSettings{
-		SegmentsCacheSize:          1,
-		SegmentsCacheTimeoutInSecs: 1,
-		DisableOdp:                 false,
-	}
+	segmentManager := pkgOdpSegment.NewSegmentManager("1212")
+	var segmentsCacheSize = 1
+	var segmentsCacheTimeoutInSecs int64 = 1
+	var disableOdp = false
 	segmentCache := cache.NewLRUCache(0, 0)
-	odpManager := odp.NewOdpManager("1212", false, 0, 0, odp.WithOdpConfig(odpConfig), odp.WithEventManager(eventManager), odp.WithSegmentManager(segmentManager), odp.WithSegmentsCache(segmentCache))
-	optimizelyClient, err := factory.Client(WithOdpManager(odpManager), WithOptimizelySdkSettings(sdkSettings))
-	assert.Equal(t, sdkSettings.SegmentsCacheSize, factory.optimizelySDKSettings.SegmentsCacheSize)
-	assert.Equal(t, sdkSettings.SegmentsCacheTimeoutInSecs, factory.optimizelySDKSettings.SegmentsCacheTimeoutInSecs)
-	assert.Equal(t, sdkSettings.DisableOdp, factory.optimizelySDKSettings.DisableOdp)
+	odpManager := odp.NewOdpManager("1212", false, odp.WithEventManager(eventManager), odp.WithSegmentManager(segmentManager), odp.WithSegmentsCache(segmentCache))
+	optimizelyClient, err := factory.Client(WithOdpManager(odpManager), WithSegmentsCacheSize(segmentsCacheSize), WithSegmentsCacheTimeoutInSecs(segmentsCacheTimeoutInSecs), WithOdpDisabled(disableOdp))
+	assert.Equal(t, segmentsCacheSize, factory.segmentsCacheSize)
+	assert.Equal(t, segmentsCacheTimeoutInSecs, factory.segmentsCacheTimeoutInSecs)
+	assert.Equal(t, disableOdp, factory.odpDisabled)
 	assert.NoError(t, err)
 	assert.Equal(t, odpManager, optimizelyClient.OdpManager)
-}
-
-func TestClientWithDefaultODPIdentificationTrue(t *testing.T) {
-	factory := OptimizelyFactory{SDKKey: "1212"}
-	optimizelyClient, err := factory.Client()
-	assert.NoError(t, err)
-	assert.Equal(t, true, *factory.identify)
-	assert.Equal(t, *factory.identify, optimizelyClient.identify)
-}
-
-func TestClientWithOdpUserIdentificationFalse(t *testing.T) {
-	factory := OptimizelyFactory{SDKKey: "1212"}
-	optimizelyClient, err := factory.Client(WithOdpUserIdentification(false))
-	assert.NoError(t, err)
-	assert.Equal(t, false, *factory.identify)
-	assert.Equal(t, *factory.identify, optimizelyClient.identify)
 }
 
 func TestClientWithDefaultSDKSettings(t *testing.T) {
 	factory := OptimizelyFactory{SDKKey: "1212"}
 	optimizelyClient, err := factory.Client()
 	assert.NoError(t, err)
-	assert.Equal(t, pkgOdpUtils.DefaultSegmentsCacheSize, factory.optimizelySDKSettings.SegmentsCacheSize)
-	assert.Equal(t, pkgOdpUtils.DefaultSegmentsCacheTimeout, factory.optimizelySDKSettings.SegmentsCacheTimeoutInSecs)
-	assert.Equal(t, false, factory.optimizelySDKSettings.DisableOdp)
+	assert.Equal(t, pkgOdpUtils.DefaultSegmentsCacheSize, factory.segmentsCacheSize)
+	assert.Equal(t, pkgOdpUtils.DefaultSegmentsCacheTimeout, factory.segmentsCacheTimeoutInSecs)
+	assert.Equal(t, false, factory.odpDisabled)
 	assert.NotNil(t, optimizelyClient.OdpManager)
+}
+
+func TestDummy(t *testing.T) {
+	factory := OptimizelyFactory{}
+	configManager := config.NewPollingProjectConfigManager("123")
+	optimizelyClient, err := factory.Client(WithConfigManager(configManager))
+	assert.NoError(t, err)
+	userContext := optimizelyClient.CreateUserContext("123", nil)
+	assert.NotNil(t, userContext)
 }
 
 func TestODPManagerDoesNotStartIfOdpDisabled(t *testing.T) {
 	factory := OptimizelyFactory{}
 	mockDatafile := []byte(`{"version":"4","integrations": [{"publicKey": "123", "host": "www.123.com", "key": "odp"}]}`)
 	configManager := config.NewStaticProjectConfigManagerWithOptions("", config.WithInitialDatafile(mockDatafile))
-	sdkSettings := &OptimizelySdkSettings{
-		SegmentsCacheSize:          1,
-		SegmentsCacheTimeoutInSecs: 1,
-		DisableOdp:                 true,
-	}
-	optimizelyClient, err := factory.Client(WithConfigManager(configManager), WithOptimizelySdkSettings(sdkSettings))
+	var segmentsCacheSize = 1
+	var segmentsCacheTimeoutInSecs int64 = 1
+	var disableOdp = true
+	optimizelyClient, err := factory.Client(WithConfigManager(configManager), WithSegmentsCacheSize(segmentsCacheSize), WithSegmentsCacheTimeoutInSecs(segmentsCacheTimeoutInSecs), WithOdpDisabled(disableOdp))
 	assert.NoError(t, err)
 	assert.NotNil(t, optimizelyClient.OdpManager)
 	var odpManager = optimizelyClient.OdpManager.(*odp.DefaultOdpManager)

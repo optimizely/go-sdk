@@ -37,32 +37,33 @@ type SegmentManagerTestSuite struct {
 func (s *SegmentManagerTestSuite) SetupTest() {
 	s.config = config.NewConfig("", "", nil)
 	s.segmentAPIManager = &MockSegmentAPIManager{}
-	s.segmentManager = NewSegmentManager("", 10, 10, WithOdpConfig(s.config), WithAPIManager(s.segmentAPIManager))
+	s.segmentManager = NewSegmentManager("", WithSegmentsCacheSize(10), WithSegmentsCacheTimeoutInSecs(10), WithAPIManager(s.segmentAPIManager))
 	s.userID = "test-user"
 }
 
 func (s *SegmentManagerTestSuite) TestNewSegmentManagerNilParameters() {
-	segmentManager := NewSegmentManager("", 0, 0)
+	segmentManager := NewSegmentManager("")
 	s.NotNil(segmentManager.apiManager)
 	s.NotNil(segmentManager.segmentsCache)
 }
 
 func (s *SegmentManagerTestSuite) TestNewSegmentManagerCustomCache() {
 	customCache := &TestCache{}
-	segmentManager := NewSegmentManager("", 0, 0, WithSegmentsCache(customCache))
+	segmentManager := NewSegmentManager("", WithSegmentsCache(customCache))
 	s.Equal(customCache, segmentManager.segmentsCache)
 }
 
 func (s *SegmentManagerTestSuite) TestFetchSegmentsNilConfig() {
-	segmentManager := NewSegmentManager("", 0, 0)
-	segments, err := segmentManager.FetchQualifiedSegments(s.userID, nil)
+	segmentManager := NewSegmentManager("")
+	segments, err := segmentManager.FetchQualifiedSegments(s.config, s.userID, nil)
 	s.Nil(segments)
 	s.Error(err)
 }
 
 func (s *SegmentManagerTestSuite) TestFetchSegmentsNoSegmentsToCheckInConfig() {
-	segmentManager := NewSegmentManager("", 0, 0, WithOdpConfig(config.NewConfig("a", "b", nil)))
-	segments, err := segmentManager.FetchQualifiedSegments(s.userID, nil)
+	odpConfig := config.NewConfig("a", "b", nil)
+	segmentManager := NewSegmentManager("")
+	segments, err := segmentManager.FetchQualifiedSegments(odpConfig, s.userID, nil)
 	s.Empty(segments)
 	s.Nil(err)
 }
@@ -70,9 +71,11 @@ func (s *SegmentManagerTestSuite) TestFetchSegmentsNoSegmentsToCheckInConfig() {
 func (s *SegmentManagerTestSuite) TestFetchSegmentsSuccessCacheMiss() {
 	expectedSegments := []string{"new-customer"}
 	s.config.Update("valid", "host", expectedSegments)
+	s.Equal(10, s.segmentManager.segmentsCacheSize)
+	s.Equal(int64(10), s.segmentManager.segmentsCacheTimeoutInSecs)
 	s.setCache("123", []string{"a"})
 
-	segments, err := s.segmentManager.FetchQualifiedSegments(s.userID, nil)
+	segments, err := s.segmentManager.FetchQualifiedSegments(s.config, s.userID, nil)
 	s.Nil(err)
 	s.Equal(expectedSegments, segments)
 }
@@ -82,7 +85,7 @@ func (s *SegmentManagerTestSuite) TestFetchSegmentsSuccessCacheHit() {
 	s.config.Update("valid", "host", []string{"new-customer"})
 	s.setCache(s.userID, expectedSegments)
 
-	segments, err := s.segmentManager.FetchQualifiedSegments(s.userID, nil)
+	segments, err := s.segmentManager.FetchQualifiedSegments(s.config, s.userID, nil)
 	s.Nil(err)
 	s.Equal(expectedSegments, segments)
 }
@@ -90,7 +93,7 @@ func (s *SegmentManagerTestSuite) TestFetchSegmentsSuccessCacheHit() {
 func (s *SegmentManagerTestSuite) TestFetchSegmentsSegmentsError() {
 	s.config.Update("invalid-key", "host", []string{"new-customer"})
 
-	segments, err := s.segmentManager.FetchQualifiedSegments(s.userID, nil)
+	segments, err := s.segmentManager.FetchQualifiedSegments(s.config, s.userID, nil)
 	s.Error(err)
 	s.Nil(segments)
 }
@@ -100,7 +103,7 @@ func (s *SegmentManagerTestSuite) TestOptionsIgnoreCache() {
 	s.config.Update("valid", "host", expectedSegments)
 	s.setCache(s.userID, []string{"a"})
 
-	segments, err := s.segmentManager.FetchQualifiedSegments(s.userID, []OptimizelySegmentOption{IgnoreCache})
+	segments, err := s.segmentManager.FetchQualifiedSegments(s.config, s.userID, []OptimizelySegmentOption{IgnoreCache})
 	s.Nil(err)
 	s.Equal(expectedSegments, segments)
 }
@@ -112,7 +115,7 @@ func (s *SegmentManagerTestSuite) TestOptionsResetCache() {
 	s.setCache("123", []string{"a"})
 	s.setCache("456", []string{"a"})
 
-	segments, err := s.segmentManager.FetchQualifiedSegments(s.userID, []OptimizelySegmentOption{ResetCache})
+	segments, err := s.segmentManager.FetchQualifiedSegments(s.config, s.userID, []OptimizelySegmentOption{ResetCache})
 	s.Nil(err)
 	s.Equal(expectedSegments, segments)
 }
@@ -130,11 +133,11 @@ func (s *SegmentManagerTestSuite) setCache(userID string, value []string) {
 type MockSegmentAPIManager struct {
 }
 
-func (s *MockSegmentAPIManager) FetchQualifiedSegments(odpConfig config.Config, userID string) ([]string, error) {
-	if odpConfig.GetAPIKey() == "invalid-key" {
+func (s *MockSegmentAPIManager) FetchQualifiedSegments(apiKey, apiHost, userID string, segmentsToCheck []string) ([]string, error) {
+	if apiKey == "invalid-key" {
 		return nil, fmt.Errorf(utils.FetchSegmentsFailedError, "403 Forbidden")
 	}
-	return odpConfig.GetSegmentsToCheck(), nil
+	return segmentsToCheck, nil
 }
 
 func TestSegmentManagerTestSuite(t *testing.T) {

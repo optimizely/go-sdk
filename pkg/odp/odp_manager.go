@@ -41,18 +41,27 @@ type Manager interface {
 
 // DefaultOdpManager represents default implementation of odp manager
 type DefaultOdpManager struct {
-	enabled        bool
-	segmentsCache  cache.Cache
-	OdpConfig      config.Config
-	logger         logging.OptimizelyLogProducer
-	SegmentManager segment.Manager
-	EventManager   event.Manager
+	enabled                    bool
+	segmentsCacheSize          int
+	segmentsCacheTimeoutInSecs int64
+	segmentsCache              cache.Cache
+	OdpConfig                  config.Config
+	logger                     logging.OptimizelyLogProducer
+	SegmentManager             segment.Manager
+	EventManager               event.Manager
 }
 
-// WithOdpConfig sets odpConfig option to be passed into the NewOdpManager method
-func WithOdpConfig(odpConfig config.Config) OMOptionFunc {
+// WithSegmentsCacheSize sets segmentsCacheSize option to be passed into the NewOdpManager method.
+func WithSegmentsCacheSize(segmentsCacheSize int) OMOptionFunc {
 	return func(om *DefaultOdpManager) {
-		om.OdpConfig = odpConfig
+		om.segmentsCacheSize = segmentsCacheSize
+	}
+}
+
+// WithSegmentsCacheTimeoutInSecs sets segmentsCacheTimeoutInSecs option to be passed into the NewOdpManager method
+func WithSegmentsCacheTimeoutInSecs(segmentsCacheTimeoutInSecs int64) OMOptionFunc {
+	return func(om *DefaultOdpManager) {
+		om.segmentsCacheTimeoutInSecs = segmentsCacheTimeoutInSecs
 	}
 }
 
@@ -78,7 +87,7 @@ func WithEventManager(eventManager event.Manager) OMOptionFunc {
 }
 
 // NewOdpManager creates and returns a new instance of DefaultOdpManager.
-func NewOdpManager(sdkKey string, disable bool, cacheSize int, cacheTimeoutInSecs int64, options ...OMOptionFunc) *DefaultOdpManager {
+func NewOdpManager(sdkKey string, disable bool, options ...OMOptionFunc) *DefaultOdpManager {
 	odpManager := &DefaultOdpManager{enabled: !disable,
 		logger: logging.GetLogger(sdkKey, "ODPManager"),
 	}
@@ -92,24 +101,16 @@ func NewOdpManager(sdkKey string, disable bool, cacheSize int, cacheTimeoutInSec
 		opt(odpManager)
 	}
 
-	if cacheSize < 0 {
-		cacheSize = utils.DefaultSegmentsCacheSize
-	}
-	if cacheTimeoutInSecs < 0 {
-		cacheTimeoutInSecs = utils.DefaultSegmentsCacheTimeout
-	}
-
-	if odpManager.OdpConfig == nil {
-		odpManager.OdpConfig = config.NewConfig("", "", nil)
-	}
-
-	if odpManager.segmentsCache == nil {
-		odpManager.segmentsCache = cache.NewLRUCache(cacheSize, cacheTimeoutInSecs)
-	}
+	odpManager.OdpConfig = config.NewConfig("", "", nil)
 
 	if odpManager.SegmentManager == nil {
-		options := []segment.SMOptionFunc{segment.WithSegmentsCache(odpManager.segmentsCache), segment.WithOdpConfig(odpManager.OdpConfig)}
-		odpManager.SegmentManager = segment.NewSegmentManager(sdkKey, cacheSize, cacheTimeoutInSecs, options...)
+		segmentOptions := []segment.SMOptionFunc{}
+		if odpManager.segmentsCache != nil {
+			segmentOptions = append(segmentOptions, segment.WithSegmentsCache(odpManager.segmentsCache))
+		} else {
+			segmentOptions = append(segmentOptions, segment.WithSegmentsCacheSize(odpManager.segmentsCacheSize), segment.WithSegmentsCacheTimeoutInSecs(odpManager.segmentsCacheTimeoutInSecs))
+		}
+		odpManager.SegmentManager = segment.NewSegmentManager(sdkKey, segmentOptions...)
 	}
 
 	if odpManager.EventManager == nil {
@@ -124,7 +125,7 @@ func (om *DefaultOdpManager) FetchQualifiedSegments(userID string, options []seg
 		return nil, errors.New(utils.OdpNotEnabled)
 	}
 
-	return om.SegmentManager.FetchQualifiedSegments(userID, options)
+	return om.SegmentManager.FetchQualifiedSegments(om.OdpConfig, userID, options)
 }
 
 // IdentifyUser associates a full-stack userid with an established VUID
@@ -160,7 +161,7 @@ func (om *DefaultOdpManager) Update(apiKey, apiHost string, segmentsToCheck []st
 	// flush old events using old odp publicKey (if exists) before updating odp key.
 	// NOTE: It should be rare but possible that odp public key is changed for the same datafile (sdkKey).
 	//       Try to send all old events with the previous public key.
-	//       If it fails to flush all the old events here (network error), remaning events will be discarded.
+	//       If it fails to flush all the old events here (network error), remaining events will be discarded.
 
 	om.EventManager.FlushEvents()
 	if om.OdpConfig.Update(apiKey, apiHost, segmentsToCheck) {

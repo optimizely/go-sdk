@@ -164,6 +164,7 @@ func (bm *BatchEventManager) Start(ctx context.Context) {
 func (bm *BatchEventManager) IdentifyUser(userID string) {
 	if !bm.IsOdpServiceIntegrated() {
 		bm.logger.Debug(utils.IdentityOdpNotIntegrated)
+		return
 	}
 	identifiers := map[string]string{utils.OdpFSUserIDKey: userID}
 	odpEvent := Event{
@@ -278,11 +279,14 @@ func (bm *BatchEventManager) FlushEvents() {
 
 		// Only send event if batch is available
 		if batchEventCount > 0 {
+			// Avoid passing odpConfig inside the loop to save multiple mutex lock calls
+			apiKey := bm.OdpConfig.GetAPIKey()
+			apiHost := bm.OdpConfig.GetAPIHost()
 			retryCount := 0
 			// Retry till maxRetries reached
 			for retryCount < maxRetries {
 				failedToSend = true
-				shouldRetry, err := bm.apiManager.SendOdpEvents(bm.OdpConfig, batchEvent)
+				shouldRetry, err := bm.apiManager.SendOdpEvents(apiKey, apiHost, batchEvent)
 				// Remove events from queue if dispatch failed and retrying is not suggested
 				if !shouldRetry {
 					bm.eventQueue.Remove(batchEventCount)

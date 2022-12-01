@@ -56,8 +56,8 @@ type MockSegmentManager struct {
 	segment.Manager
 }
 
-func (m *MockSegmentManager) FetchQualifiedSegments(userID string, options []segment.OptimizelySegmentOption) (segments []string, err error) {
-	args := m.Called(userID, options)
+func (m *MockSegmentManager) FetchQualifiedSegments(odpConfig config.Config, userID string, options []segment.OptimizelySegmentOption) (segments []string, err error) {
+	args := m.Called(odpConfig, userID, options)
 	if segArray, ok := args.Get(0).([]string); ok {
 		segments = segArray
 	}
@@ -107,33 +107,39 @@ func (o *ODPManagerTestSuite) SetupTest() {
 	o.config = &MockConfig{}
 	o.eventManager = &MockEventManager{}
 	o.segmentManager = &MockSegmentManager{}
-	o.odpManager = NewOdpManager("", false, 0, 0, WithOdpConfig(o.config), WithEventManager(o.eventManager), WithSegmentManager(o.segmentManager))
+	o.odpManager = NewOdpManager("", false, WithSegmentsCacheSize(0), WithSegmentsCacheTimeoutInSecs(0), WithEventManager(o.eventManager), WithSegmentManager(o.segmentManager))
+	o.odpManager.OdpConfig = o.config
 }
 
 func (o *ODPManagerTestSuite) TestNewODPManagerNilParametersWithDisableFalse() {
-	odpManager := NewOdpManager("", false, 0, 0)
-	o.NotNil(odpManager.segmentsCache)
+	odpManager := NewOdpManager("", false)
 	o.NotNil(odpManager.OdpConfig)
 	o.NotNil(odpManager.logger)
 	o.NotNil(odpManager.SegmentManager)
 	o.NotNil(odpManager.EventManager)
 }
 
-func (o *ODPManagerTestSuite) TestNewODPManagerWithOptionssWithDisableFalse() {
-	odpConfig := config.NewConfig("123", "456", []string{"123"})
+func (o *ODPManagerTestSuite) TestNegativeSegmentCacheSizeAndTimeout() {
+	odpManager := NewOdpManager("", false, WithSegmentsCacheSize(-1), WithSegmentsCacheTimeoutInSecs(-1))
+	o.Equal(-1, odpManager.segmentsCacheSize)
+	o.Equal(int64(-1), odpManager.segmentsCacheTimeoutInSecs)
+}
+
+func (o *ODPManagerTestSuite) TestNewODPManagerWithOptionsWithDisableFalse() {
 	segmentsCache := cache.NewLRUCache(1, 2)
-	segmentManager := segment.NewSegmentManager("", 1, 2, segment.WithSegmentsCache(segmentsCache))
+	segmentManager := segment.NewSegmentManager("", segment.WithSegmentsCache(segmentsCache))
 	eventManager := event.NewBatchEventManager()
-	odpManager := NewOdpManager("", false, -1, -1, WithOdpConfig(odpConfig), WithSegmentsCache(segmentsCache), WithSegmentManager(segmentManager), WithEventManager(eventManager))
-	o.Equal(odpConfig, odpManager.OdpConfig)
+	odpManager := NewOdpManager("", false, WithSegmentsCacheSize(1), WithSegmentsCacheTimeoutInSecs(1), WithSegmentsCache(segmentsCache), WithSegmentManager(segmentManager), WithEventManager(eventManager))
 	o.Equal(segmentsCache, odpManager.segmentsCache)
 	o.Equal(segmentManager, odpManager.SegmentManager)
 	o.Equal(eventManager, odpManager.EventManager)
+	o.Equal(1, odpManager.segmentsCacheSize)
+	o.Equal(int64(1), odpManager.segmentsCacheTimeoutInSecs)
 	o.NotNil(odpManager.logger)
 }
 
-func (o *ODPManagerTestSuite) TestNewODPManagersWithDisableTrue() {
-	odpManager := NewOdpManager("", true, 0, 0)
+func (o *ODPManagerTestSuite) TestNewODPManagerWithDisableTrue() {
+	odpManager := NewOdpManager("", true)
 	o.NotNil(odpManager.logger)
 	o.False(odpManager.enabled)
 	o.Nil(odpManager.segmentsCache)
@@ -157,27 +163,25 @@ func (o *ODPManagerTestSuite) TestODPManagerAPIsWithDisableTrue() {
 }
 
 func (o *ODPManagerTestSuite) TestODPConfigReferencePassed() {
-	odpConfig := config.NewConfig("1", "2", []string{"123"})
-	odpManager := NewOdpManager("", false, 0, 0, WithOdpConfig(odpConfig))
-	o.Equal(odpConfig, odpManager.OdpConfig)
-	o.Equal(odpConfig, odpManager.EventManager.(*event.BatchEventManager).OdpConfig)
-	o.Equal(odpConfig, odpManager.SegmentManager.(*segment.DefaultSegmentManager).OdpConfig)
+	odpManager := NewOdpManager("", false)
+	o.NotNil(odpManager.OdpConfig)
+	o.Equal(odpManager.OdpConfig, odpManager.EventManager.(*event.BatchEventManager).OdpConfig)
 
 	// Check changes reflected after update
-	odpConfig.Update("a", "b", []string{"1234"})
-	o.Equal(odpConfig.GetAPIKey(), "a")
-	o.Equal(odpConfig.GetAPIHost(), "b")
-	o.Equal(odpConfig.GetSegmentsToCheck(), []string{"1234"})
+	odpManager.OdpConfig.Update("a", "b", []string{"1234"})
+	o.Equal(odpManager.OdpConfig.GetAPIKey(), "a")
+	o.Equal(odpManager.OdpConfig.GetAPIHost(), "b")
+	o.Equal(odpManager.OdpConfig.GetSegmentsToCheck(), []string{"1234"})
 
-	o.Equal(odpConfig.GetAPIKey(), odpManager.EventManager.(*event.BatchEventManager).OdpConfig.GetAPIKey())
-	o.Equal(odpConfig.GetAPIHost(), odpManager.EventManager.(*event.BatchEventManager).OdpConfig.GetAPIHost())
-	o.Equal(odpConfig.GetSegmentsToCheck(), odpManager.EventManager.(*event.BatchEventManager).OdpConfig.GetSegmentsToCheck())
+	o.Equal(odpManager.OdpConfig.GetAPIKey(), odpManager.EventManager.(*event.BatchEventManager).OdpConfig.GetAPIKey())
+	o.Equal(odpManager.OdpConfig.GetAPIHost(), odpManager.EventManager.(*event.BatchEventManager).OdpConfig.GetAPIHost())
+	o.Equal(odpManager.OdpConfig.GetSegmentsToCheck(), odpManager.EventManager.(*event.BatchEventManager).OdpConfig.GetSegmentsToCheck())
 }
 
 func (o *ODPManagerTestSuite) TestFetchQualifiedSegments() {
 	expectedSegments := []string{"1"}
 	expectedError := errors.New("123")
-	o.segmentManager.On("FetchQualifiedSegments", "1", []segment.OptimizelySegmentOption{}).Return([]string{"1"}, errors.New("123"))
+	o.segmentManager.On("FetchQualifiedSegments", o.odpManager.OdpConfig, "1", []segment.OptimizelySegmentOption{}).Return([]string{"1"}, errors.New("123"))
 	segments, err := o.odpManager.FetchQualifiedSegments("1", []segment.OptimizelySegmentOption{})
 	o.segmentManager.AssertExpectations(o.T())
 	o.Equal(expectedSegments, segments)

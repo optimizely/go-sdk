@@ -22,14 +22,14 @@ import (
 	"net/url"
 
 	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/odp/config"
 	"github.com/optimizely/go-sdk/pkg/odp/utils"
 	pkgUtils "github.com/optimizely/go-sdk/pkg/utils"
 )
 
 // APIManager represents the event API manager.
 type APIManager interface {
-	SendOdpEvents(odpConfig config.Config, events []Event) (canRetry bool, err error)
+	// not passing ODPConfig here to avoid multiple mutex lock calls inside the batch events loop
+	SendOdpEvents(apiKey, apiHost string, events []Event) (canRetry bool, err error)
 }
 
 // ODP REST Events API
@@ -56,14 +56,14 @@ func NewEventAPIManager(sdkKey string, requester pkgUtils.Requester) *DefaultEve
 }
 
 // SendOdpEvents sends events to ODP's RESTful API
-func (s *DefaultEventAPIManager) SendOdpEvents(odpConfig config.Config, events []Event) (canRetry bool, err error) {
+func (s *DefaultEventAPIManager) SendOdpEvents(apiKey, apiHost string, events []Event) (canRetry bool, err error) {
 
 	// Creating request
-	apiEndpoint, err := url.ParseRequestURI(fmt.Sprintf("%s%s", odpConfig.GetAPIHost(), utils.ODPEventsAPIEndpointPath))
+	apiEndpoint, err := url.ParseRequestURI(fmt.Sprintf("%s%s", apiHost, utils.ODPEventsAPIEndpointPath))
 	if err != nil {
 		return false, fmt.Errorf(utils.OdpEventFailed, err.Error())
 	}
-	headers := []pkgUtils.Header{{Name: pkgUtils.HeaderContentType, Value: pkgUtils.ContentTypeJSON}, {Name: utils.OdpAPIKeyHeader, Value: odpConfig.GetAPIKey()}}
+	headers := []pkgUtils.Header{{Name: pkgUtils.HeaderContentType, Value: pkgUtils.ContentTypeJSON}, {Name: utils.OdpAPIKeyHeader, Value: apiKey}}
 
 	_, _, status, err := s.requester.Post(apiEndpoint.String(), events, headers...)
 	// handling edge cases

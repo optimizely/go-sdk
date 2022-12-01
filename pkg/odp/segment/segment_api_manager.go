@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/odp/config"
 	"github.com/optimizely/go-sdk/pkg/odp/utils"
 	pkgUtils "github.com/optimizely/go-sdk/pkg/utils"
 )
@@ -34,7 +33,8 @@ const graphqlAPIEndpointPath = "/v3/graphql"
 
 // APIManager represents the segment API manager.
 type APIManager interface {
-	FetchQualifiedSegments(odpConfig config.Config, userID string) ([]string, error)
+	// not passing ODPConfig here to avoid multiple mutex lock calls inside async requests
+	FetchQualifiedSegments(apiKey, apiHost, userID string, segmentsToCheck []string) ([]string, error)
 }
 
 // ODP GraphQL API
@@ -132,17 +132,17 @@ func NewSegmentAPIManager(sdkKey string, requester pkgUtils.Requester) *DefaultS
 }
 
 // FetchQualifiedSegments returns qualified ODP segments
-func (sm *DefaultSegmentAPIManager) FetchQualifiedSegments(odpConfig config.Config, userID string) ([]string, error) {
+func (sm *DefaultSegmentAPIManager) FetchQualifiedSegments(apiKey, apiHost, userID string, segmentsToCheck []string) ([]string, error) {
 
 	// Creating query for odp request
-	requestQuery := sm.createRequestQuery(userID, odpConfig.GetSegmentsToCheck())
+	requestQuery := sm.createRequestQuery(userID, segmentsToCheck)
 
 	// Creating request
-	apiEndpoint, err := url.ParseRequestURI(fmt.Sprintf("%s%s", odpConfig.GetAPIHost(), graphqlAPIEndpointPath))
+	apiEndpoint, err := url.ParseRequestURI(fmt.Sprintf("%s%s", apiHost, graphqlAPIEndpointPath))
 	if err != nil {
 		return nil, fmt.Errorf(utils.FetchSegmentsFailedError, err.Error())
 	}
-	headers := []pkgUtils.Header{{Name: pkgUtils.HeaderContentType, Value: pkgUtils.ContentTypeJSON}, {Name: utils.OdpAPIKeyHeader, Value: odpConfig.GetAPIKey()}}
+	headers := []pkgUtils.Header{{Name: pkgUtils.HeaderContentType, Value: pkgUtils.ContentTypeJSON}, {Name: utils.OdpAPIKeyHeader, Value: apiKey}}
 
 	// handling edge cases
 	response, _, _, err := sm.requester.Post(apiEndpoint.String(), requestQuery, headers...)

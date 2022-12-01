@@ -48,7 +48,6 @@ type OptimizelyClient struct {
 	DecisionService      decision.Service
 	EventProcessor       event.Processor
 	OdpManager           odp.Manager
-	identify             bool
 	notificationCenter   notification.Center
 	execGroup            *utils.ExecGroup
 	logger               logging.OptimizelyLogProducer
@@ -58,7 +57,7 @@ type OptimizelyClient struct {
 // CreateUserContext creates a context of the user for which decision APIs will be called.
 // A user context will be created successfully even when the SDK is not fully configured yet.
 func (o *OptimizelyClient) CreateUserContext(userID string, attributes map[string]interface{}) OptimizelyUserContext {
-	if o.identify {
+	if o.OdpManager != nil {
 		// Identify user to odp server
 		o.OdpManager.IdentifyUser(userID)
 	}
@@ -245,7 +244,7 @@ func (o *OptimizelyClient) decideAll(userContext OptimizelyUserContext, options 
 
 // fetchQualifiedSegments fetches all qualified segments for the user context.
 // request is performed asynchronously only when callback is provided
-func (o *OptimizelyClient) fetchQualifiedSegments(userContext *OptimizelyUserContext, options []pkgOdpSegment.OptimizelySegmentOption, callback func(segments []string, err error)) {
+func (o *OptimizelyClient) fetchQualifiedSegments(userContext *OptimizelyUserContext, options []pkgOdpSegment.OptimizelySegmentOption, callback func(success bool)) {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
@@ -266,29 +265,25 @@ func (o *OptimizelyClient) fetchQualifiedSegments(userContext *OptimizelyUserCon
 	userContext.SetQualifiedSegments(nil)
 
 	if _, err = o.getProjectConfig(); err != nil {
+		o.logger.Error("fetchQualifiedSegments failed with error:", decide.GetDecideError(decide.SDKNotReady))
 		if callback != nil {
-			callback(nil, decide.GetDecideError(decide.SDKNotReady))
+			callback(false)
 		}
 		return
 	}
 
-	fetchAndSetSegments := func() (segments []string, err error) {
-		qualifiedSegments, segmentsError := o.OdpManager.FetchQualifiedSegments(userContext.GetUserID(), options)
-		if segmentsError == nil {
-			userContext.SetQualifiedSegments(qualifiedSegments)
-		}
-		return qualifiedSegments, segmentsError
+	qualifiedSegments, segmentsError := o.OdpManager.FetchQualifiedSegments(userContext.GetUserID(), options)
+	success := segmentsError == nil
+
+	if success {
+		userContext.SetQualifiedSegments(qualifiedSegments)
+	} else {
+		o.logger.Error("fetchQualifiedSegments failed with error:", segmentsError)
 	}
 
-	// Async
 	if callback != nil {
-		go func() {
-			callback(fetchAndSetSegments())
-		}()
-		return
+		callback(success)
 	}
-	// Sync
-	_, _ = fetchAndSetSegments()
 }
 
 // SendOdpEvent sends an event to the ODP server.

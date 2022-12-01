@@ -30,7 +30,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/metrics"
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/odp"
-	pkgOdpConfig "github.com/optimizely/go-sdk/pkg/odp/config"
 	pkgOdpUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/optimizely/go-sdk/pkg/registry"
 	"github.com/optimizely/go-sdk/pkg/utils"
@@ -42,18 +41,21 @@ type OptimizelyFactory struct {
 	Datafile            []byte
 	DatafileAccessToken string
 
-	configManager         config.ProjectConfigManager
-	ctx                   context.Context
-	decisionService       decision.Service
-	defaultDecideOptions  *decide.Options
-	optimizelySDKSettings *OptimizelySdkSettings
-	eventDispatcher       event.Dispatcher
-	eventProcessor        event.Processor
-	identify              *bool
-	metricsRegistry       metrics.Registry
-	odpManager            odp.Manager
-	overrideStore         decision.ExperimentOverrideStore
-	userProfileService    decision.UserProfileService
+	configManager        config.ProjectConfigManager
+	ctx                  context.Context
+	decisionService      decision.Service
+	defaultDecideOptions *decide.Options
+	eventDispatcher      event.Dispatcher
+	eventProcessor       event.Processor
+	metricsRegistry      metrics.Registry
+	overrideStore        decision.ExperimentOverrideStore
+	userProfileService   decision.UserProfileService
+
+	// ODP
+	segmentsCacheSize          int
+	segmentsCacheTimeoutInSecs int64
+	odpDisabled                bool
+	odpManager                 odp.Manager
 }
 
 // OptionFunc is used to provide custom client configuration to the OptimizelyFactory.
@@ -61,6 +63,10 @@ type OptionFunc func(*OptimizelyFactory)
 
 // Client instantiates a new OptimizelyClient with the given options.
 func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClient, error) {
+	// Setting default values
+	f.segmentsCacheSize = pkgOdpUtils.DefaultSegmentsCacheSize
+	f.segmentsCacheTimeoutInSecs = pkgOdpUtils.DefaultSegmentsCacheTimeout
+
 	// extract options
 	for _, opt := range clientOptions {
 		opt(f)
@@ -177,10 +183,27 @@ func WithPollingConfigManagerDatafileAccessToken(pollingInterval time.Duration, 
 	}
 }
 
-// WithOptimizelySdkSettings sets optimizelySdkSettings on a client.
-func WithOptimizelySdkSettings(optimizelySdkSettings *OptimizelySdkSettings) OptionFunc {
+// WithSegmentsCacheSize sets SegmentsCacheSize for odp manager.
+// Default value is 10000
+func WithSegmentsCacheSize(segmentsCacheSize int) OptionFunc {
 	return func(f *OptimizelyFactory) {
-		f.optimizelySDKSettings = optimizelySdkSettings
+		f.segmentsCacheSize = segmentsCacheSize
+	}
+}
+
+// WithSegmentsCacheTimeoutInSecs sets SegmentsCacheTimeoutInSecs for odp manager.
+// Default value is 600s
+func WithSegmentsCacheTimeoutInSecs(segmentsCacheTimeoutInSecs int64) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.segmentsCacheTimeoutInSecs = segmentsCacheTimeoutInSecs
+	}
+}
+
+// WithOdpDisabled disables odp for the client.
+// Default value is false
+func WithOdpDisabled(disable bool) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.odpDisabled = disable
 	}
 }
 
@@ -188,13 +211,6 @@ func WithOptimizelySdkSettings(optimizelySdkSettings *OptimizelySdkSettings) Opt
 func WithOdpManager(odpManager odp.Manager) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.odpManager = odpManager
-	}
-}
-
-// WithOdpUserIdentification confirms whether to call IdentifyUser API on userContext initialization.
-func WithOdpUserIdentification(identify bool) OptionFunc {
-	return func(f *OptimizelyFactory) {
-		f.identify = &identify
 	}
 }
 
@@ -287,50 +303,25 @@ func (f *OptimizelyFactory) StaticClient() (optlyClient *OptimizelyClient, err e
 }
 
 func (f *OptimizelyFactory) initializeOdpManager(appClient *OptimizelyClient) {
-	// Default value for odp identify call
-	identify := true
-	if f.identify != nil {
-		identify = *f.identify
-	}
-	f.identify = &identify
-	appClient.identify = identify
-
-	if f.optimizelySDKSettings == nil {
-		f.optimizelySDKSettings = &OptimizelySdkSettings{
-			SegmentsCacheSize:          pkgOdpUtils.DefaultSegmentsCacheSize,
-			SegmentsCacheTimeoutInSecs: pkgOdpUtils.DefaultSegmentsCacheTimeout,
-		}
-	}
-
+	appClient.OdpManager = f.odpManager
 	projectConfig, err := appClient.ConfigManager.GetConfig()
 	// For cases when project config is not fetched yet
 	isProjectConfigAvailable := err == nil && projectConfig != nil
 
-	// Create new odp manaager with latest config
-	if f.odpManager == nil {
-		options := []odp.OMOptionFunc{}
-		if isProjectConfigAvailable {
-			// Add odp Config with latest config
-			options = append(options, odp.WithOdpConfig(pkgOdpConfig.NewConfig(projectConfig.GetPublicKeyForODP(), projectConfig.GetHostForODP(), projectConfig.GetSegmentList())))
-		}
-		// Create ODP Manager
-		appClient.OdpManager = odp.NewOdpManager(f.SDKKey, f.optimizelySDKSettings.DisableOdp, f.optimizelySDKSettings.SegmentsCacheSize, f.optimizelySDKSettings.SegmentsCacheTimeoutInSecs, options...)
-		return
+	// Create ODP Manager
+	if appClient.OdpManager == nil {
+		appClient.OdpManager = odp.NewOdpManager(f.SDKKey, f.odpDisabled, odp.WithSegmentsCacheSize(f.segmentsCacheSize), odp.WithSegmentsCacheTimeoutInSecs(f.segmentsCacheTimeoutInSecs))
 	}
 
-	// Update user given odp manager with latest config
-	if f.odpManager != nil {
-		appClient.OdpManager = f.odpManager
-		// Update odp config with latest config
-		if isProjectConfigAvailable {
-			appClient.OdpManager.Update(projectConfig.GetPublicKeyForODP(), projectConfig.GetHostForODP(), projectConfig.GetSegmentList())
-		}
+	// Update odp config with latest config
+	if isProjectConfigAvailable {
+		appClient.OdpManager.Update(projectConfig.GetPublicKeyForODP(), projectConfig.GetHostForODP(), projectConfig.GetSegmentList())
 	}
 }
 
 func (f *OptimizelyFactory) startOdpManager(eg *utils.ExecGroup, appClient *OptimizelyClient) {
 	// Only start service if odp is enabled
-	if f.optimizelySDKSettings.DisableOdp {
+	if f.odpDisabled {
 		return
 	}
 
@@ -342,8 +333,7 @@ func (f *OptimizelyFactory) startOdpManager(eg *utils.ExecGroup, appClient *Opti
 	eg.Go(odpManager.EventManager.Start)
 
 	// Only check for changes if ConfigManager is non static
-	_, ok = appClient.ConfigManager.(*config.StaticProjectConfigManager)
-	if ok {
+	if _, ok = appClient.ConfigManager.(*config.StaticProjectConfigManager); ok {
 		return
 	}
 

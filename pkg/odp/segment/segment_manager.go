@@ -30,28 +30,36 @@ type SMOptionFunc func(em *DefaultSegmentManager)
 
 // Manager represents the odp segment manager.
 type Manager interface {
-	FetchQualifiedSegments(userID string, options []OptimizelySegmentOption) (segments []string, err error)
+	FetchQualifiedSegments(odpConfig config.Config, userID string, options []OptimizelySegmentOption) (segments []string, err error)
 	Reset()
 }
 
 // DefaultSegmentManager represents default implementation of odp segment manager
 type DefaultSegmentManager struct {
-	OdpConfig     config.Config
-	segmentsCache cache.Cache
-	apiManager    APIManager
+	segmentsCacheSize          int
+	segmentsCacheTimeoutInSecs int64
+	segmentsCache              cache.Cache
+	apiManager                 APIManager
+}
+
+// WithSegmentsCacheSize sets segmentsCacheSize option to be passed into the NewSegmentManager method.
+func WithSegmentsCacheSize(segmentsCacheSize int) SMOptionFunc {
+	return func(om *DefaultSegmentManager) {
+		om.segmentsCacheSize = segmentsCacheSize
+	}
+}
+
+// WithSegmentsCacheTimeoutInSecs sets segmentsCacheTimeoutInSecs option to be passed into the NewSegmentManager method
+func WithSegmentsCacheTimeoutInSecs(segmentsCacheTimeoutInSecs int64) SMOptionFunc {
+	return func(om *DefaultSegmentManager) {
+		om.segmentsCacheTimeoutInSecs = segmentsCacheTimeoutInSecs
+	}
 }
 
 // WithSegmentsCache sets cache option to be passed into the NewSegmentManager method
 func WithSegmentsCache(segmentsCache cache.Cache) SMOptionFunc {
 	return func(sm *DefaultSegmentManager) {
 		sm.segmentsCache = segmentsCache
-	}
-}
-
-// WithOdpConfig sets odpConfig option to be passed into the NewSegmentManager method
-func WithOdpConfig(odpConfig config.Config) SMOptionFunc {
-	return func(sm *DefaultSegmentManager) {
-		sm.OdpConfig = odpConfig
 	}
 }
 
@@ -63,14 +71,14 @@ func WithAPIManager(segmentAPIManager APIManager) SMOptionFunc {
 }
 
 // NewSegmentManager creates and returns a new instance of DefaultSegmentManager.
-func NewSegmentManager(sdkKey string, cacheSize int, cacheTimeoutInSecs int64, options ...SMOptionFunc) *DefaultSegmentManager {
+func NewSegmentManager(sdkKey string, options ...SMOptionFunc) *DefaultSegmentManager {
 	segmentManager := &DefaultSegmentManager{}
 	for _, opt := range options {
 		opt(segmentManager)
 	}
 
 	if segmentManager.segmentsCache == nil {
-		segmentManager.segmentsCache = cache.NewLRUCache(cacheSize, cacheTimeoutInSecs)
+		segmentManager.segmentsCache = cache.NewLRUCache(segmentManager.segmentsCacheSize, segmentManager.segmentsCacheTimeoutInSecs)
 	}
 
 	if segmentManager.apiManager == nil {
@@ -80,13 +88,13 @@ func NewSegmentManager(sdkKey string, cacheSize int, cacheTimeoutInSecs int64, o
 }
 
 // FetchQualifiedSegments fetches and returns qualified segments
-func (s *DefaultSegmentManager) FetchQualifiedSegments(userID string, options []OptimizelySegmentOption) (segments []string, err error) {
-	if s.OdpConfig == nil || !s.OdpConfig.IsOdpServiceIntegrated() {
+func (s *DefaultSegmentManager) FetchQualifiedSegments(odpConfig config.Config, userID string, options []OptimizelySegmentOption) (segments []string, err error) {
+	if !odpConfig.IsOdpServiceIntegrated() {
 		return nil, fmt.Errorf(utils.FetchSegmentsFailedError, "apiKey/apiHost not defined")
 	}
 
 	// empty segmentsToCheck (no ODP audiences found in datafile) is not an error. return immediately without checking with the ODP server.
-	if len(s.OdpConfig.GetSegmentsToCheck()) == 0 {
+	if len(odpConfig.GetSegmentsToCheck()) == 0 {
 		return []string{}, nil
 	}
 
@@ -113,7 +121,7 @@ func (s *DefaultSegmentManager) FetchQualifiedSegments(userID string, options []
 		}
 	}
 
-	segments, err = s.apiManager.FetchQualifiedSegments(s.OdpConfig, userID)
+	segments, err = s.apiManager.FetchQualifiedSegments(odpConfig.GetAPIKey(), odpConfig.GetAPIHost(), userID, odpConfig.GetSegmentsToCheck())
 	if err == nil && len(segments) > 0 && !ignoreCache {
 		s.segmentsCache.Save(cacheKey, segments)
 	}

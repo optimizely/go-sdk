@@ -24,13 +24,11 @@ import (
 	"testing"
 
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
-	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/odp"
 	"github.com/optimizely/go-sdk/pkg/odp/config"
 	"github.com/optimizely/go-sdk/pkg/odp/event"
 	"github.com/optimizely/go-sdk/pkg/odp/segment"
-	"github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -47,8 +45,8 @@ type MockSegmentManager struct {
 	segment.Manager
 }
 
-func (m *MockSegmentManager) FetchQualifiedSegments(userID string, options []segment.OptimizelySegmentOption) (segments []string, err error) {
-	args := m.Called(userID, options)
+func (m *MockSegmentManager) FetchQualifiedSegments(odpConfig config.Config, userID string, options []segment.OptimizelySegmentOption) (segments []string, err error) {
+	args := m.Called(odpConfig, userID, options)
 	if segArray, ok := args.Get(0).([]string); ok {
 		segments = segArray
 	}
@@ -64,7 +62,7 @@ type MockEventAPIManager struct {
 	eventsSent []event.Event // To assert number of events successfully sent
 }
 
-func (m *MockEventAPIManager) SendOdpEvents(odpConfig config.Config, events []event.Event) (canRetry bool, err error) {
+func (m *MockEventAPIManager) SendOdpEvents(apiKey, apiHost string, events []event.Event) (canRetry bool, err error) {
 	m.eventsSent = append(m.eventsSent, events...)
 	m.wg.Done()
 	return
@@ -104,19 +102,18 @@ func (o *OptimizelyUserContextODPTestSuite) TestIsQualifiedFor() {
 func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSuccessDefaultUserAsync() {
 	segmentManager := &MockSegmentManager{}
 	segmentManager.On("Reset")
-	segmentManager.On("FetchQualifiedSegments", o.userID, mock.Anything).Return([]string{"odp-segment-1"}, nil)
-	odpManager := odp.NewOdpManager("", false, 1, 1, odp.WithSegmentManager(segmentManager))
+	segmentManager.On("FetchQualifiedSegments", mock.Anything, o.userID, mock.Anything).Return([]string{"odp-segment-1"}, nil)
+	odpManager := odp.NewOdpManager("", false, odp.WithSegmentManager(segmentManager))
 	factory := OptimizelyFactory{Datafile: o.datafile, odpManager: odpManager}
 	optimizelyClient, _ := factory.Client()
 	userContext := optimizelyClient.CreateUserContext(o.userID, nil)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	userContext.FetchQualifiedSegments(nil, func(segments []string, err error) {
-		o.NoError(err)
-		o.Equal([]string{"odp-segment-1"}, segments)
-		o.Equal(userContext.GetQualifiedSegments(), segments)
+	userContext.FetchQualifiedSegmentsAsync(func(success bool) {
+		o.True(success)
+		o.Equal([]string{"odp-segment-1"}, userContext.GetQualifiedSegments())
 		wg.Done()
-	})
+	}, nil)
 	wg.Wait()
 	segmentManager.AssertExpectations(o.T())
 }
@@ -124,13 +121,13 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSuccessDef
 func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSuccessDefaultUserSync() {
 	segmentManager := &MockSegmentManager{}
 	segmentManager.On("Reset")
-	segmentManager.On("FetchQualifiedSegments", o.userID, mock.Anything).Return([]string{"odp-segment-1"}, nil)
-	odpManager := odp.NewOdpManager("", false, 1, 1, odp.WithSegmentManager(segmentManager))
+	segmentManager.On("FetchQualifiedSegments", mock.Anything, o.userID, mock.Anything).Return([]string{"odp-segment-1"}, nil)
+	odpManager := odp.NewOdpManager("", false, odp.WithSegmentManager(segmentManager))
 	factory := OptimizelyFactory{Datafile: o.datafile, odpManager: odpManager}
 	optimizelyClient, _ := factory.Client()
 	userContext := optimizelyClient.CreateUserContext(o.userID, nil)
 	o.Nil(userContext.GetQualifiedSegments())
-	userContext.FetchQualifiedSegments(nil, nil)
+	userContext.FetchQualifiedSegments(nil)
 	o.Equal(userContext.GetQualifiedSegments(), []string{"odp-segment-1"})
 	segmentManager.AssertExpectations(o.T())
 }
@@ -141,10 +138,10 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSDKNotRead
 	userContext := client.CreateUserContext(o.userID, nil)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	userContext.FetchQualifiedSegments(nil, func(segments []string, err error) {
-		o.Equal(decide.GetDecideError(decide.SDKNotReady), err)
+	userContext.FetchQualifiedSegmentsAsync(func(success bool) {
+		o.False(success)
 		wg.Done()
-	})
+	}, nil)
 	wg.Wait()
 }
 
@@ -157,62 +154,55 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsFetchFaile
 	userContext.SetQualifiedSegments([]string{"dummy"})
 	var wg sync.WaitGroup
 	wg.Add(1)
-	userContext.FetchQualifiedSegments(nil, func(segments []string, err error) {
-		o.Equal(fmt.Errorf(utils.FetchSegmentsFailedError, "apiKey/apiHost not defined"), err)
-		o.Nil(segments)
+	userContext.FetchQualifiedSegmentsAsync(func(success bool) {
+		o.False(success)
 		o.Nil(userContext.GetQualifiedSegments())
 		wg.Done()
-	})
+	}, nil)
 	wg.Wait()
 }
 
 func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSegmentsToCheckValidAfterStart() {
-	odpManager := odp.NewOdpManager("", false, 1, 1)
+	odpManager := odp.NewOdpManager("", false)
 	factory := OptimizelyFactory{Datafile: o.datafile, odpManager: odpManager}
 	optimizelyClient, _ := factory.Client()
 	userContext := optimizelyClient.CreateUserContext(o.userID, nil)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	userContext.FetchQualifiedSegments(nil, func(segments []string, err error) {
+	userContext.FetchQualifiedSegmentsAsync(func(success bool) {
 		wg.Done()
-	})
+	}, nil)
 	wg.Wait()
 	o.Equal([]string{"odp-segment-1", "odp-segment-2", "odp-segment-3"}, odpManager.OdpConfig.GetSegmentsToCheck())
 }
 
 func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSegmentsSegmentsNotUsed() {
 	mockDatafile := []byte(`{"version":"4","integrations": [{"publicKey": "W4WzcEs-ABgXorzY7h1LCQ", "host": "https://api.zaius.com", "key": "odp"}]}`)
-	odpManager := odp.NewOdpManager("", false, 1, 1)
+	odpManager := odp.NewOdpManager("", false)
 	factory := OptimizelyFactory{Datafile: mockDatafile, odpManager: odpManager}
 	optimizelyClient, _ := factory.Client()
 	userContext := optimizelyClient.CreateUserContext(o.userID, nil)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	userContext.FetchQualifiedSegments(nil, func(segments []string, err error) {
-		o.NoError(err)
-		o.Equal([]string{}, segments)
+	userContext.FetchQualifiedSegmentsAsync(func(success bool) {
+		o.True(success)
+		o.Equal([]string{}, userContext.GetQualifiedSegments())
 		wg.Done()
-	})
+	}, nil)
 	wg.Wait()
 }
 
 func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsParameters() {
 	segmentManager := &MockSegmentManager{}
 	segmentManager.On("Reset")
-	segmentManager.On("FetchQualifiedSegments", o.userID, []segment.OptimizelySegmentOption{segment.IgnoreCache}).Return([]string{"odp-segment-1"}, nil)
-	odpManager := odp.NewOdpManager("", false, 1, 1, odp.WithSegmentManager(segmentManager))
+	segmentManager.On("FetchQualifiedSegments", mock.Anything, o.userID, []segment.OptimizelySegmentOption{segment.IgnoreCache}).Return([]string{"odp-segment-1"}, nil)
+	odpManager := odp.NewOdpManager("", false, odp.WithSegmentManager(segmentManager))
 	factory := OptimizelyFactory{Datafile: o.datafile, odpManager: odpManager}
 	optimizelyClient, _ := factory.Client()
 	userContext := optimizelyClient.CreateUserContext(o.userID, nil)
-	var wg sync.WaitGroup
-	wg.Add(1)
-	userContext.FetchQualifiedSegments([]segment.OptimizelySegmentOption{segment.IgnoreCache}, func(segments []string, err error) {
-		o.NoError(err)
-		o.Equal([]string{"odp-segment-1"}, segments)
-		o.Equal([]string{"odp-segment-1", "odp-segment-2", "odp-segment-3"}, odpManager.OdpConfig.GetSegmentsToCheck())
-		wg.Done()
-	})
-	wg.Wait()
+	userContext.FetchQualifiedSegments([]segment.OptimizelySegmentOption{segment.IgnoreCache})
+	o.Equal([]string{"odp-segment-1"}, userContext.GetQualifiedSegments())
+	o.Equal([]string{"odp-segment-1", "odp-segment-2", "odp-segment-3"}, odpManager.OdpConfig.GetSegmentsToCheck())
 	segmentManager.AssertExpectations(o.T())
 }
 
@@ -220,7 +210,8 @@ func (o *OptimizelyUserContextODPTestSuite) TestOdpEventsEarlyEventsDispatched()
 	eventAPIManager := &MockEventAPIManager{}
 	odpConfig := config.NewConfig("", "", []string{})
 	eventManager := event.NewBatchEventManager(event.WithAPIManager(eventAPIManager), event.WithBatchSize(1), event.WithOdpConfig(odpConfig))
-	odpManager := odp.NewOdpManager("", false, 1, 1, odp.WithEventManager(eventManager), odp.WithOdpConfig(odpConfig))
+	odpManager := odp.NewOdpManager("", false, odp.WithEventManager(eventManager))
+	eventManager.OdpConfig = odpManager.OdpConfig
 	factory := OptimizelyFactory{Datafile: o.datafile, odpManager: odpManager}
 	optimizelyClient, _ := factory.Client()
 	eventAPIManager.wg.Add(1)

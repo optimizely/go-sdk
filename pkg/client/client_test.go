@@ -202,12 +202,10 @@ func (m *MockODPManager) Update(apiKey, apiHost string, segmentsToCheck []string
 
 func TestSendODPEventWhenODPDisabled(t *testing.T) {
 	factory := OptimizelyFactory{SDKKey: "1212"}
-	sdkSettings := &OptimizelySdkSettings{
-		SegmentsCacheSize:          1,
-		SegmentsCacheTimeoutInSecs: 1,
-		DisableOdp:                 true,
-	}
-	optimizelyClient, err := factory.Client(WithOptimizelySdkSettings(sdkSettings))
+	var segmentsCacheSize = 1
+	var segmentsCacheTimeoutInSecs int64 = 1
+	var disableOdp = true
+	optimizelyClient, err := factory.Client(WithSegmentsCacheSize(segmentsCacheSize), WithSegmentsCacheTimeoutInSecs(segmentsCacheTimeoutInSecs), WithOdpDisabled(disableOdp))
 	assert.NoError(t, err)
 	success := optimizelyClient.SendOdpEvent("123", "456", map[string]string{
 		"abc": "123",
@@ -2542,7 +2540,7 @@ func TestCreateUserContext(t *testing.T) {
 	assert.Equal(t, userAttributes, optimizelyUserContext.GetUserAttributes())
 }
 
-func TestCreateUserContextAndIdentifyDefaultValueTrue(t *testing.T) {
+func TestCreateUserContextIdentifiesUser(t *testing.T) {
 	userID := "1212121"
 	userAttributes := map[string]interface{}{"key": 1212}
 	factory := OptimizelyFactory{SDKKey: "1212"}
@@ -2552,21 +2550,21 @@ func TestCreateUserContextAndIdentifyDefaultValueTrue(t *testing.T) {
 	assert.NoError(t, err)
 	optimizelyUserContext := client.CreateUserContext(userID, userAttributes)
 	mockOdpManager.AssertExpectations(t)
-	assert.True(t, optimizelyUserContext.optimizely.identify)
+	assert.NotNil(t, optimizelyUserContext.optimizely.OdpManager)
 	assert.Equal(t, userID, optimizelyUserContext.GetUserID())
 	assert.Equal(t, userAttributes, optimizelyUserContext.GetUserAttributes())
 }
 
-func TestCreateUserContextWithIdentifyFalse(t *testing.T) {
+func TestCreateUserContextWithNilODPManager(t *testing.T) {
 	userID := "1212121"
 	userAttributes := map[string]interface{}{"key": 1212}
 	factory := OptimizelyFactory{SDKKey: "1212"}
 	mockOdpManager := &MockODPManager{}
-	client, err := factory.Client(WithOdpManager(mockOdpManager), WithOdpUserIdentification(false))
+	client, err := factory.Client(WithOdpManager(mockOdpManager))
 	assert.NoError(t, err)
+	client.OdpManager = nil
 	optimizelyUserContext := client.CreateUserContext(userID, userAttributes)
 	mockOdpManager.AssertNotCalled(t, "IdentifyUser", userID)
-	assert.False(t, optimizelyUserContext.optimizely.identify)
 	assert.Equal(t, userID, optimizelyUserContext.GetUserID())
 	assert.Equal(t, userAttributes, optimizelyUserContext.GetUserAttributes())
 }

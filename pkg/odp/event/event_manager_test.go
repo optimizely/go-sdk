@@ -437,7 +437,7 @@ type MockEventAPIManager struct {
 	shouldNotInformWaitgroup bool    // Should not call done to inform waitgroup
 }
 
-func (m *MockEventAPIManager) SendOdpEvents(odpConfig config.Config, events []Event) (canRetry bool, err error) {
+func (m *MockEventAPIManager) SendOdpEvents(apiKey, apiHost string, events []Event) (canRetry bool, err error) {
 	if len(m.retryResponses) > m.timesSendEventsCalled {
 		canRetry = m.retryResponses[m.timesSendEventsCalled]
 	}
