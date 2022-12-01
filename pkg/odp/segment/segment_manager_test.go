@@ -45,12 +45,17 @@ func (s *SegmentManagerTestSuite) TestNewSegmentManagerNilParameters() {
 	segmentManager := NewSegmentManager("")
 	s.NotNil(segmentManager.apiManager)
 	s.NotNil(segmentManager.segmentsCache)
+	s.Equal(utils.DefaultSegmentsCacheSize, segmentManager.segmentsCacheSize)
+	s.Equal(utils.DefaultSegmentsCacheTimeout, segmentManager.segmentsCacheTimeoutInSecs)
 }
 
-func (s *SegmentManagerTestSuite) TestNewSegmentManagerCustomCache() {
+func (s *SegmentManagerTestSuite) TestNewSegmentManagerCustomOptions() {
 	customCache := &TestCache{}
-	segmentManager := NewSegmentManager("", WithSegmentsCache(customCache))
+	segmentManager := NewSegmentManager("", WithSegmentsCache(customCache), WithSegmentsCacheSize(10), WithSegmentsCacheTimeoutInSecs(10), WithAPIManager(s.segmentAPIManager))
 	s.Equal(customCache, segmentManager.segmentsCache)
+	s.Equal(10, segmentManager.segmentsCacheSize)
+	s.Equal(int64(10), segmentManager.segmentsCacheTimeoutInSecs)
+	s.Equal(s.segmentAPIManager, segmentManager.apiManager)
 }
 
 func (s *SegmentManagerTestSuite) TestFetchSegmentsNilConfig() {

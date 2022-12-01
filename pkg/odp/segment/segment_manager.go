@@ -43,6 +43,7 @@ type DefaultSegmentManager struct {
 }
 
 // WithSegmentsCacheSize sets segmentsCacheSize option to be passed into the NewSegmentManager method.
+// default value is 10000
 func WithSegmentsCacheSize(segmentsCacheSize int) SMOptionFunc {
 	return func(om *DefaultSegmentManager) {
 		om.segmentsCacheSize = segmentsCacheSize
@@ -50,6 +51,7 @@ func WithSegmentsCacheSize(segmentsCacheSize int) SMOptionFunc {
 }
 
 // WithSegmentsCacheTimeoutInSecs sets segmentsCacheTimeoutInSecs option to be passed into the NewSegmentManager method
+// default value is 600s
 func WithSegmentsCacheTimeoutInSecs(segmentsCacheTimeoutInSecs int64) SMOptionFunc {
 	return func(om *DefaultSegmentManager) {
 		om.segmentsCacheTimeoutInSecs = segmentsCacheTimeoutInSecs
@@ -72,7 +74,12 @@ func WithAPIManager(segmentAPIManager APIManager) SMOptionFunc {
 
 // NewSegmentManager creates and returns a new instance of DefaultSegmentManager.
 func NewSegmentManager(sdkKey string, options ...SMOptionFunc) *DefaultSegmentManager {
-	segmentManager := &DefaultSegmentManager{}
+	// Setting default values
+	segmentManager := &DefaultSegmentManager{
+		segmentsCacheSize:          utils.DefaultSegmentsCacheSize,
+		segmentsCacheTimeoutInSecs: utils.DefaultSegmentsCacheTimeout,
+	}
+
 	for _, opt := range options {
 		opt(segmentManager)
 	}

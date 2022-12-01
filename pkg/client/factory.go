@@ -30,7 +30,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/metrics"
 	"github.com/optimizely/go-sdk/pkg/notification"
 	"github.com/optimizely/go-sdk/pkg/odp"
-	pkgOdpUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/optimizely/go-sdk/pkg/registry"
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
@@ -63,10 +62,6 @@ type OptionFunc func(*OptimizelyFactory)
 
 // Client instantiates a new OptimizelyClient with the given options.
 func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClient, error) {
-	// Setting default values
-	f.segmentsCacheSize = pkgOdpUtils.DefaultSegmentsCacheSize
-	f.segmentsCacheTimeoutInSecs = pkgOdpUtils.DefaultSegmentsCacheTimeout
-
 	// extract options
 	for _, opt := range clientOptions {
 		opt(f)

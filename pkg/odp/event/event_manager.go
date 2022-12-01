@@ -62,23 +62,32 @@ type BatchEventManager struct {
 }
 
 // WithBatchSize sets the batch size as a config option to be passed into the NewBatchEventManager method
+// default value is 10
 func WithBatchSize(bsize int) EMOptionFunc {
 	return func(bm *BatchEventManager) {
-		bm.batchSize = bsize
+		if bsize > 0 {
+			bm.batchSize = bsize
+		}
 	}
 }
 
 // WithQueueSize sets the queue size as a config option to be passed into the NewBatchEventManager method
+// default value is 10000
 func WithQueueSize(qsize int) EMOptionFunc {
 	return func(bm *BatchEventManager) {
-		bm.maxQueueSize = qsize
+		if qsize > 0 {
+			bm.maxQueueSize = qsize
+		}
 	}
 }
 
 // WithFlushInterval sets the flush interval as a config option to be passed into the NewBatchEventManager method
+// default value is 1 second
 func WithFlushInterval(flushInterval time.Duration) EMOptionFunc {
 	return func(bm *BatchEventManager) {
-		bm.flushInterval = flushInterval
+		if flushInterval > 0 {
+			bm.flushInterval = flushInterval
+		}
 	}
 }
 
@@ -112,25 +121,19 @@ func WithOdpConfig(odpConfig config.Config) EMOptionFunc {
 
 // NewBatchEventManager returns a new instance of BatchEventManager with options
 func NewBatchEventManager(options ...EMOptionFunc) *BatchEventManager {
-	bm := &BatchEventManager{processing: semaphore.NewWeighted(int64(maxFlushWorkers))}
+	// Setting default values
+	bm := &BatchEventManager{
+		processing:    semaphore.NewWeighted(int64(maxFlushWorkers)),
+		maxQueueSize:  utils.DefaultEventQueueSize,
+		flushInterval: utils.DefaultEventFlushInterval,
+		batchSize:     utils.DefaultBatchSize,
+	}
 
 	for _, opt := range options {
 		opt(bm)
 	}
 
 	bm.logger = logging.GetLogger(bm.sdkKey, "BatchEventManager")
-
-	if bm.maxQueueSize == 0 {
-		bm.maxQueueSize = utils.DefaultEventQueueSize
-	}
-
-	if bm.flushInterval == 0 {
-		bm.flushInterval = utils.DefaultEventFlushInterval
-	}
-
-	if bm.batchSize == 0 {
-		bm.batchSize = utils.DefaultBatchSize
-	}
 
 	if bm.batchSize > bm.maxQueueSize {
 		bm.logger.Warning(

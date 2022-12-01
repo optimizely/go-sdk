@@ -63,6 +63,16 @@ func (e *EventManagerTestSuite) TestEventManagerWithOptions() {
 	e.Equal(eventQueue, em.eventQueue)
 }
 
+func (e *EventManagerTestSuite) TestEventManagerWithInvalidOptions() {
+	batchSize := -1
+	queueSize := -1
+	flushInterval := -1 * time.Second
+	em := NewBatchEventManager(WithBatchSize(batchSize), WithQueueSize(queueSize), WithFlushInterval(flushInterval))
+	e.Equal(utils.DefaultBatchSize, em.batchSize)
+	e.Equal(utils.DefaultEventQueueSize, em.maxQueueSize)
+	e.Equal(utils.DefaultEventFlushInterval, em.flushInterval)
+}
+
 func (e *EventManagerTestSuite) TestEventManagerWithoutOptions() {
 	em := NewBatchEventManager()
 	e.Equal(utils.DefaultBatchSize, em.batchSize)
