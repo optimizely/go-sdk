@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decide"
@@ -203,9 +204,9 @@ func (m *MockODPManager) Update(apiKey, apiHost string, segmentsToCheck []string
 func TestSendODPEventWhenODPDisabled(t *testing.T) {
 	factory := OptimizelyFactory{SDKKey: "1212"}
 	var segmentsCacheSize = 1
-	var segmentsCacheTimeoutInSecs int64 = 1
+	var segmentsCacheTimeout = 1 * time.Second
 	var disableOdp = true
-	optimizelyClient, err := factory.Client(WithSegmentsCacheSize(segmentsCacheSize), WithSegmentsCacheTimeoutInSecs(segmentsCacheTimeoutInSecs), WithOdpDisabled(disableOdp))
+	optimizelyClient, err := factory.Client(WithSegmentsCacheSize(segmentsCacheSize), WithSegmentsCacheTimeout(segmentsCacheTimeout), WithOdpDisabled(disableOdp))
 	assert.NoError(t, err)
 	success := optimizelyClient.SendOdpEvent("123", "456", map[string]string{
 		"abc": "123",

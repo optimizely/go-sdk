@@ -19,6 +19,7 @@ package segment
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/optimizely/go-sdk/pkg/odp/cache"
 	"github.com/optimizely/go-sdk/pkg/odp/config"
@@ -36,10 +37,10 @@ type Manager interface {
 
 // DefaultSegmentManager represents default implementation of odp segment manager
 type DefaultSegmentManager struct {
-	segmentsCacheSize          int
-	segmentsCacheTimeoutInSecs int64
-	segmentsCache              cache.Cache
-	apiManager                 APIManager
+	segmentsCacheSize    int
+	segmentsCacheTimeout time.Duration
+	segmentsCache        cache.Cache
+	apiManager           APIManager
 }
 
 // WithSegmentsCacheSize sets segmentsCacheSize option to be passed into the NewSegmentManager method.
@@ -50,11 +51,11 @@ func WithSegmentsCacheSize(segmentsCacheSize int) SMOptionFunc {
 	}
 }
 
-// WithSegmentsCacheTimeoutInSecs sets segmentsCacheTimeoutInSecs option to be passed into the NewSegmentManager method
+// WithSegmentsCacheTimeout sets segmentsCacheTimeout option to be passed into the NewSegmentManager method
 // default value is 600s
-func WithSegmentsCacheTimeoutInSecs(segmentsCacheTimeoutInSecs int64) SMOptionFunc {
+func WithSegmentsCacheTimeout(segmentsCacheTimeout time.Duration) SMOptionFunc {
 	return func(om *DefaultSegmentManager) {
-		om.segmentsCacheTimeoutInSecs = segmentsCacheTimeoutInSecs
+		om.segmentsCacheTimeout = segmentsCacheTimeout
 	}
 }
 
@@ -76,8 +77,8 @@ func WithAPIManager(segmentAPIManager APIManager) SMOptionFunc {
 func NewSegmentManager(sdkKey string, options ...SMOptionFunc) *DefaultSegmentManager {
 	// Setting default values
 	segmentManager := &DefaultSegmentManager{
-		segmentsCacheSize:          utils.DefaultSegmentsCacheSize,
-		segmentsCacheTimeoutInSecs: utils.DefaultSegmentsCacheTimeout,
+		segmentsCacheSize:    utils.DefaultSegmentsCacheSize,
+		segmentsCacheTimeout: utils.DefaultSegmentsCacheTimeout,
 	}
 
 	for _, opt := range options {
@@ -85,7 +86,7 @@ func NewSegmentManager(sdkKey string, options ...SMOptionFunc) *DefaultSegmentMa
 	}
 
 	if segmentManager.segmentsCache == nil {
-		segmentManager.segmentsCache = cache.NewLRUCache(segmentManager.segmentsCacheSize, segmentManager.segmentsCacheTimeoutInSecs)
+		segmentManager.segmentsCache = cache.NewLRUCache(segmentManager.segmentsCacheSize, segmentManager.segmentsCacheTimeout)
 	}
 
 	if segmentManager.apiManager == nil {

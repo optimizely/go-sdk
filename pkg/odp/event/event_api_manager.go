@@ -50,7 +50,7 @@ type DefaultEventAPIManager struct {
 // NewEventAPIManager creates and returns a new instance of DefaultEventAPIManager.
 func NewEventAPIManager(sdkKey string, requester pkgUtils.Requester) *DefaultEventAPIManager {
 	if requester == nil {
-		requester = pkgUtils.NewHTTPRequester(logging.GetLogger(sdkKey, "EventAPIManager"))
+		requester = pkgUtils.NewHTTPRequester(logging.GetLogger(sdkKey, "EventAPIManager"), pkgUtils.Timeout(utils.DefaultOdpEventTimeout))
 	}
 	return &DefaultEventAPIManager{requester: requester}
 }

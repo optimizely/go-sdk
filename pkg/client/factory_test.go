@@ -156,13 +156,13 @@ func TestClientWithOdpManagerAndSDKSettingsInOptions(t *testing.T) {
 	eventManager := pkgOdpEvent.NewBatchEventManager()
 	segmentManager := pkgOdpSegment.NewSegmentManager("1212")
 	var segmentsCacheSize = 1
-	var segmentsCacheTimeoutInSecs int64 = 1
+	var segmentsCacheTimeout = 1 * time.Second
 	var disableOdp = false
 	segmentCache := cache.NewLRUCache(0, 0)
 	odpManager := odp.NewOdpManager("1212", false, odp.WithEventManager(eventManager), odp.WithSegmentManager(segmentManager), odp.WithSegmentsCache(segmentCache))
-	optimizelyClient, err := factory.Client(WithOdpManager(odpManager), WithSegmentsCacheSize(segmentsCacheSize), WithSegmentsCacheTimeoutInSecs(segmentsCacheTimeoutInSecs), WithOdpDisabled(disableOdp))
+	optimizelyClient, err := factory.Client(WithOdpManager(odpManager), WithSegmentsCacheSize(segmentsCacheSize), WithSegmentsCacheTimeout(segmentsCacheTimeout), WithOdpDisabled(disableOdp))
 	assert.Equal(t, segmentsCacheSize, factory.segmentsCacheSize)
-	assert.Equal(t, segmentsCacheTimeoutInSecs, factory.segmentsCacheTimeoutInSecs)
+	assert.Equal(t, segmentsCacheTimeout, factory.segmentsCacheTimeout)
 	assert.Equal(t, disableOdp, factory.odpDisabled)
 	assert.NoError(t, err)
 	assert.Equal(t, odpManager, optimizelyClient.OdpManager)
@@ -190,9 +190,9 @@ func TestODPManagerDoesNotStartIfOdpDisabled(t *testing.T) {
 	mockDatafile := []byte(`{"version":"4","integrations": [{"publicKey": "123", "host": "www.123.com", "key": "odp"}]}`)
 	configManager := config.NewStaticProjectConfigManagerWithOptions("", config.WithInitialDatafile(mockDatafile))
 	var segmentsCacheSize = 1
-	var segmentsCacheTimeoutInSecs int64 = 1
+	var segmentsCacheTimeout = 1 * time.Second
 	var disableOdp = true
-	optimizelyClient, err := factory.Client(WithConfigManager(configManager), WithSegmentsCacheSize(segmentsCacheSize), WithSegmentsCacheTimeoutInSecs(segmentsCacheTimeoutInSecs), WithOdpDisabled(disableOdp))
+	optimizelyClient, err := factory.Client(WithConfigManager(configManager), WithSegmentsCacheSize(segmentsCacheSize), WithSegmentsCacheTimeout(segmentsCacheTimeout), WithOdpDisabled(disableOdp))
 	assert.NoError(t, err)
 	assert.NotNil(t, optimizelyClient.OdpManager)
 	var odpManager = optimizelyClient.OdpManager.(*odp.DefaultOdpManager)

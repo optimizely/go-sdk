@@ -47,4 +47,10 @@ const DefaultEventFlushInterval = 1 * time.Second
 const DefaultSegmentsCacheSize = 10000
 
 // DefaultSegmentsCacheTimeout holds the default value for the segments cache timeout
-const DefaultSegmentsCacheTimeout int64 = 600 // 10 minutes
+const DefaultSegmentsCacheTimeout = 10 * time.Minute // 10 minutes
+
+// DefaultOdpEventTimeout holds the default value for the odp event timeout
+const DefaultOdpEventTimeout = 10 * time.Second
+
+// DefaultSegmentFetchTimeout holds the default value for the segment fetch timeout
+const DefaultSegmentFetchTimeout = 10 * time.Second

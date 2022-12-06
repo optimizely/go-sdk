@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/optimizely/go-sdk/pkg/odp/cache"
 	"github.com/optimizely/go-sdk/pkg/odp/config"
@@ -107,7 +108,7 @@ func (o *ODPManagerTestSuite) SetupTest() {
 	o.config = &MockConfig{}
 	o.eventManager = &MockEventManager{}
 	o.segmentManager = &MockSegmentManager{}
-	o.odpManager = NewOdpManager("", false, WithSegmentsCacheSize(0), WithSegmentsCacheTimeoutInSecs(0), WithEventManager(o.eventManager), WithSegmentManager(o.segmentManager))
+	o.odpManager = NewOdpManager("", false, WithSegmentsCacheSize(0), WithSegmentsCacheTimeout(0), WithEventManager(o.eventManager), WithSegmentManager(o.segmentManager))
 	o.odpManager.OdpConfig = o.config
 }
 
@@ -120,21 +121,23 @@ func (o *ODPManagerTestSuite) TestNewODPManagerNilParametersWithDisableFalse() {
 }
 
 func (o *ODPManagerTestSuite) TestNegativeSegmentCacheSizeAndTimeout() {
-	odpManager := NewOdpManager("", false, WithSegmentsCacheSize(-1), WithSegmentsCacheTimeoutInSecs(-1))
+	cacheTimeout := -1 * time.Second
+	odpManager := NewOdpManager("", false, WithSegmentsCacheSize(-1), WithSegmentsCacheTimeout(cacheTimeout))
 	o.Equal(-1, odpManager.segmentsCacheSize)
-	o.Equal(int64(-1), odpManager.segmentsCacheTimeoutInSecs)
+	o.Equal(cacheTimeout, odpManager.segmentsCacheTimeout)
 }
 
 func (o *ODPManagerTestSuite) TestNewODPManagerWithOptionsWithDisableFalse() {
-	segmentsCache := cache.NewLRUCache(1, 2)
+	expectedCacheTimeout := 1 * time.Second
+	segmentsCache := cache.NewLRUCache(1, 2*time.Second)
 	segmentManager := segment.NewSegmentManager("", segment.WithSegmentsCache(segmentsCache))
 	eventManager := event.NewBatchEventManager()
-	odpManager := NewOdpManager("", false, WithSegmentsCacheSize(1), WithSegmentsCacheTimeoutInSecs(1), WithSegmentsCache(segmentsCache), WithSegmentManager(segmentManager), WithEventManager(eventManager))
+	odpManager := NewOdpManager("", false, WithSegmentsCacheSize(1), WithSegmentsCacheTimeout(expectedCacheTimeout), WithSegmentsCache(segmentsCache), WithSegmentManager(segmentManager), WithEventManager(eventManager))
 	o.Equal(segmentsCache, odpManager.segmentsCache)
 	o.Equal(segmentManager, odpManager.SegmentManager)
 	o.Equal(eventManager, odpManager.EventManager)
 	o.Equal(1, odpManager.segmentsCacheSize)
-	o.Equal(int64(1), odpManager.segmentsCacheTimeoutInSecs)
+	o.Equal(expectedCacheTimeout, odpManager.segmentsCacheTimeout)
 	o.NotNil(odpManager.logger)
 }
 

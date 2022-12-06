@@ -19,6 +19,7 @@ package odp
 
 import (
 	"errors"
+	"time"
 
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/odp/cache"
@@ -41,14 +42,14 @@ type Manager interface {
 
 // DefaultOdpManager represents default implementation of odp manager
 type DefaultOdpManager struct {
-	enabled                    bool
-	segmentsCacheSize          int
-	segmentsCacheTimeoutInSecs int64
-	segmentsCache              cache.Cache
-	OdpConfig                  config.Config
-	logger                     logging.OptimizelyLogProducer
-	SegmentManager             segment.Manager
-	EventManager               event.Manager
+	enabled              bool
+	segmentsCacheSize    int
+	segmentsCacheTimeout time.Duration
+	segmentsCache        cache.Cache
+	OdpConfig            config.Config
+	logger               logging.OptimizelyLogProducer
+	SegmentManager       segment.Manager
+	EventManager         event.Manager
 }
 
 // WithSegmentsCacheSize sets segmentsCacheSize option to be passed into the NewOdpManager method.
@@ -58,10 +59,10 @@ func WithSegmentsCacheSize(segmentsCacheSize int) OMOptionFunc {
 	}
 }
 
-// WithSegmentsCacheTimeoutInSecs sets segmentsCacheTimeoutInSecs option to be passed into the NewOdpManager method
-func WithSegmentsCacheTimeoutInSecs(segmentsCacheTimeoutInSecs int64) OMOptionFunc {
+// WithSegmentsCacheTimeout sets segmentsCacheTimeout option to be passed into the NewOdpManager method
+func WithSegmentsCacheTimeout(segmentsCacheTimeout time.Duration) OMOptionFunc {
 	return func(om *DefaultOdpManager) {
-		om.segmentsCacheTimeoutInSecs = segmentsCacheTimeoutInSecs
+		om.segmentsCacheTimeout = segmentsCacheTimeout
 	}
 }
 
@@ -108,7 +109,7 @@ func NewOdpManager(sdkKey string, disable bool, options ...OMOptionFunc) *Defaul
 		if odpManager.segmentsCache != nil {
 			segmentOptions = append(segmentOptions, segment.WithSegmentsCache(odpManager.segmentsCache))
 		} else {
-			segmentOptions = append(segmentOptions, segment.WithSegmentsCacheSize(odpManager.segmentsCacheSize), segment.WithSegmentsCacheTimeoutInSecs(odpManager.segmentsCacheTimeoutInSecs))
+			segmentOptions = append(segmentOptions, segment.WithSegmentsCacheSize(odpManager.segmentsCacheSize), segment.WithSegmentsCacheTimeout(odpManager.segmentsCacheTimeout))
 		}
 		odpManager.SegmentManager = segment.NewSegmentManager(sdkKey, segmentOptions...)
 	}

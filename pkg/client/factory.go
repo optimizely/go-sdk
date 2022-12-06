@@ -51,10 +51,10 @@ type OptimizelyFactory struct {
 	userProfileService   decision.UserProfileService
 
 	// ODP
-	segmentsCacheSize          int
-	segmentsCacheTimeoutInSecs int64
-	odpDisabled                bool
-	odpManager                 odp.Manager
+	segmentsCacheSize    int
+	segmentsCacheTimeout time.Duration
+	odpDisabled          bool
+	odpManager           odp.Manager
 }
 
 // OptionFunc is used to provide custom client configuration to the OptimizelyFactory.
@@ -186,11 +186,11 @@ func WithSegmentsCacheSize(segmentsCacheSize int) OptionFunc {
 	}
 }
 
-// WithSegmentsCacheTimeoutInSecs sets SegmentsCacheTimeoutInSecs for odp manager.
+// WithSegmentsCacheTimeout sets SegmentsCacheTimeoutInSecs for odp manager.
 // Default value is 600s
-func WithSegmentsCacheTimeoutInSecs(segmentsCacheTimeoutInSecs int64) OptionFunc {
+func WithSegmentsCacheTimeout(segmentsCacheTimeout time.Duration) OptionFunc {
 	return func(f *OptimizelyFactory) {
-		f.segmentsCacheTimeoutInSecs = segmentsCacheTimeoutInSecs
+		f.segmentsCacheTimeout = segmentsCacheTimeout
 	}
 }
 
@@ -305,7 +305,7 @@ func (f *OptimizelyFactory) initializeOdpManager(appClient *OptimizelyClient) {
 
 	// Create ODP Manager
 	if appClient.OdpManager == nil {
-		appClient.OdpManager = odp.NewOdpManager(f.SDKKey, f.odpDisabled, odp.WithSegmentsCacheSize(f.segmentsCacheSize), odp.WithSegmentsCacheTimeoutInSecs(f.segmentsCacheTimeoutInSecs))
+		appClient.OdpManager = odp.NewOdpManager(f.SDKKey, f.odpDisabled, odp.WithSegmentsCacheSize(f.segmentsCacheSize), odp.WithSegmentsCacheTimeout(f.segmentsCacheTimeout))
 	}
 
 	// Update odp config with latest config

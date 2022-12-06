@@ -20,6 +20,7 @@ package segment
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/optimizely/go-sdk/pkg/odp/config"
 	"github.com/optimizely/go-sdk/pkg/odp/utils"
@@ -37,7 +38,7 @@ type SegmentManagerTestSuite struct {
 func (s *SegmentManagerTestSuite) SetupTest() {
 	s.config = config.NewConfig("", "", nil)
 	s.segmentAPIManager = &MockSegmentAPIManager{}
-	s.segmentManager = NewSegmentManager("", WithSegmentsCacheSize(10), WithSegmentsCacheTimeoutInSecs(10), WithAPIManager(s.segmentAPIManager))
+	s.segmentManager = NewSegmentManager("", WithSegmentsCacheSize(10), WithSegmentsCacheTimeout(10*time.Second), WithAPIManager(s.segmentAPIManager))
 	s.userID = "test-user"
 }
 
@@ -46,15 +47,15 @@ func (s *SegmentManagerTestSuite) TestNewSegmentManagerNilParameters() {
 	s.NotNil(segmentManager.apiManager)
 	s.NotNil(segmentManager.segmentsCache)
 	s.Equal(utils.DefaultSegmentsCacheSize, segmentManager.segmentsCacheSize)
-	s.Equal(utils.DefaultSegmentsCacheTimeout, segmentManager.segmentsCacheTimeoutInSecs)
+	s.Equal(utils.DefaultSegmentsCacheTimeout, segmentManager.segmentsCacheTimeout)
 }
 
 func (s *SegmentManagerTestSuite) TestNewSegmentManagerCustomOptions() {
 	customCache := &TestCache{}
-	segmentManager := NewSegmentManager("", WithSegmentsCache(customCache), WithSegmentsCacheSize(10), WithSegmentsCacheTimeoutInSecs(10), WithAPIManager(s.segmentAPIManager))
+	segmentManager := NewSegmentManager("", WithSegmentsCache(customCache), WithSegmentsCacheSize(10), WithSegmentsCacheTimeout(10*time.Second), WithAPIManager(s.segmentAPIManager))
 	s.Equal(customCache, segmentManager.segmentsCache)
 	s.Equal(10, segmentManager.segmentsCacheSize)
-	s.Equal(int64(10), segmentManager.segmentsCacheTimeoutInSecs)
+	s.Equal(10*time.Second, segmentManager.segmentsCacheTimeout)
 	s.Equal(s.segmentAPIManager, segmentManager.apiManager)
 }
 
@@ -77,7 +78,7 @@ func (s *SegmentManagerTestSuite) TestFetchSegmentsSuccessCacheMiss() {
 	expectedSegments := []string{"new-customer"}
 	s.config.Update("valid", "host", expectedSegments)
 	s.Equal(10, s.segmentManager.segmentsCacheSize)
-	s.Equal(int64(10), s.segmentManager.segmentsCacheTimeoutInSecs)
+	s.Equal(10*time.Second, s.segmentManager.segmentsCacheTimeout)
 	s.setCache("123", []string{"a"})
 
 	segments, err := s.segmentManager.FetchQualifiedSegments(s.config, s.userID, nil)

@@ -126,7 +126,7 @@ type DefaultSegmentAPIManager struct {
 // NewSegmentAPIManager creates and returns a new instance of DefaultSegmentAPIManager.
 func NewSegmentAPIManager(sdkKey string, requester pkgUtils.Requester) *DefaultSegmentAPIManager {
 	if requester == nil {
-		requester = pkgUtils.NewHTTPRequester(logging.GetLogger(sdkKey, "SegmentAPIManager"))
+		requester = pkgUtils.NewHTTPRequester(logging.GetLogger(sdkKey, "SegmentAPIManager"), pkgUtils.Timeout(utils.DefaultSegmentFetchTimeout))
 	}
 	return &DefaultSegmentAPIManager{requester: requester}
 }
