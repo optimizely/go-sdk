@@ -90,7 +90,9 @@ func WithEventManager(eventManager event.Manager) OMOptionFunc {
 // NewOdpManager creates and returns a new instance of DefaultOdpManager.
 func NewOdpManager(sdkKey string, disable bool, options ...OMOptionFunc) *DefaultOdpManager {
 	odpManager := &DefaultOdpManager{enabled: !disable,
-		logger: logging.GetLogger(sdkKey, "ODPManager"),
+		logger:               logging.GetLogger(sdkKey, "ODPManager"),
+		segmentsCacheSize:    utils.DefaultSegmentsCacheSize,
+		segmentsCacheTimeout: utils.DefaultSegmentsCacheTimeout,
 	}
 
 	if disable {
@@ -114,8 +116,21 @@ func NewOdpManager(sdkKey string, disable bool, options ...OMOptionFunc) *Defaul
 		odpManager.SegmentManager = segment.NewSegmentManager(sdkKey, segmentOptions...)
 	}
 
+	// If user has not provided event manager, create a new one and return
 	if odpManager.EventManager == nil {
 		odpManager.EventManager = event.NewBatchEventManager(event.WithSDKKey(sdkKey), event.WithOdpConfig(odpManager.OdpConfig))
+		return odpManager
+	}
+
+	// If user has provided an EventManager with odpConfig, use the same odpConfig for odpManager
+	// Otherwise assign a new odpConfig to both EventManager and OdpManager
+	if batchEventManager, ok := odpManager.EventManager.(*event.BatchEventManager); ok {
+		// Making sure both OdpManager and EventManager have the same OdpConfig
+		if batchEventManager.OdpConfig == nil {
+			batchEventManager.OdpConfig = odpManager.OdpConfig
+		} else {
+			odpManager.OdpConfig = batchEventManager.OdpConfig
+		}
 	}
 	return odpManager
 }
@@ -143,6 +158,9 @@ func (om *DefaultOdpManager) SendOdpEvent(eventType, action string, identifiers 
 	if !om.enabled {
 		om.logger.Debug(utils.OdpNotEnabled)
 		return false
+	}
+	if identifiers == nil {
+		identifiers = map[string]string{}
 	}
 	odpEvent := event.Event{
 		Type:        eventType,

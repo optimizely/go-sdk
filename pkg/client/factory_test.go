@@ -34,6 +34,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/odp/cache"
 	pkgOdpEvent "github.com/optimizely/go-sdk/pkg/odp/event"
 	pkgOdpSegment "github.com/optimizely/go-sdk/pkg/odp/segment"
+	pkgOdpUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/optimizely/go-sdk/pkg/registry"
 	"github.com/optimizely/go-sdk/pkg/utils"
 
@@ -173,6 +174,8 @@ func TestClientWithDefaultSDKSettings(t *testing.T) {
 	optimizelyClient, err := factory.Client()
 	assert.NoError(t, err)
 	assert.Equal(t, false, factory.odpDisabled)
+	assert.Equal(t, pkgOdpUtils.DefaultSegmentsCacheSize, factory.segmentsCacheSize)
+	assert.Equal(t, pkgOdpUtils.DefaultSegmentsCacheTimeout, factory.segmentsCacheTimeout)
 	assert.NotNil(t, optimizelyClient.OdpManager)
 }
 

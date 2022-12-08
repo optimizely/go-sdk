@@ -27,6 +27,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/odp/config"
 	"github.com/optimizely/go-sdk/pkg/odp/event"
 	"github.com/optimizely/go-sdk/pkg/odp/segment"
+	"github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -125,6 +126,12 @@ func (o *ODPManagerTestSuite) TestNegativeSegmentCacheSizeAndTimeout() {
 	odpManager := NewOdpManager("", false, WithSegmentsCacheSize(-1), WithSegmentsCacheTimeout(cacheTimeout))
 	o.Equal(-1, odpManager.segmentsCacheSize)
 	o.Equal(cacheTimeout, odpManager.segmentsCacheTimeout)
+}
+
+func (o *ODPManagerTestSuite) TestDefaultCacheSizeAndTimeout() {
+	odpManager := NewOdpManager("", false)
+	o.Equal(utils.DefaultSegmentsCacheSize, odpManager.segmentsCacheSize)
+	o.Equal(utils.DefaultSegmentsCacheTimeout, odpManager.segmentsCacheTimeout)
 }
 
 func (o *ODPManagerTestSuite) TestNewODPManagerWithOptionsWithDisableFalse() {
