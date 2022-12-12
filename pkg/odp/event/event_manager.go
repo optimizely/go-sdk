@@ -151,7 +151,7 @@ func (bm *BatchEventManager) Start(ctx context.Context, apiKey, apiHost string) 
 	if !bm.IsOdpServiceIntegrated(apiKey, apiHost) {
 		return
 	}
-	bm.startTicker(apiKey, apiHost, ctx)
+	bm.startTicker(ctx, apiKey, apiHost)
 }
 
 // IdentifyUser associates a full-stack userid with an established VUID
@@ -209,7 +209,7 @@ func (bm *BatchEventManager) ProcessEvent(apiKey, apiHost string, odpEvent Event
 }
 
 // StartTicker starts new ticker for flushing events
-func (bm *BatchEventManager) startTicker(apiKey, apiHost string, ctx context.Context) {
+func (bm *BatchEventManager) startTicker(ctx context.Context, apiKey, apiHost string) {
 	// Make sure multiple go-routines dont reinitialize ticker
 	bm.flushLock.Lock()
 	if bm.ticker != nil {

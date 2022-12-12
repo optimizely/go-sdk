@@ -347,7 +347,7 @@ func (e *EventManagerTestSuite) TestEventManagerAsyncBehaviour() {
 	}
 	for i := 0; i < iterations; i++ {
 		eg.Go(func(ctx context.Context) {
-			eventManager.startTicker("-1", "-1", ctx)
+			eventManager.startTicker(ctx, "-1", "-1")
 		})
 		go callAllMethods(fmt.Sprintf("%d", i))
 	}
@@ -374,12 +374,9 @@ func (e *EventManagerTestSuite) TestFlushEventsAsyncBehaviour() {
 		eventManager.eventQueue.Add(Event{Type: fmt.Sprintf("%d", i)})
 	}
 
-	callAllMethods := func() {
-		eventManager.FlushEvents("-1", "-1")
-	}
 	// Call flushEvents on different go routines
 	for i := 0; i < iterations; i++ {
-		go callAllMethods()
+		go eventManager.FlushEvents("-1", "-1")
 	}
 	// Wait for all go routines to complete
 	eventAPIManager.wg.Wait()
