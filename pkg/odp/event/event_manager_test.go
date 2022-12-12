@@ -27,7 +27,6 @@ import (
 
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/odp/config"
 	"github.com/optimizely/go-sdk/pkg/odp/utils"
 	pkgUtils "github.com/optimizely/go-sdk/pkg/utils"
 	"github.com/stretchr/testify/suite"
@@ -41,7 +40,7 @@ type EventManagerTestSuite struct {
 
 func (e *EventManagerTestSuite) SetupTest() {
 	e.eventAPIManager = &MockEventAPIManager{}
-	e.eventManager = NewBatchEventManager(WithAPIManager(e.eventAPIManager), WithBatchSize(2), WithOdpConfig(config.NewConfig("a", "b", []string{"c"})))
+	e.eventManager = NewBatchEventManager(WithAPIManager(e.eventAPIManager), WithBatchSize(2))
 }
 
 func (e *EventManagerTestSuite) TestEventManagerWithOptions() {
@@ -50,16 +49,14 @@ func (e *EventManagerTestSuite) TestEventManagerWithOptions() {
 	flushInterval := 3 * time.Second
 	sdkKey := "abc"
 	eventAPIManager := NewEventAPIManager(sdkKey, nil)
-	conf := config.NewConfig("", "", nil)
 	eventQueue := event.NewInMemoryQueue(queueSize)
 	em := NewBatchEventManager(WithBatchSize(batchSize), WithQueueSize(queueSize), WithFlushInterval(flushInterval), WithSDKKey(sdkKey),
-		WithAPIManager(eventAPIManager), WithOdpConfig(conf), WithQueue(eventQueue))
+		WithAPIManager(eventAPIManager), WithQueue(eventQueue))
 	e.Equal(batchSize, em.batchSize)
 	e.Equal(queueSize, em.maxQueueSize)
 	e.Equal(flushInterval, em.flushInterval)
 	e.Equal(sdkKey, em.sdkKey)
 	e.Equal(eventAPIManager, em.apiManager)
-	e.Equal(conf, em.OdpConfig)
 	e.Equal(eventQueue, em.eventQueue)
 }
 
@@ -85,27 +82,34 @@ func (e *EventManagerTestSuite) TestEventManagerWithoutOptions() {
 
 func (e *EventManagerTestSuite) TestTickerNotStartedIfODPNotIntegrated() {
 	eg := newExecutionContext()
-	e.eventManager.OdpConfig = config.NewConfig("", "", nil)
-	eg.Go(e.eventManager.Start)
+	eg.Go(func(ctx context.Context) {
+		e.eventManager.Start(ctx, "", "")
+	})
 	eg.TerminateAndWait()
 	e.Nil(e.eventManager.ticker)
 }
 
 func (e *EventManagerTestSuite) TestTickerStartedIfODPIntegrated() {
 	eg := newExecutionContext()
-	eg.Go(e.eventManager.Start)
+	eg.Go(func(ctx context.Context) {
+		e.eventManager.Start(ctx, "a", "b")
+	})
 	eg.TerminateAndWait()
 	e.NotNil(e.eventManager.ticker)
 }
 
 func (e *EventManagerTestSuite) TestTickerIsNotReinitializedIfStartIsCalledAgain() {
 	eg := newExecutionContext()
-	eg.Go(e.eventManager.Start)
+	eg.Go(func(ctx context.Context) {
+		e.eventManager.Start(ctx, "a", "b")
+	})
 	eg.TerminateAndWait()
 	e.NotNil(e.eventManager.ticker)
 	ticker := e.eventManager.ticker
 
-	eg.Go(e.eventManager.Start)
+	eg.Go(func(ctx context.Context) {
+		e.eventManager.Start(ctx, "b", "c")
+	})
 	eg.TerminateAndWait()
 	e.Equal(ticker, e.eventManager.ticker)
 }
@@ -115,7 +119,9 @@ func (e *EventManagerTestSuite) TestEventsDispatchedWhenContextIsTerminated() {
 	e.eventManager.eventQueue.Add(Event{})
 	e.eventAPIManager.wg.Add(1)
 	e.Equal(1, e.eventManager.eventQueue.Size())
-	eg.Go(e.eventManager.Start)
+	eg.Go(func(ctx context.Context) {
+		e.eventManager.Start(ctx, "a", "b")
+	})
 	eg.TerminateAndWait()
 	e.NotNil(e.eventManager.ticker)
 	e.Equal(0, e.eventManager.eventQueue.Size())
@@ -128,7 +134,9 @@ func (e *EventManagerTestSuite) TestEventsDispatchedWhenFlushIntervalReached() {
 	e.eventManager.eventQueue.Add(Event{})
 	e.eventAPIManager.wg.Add(1)
 	e.Equal(1, e.eventManager.eventQueue.Size())
-	eg.Go(e.eventManager.Start)
+	eg.Go(func(ctx context.Context) {
+		e.eventManager.Start(ctx, "a", "b")
+	})
 	e.eventAPIManager.wg.Wait()
 	eg.TerminateAndWait()
 	e.Equal(0, e.eventManager.eventQueue.Size())
@@ -136,8 +144,7 @@ func (e *EventManagerTestSuite) TestEventsDispatchedWhenFlushIntervalReached() {
 }
 
 func (e *EventManagerTestSuite) TestIdentifyUserWhenODPNotIntegrated() {
-	e.eventManager.OdpConfig = config.NewConfig("", "", nil)
-	e.eventManager.IdentifyUser("123")
+	e.eventManager.IdentifyUser("", "1", "123")
 	e.Nil(e.eventManager.ticker)
 	e.Equal(0, e.eventAPIManager.timesSendEventsCalled)
 }
@@ -148,7 +155,7 @@ func (e *EventManagerTestSuite) TestIdentifyUserWhenODPIntegrated() {
 	e.eventManager.addCommonData(&expectedEvent)
 	e.eventAPIManager.wg.Add(1)
 	e.eventManager.batchSize = 1
-	e.eventManager.IdentifyUser(userID)
+	e.eventManager.IdentifyUser("1", "2", userID)
 	e.eventAPIManager.wg.Wait()
 	e.Equal(1, e.eventAPIManager.timesSendEventsCalled)
 
@@ -160,8 +167,8 @@ func (e *EventManagerTestSuite) TestIdentifyUserWhenODPIntegrated() {
 }
 
 func (e *EventManagerTestSuite) TestProcessEventWithInvalidODPConfig() {
-	em := NewBatchEventManager(WithAPIManager(&MockEventAPIManager{}), WithBatchSize(2), WithOdpConfig(config.NewConfig("", "", nil)))
-	e.False(em.ProcessEvent(Event{}))
+	em := NewBatchEventManager(WithAPIManager(&MockEventAPIManager{}), WithBatchSize(2))
+	e.False(em.ProcessEvent("", "", Event{}))
 	e.Equal(0, em.eventQueue.Size())
 }
 
@@ -179,7 +186,7 @@ func (e *EventManagerTestSuite) TestProcessEventWithValidEventData() {
 		},
 	}
 
-	e.True(e.eventManager.ProcessEvent(tmpEvent))
+	e.True(e.eventManager.ProcessEvent("1", "2", tmpEvent))
 	e.Equal(1, e.eventManager.eventQueue.Size())
 }
 
@@ -193,20 +200,20 @@ func (e *EventManagerTestSuite) TestProcessEventWithInvalidEventData() {
 			"key12": []string{},
 		},
 	}
-	e.False(e.eventManager.ProcessEvent(tmpEvent))
+	e.False(e.eventManager.ProcessEvent("a", "b", tmpEvent))
 	e.Equal(0, e.eventManager.eventQueue.Size())
 }
 
 func (e *EventManagerTestSuite) TestProcessEventDiscardsEventExceedingMaxQueueSize() {
 	e.eventManager.maxQueueSize = 1
 	e.eventManager.eventQueue.Add(Event{})
-	e.False(e.eventManager.ProcessEvent(Event{}))
+	e.False(e.eventManager.ProcessEvent("a", "b", Event{}))
 	e.Equal(1, e.eventManager.eventQueue.Size())
 }
 
 func (e *EventManagerTestSuite) TestProcessEventWithBatchSizeNotReached() {
-	em := NewBatchEventManager(WithAPIManager(&MockEventAPIManager{}), WithBatchSize(2), WithOdpConfig(config.NewConfig("a", "b", []string{"c"})))
-	e.True(em.ProcessEvent(Event{}))
+	em := NewBatchEventManager(WithAPIManager(&MockEventAPIManager{}), WithBatchSize(2))
+	e.True(em.ProcessEvent("a", "b", Event{}))
 	e.Equal(1, em.eventQueue.Size())
 	e.Equal(0, e.eventAPIManager.timesSendEventsCalled)
 }
@@ -215,7 +222,7 @@ func (e *EventManagerTestSuite) TestProcessEventWithBatchSizeReached() {
 	e.eventManager.eventQueue.Add(Event{})
 	e.Equal(1, e.eventManager.eventQueue.Size())
 	e.eventAPIManager.wg.Add(1)
-	e.True(e.eventManager.ProcessEvent(Event{}))
+	e.True(e.eventManager.ProcessEvent("a", "b", Event{}))
 	// Wait for event fire through go routine
 	e.eventAPIManager.wg.Wait()
 	e.Equal(0, e.eventManager.eventQueue.Size())
@@ -228,7 +235,7 @@ func (e *EventManagerTestSuite) TestProcessEventsExceedingBatchSize() {
 	e.Equal(2, e.eventManager.eventQueue.Size())
 	// Two batch events should be fired
 	e.eventAPIManager.wg.Add(2)
-	e.True(e.eventManager.ProcessEvent(Event{}))
+	e.True(e.eventManager.ProcessEvent("a", "b", Event{}))
 	// Wait for event fire through go routine
 	e.eventAPIManager.wg.Wait()
 	// Since all events fired successfully, queue should be empty
@@ -248,7 +255,7 @@ func (e *EventManagerTestSuite) TestProcessEventFirstEventFailsWithRetries() {
 	// Total 3 events in queue which make 2 batches
 	// first batch will be retried thrice, second one wont be fired since first failed thrice
 	e.eventAPIManager.wg.Add(maxRetries)
-	e.True(e.eventManager.ProcessEvent(Event{}))
+	e.True(e.eventManager.ProcessEvent("a", "b", Event{}))
 	// Wait for three retries
 	e.eventAPIManager.wg.Wait()
 	// Since all events failed, queue should contain all events
@@ -266,7 +273,7 @@ func (e *EventManagerTestSuite) TestProcessEventFirstEventFailsWithRetryNotAllow
 	// Total 3 events in queue which make 2 batches
 	// first batch will not be retried, second one wont be fired since first failed
 	e.eventAPIManager.wg.Add(1)
-	e.True(e.eventManager.ProcessEvent(Event{}))
+	e.True(e.eventManager.ProcessEvent("a", "b", Event{}))
 	// Wait for three retries
 	e.eventAPIManager.wg.Wait()
 	// Since first batch of 2 events failed with no retry allowed, queue should only contain 1 event
@@ -286,7 +293,7 @@ func (e *EventManagerTestSuite) TestProcessEventSecondEventFailsWithRetriesLater
 	// Total 3 events in queue which make 2 batches
 	// first batch will be successfully dispatched, second will be retried thrice
 	e.eventAPIManager.wg.Add(4)
-	e.True(e.eventManager.ProcessEvent(Event{}))
+	e.True(e.eventManager.ProcessEvent("a", "b", Event{}))
 	// Wait for events to fire
 	e.eventAPIManager.wg.Wait()
 	// Since second batch of 1 event failed, queue should be contain 1 event
@@ -298,7 +305,7 @@ func (e *EventManagerTestSuite) TestProcessEventSecondEventFailsWithRetriesLater
 	time.Sleep(200 * time.Millisecond)
 
 	e.eventAPIManager.wg.Add(1)
-	e.True(e.eventManager.ProcessEvent(Event{}))
+	e.True(e.eventManager.ProcessEvent("a", "b", Event{}))
 	// Wait for events to fire
 	e.eventAPIManager.wg.Wait()
 	// Queue should be empty since remaining event was sent now
@@ -319,7 +326,7 @@ func (e *EventManagerTestSuite) TestProcessEventFirstEventPassesWithRetries() {
 	// Total 3 events in queue which make 2 batches
 	// first batch will be retried once, second will be successful immediately
 	e.eventAPIManager.wg.Add(3)
-	e.True(e.eventManager.ProcessEvent(Event{}))
+	e.True(e.eventManager.ProcessEvent("a", "b", Event{}))
 	// Wait for events to fire
 	e.eventAPIManager.wg.Wait()
 	// Since all events were successful, queue should be empty
@@ -329,17 +336,19 @@ func (e *EventManagerTestSuite) TestProcessEventFirstEventPassesWithRetries() {
 
 func (e *EventManagerTestSuite) TestEventManagerAsyncBehaviour() {
 	eventAPIManager := &MockEventAPIManager{}
-	eventManager := NewBatchEventManager(WithAPIManager(eventAPIManager), WithBatchSize(2), WithOdpConfig(config.NewConfig("-1", "-1", []string{"-1"})))
+	eventManager := NewBatchEventManager(WithAPIManager(eventAPIManager), WithBatchSize(2))
 
 	iterations := 100
 	eventAPIManager.shouldNotInformWaitgroup = true
 	eg := newExecutionContext()
 	callAllMethods := func(id string) {
-		eventManager.IdentifyUser(id)
-		eventManager.ProcessEvent(Event{})
+		eventManager.IdentifyUser("-1", "-1", id)
+		eventManager.ProcessEvent("-1", "-1", Event{})
 	}
 	for i := 0; i < iterations; i++ {
-		eg.Go(eventManager.Start)
+		eg.Go(func(ctx context.Context) {
+			eventManager.startTicker("-1", "-1", ctx)
+		})
 		go callAllMethods(fmt.Sprintf("%d", i))
 	}
 	// Wait for all go routines to complete
@@ -357,7 +366,7 @@ func (e *EventManagerTestSuite) TestEventManagerAsyncBehaviour() {
 func (e *EventManagerTestSuite) TestFlushEventsAsyncBehaviour() {
 	eventAPIManager := &MockEventAPIManager{}
 	batchSize := 2
-	eventManager := NewBatchEventManager(WithAPIManager(eventAPIManager), WithBatchSize(batchSize), WithOdpConfig(config.NewConfig("-1", "-1", []string{"-1"})))
+	eventManager := NewBatchEventManager(WithAPIManager(eventAPIManager), WithBatchSize(batchSize))
 	iterations := 100
 	eventAPIManager.wg.Add(50)
 	// Add 100 events to queue
@@ -366,7 +375,7 @@ func (e *EventManagerTestSuite) TestFlushEventsAsyncBehaviour() {
 	}
 
 	callAllMethods := func() {
-		eventManager.FlushEvents()
+		eventManager.FlushEvents("-1", "-1")
 	}
 	// Call flushEvents on different go routines
 	for i := 0; i < iterations; i++ {
@@ -408,12 +417,19 @@ func (e *EventManagerTestSuite) TestUserDataOverridesCommonData() {
 }
 
 func (e *EventManagerTestSuite) TestIsOdpServiceIntegrated() {
-	e.True(e.eventManager.IsOdpServiceIntegrated())
+	e.True(e.eventManager.IsOdpServiceIntegrated("a", "b"))
 	e.eventManager.eventQueue.Add(Event{})
 	e.Equal(1, e.eventManager.eventQueue.Size())
 
-	e.eventManager.OdpConfig = config.NewConfig("", "", nil)
-	e.False(e.eventManager.IsOdpServiceIntegrated())
+	e.False(e.eventManager.IsOdpServiceIntegrated("", ""))
+	e.Equal(0, e.eventManager.eventQueue.Size())
+
+	e.eventManager.eventQueue.Add(Event{})
+	e.False(e.eventManager.IsOdpServiceIntegrated("a", ""))
+	e.Equal(0, e.eventManager.eventQueue.Size())
+
+	e.eventManager.eventQueue.Add(Event{})
+	e.False(e.eventManager.IsOdpServiceIntegrated("", "b"))
 	e.Equal(0, e.eventManager.eventQueue.Size())
 }
 

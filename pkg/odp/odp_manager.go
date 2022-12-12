@@ -118,19 +118,8 @@ func NewOdpManager(sdkKey string, disable bool, options ...OMOptionFunc) *Defaul
 
 	// If user has not provided event manager, create a new one and return
 	if odpManager.EventManager == nil {
-		odpManager.EventManager = event.NewBatchEventManager(event.WithSDKKey(sdkKey), event.WithOdpConfig(odpManager.OdpConfig))
+		odpManager.EventManager = event.NewBatchEventManager(event.WithSDKKey(sdkKey))
 		return odpManager
-	}
-
-	// If user has provided an EventManager with odpConfig, use the same odpConfig for odpManager
-	// Otherwise assign a new odpConfig to both EventManager and OdpManager
-	if batchEventManager, ok := odpManager.EventManager.(*event.BatchEventManager); ok {
-		// Making sure both OdpManager and EventManager have the same OdpConfig
-		if batchEventManager.OdpConfig == nil {
-			batchEventManager.OdpConfig = odpManager.OdpConfig
-		} else {
-			odpManager.OdpConfig = batchEventManager.OdpConfig
-		}
 	}
 	return odpManager
 }
@@ -140,8 +129,10 @@ func (om *DefaultOdpManager) FetchQualifiedSegments(userID string, options []seg
 	if !om.enabled {
 		return nil, errors.New(utils.OdpNotEnabled)
 	}
-
-	return om.SegmentManager.FetchQualifiedSegments(om.OdpConfig, userID, options)
+	apiKey := om.OdpConfig.GetAPIKey()
+	apiHost := om.OdpConfig.GetAPIHost()
+	segmentsToCheck := om.OdpConfig.GetSegmentsToCheck()
+	return om.SegmentManager.FetchQualifiedSegments(apiKey, apiHost, userID, segmentsToCheck, options)
 }
 
 // IdentifyUser associates a full-stack userid with an established VUID
@@ -150,7 +141,7 @@ func (om *DefaultOdpManager) IdentifyUser(userID string) {
 		om.logger.Debug(utils.IdentityOdpDisabled)
 		return
 	}
-	om.EventManager.IdentifyUser(userID)
+	om.EventManager.IdentifyUser(om.OdpConfig.GetAPIKey(), om.OdpConfig.GetAPIHost(), userID)
 }
 
 // SendOdpEvent sends an event to the ODP server.
@@ -168,7 +159,7 @@ func (om *DefaultOdpManager) SendOdpEvent(eventType, action string, identifiers 
 		Identifiers: identifiers,
 		Data:        data,
 	}
-	return om.EventManager.ProcessEvent(odpEvent)
+	return om.EventManager.ProcessEvent(om.OdpConfig.GetAPIKey(), om.OdpConfig.GetAPIHost(), odpEvent)
 }
 
 // Update updates odp config.
@@ -182,7 +173,7 @@ func (om *DefaultOdpManager) Update(apiKey, apiHost string, segmentsToCheck []st
 	//       Try to send all old events with the previous public key.
 	//       If it fails to flush all the old events here (network error), remaining events will be discarded.
 
-	om.EventManager.FlushEvents()
+	om.EventManager.FlushEvents(om.OdpConfig.GetAPIKey(), om.OdpConfig.GetAPIHost())
 	if om.OdpConfig.Update(apiKey, apiHost, segmentsToCheck) {
 		// reset segments cache when odp integration or segmentsToCheck are changed
 		om.SegmentManager.Reset()

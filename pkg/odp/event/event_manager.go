@@ -27,7 +27,6 @@ import (
 	guuid "github.com/google/uuid"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/odp/config"
 	"github.com/optimizely/go-sdk/pkg/odp/utils"
 	"golang.org/x/sync/semaphore"
 )
@@ -40,10 +39,10 @@ const maxRetries = 3
 
 // Manager represents the event manager.
 type Manager interface {
-	Start(ctx context.Context)
-	IdentifyUser(userID string)
-	ProcessEvent(odpEvent Event) bool
-	FlushEvents()
+	Start(ctx context.Context, apiKey, apiHost string)
+	IdentifyUser(apiKey, apiHost, userID string)
+	ProcessEvent(apiKey, apiHost string, odpEvent Event) bool
+	FlushEvents(apiKey, apiHost string)
 }
 
 // BatchEventManager represents default implementation of BatchEventManager
@@ -56,7 +55,6 @@ type BatchEventManager struct {
 	flushLock     sync.Mutex
 	ticker        *time.Ticker
 	apiManager    APIManager
-	OdpConfig     config.Config
 	processing    *semaphore.Weighted
 	logger        logging.OptimizelyLogProducer
 }
@@ -112,13 +110,6 @@ func WithAPIManager(apiManager APIManager) EMOptionFunc {
 	}
 }
 
-// WithOdpConfig sets odpConfig option to be passed into the NewBatchEventManager method
-func WithOdpConfig(odpConfig config.Config) EMOptionFunc {
-	return func(bm *BatchEventManager) {
-		bm.OdpConfig = odpConfig
-	}
-}
-
 // NewBatchEventManager returns a new instance of BatchEventManager with options
 func NewBatchEventManager(options ...EMOptionFunc) *BatchEventManager {
 	// Setting default values
@@ -156,16 +147,16 @@ func NewBatchEventManager(options ...EMOptionFunc) *BatchEventManager {
 }
 
 // Start does not do any initialization, just starts the ticker
-func (bm *BatchEventManager) Start(ctx context.Context) {
-	if !bm.IsOdpServiceIntegrated() {
+func (bm *BatchEventManager) Start(ctx context.Context, apiKey, apiHost string) {
+	if !bm.IsOdpServiceIntegrated(apiKey, apiHost) {
 		return
 	}
-	bm.startTicker(ctx)
+	bm.startTicker(apiKey, apiHost, ctx)
 }
 
 // IdentifyUser associates a full-stack userid with an established VUID
-func (bm *BatchEventManager) IdentifyUser(userID string) {
-	if !bm.IsOdpServiceIntegrated() {
+func (bm *BatchEventManager) IdentifyUser(apiKey, apiHost, userID string) {
+	if !bm.IsOdpServiceIntegrated(apiKey, apiHost) {
 		bm.logger.Debug(utils.IdentityOdpNotIntegrated)
 		return
 	}
@@ -175,14 +166,14 @@ func (bm *BatchEventManager) IdentifyUser(userID string) {
 		Action:      utils.OdpActionIdentified,
 		Identifiers: identifiers,
 	}
-	bm.ProcessEvent(odpEvent)
+	bm.ProcessEvent(apiKey, apiHost, odpEvent)
 }
 
 // ProcessEvent takes the given odp event and queues it up to be dispatched.
 // A dispatch happens when we flush the events, which can happen on a set interval or
 // when the specified batch size is reached.
-func (bm *BatchEventManager) ProcessEvent(odpEvent Event) bool {
-	if !bm.IsOdpServiceIntegrated() {
+func (bm *BatchEventManager) ProcessEvent(apiKey, apiHost string, odpEvent Event) bool {
+	if !bm.IsOdpServiceIntegrated(apiKey, apiHost) {
 		bm.logger.Debug(utils.OdpNotIntegrated)
 		return false
 	}
@@ -209,7 +200,7 @@ func (bm *BatchEventManager) ProcessEvent(odpEvent Event) bool {
 		// we just want to start one go routine when the batch size is met.
 		bm.logger.Debug("batch size reached.  Flushing routine being called")
 		go func() {
-			bm.FlushEvents()
+			bm.FlushEvents(apiKey, apiHost)
 			bm.processing.Release(1)
 		}()
 	}
@@ -218,7 +209,7 @@ func (bm *BatchEventManager) ProcessEvent(odpEvent Event) bool {
 }
 
 // StartTicker starts new ticker for flushing events
-func (bm *BatchEventManager) startTicker(ctx context.Context) {
+func (bm *BatchEventManager) startTicker(apiKey, apiHost string, ctx context.Context) {
 	// Make sure multiple go-routines dont reinitialize ticker
 	bm.flushLock.Lock()
 	if bm.ticker != nil {
@@ -233,17 +224,17 @@ func (bm *BatchEventManager) startTicker(ctx context.Context) {
 	for {
 		select {
 		case <-bm.ticker.C:
-			bm.FlushEvents()
+			bm.FlushEvents(apiKey, apiHost)
 		case <-ctx.Done():
 			bm.logger.Debug("BatchEventManager stopped, flushing events.")
-			bm.FlushEvents()
+			bm.FlushEvents(apiKey, apiHost)
 			return
 		}
 	}
 }
 
 // FlushEvents flushes events in queue
-func (bm *BatchEventManager) FlushEvents() {
+func (bm *BatchEventManager) FlushEvents(apiKey, apiHost string) {
 	// we flush when queue size is reached.
 	// however, if there is a ticker cycle already processing, we should wait
 	bm.flushLock.Lock()
@@ -282,9 +273,6 @@ func (bm *BatchEventManager) FlushEvents() {
 
 		// Only send event if batch is available
 		if batchEventCount > 0 {
-			// Avoid passing odpConfig inside the loop to save multiple mutex lock calls
-			apiKey := bm.OdpConfig.GetAPIKey()
-			apiHost := bm.OdpConfig.GetAPIHost()
 			retryCount := 0
 			// Retry till maxRetries reached
 			for retryCount < maxRetries {
@@ -310,8 +298,8 @@ func (bm *BatchEventManager) FlushEvents() {
 }
 
 // IsOdpServiceIntegrated returns true if odp service is integrated
-func (bm *BatchEventManager) IsOdpServiceIntegrated() bool {
-	if bm.OdpConfig == nil || !bm.OdpConfig.IsOdpServiceIntegrated() {
+func (bm *BatchEventManager) IsOdpServiceIntegrated(apiKey, apiHost string) bool {
+	if apiKey == "" || apiHost == "" {
 		// ensure empty queue
 		bm.eventQueue.Remove(bm.eventQueue.Size())
 		return false

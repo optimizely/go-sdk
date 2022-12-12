@@ -329,8 +329,13 @@ func (f *OptimizelyFactory) startOdpManager(eg *utils.ExecGroup, appClient *Opti
 	if !ok {
 		return
 	}
+
 	// Start odp ticker
-	eg.Go(odpManager.EventManager.Start)
+	apiKey := odpManager.OdpConfig.GetAPIKey()
+	apiHost := odpManager.OdpConfig.GetAPIHost()
+	eg.Go(func(ctx context.Context) {
+		odpManager.EventManager.Start(ctx, apiKey, apiHost)
+	})
 
 	// Only check for changes if ConfigManager is non static
 	if _, ok = appClient.ConfigManager.(*config.StaticProjectConfigManager); ok {
@@ -341,9 +346,12 @@ func (f *OptimizelyFactory) startOdpManager(eg *utils.ExecGroup, appClient *Opti
 	callback := func(notification notification.ProjectConfigUpdateNotification) {
 		if conf, err := appClient.ConfigManager.GetConfig(); err == nil && conf != nil {
 			// Update odp manager with new changes and start service if not already started
+			apiKey := conf.GetPublicKeyForODP()
+			apiHost := conf.GetHostForODP()
+			segmentList := conf.GetSegmentList()
 			eg.Go(func(ctx context.Context) {
-				odpManager.Update(conf.GetPublicKeyForODP(), conf.GetHostForODP(), conf.GetSegmentList())
-				odpManager.EventManager.Start(ctx)
+				odpManager.Update(apiKey, apiHost, segmentList)
+				odpManager.EventManager.Start(ctx, apiKey, apiHost)
 			})
 		}
 	}

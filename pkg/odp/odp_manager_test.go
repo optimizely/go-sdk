@@ -37,20 +37,20 @@ type MockEventManager struct {
 	event.Manager
 }
 
-func (m *MockEventManager) Start(ctx context.Context) {
-	m.Called(ctx)
+func (m *MockEventManager) Start(ctx context.Context, apiKey, apiHost string) {
+	m.Called(ctx, apiKey, apiHost)
 }
 
-func (m *MockEventManager) IdentifyUser(userID string) {
-	m.Called(userID)
+func (m *MockEventManager) IdentifyUser(apiKey, apiHost, userID string) {
+	m.Called(apiKey, apiHost, userID)
 }
 
-func (m *MockEventManager) ProcessEvent(odpEvent event.Event) bool {
-	return m.Called(odpEvent).Get(0).(bool)
+func (m *MockEventManager) ProcessEvent(apiKey, apiHost string, odpEvent event.Event) bool {
+	return m.Called(apiKey, apiHost, odpEvent).Get(0).(bool)
 }
 
-func (m *MockEventManager) FlushEvents() {
-	m.Called()
+func (m *MockEventManager) FlushEvents(apiKey, apiHost string) {
+	m.Called(apiKey, apiHost)
 }
 
 type MockSegmentManager struct {
@@ -58,8 +58,8 @@ type MockSegmentManager struct {
 	segment.Manager
 }
 
-func (m *MockSegmentManager) FetchQualifiedSegments(odpConfig config.Config, userID string, options []segment.OptimizelySegmentOption) (segments []string, err error) {
-	args := m.Called(odpConfig, userID, options)
+func (m *MockSegmentManager) FetchQualifiedSegments(apiKey, apiHost, userID string, segmentsToCheck []string, options []segment.OptimizelySegmentOption) (segments []string, err error) {
+	args := m.Called(apiKey, apiHost, userID, segmentsToCheck, options)
 	if segArray, ok := args.Get(0).([]string); ok {
 		segments = segArray
 	}
@@ -172,26 +172,13 @@ func (o *ODPManagerTestSuite) TestODPManagerAPIsWithDisableTrue() {
 	o.eventManager.AssertNumberOfCalls(o.T(), "FlushEvents", 0)
 }
 
-func (o *ODPManagerTestSuite) TestODPConfigReferencePassed() {
-	odpManager := NewOdpManager("", false)
-	o.NotNil(odpManager.OdpConfig)
-	o.Equal(odpManager.OdpConfig, odpManager.EventManager.(*event.BatchEventManager).OdpConfig)
-
-	// Check changes reflected after update
-	odpManager.OdpConfig.Update("a", "b", []string{"1234"})
-	o.Equal(odpManager.OdpConfig.GetAPIKey(), "a")
-	o.Equal(odpManager.OdpConfig.GetAPIHost(), "b")
-	o.Equal(odpManager.OdpConfig.GetSegmentsToCheck(), []string{"1234"})
-
-	o.Equal(odpManager.OdpConfig.GetAPIKey(), odpManager.EventManager.(*event.BatchEventManager).OdpConfig.GetAPIKey())
-	o.Equal(odpManager.OdpConfig.GetAPIHost(), odpManager.EventManager.(*event.BatchEventManager).OdpConfig.GetAPIHost())
-	o.Equal(odpManager.OdpConfig.GetSegmentsToCheck(), odpManager.EventManager.(*event.BatchEventManager).OdpConfig.GetSegmentsToCheck())
-}
-
 func (o *ODPManagerTestSuite) TestFetchQualifiedSegments() {
 	expectedSegments := []string{"1"}
 	expectedError := errors.New("123")
-	o.segmentManager.On("FetchQualifiedSegments", o.odpManager.OdpConfig, "1", []segment.OptimizelySegmentOption{}).Return([]string{"1"}, errors.New("123"))
+	o.config.On("GetAPIKey").Return("1")
+	o.config.On("GetAPIHost").Return("2")
+	o.config.On("GetSegmentsToCheck").Return([]string{"1"})
+	o.segmentManager.On("FetchQualifiedSegments", "1", "2", "1", []string{"1"}, []segment.OptimizelySegmentOption{}).Return([]string{"1"}, errors.New("123"))
 	segments, err := o.odpManager.FetchQualifiedSegments("1", []segment.OptimizelySegmentOption{})
 	o.segmentManager.AssertExpectations(o.T())
 	o.Equal(expectedSegments, segments)
@@ -199,7 +186,9 @@ func (o *ODPManagerTestSuite) TestFetchQualifiedSegments() {
 }
 
 func (o *ODPManagerTestSuite) TestIdentifyUser() {
-	o.eventManager.On("IdentifyUser", o.userID)
+	o.config.On("GetAPIKey").Return("")
+	o.config.On("GetAPIHost").Return("")
+	o.eventManager.On("IdentifyUser", "", "", o.userID)
 	o.odpManager.IdentifyUser(o.userID)
 	o.segmentManager.AssertExpectations(o.T())
 }
@@ -218,20 +207,26 @@ func (o *ODPManagerTestSuite) TestSendOdpEvent() {
 			"data_source":         true,
 			"data_source_version": 6.78,
 		}}
-	o.eventManager.On("ProcessEvent", userEvent).Return(true)
+	o.config.On("GetAPIKey").Return("")
+	o.config.On("GetAPIHost").Return("")
+	o.eventManager.On("ProcessEvent", "", "", userEvent).Return(true)
 	o.True(o.odpManager.SendOdpEvent(userEvent.Type, userEvent.Action, userEvent.Identifiers, userEvent.Data))
 	o.segmentManager.AssertExpectations(o.T())
 }
 
 func (o *ODPManagerTestSuite) TestUpdate() {
-	apiKey := "1"
-	apiHost := "2"
+	newAPIKey := "1"
+	newAPIHost := "2"
 	segmentsToCheck := []string{"123"}
 
-	o.eventManager.On("FlushEvents")
-	o.config.On("Update", apiKey, apiHost, segmentsToCheck).Return(true)
+	o.config.On("GetAPIKey").Return("a")
+	o.config.On("GetAPIHost").Return("b")
+	// Called with old keys
+	o.eventManager.On("FlushEvents", "a", "b")
+	// Called with new keys
+	o.config.On("Update", newAPIKey, newAPIHost, segmentsToCheck).Return(true)
 	o.segmentManager.On("Reset")
-	o.odpManager.Update(apiKey, apiHost, segmentsToCheck)
+	o.odpManager.Update(newAPIKey, newAPIHost, segmentsToCheck)
 
 	o.segmentManager.AssertExpectations(o.T())
 }

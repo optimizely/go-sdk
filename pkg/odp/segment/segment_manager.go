@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/optimizely/go-sdk/pkg/odp/cache"
-	"github.com/optimizely/go-sdk/pkg/odp/config"
 	"github.com/optimizely/go-sdk/pkg/odp/utils"
 )
 
@@ -31,7 +30,7 @@ type SMOptionFunc func(em *DefaultSegmentManager)
 
 // Manager represents the odp segment manager.
 type Manager interface {
-	FetchQualifiedSegments(odpConfig config.Config, userID string, options []OptimizelySegmentOption) (segments []string, err error)
+	FetchQualifiedSegments(apiKey, apiHost, userID string, segmentsToCheck []string, options []OptimizelySegmentOption) (segments []string, err error)
 	Reset()
 }
 
@@ -96,13 +95,13 @@ func NewSegmentManager(sdkKey string, options ...SMOptionFunc) *DefaultSegmentMa
 }
 
 // FetchQualifiedSegments fetches and returns qualified segments
-func (s *DefaultSegmentManager) FetchQualifiedSegments(odpConfig config.Config, userID string, options []OptimizelySegmentOption) (segments []string, err error) {
-	if !odpConfig.IsOdpServiceIntegrated() {
+func (s *DefaultSegmentManager) FetchQualifiedSegments(apiKey, apiHost, userID string, segmentsToCheck []string, options []OptimizelySegmentOption) (segments []string, err error) {
+	if !s.isOdpServiceIntegrated(apiKey, apiHost) {
 		return nil, fmt.Errorf(utils.FetchSegmentsFailedError, "apiKey/apiHost not defined")
 	}
 
 	// empty segmentsToCheck (no ODP audiences found in datafile) is not an error. return immediately without checking with the ODP server.
-	if len(odpConfig.GetSegmentsToCheck()) == 0 {
+	if len(segmentsToCheck) == 0 {
 		return []string{}, nil
 	}
 
@@ -129,7 +128,7 @@ func (s *DefaultSegmentManager) FetchQualifiedSegments(odpConfig config.Config, 
 		}
 	}
 
-	segments, err = s.apiManager.FetchQualifiedSegments(odpConfig.GetAPIKey(), odpConfig.GetAPIHost(), userID, odpConfig.GetSegmentsToCheck())
+	segments, err = s.apiManager.FetchQualifiedSegments(apiKey, apiHost, userID, segmentsToCheck)
 	if err == nil && len(segments) > 0 && !ignoreCache {
 		s.segmentsCache.Save(cacheKey, segments)
 	}
@@ -139,6 +138,11 @@ func (s *DefaultSegmentManager) FetchQualifiedSegments(odpConfig config.Config, 
 // Reset resets segmentsCache.
 func (s *DefaultSegmentManager) Reset() {
 	s.segmentsCache.Reset()
+}
+
+// isOdpServiceIntegrated returns true if odp service is integrated
+func (s *DefaultSegmentManager) isOdpServiceIntegrated(apiKey, apiHost string) bool {
+	return apiKey != "" && apiHost != ""
 }
 
 // MakeCacheKey creates and returns cacheKey
