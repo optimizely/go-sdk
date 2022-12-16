@@ -106,7 +106,7 @@ func (o *OptimizelyUserContext) FetchQualifiedSegments(options []pkgOdpSegment.O
 }
 
 // FetchQualifiedSegmentsAsync fetches all qualified segments aysnchronously for the user context.
-func (o *OptimizelyUserContext) FetchQualifiedSegmentsAsync(callback func(success bool), options []pkgOdpSegment.OptimizelySegmentOption) {
+func (o *OptimizelyUserContext) FetchQualifiedSegmentsAsync(options []pkgOdpSegment.OptimizelySegmentOption, callback func(success bool)) {
 	go o.optimizely.fetchQualifiedSegments(o, options, callback)
 }
 

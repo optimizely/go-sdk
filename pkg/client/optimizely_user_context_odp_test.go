@@ -112,11 +112,11 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSuccessDef
 	userContext := optimizelyClient.CreateUserContext(o.userID, nil)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	userContext.FetchQualifiedSegmentsAsync(func(success bool) {
+	userContext.FetchQualifiedSegmentsAsync(nil, func(success bool) {
 		o.True(success)
 		o.Equal([]string{"odp-segment-1"}, userContext.GetQualifiedSegments())
 		wg.Done()
-	}, nil)
+	})
 	wg.Wait()
 	segmentManager.AssertExpectations(o.T())
 }
@@ -141,10 +141,10 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSDKNotRead
 	userContext := client.CreateUserContext(o.userID, nil)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	userContext.FetchQualifiedSegmentsAsync(func(success bool) {
+	userContext.FetchQualifiedSegmentsAsync(nil, func(success bool) {
 		o.False(success)
 		wg.Done()
-	}, nil)
+	})
 	wg.Wait()
 }
 
@@ -157,11 +157,11 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsFetchFaile
 	userContext.SetQualifiedSegments([]string{"dummy"})
 	var wg sync.WaitGroup
 	wg.Add(1)
-	userContext.FetchQualifiedSegmentsAsync(func(success bool) {
+	userContext.FetchQualifiedSegmentsAsync(nil, func(success bool) {
 		o.False(success)
 		o.Nil(userContext.GetQualifiedSegments())
 		wg.Done()
-	}, nil)
+	})
 	wg.Wait()
 }
 
@@ -172,9 +172,9 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSegmentsTo
 	userContext := optimizelyClient.CreateUserContext(o.userID, nil)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	userContext.FetchQualifiedSegmentsAsync(func(success bool) {
+	userContext.FetchQualifiedSegmentsAsync(nil, func(success bool) {
 		wg.Done()
-	}, nil)
+	})
 	wg.Wait()
 	o.Equal([]string{"odp-segment-1", "odp-segment-2", "odp-segment-3"}, odpManager.OdpConfig.GetSegmentsToCheck())
 }
@@ -187,11 +187,11 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSegmentsSe
 	userContext := optimizelyClient.CreateUserContext(o.userID, nil)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	userContext.FetchQualifiedSegmentsAsync(func(success bool) {
+	userContext.FetchQualifiedSegmentsAsync(nil, func(success bool) {
 		o.True(success)
 		o.Equal([]string{}, userContext.GetQualifiedSegments())
 		wg.Done()
-	}, nil)
+	})
 	wg.Wait()
 }
 
