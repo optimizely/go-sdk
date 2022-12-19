@@ -18,6 +18,7 @@
 package datafileprojectconfig
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -56,41 +57,44 @@ func TestNewDatafileProjectConfigNotNil(t *testing.T) {
 }
 
 func TestNewDatafileProjectConfigWithODP(t *testing.T) {
-	dpc := DatafileProjectConfig{integrations: []entities.Integration{{PublicKey: "123", Host: "www.123.com", Key: "odp"}}}
-	// odp without extra keys
-	jsonDatafileStr := `{"version":"4","integrations": [{"publicKey": "123", "host": "www.123.com", "key": "odp"}]}`
-	jsonDatafile := []byte(jsonDatafileStr)
-	projectConfig, err := NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", "DatafileProjectConfig"))
-	assert.Nil(t, err)
-	assert.NotNil(t, projectConfig)
-	assert.Equal(t, dpc.integrations, projectConfig.integrations)
+	expectedIntegrations := [][]entities.Integration{
+		{{PublicKey: "123", Host: "www.123.com", Key: "odp"}},
+		{{PublicKey: "123", Host: "www.123.com", Key: "odp"}},
+		{{Key: "odp"}},
+		{{PublicKey: "123", Host: "www.123.com"}},
+		{{PublicKey: "123", Host: "www.123.com"}},
+	}
 
-	// odp with extra keys
-	dpc = DatafileProjectConfig{integrations: []entities.Integration{{PublicKey: "123", Host: "www.123.com", Key: "odp"}}}
-	jsonDatafileStr = `{"version":"4","integrations": [{"publicKey": "123", "host": "www.123.com", "key": "odp", "key1": "odp", "key2": "odp"}]}`
-	jsonDatafile = []byte(jsonDatafileStr)
-	projectConfig, err = NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", "DatafileProjectConfig"))
-	assert.Nil(t, err)
-	assert.NotNil(t, projectConfig)
-	assert.Equal(t, dpc.integrations, projectConfig.integrations)
+	expectedErrors := []error{
+		nil,
+		nil,
+		nil,
+		errors.New(""),
+		nil,
+	}
 
-	// odp with missing host and public key keys
-	dpc = DatafileProjectConfig{integrations: []entities.Integration{{Key: "odp"}}}
-	jsonDatafileStr = `{"version":"4","integrations": [{"key": "odp"}]}`
-	jsonDatafile = []byte(jsonDatafileStr)
-	projectConfig, err = NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", "DatafileProjectConfig"))
-	assert.Nil(t, err)
-	assert.NotNil(t, projectConfig)
-	assert.Equal(t, dpc.integrations, projectConfig.integrations)
+	jsonDatafileStrs := []string{
+		// odp without extra keys
+		`{"version":"4","integrations": [{"publicKey": "123", "host": "www.123.com", "key": "odp"}]}`,
+		// odp with extra keys
+		`{"version":"4","integrations": [{"publicKey": "123", "host": "www.123.com", "key": "odp", "key1": "odp", "key2": "odp"}]}`,
+		// odp with missing host and public key keys
+		`{"version":"4","integrations": [{"key": "odp"}]}`,
+		// odp with missing key
+		`{"version":"4","integrations": [{"publicKey": "123", "host": "www.123.com"}]}`,
+		// odp with empty key
+		`{"version":"4","integrations": [{"key": "", "publicKey": "123", "host": "www.123.com"}]}`,
+	}
 
-	// odp with missing key
-	dpc = DatafileProjectConfig{integrations: []entities.Integration{{PublicKey: "123", Host: "www.123.com"}}}
-	jsonDatafileStr = `{"version":"4","integrations": [{"publicKey": "123", "host": "www.123.com"}]}`
-	jsonDatafile = []byte(jsonDatafileStr)
-	projectConfig, err = NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", "DatafileProjectConfig"))
-	assert.Nil(t, err)
-	assert.NotNil(t, projectConfig)
-	assert.Equal(t, dpc.integrations, projectConfig.integrations)
+	for i := 0; i < len(expectedIntegrations); i++ {
+		jsonDatafile := []byte(jsonDatafileStrs[i])
+		projectConfig, err := NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", "DatafileProjectConfig"))
+		assert.Equal(t, expectedErrors[i] == nil, err == nil)
+		if expectedErrors[i] == nil {
+			assert.NotNil(t, projectConfig)
+			assert.Equal(t, expectedIntegrations[i], projectConfig.integrations)
+		}
+	}
 }
 
 func TestGetDatafile(t *testing.T) {
@@ -104,7 +108,7 @@ func TestGetDatafile(t *testing.T) {
 }
 
 func TestGetHostAndPublicKeyForValidODP(t *testing.T) {
-	jsonDatafileStr := `{"version": "4","integrations": [{"publicKey": "1234", "host": "www.1234.com", "key": "non-odp"},{},{"randomKey":"123", "publicKey": "123", "host": "www.123.com", "key": "123"},{"publicKey": "123", "host": "www.123.com", "key": "odp"}]}`
+	jsonDatafileStr := `{"version": "4","integrations": [{"publicKey": "1234", "host": "www.1234.com", "key": "non-odp"},{"randomKey":"123", "publicKey": "123", "host": "www.123.com", "key": "123"},{"publicKey": "123", "host": "www.123.com", "key": "odp"}]}`
 	jsonDatafile := []byte(jsonDatafileStr)
 	config, err := NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", ""))
 	assert.NoError(t, err)
@@ -114,7 +118,7 @@ func TestGetHostAndPublicKeyForValidODP(t *testing.T) {
 }
 
 func TestGetHostAndPublicKeyForInvalidODP(t *testing.T) {
-	jsonDatafileStr := `{"version": "4","integrations": [{"publicKey": "1234", "host": "www.1234.com", "key": "non-odp"},{},{"randomKey":"123", "publicKey": "123", "host": "www.123.com", "key": "123"}]}`
+	jsonDatafileStr := `{"version": "4","integrations": [{"publicKey": "1234", "host": "www.1234.com", "key": "non-odp"},{"randomKey":"123", "publicKey": "123", "host": "www.123.com", "key": "123"}]}`
 	jsonDatafile := []byte(jsonDatafileStr)
 	config, err := NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", ""))
 	assert.NoError(t, err)
@@ -406,12 +410,12 @@ func TestGetRolloutList(t *testing.T) {
 }
 
 func TestGetIntegrationListODP(t *testing.T) {
-	jsonDatafileStr := `{"version": "4","integrations": [{"publicKey": "1234", "host": "www.1234.com", "key": "non-odp"},{"publicKey": "123", "host": "www.123.com", "key": "odp"},{"randomKey":"123", "publicKey": "123", "host": "www.123.com", "key": "123"},{}]}`
+	jsonDatafileStr := `{"version": "4","integrations": [{"publicKey": "1234", "host": "www.1234.com", "key": "non-odp"},{"publicKey": "123", "host": "www.123.com", "key": "odp"},{"randomKey":"123", "publicKey": "123", "host": "www.123.com", "key": "123"}]}`
 	jsonDatafile := []byte(jsonDatafileStr)
 	config, err := NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", ""))
 	assert.NoError(t, err)
 	assert.Equal(t, string(jsonDatafile), config.GetDatafile())
-	expectedIntegrations := []entities.Integration{{Host: "www.1234.com", PublicKey: "1234", Key: "non-odp"}, {Host: "www.123.com", PublicKey: "123", Key: "odp"}, {Host: "www.123.com", PublicKey: "123", Key: "123"}, {}}
+	expectedIntegrations := []entities.Integration{{Host: "www.1234.com", PublicKey: "1234", Key: "non-odp"}, {Host: "www.123.com", PublicKey: "123", Key: "odp"}, {Host: "www.123.com", PublicKey: "123", Key: "123"}}
 	assert.Equal(t, expectedIntegrations, config.GetIntegrationList())
 }
 

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -14,16 +14,15 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package odp //
-package odp
+// Package segment //
+package segment
 
-// Audience represents an ODP Audience
-type Audience struct {
-	Name        string `json:"name"`
-	State       string `json:"state"`
-	Description string `json:"description,omitempty"`
-}
+// OptimizelySegmentOption represents options controlling audience segments.
+type OptimizelySegmentOption int
 
-func (s Audience) isQualified() bool {
-	return s.State == "qualified"
-}
+const (
+	// IgnoreCache ignores cache (save/lookup)
+	IgnoreCache OptimizelySegmentOption = iota
+	// ResetCache resets cache
+	ResetCache
+)

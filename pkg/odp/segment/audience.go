@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -14,13 +14,16 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package odp //
-package odp
+// Package segment //
+package segment
 
-// Event represents a event to be sent and stored in the Optimizely Data Platform
-type Event struct {
-	Type        string                 `json:"type"`
-	Action      string                 `json:"action"`
-	Identifiers map[string]string      `json:"identifiers"`
-	Data        map[string]interface{} `json:"data"`
+// Audience represents an ODP Audience
+type Audience struct {
+	Name        string `json:"name"`
+	State       string `json:"state"`
+	Description string `json:"description,omitempty"`
+}
+
+func (s Audience) isQualified() bool {
+	return s.State == "qualified"
 }

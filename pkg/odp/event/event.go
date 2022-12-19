@@ -14,10 +14,13 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package odp //
-package odp
+// Package event //
+package event
 
-const invalidSegmentIdentifier = "audience segments fetch failed (invalid identifier)"
-const fetchSegmentsFailedError = "audience segments fetch failed (%s)"
-const odpEventFailed = "ODP event send failed (%s)"
-const odpInvalidData = "ODP data is not valid"
+// Event represents a event to be sent and stored in the Optimizely Data Platform
+type Event struct {
+	Type        string                 `json:"type"`
+	Action      string                 `json:"action"`
+	Identifiers map[string]string      `json:"identifiers"`
+	Data        map[string]interface{} `json:"data"`
+}

@@ -1,4 +1,21 @@
-package odp
+/****************************************************************************
+ * Copyright 2022, Optimizely, Inc. and contributors                        *
+ *                                                                          *
+ * Licensed under the Apache License, Version 2.0 (the "License");          *
+ * you may not use this file except in compliance with the License.         *
+ * You may obtain a copy of the License at                                  *
+ *                                                                          *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
+ *                                                                          *
+ * Unless required by applicable law or agreed to in writing, software      *
+ * distributed under the License is distributed on an "AS IS" BASIS,        *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+ * See the License for the specific language governing permissions and      *
+ * limitations under the License.                                           *
+ ***************************************************************************/
+
+// Package cache //
+package cache
 
 import (
 	"fmt"
@@ -10,18 +27,18 @@ import (
 )
 
 func TestMinConfig(t *testing.T) {
-	cache := NewLRUCache(1000, 2000)
+	cache := NewLRUCache(1000, 5*time.Second)
 	assert.Equal(t, 1000, cache.maxSize)
-	assert.Equal(t, int64(2000), cache.timeoutInSecs)
+	assert.Equal(t, 5*time.Second, cache.timeout)
 
-	cache = NewLRUCache(0, 0)
+	cache = NewLRUCache(0, 0*time.Second)
 	assert.Equal(t, 0, cache.maxSize)
-	assert.Equal(t, int64(0), cache.timeoutInSecs)
+	assert.Equal(t, 0*time.Second, cache.timeout)
 }
 
 func TestSaveAndLookupConfig(t *testing.T) {
 	maxSize := 2
-	cache := NewLRUCache(maxSize, 1000)
+	cache := NewLRUCache(maxSize, 1000*time.Second)
 
 	cache.Save("1", 100) // [1]
 	cache.Save("2", 200) // [1, 2]
@@ -53,7 +70,7 @@ func TestSaveAndLookupConfig(t *testing.T) {
 
 func TestReset(t *testing.T) {
 	maxSize := 2
-	cache := NewLRUCache(maxSize, 1000)
+	cache := NewLRUCache(maxSize, 1000*time.Second)
 
 	cache.Save("1", 100) // [1]
 	cache.Save("2", 200) // [1, 2]
@@ -81,7 +98,7 @@ func TestReset(t *testing.T) {
 }
 
 func TestSizeZero(t *testing.T) {
-	cache := NewLRUCache(0, 1000)
+	cache := NewLRUCache(0, 1000*time.Second)
 	cache.Save("1", 100)
 	assert.Nil(t, cache.Lookup("1"))
 	cache.Save("2", 200)
@@ -93,7 +110,7 @@ func TestSizeZero(t *testing.T) {
 
 func TestThreadSafe(t *testing.T) {
 	maxSize := 1000
-	cache := NewLRUCache(maxSize, 1000)
+	cache := NewLRUCache(maxSize, 1000*time.Second)
 	wg := sync.WaitGroup{}
 
 	save := func(k int, v interface{}, wg *sync.WaitGroup) {
@@ -157,7 +174,7 @@ func TestThreadSafe(t *testing.T) {
 }
 
 func TestTimeout(t *testing.T) {
-	var maxTimeout int64 = 1
+	var maxTimeout = 1 * time.Second
 	// cache with timeout
 	cache1 := NewLRUCache(1000, maxTimeout)
 	// Zero timeout cache
@@ -186,15 +203,4 @@ func TestTimeout(t *testing.T) {
 	assert.Equal(t, 100, cache2.Lookup("1"))
 	assert.Equal(t, 200, cache2.Lookup("2"))
 	assert.Equal(t, 300, cache2.Lookup("3"))
-}
-
-type TestCache struct {
-}
-
-func (l *TestCache) Save(key string, value interface{}) {
-}
-func (l *TestCache) Lookup(key string) interface{} {
-	return nil
-}
-func (l *TestCache) Reset() {
 }

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -14,22 +14,22 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package odp //
-package odp
+// Package event //
+package event
 
 import (
 	"fmt"
 	"net/url"
 
 	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/utils"
+	"github.com/optimizely/go-sdk/pkg/odp/utils"
+	pkgUtils "github.com/optimizely/go-sdk/pkg/utils"
 )
 
-const eventsAPIEndpointPath = "/v3/events"
-
-// EventAPIManager represents the event API manager.
-type EventAPIManager interface {
-	SendODPEvents(config Config, events []Event) (canRetry bool, err error)
+// APIManager represents the event API manager.
+type APIManager interface {
+	// not passing ODPConfig here to avoid multiple mutex lock calls inside the batch events loop
+	SendOdpEvents(apiKey, apiHost string, events []Event) (canRetry bool, err error)
 }
 
 // ODP REST Events API
@@ -44,26 +44,26 @@ type EventAPIManager interface {
 
 // DefaultEventAPIManager represents default implementation of Event API Manager
 type DefaultEventAPIManager struct {
-	requester utils.Requester
+	requester pkgUtils.Requester
 }
 
 // NewEventAPIManager creates and returns a new instance of DefaultEventAPIManager.
-func NewEventAPIManager(sdkKey string, requester utils.Requester) *DefaultEventAPIManager {
+func NewEventAPIManager(sdkKey string, requester pkgUtils.Requester) *DefaultEventAPIManager {
 	if requester == nil {
-		requester = utils.NewHTTPRequester(logging.GetLogger(sdkKey, "EventAPIManager"))
+		requester = pkgUtils.NewHTTPRequester(logging.GetLogger(sdkKey, "EventAPIManager"), pkgUtils.Timeout(utils.DefaultOdpEventTimeout))
 	}
 	return &DefaultEventAPIManager{requester: requester}
 }
 
-// SendODPEvents sends events to ODP's RESTful API
-func (s *DefaultEventAPIManager) SendODPEvents(config Config, events []Event) (canRetry bool, err error) {
+// SendOdpEvents sends events to ODP's RESTful API
+func (s *DefaultEventAPIManager) SendOdpEvents(apiKey, apiHost string, events []Event) (canRetry bool, err error) {
 
 	// Creating request
-	apiEndpoint, err := url.ParseRequestURI(fmt.Sprintf("%s%s", config.GetAPIHost(), eventsAPIEndpointPath))
+	apiEndpoint, err := url.ParseRequestURI(fmt.Sprintf("%s%s", apiHost, utils.ODPEventsAPIEndpointPath))
 	if err != nil {
-		return false, fmt.Errorf(odpEventFailed, err.Error())
+		return false, fmt.Errorf(utils.OdpEventFailed, err.Error())
 	}
-	headers := []utils.Header{{Name: utils.HeaderContentType, Value: utils.ContentTypeJSON}, {Name: ODPAPIKeyHeader, Value: config.GetAPIKey()}}
+	headers := []pkgUtils.Header{{Name: pkgUtils.HeaderContentType, Value: pkgUtils.ContentTypeJSON}, {Name: utils.OdpAPIKeyHeader, Value: apiKey}}
 
 	_, _, status, err := s.requester.Post(apiEndpoint.String(), events, headers...)
 	// handling edge cases
@@ -71,7 +71,7 @@ func (s *DefaultEventAPIManager) SendODPEvents(config Config, events []Event) (c
 		return false, nil
 	}
 	if status >= 400 && status < 500 { // no retry (client error)
-		return false, fmt.Errorf(odpEventFailed, err.Error())
+		return false, fmt.Errorf(utils.OdpEventFailed, err.Error())
 	}
-	return true, fmt.Errorf(odpEventFailed, err.Error())
+	return true, fmt.Errorf(utils.OdpEventFailed, err.Error())
 }

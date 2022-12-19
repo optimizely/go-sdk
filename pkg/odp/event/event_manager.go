@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package odp //
-package odp
+// Package event //
+package event
 
 import (
 	"context"
@@ -27,27 +27,9 @@ import (
 	guuid "github.com/google/uuid"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/utils"
+	"github.com/optimizely/go-sdk/pkg/odp/utils"
 	"golang.org/x/sync/semaphore"
 )
-
-// ODPEventType holds the value for the odp event type
-const ODPEventType = "fullstack"
-
-// ODPFSUserIDKey holds the key for the odp fullstack userID
-const ODPFSUserIDKey = "fs_user_id"
-
-// ODPActionIdentified holds the value for identified action type
-const ODPActionIdentified = "identified"
-
-// DefaultBatchSize holds the default value for the batch size
-const DefaultBatchSize = 10
-
-// DefaultEventQueueSize holds the default value for the event queue size
-const DefaultEventQueueSize = 10000
-
-// DefaultEventFlushInterval holds the default value for the event flush interval
-const DefaultEventFlushInterval = 1 * time.Second
 
 // EMOptionFunc are the EventManager options that give you the ability to add one more more options before the event manager is initialized.
 type EMOptionFunc func(em *BatchEventManager)
@@ -55,46 +37,55 @@ type EMOptionFunc func(em *BatchEventManager)
 const maxFlushWorkers = 1
 const maxRetries = 3
 
-// EventManager represents the event manager.
-type EventManager interface {
-	Start(ctx context.Context)
-	IdentifyUser(userID string) bool
-	ProcessEvent(odpEvent Event) bool
+// Manager represents the event manager.
+type Manager interface {
+	Start(ctx context.Context, apiKey, apiHost string)
+	IdentifyUser(apiKey, apiHost, userID string)
+	ProcessEvent(apiKey, apiHost string, odpEvent Event) bool
+	FlushEvents(apiKey, apiHost string)
 }
 
 // BatchEventManager represents default implementation of BatchEventManager
 type BatchEventManager struct {
-	sdkKey          string
-	maxQueueSize    int           // max size of the queue before flush
-	flushInterval   time.Duration // in milliseconds
-	batchSize       int
-	eventQueue      event.Queue
-	flushLock       sync.Mutex
-	ticker          *time.Ticker
-	eventAPIManager EventAPIManager
-	odpConfig       Config
-	processing      *semaphore.Weighted
-	logger          logging.OptimizelyLogProducer
+	sdkKey        string
+	maxQueueSize  int           // max size of the queue before flush
+	flushInterval time.Duration // in milliseconds
+	batchSize     int
+	eventQueue    event.Queue
+	flushLock     sync.Mutex
+	ticker        *time.Ticker
+	apiManager    APIManager
+	processing    *semaphore.Weighted
+	logger        logging.OptimizelyLogProducer
 }
 
 // WithBatchSize sets the batch size as a config option to be passed into the NewBatchEventManager method
+// default value is 10
 func WithBatchSize(bsize int) EMOptionFunc {
 	return func(bm *BatchEventManager) {
-		bm.batchSize = bsize
+		if bsize > 0 {
+			bm.batchSize = bsize
+		}
 	}
 }
 
 // WithQueueSize sets the queue size as a config option to be passed into the NewBatchEventManager method
+// default value is 10000
 func WithQueueSize(qsize int) EMOptionFunc {
 	return func(bm *BatchEventManager) {
-		bm.maxQueueSize = qsize
+		if qsize > 0 {
+			bm.maxQueueSize = qsize
+		}
 	}
 }
 
 // WithFlushInterval sets the flush interval as a config option to be passed into the NewBatchEventManager method
+// default value is 1 second
 func WithFlushInterval(flushInterval time.Duration) EMOptionFunc {
 	return func(bm *BatchEventManager) {
-		bm.flushInterval = flushInterval
+		if flushInterval > 0 {
+			bm.flushInterval = flushInterval
+		}
 	}
 }
 
@@ -112,23 +103,22 @@ func WithSDKKey(sdkKey string) EMOptionFunc {
 	}
 }
 
-// WithEventAPIManager sets eventAPIManager as a config option to be passed into the NewBatchEventManager method
-func WithEventAPIManager(eventAPIManager EventAPIManager) EMOptionFunc {
+// WithAPIManager sets apiManager as a config option to be passed into the NewBatchEventManager method
+func WithAPIManager(apiManager APIManager) EMOptionFunc {
 	return func(bm *BatchEventManager) {
-		bm.eventAPIManager = eventAPIManager
-	}
-}
-
-// WithConfig sets odpConfig option to be passed into the NewBatchEventManager method
-func WithConfig(odpConfig Config) EMOptionFunc {
-	return func(bm *BatchEventManager) {
-		bm.odpConfig = odpConfig
+		bm.apiManager = apiManager
 	}
 }
 
 // NewBatchEventManager returns a new instance of BatchEventManager with options
 func NewBatchEventManager(options ...EMOptionFunc) *BatchEventManager {
-	bm := &BatchEventManager{processing: semaphore.NewWeighted(int64(maxFlushWorkers))}
+	// Setting default values
+	bm := &BatchEventManager{
+		processing:    semaphore.NewWeighted(int64(maxFlushWorkers)),
+		maxQueueSize:  utils.DefaultEventQueueSize,
+		flushInterval: utils.DefaultEventFlushInterval,
+		batchSize:     utils.DefaultBatchSize,
+	}
 
 	for _, opt := range options {
 		opt(bm)
@@ -136,70 +126,60 @@ func NewBatchEventManager(options ...EMOptionFunc) *BatchEventManager {
 
 	bm.logger = logging.GetLogger(bm.sdkKey, "BatchEventManager")
 
-	if bm.maxQueueSize == 0 {
-		bm.maxQueueSize = DefaultEventQueueSize
-	}
-
-	if bm.flushInterval == 0 {
-		bm.flushInterval = DefaultEventFlushInterval
-	}
-
-	if bm.batchSize == 0 {
-		bm.batchSize = DefaultBatchSize
-	}
-
 	if bm.batchSize > bm.maxQueueSize {
 		bm.logger.Warning(
 			fmt.Sprintf("Batch size %d is larger than queue size %d.  Setting to defaults",
 				bm.batchSize, bm.maxQueueSize))
 
-		bm.batchSize = DefaultBatchSize
-		bm.maxQueueSize = DefaultEventQueueSize
+		bm.batchSize = utils.DefaultBatchSize
+		bm.maxQueueSize = utils.DefaultEventQueueSize
 	}
 
 	if bm.eventQueue == nil {
 		bm.eventQueue = event.NewInMemoryQueueWithLogger(bm.maxQueueSize, bm.logger)
 	}
 
-	if bm.eventAPIManager == nil {
-		bm.eventAPIManager = NewEventAPIManager(bm.sdkKey, nil)
+	if bm.apiManager == nil {
+		bm.apiManager = NewEventAPIManager(bm.sdkKey, nil)
 	}
 
 	return bm
 }
 
 // Start does not do any initialization, just starts the ticker
-func (bm *BatchEventManager) Start(ctx context.Context) {
-	if !bm.IsOdpServiceIntegrated() {
+func (bm *BatchEventManager) Start(ctx context.Context, apiKey, apiHost string) {
+	if !bm.IsOdpServiceIntegrated(apiKey, apiHost) {
 		return
 	}
-	bm.startTicker(ctx)
+	bm.startTicker(ctx, apiKey, apiHost)
 }
 
 // IdentifyUser associates a full-stack userid with an established VUID
-func (bm *BatchEventManager) IdentifyUser(userID string) bool {
-	if !bm.IsOdpServiceIntegrated() {
-		return false
+func (bm *BatchEventManager) IdentifyUser(apiKey, apiHost, userID string) {
+	if !bm.IsOdpServiceIntegrated(apiKey, apiHost) {
+		bm.logger.Debug(utils.IdentityOdpNotIntegrated)
+		return
 	}
-	identifiers := map[string]string{ODPFSUserIDKey: userID}
+	identifiers := map[string]string{utils.OdpFSUserIDKey: userID}
 	odpEvent := Event{
-		Type:        ODPEventType,
-		Action:      ODPActionIdentified,
+		Type:        utils.OdpEventType,
+		Action:      utils.OdpActionIdentified,
 		Identifiers: identifiers,
 	}
-	return bm.ProcessEvent(odpEvent)
+	bm.ProcessEvent(apiKey, apiHost, odpEvent)
 }
 
 // ProcessEvent takes the given odp event and queues it up to be dispatched.
 // A dispatch happens when we flush the events, which can happen on a set interval or
 // when the specified batch size is reached.
-func (bm *BatchEventManager) ProcessEvent(odpEvent Event) bool {
-	if !bm.IsOdpServiceIntegrated() {
+func (bm *BatchEventManager) ProcessEvent(apiKey, apiHost string, odpEvent Event) bool {
+	if !bm.IsOdpServiceIntegrated(apiKey, apiHost) {
+		bm.logger.Debug(utils.OdpNotIntegrated)
 		return false
 	}
 
-	if !utils.IsValidODPData(odpEvent.Data) {
-		bm.logger.Error(odpInvalidData, errors.New("invalid event data"))
+	if !utils.IsValidOdpData(odpEvent.Data) {
+		bm.logger.Error(utils.OdpInvalidData, errors.New("invalid event data"))
 		return false
 	}
 
@@ -220,7 +200,7 @@ func (bm *BatchEventManager) ProcessEvent(odpEvent Event) bool {
 		// we just want to start one go routine when the batch size is met.
 		bm.logger.Debug("batch size reached.  Flushing routine being called")
 		go func() {
-			bm.flushEvents()
+			bm.FlushEvents(apiKey, apiHost)
 			bm.processing.Release(1)
 		}()
 	}
@@ -229,7 +209,7 @@ func (bm *BatchEventManager) ProcessEvent(odpEvent Event) bool {
 }
 
 // StartTicker starts new ticker for flushing events
-func (bm *BatchEventManager) startTicker(ctx context.Context) {
+func (bm *BatchEventManager) startTicker(ctx context.Context, apiKey, apiHost string) {
 	// Make sure multiple go-routines dont reinitialize ticker
 	bm.flushLock.Lock()
 	if bm.ticker != nil {
@@ -244,17 +224,17 @@ func (bm *BatchEventManager) startTicker(ctx context.Context) {
 	for {
 		select {
 		case <-bm.ticker.C:
-			bm.flushEvents()
+			bm.FlushEvents(apiKey, apiHost)
 		case <-ctx.Done():
 			bm.logger.Debug("BatchEventManager stopped, flushing events.")
-			bm.flushEvents()
+			bm.FlushEvents(apiKey, apiHost)
 			return
 		}
 	}
 }
 
-// flushEvents flushes events in queue
-func (bm *BatchEventManager) flushEvents() {
+// FlushEvents flushes events in queue
+func (bm *BatchEventManager) FlushEvents(apiKey, apiHost string) {
 	// we flush when queue size is reached.
 	// however, if there is a ticker cycle already processing, we should wait
 	bm.flushLock.Lock()
@@ -297,7 +277,7 @@ func (bm *BatchEventManager) flushEvents() {
 			// Retry till maxRetries reached
 			for retryCount < maxRetries {
 				failedToSend = true
-				shouldRetry, err := bm.eventAPIManager.SendODPEvents(bm.odpConfig, batchEvent)
+				shouldRetry, err := bm.apiManager.SendOdpEvents(apiKey, apiHost, batchEvent)
 				// Remove events from queue if dispatch failed and retrying is not suggested
 				if !shouldRetry {
 					bm.eventQueue.Remove(batchEventCount)
@@ -318,8 +298,8 @@ func (bm *BatchEventManager) flushEvents() {
 }
 
 // IsOdpServiceIntegrated returns true if odp service is integrated
-func (bm *BatchEventManager) IsOdpServiceIntegrated() bool {
-	if bm.odpConfig == nil || !bm.odpConfig.IsOdpServiceIntegrated() {
+func (bm *BatchEventManager) IsOdpServiceIntegrated(apiKey, apiHost string) bool {
+	if apiKey == "" || apiHost == "" {
 		// ensure empty queue
 		bm.eventQueue.Remove(bm.eventQueue.Size())
 		return false

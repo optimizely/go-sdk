@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package odp //
-package odp
+// Package cache //
+package cache
 
 import (
 	"container/list"
@@ -32,22 +32,22 @@ type Cache interface {
 
 type cacheElement struct {
 	data   interface{}
-	time   int64
+	time   time.Time
 	keyPtr *list.Element
 }
 
 // LRUCache a Least Recently Used in-memory cache
 type LRUCache struct {
-	queue         *list.List
-	items         map[string]*cacheElement
-	maxSize       int
-	timeoutInSecs int64
-	lock          *sync.RWMutex
+	queue   *list.List
+	items   map[string]*cacheElement
+	maxSize int
+	timeout time.Duration
+	lock    sync.RWMutex
 }
 
 // NewLRUCache returns a new instance of Least Recently Used in-memory cache
-func NewLRUCache(size int, timeoutInSecs int64) *LRUCache {
-	return &LRUCache{queue: list.New(), items: make(map[string]*cacheElement), maxSize: size, timeoutInSecs: timeoutInSecs, lock: new(sync.RWMutex)}
+func NewLRUCache(size int, timeout time.Duration) *LRUCache {
+	return &LRUCache{queue: list.New(), items: make(map[string]*cacheElement), maxSize: size, timeout: timeout}
 }
 
 // Save stores a new element into the cache
@@ -65,7 +65,7 @@ func (l *LRUCache) Save(key string, value interface{}) {
 			delete(l.items, back.Value.(string))
 		}
 		// push the new object to the front of the queue
-		l.items[key] = &cacheElement{data: value, keyPtr: l.queue.PushFront(key), time: time.Now().Unix()}
+		l.items[key] = &cacheElement{data: value, keyPtr: l.queue.PushFront(key), time: time.Now()}
 	} else {
 		item.data = value
 		l.items[key] = item
@@ -103,10 +103,10 @@ func (l *LRUCache) Reset() {
 }
 
 func (l *LRUCache) isValid(e *cacheElement) bool {
-	if l.timeoutInSecs <= 0 {
+	if l.timeout <= 0 {
 		return true
 	}
-	currenttime := time.Now().Unix()
-	elapsedtime := currenttime - e.time
-	return l.timeoutInSecs > elapsedtime
+	currenttime := time.Now()
+	elapsedtime := currenttime.Sub(e.time)
+	return l.timeout > elapsedtime
 }

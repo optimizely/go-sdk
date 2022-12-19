@@ -24,6 +24,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/decide"
 	pkgDecision "github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
+	pkgOdpSegment "github.com/optimizely/go-sdk/pkg/odp/segment"
 )
 
 // OptimizelyUserContext defines user contexts that the SDK will use to make decisions for.
@@ -94,6 +95,19 @@ func (o *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
 		o.Attributes = make(map[string]interface{})
 	}
 	o.Attributes[key] = value
+}
+
+// FetchQualifiedSegments fetches all qualified segments for the user context.
+func (o *OptimizelyUserContext) FetchQualifiedSegments(options []pkgOdpSegment.OptimizelySegmentOption) (success bool) {
+	o.optimizely.fetchQualifiedSegments(o, options, func(result bool) {
+		success = result
+	})
+	return
+}
+
+// FetchQualifiedSegmentsAsync fetches all qualified segments aysnchronously for the user context.
+func (o *OptimizelyUserContext) FetchQualifiedSegmentsAsync(options []pkgOdpSegment.OptimizelySegmentOption, callback func(success bool)) {
+	go o.optimizely.fetchQualifiedSegments(o, options, callback)
 }
 
 // SetQualifiedSegments clears and adds qualified segments for Optimizely user context
