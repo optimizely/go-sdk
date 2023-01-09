@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2022, Optimizely, Inc. and contributors                        *
+ * Copyright 2022-2023, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -59,16 +59,6 @@ type BatchEventManager struct {
 	logger        logging.OptimizelyLogProducer
 }
 
-// WithBatchSize sets the batch size as a config option to be passed into the NewBatchEventManager method
-// default value is 10
-func WithBatchSize(bsize int) EMOptionFunc {
-	return func(bm *BatchEventManager) {
-		if bsize > 0 {
-			bm.batchSize = bsize
-		}
-	}
-}
-
 // WithQueueSize sets the queue size as a config option to be passed into the NewBatchEventManager method
 // default value is 10000
 func WithQueueSize(qsize int) EMOptionFunc {
@@ -83,7 +73,11 @@ func WithQueueSize(qsize int) EMOptionFunc {
 // default value is 1 second
 func WithFlushInterval(flushInterval time.Duration) EMOptionFunc {
 	return func(bm *BatchEventManager) {
-		if flushInterval > 0 {
+		if flushInterval >= 0 {
+			// if flush interval is zero, send events immediately by setting batchSize to 1
+			if flushInterval == 0 {
+				bm.batchSize = 1
+			}
 			bm.flushInterval = flushInterval
 		}
 	}
@@ -210,6 +204,10 @@ func (bm *BatchEventManager) ProcessEvent(apiKey, apiHost string, odpEvent Event
 
 // StartTicker starts new ticker for flushing events
 func (bm *BatchEventManager) startTicker(ctx context.Context, apiKey, apiHost string) {
+	// Do not start ticker if flushInterval is 0
+	if bm.flushInterval <= 0 {
+		return
+	}
 	// Make sure multiple go-routines dont reinitialize ticker
 	bm.flushLock.Lock()
 	if bm.ticker != nil {
