@@ -40,6 +40,7 @@ const maxRetries = 3
 
 // Manager represents the event manager.
 type Manager interface {
+	// odpConfig is required here since it can be updated anytime and ticker needs to be aware of latest changes
 	Start(ctx context.Context, odpConfig config.Config)
 	IdentifyUser(apiKey, apiHost, userID string)
 	ProcessEvent(apiKey, apiHost string, odpEvent Event) bool
@@ -142,6 +143,7 @@ func NewBatchEventManager(options ...EMOptionFunc) *BatchEventManager {
 }
 
 // Start does not do any initialization, just starts the ticker
+// odpConfig is required here since it can be updated anytime and ticker needs to be aware of latest changes
 func (bm *BatchEventManager) Start(ctx context.Context, odpConfig config.Config) {
 	if !bm.IsOdpServiceIntegrated(odpConfig.GetAPIKey(), odpConfig.GetAPIHost()) {
 		return
