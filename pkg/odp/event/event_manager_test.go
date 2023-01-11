@@ -27,6 +27,7 @@ import (
 
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/pkg/odp/config"
 	"github.com/optimizely/go-sdk/pkg/odp/utils"
 	pkgUtils "github.com/optimizely/go-sdk/pkg/utils"
 	"github.com/stretchr/testify/suite"
@@ -90,67 +91,61 @@ func (e *EventManagerTestSuite) TestEventManagerWithoutOptions() {
 func (e *EventManagerTestSuite) TestTickerNotStartedIfODPNotIntegrated() {
 	eg := newExecutionContext()
 	eg.Go(func(ctx context.Context) {
-		e.eventManager.Start(ctx, "", "")
+		e.eventManager.Start(ctx, config.NewConfig("", "", nil))
 	})
 	eg.TerminateAndWait()
 	e.Nil(e.eventManager.ticker)
-}
-
-func (e *EventManagerTestSuite) TestPreviousTickerStoppedIfODPNotIntegratedInNewConfig() {
-	eg := newExecutionContext()
-	eg.Go(func(ctx context.Context) {
-		e.eventManager.Start(ctx, "a", "b")
-	})
-	time.Sleep(50 * time.Millisecond)
-	e.NotNil(e.eventManager.ticker)
-	e.NotNil(e.eventManager.tickerCloseChannel)
-
-	eg.Go(func(ctx context.Context) {
-		e.eventManager.Start(ctx, "", "")
-	})
-	time.Sleep(50 * time.Millisecond)
-	e.Nil(e.eventManager.ticker)
-	e.Nil(e.eventManager.tickerCloseChannel)
 }
 
 func (e *EventManagerTestSuite) TestTickerStartedIfODPIntegrated() {
 	eg := newExecutionContext()
 	eg.Go(func(ctx context.Context) {
-		e.eventManager.Start(ctx, "a", "b")
+		e.eventManager.Start(ctx, config.NewConfig("a", "b", nil))
 	})
 	eg.TerminateAndWait()
 	e.NotNil(e.eventManager.ticker)
 }
 
-func (e *EventManagerTestSuite) TestTickerIsStoppedAndReinitializedIfStartIsCalledAgain() {
+func (e *EventManagerTestSuite) TestTickerIsNotReinitializedIfStartIsCalledAgain() {
 	eg := newExecutionContext()
 	eg.Go(func(ctx context.Context) {
-		e.eventManager.Start(ctx, "a", "b")
+		e.eventManager.Start(ctx, config.NewConfig("a", "b", nil))
 	})
 	eg.TerminateAndWait()
 	e.NotNil(e.eventManager.ticker)
 	ticker := e.eventManager.ticker
 
 	eg.Go(func(ctx context.Context) {
-		e.eventManager.Start(ctx, "b", "c")
+		e.eventManager.Start(ctx, config.NewConfig("b", "c", nil))
 	})
 	eg.TerminateAndWait()
-	e.NotEqual(ticker, e.eventManager.ticker)
+	e.Equal(ticker, e.eventManager.ticker)
 }
 
-func (e *EventManagerTestSuite) TestStopTicker() {
+func (e *EventManagerTestSuite) TestTickerWhenODPConfigIsUpdated() {
+	flushInterval := 100 * time.Millisecond
+	em := NewBatchEventManager(WithFlushInterval(flushInterval),
+		WithAPIManager(e.eventAPIManager))
+	e.eventAPIManager.wg.Add(1)
+	em.ProcessEvent("a", "b", Event{})
 	eg := newExecutionContext()
+	odpConfig := config.NewConfig("a", "b", nil)
 	eg.Go(func(ctx context.Context) {
-		e.eventManager.Start(ctx, "a", "b")
+		em.Start(ctx, odpConfig)
 	})
-	// Wait for manager to start
-	time.Sleep(50 * time.Millisecond)
-	e.eventManager.stopTicker()
-	// Wait for channel to stop
-	time.Sleep(50 * time.Millisecond)
-	// Test if channel was closed and ticker was stopped
-	e.Nil(e.eventManager.ticker)
-	e.Nil(e.eventManager.tickerCloseChannel)
+
+	// Check events fired with original config using ticker
+	e.eventAPIManager.wg.Wait()
+	e.Equal("a", e.eventAPIManager.apiKey)
+	e.Equal("b", e.eventAPIManager.apiHost)
+
+	// Check events fired with updated config using ticker
+	e.eventAPIManager.wg.Add(1)
+	odpConfig.Update("c", "d", nil)
+	em.ProcessEvent("a", "b", Event{})
+	e.eventAPIManager.wg.Wait()
+	e.Equal("c", e.eventAPIManager.apiKey)
+	e.Equal("d", e.eventAPIManager.apiHost)
 }
 
 func (e *EventManagerTestSuite) TestEventsDispatchedWhenContextIsTerminated() {
@@ -159,7 +154,7 @@ func (e *EventManagerTestSuite) TestEventsDispatchedWhenContextIsTerminated() {
 	e.eventAPIManager.wg.Add(1)
 	e.Equal(1, e.eventManager.eventQueue.Size())
 	eg.Go(func(ctx context.Context) {
-		e.eventManager.Start(ctx, "a", "b")
+		e.eventManager.Start(ctx, config.NewConfig("a", "b", nil))
 	})
 	eg.TerminateAndWait()
 	e.NotNil(e.eventManager.ticker)
@@ -174,7 +169,7 @@ func (e *EventManagerTestSuite) TestEventsDispatchedWhenFlushIntervalReached() {
 	e.eventAPIManager.wg.Add(1)
 	e.Equal(1, e.eventManager.eventQueue.Size())
 	eg.Go(func(ctx context.Context) {
-		e.eventManager.Start(ctx, "a", "b")
+		e.eventManager.Start(ctx, config.NewConfig("a", "b", nil))
 	})
 	e.eventAPIManager.wg.Wait()
 	eg.TerminateAndWait()
@@ -393,7 +388,7 @@ func (e *EventManagerTestSuite) TestEventManagerAsyncBehaviour() {
 	}
 	for i := 0; i < iterations; i++ {
 		eg.Go(func(ctx context.Context) {
-			eventManager.startTicker(ctx, "-1", "-1")
+			eventManager.startTicker(ctx, config.NewConfig("-1", "-1", nil))
 		})
 		go callAllMethods(fmt.Sprintf("%d", i))
 	}
@@ -504,9 +499,12 @@ type MockEventAPIManager struct {
 	timesSendEventsCalled    int     // To assert the number of times SendOdpEvents was called
 	eventsSent               []Event // To assert number of events successfully sent
 	shouldNotInformWaitgroup bool    // Should not call done to inform waitgroup
+	apiKey, apiHost          string
 }
 
 func (m *MockEventAPIManager) SendOdpEvents(apiKey, apiHost string, events []Event) (canRetry bool, err error) {
+	m.apiKey = apiKey
+	m.apiHost = apiHost
 	if len(m.retryResponses) > m.timesSendEventsCalled {
 		canRetry = m.retryResponses[m.timesSendEventsCalled]
 	}

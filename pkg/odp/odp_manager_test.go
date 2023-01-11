@@ -37,8 +37,8 @@ type MockEventManager struct {
 	event.Manager
 }
 
-func (m *MockEventManager) Start(ctx context.Context, apiKey, apiHost string) {
-	m.Called(ctx, apiKey, apiHost)
+func (m *MockEventManager) Start(ctx context.Context, odpConfig config.Config) {
+	m.Called(ctx, odpConfig)
 }
 
 func (m *MockEventManager) IdentifyUser(apiKey, apiHost, userID string) {

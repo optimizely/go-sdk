@@ -27,6 +27,7 @@ import (
 	guuid "github.com/google/uuid"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/pkg/odp/config"
 	"github.com/optimizely/go-sdk/pkg/odp/utils"
 	"golang.org/x/sync/semaphore"
 )
@@ -39,7 +40,7 @@ const maxRetries = 3
 
 // Manager represents the event manager.
 type Manager interface {
-	Start(ctx context.Context, apiKey, apiHost string)
+	Start(ctx context.Context, odpConfig config.Config)
 	IdentifyUser(apiKey, apiHost, userID string)
 	ProcessEvent(apiKey, apiHost string, odpEvent Event) bool
 	FlushEvents(apiKey, apiHost string)
@@ -47,17 +48,16 @@ type Manager interface {
 
 // BatchEventManager represents default implementation of BatchEventManager
 type BatchEventManager struct {
-	sdkKey             string
-	maxQueueSize       int           // max size of the queue before flush
-	flushInterval      time.Duration // in milliseconds
-	batchSize          int
-	eventQueue         event.Queue
-	flushLock          sync.Mutex
-	ticker             *time.Ticker
-	tickerCloseChannel chan bool
-	apiManager         APIManager
-	processing         *semaphore.Weighted
-	logger             logging.OptimizelyLogProducer
+	sdkKey        string
+	maxQueueSize  int           // max size of the queue before flush
+	flushInterval time.Duration // in milliseconds
+	batchSize     int
+	eventQueue    event.Queue
+	flushLock     sync.Mutex
+	ticker        *time.Ticker
+	apiManager    APIManager
+	processing    *semaphore.Weighted
+	logger        logging.OptimizelyLogProducer
 }
 
 // WithQueueSize sets the queue size as a config option to be passed into the NewBatchEventManager method
@@ -142,14 +142,11 @@ func NewBatchEventManager(options ...EMOptionFunc) *BatchEventManager {
 }
 
 // Start does not do any initialization, just starts the ticker
-func (bm *BatchEventManager) Start(ctx context.Context, apiKey, apiHost string) {
-	// Stop any prexisting ticker with old odp config
-	bm.stopTicker()
-
-	if !bm.IsOdpServiceIntegrated(apiKey, apiHost) {
+func (bm *BatchEventManager) Start(ctx context.Context, odpConfig config.Config) {
+	if !bm.IsOdpServiceIntegrated(odpConfig.GetAPIKey(), odpConfig.GetAPIHost()) {
 		return
 	}
-	bm.startTicker(ctx, apiKey, apiHost)
+	bm.startTicker(ctx, odpConfig)
 }
 
 // IdentifyUser associates a full-stack userid with an established VUID
@@ -207,7 +204,7 @@ func (bm *BatchEventManager) ProcessEvent(apiKey, apiHost string, odpEvent Event
 }
 
 // StartTicker starts new ticker for flushing events
-func (bm *BatchEventManager) startTicker(ctx context.Context, apiKey, apiHost string) {
+func (bm *BatchEventManager) startTicker(ctx context.Context, odpConfig config.Config) {
 	// Do not start ticker if flushInterval is 0
 	if bm.flushInterval <= 0 {
 		return
@@ -220,39 +217,18 @@ func (bm *BatchEventManager) startTicker(ctx context.Context, apiKey, apiHost st
 	}
 
 	bm.logger.Info("Batch event manager started")
-	bm.tickerCloseChannel = make(chan bool, 1)
 	bm.ticker = time.NewTicker(bm.flushInterval)
 	bm.flushLock.Unlock()
 
 	for {
 		select {
 		case <-bm.ticker.C:
-			bm.FlushEvents(apiKey, apiHost)
+			bm.FlushEvents(odpConfig.GetAPIKey(), odpConfig.GetAPIHost())
 		case <-ctx.Done():
 			bm.logger.Debug("BatchEventManager stopped, flushing events.")
-			bm.FlushEvents(apiKey, apiHost)
-			return
-		case <-bm.tickerCloseChannel:
-			// This is needed in case odp config is changed and we need the go-routine to stop
-			// along with the ticker
-			bm.tickerCloseChannel = nil
+			bm.FlushEvents(odpConfig.GetAPIKey(), odpConfig.GetAPIHost())
 			return
 		}
-	}
-}
-
-// stopTicker stops the current ticker from flushing events
-func (bm *BatchEventManager) stopTicker() {
-	bm.flushLock.Lock()
-	defer bm.flushLock.Unlock()
-	// Stop the active ticker
-	if bm.ticker != nil {
-		bm.ticker.Stop()
-		bm.ticker = nil
-	}
-	// Close channel and return from the active go routine
-	if bm.tickerCloseChannel != nil {
-		close(bm.tickerCloseChannel)
 	}
 }
 
