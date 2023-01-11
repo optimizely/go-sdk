@@ -96,6 +96,23 @@ func (e *EventManagerTestSuite) TestTickerNotStartedIfODPNotIntegrated() {
 	e.Nil(e.eventManager.ticker)
 }
 
+func (e *EventManagerTestSuite) TestPreviousTickerStoppedIfODPNotIntegratedInNewConfig() {
+	eg := newExecutionContext()
+	eg.Go(func(ctx context.Context) {
+		e.eventManager.Start(ctx, "a", "b")
+	})
+	time.Sleep(50 * time.Millisecond)
+	e.NotNil(e.eventManager.ticker)
+	e.NotNil(e.eventManager.tickerCloseChannel)
+
+	eg.Go(func(ctx context.Context) {
+		e.eventManager.Start(ctx, "", "")
+	})
+	time.Sleep(50 * time.Millisecond)
+	e.Nil(e.eventManager.ticker)
+	e.Nil(e.eventManager.tickerCloseChannel)
+}
+
 func (e *EventManagerTestSuite) TestTickerStartedIfODPIntegrated() {
 	eg := newExecutionContext()
 	eg.Go(func(ctx context.Context) {
@@ -105,7 +122,7 @@ func (e *EventManagerTestSuite) TestTickerStartedIfODPIntegrated() {
 	e.NotNil(e.eventManager.ticker)
 }
 
-func (e *EventManagerTestSuite) TestTickerIsNotReinitializedIfStartIsCalledAgain() {
+func (e *EventManagerTestSuite) TestTickerIsStoppedAndReinitializedIfStartIsCalledAgain() {
 	eg := newExecutionContext()
 	eg.Go(func(ctx context.Context) {
 		e.eventManager.Start(ctx, "a", "b")
@@ -118,7 +135,22 @@ func (e *EventManagerTestSuite) TestTickerIsNotReinitializedIfStartIsCalledAgain
 		e.eventManager.Start(ctx, "b", "c")
 	})
 	eg.TerminateAndWait()
-	e.Equal(ticker, e.eventManager.ticker)
+	e.NotEqual(ticker, e.eventManager.ticker)
+}
+
+func (e *EventManagerTestSuite) TestStopTicker() {
+	eg := newExecutionContext()
+	eg.Go(func(ctx context.Context) {
+		e.eventManager.Start(ctx, "a", "b")
+	})
+	// Wait for manager to start
+	time.Sleep(50 * time.Millisecond)
+	e.eventManager.stopTicker()
+	// Wait for channel to stop
+	time.Sleep(50 * time.Millisecond)
+	// Test if channel was closed and ticker was stopped
+	e.Nil(e.eventManager.ticker)
+	e.Nil(e.eventManager.tickerCloseChannel)
 }
 
 func (e *EventManagerTestSuite) TestEventsDispatchedWhenContextIsTerminated() {

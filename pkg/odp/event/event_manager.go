@@ -47,16 +47,17 @@ type Manager interface {
 
 // BatchEventManager represents default implementation of BatchEventManager
 type BatchEventManager struct {
-	sdkKey        string
-	maxQueueSize  int           // max size of the queue before flush
-	flushInterval time.Duration // in milliseconds
-	batchSize     int
-	eventQueue    event.Queue
-	flushLock     sync.Mutex
-	ticker        *time.Ticker
-	apiManager    APIManager
-	processing    *semaphore.Weighted
-	logger        logging.OptimizelyLogProducer
+	sdkKey             string
+	maxQueueSize       int           // max size of the queue before flush
+	flushInterval      time.Duration // in milliseconds
+	batchSize          int
+	eventQueue         event.Queue
+	flushLock          sync.Mutex
+	ticker             *time.Ticker
+	tickerCloseChannel chan bool
+	apiManager         APIManager
+	processing         *semaphore.Weighted
+	logger             logging.OptimizelyLogProducer
 }
 
 // WithQueueSize sets the queue size as a config option to be passed into the NewBatchEventManager method
@@ -142,6 +143,9 @@ func NewBatchEventManager(options ...EMOptionFunc) *BatchEventManager {
 
 // Start does not do any initialization, just starts the ticker
 func (bm *BatchEventManager) Start(ctx context.Context, apiKey, apiHost string) {
+	// Stop any prexisting ticker with old odp config
+	bm.stopTicker()
+
 	if !bm.IsOdpServiceIntegrated(apiKey, apiHost) {
 		return
 	}
@@ -216,6 +220,7 @@ func (bm *BatchEventManager) startTicker(ctx context.Context, apiKey, apiHost st
 	}
 
 	bm.logger.Info("Batch event manager started")
+	bm.tickerCloseChannel = make(chan bool, 1)
 	bm.ticker = time.NewTicker(bm.flushInterval)
 	bm.flushLock.Unlock()
 
@@ -227,7 +232,27 @@ func (bm *BatchEventManager) startTicker(ctx context.Context, apiKey, apiHost st
 			bm.logger.Debug("BatchEventManager stopped, flushing events.")
 			bm.FlushEvents(apiKey, apiHost)
 			return
+		case <-bm.tickerCloseChannel:
+			// This is needed in case odp config is changed and we need the go-routine to stop
+			// along with the ticker
+			bm.tickerCloseChannel = nil
+			return
 		}
+	}
+}
+
+// stopTicker stops the current ticker from flushing events
+func (bm *BatchEventManager) stopTicker() {
+	bm.flushLock.Lock()
+	defer bm.flushLock.Unlock()
+	// Stop the active ticker
+	if bm.ticker != nil {
+		bm.ticker.Stop()
+		bm.ticker = nil
+	}
+	// Close channel and return from the active go routine
+	if bm.tickerCloseChannel != nil {
+		close(bm.tickerCloseChannel)
 	}
 }
 
