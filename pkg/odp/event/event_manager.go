@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2022, Optimizely, Inc. and contributors                        *
+ * Copyright 2022-2023, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -27,6 +27,7 @@ import (
 	guuid "github.com/google/uuid"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/pkg/odp/config"
 	"github.com/optimizely/go-sdk/pkg/odp/utils"
 	"golang.org/x/sync/semaphore"
 )
@@ -39,7 +40,8 @@ const maxRetries = 3
 
 // Manager represents the event manager.
 type Manager interface {
-	Start(ctx context.Context, apiKey, apiHost string)
+	// odpConfig is required here since it can be updated anytime and ticker needs to be aware of latest changes
+	Start(ctx context.Context, odpConfig config.Config)
 	IdentifyUser(apiKey, apiHost, userID string)
 	ProcessEvent(apiKey, apiHost string, odpEvent Event) bool
 	FlushEvents(apiKey, apiHost string)
@@ -59,16 +61,6 @@ type BatchEventManager struct {
 	logger        logging.OptimizelyLogProducer
 }
 
-// WithBatchSize sets the batch size as a config option to be passed into the NewBatchEventManager method
-// default value is 10
-func WithBatchSize(bsize int) EMOptionFunc {
-	return func(bm *BatchEventManager) {
-		if bsize > 0 {
-			bm.batchSize = bsize
-		}
-	}
-}
-
 // WithQueueSize sets the queue size as a config option to be passed into the NewBatchEventManager method
 // default value is 10000
 func WithQueueSize(qsize int) EMOptionFunc {
@@ -83,7 +75,11 @@ func WithQueueSize(qsize int) EMOptionFunc {
 // default value is 1 second
 func WithFlushInterval(flushInterval time.Duration) EMOptionFunc {
 	return func(bm *BatchEventManager) {
-		if flushInterval > 0 {
+		if flushInterval >= 0 {
+			// if flush interval is zero, send events immediately by setting batchSize to 1
+			if flushInterval == 0 {
+				bm.batchSize = 1
+			}
 			bm.flushInterval = flushInterval
 		}
 	}
@@ -147,11 +143,12 @@ func NewBatchEventManager(options ...EMOptionFunc) *BatchEventManager {
 }
 
 // Start does not do any initialization, just starts the ticker
-func (bm *BatchEventManager) Start(ctx context.Context, apiKey, apiHost string) {
-	if !bm.IsOdpServiceIntegrated(apiKey, apiHost) {
+// odpConfig is required here since it can be updated anytime and ticker needs to be aware of latest changes
+func (bm *BatchEventManager) Start(ctx context.Context, odpConfig config.Config) {
+	if !bm.IsOdpServiceIntegrated(odpConfig.GetAPIKey(), odpConfig.GetAPIHost()) {
 		return
 	}
-	bm.startTicker(ctx, apiKey, apiHost)
+	bm.startTicker(ctx, odpConfig)
 }
 
 // IdentifyUser associates a full-stack userid with an established VUID
@@ -209,7 +206,11 @@ func (bm *BatchEventManager) ProcessEvent(apiKey, apiHost string, odpEvent Event
 }
 
 // StartTicker starts new ticker for flushing events
-func (bm *BatchEventManager) startTicker(ctx context.Context, apiKey, apiHost string) {
+func (bm *BatchEventManager) startTicker(ctx context.Context, odpConfig config.Config) {
+	// Do not start ticker if flushInterval is 0
+	if bm.flushInterval <= 0 {
+		return
+	}
 	// Make sure multiple go-routines dont reinitialize ticker
 	bm.flushLock.Lock()
 	if bm.ticker != nil {
@@ -224,10 +225,10 @@ func (bm *BatchEventManager) startTicker(ctx context.Context, apiKey, apiHost st
 	for {
 		select {
 		case <-bm.ticker.C:
-			bm.FlushEvents(apiKey, apiHost)
+			bm.FlushEvents(odpConfig.GetAPIKey(), odpConfig.GetAPIHost())
 		case <-ctx.Done():
 			bm.logger.Debug("BatchEventManager stopped, flushing events.")
-			bm.FlushEvents(apiKey, apiHost)
+			bm.FlushEvents(odpConfig.GetAPIKey(), odpConfig.GetAPIHost())
 			return
 		}
 	}

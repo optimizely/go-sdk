@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2022, Optimizely, Inc. and contributors                        *
+ * Copyright 2022-2023, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -211,7 +211,7 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsParameters
 
 func (o *OptimizelyUserContextODPTestSuite) TestOdpEventsEarlyEventsDispatched() {
 	eventAPIManager := &MockEventAPIManager{}
-	eventManager := event.NewBatchEventManager(event.WithAPIManager(eventAPIManager), event.WithBatchSize(1))
+	eventManager := event.NewBatchEventManager(event.WithAPIManager(eventAPIManager), event.WithFlushInterval(0))
 	odpManager := odp.NewOdpManager("", false, odp.WithEventManager(eventManager))
 	factory := OptimizelyFactory{Datafile: o.datafile, odpManager: odpManager}
 	optimizelyClient, _ := factory.Client()
@@ -239,9 +239,9 @@ func (o *OptimizelyUserContextODPTestSuite) TestOdpEventsEarlyEventsDispatched()
 // 	userContext := optimizelyClient.CreateUserContext(o.userID, nil)
 // 	var wg sync.WaitGroup
 // 	wg.Add(1)
-// 	userContext.FetchQualifiedSegments(nil, func(segments []string, err error) {
-// 		o.NoError(err)
-// 		o.Equal([]string{}, segments)
+// 	userContext.FetchQualifiedSegmentsAsync(nil, func(success bool) {
+// 		o.True(success)
+// 		o.Equal([]string{}, userContext.GetQualifiedSegments())
 // 		wg.Done()
 // 	})
 // 	wg.Wait()

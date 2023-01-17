@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2022, Optimizely, Inc. and contributors                        *
+ * Copyright 2022-2023, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -37,8 +37,8 @@ type MockEventManager struct {
 	event.Manager
 }
 
-func (m *MockEventManager) Start(ctx context.Context, apiKey, apiHost string) {
-	m.Called(ctx, apiKey, apiHost)
+func (m *MockEventManager) Start(ctx context.Context, odpConfig config.Config) {
+	m.Called(ctx, odpConfig)
 }
 
 func (m *MockEventManager) IdentifyUser(apiKey, apiHost, userID string) {

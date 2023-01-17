@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020,2022 Optimizely, Inc. and contributors               *
+ * Copyright 2019-2020,2022-2023 Optimizely, Inc. and contributors          *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -331,10 +331,8 @@ func (f *OptimizelyFactory) startOdpManager(eg *utils.ExecGroup, appClient *Opti
 	}
 
 	// Start odp ticker
-	apiKey := odpManager.OdpConfig.GetAPIKey()
-	apiHost := odpManager.OdpConfig.GetAPIHost()
 	eg.Go(func(ctx context.Context) {
-		odpManager.EventManager.Start(ctx, apiKey, apiHost)
+		odpManager.EventManager.Start(ctx, odpManager.OdpConfig)
 	})
 
 	// Only check for changes if ConfigManager is non static
@@ -351,7 +349,7 @@ func (f *OptimizelyFactory) startOdpManager(eg *utils.ExecGroup, appClient *Opti
 			segmentList := conf.GetSegmentList()
 			eg.Go(func(ctx context.Context) {
 				odpManager.Update(apiKey, apiHost, segmentList)
-				odpManager.EventManager.Start(ctx, apiKey, apiHost)
+				odpManager.EventManager.Start(ctx, odpManager.OdpConfig)
 			})
 		}
 	}
