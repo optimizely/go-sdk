@@ -191,6 +191,7 @@ func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
 		case <-t.C:
 			cm.SyncConfig()
 		case <-ctx.Done():
+			t.Stop()
 			cm.logger.Debug("Polling Config Manager Stopped")
 			return
 		}

@@ -237,6 +237,9 @@ func (bm *BatchEventManager) startTicker(ctx context.Context, odpConfig config.C
 		case <-ctx.Done():
 			bm.logger.Debug("BatchEventManager stopped, flushing events.")
 			bm.FlushEvents(odpConfig.GetAPIKey(), odpConfig.GetAPIHost())
+			bm.flushLock.Lock()
+			bm.ticker.Stop()
+			bm.flushLock.Unlock()
 			return
 		}
 	}

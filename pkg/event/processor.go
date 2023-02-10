@@ -246,6 +246,7 @@ func (p *BatchEventProcessor) startTicker(ctx context.Context) {
 			if ok {
 				d.flushEvents()
 			}
+			p.Ticker.Stop()
 			return
 		}
 	}
