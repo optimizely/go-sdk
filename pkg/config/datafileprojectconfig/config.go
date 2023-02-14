@@ -1,11 +1,11 @@
 /****************************************************************************
- * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2022, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -33,6 +33,8 @@ var datafileVersions = map[string]struct{}{
 // DatafileProjectConfig is a project config backed by a datafile
 type DatafileProjectConfig struct {
 	datafile             string
+	hostForODP           string
+	publicKeyForODP      string
 	accountID            string
 	projectID            string
 	revision             string
@@ -45,6 +47,8 @@ type DatafileProjectConfig struct {
 	featureMap           map[string]entities.Feature
 	groupMap             map[string]entities.Group
 	rollouts             []entities.Rollout
+	integrations         []entities.Integration
+	segments             []string
 	rolloutMap           map[string]entities.Rollout
 	anonymizeIP          bool
 	botFiltering         bool
@@ -58,6 +62,16 @@ type DatafileProjectConfig struct {
 // GetDatafile returns a string representation of the environment's datafile
 func (c DatafileProjectConfig) GetDatafile() string {
 	return c.datafile
+}
+
+// GetHostForODP returns hostForODP
+func (c DatafileProjectConfig) GetHostForODP() string {
+	return c.hostForODP
+}
+
+// GetPublicKeyForODP returns publicKeyForODP
+func (c DatafileProjectConfig) GetPublicKeyForODP() string {
+	return c.publicKeyForODP
 }
 
 // GetProjectID returns projectID
@@ -176,6 +190,16 @@ func (c DatafileProjectConfig) GetExperimentList() (experimentList []entities.Ex
 	return experimentList
 }
 
+// GetIntegrationList returns an array of all the integrations
+func (c DatafileProjectConfig) GetIntegrationList() (integrationList []entities.Integration) {
+	return c.integrations
+}
+
+// GetSegmentList returns an array of all the segments
+func (c DatafileProjectConfig) GetSegmentList() (segmentList []string) {
+	return c.segments
+}
+
 // GetRolloutList returns an array of all the rollouts
 func (c DatafileProjectConfig) GetRolloutList() (rolloutList []entities.Rollout) {
 	return c.rollouts
@@ -247,19 +271,38 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		return nil, err
 	}
 
+	var hostForODP, publicKeyForODP string
+	for _, integration := range datafile.Integrations {
+		if integration.Key == nil {
+			err = errors.New("unsupported key in integrations")
+			logger.Error("Error parsing datafile", err)
+			return nil, err
+		}
+		if *integration.Key == "odp" {
+			hostForODP = integration.Host
+			publicKeyForODP = integration.PublicKey
+			break
+		}
+	}
+
 	attributeMap, attributeKeyToIDMap := mappers.MapAttributes(datafile.Attributes)
 	allExperiments := mappers.MergeExperiments(datafile.Experiments, datafile.Groups)
 	groupMap, experimentGroupMap := mappers.MapGroups(datafile.Groups)
 	experimentIDMap, experimentKeyMap := mappers.MapExperiments(allExperiments, experimentGroupMap)
 
 	rollouts, rolloutMap := mappers.MapRollouts(datafile.Rollouts)
+	integrations := []entities.Integration{}
+	for _, integration := range datafile.Integrations {
+		integrations = append(integrations, entities.Integration{Key: *integration.Key, Host: integration.Host, PublicKey: integration.PublicKey})
+	}
 	eventMap := mappers.MapEvents(datafile.Events)
-	mergedAudiences := append(datafile.TypedAudiences, datafile.Audiences...)
 	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentIDMap)
-	audienceMap := mappers.MapAudiences(mergedAudiences)
+	audienceMap, audienceSegmentList := mappers.MapAudiences(append(datafile.TypedAudiences, datafile.Audiences...))
 	flagVariationsMap := mappers.MapFlagVariations(featureMap)
 
 	config := &DatafileProjectConfig{
+		hostForODP:           hostForODP,
+		publicKeyForODP:      publicKeyForODP,
 		datafile:             string(jsonDatafile),
 		accountID:            datafile.AccountID,
 		anonymizeIP:          datafile.AnonymizeIP,
@@ -277,6 +320,8 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		projectID:            datafile.ProjectID,
 		revision:             datafile.Revision,
 		rollouts:             rollouts,
+		integrations:         integrations,
+		segments:             audienceSegmentList,
 		rolloutMap:           rolloutMap,
 		sendFlagDecisions:    datafile.SendFlagDecisions,
 		flagVariationsMap:    flagVariationsMap,

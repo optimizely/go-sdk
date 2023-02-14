@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2020,2022 Optimizely, Inc. and contributors               *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -122,7 +122,7 @@ func createImpressionVisitor(userEvent UserEvent) Visitor {
 	decision.Metadata = userEvent.Impression.Metadata
 
 	dispatchEvent := SnapshotEvent{}
-	dispatchEvent.Timestamp = makeTimestamp()
+	dispatchEvent.Timestamp = userEvent.Timestamp
 	dispatchEvent.Key = userEvent.Impression.Key
 	dispatchEvent.EntityID = userEvent.Impression.EntityID
 	dispatchEvent.UUID = guuid.New().String()
@@ -186,7 +186,7 @@ func createVisitorFromUserEvent(event UserEvent) Visitor {
 func createConversionVisitor(userEvent UserEvent) Visitor {
 
 	dispatchEvent := SnapshotEvent{}
-	dispatchEvent.Timestamp = makeTimestamp()
+	dispatchEvent.Timestamp = userEvent.Timestamp
 	dispatchEvent.Key = userEvent.Conversion.Key
 	dispatchEvent.EntityID = userEvent.Conversion.EntityID
 	dispatchEvent.UUID = userEvent.UUID
@@ -243,7 +243,7 @@ func getEventAttributes(projectConfig config.ProjectConfig, attributes map[strin
 	var eventAttributes = []VisitorAttribute{}
 
 	for key, value := range attributes {
-		if value == nil {
+		if !utils.IsValidAttribute(value) {
 			continue
 		}
 		visitorAttribute := VisitorAttribute{}

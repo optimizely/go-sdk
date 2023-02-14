@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.
 
+## [1.8.3] - October 12, 2022
+
+### New Features
+* Add option to set custom http.Client on HTTPRequester. ([#335](https://github.com/optimizely/go-sdk/pull/335))
+
+### Bug Fix
+* Fixes issue with visitor where dispatch timestamp was used instead of userEvent creation timestamp. ([#345](https://github.com/optimizely/go-sdk/pull/345))
+
+## [1.8.2] - September 1, 2022
+
+### Bug Fix
+* Add additional validation for numeric attribute types when building an event object. ([#341](https://github.com/optimizely/go-sdk/pull/341))
+
+## [1.8.1] - August 29, 2022
+
+### Bug Fix
+* Add validation for user attribute types when building an event object. Only allow primitive types ([#339](https://github.com/optimizely/go-sdk/pull/339))
+
 ## [1.8.0] - January 12, 2022
 
 ### New Features

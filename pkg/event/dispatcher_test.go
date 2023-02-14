@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2020,2022 Optimizely, Inc. and contributors               *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -120,6 +120,7 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 	conversionUserEvent := CreateConversionUserEvent(config, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext, eventTags)
 
 	batch := createBatchEvent(conversionUserEvent, createVisitorFromUserEvent(conversionUserEvent))
+	assert.Equal(t, conversionUserEvent.Timestamp, batch.Visitors[0].Snapshots[0].Events[0].Timestamp)
 
 	logEvent := createLogEvent(batch, DefaultEventEndPoint)
 
@@ -178,6 +179,7 @@ func TestQueueEventDispatcher_FailDispath(t *testing.T) {
 	conversionUserEvent := CreateConversionUserEvent(config, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext, eventTags)
 
 	batch := createBatchEvent(conversionUserEvent, createVisitorFromUserEvent(conversionUserEvent))
+	assert.Equal(t, conversionUserEvent.Timestamp, batch.Visitors[0].Snapshots[0].Events[0].Timestamp)
 
 	logEvent := createLogEvent(batch, DefaultEventEndPoint)
 

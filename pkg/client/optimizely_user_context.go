@@ -1,11 +1,11 @@
 /****************************************************************************
- * Copyright 2020-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2020-2022, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -24,6 +24,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/decide"
 	pkgDecision "github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
+	pkgOdpSegment "github.com/optimizely/go-sdk/pkg/odp/segment"
 )
 
 // OptimizelyUserContext defines user contexts that the SDK will use to make decisions for.
@@ -31,21 +32,24 @@ type OptimizelyUserContext struct {
 	UserID     string                 `json:"userId"`
 	Attributes map[string]interface{} `json:"attributes"`
 
+	qualifiedSegments     []string
 	optimizely            *OptimizelyClient
 	forcedDecisionService *pkgDecision.ForcedDecisionService
 	mutex                 *sync.RWMutex
 }
 
 // returns an instance of the optimizely user context.
-func newOptimizelyUserContext(optimizely *OptimizelyClient, userID string, attributes map[string]interface{}, forcedDecisionService *pkgDecision.ForcedDecisionService) OptimizelyUserContext {
+func newOptimizelyUserContext(optimizely *OptimizelyClient, userID string, attributes map[string]interface{}, forcedDecisionService *pkgDecision.ForcedDecisionService, qualifiedSegments []string) OptimizelyUserContext {
 	// store a copy of the provided attributes so it isn't affected by changes made afterwards.
 	if attributes == nil {
 		attributes = map[string]interface{}{}
 	}
 	attributesCopy := copyUserAttributes(attributes)
+	qualifiedSegmentsCopy := copyQualifiedSegments(qualifiedSegments)
 	return OptimizelyUserContext{
 		UserID:                userID,
 		Attributes:            attributesCopy,
+		qualifiedSegments:     qualifiedSegmentsCopy,
 		optimizely:            optimizely,
 		forcedDecisionService: forcedDecisionService,
 		mutex:                 new(sync.RWMutex),
@@ -69,6 +73,13 @@ func (o OptimizelyUserContext) GetUserAttributes() map[string]interface{} {
 	return copyUserAttributes(o.Attributes)
 }
 
+// GetQualifiedSegments returns qualified segments for Optimizely user context
+func (o *OptimizelyUserContext) GetQualifiedSegments() []string {
+	o.mutex.RLock()
+	defer o.mutex.RUnlock()
+	return copyQualifiedSegments(o.qualifiedSegments)
+}
+
 func (o OptimizelyUserContext) getForcedDecisionService() *pkgDecision.ForcedDecisionService {
 	if o.forcedDecisionService != nil {
 		return o.forcedDecisionService.CreateCopy()
@@ -86,25 +97,53 @@ func (o *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
 	o.Attributes[key] = value
 }
 
+// FetchQualifiedSegments fetches all qualified segments for the user context.
+func (o *OptimizelyUserContext) FetchQualifiedSegments(options []pkgOdpSegment.OptimizelySegmentOption) (success bool) {
+	o.optimizely.fetchQualifiedSegments(o, options, func(result bool) {
+		success = result
+	})
+	return
+}
+
+// FetchQualifiedSegmentsAsync fetches all qualified segments aysnchronously for the user context.
+func (o *OptimizelyUserContext) FetchQualifiedSegmentsAsync(options []pkgOdpSegment.OptimizelySegmentOption, callback func(success bool)) {
+	go o.optimizely.fetchQualifiedSegments(o, options, callback)
+}
+
+// SetQualifiedSegments clears and adds qualified segments for Optimizely user context
+func (o *OptimizelyUserContext) SetQualifiedSegments(qualifiedSegments []string) {
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+	o.qualifiedSegments = copyQualifiedSegments(qualifiedSegments)
+}
+
+// IsQualifiedFor returns true if the user is qualified for the given segment name
+func (o *OptimizelyUserContext) IsQualifiedFor(segment string) bool {
+	userContext := entities.UserContext{
+		QualifiedSegments: o.GetQualifiedSegments(),
+	}
+	return userContext.IsQualifiedFor(segment)
+}
+
 // Decide returns a decision result for a given flag key and a user context, which contains
 // all data required to deliver the flag or experiment.
 func (o *OptimizelyUserContext) Decide(key string, options []decide.OptimizelyDecideOptions) OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
-	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService())
+	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
 	return o.optimizely.decide(userContextCopy, key, convertDecideOptions(options))
 }
 
 // DecideAll returns a key-map of decision results for all active flag keys with options.
 func (o *OptimizelyUserContext) DecideAll(options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
-	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService())
+	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
 	return o.optimizely.decideAll(userContextCopy, convertDecideOptions(options))
 }
 
 // DecideForKeys returns a key-map of decision results for multiple flag keys and options.
 func (o *OptimizelyUserContext) DecideForKeys(keys []string, options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
-	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService())
+	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
 	return o.optimizely.decideForKeys(userContextCopy, keys, convertDecideOptions(options))
 }
 
@@ -159,4 +198,13 @@ func copyUserAttributes(attributes map[string]interface{}) (attributesCopy map[s
 		}
 	}
 	return attributesCopy
+}
+
+func copyQualifiedSegments(qualifiedSegments []string) (qualifiedSegmentsCopy []string) {
+	if qualifiedSegments == nil {
+		return nil
+	}
+	qualifiedSegmentsCopy = make([]string, len(qualifiedSegments))
+	copy(qualifiedSegmentsCopy, qualifiedSegments)
+	return
 }
