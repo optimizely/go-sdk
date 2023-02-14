@@ -17,12 +17,36 @@
 // Package segment //
 package segment
 
+import "errors"
+
 // OptimizelySegmentOption represents options controlling audience segments.
-type OptimizelySegmentOption int
+type OptimizelySegmentOption string
 
 const (
 	// IgnoreCache ignores cache (save/lookup)
-	IgnoreCache OptimizelySegmentOption = iota
+	IgnoreCache OptimizelySegmentOption = "IGNORE_CACHE"
 	// ResetCache resets cache
-	ResetCache
+	ResetCache OptimizelySegmentOption = "RESET_CACHE"
 )
+
+// Options defines options for controlling audience segments.
+type Options struct {
+	IgnoreCache bool
+	ResetCache  bool
+}
+
+// TranslateOptions converts string options array to array of OptimizelySegmentOptions
+func TranslateOptions(options []string) ([]OptimizelySegmentOption, error) {
+	segmentOptions := []OptimizelySegmentOption{}
+	for _, val := range options {
+		switch OptimizelySegmentOption(val) {
+		case IgnoreCache:
+			segmentOptions = append(segmentOptions, IgnoreCache)
+		case ResetCache:
+			segmentOptions = append(segmentOptions, ResetCache)
+		default:
+			return []OptimizelySegmentOption{}, errors.New("invalid option: " + val)
+		}
+	}
+	return segmentOptions, nil
+}
