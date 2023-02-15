@@ -19,6 +19,8 @@ package mappers
 import (
 	"testing"
 
+	"github.com/goccy/go-json"
+
 	datafileConfig "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/stretchr/testify/assert"

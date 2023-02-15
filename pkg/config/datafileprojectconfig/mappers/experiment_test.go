@@ -19,7 +19,8 @@ package mappers
 import (
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
+
 	datafileEntities "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/stretchr/testify/assert"
@@ -61,7 +62,6 @@ func TestMapExperiments(t *testing.T) {
 	}`
 
 	var rawExperiment datafileEntities.Experiment
-	var json = jsoniter.ConfigCompatibleWithStandardLibrary
 	json.Unmarshal([]byte(testExperimentString), &rawExperiment)
 
 	rawExperiments := []datafileEntities.Experiment{rawExperiment}

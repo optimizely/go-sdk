@@ -17,7 +17,7 @@
 // Package utils //
 package utils
 
-import "reflect"
+import "github.com/goccy/go-reflect"
 
 // ToFloat attempts to convert the given value to a float
 func ToFloat(value interface{}) (float64, bool) {
@@ -26,7 +26,7 @@ func ToFloat(value interface{}) (float64, bool) {
 		return 0, false
 	}
 	var floatType = reflect.TypeOf(float64(0))
-	v := reflect.ValueOf(value)
+	v := reflect.ValueNoEscapeOf(value)
 	v = reflect.Indirect(v)
 
 	if v.Type().String() == "float64" || v.Type().ConvertibleTo(floatType) {

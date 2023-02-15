@@ -18,9 +18,10 @@
 package event
 
 import (
-	"encoding/json"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/goccy/go-json"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSnapshotHasOptionalDecisions(t *testing.T) {

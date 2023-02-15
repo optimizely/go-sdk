@@ -43,7 +43,7 @@ func TestNewDatafileProjectConfigNil(t *testing.T) {
 
 func TestNewDatafileProjectConfigNotNil(t *testing.T) {
 	dpc := DatafileProjectConfig{accountID: "123", revision: "1", projectID: "12345", sdkKey: "a", environmentKey: "production", eventMap: map[string]entities.Event{"event_single_targeted_exp": {Key: "event_single_targeted_exp"}}, attributeMap: map[string]entities.Attribute{"10401066170": {ID: "10401066170"}}, integrations: []entities.Integration{{PublicKey: "123", Host: "www.123.com", Key: "odp"}}}
-	jsonDatafileStr := `{"accountID":"123","revision":"1","projectId":"12345","version":"4","sdkKey":"a","environmentKey":"production","events":[{"key":"event_single_targeted_exp"}],"attributes":[{"id":"10401066170"}],"integrations": [{"publicKey": "123", "host": "www.123.com", "key": "odp"}]}`
+	jsonDatafileStr := `{"accountId":"123","revision":"1","projectId":"12345","version":"4","sdkKey":"a","environmentKey":"production","events":[{"key":"event_single_targeted_exp"}],"attributes":[{"id":"10401066170"}],"integrations": [{"publicKey": "123", "host": "www.123.com", "key": "odp"}]}`
 	jsonDatafile := []byte(jsonDatafileStr)
 	projectConfig, err := NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", "DatafileProjectConfig"))
 	assert.Nil(t, err)

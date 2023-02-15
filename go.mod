@@ -3,9 +3,10 @@ module github.com/optimizely/go-sdk
 go 1.13
 
 require (
+	github.com/goccy/go-json v0.10.0
+	github.com/goccy/go-reflect v1.2.0
 	github.com/google/uuid v1.1.1
 	github.com/hashicorp/go-multierror v1.1.0
-	github.com/json-iterator/go v1.1.12
 	github.com/pkg/errors v0.8.1
 	github.com/pkg/profile v1.3.0
 	github.com/stretchr/testify v1.4.0

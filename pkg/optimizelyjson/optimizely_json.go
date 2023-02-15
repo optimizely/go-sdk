@@ -18,10 +18,11 @@
 package optimizelyjson
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/goccy/go-json"
 )
 
 // OptimizelyJSON holds the underlying structure of the object

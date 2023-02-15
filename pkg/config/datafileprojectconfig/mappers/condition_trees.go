@@ -19,15 +19,16 @@ package mappers
 
 import (
 	"errors"
-	"reflect"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-reflect"
+
+	"github.com/goccy/go-json"
+
 	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers"
 	"github.com/optimizely/go-sdk/pkg/entities"
 )
 
 var errEmptyTree = errors.New("empty tree")
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // OperatorType defines logical operator for conditions
 type OperatorType string
@@ -47,7 +48,7 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 		return
 	}
 	odpSegments = []string{}
-	value := reflect.ValueOf(parsedConditions)
+	value := reflect.ValueNoEscapeOf(parsedConditions)
 	visited := make(map[interface{}]bool)
 
 	conditionTree = &entities.TreeNode{}
@@ -150,7 +151,7 @@ func createLeafCondition(typedV map[string]interface{}, node *entities.TreeNode)
 // Takes the conditions array from the audience in the datafile and turns it into a condition tree
 func buildAudienceConditionTree(conditions interface{}) (conditionTree *entities.TreeNode, err error) {
 
-	value := reflect.ValueOf(conditions)
+	value := reflect.ValueNoEscapeOf(conditions)
 	visited := make(map[interface{}]bool)
 
 	conditionTree = &entities.TreeNode{Operator: "or"}

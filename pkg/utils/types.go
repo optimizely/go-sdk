@@ -20,7 +20,8 @@ package utils
 import (
 	"fmt"
 	"math"
-	"reflect"
+
+	"github.com/goccy/go-reflect"
 )
 
 var floatType = reflect.TypeOf(float64(0))
@@ -29,7 +30,7 @@ var intType = reflect.TypeOf(int64(0))
 // GetBoolValue will attempt to convert the given value to a bool
 func GetBoolValue(value interface{}) (bool, error) {
 	if value != nil {
-		v := reflect.ValueOf(value)
+		v := reflect.ValueNoEscapeOf(value)
 		if v.Type().String() == "bool" {
 			return v.Bool(), nil
 		}
@@ -41,7 +42,7 @@ func GetBoolValue(value interface{}) (bool, error) {
 // GetFloatValue will attempt to convert the given value to a float64
 func GetFloatValue(value interface{}) (float64, error) {
 	if value != nil {
-		v := reflect.ValueOf(value)
+		v := reflect.ValueNoEscapeOf(value)
 		v = reflect.Indirect(v)
 		if v.Type().ConvertibleTo(floatType) {
 			fv := v.Convert(floatType)
@@ -55,7 +56,7 @@ func GetFloatValue(value interface{}) (float64, error) {
 // GetIntValue will attempt to convert the given value to an int64
 func GetIntValue(value interface{}) (int64, error) {
 	if value != nil {
-		v := reflect.ValueOf(value)
+		v := reflect.ValueNoEscapeOf(value)
 		if v.Type().String() == "int64" || v.Type().ConvertibleTo(intType) {
 			intValue := v.Convert(intType).Int()
 			return intValue, nil
@@ -68,7 +69,7 @@ func GetIntValue(value interface{}) (int64, error) {
 // GetStringValue will attempt to convert the given value to a string
 func GetStringValue(value interface{}) (string, error) {
 	if value != nil {
-		v := reflect.ValueOf(value)
+		v := reflect.ValueNoEscapeOf(value)
 		if v.Type().String() == "string" {
 			return v.String(), nil
 		}
@@ -107,7 +108,7 @@ func isNumericType(value interface{}) (float64, error) {
 	case float64:
 		return i, nil
 	default:
-		v := reflect.ValueOf(value)
+		v := reflect.ValueNoEscapeOf(value)
 		v = reflect.Indirect(v)
 		return math.NaN(), fmt.Errorf("can't convert %v to float64", v.Type())
 	}

@@ -18,11 +18,12 @@
 package segment
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
 	"strings"
+
+	"github.com/goccy/go-json"
 
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/odp/utils"

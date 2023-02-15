@@ -26,9 +26,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/goccy/go-json"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 const (
@@ -46,8 +46,6 @@ const (
 
 	defaultTTL = 5 * time.Second
 )
-
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // Requester is used to make outbound requests with
 type Requester interface {

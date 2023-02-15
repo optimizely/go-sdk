@@ -17,10 +17,12 @@
 package config
 
 import (
-	"encoding/json"
 	"io/ioutil"
-	"reflect"
 	"testing"
+
+	"github.com/goccy/go-reflect"
+
+	"github.com/goccy/go-json"
 
 	"github.com/stretchr/testify/suite"
 )

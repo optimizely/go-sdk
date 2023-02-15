@@ -18,12 +18,14 @@
 package client
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"runtime/debug"
 	"strconv"
+
+	"github.com/goccy/go-reflect"
+
+	"github.com/goccy/go-json"
 
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decide"
@@ -1079,5 +1081,5 @@ func (o *OptimizelyClient) getDecisionVariableMap(feature entities.Feature, vari
 }
 
 func isNil(v interface{}) bool {
-	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
+	return v == nil || (reflect.ValueNoEscapeOf(v).Kind() == reflect.Ptr && reflect.ValueNoEscapeOf(v).IsNil())
 }
