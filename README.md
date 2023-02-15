@@ -104,6 +104,14 @@ testify
 Copyright (c) 2012-2018 Mat Ryer and Tyler Bunnell.
 License (MIT): https://github.com/stretchr/testify/blob/master/LICENSE
 
+go-json
+Copyright (c) 2020 go-json
+License (MIT): https://github.com/goccy/go-json/blob/master/LICENSE
+
+go-reflect
+Copyright (c) 2020 go-reflect
+License (MIT): https://github.com/goccy/go-reflect/blob/master/LICENSE
+
 subset
 Copyright (c) 2015, Facebook, Inc. All rights reserved.
 License (BSD): https://github.com/facebookarchive/subset/blob/master/license
