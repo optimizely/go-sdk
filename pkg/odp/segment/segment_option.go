@@ -29,12 +29,6 @@ const (
 	ResetCache OptimizelySegmentOption = "RESET_CACHE"
 )
 
-// Options defines options for controlling audience segments.
-type Options struct {
-	IgnoreCache bool
-	ResetCache  bool
-}
-
 // TranslateOptions converts string options array to array of OptimizelySegmentOptions
 func TranslateOptions(options []string) ([]OptimizelySegmentOption, error) {
 	segmentOptions := []OptimizelySegmentOption{}
