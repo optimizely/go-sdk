@@ -256,8 +256,8 @@ func TestSendODPEventEmptyIdentifiers(t *testing.T) {
 	optimizelyClient := OptimizelyClient{
 		logger: logging.GetLogger("", ""),
 	}
-	sendErr := optimizelyClient.SendOdpEvent("", action, identifiers, data)
-	assert.Equal(t, sendErr, errors.New("ODP events must have at least one key-value pair in identifiers"))
+	success := optimizelyClient.SendOdpEvent("", action, identifiers, data)
+	assert.False(t, success)
 }
 
 func TestSendODPEventNilIdentifiers(t *testing.T) {
