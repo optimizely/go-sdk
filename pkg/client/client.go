@@ -310,6 +310,12 @@ func (o *OptimizelyClient) SendOdpEvent(eventType, action string, identifiers ma
 	if eventType == "" {
 		eventType = pkgOdpUtils.OdpEventType
 	}
+
+	if len(identifiers) == 0 {
+		o.logger.Error("ODP events must have at least one key-value pair in identifiers", err)
+		return false
+	}
+
 	return o.OdpManager.SendOdpEvent(eventType, action, identifiers, data)
 }
 
