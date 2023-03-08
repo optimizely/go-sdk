@@ -193,8 +193,12 @@ func (m *MockODPManager) IdentifyUser(userID string) {
 	m.Called(userID)
 }
 
-func (m *MockODPManager) SendOdpEvent(eventType, action string, identifiers map[string]string, data map[string]interface{}) bool {
-	return m.Called(eventType, action, identifiers, data).Get(0).(bool)
+func (m *MockODPManager) SendOdpEvent(eventType, action string, identifiers map[string]string, data map[string]interface{}) error {
+	err := m.Called(eventType, action, identifiers, data).Get(0)
+	if err == nil {
+		return nil
+	}
+	return err.(error)
 }
 
 func (m *MockODPManager) Update(apiKey, apiHost string, segmentsToCheck []string) {
@@ -208,7 +212,7 @@ func TestSendODPEventWhenODPDisabled(t *testing.T) {
 	var disableOdp = true
 	optimizelyClient, err := factory.Client(WithSegmentsCacheSize(segmentsCacheSize), WithSegmentsCacheTimeout(segmentsCacheTimeout), WithOdpDisabled(disableOdp))
 	assert.NoError(t, err)
-	success := optimizelyClient.SendOdpEvent("123", "456", map[string]string{
+	err = optimizelyClient.SendOdpEvent("123", "456", map[string]string{
 		"abc": "123",
 	}, map[string]interface{}{
 		"abc":                 nil,
@@ -217,7 +221,7 @@ func TestSendODPEventWhenODPDisabled(t *testing.T) {
 		"data_source":         true,
 		"data_source_version": 6.78,
 	})
-	assert.False(t, success)
+	assert.Error(t, err)
 }
 
 func TestSendODPEventEmptyType(t *testing.T) {
@@ -234,12 +238,12 @@ func TestSendODPEventEmptyType(t *testing.T) {
 		"data_source_version": 6.78,
 	}
 	mockOdpManager := &MockODPManager{}
-	mockOdpManager.On("SendOdpEvent", eventType, action, identifiers, data).Return(true)
+	mockOdpManager.On("SendOdpEvent", eventType, action, identifiers, data).Return(nil)
 	optimizelyClient := OptimizelyClient{
 		OdpManager: mockOdpManager,
 	}
-	success := optimizelyClient.SendOdpEvent("", action, identifiers, data)
-	assert.True(t, success)
+	err := optimizelyClient.SendOdpEvent("", action, identifiers, data)
+	assert.NoError(t, err)
 	mockOdpManager.AssertExpectations(t)
 }
 
@@ -256,8 +260,8 @@ func TestSendODPEventEmptyIdentifiers(t *testing.T) {
 	optimizelyClient := OptimizelyClient{
 		logger: logging.GetLogger("", ""),
 	}
-	success := optimizelyClient.SendOdpEvent("", action, identifiers, data)
-	assert.False(t, success)
+	err := optimizelyClient.SendOdpEvent("", action, identifiers, data)
+	assert.Error(t, err)
 }
 
 func TestSendODPEventNilIdentifiers(t *testing.T) {
@@ -272,18 +276,18 @@ func TestSendODPEventNilIdentifiers(t *testing.T) {
 	optimizelyClient := OptimizelyClient{
 		logger: logging.GetLogger("", ""),
 	}
-	success := optimizelyClient.SendOdpEvent("", action, nil, data)
-	assert.False(t, success)
+	err := optimizelyClient.SendOdpEvent("", action, nil, data)
+	assert.Error(t, err)
 }
 
 func TestSendODPEvent(t *testing.T) {
 	mockOdpManager := &MockODPManager{}
-	mockOdpManager.On("SendOdpEvent", "123", "", map[string]string{"identifier": "123"}, mock.Anything).Return(true)
+	mockOdpManager.On("SendOdpEvent", "123", "", map[string]string{"identifier": "123"}, mock.Anything).Return(nil)
 	optimizelyClient := OptimizelyClient{
 		OdpManager: mockOdpManager,
 	}
-	success := optimizelyClient.SendOdpEvent("123", "", map[string]string{"identifier": "123"}, nil)
-	assert.True(t, success)
+	err := optimizelyClient.SendOdpEvent("123", "", map[string]string{"identifier": "123"}, nil)
+	assert.NoError(t, err)
 	mockOdpManager.AssertExpectations(t)
 }
 

@@ -45,8 +45,12 @@ func (m *MockEventManager) IdentifyUser(apiKey, apiHost, userID string) {
 	m.Called(apiKey, apiHost, userID)
 }
 
-func (m *MockEventManager) ProcessEvent(apiKey, apiHost string, odpEvent event.Event) bool {
-	return m.Called(apiKey, apiHost, odpEvent).Get(0).(bool)
+func (m *MockEventManager) ProcessEvent(apiKey, apiHost string, odpEvent event.Event) error {
+	err := m.Called(apiKey, apiHost, odpEvent).Get(0)
+	if err == nil {
+		return nil
+	}
+	return err.(error)
 }
 
 func (m *MockEventManager) FlushEvents(apiKey, apiHost string) {
@@ -209,8 +213,8 @@ func (o *ODPManagerTestSuite) TestSendOdpEvent() {
 		}}
 	o.config.On("GetAPIKey").Return("")
 	o.config.On("GetAPIHost").Return("")
-	o.eventManager.On("ProcessEvent", "", "", userEvent).Return(true)
-	o.True(o.odpManager.SendOdpEvent(userEvent.Type, userEvent.Action, userEvent.Identifiers, userEvent.Data))
+	o.eventManager.On("ProcessEvent", "", "", userEvent).Return(nil)
+	o.NoError(o.odpManager.SendOdpEvent(userEvent.Type, userEvent.Action, userEvent.Identifiers, userEvent.Data))
 	o.segmentManager.AssertExpectations(o.T())
 }
 

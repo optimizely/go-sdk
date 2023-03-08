@@ -202,7 +202,7 @@ func (e *EventManagerTestSuite) TestIdentifyUserWhenODPIntegrated() {
 
 func (e *EventManagerTestSuite) TestProcessEventWithInvalidODPConfig() {
 	em := NewBatchEventManager(WithAPIManager(&MockEventAPIManager{}))
-	e.False(em.ProcessEvent("", "", Event{}))
+	e.Error(em.ProcessEvent("", "", Event{}))
 	e.Equal(0, em.eventQueue.Size())
 }
 
@@ -220,7 +220,7 @@ func (e *EventManagerTestSuite) TestProcessEventWithValidEventData() {
 		},
 	}
 
-	e.True(e.eventManager.ProcessEvent("1", "2", tmpEvent))
+	e.NoError(e.eventManager.ProcessEvent("1", "2", tmpEvent))
 	e.Equal(1, e.eventManager.eventQueue.Size())
 }
 
@@ -234,20 +234,20 @@ func (e *EventManagerTestSuite) TestProcessEventWithInvalidEventData() {
 			"key12": []string{},
 		},
 	}
-	e.False(e.eventManager.ProcessEvent("a", "b", tmpEvent))
+	e.Error(e.eventManager.ProcessEvent("a", "b", tmpEvent))
 	e.Equal(0, e.eventManager.eventQueue.Size())
 }
 
 func (e *EventManagerTestSuite) TestProcessEventDiscardsEventExceedingMaxQueueSize() {
 	e.eventManager.maxQueueSize = 1
 	e.eventManager.eventQueue.Add(Event{})
-	e.False(e.eventManager.ProcessEvent("a", "b", Event{}))
+	e.Error(e.eventManager.ProcessEvent("a", "b", Event{}))
 	e.Equal(1, e.eventManager.eventQueue.Size())
 }
 
 func (e *EventManagerTestSuite) TestProcessEventWithBatchSizeNotReached() {
 	em := NewBatchEventManager(WithAPIManager(&MockEventAPIManager{}))
-	e.True(em.ProcessEvent("a", "b", Event{}))
+	e.NoError(em.ProcessEvent("a", "b", Event{}))
 	e.Equal(1, em.eventQueue.Size())
 	e.Equal(0, e.eventAPIManager.timesSendEventsCalled)
 }
@@ -257,7 +257,7 @@ func (e *EventManagerTestSuite) TestProcessEventWithBatchSizeReached() {
 	em := NewBatchEventManager(WithAPIManager(apiManager), WithFlushInterval(0))
 	e.Equal(0, em.eventQueue.Size())
 	apiManager.wg.Add(1)
-	e.True(em.ProcessEvent("a", "b", Event{}))
+	e.NoError(em.ProcessEvent("a", "b", Event{}))
 	// Wait for event fire through go routine
 	apiManager.wg.Wait()
 	e.Equal(0, em.eventQueue.Size())
@@ -272,7 +272,7 @@ func (e *EventManagerTestSuite) TestProcessEventsExceedingBatchSize() {
 	e.Equal(2, em.eventQueue.Size())
 	// Three batch events should be fired
 	apiManager.wg.Add(3)
-	e.True(em.ProcessEvent("a", "b", Event{}))
+	e.NoError(em.ProcessEvent("a", "b", Event{}))
 	// Wait for event fire through go routine
 	apiManager.wg.Wait()
 	// Since all events fired successfully, queue should be empty
@@ -293,7 +293,7 @@ func (e *EventManagerTestSuite) TestProcessEventFirstEventFailsWithRetries() {
 	// Total 2 events in queue which make 2 batches
 	// first batch will be retried thrice, second one wont be fired since first failed thrice
 	apiManager.wg.Add(maxRetries)
-	e.True(em.ProcessEvent("a", "b", Event{}))
+	e.NoError(em.ProcessEvent("a", "b", Event{}))
 	// Wait for three retries
 	apiManager.wg.Wait()
 	// Since all events failed, queue should contain all events
@@ -311,7 +311,7 @@ func (e *EventManagerTestSuite) TestProcessEventFirstEventFailsWithRetryNotAllow
 	apiManager.errResponses = []error{tmpError}
 	// first batch will not be retried, second one wont be fired since first failed
 	apiManager.wg.Add(1)
-	e.True(em.ProcessEvent("a", "b", Event{}))
+	e.NoError(em.ProcessEvent("a", "b", Event{}))
 	// Wait for three retries
 	apiManager.wg.Wait()
 	// Since first batch of 2 events failed with no retry allowed, queue should only contain 1 event
@@ -332,7 +332,7 @@ func (e *EventManagerTestSuite) TestProcessEventSecondEventFailsWithRetriesLater
 	// Total 2 events in queue which make 2 batches
 	// first batch will be successfully dispatched, second will be retried thrice
 	apiManager.wg.Add(4)
-	e.True(em.ProcessEvent("a", "b", Event{}))
+	e.NoError(em.ProcessEvent("a", "b", Event{}))
 	// Wait for events to fire
 	apiManager.wg.Wait()
 	// Since second batch of 1 event failed, queue should be contain 1 event
@@ -344,7 +344,7 @@ func (e *EventManagerTestSuite) TestProcessEventSecondEventFailsWithRetriesLater
 	time.Sleep(200 * time.Millisecond)
 
 	apiManager.wg.Add(2)
-	e.True(em.ProcessEvent("a", "b", Event{}))
+	e.NoError(em.ProcessEvent("a", "b", Event{}))
 	// Wait for events to fire
 	apiManager.wg.Wait()
 	// Queue should be empty since remaining event was sent now
@@ -366,7 +366,7 @@ func (e *EventManagerTestSuite) TestProcessEventFirstEventPassesWithRetries() {
 	// Total 2 events in queue which make 2 batches
 	// first batch will be retried once, second will be successful immediately
 	apiManager.wg.Add(3)
-	e.True(em.ProcessEvent("a", "b", Event{}))
+	e.NoError(em.ProcessEvent("a", "b", Event{}))
 	// Wait for events to fire
 	apiManager.wg.Wait()
 	// Since all events were successful, queue should be empty
