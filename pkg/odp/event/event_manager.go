@@ -163,7 +163,7 @@ func (bm *BatchEventManager) IdentifyUser(apiKey, apiHost, userID string) {
 		Action:      utils.OdpActionIdentified,
 		Identifiers: identifiers,
 	}
-	bm.ProcessEvent(apiKey, apiHost, odpEvent)
+	_ = bm.ProcessEvent(apiKey, apiHost, odpEvent)
 }
 
 // ProcessEvent takes the given odp event and queues it up to be dispatched.
@@ -190,7 +190,7 @@ func (bm *BatchEventManager) ProcessEvent(apiKey, apiHost string, odpEvent Event
 	bm.eventQueue.Add(odpEvent)
 
 	if bm.eventQueue.Size() < bm.batchSize {
-		return
+		return nil
 	}
 
 	if bm.processing.TryAcquire(1) {
@@ -203,7 +203,7 @@ func (bm *BatchEventManager) ProcessEvent(apiKey, apiHost string, odpEvent Event
 		}()
 	}
 
-	return
+	return nil
 }
 
 // StartTicker starts new ticker for flushing events
