@@ -287,9 +287,8 @@ func (o *OptimizelyClient) fetchQualifiedSegments(userContext *OptimizelyUserCon
 }
 
 // SendOdpEvent sends an event to the ODP server.
-func (o *OptimizelyClient) SendOdpEvent(eventType, action string, identifiers map[string]string, data map[string]interface{}) bool {
+func (o *OptimizelyClient) SendOdpEvent(eventType, action string, identifiers map[string]string, data map[string]interface{}) (err error) {
 
-	var err error
 	defer func() {
 		if r := recover(); r != nil {
 			switch t := r.(type) {
@@ -312,8 +311,9 @@ func (o *OptimizelyClient) SendOdpEvent(eventType, action string, identifiers ma
 	}
 
 	if len(identifiers) == 0 {
-		o.logger.Error("ODP events must have at least one key-value pair in identifiers", err)
-		return false
+		err = errors.New("ODP events must have at least one key-value pair in identifiers")
+		o.logger.Error("received an error while sending ODP event", err)
+		return err
 	}
 
 	return o.OdpManager.SendOdpEvent(eventType, action, identifiers, data)

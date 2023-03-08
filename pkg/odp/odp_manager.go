@@ -36,7 +36,7 @@ type OMOptionFunc func(em *DefaultOdpManager)
 type Manager interface {
 	FetchQualifiedSegments(userID string, options []segment.OptimizelySegmentOption) (segments []string, err error)
 	IdentifyUser(userID string)
-	SendOdpEvent(eventType, action string, identifiers map[string]string, data map[string]interface{}) bool
+	SendOdpEvent(eventType, action string, identifiers map[string]string, data map[string]interface{}) (err error)
 	Update(apiKey, apiHost string, segmentsToCheck []string)
 }
 
@@ -145,10 +145,10 @@ func (om *DefaultOdpManager) IdentifyUser(userID string) {
 }
 
 // SendOdpEvent sends an event to the ODP server.
-func (om *DefaultOdpManager) SendOdpEvent(eventType, action string, identifiers map[string]string, data map[string]interface{}) bool {
+func (om *DefaultOdpManager) SendOdpEvent(eventType, action string, identifiers map[string]string, data map[string]interface{}) (err error) {
 	if !om.enabled {
 		om.logger.Debug(utils.OdpNotEnabled)
-		return false
+		return errors.New(utils.OdpNotEnabled)
 	}
 	if identifiers == nil {
 		identifiers = map[string]string{}

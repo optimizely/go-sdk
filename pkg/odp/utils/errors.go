@@ -33,7 +33,7 @@ const IdentityOdpDisabled = "ODP identify event is not dispatched (ODP disabled)
 const IdentityOdpNotIntegrated = "ODP identify event is not dispatched (ODP not integrated)"
 
 // OdpNotIntegrated error string when odp is not integrated
-const OdpNotIntegrated = "ODP not integrated"
+const OdpNotIntegrated = "ODP is not integrated"
 
 // OdpEventFailed error string when odp event failed with provided reason
 const OdpEventFailed = "ODP event send failed (%s)"

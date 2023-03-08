@@ -43,7 +43,7 @@ type Manager interface {
 	// odpConfig is required here since it can be updated anytime and ticker needs to be aware of latest changes
 	Start(ctx context.Context, odpConfig config.Config)
 	IdentifyUser(apiKey, apiHost, userID string)
-	ProcessEvent(apiKey, apiHost string, odpEvent Event) bool
+	ProcessEvent(apiKey, apiHost string, odpEvent Event) error
 	FlushEvents(apiKey, apiHost string)
 }
 
@@ -169,27 +169,28 @@ func (bm *BatchEventManager) IdentifyUser(apiKey, apiHost, userID string) {
 // ProcessEvent takes the given odp event and queues it up to be dispatched.
 // A dispatch happens when we flush the events, which can happen on a set interval or
 // when the specified batch size is reached.
-func (bm *BatchEventManager) ProcessEvent(apiKey, apiHost string, odpEvent Event) bool {
+func (bm *BatchEventManager) ProcessEvent(apiKey, apiHost string, odpEvent Event) (err error) {
 	if !bm.IsOdpServiceIntegrated(apiKey, apiHost) {
 		bm.logger.Debug(utils.OdpNotIntegrated)
-		return false
+		return errors.New(utils.OdpNotIntegrated)
 	}
 
 	if !utils.IsValidOdpData(odpEvent.Data) {
 		bm.logger.Error(utils.OdpInvalidData, errors.New("invalid event data"))
-		return false
+		return errors.New(utils.OdpInvalidData)
 	}
 
 	if bm.eventQueue.Size() >= bm.maxQueueSize {
-		bm.logger.Warning("maxQueueSize has been met. Discarding event")
-		return false
+		err = errors.New("ODP EventQueue is full")
+		bm.logger.Error("maxQueueSize has been met. Discarding event", err)
+		return err
 	}
 
 	bm.addCommonData(&odpEvent)
 	bm.eventQueue.Add(odpEvent)
 
 	if bm.eventQueue.Size() < bm.batchSize {
-		return true
+		return
 	}
 
 	if bm.processing.TryAcquire(1) {
@@ -202,7 +203,7 @@ func (bm *BatchEventManager) ProcessEvent(apiKey, apiHost string, odpEvent Event
 		}()
 	}
 
-	return true
+	return
 }
 
 // StartTicker starts new ticker for flushing events
