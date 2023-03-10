@@ -1,4 +1,3 @@
-
 # Optimizely Go SDK
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/optimizely/go-sdk)](https://goreportcard.com/report/github.com/optimizely/go-sdk)
