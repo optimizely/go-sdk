@@ -1,17 +1,35 @@
+
 # Optimizely Go SDK
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/optimizely/go-sdk)](https://goreportcard.com/report/github.com/optimizely/go-sdk)
 [![Coverage Status](https://coveralls.io/repos/github/optimizely/go-sdk/badge.svg?branch=master)](https://coveralls.io/github/optimizely/go-sdk?branch=master)
 
-## Installation
 
-### Install from github:
+This repository houses the Go SDK for use with Optimizely Feature Experimentation and Optimizely Full Stack (legacy).
+
+Optimizely Feature Experimentation is an A/B testing and feature management tool for product development teams that enables you to experiment at every step. Using Optimizely Feature Experimentation allows for every feature on your roadmap to be an opportunity to discover hidden insights. Learn more at [Optimizely.com](https://www.optimizely.com/products/experiment/feature-experimentation/), or see the [developer documentation](https://docs.developers.optimizely.com/experimentation/v4.0.0-full-stack/docs/welcome).
+
+Optimizely Rollouts is [free feature flags](https://www.optimizely.com/free-feature-flagging/) for development teams. You can easily roll out and roll back features in any application without code deploys, mitigating risk for every feature on your roadmap.
+
+## Get Started
+
+Refer to the [Go SDK's developer documentation](https://docs.developers.optimizely.com/experimentation/v4.0.0-full-stack/docs/go-sdk) for detailed instructions on getting started with using the SDK.
+
+### Prerequisites
+  
+### Requirements  
+
+Requires Golang version 1.13 or higher.
+
+### Install the SDK
+
+#### Install from github:
 
 ```$sh
 go get github.com/optimizely/go-sdk
 ```
 
-### Install from source:
+#### Install from source:
 ```$sh
 go get github.com/optimizely/go-sdk
 cd $GOPATH/src/github.com/optimizely/go-sdk
@@ -21,7 +39,7 @@ go install
 NOTE:
 We practice trunk-based development, and as such our default branch, `master` might not always be the most stable. We do tag releases on Github and you can pin your installation to those particular release versions. One way to do this is to use [*Go Modules*](https://blog.golang.org/using-go-modules) for managing external dependencies:
 
-### Install using go.mod:
+#### Install using go.mod:
 
 ```
 module mymodule
@@ -49,10 +67,15 @@ go get github.com/optimizely/go-sdk/pkg
 ```
 will install it as a package to pkg directory, rather than src directory. It could be useful for future development and vendoring.
 
-## Usage
+### Packages
 
-### Instantiation
-To start using the SDK, create an instance using our factory method:
+### Configuration options
+
+## Use the Go SDK
+
+See the example file in examples/main.go.
+
+### "Initialization"
 
 ```
 import optly "github.com/optimizely/go-sdk"
@@ -69,8 +92,7 @@ optimizelyFactory := &client.OptimizelyFactory{
 client, err = optimizelyFactory.Client()
 
 ```
-
-### Feature Rollouts
+### Make Decisions
 ```
 import (
   optly "github.com/optimizely/go-sdk"
@@ -85,10 +107,27 @@ atributes := map[string]interface{}{
      "likes_donuts": true,
 }, 
 user := optly.UserContext("optimizely end user", attributes)
-enabled, _ := client.IsFeatureEnabled("binary_feature", user)
+options := []decide.OptimizelyDecideOptions{decide.IncludeReasons}
+decision := userCtx.Decide("my_flag", options)
+if jsonResp, err := json.Marshal(convertDecisionToMap(decision)); err == nil {
+    fmt.Println("string(jsonResp)")
+}
 ```
 
-## Credits
+## SDK Development
+
+### Unit Tests
+
+Run 
+``` 
+make test 
+```
+
+### Contributing
+
+Please see [CONTRIBUTING](https://github.com/optimizely/go-sdk/blob/master/CONTRIBUTING.md).
+
+### Credits
 
 This software is distributed with code from the following open source projects:
 
@@ -119,3 +158,29 @@ License (BSD): https://github.com/pkg/profile/blob/master/LICENSE
 sync
 Copyright (c) 2009 The Go Authors. All rights reserved.
 https://github.com/golang/sync/blob/master/LICENSE
+
+### Other Optimizely SDKs
+
+- Agent - https://github.com/optimizely/agent
+
+- Android - https://github.com/optimizely/android-sdk
+
+- C# - https://github.com/optimizely/csharp-sdk
+
+- Flutter - https://github.com/optimizely/optimizely-flutter-sdk
+
+- Go - https://github.com/optimizely/go-sdk
+
+- Java - https://github.com/optimizely/java-sdk
+
+- JavaScript - https://github.com/optimizely/javascript-sdk
+
+- PHP - https://github.com/optimizely/php-sdk
+
+- Python - https://github.com/optimizely/python-sdk
+
+- React - https://github.com/optimizely/react-sdk
+
+- Ruby - https://github.com/optimizely/ruby-sdk
+
+- Swift - https://github.com/optimizely/swift-sdk
