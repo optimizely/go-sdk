@@ -28,7 +28,7 @@ const OdpAPIKeyHeader = "x-api-key"
 // OdpEventType holds the value for the odp event type
 const OdpEventType = "fullstack"
 
-// OdpFSUserIDKey holds the key for the odp fullstack userID
+// OdpFSUserIDKey holds the key for the odp fullstack/feature experimentation userID
 const OdpFSUserIDKey = "fs_user_id"
 
 // OdpActionIdentified holds the value for identified action type

@@ -6,7 +6,7 @@ hidden: true
 createdAt: "2019-10-29T23:36:28.978Z"
 updatedAt: "2020-01-16T20:42:04.941Z"
 ---
-The [Optimizely Full Stack Go SDK](https://github.com/optimizely/go-sdk) batches impression and conversion events into a single payload before sending it to Optimizely. This is achieved through an SDK component called the event processor.
+The [Optimizely Feature Experimentation Go SDK](https://github.com/optimizely/go-sdk) batches impression and conversion events into a single payload before sending it to Optimizely. This is achieved through an SDK component called the event processor.
 
 Event batching has the advantage of reducing the number of outbound requests to Optimizely depending on how you define, configure, and use the event processor. It means less network traffic for the same number of Impression and conversion events tracked.
 
