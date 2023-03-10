@@ -75,16 +75,14 @@ See the example file in examples/main.go.
 import optly "github.com/optimizely/go-sdk"
 import "github.com/optimizely/go-sdk/client"
 
-// Simple one-line initialization with the SDK key
-client, err := optly.Client("SDK_KEY")
+// Simple one-line initialization with the SDK key    
+optlyClient, err := optly.Client("SDK_KEY")    
 
-// You can also instantiate with a hard-coded datafile using our client factory method
-optimizelyFactory := &client.OptimizelyFactory{
-	Datafile: []byte("datafile_string"),
-}
-
-client, err = optimizelyFactory.Client()
-
+// You can also instantiate with a hard-coded datafile using our client factory method    
+optimizelyFactory := &client.OptimizelyFactory {        
+  Datafile: []byte("datafile_string"),   
+}    
+optlyClient, err = optimizelyFactory.Client()
 ```
 ### Make Decisions
 ```
