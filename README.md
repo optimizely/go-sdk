@@ -13,8 +13,6 @@ Optimizely Rollouts is [free feature flags](https://www.optimizely.com/free-feat
 ## Get Started
 
 Refer to the [Go SDK's developer documentation](https://docs.developers.optimizely.com/experimentation/v4.0.0-full-stack/docs/go-sdk) for detailed instructions on getting started with using the SDK.
-
-### Prerequisites
   
 ### Requirements  
 
@@ -66,15 +64,12 @@ go get github.com/optimizely/go-sdk/pkg
 ```
 will install it as a package to pkg directory, rather than src directory. It could be useful for future development and vendoring.
 
-### Packages
-
-### Configuration options
 
 ## Use the Go SDK
 
 See the example file in examples/main.go.
 
-### "Initialization"
+### Initialization
 
 ```
 import optly "github.com/optimizely/go-sdk"
