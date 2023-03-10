@@ -108,8 +108,18 @@ atributes := map[string]interface{}{
 user := optly.UserContext("optimizely end user", attributes)
 options := []decide.OptimizelyDecideOptions{decide.IncludeReasons}
 decision := userCtx.Decide("my_flag", options)
-if jsonResp, err := json.Marshal(convertDecisionToMap(decision)); err == nil {
-    fmt.Println("string(jsonResp)")
+
+var variationKey string
+if variationKey = decision.VariationKey; variationKey == "" {
+  fmt.Printf("[decide] error: %v", decision.GetReasons())
+  return
+}
+if variationKey == "control" {
+  // Execute code for control variation
+} else if variationKey == "treatment" {
+  // Execute code for treatment variation
+}
+
 }
 ```
 
@@ -167,8 +177,6 @@ https://github.com/golang/sync/blob/master/LICENSE
 - C# - https://github.com/optimizely/csharp-sdk
 
 - Flutter - https://github.com/optimizely/optimizely-flutter-sdk
-
-- Go - https://github.com/optimizely/go-sdk
 
 - Java - https://github.com/optimizely/java-sdk
 
