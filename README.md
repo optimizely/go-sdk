@@ -88,33 +88,33 @@ client, err = optimizelyFactory.Client()
 ```
 ### Make Decisions
 ```
-import (
-  optly "github.com/optimizely/go-sdk"
-)
+import ( 
+  optly "github.com/optimizely/go-sdk" 
+) 
 
-// instantiate a client
-client, err := optly.Client("SDK_KEY")
+// instantiate a client 
+client, err := optly.Client("SDK_KEY") 
 
-// User attributes are optional and used for targeting and results segmentation
-atributes := map[string]interface{}{
-     "state":      "California",
-     "likes_donuts": true,
-}, 
-user := optly.UserContext("optimizely end user", attributes)
-options := []decide.OptimizelyDecideOptions{decide.IncludeReasons}
-decision := userCtx.Decide("my_flag", options)
+// User attributes are optional and used for targeting and results segmentation 
+attributes := map[string]interface{}{ 
+  "state": "California", 
+  "likes_donuts": true, 
+} 
 
-var variationKey string
-if variationKey = decision.VariationKey; variationKey == "" {
-  fmt.Printf("[decide] error: %v", decision.GetReasons())
-  return
-}
-if variationKey == "control" {
-  // Execute code for control variation
-} else if variationKey == "treatment" {
-  // Execute code for treatment variation
-}
+user := client.CreateUserContext("optimizely end user", attributes) 
+options := []decide.OptimizelyDecideOptions{decide.IncludeReasons} 
 
+decision := user.Decide("my_flag", options) 
+var variationKey string 
+if variationKey = decision.VariationKey; variationKey == "" { 
+  fmt.Printf("[decide] error: %v", decision.Reasons) 
+  return 
+} 
+
+if variationKey == "control" { 
+	// Execute code for control variation 
+} else if variationKey == "treatment" { 
+	// Execute code for treatment variation 
 }
 ```
 
