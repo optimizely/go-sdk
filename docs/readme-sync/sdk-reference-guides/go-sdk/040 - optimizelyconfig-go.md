@@ -8,7 +8,7 @@ updatedAt: "2020-01-28T21:53:26.607Z"
 ---
 ### Overview
 
-Full Stack SDKs open a well-defined set of public APIs, hiding all implementation details. However, some clients may need access to project configuration data within the "datafile". 
+Optimizely Feature Experimentation and Optimizely Full Stack (legacy) SDKs open a well-defined set of public APIs, hiding all implementation details. However, some clients may need access to project configuration data within the "datafile". 
 
 In this document, we extend our public APIs to define data models and access methods, which clients can use to access project configuration data. 
 
