@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.
 
+## [1.8.4] - March 10th, 2023
+
+* We updated our README.md and other non-functional code to reflect that this SDK supports both Optimizely Feature Experimentation and Optimizely Full Stack. ([#366](https://github.com/optimizely/go-sdk/pull/366))
+
 ## [1.8.3] - October 12, 2022
 
 ### New Features
