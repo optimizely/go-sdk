@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2022 Optimizely, Inc. and contributors                    *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -232,4 +232,44 @@ func TestGetStringValue(t *testing.T) {
 	val15, err15 := GetStringValue(nil)
 	assert.NotNil(t, err15)
 	assert.Equal(t, val15, "")
+}
+
+func TestIsValidAttribute(t *testing.T) {
+	assert.False(t, IsValidAttribute(nil))
+	assert.False(t, IsValidAttribute(map[string]interface{}{}))
+	assert.False(t, IsValidAttribute([]string{}))
+	assert.False(t, IsValidAttribute([]interface{}{}))
+	assert.False(t, IsValidAttribute(make(chan int)))
+	assert.False(t, IsValidAttribute(complex64(1234.1231)))
+	assert.False(t, IsValidAttribute(complex128(123446.123123)))
+	assert.False(t, IsValidAttribute(math.Pow(2, 54)))
+
+	assert.False(t, IsValidAttribute(math.NaN()))
+	posInf := math.Inf(1)
+	assert.False(t, IsValidAttribute(posInf))
+	posInf += 12.2 // infinite value will still propagate after add operation
+	assert.False(t, IsValidAttribute(posInf))
+	negInf := math.Inf(-1)
+	assert.False(t, IsValidAttribute(negInf))
+	negInf /= negInf // will turn infinite into NaN
+	assert.False(t, IsValidAttribute(negInf))
+	assert.False(t, IsValidAttribute(math.Inf(0)))
+
+	assert.True(t, IsValidAttribute(bool(true)))
+	assert.True(t, IsValidAttribute(string("abcd")))
+	assert.True(t, IsValidAttribute(int(1)))
+	assert.True(t, IsValidAttribute(int8(-12)))
+	assert.True(t, IsValidAttribute(int16(-123)))
+	assert.True(t, IsValidAttribute(int32(1234)))
+	assert.True(t, IsValidAttribute(int64(123446)))
+	assert.True(t, IsValidAttribute(uint(1)))
+	assert.True(t, IsValidAttribute(uint8(12)))
+	assert.True(t, IsValidAttribute(uint16(123)))
+	assert.True(t, IsValidAttribute(uint32(1234)))
+	assert.True(t, IsValidAttribute(uint64(123446)))
+	assert.True(t, IsValidAttribute(uintptr(1)))
+	assert.True(t, IsValidAttribute(float32(12.11)))
+	assert.True(t, IsValidAttribute(float64(123.1231)))
+	assert.True(t, IsValidAttribute(byte(134)))
+	assert.True(t, IsValidAttribute(rune(123446)))
 }

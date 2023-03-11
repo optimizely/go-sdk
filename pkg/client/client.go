@@ -1,11 +1,11 @@
 /****************************************************************************
- * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2022, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -33,6 +33,9 @@ import (
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/notification"
+	"github.com/optimizely/go-sdk/pkg/odp"
+	pkgOdpSegment "github.com/optimizely/go-sdk/pkg/odp/segment"
+	pkgOdpUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/optimizely/go-sdk/pkg/optimizelyjson"
 	"github.com/optimizely/go-sdk/pkg/utils"
 
@@ -44,6 +47,7 @@ type OptimizelyClient struct {
 	ConfigManager        config.ProjectConfigManager
 	DecisionService      decision.Service
 	EventProcessor       event.Processor
+	OdpManager           odp.Manager
 	notificationCenter   notification.Center
 	execGroup            *utils.ExecGroup
 	logger               logging.OptimizelyLogProducer
@@ -53,7 +57,12 @@ type OptimizelyClient struct {
 // CreateUserContext creates a context of the user for which decision APIs will be called.
 // A user context will be created successfully even when the SDK is not fully configured yet.
 func (o *OptimizelyClient) CreateUserContext(userID string, attributes map[string]interface{}) OptimizelyUserContext {
-	return newOptimizelyUserContext(o, userID, attributes, nil)
+	if o.OdpManager != nil {
+		// Identify user to odp server
+		o.OdpManager.IdentifyUser(userID)
+	}
+	// Passing qualified segments as nil initially since they will be fetched later
+	return newOptimizelyUserContext(o, userID, attributes, nil, nil)
 }
 
 func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string, options *decide.Options) OptimizelyDecision {
@@ -90,8 +99,9 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	decisionContext.Feature = &feature
 
 	usrContext := entities.UserContext{
-		ID:         userContext.GetUserID(),
-		Attributes: userContext.GetUserAttributes(),
+		ID:                userContext.GetUserID(),
+		Attributes:        userContext.GetUserAttributes(),
+		QualifiedSegments: userContext.GetQualifiedSegments(),
 	}
 	var variationKey string
 	var eventSent, flagEnabled bool
@@ -230,6 +240,83 @@ func (o *OptimizelyClient) decideAll(userContext OptimizelyUserContext, options 
 	}
 
 	return o.decideForKeys(userContext, allFlagKeys, options)
+}
+
+// fetchQualifiedSegments fetches all qualified segments for the user context.
+// request is performed asynchronously only when callback is provided
+func (o *OptimizelyClient) fetchQualifiedSegments(userContext *OptimizelyUserContext, options []pkgOdpSegment.OptimizelySegmentOption, callback func(success bool)) {
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			switch t := r.(type) {
+			case error:
+				err = t
+			case string:
+				err = errors.New(t)
+			default:
+				err = errors.New("unexpected error")
+			}
+			o.logger.Error("fetchQualifiedSegments call, optimizely SDK is panicking with the error:", err)
+			o.logger.Debug(string(debug.Stack()))
+		}
+	}()
+
+	// on failure, qualifiedSegments should be reset if a previous value exists.
+	userContext.SetQualifiedSegments(nil)
+
+	if _, err = o.getProjectConfig(); err != nil {
+		o.logger.Error("fetchQualifiedSegments failed with error:", decide.GetDecideError(decide.SDKNotReady))
+		if callback != nil {
+			callback(false)
+		}
+		return
+	}
+
+	qualifiedSegments, segmentsError := o.OdpManager.FetchQualifiedSegments(userContext.GetUserID(), options)
+	success := segmentsError == nil
+
+	if success {
+		userContext.SetQualifiedSegments(qualifiedSegments)
+	} else {
+		o.logger.Error("fetchQualifiedSegments failed with error:", segmentsError)
+	}
+
+	if callback != nil {
+		callback(success)
+	}
+}
+
+// SendOdpEvent sends an event to the ODP server.
+func (o *OptimizelyClient) SendOdpEvent(eventType, action string, identifiers map[string]string, data map[string]interface{}) (err error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			switch t := r.(type) {
+			case error:
+				err = t
+			case string:
+				err = errors.New(t)
+			default:
+				err = errors.New("unexpected error")
+			}
+			errorMessage := fmt.Sprintf("SendOdpEvent call, optimizely SDK is panicking with the error:")
+			o.logger.Error(errorMessage, err)
+			o.logger.Debug(string(debug.Stack()))
+		}
+	}()
+
+	// the event type (default = "fullstack").
+	if eventType == "" {
+		eventType = pkgOdpUtils.OdpEventType
+	}
+
+	if len(identifiers) == 0 {
+		err = errors.New("ODP events must have at least one key-value pair in identifiers")
+		o.logger.Error("received an error while sending ODP event", err)
+		return err
+	}
+
+	return o.OdpManager.SendOdpEvent(eventType, action, identifiers, data)
 }
 
 // Activate returns the key of the variation the user is bucketed into and queues up an impression event to be sent to

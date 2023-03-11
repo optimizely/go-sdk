@@ -31,7 +31,21 @@ import (
 	jsoniter "github.com/json-iterator/go"
 )
 
-const defaultTTL = 5 * time.Second
+const (
+	// HeaderContentType is the HTTP Content Type header.
+	HeaderContentType = "Content-Type"
+
+	// HeaderAuthorization is the HTTP Authorization Type header.
+	HeaderAuthorization = "Authorization"
+
+	// HeaderAccept is the HTTP Accept Type header.
+	HeaderAccept = "Accept"
+
+	// ContentTypeJSON is the Content-Type value for a JSON response.
+	ContentTypeJSON = "application/json"
+
+	defaultTTL = 5 * time.Second
+)
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
@@ -94,7 +108,7 @@ func NewHTTPRequester(logger logging.OptimizelyLogProducer, params ...func(*HTTP
 
 	res := HTTPRequester{
 		retries: 1,
-		headers: []Header{{"Content-Type", "application/json"}, {"Accept", "application/json"}},
+		headers: []Header{{HeaderContentType, ContentTypeJSON}, {HeaderAccept, ContentTypeJSON}},
 		client:  http.Client{Timeout: defaultTTL},
 		logger:  logger,
 	}

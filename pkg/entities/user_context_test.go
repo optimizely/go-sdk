@@ -1,11 +1,11 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2022 Optimizely, Inc. and contributors                    *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -22,6 +22,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestIsQualifiedFor(t *testing.T) {
+	userContext := UserContext{
+		QualifiedSegments: []string{"1", "2", "3"},
+	}
+
+	// Test happy path
+	assert.Equal(t, true, userContext.IsQualifiedFor("1"))
+	assert.Equal(t, true, userContext.IsQualifiedFor("2"))
+	assert.Equal(t, true, userContext.IsQualifiedFor("3"))
+
+	// Test non-existent segment
+	assert.Equal(t, false, userContext.IsQualifiedFor("4"))
+}
 
 func TestUserAttributeExists(t *testing.T) {
 	userContext := UserContext{

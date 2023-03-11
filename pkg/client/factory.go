@@ -1,11 +1,11 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2020,2022-2023 Optimizely, Inc. and contributors          *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -28,6 +28,9 @@ import (
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/metrics"
+	"github.com/optimizely/go-sdk/pkg/notification"
+	"github.com/optimizely/go-sdk/pkg/odp"
+	pkgUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/optimizely/go-sdk/pkg/registry"
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
@@ -44,9 +47,15 @@ type OptimizelyFactory struct {
 	defaultDecideOptions *decide.Options
 	eventDispatcher      event.Dispatcher
 	eventProcessor       event.Processor
-	userProfileService   decision.UserProfileService
-	overrideStore        decision.ExperimentOverrideStore
 	metricsRegistry      metrics.Registry
+	overrideStore        decision.ExperimentOverrideStore
+	userProfileService   decision.UserProfileService
+
+	// ODP
+	segmentsCacheSize    int
+	segmentsCacheTimeout time.Duration
+	odpDisabled          bool
+	odpManager           odp.Manager
 }
 
 // OptionFunc is used to provide custom client configuration to the OptimizelyFactory.
@@ -54,6 +63,10 @@ type OptionFunc func(*OptimizelyFactory)
 
 // Client instantiates a new OptimizelyClient with the given options.
 func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClient, error) {
+	// Default values for odp cache
+	f.segmentsCacheSize = pkgUtils.DefaultSegmentsCacheSize
+	f.segmentsCacheTimeout = pkgUtils.DefaultSegmentsCacheTimeout
+
 	// extract options
 	for _, opt := range clientOptions {
 		opt(f)
@@ -139,6 +152,11 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		eg.Go(batchProcessor.Start)
 	}
 
+	// Initialize and Start odp manager if possible
+	// Needed a separate functions for this to avoid cyclo-complexity warning
+	f.initializeOdpManager(appClient)
+	f.startOdpManager(eg, appClient)
+
 	return appClient, nil
 }
 
@@ -162,6 +180,37 @@ func WithPollingConfigManagerDatafileAccessToken(pollingInterval time.Duration, 
 	return func(f *OptimizelyFactory) {
 		f.configManager = config.NewPollingProjectConfigManager(f.SDKKey, config.WithInitialDatafile(initDataFile),
 			config.WithPollingInterval(pollingInterval), config.WithDatafileAccessToken(datafileAccessToken))
+	}
+}
+
+// WithSegmentsCacheSize sets SegmentsCacheSize for odp manager.
+// Default value is 10000
+func WithSegmentsCacheSize(segmentsCacheSize int) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.segmentsCacheSize = segmentsCacheSize
+	}
+}
+
+// WithSegmentsCacheTimeout sets SegmentsCacheTimeoutInSecs for odp manager.
+// Default value is 600s
+func WithSegmentsCacheTimeout(segmentsCacheTimeout time.Duration) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.segmentsCacheTimeout = segmentsCacheTimeout
+	}
+}
+
+// WithOdpDisabled disables odp for the client.
+// Default value is false
+func WithOdpDisabled(disable bool) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.odpDisabled = disable
+	}
+}
+
+// WithOdpManager sets odp manager on a client.
+func WithOdpManager(odpManager odp.Manager) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.odpManager = odpManager
 	}
 }
 
@@ -251,6 +300,61 @@ func (f *OptimizelyFactory) StaticClient() (optlyClient *OptimizelyClient, err e
 	)
 
 	return optlyClient, err
+}
+
+func (f *OptimizelyFactory) initializeOdpManager(appClient *OptimizelyClient) {
+	appClient.OdpManager = f.odpManager
+	projectConfig, err := appClient.ConfigManager.GetConfig()
+	// For cases when project config is not fetched yet
+	isProjectConfigAvailable := err == nil && projectConfig != nil
+
+	// Create ODP Manager
+	if appClient.OdpManager == nil {
+		appClient.OdpManager = odp.NewOdpManager(f.SDKKey, f.odpDisabled, odp.WithSegmentsCacheSize(f.segmentsCacheSize), odp.WithSegmentsCacheTimeout(f.segmentsCacheTimeout))
+	}
+
+	// Update odp config with latest config
+	if isProjectConfigAvailable {
+		appClient.OdpManager.Update(projectConfig.GetPublicKeyForODP(), projectConfig.GetHostForODP(), projectConfig.GetSegmentList())
+	}
+}
+
+func (f *OptimizelyFactory) startOdpManager(eg *utils.ExecGroup, appClient *OptimizelyClient) {
+	// Only start service if odp is enabled
+	if f.odpDisabled {
+		return
+	}
+
+	odpManager, ok := appClient.OdpManager.(*odp.DefaultOdpManager)
+	if !ok {
+		return
+	}
+
+	// Start odp ticker
+	eg.Go(func(ctx context.Context) {
+		odpManager.EventManager.Start(ctx, odpManager.OdpConfig)
+	})
+
+	// Only check for changes if ConfigManager is non static
+	if _, ok = appClient.ConfigManager.(*config.StaticProjectConfigManager); ok {
+		return
+	}
+
+	// listen to ProjectConfigUpdateNotification to update odp config accordingly
+	callback := func(notification notification.ProjectConfigUpdateNotification) {
+		if conf, err := appClient.ConfigManager.GetConfig(); err == nil && conf != nil {
+			// Update odp manager with new changes and start service if not already started
+			apiKey := conf.GetPublicKeyForODP()
+			apiHost := conf.GetHostForODP()
+			segmentList := conf.GetSegmentList()
+			eg.Go(func(ctx context.Context) {
+				odpManager.Update(apiKey, apiHost, segmentList)
+				odpManager.EventManager.Start(ctx, odpManager.OdpConfig)
+			})
+		}
+	}
+	// Add callback for config update
+	_, _ = appClient.ConfigManager.OnProjectConfigUpdate(callback)
 }
 
 func convertDecideOptions(options []decide.OptimizelyDecideOptions) *decide.Options {
