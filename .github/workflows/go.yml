@@ -50,13 +50,10 @@ jobs:
     - uses: actions/setup-go@v3
       with:
         go-version: '1.19.7'
-    - name: Run Unit tests
-      run: |
+    - run: |
         go test -race -covermode atomic -coverprofile=covprofile ./...
-    - name: Install goveralls
-      run: go install github.com/mattn/goveralls@latest
-    - name: Send coverage
-      run: goveralls -coverprofile=covprofile -service=github
+        go install github.com/mattn/goveralls@latest
+        goveralls -coverprofile=covprofile -service=github
 
   benchmark_test:
     runs-on: ubuntu-latest
