@@ -78,12 +78,12 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	// bucket user into a variation
 	bucketingID, err := userContext.GetBucketingID()
 	if err != nil {
-		errorMessage := reasons.AddInfo(`Error computing bucketing ID for experiment "%s": "%s"`, experiment.Key, err.Error())
+		errorMessage := reasons.AddInfo(`Error computing bucketing ID for experiment %q: %q`, experiment.Key, err.Error())
 		s.logger.Debug(errorMessage)
 	}
 
 	if bucketingID != userContext.ID {
-		s.logger.Debug(fmt.Sprintf(`Using bucketing ID: "%s" for user "%s"`, bucketingID, userContext.ID))
+		s.logger.Debug(fmt.Sprintf(`Using bucketing ID: %q for user %q`, bucketingID, userContext.ID))
 	}
 	// @TODO: handle error from bucketer
 	variation, reason, _ := s.bucketer.Bucket(bucketingID, *experiment, group)

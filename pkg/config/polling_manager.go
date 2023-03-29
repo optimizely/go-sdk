@@ -257,7 +257,7 @@ func (cm *PollingProjectConfigManager) GetConfig() (ProjectConfig, error) {
 	cm.configLock.RLock()
 	defer cm.configLock.RUnlock()
 	if cm.projectConfig == nil {
-		return cm.projectConfig, cm.err
+		return nil, cm.err
 	}
 	return cm.projectConfig, nil
 }

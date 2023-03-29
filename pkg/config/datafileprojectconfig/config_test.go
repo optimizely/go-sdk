@@ -20,7 +20,7 @@ package datafileprojectconfig
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -549,7 +549,7 @@ func TestGetGroupByIDMissingIDError(t *testing.T) {
 
 func TestGetFlagVariationsMap(t *testing.T) {
 	absPath, _ := filepath.Abs("../../../test-data/decide-test-datafile.json")
-	datafile, err := ioutil.ReadFile(absPath)
+	datafile, err := os.ReadFile(absPath)
 	assert.NoError(t, err)
 	config, err := NewDatafileProjectConfig(datafile, logging.GetLogger("", ""))
 	assert.NoError(t, err)

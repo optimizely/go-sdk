@@ -18,8 +18,6 @@
 package decision
 
 import (
-	"fmt"
-
 	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
@@ -52,7 +50,7 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 		featureDecision, decisionReasons, err = featureDecisionService.GetDecision(decisionContext, userContext, options)
 		reasons.Append(decisionReasons)
 		if err != nil {
-			f.logger.Debug(fmt.Sprintf("%v", err))
+			f.logger.Debug(err.Error())
 		}
 
 		if featureDecision.Variation != nil && err == nil {

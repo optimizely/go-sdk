@@ -18,7 +18,7 @@ package config
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 
@@ -33,7 +33,7 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 
 	rootDirectory := "testdata/"
 	test := func(datafileOne string, datafileTwo string, compareExpMap bool) {
-		dataFile, err := ioutil.ReadFile(rootDirectory + datafileOne)
+		dataFile, err := os.ReadFile(rootDirectory + datafileOne)
 		if err != nil {
 			s.Fail("error opening file " + datafileOne)
 		}
@@ -45,7 +45,7 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 		}
 		optimizelyConfig := NewOptimizelyConfig(projConfig)
 
-		dataFile2, err := ioutil.ReadFile(rootDirectory + datafileTwo)
+		dataFile2, err := os.ReadFile(rootDirectory + datafileTwo)
 		if err != nil {
 			s.Fail("error opening file " + datafileTwo)
 		}
@@ -85,7 +85,7 @@ func (s *OptimizelyConfigTestSuite) TestOptlyConfig() {
 func (s *OptimizelyConfigTestSuite) TestSerializeAudiences() {
 
 	dataFileName := "testdata/typed_audience_datafile.json"
-	dataFile, err := ioutil.ReadFile(dataFileName)
+	dataFile, err := os.ReadFile(dataFileName)
 	if err != nil {
 		s.Fail("error opening file " + dataFileName)
 	}

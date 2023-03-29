@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -166,7 +165,7 @@ func (r HTTPRequester) Do(url, method string, body io.Reader, headers []Header) 
 			}
 		}()
 
-		if response, err = ioutil.ReadAll(resp.Body); err != nil {
+		if response, err = io.ReadAll(resp.Body); err != nil {
 			r.logger.Error("failed to read body", err)
 			return nil, resp.Header, resp.StatusCode, err
 		}

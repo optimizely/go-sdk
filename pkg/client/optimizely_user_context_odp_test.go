@@ -18,7 +18,7 @@ package client
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -71,7 +71,7 @@ func (m *MockEventAPIManager) SendOdpEvents(apiKey, apiHost string, events []eve
 func (o *OptimizelyUserContextODPTestSuite) SetupTest() {
 	o.doOnce.Do(func() {
 		absPath, _ := filepath.Abs("../../test-data/odp-test-datafile.json")
-		o.datafile, _ = ioutil.ReadFile(absPath)
+		o.datafile, _ = os.ReadFile(absPath)
 	})
 	o.userID = "tester"
 	o.apiKey = "W4WzcEs-ABgXorzY7h1LCQ"

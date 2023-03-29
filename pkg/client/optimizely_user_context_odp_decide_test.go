@@ -17,7 +17,7 @@
 package client
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -38,7 +38,7 @@ type OptimizelyUserContextODPDecideTestSuite struct {
 func (o *OptimizelyUserContextODPDecideTestSuite) SetupTest() {
 	o.doOnce.Do(func() {
 		absPath, _ := filepath.Abs("../../test-data/odp-test-datafile.json")
-		o.datafile, _ = ioutil.ReadFile(absPath)
+		o.datafile, _ = os.ReadFile(absPath)
 	})
 	o.userID = "tester"
 	o.flagKey = "flag-segment"
