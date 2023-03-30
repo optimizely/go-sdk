@@ -37,6 +37,10 @@ type MockRequester struct {
 	mock.Mock
 }
 
+func (m *MockRequester) String() string {
+	return ""
+}
+
 func (m *MockRequester) Get(uri string, headers ...utils.Header) (response []byte, responseHeaders http.Header, code int, err error) {
 	args := m.Called(headers)
 	return args.Get(0).([]byte), args.Get(1).(http.Header), args.Int(2), args.Error(3)

@@ -165,12 +165,12 @@ func getSerializedAudiences(conditions interface{}, audiencesByID map[string]ent
 								cond = strings.ToUpper(string(mappers.Or))
 							}
 							if serializedAudience == "" {
-								serializedAudience = fmt.Sprintf(`%s "%s"`, cond, audiencesByID[item].Name)
+								serializedAudience = fmt.Sprintf(`%s %q`, cond, audiencesByID[item].Name)
 							} else {
-								serializedAudience += fmt.Sprintf(` %s "%s"`, cond, audienceName)
+								serializedAudience += fmt.Sprintf(` %s %q`, cond, audienceName)
 							}
 						} else {
-							serializedAudience = fmt.Sprintf(`"%s"`, audienceName)
+							serializedAudience = fmt.Sprintf(`%q`, audienceName)
 						}
 					}
 				default:

@@ -19,7 +19,7 @@ package decision
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -42,7 +42,7 @@ func (s *ForcedDecisionServiceTestSuite) SetupTest() {
 	s.forcedDecisionService = NewForcedDecisionService("abc")
 	doOnce.Do(func() {
 		absPath, _ := filepath.Abs("../../test-data/decide-test-datafile.json")
-		datafile, _ = ioutil.ReadFile(absPath)
+		datafile, _ = os.ReadFile(absPath)
 	})
 
 	configManager := config.NewStaticProjectConfigManagerWithOptions("", config.WithInitialDatafile(datafile))

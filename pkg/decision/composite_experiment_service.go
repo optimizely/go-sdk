@@ -18,8 +18,6 @@
 package decision
 
 import (
-	"fmt"
-
 	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/entities"
 	"github.com/optimizely/go-sdk/pkg/logging"
@@ -91,7 +89,7 @@ func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisi
 		decision, decisionReasons, err = experimentService.GetDecision(decisionContext, userContext, options)
 		reasons.Append(decisionReasons)
 		if err != nil {
-			s.logger.Debug(fmt.Sprintf("%v", err))
+			s.logger.Debug(err.Error())
 		}
 		if decision.Variation != nil && err == nil {
 			return decision, reasons, err

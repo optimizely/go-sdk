@@ -77,7 +77,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("decide call, optimizely SDK is panicking with the error:")
+			errorMessage := "decide call, optimizely SDK is panicking with the error:"
 			o.logger.Error(errorMessage, err)
 			o.logger.Debug(string(debug.Stack()))
 		}
@@ -134,7 +134,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	}
 
 	if err != nil {
-		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature "%s": %s`, key, err))
+		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature %q: %s`, key, err))
 	}
 
 	if featureDecision.Variation != nil {
@@ -161,7 +161,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 
 	if o.notificationCenter != nil {
 		decisionNotification := decision.FlagNotification(key, variationKey, ruleKey, flagEnabled, eventSent, usrContext, variableMap, reasonsToReport)
-		o.logger.Info(fmt.Sprintf(`Feature "%s" is enabled for user "%s"? %v`, key, usrContext.ID, flagEnabled))
+		o.logger.Info(fmt.Sprintf(`Feature %q is enabled for user %q? %v`, key, usrContext.ID, flagEnabled))
 		if e := o.notificationCenter.Send(notification.Decision, *decisionNotification); e != nil {
 			o.logger.Warning("Problem with sending notification")
 		}
@@ -182,7 +182,7 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("decideForKeys call, optimizely SDK is panicking with the error:")
+			errorMessage := "decideForKeys call, optimizely SDK is panicking with the error:"
 			o.logger.Error(errorMessage, err)
 			o.logger.Debug(string(debug.Stack()))
 		}
@@ -222,7 +222,7 @@ func (o *OptimizelyClient) decideAll(userContext OptimizelyUserContext, options 
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("decideAll call, optimizely SDK is panicking with the error:")
+			errorMessage := "decideAll call, optimizely SDK is panicking with the error:"
 			o.logger.Error(errorMessage, err)
 			o.logger.Debug(string(debug.Stack()))
 		}
@@ -299,7 +299,7 @@ func (o *OptimizelyClient) SendOdpEvent(eventType, action string, identifiers ma
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("SendOdpEvent call, optimizely SDK is panicking with the error:")
+			errorMessage := "SendOdpEvent call, optimizely SDK is panicking with the error:"
 			o.logger.Error(errorMessage, err)
 			o.logger.Debug(string(debug.Stack()))
 		}
@@ -333,7 +333,7 @@ func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.U
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("Activate call, optimizely SDK is panicking with the error:")
+			errorMessage := "Activate call, optimizely SDK is panicking with the error:"
 			o.logger.Error(errorMessage, err)
 			o.logger.Debug(string(debug.Stack()))
 		}
@@ -371,7 +371,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("IsFeatureEnabled call, optimizely SDK is panicking with the error:")
+			errorMessage := "IsFeatureEnabled call, optimizely SDK is panicking with the error:"
 			o.logger.Error(errorMessage, err)
 			o.logger.Debug(string(debug.Stack()))
 		}
@@ -390,9 +390,9 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 	}
 
 	if result {
-		o.logger.Info(fmt.Sprintf(`Feature "%s" is enabled for user "%s".`, featureKey, userContext.ID))
+		o.logger.Info(fmt.Sprintf(`Feature %q is enabled for user %q.`, featureKey, userContext.ID))
 	} else {
-		o.logger.Info(fmt.Sprintf(`Feature "%s" is not enabled for user "%s".`, featureKey, userContext.ID))
+		o.logger.Info(fmt.Sprintf(`Feature %q is not enabled for user %q.`, featureKey, userContext.ID))
 	}
 
 	if o.notificationCenter != nil {
@@ -425,7 +425,7 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("GetEnabledFeatures call, optimizely SDK is panicking with the error:")
+			errorMessage := "GetEnabledFeatures call, optimizely SDK is panicking with the error:"
 			o.logger.Error(errorMessage, err)
 			o.logger.Debug(string(debug.Stack()))
 		}
@@ -689,7 +689,7 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string,
 
 	feature := decisionContext.Feature
 	if feature == nil {
-		o.logger.Warning(fmt.Sprintf(`feature "%s" does not exist`, featureKey))
+		o.logger.Warning(fmt.Sprintf(`feature %q does not exist`, featureKey))
 		return enabled, variableMap, nil
 	}
 
@@ -756,7 +756,7 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 
 	feature := decisionContext.Feature
 	if feature == nil {
-		o.logger.Warning(fmt.Sprintf(`feature "%s" does not exist`, featureKey))
+		o.logger.Warning(fmt.Sprintf(`feature %q does not exist`, featureKey))
 		return decisionInfo, nil
 	}
 
@@ -769,7 +769,7 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 			if variable, ok := featureDecision.Variation.Variables[v.ID]; ok {
 				val = variable.Value
 			} else {
-				o.logger.Warning(fmt.Sprintf(`variable with id "%s" does not exist`, v.ID))
+				o.logger.Warning(fmt.Sprintf(`variable with id %q does not exist`, v.ID))
 			}
 		}
 
@@ -813,7 +813,7 @@ func (o *OptimizelyClient) GetVariation(experimentKey string, userContext entiti
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("GetVariation call, optimizely SDK is panicking with the error:")
+			errorMessage := "GetVariation call, optimizely SDK is panicking with the error:"
 			o.logger.Error(errorMessage, err)
 			o.logger.Debug(string(debug.Stack()))
 		}
@@ -845,7 +845,7 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("Track call, optimizely SDK is panicking with the error:")
+			errorMessage := "Track call, optimizely SDK is panicking with the error:"
 			o.logger.Error(errorMessage, err)
 			o.logger.Debug(string(debug.Stack()))
 		}
@@ -860,7 +860,7 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 	configEvent, e := projectConfig.GetEventByKey(eventKey)
 
 	if e != nil {
-		errorMessage := fmt.Sprintf(`Unable to get event for key "%s": %s`, eventKey, e)
+		errorMessage := fmt.Sprintf(`Unable to get event for key %q: %s`, eventKey, e)
 		o.logger.Warning(errorMessage)
 		return nil
 	}
@@ -888,14 +888,14 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 			default:
 				err = errors.New("unexpected error")
 			}
-			errorMessage := fmt.Sprintf("getFeatureDecision call, optimizely SDK is panicking with the error:")
+			errorMessage := "getFeatureDecision call, optimizely SDK is panicking with the error:"
 			o.logger.Error(errorMessage, err)
 			o.logger.Debug(string(debug.Stack()))
 		}
 	}()
 
 	userID := userContext.ID
-	o.logger.Debug(fmt.Sprintf(`Evaluating feature "%s" for user "%s".`, featureKey, userID))
+	o.logger.Debug(fmt.Sprintf(`Evaluating feature %q for user %q.`, featureKey, userID))
 
 	projectConfig, e := o.getProjectConfig()
 	if e != nil {
@@ -906,7 +906,7 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 	decisionContext.ProjectConfig = projectConfig
 	feature, e := projectConfig.GetFeatureByKey(featureKey)
 	if e != nil {
-		o.logger.Warning(fmt.Sprintf(`Could not get feature for key "%s": %s`, featureKey, e))
+		o.logger.Warning(fmt.Sprintf(`Could not get feature for key %q: %s`, featureKey, e))
 		return decisionContext, featureDecision, nil
 	}
 
@@ -915,7 +915,7 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 	if variableKey != "" {
 		variable, err = projectConfig.GetVariableByKey(feature.Key, variableKey)
 		if err != nil {
-			o.logger.Warning(fmt.Sprintf(`Could not get variable for key "%s": %s`, variableKey, err))
+			o.logger.Warning(fmt.Sprintf(`Could not get variable for key %q: %s`, variableKey, err))
 			return decisionContext, featureDecision, nil
 		}
 	}
@@ -924,7 +924,7 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 	options := &decide.Options{}
 	featureDecision, _, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext, options)
 	if err != nil {
-		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature "%s": %s`, featureKey, err))
+		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature %q: %s`, featureKey, err))
 		return decisionContext, featureDecision, nil
 	}
 
@@ -934,7 +934,7 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userContext entities.UserContext) (decisionContext decision.ExperimentDecisionContext, experimentDecision decision.ExperimentDecision, err error) {
 
 	userID := userContext.ID
-	o.logger.Debug(fmt.Sprintf(`Evaluating experiment "%s" for user "%s".`, experimentKey, userID))
+	o.logger.Debug(fmt.Sprintf(`Evaluating experiment %q for user %q.`, experimentKey, userID))
 
 	projectConfig, e := o.getProjectConfig()
 	if e != nil {
@@ -943,7 +943,7 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 
 	experiment, e := projectConfig.GetExperimentByKey(experimentKey)
 	if e != nil {
-		o.logger.Warning(fmt.Sprintf(`Could not get experiment for key "%s": %s`, experimentKey, e))
+		o.logger.Warning(fmt.Sprintf(`Could not get experiment for key %q: %s`, experimentKey, e))
 		return decisionContext, experimentDecision, nil
 	}
 
@@ -955,15 +955,15 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 	options := &decide.Options{}
 	experimentDecision, _, err = o.DecisionService.GetExperimentDecision(decisionContext, userContext, options)
 	if err != nil {
-		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for experiment "%s": %s`, experimentKey, err))
+		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for experiment %q: %s`, experimentKey, err))
 		return decisionContext, experimentDecision, nil
 	}
 
 	if experimentDecision.Variation != nil {
 		result := experimentDecision.Variation.Key
-		o.logger.Info(fmt.Sprintf(`User "%s" is bucketed into variation "%s" of experiment "%s".`, userContext.ID, result, experimentKey))
+		o.logger.Info(fmt.Sprintf(`User %q is bucketed into variation %q of experiment %q.`, userContext.ID, result, experimentKey))
 	} else {
-		o.logger.Info(fmt.Sprintf(`User "%s" is not bucketed into any variation for experiment "%s": %s.`, userContext.ID, experimentKey, experimentDecision.Reason))
+		o.logger.Info(fmt.Sprintf(`User %q is not bucketed into any variation for experiment %q: %s.`, userContext.ID, experimentKey, experimentDecision.Reason))
 	}
 
 	return decisionContext, experimentDecision, err
@@ -1022,7 +1022,7 @@ func (o *OptimizelyClient) getTypedValue(value string, variableType entities.Var
 		convertedValue = optlyJSON.ToMap()
 	case entities.String:
 	default:
-		o.logger.Warning(fmt.Sprintf(`type "%s" is unknown, returning string`, variableType))
+		o.logger.Warning(fmt.Sprintf(`type %q is unknown, returning string`, variableType))
 	}
 	return convertedValue, err
 }

@@ -37,7 +37,7 @@ const (
 	whiteSpace          = " "
 )
 
-var digitCheck = regexp.MustCompile(`^[0-9]+$`)
+var digitCheck = regexp.MustCompile(`^\d+$`)
 
 // SemanticVersion defines the class
 type SemanticVersion struct {
