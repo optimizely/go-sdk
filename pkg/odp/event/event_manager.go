@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -175,6 +176,11 @@ func (bm *BatchEventManager) ProcessEvent(apiKey, apiHost string, odpEvent Event
 		return errors.New(utils.OdpNotIntegrated)
 	}
 
+	if odpEvent.Action == "" {
+		bm.logger.Error(utils.OdpInvalidAction, errors.New("invalid event action"))
+		return errors.New(utils.OdpInvalidAction)
+	}
+
 	if !utils.IsValidOdpData(odpEvent.Data) {
 		bm.logger.Error(utils.OdpInvalidData, errors.New("invalid event data"))
 		return errors.New(utils.OdpInvalidData)
@@ -187,6 +193,7 @@ func (bm *BatchEventManager) ProcessEvent(apiKey, apiHost string, odpEvent Event
 	}
 
 	bm.addCommonData(&odpEvent)
+	bm.convertIdentifiers(&odpEvent)
 	bm.eventQueue.Add(odpEvent)
 
 	if bm.eventQueue.Size() < bm.batchSize {
@@ -322,4 +329,20 @@ func (bm *BatchEventManager) addCommonData(odpEvent *Event) {
 		commonData[k] = v
 	}
 	odpEvent.Data = commonData
+}
+
+// Convert incorrect case/separator of identifier key `fs_user_id`
+// (ie. `fs-user-id`, `FS_USER_ID`).
+func (bm *BatchEventManager) convertIdentifiers(odpEvent *Event) {
+	if odpEvent.Identifiers[utils.OdpFSUserIDKey] != "" {
+		return
+	}
+	keysToCheck := map[string]bool{"fs-user-id": true, utils.OdpFSUserIDKey: true}
+	for k, v := range odpEvent.Identifiers {
+		if keysToCheck[strings.ToLower(k)] {
+			odpEvent.Identifiers[utils.OdpFSUserIDKey] = v
+			delete(odpEvent.Identifiers, k)
+			break
+		}
+	}
 }
