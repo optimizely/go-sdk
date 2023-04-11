@@ -40,3 +40,6 @@ const OdpEventFailed = "ODP event send failed (%s)"
 
 // OdpInvalidData error string when odp event data is invalid
 const OdpInvalidData = "ODP data is not valid"
+
+// OdpInvalidAction error string when odp event action is invalid
+const OdpInvalidAction = "ODP action is not valid (cannot be empty)"
