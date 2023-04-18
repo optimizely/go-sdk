@@ -226,6 +226,8 @@ func TestSendODPEventWhenODPDisabled(t *testing.T) {
 	var segmentsCacheTimeout = 1 * time.Second
 	var disableOdp = true
 	optimizelyClient, err := factory.Client(WithSegmentsCacheSize(segmentsCacheSize), WithSegmentsCacheTimeout(segmentsCacheTimeout), WithOdpDisabled(disableOdp))
+	optimizelyClient.ConfigManager = getMockConfigManager()
+
 	assert.NoError(t, err)
 	err = optimizelyClient.SendOdpEvent("123", "456", map[string]string{
 		"abc": "123",
@@ -236,7 +238,7 @@ func TestSendODPEventWhenODPDisabled(t *testing.T) {
 		"data_source":         true,
 		"data_source_version": 6.78,
 	})
-	assert.Error(t, err)
+	assert.Equal(t, errors.New(pkgOdpUtils.OdpNotEnabled), err)
 }
 
 func TestSendODPEventEmptyType(t *testing.T) {
@@ -255,7 +257,8 @@ func TestSendODPEventEmptyType(t *testing.T) {
 	mockOdpManager := &MockODPManager{}
 	mockOdpManager.On("SendOdpEvent", eventType, action, identifiers, data).Return(nil)
 	optimizelyClient := OptimizelyClient{
-		OdpManager: mockOdpManager,
+		OdpManager:    mockOdpManager,
+		ConfigManager: getMockConfigManager(),
 	}
 	err := optimizelyClient.SendOdpEvent("", action, identifiers, data)
 	assert.NoError(t, err)
@@ -273,10 +276,11 @@ func TestSendODPEventEmptyIdentifiers(t *testing.T) {
 		"data_source_version": 6.78,
 	}
 	optimizelyClient := OptimizelyClient{
-		logger: logging.GetLogger("", ""),
+		logger:        logging.GetLogger("", ""),
+		ConfigManager: getMockConfigManager(),
 	}
 	err := optimizelyClient.SendOdpEvent("", action, identifiers, data)
-	assert.Error(t, err)
+	assert.Equal(t, errors.New("ODP events must have at least one key-value pair in identifiers"), err)
 }
 
 func TestSendODPEventNilIdentifiers(t *testing.T) {
@@ -289,17 +293,19 @@ func TestSendODPEventNilIdentifiers(t *testing.T) {
 		"data_source_version": 6.78,
 	}
 	optimizelyClient := OptimizelyClient{
-		logger: logging.GetLogger("", ""),
+		logger:        logging.GetLogger("", ""),
+		ConfigManager: getMockConfigManager(),
 	}
 	err := optimizelyClient.SendOdpEvent("", action, nil, data)
-	assert.Error(t, err)
+	assert.Equal(t, errors.New("ODP events must have at least one key-value pair in identifiers"), err)
 }
 
 func TestSendODPEvent(t *testing.T) {
 	mockOdpManager := &MockODPManager{}
 	mockOdpManager.On("SendOdpEvent", "123", "", map[string]string{"identifier": "123"}, mock.Anything).Return(nil)
 	optimizelyClient := OptimizelyClient{
-		OdpManager: mockOdpManager,
+		OdpManager:    mockOdpManager,
+		ConfigManager: getMockConfigManager(),
 	}
 	err := optimizelyClient.SendOdpEvent("123", "", map[string]string{"identifier": "123"}, nil)
 	assert.NoError(t, err)
@@ -2137,6 +2143,13 @@ func getMockConfig(featureKey string, variableKey string, feature entities.Featu
 	mockConfig.On("GetFeatureByKey", featureKey).Return(feature, nil)
 	mockConfig.On("GetVariableByKey", featureKey, variableKey).Return(variable, nil)
 	return mockConfig
+}
+
+func getMockConfigManager() *MockProjectConfigManager {
+	mockConfig := new(MockProjectConfig)
+	mockConfigManager := new(MockProjectConfigManager)
+	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
+	return mockConfigManager
 }
 
 func getTestFeature(featureKey string, experiment entities.Experiment) entities.Feature {
