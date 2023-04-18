@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2022 Optimizely, Inc. and contributors                    *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -114,6 +114,12 @@ func BuildTestConversionEvent() UserEvent {
 	return conversionUserEvent
 }
 
+func TestVisitorTimestampMatchesUserEventTimestamp(t *testing.T) {
+	impressionUserEvent := BuildTestImpressionEvent()
+	visitor := createVisitorFromUserEvent(impressionUserEvent)
+	assert.Equal(t, impressionUserEvent.Timestamp, visitor.Snapshots[0].Events[0].Timestamp)
+}
+
 func TestCreateEmptyEvent(t *testing.T) {
 	impressionUserEvent := BuildTestImpressionEvent()
 
@@ -176,6 +182,7 @@ func TestCreateConversionEventRevenue(t *testing.T) {
 	assert.Equal(t, 25.1, *conversionUserEvent.Conversion.Value)
 
 	batch := createBatchEvent(conversionUserEvent, createVisitorFromUserEvent(conversionUserEvent))
+	assert.Equal(t, conversionUserEvent.Timestamp, batch.Visitors[0].Snapshots[0].Events[0].Timestamp)
 	assert.Equal(t, int64(55), *batch.Visitors[0].Snapshots[0].Events[0].Revenue)
 	assert.Equal(t, 25.1, *batch.Visitors[0].Snapshots[0].Events[0].Value)
 

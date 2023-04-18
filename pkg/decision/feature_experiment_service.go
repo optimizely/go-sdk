@@ -69,7 +69,7 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 		experimentDecision, decisionReasons, err := f.compositeExperimentService.GetDecision(experimentDecisionContext, userContext, options)
 		reasons.Append(decisionReasons)
 		f.logger.Debug(fmt.Sprintf(
-			`Decision made for feature test with key "%s" for user "%s" with the following reason: "%s".`,
+			`Decision made for feature test with key %q for user %q with the following reason: %q.`,
 			feature.Key,
 			userContext.ID,
 			experimentDecision.Reason,

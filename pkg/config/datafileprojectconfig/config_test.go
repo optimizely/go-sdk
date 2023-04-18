@@ -1,11 +1,11 @@
 /****************************************************************************
- * Copyright 2019,2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019,2021-2022, Optimizely, Inc. and contributors              *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -18,8 +18,9 @@
 package datafileprojectconfig
 
 import (
+	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -41,8 +42,8 @@ func TestNewDatafileProjectConfigNil(t *testing.T) {
 }
 
 func TestNewDatafileProjectConfigNotNil(t *testing.T) {
-	dpc := DatafileProjectConfig{accountID: "123", revision: "1", projectID: "12345", sdkKey: "a", environmentKey: "production", eventMap: map[string]entities.Event{"event_single_targeted_exp": {Key: "event_single_targeted_exp"}}, attributeMap: map[string]entities.Attribute{"10401066170": {ID: "10401066170"}}}
-	jsonDatafileStr := `{"accountID":"123","revision":"1","projectId":"12345","version":"4","sdkKey":"a","environmentKey":"production","events":[{"key":"event_single_targeted_exp"}],"attributes":[{"id":"10401066170"}]}`
+	dpc := DatafileProjectConfig{accountID: "123", revision: "1", projectID: "12345", sdkKey: "a", environmentKey: "production", eventMap: map[string]entities.Event{"event_single_targeted_exp": {Key: "event_single_targeted_exp"}}, attributeMap: map[string]entities.Attribute{"10401066170": {ID: "10401066170"}}, integrations: []entities.Integration{{PublicKey: "123", Host: "www.123.com", Key: "odp"}}}
+	jsonDatafileStr := `{"accountID":"123","revision":"1","projectId":"12345","version":"4","sdkKey":"a","environmentKey":"production","events":[{"key":"event_single_targeted_exp"}],"attributes":[{"id":"10401066170"}],"integrations": [{"publicKey": "123", "host": "www.123.com", "key": "odp"}]}`
 	jsonDatafile := []byte(jsonDatafileStr)
 	projectConfig, err := NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", "DatafileProjectConfig"))
 	assert.Nil(t, err)
@@ -52,16 +53,78 @@ func TestNewDatafileProjectConfigNotNil(t *testing.T) {
 	assert.Equal(t, dpc.projectID, projectConfig.projectID)
 	assert.Equal(t, dpc.environmentKey, projectConfig.environmentKey)
 	assert.Equal(t, dpc.sdkKey, projectConfig.sdkKey)
+	assert.Equal(t, dpc.integrations, projectConfig.integrations)
+}
+
+func TestNewDatafileProjectConfigWithODP(t *testing.T) {
+	expectedIntegrations := [][]entities.Integration{
+		{{PublicKey: "123", Host: "www.123.com", Key: "odp"}},
+		{{PublicKey: "123", Host: "www.123.com", Key: "odp"}},
+		{{Key: "odp"}},
+		{{PublicKey: "123", Host: "www.123.com"}},
+		{{PublicKey: "123", Host: "www.123.com"}},
+	}
+
+	expectedErrors := []error{
+		nil,
+		nil,
+		nil,
+		errors.New(""),
+		nil,
+	}
+
+	jsonDatafileStrs := []string{
+		// odp without extra keys
+		`{"version":"4","integrations": [{"publicKey": "123", "host": "www.123.com", "key": "odp"}]}`,
+		// odp with extra keys
+		`{"version":"4","integrations": [{"publicKey": "123", "host": "www.123.com", "key": "odp", "key1": "odp", "key2": "odp"}]}`,
+		// odp with missing host and public key keys
+		`{"version":"4","integrations": [{"key": "odp"}]}`,
+		// odp with missing key
+		`{"version":"4","integrations": [{"publicKey": "123", "host": "www.123.com"}]}`,
+		// odp with empty key
+		`{"version":"4","integrations": [{"key": "", "publicKey": "123", "host": "www.123.com"}]}`,
+	}
+
+	for i := 0; i < len(expectedIntegrations); i++ {
+		jsonDatafile := []byte(jsonDatafileStrs[i])
+		projectConfig, err := NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", "DatafileProjectConfig"))
+		assert.Equal(t, expectedErrors[i] == nil, err == nil)
+		if expectedErrors[i] == nil {
+			assert.NotNil(t, projectConfig)
+			assert.Equal(t, expectedIntegrations[i], projectConfig.integrations)
+		}
+	}
 }
 
 func TestGetDatafile(t *testing.T) {
-	jsonDatafileStr := `{"accountID": "123", "revision": "1", "projectId": "12345", "version": "4", "sdkKey": "a", "environmentKey": "production"}`
+	jsonDatafileStr := `{"accountID": "123", "revision": "1", "projectId": "12345", "version": "4", "sdkKey": "a", "environmentKey": "production","integrations": [{"publicKey": "123", "host": "www.123.com", "key": "odp"}]}`
 	jsonDatafile := []byte(jsonDatafileStr)
 	config := &DatafileProjectConfig{
 		datafile: string(jsonDatafile),
 	}
 
 	assert.Equal(t, string(jsonDatafile), config.GetDatafile())
+}
+
+func TestGetHostAndPublicKeyForValidODP(t *testing.T) {
+	jsonDatafileStr := `{"version": "4","integrations": [{"publicKey": "1234", "host": "www.1234.com", "key": "non-odp"},{"randomKey":"123", "publicKey": "123", "host": "www.123.com", "key": "123"},{"publicKey": "123", "host": "www.123.com", "key": "odp"}]}`
+	jsonDatafile := []byte(jsonDatafileStr)
+	config, err := NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", ""))
+	assert.NoError(t, err)
+	assert.Equal(t, string(jsonDatafile), config.GetDatafile())
+	assert.Equal(t, "www.123.com", config.GetHostForODP())
+	assert.Equal(t, "123", config.GetPublicKeyForODP())
+}
+
+func TestGetHostAndPublicKeyForInvalidODP(t *testing.T) {
+	jsonDatafileStr := `{"version": "4","integrations": [{"publicKey": "1234", "host": "www.1234.com", "key": "non-odp"},{"randomKey":"123", "publicKey": "123", "host": "www.123.com", "key": "123"}]}`
+	jsonDatafile := []byte(jsonDatafileStr)
+	config, err := NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", ""))
+	assert.NoError(t, err)
+	assert.Equal(t, string(jsonDatafile), config.GetDatafile())
+	assert.Equal(t, "", config.GetHostForODP())
+	assert.Equal(t, "", config.GetPublicKeyForODP())
 }
 
 func TestGetProjectID(t *testing.T) {
@@ -346,6 +409,25 @@ func TestGetRolloutList(t *testing.T) {
 	assert.Equal(t, config.rollouts, config.GetRolloutList())
 }
 
+func TestGetIntegrationListODP(t *testing.T) {
+	jsonDatafileStr := `{"version": "4","integrations": [{"publicKey": "1234", "host": "www.1234.com", "key": "non-odp"},{"publicKey": "123", "host": "www.123.com", "key": "odp"},{"randomKey":"123", "publicKey": "123", "host": "www.123.com", "key": "123"}]}`
+	jsonDatafile := []byte(jsonDatafileStr)
+	config, err := NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", ""))
+	assert.NoError(t, err)
+	assert.Equal(t, string(jsonDatafile), config.GetDatafile())
+	expectedIntegrations := []entities.Integration{{Host: "www.1234.com", PublicKey: "1234", Key: "non-odp"}, {Host: "www.123.com", PublicKey: "123", Key: "odp"}, {Host: "www.123.com", PublicKey: "123", Key: "123"}}
+	assert.Equal(t, expectedIntegrations, config.GetIntegrationList())
+}
+
+func TestGetSegmentList(t *testing.T) {
+	jsonDatafileStr := `{"version": "4","typedAudiences": [{"id": "22290411365", "conditions": ["and", ["or", ["or", {"value": "order_last_7_days", "type": "third_party_dimension", "name": "odp.audiences", "match": "qualified"}, {"value": "favoritecolorred", "type": "third_party_dimension", "name": "odp.audiences", "match": "qualified"}]]], "name": "sohail"}, {"id": "22282671333", "conditions": ["and", ["or", ["or", {"value": "has_email_or_phone_opted_in", "type": "third_party_dimension", "name": "odp.audiences", "match": "qualified"}]]], "name": "audience_age"}]}`
+	jsonDatafile := []byte(jsonDatafileStr)
+	expectedSegmentList := []string{"order_last_7_days", "favoritecolorred", "has_email_or_phone_opted_in"}
+	config, err := NewDatafileProjectConfig(jsonDatafile, logging.GetLogger("", ""))
+	assert.NoError(t, err)
+	assert.Equal(t, expectedSegmentList, config.GetSegmentList())
+}
+
 func TestGetAudienceList(t *testing.T) {
 	config := &DatafileProjectConfig{
 		audienceMap: map[string]entities.Audience{"5": {ID: "5", Name: "one"}, "6": {ID: "6", Name: "two"}},
@@ -467,7 +549,7 @@ func TestGetGroupByIDMissingIDError(t *testing.T) {
 
 func TestGetFlagVariationsMap(t *testing.T) {
 	absPath, _ := filepath.Abs("../../../test-data/decide-test-datafile.json")
-	datafile, err := ioutil.ReadFile(absPath)
+	datafile, err := os.ReadFile(absPath)
 	assert.NoError(t, err)
 	config, err := NewDatafileProjectConfig(datafile, logging.GetLogger("", ""))
 	assert.NoError(t, err)

@@ -1,11 +1,11 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2020,2022 Optimizely, Inc. and contributors               *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -29,6 +29,13 @@ import (
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/metrics"
+	"github.com/optimizely/go-sdk/pkg/notification"
+	"github.com/optimizely/go-sdk/pkg/odp"
+	"github.com/optimizely/go-sdk/pkg/odp/cache"
+	pkgOdpEvent "github.com/optimizely/go-sdk/pkg/odp/event"
+	pkgOdpSegment "github.com/optimizely/go-sdk/pkg/odp/segment"
+	pkgOdpUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
+	"github.com/optimizely/go-sdk/pkg/registry"
 	"github.com/optimizely/go-sdk/pkg/utils"
 
 	"github.com/stretchr/testify/assert"
@@ -54,6 +61,28 @@ func (f *MockDispatcher) DispatchEvent(event event.LogEvent) (bool, error) {
 	return true, nil
 }
 
+type MockConfigManager struct {
+	config.ProjectConfigManager
+	projectConfig             config.ProjectConfig
+	sdkKey                    string
+	notificationListenerAdded bool
+}
+
+func (m *MockConfigManager) GetConfig() (config.ProjectConfig, error) {
+	return m.projectConfig, nil
+}
+
+func (m *MockConfigManager) OnProjectConfigUpdate(callback func(notification.ProjectConfigUpdateNotification)) (int, error) {
+	m.notificationListenerAdded = true
+	notificationCenter := registry.GetNotificationCenter(m.sdkKey)
+	handler := func(payload interface{}) {
+		if projectConfigUpdateNotification, ok := payload.(notification.ProjectConfigUpdateNotification); ok {
+			callback(projectConfigUpdateNotification)
+		}
+	}
+	return notificationCenter.AddHandler(notification.ProjectConfigUpdate, handler)
+}
+
 func TestFactoryClientReturnsDefaultClient(t *testing.T) {
 	factory := OptimizelyFactory{}
 
@@ -72,6 +101,7 @@ func TestClientWithSDKKey(t *testing.T) {
 	assert.NotNil(t, optimizelyClient.ConfigManager)
 	assert.NotNil(t, optimizelyClient.DecisionService)
 	assert.NotNil(t, optimizelyClient.EventProcessor)
+	assert.NotNil(t, optimizelyClient.OdpManager)
 }
 
 func TestClientWithPollingConfigManager(t *testing.T) {
@@ -82,6 +112,7 @@ func TestClientWithPollingConfigManager(t *testing.T) {
 	assert.NotNil(t, optimizelyClient.ConfigManager)
 	assert.NotNil(t, optimizelyClient.DecisionService)
 	assert.NotNil(t, optimizelyClient.EventProcessor)
+	assert.NotNil(t, optimizelyClient.OdpManager)
 }
 
 func TestClientWithPollingConfigManagerDatafileAccessToken(t *testing.T) {
@@ -92,6 +123,7 @@ func TestClientWithPollingConfigManagerDatafileAccessToken(t *testing.T) {
 	assert.NotNil(t, optimizelyClient.ConfigManager)
 	assert.NotNil(t, optimizelyClient.DecisionService)
 	assert.NotNil(t, optimizelyClient.EventProcessor)
+	assert.NotNil(t, optimizelyClient.OdpManager)
 }
 func TestClientWithProjectConfigManagerInOptions(t *testing.T) {
 	factory := OptimizelyFactory{}
@@ -103,6 +135,7 @@ func TestClientWithProjectConfigManagerInOptions(t *testing.T) {
 	assert.NotNil(t, optimizelyClient.ConfigManager)
 	assert.NotNil(t, optimizelyClient.DecisionService)
 	assert.NotNil(t, optimizelyClient.EventProcessor)
+	assert.NotNil(t, optimizelyClient.OdpManager)
 }
 
 func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
@@ -119,10 +152,115 @@ func TestClientWithDecisionServiceAndEventProcessorInOptions(t *testing.T) {
 	assert.Equal(t, processor, optimizelyClient.EventProcessor)
 }
 
+func TestClientWithOdpManagerAndSDKSettingsInOptions(t *testing.T) {
+	factory := OptimizelyFactory{SDKKey: "1212"}
+	eventManager := pkgOdpEvent.NewBatchEventManager()
+	segmentManager := pkgOdpSegment.NewSegmentManager("1212")
+	var segmentsCacheSize = 1
+	var segmentsCacheTimeout = 1 * time.Second
+	var disableOdp = false
+	segmentCache := cache.NewLRUCache(0, 0)
+	odpManager := odp.NewOdpManager("1212", false, odp.WithEventManager(eventManager), odp.WithSegmentManager(segmentManager), odp.WithSegmentsCache(segmentCache))
+	optimizelyClient, err := factory.Client(WithOdpManager(odpManager), WithSegmentsCacheSize(segmentsCacheSize), WithSegmentsCacheTimeout(segmentsCacheTimeout), WithOdpDisabled(disableOdp))
+	assert.Equal(t, segmentsCacheSize, factory.segmentsCacheSize)
+	assert.Equal(t, segmentsCacheTimeout, factory.segmentsCacheTimeout)
+	assert.Equal(t, disableOdp, factory.odpDisabled)
+	assert.NoError(t, err)
+	assert.Equal(t, odpManager, optimizelyClient.OdpManager)
+}
+
+func TestClientWithDefaultSDKSettings(t *testing.T) {
+	factory := OptimizelyFactory{SDKKey: "1212"}
+	optimizelyClient, err := factory.Client()
+	assert.NoError(t, err)
+	assert.Equal(t, false, factory.odpDisabled)
+	assert.Equal(t, pkgOdpUtils.DefaultSegmentsCacheSize, factory.segmentsCacheSize)
+	assert.Equal(t, pkgOdpUtils.DefaultSegmentsCacheTimeout, factory.segmentsCacheTimeout)
+	assert.NotNil(t, optimizelyClient.OdpManager)
+}
+
+func TestDummy(t *testing.T) {
+	factory := OptimizelyFactory{}
+	configManager := config.NewPollingProjectConfigManager("123")
+	optimizelyClient, err := factory.Client(WithConfigManager(configManager))
+	assert.NoError(t, err)
+	userContext := optimizelyClient.CreateUserContext("123", nil)
+	assert.NotNil(t, userContext)
+}
+
+func TestODPManagerDoesNotStartIfOdpDisabled(t *testing.T) {
+	factory := OptimizelyFactory{}
+	mockDatafile := []byte(`{"version":"4","integrations": [{"publicKey": "123", "host": "www.123.com", "key": "odp"}]}`)
+	configManager := config.NewStaticProjectConfigManagerWithOptions("", config.WithInitialDatafile(mockDatafile))
+	var segmentsCacheSize = 1
+	var segmentsCacheTimeout = 1 * time.Second
+	var disableOdp = true
+	optimizelyClient, err := factory.Client(WithConfigManager(configManager), WithSegmentsCacheSize(segmentsCacheSize), WithSegmentsCacheTimeout(segmentsCacheTimeout), WithOdpDisabled(disableOdp))
+	assert.NoError(t, err)
+	assert.NotNil(t, optimizelyClient.OdpManager)
+	var odpManager = optimizelyClient.OdpManager.(*odp.DefaultOdpManager)
+	assert.Nil(t, odpManager.OdpConfig)
+	// ticket should not start
+	time.Sleep(100 * time.Millisecond)
+	assert.Nil(t, odpManager.EventManager)
+	assert.Nil(t, odpManager.SegmentManager)
+}
+
+func TestODPManagerInitializesWithLatestProjectConfig(t *testing.T) {
+	factory := OptimizelyFactory{SDKKey: "1234"}
+	mockDatafile := []byte(`{"version":"4","integrations": [{"publicKey": "123", "host": "www.123.com", "key": "odp"}]}`)
+	configManager := config.NewStaticProjectConfigManagerWithOptions("", config.WithInitialDatafile(mockDatafile))
+	optimizelyClient, err := factory.Client(WithConfigManager(configManager))
+	assert.NoError(t, err)
+	assert.NotNil(t, optimizelyClient.OdpManager)
+	var odpManager = optimizelyClient.OdpManager.(*odp.DefaultOdpManager)
+	assert.Equal(t, "www.123.com", odpManager.OdpConfig.GetAPIHost())
+	assert.Equal(t, "123", odpManager.OdpConfig.GetAPIKey())
+}
+
+func TestODPManagerListensToConfigManagerChangesAndUpdatesODPConfigAccordingly(t *testing.T) {
+	sdkKey := "abcd"
+	mockDatafile1 := []byte(`{"version":"4","integrations": [{"publicKey": "123", "host": "www.123.com", "key": "odp"}]}`)
+	factory := OptimizelyFactory{SDKKey: sdkKey}
+	tmpConfigManager1 := config.NewStaticProjectConfigManagerWithOptions("", config.WithInitialDatafile(mockDatafile1))
+	projectConfig1, err1 := tmpConfigManager1.GetConfig()
+	assert.NoError(t, err1)
+
+	// Create client with config manager
+	mockConfigManager := &MockConfigManager{projectConfig: projectConfig1, sdkKey: sdkKey}
+	optimizelyClient, err := factory.Client(WithConfigManager(mockConfigManager))
+	assert.NoError(t, err)
+	var odpManager = optimizelyClient.OdpManager.(*odp.DefaultOdpManager)
+	// Odp config should contain latest updates of config manager
+	assert.Equal(t, projectConfig1.GetHostForODP(), odpManager.OdpConfig.GetAPIHost())
+	assert.Equal(t, projectConfig1.GetPublicKeyForODP(), odpManager.OdpConfig.GetAPIKey())
+
+	// Update project config and trigger notification
+	// This should update odp config too
+	mockDatafile2 := []byte(`{"version":"4","integrations": [{"publicKey": "1234", "host": "www.1234.com", "key": "odp"}]}`)
+	tmpConfigManager2 := config.NewStaticProjectConfigManagerWithOptions("", config.WithInitialDatafile(mockDatafile2))
+	projectConfig2, err2 := tmpConfigManager2.GetConfig()
+	assert.NoError(t, err2)
+	// Update project config and trigger notification update to verify if notification listener
+	// was added and it updates odpConfigManager
+	mockConfigManager.projectConfig = projectConfig2
+	projectConfigUpdateNotification := notification.ProjectConfigUpdateNotification{
+		Type:     notification.ProjectConfigUpdate,
+		Revision: "123",
+	}
+	registry.GetNotificationCenter(sdkKey).Send(notification.ProjectConfigUpdate, projectConfigUpdateNotification)
+	// wait for notification to be received and config to be updated
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, projectConfig2.GetHostForODP(), odpManager.OdpConfig.GetAPIHost())
+	assert.Equal(t, projectConfig2.GetPublicKeyForODP(), odpManager.OdpConfig.GetAPIKey())
+}
+
 func TestClientWithCustomCtx(t *testing.T) {
 	factory := OptimizelyFactory{}
 	ctx, cancel := context.WithCancel(context.Background())
 	mockConfigManager := new(MockProjectConfigManager)
+	mockConfig := new(MockProjectConfig)
+	mockConfigManager.On("GetConfig").Return(mockConfig, errors.New("no project config available"))
 	client, err := factory.Client(
 		WithConfigManager(mockConfigManager),
 		WithContext(ctx),
@@ -144,6 +282,7 @@ func TestStaticClient(t *testing.T) {
 	factory := OptimizelyFactory{Datafile: []byte(`{"revision": "42", "version": "4"}`)}
 	optlyClient, err := factory.StaticClient()
 	assert.NoError(t, err)
+	assert.NotNil(t, optlyClient.OdpManager)
 
 	parsedConfig, _ := optlyClient.ConfigManager.GetConfig()
 	assert.Equal(t, "42", parsedConfig.GetRevision())

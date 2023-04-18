@@ -172,7 +172,7 @@ func (r RolloutService) getFeatureDecision(featureDecision *FeatureDecision, use
 	if featureDecision.Variation != nil {
 		featureDecision.Experiment = *experiment
 	}
-	r.logger.Debug(fmt.Sprintf(`Decision made for user "%s" for feature rollout with key "%s": %s.`, userContext.ID, feature.Key, featureDecision.Reason))
+	r.logger.Debug(fmt.Sprintf(`Decision made for user %q for feature rollout with key %q: %s.`, userContext.ID, feature.Key, featureDecision.Reason))
 	return *featureDecision
 }
 

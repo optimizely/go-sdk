@@ -263,8 +263,7 @@ func (p *BatchEventProcessor) canBatch(current *Batch, user UserEvent) bool {
 
 // add the visitor to the current batch
 func (p *BatchEventProcessor) addToBatch(current *Batch, visitor Visitor) {
-	visitors := append(current.Visitors, visitor)
-	current.Visitors = visitors
+	current.Visitors = append(current.Visitors, visitor)
 }
 
 // flushEvents flushes events in queue

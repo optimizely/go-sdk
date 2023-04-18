@@ -1,11 +1,11 @@
 /****************************************************************************
- * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2022, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
  * You may obtain a copy of the License at                                  *
  *                                                                          *
- *    http://www.apache.org/licenses/LICENSE-2.0                            *
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
  *                                                                          *
  * Unless required by applicable law or agreed to in writing, software      *
  * distributed under the License is distributed on an "AS IS" BASIS,        *
@@ -25,7 +25,14 @@ import (
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
+// String constant representing custom attribute condition type.
 const customAttributeType = "custom_attribute"
+
+// String constant representing a third-party condition type.
+const thirdPartyDimension = "third_party_dimension"
+
+// Valid types allowed for validation
+var validTypes = [...]string{customAttributeType, thirdPartyDimension}
 
 const (
 	// "and" operator returns true if all conditions evaluate to true

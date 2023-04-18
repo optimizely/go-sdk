@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2022 Optimizely, Inc. and contributors                    *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -21,16 +21,30 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/optimizely/go-sdk/pkg/logging"
 
 	jsoniter "github.com/json-iterator/go"
 )
 
-const defaultTTL = 5 * time.Second
+const (
+	// HeaderContentType is the HTTP Content Type header.
+	HeaderContentType = "Content-Type"
+
+	// HeaderAuthorization is the HTTP Authorization Type header.
+	HeaderAuthorization = "Authorization"
+
+	// HeaderAccept is the HTTP Accept Type header.
+	HeaderAccept = "Accept"
+
+	// ContentTypeJSON is the Content-Type value for a JSON response.
+	ContentTypeJSON = "application/json"
+
+	defaultTTL = 5 * time.Second
+)
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
@@ -50,10 +64,17 @@ type Header struct {
 	Name, Value string
 }
 
+// Client sets http client
+func Client(client http.Client) func(r *HTTPRequester) {
+	return func(r *HTTPRequester) {
+		r.client = client
+	}
+}
+
 // Timeout sets http client timeout
 func Timeout(timeout time.Duration) func(r *HTTPRequester) {
 	return func(r *HTTPRequester) {
-		r.client = http.Client{Timeout: timeout}
+		r.client.Timeout = timeout
 	}
 }
 
@@ -86,7 +107,7 @@ func NewHTTPRequester(logger logging.OptimizelyLogProducer, params ...func(*HTTP
 
 	res := HTTPRequester{
 		retries: 1,
-		headers: []Header{{"Content-Type", "application/json"}, {"Accept", "application/json"}},
+		headers: []Header{{HeaderContentType, ContentTypeJSON}, {HeaderAccept, ContentTypeJSON}},
 		client:  http.Client{Timeout: defaultTTL},
 		logger:  logger,
 	}
@@ -144,7 +165,7 @@ func (r HTTPRequester) Do(url, method string, body io.Reader, headers []Header) 
 			}
 		}()
 
-		if response, err = ioutil.ReadAll(resp.Body); err != nil {
+		if response, err = io.ReadAll(resp.Body); err != nil {
 			r.logger.Error("failed to read body", err)
 			return nil, resp.Header, resp.StatusCode, err
 		}
