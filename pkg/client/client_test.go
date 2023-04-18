@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020,2022 Optimizely, Inc. and contributors               *
+ * Copyright 2019-2020,2022-2023 Optimizely, Inc. and contributors          *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -203,6 +203,21 @@ func (m *MockODPManager) SendOdpEvent(eventType, action string, identifiers map[
 
 func (m *MockODPManager) Update(apiKey, apiHost string, segmentsToCheck []string) {
 	m.Called(apiKey, apiHost, segmentsToCheck)
+}
+
+func TestSendODPEventWhenSDKNotReady(t *testing.T) {
+	factory := OptimizelyFactory{SDKKey: "121"}
+	client, _ := factory.Client()
+	err := client.SendOdpEvent("123", "456", map[string]string{
+		"abc": "123",
+	}, map[string]interface{}{
+		"abc":                 nil,
+		"idempotence_id":      234,
+		"data_source_type":    "456",
+		"data_source":         true,
+		"data_source_version": 6.78,
+	})
+	assert.Error(t, err)
 }
 
 func TestSendODPEventWhenODPDisabled(t *testing.T) {
