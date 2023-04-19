@@ -199,8 +199,8 @@ func (t *mockLogger) Debug(message string)   {}
 func (t *mockLogger) Info(message string)    {}
 func (t *mockLogger) Warning(message string) {}
 func (t *mockLogger) Error(message string, err interface{}) {
-	if _, ok := err.(error); ok {
-		t.Errors = append(t.Errors, err.(error))
+	if err, ok := err.(error); ok {
+		t.Errors = append(t.Errors, err)
 	}
 }
 
