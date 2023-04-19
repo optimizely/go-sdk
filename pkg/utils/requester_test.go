@@ -199,7 +199,9 @@ func (t *mockLogger) Debug(message string)   {}
 func (t *mockLogger) Info(message string)    {}
 func (t *mockLogger) Warning(message string) {}
 func (t *mockLogger) Error(message string, err interface{}) {
-	t.Errors = append(t.Errors, err.(error))
+	if _, ok := err.(error); ok {
+		t.Errors = append(t.Errors, err.(error))
+	}
 }
 
 func TestGetBad(t *testing.T) {
@@ -212,9 +214,13 @@ func TestGetBad(t *testing.T) {
 	returnedErr, ok := err.(*url.Error)
 	assert.True(t, ok, "url error")
 
-	// Did we "log" the error?
+	// Check to make sure we have some log for bad url
 	assert.NotNil(t, mlog.Errors)
-	assert.Len(t, mlog.Errors, 1, "logged error")
+	// If we didn't get the expected error, we need to stop before we do the rest
+	// of the checks that depend on that error.
+	if !assert.Len(t, mlog.Errors, 1, "logged error") {
+		t.FailNow()
+	}
 	// Check to make sure the error that was logged is the same as what was returned
 	loggedErr, ok := mlog.Errors[0].(*url.Error)
 	assert.True(t, ok, "is URL error")
