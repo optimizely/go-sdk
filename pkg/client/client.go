@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2022, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2023, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -304,6 +304,11 @@ func (o *OptimizelyClient) SendOdpEvent(eventType, action string, identifiers ma
 			o.logger.Debug(string(debug.Stack()))
 		}
 	}()
+
+	if _, err = o.getProjectConfig(); err != nil {
+		o.logger.Error("SendOdpEvent failed with error:", decide.GetDecideError(decide.SDKNotReady))
+		return err
+	}
 
 	// the event type (default = "fullstack").
 	if eventType == "" {

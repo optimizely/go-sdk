@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020,2022 Optimizely, Inc. and contributors               *
+ * Copyright 2019-2020,2022-2023 Optimizely, Inc. and contributors          *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -205,12 +205,29 @@ func (m *MockODPManager) Update(apiKey, apiHost string, segmentsToCheck []string
 	m.Called(apiKey, apiHost, segmentsToCheck)
 }
 
+func TestSendODPEventWhenSDKNotReady(t *testing.T) {
+	factory := OptimizelyFactory{SDKKey: "121"}
+	client, _ := factory.Client()
+	err := client.SendOdpEvent("123", "456", map[string]string{
+		"abc": "123",
+	}, map[string]interface{}{
+		"abc":                 nil,
+		"idempotence_id":      234,
+		"data_source_type":    "456",
+		"data_source":         true,
+		"data_source_version": 6.78,
+	})
+	assert.Error(t, err)
+}
+
 func TestSendODPEventWhenODPDisabled(t *testing.T) {
 	factory := OptimizelyFactory{SDKKey: "1212"}
 	var segmentsCacheSize = 1
 	var segmentsCacheTimeout = 1 * time.Second
 	var disableOdp = true
 	optimizelyClient, err := factory.Client(WithSegmentsCacheSize(segmentsCacheSize), WithSegmentsCacheTimeout(segmentsCacheTimeout), WithOdpDisabled(disableOdp))
+	optimizelyClient.ConfigManager = getMockConfigManager()
+
 	assert.NoError(t, err)
 	err = optimizelyClient.SendOdpEvent("123", "456", map[string]string{
 		"abc": "123",
@@ -221,7 +238,7 @@ func TestSendODPEventWhenODPDisabled(t *testing.T) {
 		"data_source":         true,
 		"data_source_version": 6.78,
 	})
-	assert.Error(t, err)
+	assert.Equal(t, errors.New(pkgOdpUtils.OdpNotEnabled), err)
 }
 
 func TestSendODPEventEmptyType(t *testing.T) {
@@ -240,7 +257,8 @@ func TestSendODPEventEmptyType(t *testing.T) {
 	mockOdpManager := &MockODPManager{}
 	mockOdpManager.On("SendOdpEvent", eventType, action, identifiers, data).Return(nil)
 	optimizelyClient := OptimizelyClient{
-		OdpManager: mockOdpManager,
+		OdpManager:    mockOdpManager,
+		ConfigManager: getMockConfigManager(),
 	}
 	err := optimizelyClient.SendOdpEvent("", action, identifiers, data)
 	assert.NoError(t, err)
@@ -258,10 +276,11 @@ func TestSendODPEventEmptyIdentifiers(t *testing.T) {
 		"data_source_version": 6.78,
 	}
 	optimizelyClient := OptimizelyClient{
-		logger: logging.GetLogger("", ""),
+		logger:        logging.GetLogger("", ""),
+		ConfigManager: getMockConfigManager(),
 	}
 	err := optimizelyClient.SendOdpEvent("", action, identifiers, data)
-	assert.Error(t, err)
+	assert.Equal(t, errors.New("ODP events must have at least one key-value pair in identifiers"), err)
 }
 
 func TestSendODPEventNilIdentifiers(t *testing.T) {
@@ -274,17 +293,19 @@ func TestSendODPEventNilIdentifiers(t *testing.T) {
 		"data_source_version": 6.78,
 	}
 	optimizelyClient := OptimizelyClient{
-		logger: logging.GetLogger("", ""),
+		logger:        logging.GetLogger("", ""),
+		ConfigManager: getMockConfigManager(),
 	}
 	err := optimizelyClient.SendOdpEvent("", action, nil, data)
-	assert.Error(t, err)
+	assert.Equal(t, errors.New("ODP events must have at least one key-value pair in identifiers"), err)
 }
 
 func TestSendODPEvent(t *testing.T) {
 	mockOdpManager := &MockODPManager{}
 	mockOdpManager.On("SendOdpEvent", "123", "", map[string]string{"identifier": "123"}, mock.Anything).Return(nil)
 	optimizelyClient := OptimizelyClient{
-		OdpManager: mockOdpManager,
+		OdpManager:    mockOdpManager,
+		ConfigManager: getMockConfigManager(),
 	}
 	err := optimizelyClient.SendOdpEvent("123", "", map[string]string{"identifier": "123"}, nil)
 	assert.NoError(t, err)
@@ -2122,6 +2143,13 @@ func getMockConfig(featureKey string, variableKey string, feature entities.Featu
 	mockConfig.On("GetFeatureByKey", featureKey).Return(feature, nil)
 	mockConfig.On("GetVariableByKey", featureKey, variableKey).Return(variable, nil)
 	return mockConfig
+}
+
+func getMockConfigManager() *MockProjectConfigManager {
+	mockConfig := new(MockProjectConfig)
+	mockConfigManager := new(MockProjectConfigManager)
+	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
+	return mockConfigManager
 }
 
 func getTestFeature(featureKey string, experiment entities.Experiment) entities.Feature {
