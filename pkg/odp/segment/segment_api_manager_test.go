@@ -98,7 +98,8 @@ func (s *SegmentAPIManagerTestSuite) SetupTest() {
 			  "customer"
 			],
 			"extensions": {
-			  "classification": "InvalidIdentifierException"
+				"code": "INVALID_IDENTIFIER_EXCEPTION",
+				"classification": "DataFetchingException"
 			}
 		  }
 		],
