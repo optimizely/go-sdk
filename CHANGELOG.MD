@@ -11,7 +11,7 @@ Changes that have landed but are not yet released.
 
 ### New Features  
 
-The 2.0.0-beta release introduces a new primary feature, [Advanced Audience Targeting]( https://docs.developers.optimizely.com/feature-experimentation/docs/optimizely-data-platform-advanced-audience-targeting) enabled through integration with [Optimizely Data Platform (ODP)](https://docs.developers.optimizely.com/optimizely-data-platform/docs) ([#347](https://github.com/optimizely/go-sdk/pull/347), [#350](https://github.com/optimizely/go-sdk/pull/350), [#352](https://github.com/optimizely/go-sdk/pull/352), [#353](https://github.com/optimizely/go-sdk/pull/353), [#354](https://github.com/optimizely/go-sdk/pull/354), [#355](https://github.com/optimizely/go-sdk/pull/355), [#356](https://github.com/optimizely/go-sdk/pull/356), [#362](https://github.com/optimizely/go-sdk/pull/362), [#364](https://github.com/optimizely/go-sdk/pull/364), [#365](https://github.com/optimizely/go-sdk/pull/365), [#369](https://github.com/optimizely/go-sdk/pull/369), [#370](https://github.com/optimizely/go-sdk/pull/370), [#371](https://github.com/optimizely/go-sdk/pull/371), [#372](https://github.com/optimizely/go-sdk/pull/372)).
+The 2.0.0-beta release introduces a new primary feature, [Advanced Audience Targeting]( https://docs.developers.optimizely.com/feature-experimentation/docs/optimizely-data-platform-advanced-audience-targeting) enabled through integration with [Optimizely Data Platform (ODP)](https://docs.developers.optimizely.com/optimizely-data-platform/docs) ([#350](https://github.com/optimizely/go-sdk/pull/350), [#353](https://github.com/optimizely/go-sdk/pull/353), [#354](https://github.com/optimizely/go-sdk/pull/354), [#355](https://github.com/optimizely/go-sdk/pull/355)).
 
 You can use ODP, a high-performance [Customer Data Platform (CDP)]( https://www.optimizely.com/optimization-glossary/customer-data-platform/), to easily create complex real-time segments (RTS) using first-party and 50+ third-party data sources out of the box. You can create custom schemas that support the user attributes important for your business, and stitch together user behavior done on different devices to better understand and target your customers for personalized user experiences. ODP can be used as a single source of truth for these segments in any Optimizely or 3rd party tool.  
 
@@ -46,7 +46,7 @@ For details, refer to our documentation pages:
 ### Breaking Changes 
 
 * ODPManager in the SDK is enabled by default. Unless an ODP account is integrated into the Optimizely projects, most ODPManager functions will be ignored. If needed, ODPManager can be disabled when `OptimizelyClient` is instantiated. 
-* Minimum golang version changed from 1.13 to 1.19. 
+* Minimum golang version changed from 1.13 to 1.19. ([#369](https://github.com/optimizely/go-sdk/pull/369))
 
 ## [1.8.4] - March 10th, 2023
 
