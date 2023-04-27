@@ -110,7 +110,7 @@ func (e *EventAPIManagerTestSuite) TestSuggestRetryForNetworkTimeout() {
 // 			"idempotence_id":      "xyz",
 // 			"source":              "go-sdk",
 // 			"data_source_type":    "sdk",
-// 			"data_source_version": "1.8.3",
+// 			"data_source_version": "2.0.0-beta",
 // 		},
 // 	}}
 // 	canRetry, err := e.eventAPIManager.SendOdpEvents("W4WzcEs-ABgXorzY7h1LCQ", "https://api.zaius.com", events)
