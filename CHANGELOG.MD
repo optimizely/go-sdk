@@ -19,29 +19,29 @@ With ODP accounts integrated into Optimizely projects, you can build audiences u
 
 This version includes the following changes: 
 
-New API added to `OptimizelyUserContext`: 
+* New API added to `OptimizelyUserContext`: 
 
-`FetchQualifiedSegments()`: this API will retrieve user segments from the ODP server. The fetched segments will be used for audience evaluation. The fetched data will be stored in the local cache to avoid repeated network delays. 
+	- `FetchQualifiedSegments()`: this API will retrieve user segments from the ODP server. The fetched segments will be used for audience evaluation. The fetched data will be stored in the local cache to avoid repeated network delays. 
 
-When an OptimizelyUserContext is created, the SDK will automatically send an identify request to the ODP server to facilitate observing user activities. 
+	- When an `OptimizelyUserContext` is created, the SDK will automatically send an identify request to the ODP server to facilitate observing user activities. 
 
-New APIs added to `OptimizelyClient`: 
+* New APIs added to `OptimizelyClient`: 
 
-`SendOdpEvent()`: customers can build/send arbitrary ODP events that will bind user identifiers and data to user profiles in ODP.
+	- `SendOdpEvent()`: customers can build/send arbitrary ODP events that will bind user identifiers and data to user profiles in ODP. 
 
 For details, refer to our documentation pages:  
 
-[Advanced Audience Targeting](https://docs.developers.optimizely.com/feature-experimentation/docs/optimizely-data-platform-advanced-audience-targeting)  
+* [Advanced Audience Targeting](https://docs.developers.optimizely.com/feature-experimentation/docs/optimizely-data-platform-advanced-audience-targeting)  
 
-[Server SDK Support](https://docs.developers.optimizely.com/feature-experimentation/v1.0/docs/advanced-audience-targeting-for-server-side-sdks) 
+* [Server SDK Support](https://docs.developers.optimizely.com/feature-experimentation/v1.0/docs/advanced-audience-targeting-for-server-side-sdks) 
 
-[Initialize Go SDK](https://docs.developers.optimizely.com/feature-experimentation/docs/initialize-sdk-go) 
+* [Initialize Go SDK](https://docs.developers.optimizely.com/feature-experimentation/docs/initialize-sdk-go) 
 
-[OptimizelyUserContext Go SDK](https://docs.developers.optimizely.com/feature-experimentation/docs/optimizelyusercontext-go) 
+* [OptimizelyUserContext Go SDK](https://docs.developers.optimizely.com/feature-experimentation/docs/optimizelyusercontext-go) 
 
-[Advanced Audience Targeting segment qualification methods](https://docs.developers.optimizely.com/feature-experimentation/v1.0/docs/advanced-audience-targeting-segment-qualification-methods-go) 
+* [Advanced Audience Targeting segment qualification methods](https://docs.developers.optimizely.com/feature-experimentation/v1.0/docs/advanced-audience-targeting-segment-qualification-methods-go) 
 
-[Send Optimizely Data Platform data using Advanced Audience Targeting](https://docs.developers.optimizely.com/feature-experimentation/v1.0/docs/send-odp-data-using-advanced-audience-targeting-go) 
+* [Send Optimizely Data Platform data using Advanced Audience Targeting](https://docs.developers.optimizely.com/feature-experimentation/v1.0/docs/send-odp-data-using-advanced-audience-targeting-go) 
 
 ### Breaking Changes 
 
