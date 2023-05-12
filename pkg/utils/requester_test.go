@@ -208,7 +208,7 @@ func TestGetBad(t *testing.T) {
 	mLogger := &mockLogger{}
 	httpreq := NewHTTPRequester(mLogger)
 
-	badURL := "htp:/ww.bad-url.fake/blah12345"
+	badURL := "http://ww.bad-url.fake/blah12345"
 	_, _, _, err := httpreq.Get(badURL)
 	returnedErr, ok := err.(*url.Error)
 	assert.True(t, ok, "url error")
