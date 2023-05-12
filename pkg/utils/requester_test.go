@@ -190,39 +190,38 @@ func TestPostObj(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-// mockLogger exists to check that the logged error is what we expected
 type mockLogger struct {
 	Errors []error
 }
 
-func (t *mockLogger) Debug(message string)   {}
-func (t *mockLogger) Info(message string)    {}
-func (t *mockLogger) Warning(message string) {}
-func (t *mockLogger) Error(message string, err interface{}) {
+func (m *mockLogger) Debug(message string)   {}
+func (m *mockLogger) Info(message string)    {}
+func (m *mockLogger) Warning(message string) {}
+func (m *mockLogger) Error(message string, err interface{}) {
 	if err, ok := err.(error); ok {
-		t.Errors = append(t.Errors, err)
+		m.Errors = append(m.Errors, err)
 	}
 }
 
 func TestGetBad(t *testing.T) {
 	// Using a mockLogger to ensure we're logging the expected error message
-	mlog := &mockLogger{}
-	httpreq := NewHTTPRequester(mlog)
+	mLogger := &mockLogger{}
+	httpreq := NewHTTPRequester(mLogger)
 
-	badURL := "blah12345/good"
+	badURL := "htp:/ww.bad-url.fake/blah12345"
 	_, _, _, err := httpreq.Get(badURL)
 	returnedErr, ok := err.(*url.Error)
 	assert.True(t, ok, "url error")
 
 	// Check to make sure we have some log for bad url
-	assert.NotNil(t, mlog.Errors)
+	assert.NotNil(t, mLogger.Errors)
 	// If we didn't get the expected error, we need to stop before we do the rest
 	// of the checks that depend on that error.
-	if !assert.Len(t, mlog.Errors, 1, "logged error") {
+	if !assert.Len(t, mLogger.Errors, 1, "logged error") {
 		t.FailNow()
 	}
 	// Check to make sure the error that was logged is the same as what was returned
-	loggedErr, ok := mlog.Errors[0].(*url.Error)
+	loggedErr, ok := mLogger.Errors[0].(*url.Error)
 	assert.True(t, ok, "is URL error")
 	assert.Equal(t, returnedErr, loggedErr, "expected same error")
 	assert.Equal(t, badURL, loggedErr.URL, "expected the URL we requested")
