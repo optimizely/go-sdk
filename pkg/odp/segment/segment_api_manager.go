@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2022, Optimizely, Inc. and contributors                        *
+ * Copyright 2022-2023, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -108,7 +108,8 @@ type APIManager interface {
          "customer"
        ],
        "extensions": {
-         "classification": "InvalidIdentifierException"
+         "code": "INVALID_IDENTIFIER_EXCEPTION",
+         "classification": "DataFetchingException"
        }
      }
    ],
@@ -160,7 +161,7 @@ func (sm *DefaultSegmentAPIManager) FetchQualifiedSegments(apiKey, apiHost, user
 	if odpErrors, ok := sm.extractComponent("errors", responseMap).([]interface{}); ok {
 		if odpError, ok := odpErrors[0].(map[string]interface{}); ok {
 			if errorClass, ok := sm.extractComponent("extensions.classification", odpError).(string); ok {
-				if errorClass == "InvalidIdentifierException" {
+				if errorCode, ok := sm.extractComponent("extensions.code", odpError).(string); ok && errorCode == "INVALID_IDENTIFIER_EXCEPTION" {
 					return nil, errors.New(utils.InvalidSegmentIdentifier)
 				}
 				return nil, fmt.Errorf(utils.FetchSegmentsFailedError, errorClass)
