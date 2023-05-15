@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019,2021-2022 Optimizely, Inc. and contributors               *
+ * Copyright 2019,2021-2023 Optimizely, Inc. and contributors               *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -190,12 +190,41 @@ func TestPostObj(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestGetBad(t *testing.T) {
+type mockLogger struct {
+	Errors []error
+}
 
-	httpreq := NewHTTPRequester(logging.GetLogger("", ""))
-	_, _, _, err := httpreq.Get("blah12345/good")
-	_, ok := err.(*url.Error)
+func (m *mockLogger) Debug(message string)   {}
+func (m *mockLogger) Info(message string)    {}
+func (m *mockLogger) Warning(message string) {}
+func (m *mockLogger) Error(message string, err interface{}) {
+	if err, ok := err.(error); ok {
+		m.Errors = append(m.Errors, err)
+	}
+}
+
+func TestGetBad(t *testing.T) {
+	// Using a mockLogger to ensure we're logging the expected error message
+	mLogger := &mockLogger{}
+	httpreq := NewHTTPRequester(mLogger)
+
+	badURL := "http://ww.bad-url.fake/blah12345"
+	_, _, _, err := httpreq.Get(badURL)
+	returnedErr, ok := err.(*url.Error)
 	assert.True(t, ok, "url error")
+
+	// Check to make sure we have some log for bad url
+	assert.NotNil(t, mLogger.Errors)
+	// If we didn't get the expected error, we need to stop before we do the rest
+	// of the checks that depend on that error.
+	if !assert.Len(t, mLogger.Errors, 1, "logged error") {
+		t.FailNow()
+	}
+	// Check to make sure the error that was logged is the same as what was returned
+	loggedErr, ok := mLogger.Errors[0].(*url.Error)
+	assert.True(t, ok, "is URL error")
+	assert.Equal(t, returnedErr, loggedErr, "expected same error")
+	assert.Equal(t, badURL, loggedErr.URL, "expected the URL we requested")
 }
 
 func TestGetBadWithResponse(t *testing.T) {

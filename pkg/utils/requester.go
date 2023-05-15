@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019,2022 Optimizely, Inc. and contributors                    *
+ * Copyright 2019,2022-2023 Optimizely, Inc. and contributors               *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -143,7 +143,7 @@ func (r HTTPRequester) Do(url, method string, body io.Reader, headers []Header) 
 	single := func(request *http.Request) (response []byte, responseHeaders http.Header, code int, e error) {
 		resp, doErr := r.client.Do(request)
 		if doErr != nil {
-			r.logger.Error(fmt.Sprintf("failed to send request %v", request), e)
+			r.logger.Error(fmt.Sprintf("failed to send request %v", request), doErr)
 			return nil, http.Header{}, 0, doErr
 		}
 		defer func() {
