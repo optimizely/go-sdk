@@ -61,6 +61,10 @@ func (f *MockDispatcher) DispatchEvent(event event.LogEvent) (bool, error) {
 	return true, nil
 }
 
+func (f *MockDispatcher) EventsInQueue() int {
+	return 0
+}
+
 type MockConfigManager struct {
 	config.ProjectConfigManager
 	projectConfig             config.ProjectConfig

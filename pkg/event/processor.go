@@ -189,7 +189,7 @@ func (p *BatchEventProcessor) Start(ctx context.Context) {
 func (p *BatchEventProcessor) WaitForDispatchingEventsOnClose(timeout, interval time.Duration) {
 	startTime := time.Now()
 	for {
-		if p.Q.Size() == 0 && p.EventDispatcher.EventsCount() == 0 {
+		if p.Q.Size() == 0 && p.EventDispatcher.EventsInQueue() == 0 {
 			break
 		}
 

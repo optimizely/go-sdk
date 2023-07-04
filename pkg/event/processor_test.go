@@ -42,6 +42,10 @@ func (c *CountingDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	return true, nil
 }
 
+func (c *CountingDispatcher) EventsInQueue() int {
+	return 0
+}
+
 type MockDispatcher struct {
 	ShouldFail bool
 	Events     Queue
@@ -54,6 +58,10 @@ func (m *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 
 	m.Events.Add(event)
 	return true, nil
+}
+
+func (m *MockDispatcher) EventsInQueue() int {
+	return m.Events.Size()
 }
 
 func NewMockDispatcher(queueSize int, shouldFail bool) *MockDispatcher {
@@ -493,7 +501,8 @@ func (l *NoOpLogger) SetLogLevel(level logging.LogLevel) {
 
 }
 
-/**
+/*
+*
 goos: darwin
 goarch: amd64
 pkg: github.com/optimizely/go-sdk/pkg/event
