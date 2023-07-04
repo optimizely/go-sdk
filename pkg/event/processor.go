@@ -37,6 +37,7 @@ type Processor interface {
 	ProcessEvent(event UserEvent) bool
 	OnEventDispatch(callback func(logEvent LogEvent)) (int, error)
 	RemoveOnEventDispatch(id int) error
+	WaitForDispatchingEventsOnClose(timeout, interval time.Duration)
 }
 
 // BatchEventProcessor is used out of the box by the SDK to queue up and batch events to be sent to the Optimizely
@@ -182,6 +183,21 @@ func (p *BatchEventProcessor) Start(ctx context.Context) {
 
 	p.logger.Info("Batch event processor started")
 	p.startTicker(ctx)
+}
+
+// Start does not do any initialization, just starts the ticker
+func (p *BatchEventProcessor) WaitForDispatchingEventsOnClose(timeout, interval time.Duration) {
+	startTime := time.Now()
+	for {
+		if p.Q.Size() == 0 && p.EventDispatcher.EventsCount() == 0 {
+			break
+		}
+
+		if time.Since(startTime) > timeout {
+			break
+		}
+		time.Sleep(interval)
+	}
 }
 
 // ProcessEvent takes the given user event (can be an impression or conversion event) and queues it up to be dispatched

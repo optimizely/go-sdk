@@ -24,6 +24,7 @@ import (
 	"reflect"
 	"runtime/debug"
 	"strconv"
+	"time"
 
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decide"
@@ -1064,6 +1065,7 @@ func (o *OptimizelyClient) GetOptimizelyConfig() (optimizelyConfig *config.Optim
 // Close closes the Optimizely instance and stops any ongoing tasks from its children components.
 func (o *OptimizelyClient) Close() {
 	o.execGroup.TerminateAndWait()
+	o.EventProcessor.WaitForDispatchingEventsOnClose(time.Minute, time.Second)
 }
 
 func (o *OptimizelyClient) getDecisionVariableMap(feature entities.Feature, variation *entities.Variation, featureEnabled bool) (map[string]interface{}, decide.DecisionReasons) {

@@ -37,6 +37,7 @@ const sleepTime = 1 * time.Second
 // Dispatcher dispatches events
 type Dispatcher interface {
 	DispatchEvent(event LogEvent) (bool, error)
+	EventsCount() int
 }
 
 // httpEventDispatcher is the HTTP implementation of the Dispatcher interface
@@ -65,6 +66,10 @@ func (ed *httpEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 		}
 	}
 	return success, err
+}
+
+func (ed *httpEventDispatcher) EventsCount() int {
+	return 0
 }
 
 // NewHTTPEventDispatcher creates a full http dispatcher. The requester and logger parameters can be nil.
@@ -98,6 +103,10 @@ func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	ed.eventQueue.Add(event)
 	go ed.flushEvents()
 	return true, nil
+}
+
+func (ed *QueueEventDispatcher) EventsCount() int {
+	return ed.eventQueue.Size()
 }
 
 // flush the events
