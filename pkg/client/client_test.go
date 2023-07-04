@@ -105,7 +105,7 @@ func (m *MockProcessor) RemoveOnEventDispatch(id int) error {
 	return nil
 }
 
-func (m *MockProcessor) WaitForDispatchingEventsOnClose(_, _ time.Duration) {}
+func (m *MockProcessor) WaitForDispatchingEventsOnClose(ctx context.Context) {}
 
 type MockNotificationCenter struct {
 	notification.Center

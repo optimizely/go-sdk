@@ -37,7 +37,7 @@ type Processor interface {
 	ProcessEvent(event UserEvent) bool
 	OnEventDispatch(callback func(logEvent LogEvent)) (int, error)
 	RemoveOnEventDispatch(id int) error
-	WaitForDispatchingEventsOnClose(timeout, interval time.Duration)
+	WaitForDispatchingEventsOnClose(ctx context.Context)
 }
 
 // BatchEventProcessor is used out of the box by the SDK to queue up and batch events to be sent to the Optimizely
@@ -65,6 +65,9 @@ const DefaultEventQueueSize = 2000
 
 // DefaultEventFlushInterval holds the default value for the event flush interval
 const DefaultEventFlushInterval = 30 * time.Second
+
+// WaitForDispatchingEventsInterval holds the checking interval for the dispatching events on client close
+const WaitForDispatchingEventsInterval = 500 * time.Millisecond
 
 // DefaultEventEndPoint is used as the default endpoint for sending events.
 const DefaultEventEndPoint = "https://logx.optimizely.com/v1/events"
@@ -185,18 +188,18 @@ func (p *BatchEventProcessor) Start(ctx context.Context) {
 	p.startTicker(ctx)
 }
 
-// Start does not do any initialization, just starts the ticker
-func (p *BatchEventProcessor) WaitForDispatchingEventsOnClose(timeout, interval time.Duration) {
-	startTime := time.Now()
+// WaitForDispatchingEventsOnClose waits until all the events are dispatched
+func (p *BatchEventProcessor) WaitForDispatchingEventsOnClose(ctx context.Context) {
 	for {
-		if p.Q.Size() == 0 && p.EventDispatcher.EventsInQueue() == 0 {
-			break
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if p.Q.Size() == 0 && p.EventDispatcher.EventsInQueue() == 0 {
+				return
+			}
+			time.Sleep(WaitForDispatchingEventsInterval)
 		}
-
-		if time.Since(startTime) > timeout {
-			break
-		}
-		time.Sleep(interval)
 	}
 }
 

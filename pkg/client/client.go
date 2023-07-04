@@ -18,6 +18,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -54,6 +55,9 @@ type OptimizelyClient struct {
 	logger               logging.OptimizelyLogProducer
 	defaultDecideOptions *decide.Options
 }
+
+// WaitForDispatchingEventsTimeout holds the timeout value for the waiting for the dispatching events on client close
+const WaitForDispatchingEventsTimeout = 10 * time.Second
 
 // CreateUserContext creates a context of the user for which decision APIs will be called.
 // A user context will be created successfully even when the SDK is not fully configured yet.
@@ -1065,7 +1069,9 @@ func (o *OptimizelyClient) GetOptimizelyConfig() (optimizelyConfig *config.Optim
 // Close closes the Optimizely instance and stops any ongoing tasks from its children components.
 func (o *OptimizelyClient) Close() {
 	o.execGroup.TerminateAndWait()
-	o.EventProcessor.WaitForDispatchingEventsOnClose(time.Minute, time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), WaitForDispatchingEventsTimeout)
+	defer cancel()
+	o.EventProcessor.WaitForDispatchingEventsOnClose(ctx)
 }
 
 func (o *OptimizelyClient) getDecisionVariableMap(feature entities.Feature, variation *entities.Variation, featureEnabled bool) (map[string]interface{}, decide.DecisionReasons) {
