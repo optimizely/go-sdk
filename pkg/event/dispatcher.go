@@ -105,6 +105,7 @@ func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	return true, nil
 }
 
+// EventsInQueue returns the events count in the queue.
 func (ed *QueueEventDispatcher) EventsInQueue() int {
 	return ed.eventQueue.Size()
 }
