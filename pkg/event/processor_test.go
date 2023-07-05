@@ -47,8 +47,9 @@ func (c *CountingDispatcher) EventsInQueue() int {
 }
 
 type MockDispatcher struct {
-	ShouldFail bool
-	Events     Queue
+	ShouldFail  bool
+	Events      Queue
+	eventsQueue Queue // dispatch events from this queue
 }
 
 func (m *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
@@ -57,15 +58,27 @@ func (m *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	}
 
 	m.Events.Add(event)
+	if m.eventsQueue != nil {
+		m.eventsQueue.Add(event)
+		go m.flushEvents()
+	}
 	return true, nil
 }
 
 func (m *MockDispatcher) EventsInQueue() int {
-	return m.Events.Size()
+	return m.eventsQueue.Size()
+}
+
+func (m *MockDispatcher) flushEvents() {
+	queueSize := m.eventsQueue.Size()
+	for ; queueSize > 0; queueSize = m.eventsQueue.Size() {
+		m.eventsQueue.Remove(1)
+		time.Sleep(5 * time.Millisecond)
+	}
 }
 
 func NewMockDispatcher(queueSize int, shouldFail bool) *MockDispatcher {
-	return &MockDispatcher{Events: NewInMemoryQueue(queueSize), ShouldFail: shouldFail}
+	return &MockDispatcher{Events: NewInMemoryQueue(queueSize), eventsQueue: NewInMemoryQueue(queueSize), ShouldFail: shouldFail}
 }
 
 func newExecutionContext() *utils.ExecGroup {
@@ -188,7 +201,6 @@ func TestDefaultEventProcessor_BatchSizes(t *testing.T) {
 		assert.Equal(t, 50, len(logEvent.Event.Visitors))
 		logEvent, _ = evs[1].(LogEvent)
 		assert.Equal(t, 50, len(logEvent.Event.Visitors))
-
 	}
 	eg.TerminateAndWait()
 }
