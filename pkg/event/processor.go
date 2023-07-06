@@ -37,7 +37,6 @@ type Processor interface {
 	ProcessEvent(event UserEvent) bool
 	OnEventDispatch(callback func(logEvent LogEvent)) (int, error)
 	RemoveOnEventDispatch(id int) error
-	WaitForDispatchingEventsOnClose(ctx context.Context)
 }
 
 // BatchEventProcessor is used out of the box by the SDK to queue up and batch events to be sent to the Optimizely
@@ -68,6 +67,9 @@ const DefaultEventFlushInterval = 30 * time.Second
 
 // WaitForDispatchingEventsInterval holds the checking interval for the dispatching events on client close
 const WaitForDispatchingEventsInterval = 500 * time.Millisecond
+
+// WaitForDispatchingEventsTimeout holds the timeout value for the waiting for the dispatching events on client close
+const WaitForDispatchingEventsTimeout = 30 * time.Second
 
 // DefaultEventEndPoint is used as the default endpoint for sending events.
 const DefaultEventEndPoint = "https://logx.optimizely.com/v1/events"
@@ -188,21 +190,6 @@ func (p *BatchEventProcessor) Start(ctx context.Context) {
 	p.startTicker(ctx)
 }
 
-// WaitForDispatchingEventsOnClose waits until all the events are dispatched
-func (p *BatchEventProcessor) WaitForDispatchingEventsOnClose(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			if p.Q.Size() == 0 && p.EventDispatcher.EventsInQueue() == 0 {
-				return
-			}
-			time.Sleep(WaitForDispatchingEventsInterval)
-		}
-	}
-}
-
 // ProcessEvent takes the given user event (can be an impression or conversion event) and queues it up to be dispatched
 // to the Optimizely log endpoint. A dispatch happens when we flush the events, which can happen on a set interval or
 // when the specified batch size (defaulted to 10) is reached.
@@ -264,6 +251,9 @@ func (p *BatchEventProcessor) startTicker(ctx context.Context) {
 			d, ok := p.EventDispatcher.(*QueueEventDispatcher)
 			if ok {
 				d.flushEvents()
+				waitCtx, cancel := context.WithTimeout(context.Background(), WaitForDispatchingEventsTimeout)
+				defer cancel()
+				d.waitForDispatchingEventsOnClose(waitCtx)
 			}
 			p.Ticker.Stop()
 			return

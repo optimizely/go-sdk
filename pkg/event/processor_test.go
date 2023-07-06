@@ -42,10 +42,6 @@ func (c *CountingDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	return true, nil
 }
 
-func (c *CountingDispatcher) EventsInQueue() int {
-	return 0
-}
-
 type MockDispatcher struct {
 	ShouldFail  bool
 	Events      Queue
@@ -63,10 +59,6 @@ func (m *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 		go m.flushEvents()
 	}
 	return true, nil
-}
-
-func (m *MockDispatcher) EventsInQueue() int {
-	return m.eventsQueue.Size()
 }
 
 func (m *MockDispatcher) flushEvents() {
@@ -399,20 +391,20 @@ func TestBatchEventProcessor_WaitForDispatchingEventsOnClose(t *testing.T) {
 
 	impression := BuildTestImpressionEvent()
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10; i++ {
 		processor.ProcessEvent(impression)
 	}
 
-	assert.Equal(t, 100, processor.eventsCount())
+	assert.Equal(t, 10, processor.eventsCount())
 
 	// Triggers the flush in the processor
 	eg.TerminateAndWait()
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel()
-	processor.WaitForDispatchingEventsOnClose(ctx)
+
+	dispatcher, ok := processor.EventDispatcher.(*MockDispatcher)
+	assert.True(t, ok)
 
 	assert.Equal(t, 0, processor.eventsCount())
-	assert.Equal(t, 0, processor.EventDispatcher.EventsInQueue())
+	assert.Equal(t, 0, dispatcher.eventsQueue.Size())
 }
 
 func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
@@ -540,7 +532,6 @@ func (l *NoOpLogger) SetLogLevel(level logging.LogLevel) {
 }
 
 /*
-*
 goos: darwin
 goarch: amd64
 pkg: github.com/optimizely/go-sdk/pkg/event

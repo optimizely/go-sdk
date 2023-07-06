@@ -18,6 +18,7 @@
 package event
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -37,7 +38,6 @@ const sleepTime = 1 * time.Second
 // Dispatcher dispatches events
 type Dispatcher interface {
 	DispatchEvent(event LogEvent) (bool, error)
-	EventsInQueue() int
 }
 
 // httpEventDispatcher is the HTTP implementation of the Dispatcher interface
@@ -66,10 +66,6 @@ func (ed *httpEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 		}
 	}
 	return success, err
-}
-
-func (ed *httpEventDispatcher) EventsInQueue() int {
-	return 0
 }
 
 // NewHTTPEventDispatcher creates a full http dispatcher. The requester and logger parameters can be nil.
@@ -105,14 +101,24 @@ func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	return true, nil
 }
 
-// EventsInQueue returns the events count in the queue.
-func (ed *QueueEventDispatcher) EventsInQueue() int {
-	return ed.eventQueue.Size()
+// waitForDispatchingEventsOnClose will wait until all the event are dispatched or
+// until the given context is alive
+func (ed *QueueEventDispatcher) waitForDispatchingEventsOnClose(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if ed.eventQueue.Size() == 0 {
+				return
+			}
+			time.Sleep(WaitForDispatchingEventsInterval)
+		}
+	}
 }
 
 // flush the events
 func (ed *QueueEventDispatcher) flushEvents() {
-
 	// Limit flushing to a single worker
 	if !ed.processing.TryAcquire(1) {
 		return
