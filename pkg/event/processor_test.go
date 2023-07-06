@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2020,2023 Optimizely, Inc. and contributors               *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -43,8 +43,9 @@ func (c *CountingDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 }
 
 type MockDispatcher struct {
-	ShouldFail bool
-	Events     Queue
+	ShouldFail  bool
+	Events      Queue
+	eventsQueue Queue // dispatch events from this queue
 }
 
 func (m *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
@@ -53,11 +54,22 @@ func (m *MockDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	}
 
 	m.Events.Add(event)
+	if m.eventsQueue != nil {
+		m.eventsQueue.Add(event)
+		go m.flushEvents()
+	}
 	return true, nil
 }
 
+func (m *MockDispatcher) flushEvents() {
+	queueSize := m.eventsQueue.Size()
+	for ; queueSize > 0; queueSize = m.eventsQueue.Size() {
+		m.eventsQueue.Remove(1)
+	}
+}
+
 func NewMockDispatcher(queueSize int, shouldFail bool) *MockDispatcher {
-	return &MockDispatcher{Events: NewInMemoryQueue(queueSize), ShouldFail: shouldFail}
+	return &MockDispatcher{Events: NewInMemoryQueue(queueSize), eventsQueue: NewInMemoryQueue(queueSize), ShouldFail: shouldFail}
 }
 
 func newExecutionContext() *utils.ExecGroup {
@@ -180,7 +192,6 @@ func TestDefaultEventProcessor_BatchSizes(t *testing.T) {
 		assert.Equal(t, 50, len(logEvent.Event.Visitors))
 		logEvent, _ = evs[1].(LogEvent)
 		assert.Equal(t, 50, len(logEvent.Event.Visitors))
-
 	}
 	eg.TerminateAndWait()
 }
@@ -493,7 +504,7 @@ func (l *NoOpLogger) SetLogLevel(level logging.LogLevel) {
 
 }
 
-/**
+/*
 goos: darwin
 goarch: amd64
 pkg: github.com/optimizely/go-sdk/pkg/event

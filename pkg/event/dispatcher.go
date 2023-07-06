@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2023 Optimizely, Inc. and contributors                    *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -18,6 +18,7 @@
 package event
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -100,9 +101,26 @@ func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	return true, nil
 }
 
+// waitForDispatchingEventsOnClose will wait until all the event are dispatched
+func (ed *QueueEventDispatcher) waitForDispatchingEventsOnClose(timeout time.Duration) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if ed.eventQueue.Size() == 0 {
+				return
+			}
+			time.Sleep(CloseEventDispatchWaitTime)
+		}
+	}
+}
+
 // flush the events
 func (ed *QueueEventDispatcher) flushEvents() {
-
 	// Limit flushing to a single worker
 	if !ed.processing.TryAcquire(1) {
 		return

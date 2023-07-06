@@ -65,6 +65,12 @@ const DefaultEventQueueSize = 2000
 // DefaultEventFlushInterval holds the default value for the event flush interval
 const DefaultEventFlushInterval = 30 * time.Second
 
+// CloseEventDispatchWaitTime holds the checking interval for the dispatching events on client close
+const CloseEventDispatchWaitTime = 500 * time.Millisecond
+
+// CloseEventDispatchTimeout holds the timeout value for the waiting for the dispatching events on client close
+const CloseEventDispatchTimeout = 30 * time.Second
+
 // DefaultEventEndPoint is used as the default endpoint for sending events.
 const DefaultEventEndPoint = "https://logx.optimizely.com/v1/events"
 
@@ -245,6 +251,7 @@ func (p *BatchEventProcessor) startTicker(ctx context.Context) {
 			d, ok := p.EventDispatcher.(*QueueEventDispatcher)
 			if ok {
 				d.flushEvents()
+				d.waitForDispatchingEventsOnClose(CloseEventDispatchTimeout)
 			}
 			p.Ticker.Stop()
 			return
