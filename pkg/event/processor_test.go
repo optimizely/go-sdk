@@ -65,7 +65,6 @@ func (m *MockDispatcher) flushEvents() {
 	queueSize := m.eventsQueue.Size()
 	for ; queueSize > 0; queueSize = m.eventsQueue.Size() {
 		m.eventsQueue.Remove(1)
-		time.Sleep(5 * time.Millisecond)
 	}
 }
 

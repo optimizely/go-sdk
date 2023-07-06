@@ -101,9 +101,11 @@ func (ed *QueueEventDispatcher) DispatchEvent(event LogEvent) (bool, error) {
 	return true, nil
 }
 
-// waitForDispatchingEventsOnClose will wait until all the event are dispatched or
-// until the given context is alive
-func (ed *QueueEventDispatcher) waitForDispatchingEventsOnClose(ctx context.Context) {
+// waitForDispatchingEventsOnClose will wait until all the event are dispatched
+func (ed *QueueEventDispatcher) waitForDispatchingEventsOnClose(timeout time.Duration) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
 	for {
 		select {
 		case <-ctx.Done():

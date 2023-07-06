@@ -251,9 +251,7 @@ func (p *BatchEventProcessor) startTicker(ctx context.Context) {
 			d, ok := p.EventDispatcher.(*QueueEventDispatcher)
 			if ok {
 				d.flushEvents()
-				waitCtx, cancel := context.WithTimeout(context.Background(), WaitForDispatchingEventsTimeout)
-				defer cancel()
-				d.waitForDispatchingEventsOnClose(waitCtx)
+				d.waitForDispatchingEventsOnClose(WaitForDispatchingEventsTimeout)
 			}
 			p.Ticker.Stop()
 			return
