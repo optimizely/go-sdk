@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, Optimizely, Inc. and contributors                        *
+ * Copyright 2019,2023 Optimizely, Inc. and contributors                    *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -114,7 +114,7 @@ func (ed *QueueEventDispatcher) waitForDispatchingEventsOnClose(timeout time.Dur
 			if ed.eventQueue.Size() == 0 {
 				return
 			}
-			time.Sleep(WaitForDispatchingEventsInterval)
+			time.Sleep(CloseEventDispatchWaitTime)
 		}
 	}
 }
