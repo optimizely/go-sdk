@@ -197,3 +197,40 @@ func TestQueueEventDispatcher_FailDispath(t *testing.T) {
 	assert.Equal(t, float64(1), metricsRegistry.GetGauge(metrics.DispatcherQueueSize).(*MetricsGauge).Get())
 	assert.Equal(t, float64(0), metricsRegistry.GetCounter(metrics.DispatcherSuccessFlush).(*MetricsCounter).Get())
 }
+
+func TestQueueEventDispatcher_WaitForDispatchingEventsOnClose(t *testing.T) {
+	metricsRegistry := NewMetricsRegistry()
+
+	q := NewQueueEventDispatcher("", metricsRegistry)
+
+	assert.True(t, q.Dispatcher != nil)
+	if d, ok := q.Dispatcher.(*httpEventDispatcher); ok {
+		assert.True(t, d.requester != nil && d.logger != nil)
+	} else {
+		assert.True(t, false)
+	}
+	sender := &MockDispatcher{Events: NewInMemoryQueue(100), eventsQueue: NewInMemoryQueue(100)}
+	q.Dispatcher = sender
+
+	eventTags := map[string]interface{}{"revenue": 55.0, "value": 25.1}
+	config := TestConfig{}
+
+	for i := 0; i < 10; i++ {
+		conversionUserEvent := CreateConversionUserEvent(config, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext, eventTags)
+
+		batch := createBatchEvent(conversionUserEvent, createVisitorFromUserEvent(conversionUserEvent))
+		assert.Equal(t, conversionUserEvent.Timestamp, batch.Visitors[0].Snapshots[0].Events[0].Timestamp)
+
+		logEvent := createLogEvent(batch, DefaultEventEndPoint)
+
+		success, _ := q.DispatchEvent(logEvent)
+
+		assert.True(t, success)
+	}
+
+	// wait for the events to be dispatched
+	q.waitForDispatchingEventsOnClose(10 * time.Second)
+
+	// check the queue
+	assert.Equal(t, 0, q.eventQueue.Size())
+}

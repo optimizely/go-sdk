@@ -380,32 +380,6 @@ func TestBatchEventProcessor_FlushesOnClose(t *testing.T) {
 	assert.Equal(t, 0, processor.eventsCount())
 }
 
-func TestBatchEventProcessor_WaitForDispatchingEventsOnClose(t *testing.T) {
-	eg := newExecutionContext()
-	processor := NewBatchEventProcessor(
-		WithQueueSize(100),
-		WithQueue(NewInMemoryQueue(100)),
-		WithEventDispatcher(NewMockDispatcher(100, false)))
-	eg.Go(processor.Start)
-
-	impression := BuildTestImpressionEvent()
-
-	for i := 0; i < 10; i++ {
-		processor.ProcessEvent(impression)
-	}
-
-	assert.Equal(t, 10, processor.eventsCount())
-
-	// Triggers the flush in the processor
-	eg.TerminateAndWait()
-
-	dispatcher, ok := processor.EventDispatcher.(*MockDispatcher)
-	assert.True(t, ok)
-
-	assert.Equal(t, 0, processor.eventsCount())
-	assert.Equal(t, 0, dispatcher.eventsQueue.Size())
-}
-
 func TestDefaultEventProcessor_ProcessBatchRevisionMismatch(t *testing.T) {
 	eg := newExecutionContext()
 	dispatcher := NewMockDispatcher(100, false)
