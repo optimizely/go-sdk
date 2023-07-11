@@ -9,53 +9,57 @@ import (
 
 	optimizely "github.com/optimizely/go-sdk"
 	"github.com/optimizely/go-sdk/pkg/client"
-	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/event"
 	"github.com/optimizely/go-sdk/pkg/logging"
 )
 
 func main() {
-	sdkKey := "4SLpaJA1r1pgE6T2CoMs9q"
+	sdkKey := "RZKHh5HhUExLvpeieGZnD"
 	logging.SetLogLevel(logging.LogLevelDebug)
-
-	user := optimizely.UserContext(
-		"mike ng",
-		map[string]interface{}{
-			"country":      "Unknown",
-			"likes_donuts": true,
-		},
-	)
 
 	/************* Bad SDK Key  ********************/
 
-	optimizelyClient, err := optimizely.Client("some_key")
-	enabled, err := optimizelyClient.IsFeatureEnabled("mutext_feat", user)
-	if err == config.Err403Forbidden {
-		fmt.Println("A Valid 403 error received:", config.Err403Forbidden)
+	if optimizelyClient, err := optimizely.Client("some_key"); err == nil {
+		userContext := optimizelyClient.CreateUserContext("user1", map[string]interface{}{
+			"country":      "Unknown",
+			"likes_donuts": true,
+		})
+		decision := userContext.Decide("mutext_feat", nil)
+		fmt.Printf("Is feature enabled? %v\n", decision.Enabled)
+		if len(decision.Reasons[0]) > 0 {
+			fmt.Println("A Valid 403 error received:", decision.Reasons[0])
+		}
 	}
 
 	/************* Simple usage ********************/
 
-	optimizelyClient, err = optimizely.Client(sdkKey)
-	enabled, _ = optimizelyClient.IsFeatureEnabled("mutext_feat", user)
+	if optimizelyClient, err := optimizely.Client(sdkKey); err == nil {
+		userContext := optimizelyClient.CreateUserContext("user1", map[string]interface{}{
+			"country":      "US",
+			"likes_donuts": false,
+		})
+		decision := userContext.Decide("mutext_feat", nil)
+		fmt.Printf("Is feature enabled? %v\n", decision.Enabled)
+	}
 
-	fmt.Printf("Is feature enabled? %v\n", enabled)
-
-	/************* StaticClient ********************/
+	// /************* StaticClient ********************/
 
 	optimizelyFactory := &client.OptimizelyFactory{
 		SDKKey: sdkKey,
 	}
 
-	optimizelyClient, err = optimizelyFactory.StaticClient()
-
+	optimizelyClient, err := optimizelyFactory.StaticClient()
 	if err != nil {
 		fmt.Printf("Error instantiating client: %s", err)
 		return
 	}
 
-	enabled, _ = optimizelyClient.IsFeatureEnabled("mutext_feat", user)
-	fmt.Printf("Is feature enabled? %v\n", enabled)
+	userContext := optimizelyClient.CreateUserContext("user1", map[string]interface{}{
+		"country":      "Unknown",
+		"likes_donuts": true,
+	})
+	decision := userContext.Decide("mutext_feat", nil)
+	fmt.Printf("Is feature enabled? %v\n", decision.Enabled)
 
 	fmt.Println()
 	optimizelyClient.Close() //  user can close dispatcher
@@ -74,9 +78,16 @@ func main() {
 		return
 	}
 
-	enabled, _ = optimizelyClient.IsFeatureEnabled("mutext_feat", user)
-	fmt.Printf("Is feature enabled? %v\n", enabled)
+	userContext = optimizelyClient.CreateUserContext("user1", map[string]interface{}{
+		"country":      "Unknown",
+		"likes_donuts": true,
+	})
+	decision = userContext.Decide("mutext_feat", nil)
+	fmt.Printf("Is feature enabled? %v\n", decision.Enabled)
+
+	fmt.Println()
 	optimizelyClient.Close() //  user can close dispatcher
+	fmt.Println()
 
 	/************* Setting Polling Interval ********************/
 
