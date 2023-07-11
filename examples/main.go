@@ -85,9 +85,7 @@ func main() {
 	decision = userContext.Decide("mutext_feat", nil)
 	fmt.Printf("Is feature enabled? %v\n", decision.Enabled)
 
-	fmt.Println()
 	optimizelyClient.Close() //  user can close dispatcher
-	fmt.Println()
 
 	/************* Setting Polling Interval ********************/
 
