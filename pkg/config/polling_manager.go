@@ -184,6 +184,9 @@ func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
 		cm.logger.Info("Polling Config Manager Disabled")
 		return
 	}
+	if cm.pollingInterval < 30*time.Second {
+		cm.logger.Warning("Polling intervals below 30 seconds are not recommended.")
+	}
 	cm.logger.Debug("Polling Config Manager Initiated")
 	t := time.NewTicker(cm.pollingInterval)
 	for {
