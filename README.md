@@ -16,7 +16,7 @@ Refer to the [Go SDK's developer documentation](https://docs.developers.optimize
   
 ### Requirements  
 
-Requires Golang version 1.19 or higher.
+Requires Golang version 1.21.0 or higher.
 
 ### Install the SDK
 
@@ -41,7 +41,7 @@ We practice trunk-based development, and as such our default branch, `master` mi
 ```
 module mymodule
 
-go 1.19
+go 1.21.0
 
 require (
 	github.com/optimizely/go-sdk v2.0.0-beta
