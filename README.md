@@ -41,7 +41,7 @@ We practice trunk-based development, and as such our default branch, `master` mi
 ```
 module mymodule
 
-go 1.19
+go 1.21.0
 
 require (
 	github.com/optimizely/go-sdk v2.0.0-beta
