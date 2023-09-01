@@ -16,7 +16,7 @@ Refer to the [Go SDK's developer documentation](https://docs.developers.optimize
   
 ### Requirements  
 
-Requires Golang version 1.21.0 or higher.
+Requires Golang version 1.19 or higher.
 
 ### Install the SDK
 
