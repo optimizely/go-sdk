@@ -23,7 +23,7 @@ cover: ## run unit tests with coverage
 	GO111MODULE=$(GO111MODULE) $(GOTEST) -race ./pkg/... -coverprofile=profile.cov
 
 install: ## installs dev and ci dependencies
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(GOPATH)/bin v1.52.2
+	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(GOPATH)/bin v1.54.2
 
 lint: ## runs `golangci-lint` linters defined in `.golangci.yml` file
 	$(GOLINT) run --out-format=tab --tests=false pkg/...

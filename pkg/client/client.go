@@ -1061,7 +1061,7 @@ func (o *OptimizelyClient) GetOptimizelyConfig() (optimizelyConfig *config.Optim
 	return o.ConfigManager.GetOptimizelyConfig()
 }
 
-// GetOptimizelyConfig returns OptimizelyConfig object
+// GetNotificationCenter returns Optimizely Notification Center interface
 func (o *OptimizelyClient) GetNotificationCenter() notification.Center {
 	return o.notificationCenter
 }
