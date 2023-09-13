@@ -44,7 +44,7 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 
 	parsedConditions, retErr := parseConditions(conditions)
 	if retErr != nil {
-		return
+		return nil, nil, retErr
 	}
 	odpSegments = []string{}
 	value := reflect.ValueOf(parsedConditions)
@@ -101,7 +101,7 @@ func buildConditionTree(conditions interface{}) (conditionTree *entities.TreeNod
 			n := &entities.TreeNode{}
 			if err := createLeafCondition(v, n); err != nil {
 				retErr = err
-				return
+				return nil, nil, retErr
 			}
 			// Extract odp segment from leaf node if applicable
 			extractSegment(&odpSegments, n)
