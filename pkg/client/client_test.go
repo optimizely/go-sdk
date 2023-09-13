@@ -1378,6 +1378,15 @@ func TestGetOptimizelyConfig(t *testing.T) {
 	assert.Equal(t, &config.OptimizelyConfig{Revision: "232"}, optimizelyConfig)
 }
 
+func TestGetNotificationCenter(t *testing.T) {
+	nc := &MockNotificationCenter{}
+	client := OptimizelyClient{
+		notificationCenter: nc,
+	}
+
+	assert.Equal(t, client.GetNotificationCenter(), nc)
+}
+
 func TestGetFeatureDecisionValid(t *testing.T) {
 	testFeatureKey := "test_feature_key"
 	testVariableKey := "test_feature_flag_key"
