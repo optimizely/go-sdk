@@ -63,6 +63,8 @@ type OptimizelyFactory struct {
 type OptionFunc func(*OptimizelyFactory)
 
 // Client instantiates a new OptimizelyClient with the given options.
+//
+//nolint:gocyclo // exceeds gocyclo cyclomatic complexity
 func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClient, error) {
 	// Default values for odp cache
 	f.segmentsCacheSize = pkgUtils.DefaultSegmentsCacheSize
