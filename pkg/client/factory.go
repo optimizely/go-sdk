@@ -50,6 +50,7 @@ type OptimizelyFactory struct {
 	metricsRegistry      metrics.Registry
 	overrideStore        decision.ExperimentOverrideStore
 	userProfileService   decision.UserProfileService
+	notificationCenter   notification.Center
 
 	// ODP
 	segmentsCacheSize    int
@@ -62,6 +63,8 @@ type OptimizelyFactory struct {
 type OptionFunc func(*OptimizelyFactory)
 
 // Client instantiates a new OptimizelyClient with the given options.
+//
+//nolint:gocyclo // exceeds gocyclo cyclomatic complexity
 func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClient, error) {
 	// Default values for odp cache
 	f.segmentsCacheSize = pkgUtils.DefaultSegmentsCacheSize
@@ -101,8 +104,13 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 	appClient := &OptimizelyClient{
 		defaultDecideOptions: decideOptions,
 		execGroup:            eg,
-		notificationCenter:   registry.GetNotificationCenter(f.SDKKey),
 		logger:               logging.GetLogger(f.SDKKey, "OptimizelyClient"),
+	}
+
+	if f.notificationCenter != nil {
+		appClient.notificationCenter = f.notificationCenter
+	} else {
+		appClient.notificationCenter = registry.GetNotificationCenter(f.SDKKey)
 	}
 
 	if f.configManager != nil {
@@ -282,6 +290,13 @@ func WithContext(ctx context.Context) OptionFunc {
 func WithMetricsRegistry(metricsRegistry metrics.Registry) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.metricsRegistry = metricsRegistry
+	}
+}
+
+// WithNotificationCenter allows user to pass in their own implementation of the notification.Center interface
+func WithNotificationCenter(nc notification.Center) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.notificationCenter = nc
 	}
 }
 

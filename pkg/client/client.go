@@ -1061,6 +1061,11 @@ func (o *OptimizelyClient) GetOptimizelyConfig() (optimizelyConfig *config.Optim
 	return o.ConfigManager.GetOptimizelyConfig()
 }
 
+// GetNotificationCenter returns Optimizely Notification Center interface
+func (o *OptimizelyClient) GetNotificationCenter() notification.Center {
+	return o.notificationCenter
+}
+
 // Close closes the Optimizely instance and stops any ongoing tasks from its children components.
 func (o *OptimizelyClient) Close() {
 	o.execGroup.TerminateAndWait()

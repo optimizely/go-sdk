@@ -24,6 +24,3 @@ require (
 	github.com/stretchr/objx v0.5.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-// Work around issue with git.apache.org/thrift.git
-replace git.apache.org/thrift.git => github.com/apache/thrift v0.12.0

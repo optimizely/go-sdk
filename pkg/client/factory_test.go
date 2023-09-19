@@ -179,6 +179,14 @@ func TestClientWithDefaultSDKSettings(t *testing.T) {
 	assert.NotNil(t, optimizelyClient.OdpManager)
 }
 
+func TestClientWithNotificationCenterInOptions(t *testing.T) {
+	factory := OptimizelyFactory{SDKKey: "1212"}
+	nc := &MockNotificationCenter{}
+	optimizelyClient, err := factory.Client(WithNotificationCenter(nc))
+	assert.NoError(t, err)
+	assert.Equal(t, nc, optimizelyClient.notificationCenter)
+}
+
 func TestDummy(t *testing.T) {
 	factory := OptimizelyFactory{}
 	configManager := config.NewPollingProjectConfigManager("123")
