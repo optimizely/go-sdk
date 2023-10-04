@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.
 
+## [1.8.5] - October 5th, 2023
+
+* Fixed a bug in the HTTP Requester logging. Now correct error message is logged. ([#374](https://github.com/optimizely/go-sdk/pull/374))
+
 ## [2.0.0-beta] - April 27th, 2023
 
 ### New Features  
