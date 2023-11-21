@@ -130,7 +130,7 @@ func (cm *PollingProjectConfigManager) SyncConfig() {
 
 	if e != nil {
 		msg := "unable to fetch fresh datafile"
-		cm.logger.Warning(msg)
+		cm.logger.Error(msg, e)
 		cm.configLock.Lock()
 
 		if code == http.StatusForbidden {
@@ -156,7 +156,7 @@ func (cm *PollingProjectConfigManager) SyncConfig() {
 
 	projectConfig, err := datafileprojectconfig.NewDatafileProjectConfig(datafile, logging.GetLogger(cm.sdkKey, "NewDatafileProjectConfig"))
 	if err != nil {
-		cm.logger.Warning("failed to create project config")
+		cm.logger.Error("failed to create project config", err)
 		closeMutex(errors.New("unable to parse datafile"))
 		return
 	}
