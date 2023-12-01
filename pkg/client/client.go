@@ -18,6 +18,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -37,6 +38,7 @@ import (
 	pkgOdpSegment "github.com/optimizely/go-sdk/pkg/odp/segment"
 	pkgOdpUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/optimizely/go-sdk/pkg/optimizelyjson"
+	"github.com/optimizely/go-sdk/pkg/tracing"
 	"github.com/optimizely/go-sdk/pkg/utils"
 
 	"github.com/hashicorp/go-multierror"
@@ -52,6 +54,7 @@ type OptimizelyClient struct {
 	execGroup            *utils.ExecGroup
 	logger               logging.OptimizelyLogProducer
 	defaultDecideOptions *decide.Options
+	tracer               tracing.Tracer
 }
 
 // CreateUserContext creates a context of the user for which decision APIs will be called.
@@ -66,6 +69,10 @@ func (o *OptimizelyClient) CreateUserContext(userID string, attributes map[strin
 }
 
 func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string, options *decide.Options) OptimizelyDecision {
+	// TODO: we need to change userContext to carry a context from the caller to use in StartSpan
+	_, span := o.tracer.StartSpan(context.TODO(), "decide")
+	defer span.End()
+
 	var err error
 	defer func() {
 		if r := recover(); r != nil {

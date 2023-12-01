@@ -32,6 +32,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/odp"
 	pkgUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/optimizely/go-sdk/pkg/registry"
+	"github.com/optimizely/go-sdk/pkg/tracing"
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
@@ -48,6 +49,7 @@ type OptimizelyFactory struct {
 	eventDispatcher      event.Dispatcher
 	eventProcessor       event.Processor
 	metricsRegistry      metrics.Registry
+	tracer               tracing.Tracer
 	overrideStore        decision.ExperimentOverrideStore
 	userProfileService   decision.UserProfileService
 	notificationCenter   notification.Center
@@ -111,6 +113,12 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		appClient.notificationCenter = f.notificationCenter
 	} else {
 		appClient.notificationCenter = registry.GetNotificationCenter(f.SDKKey)
+	}
+
+	if f.tracer != nil {
+		appClient.tracer = f.tracer
+	} else {
+		appClient.tracer = &tracing.NoopTracer{}
 	}
 
 	if f.configManager != nil {
@@ -297,6 +305,12 @@ func WithMetricsRegistry(metricsRegistry metrics.Registry) OptionFunc {
 func WithNotificationCenter(nc notification.Center) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.notificationCenter = nc
+	}
+}
+
+func WithTracer(tracer tracing.Tracer) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.tracer = tracer
 	}
 }
 
