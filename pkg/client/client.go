@@ -69,10 +69,6 @@ func (o *OptimizelyClient) CreateUserContext(userID string, attributes map[strin
 }
 
 func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string, options *decide.Options) OptimizelyDecision {
-	// TODO: we need to change userContext to carry a context from the caller to use in StartSpan
-	_, span := o.tracer.StartSpan(context.TODO(), "decide")
-	defer span.End()
-
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
@@ -89,7 +85,6 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 			o.logger.Debug(string(debug.Stack()))
 		}
 	}()
-
 	decisionContext := decision.FeatureDecisionContext{
 		ForcedDecisionService: userContext.forcedDecisionService,
 	}
@@ -845,7 +840,7 @@ func (o *OptimizelyClient) GetVariation(experimentKey string, userContext entiti
 
 // Track generates a conversion event with the given event key if it exists and queues it up to be sent to the Optimizely
 // log endpoint for results processing.
-func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}) (err error) {
+func (o *OptimizelyClient) Track(ctx context.Context, eventKey string, userContext entities.UserContext, eventTags map[string]interface{}) (err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -862,6 +857,10 @@ func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserConte
 			o.logger.Debug(string(debug.Stack()))
 		}
 	}()
+
+	// TODO: we need to change userContext to carry a context from the caller to use in StartSpan
+	_, span := o.tracer.StartSpan(ctx, "track-sdk")
+	defer span.End()
 
 	projectConfig, e := o.getProjectConfig()
 	if e != nil {

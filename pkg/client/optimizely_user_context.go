@@ -18,6 +18,7 @@
 package client
 
 import (
+	"context"
 	"errors"
 	"sync"
 
@@ -154,7 +155,7 @@ func (o *OptimizelyUserContext) TrackEvent(eventKey string, eventTags map[string
 		ID:         o.GetUserID(),
 		Attributes: o.GetUserAttributes(),
 	}
-	return o.optimizely.Track(eventKey, userContext, eventTags)
+	return o.optimizely.Track(context.Background(), eventKey, userContext, eventTags)
 }
 
 // SetForcedDecision sets the forced decision (variation key) for a given decision context (flag key and optional rule key).
