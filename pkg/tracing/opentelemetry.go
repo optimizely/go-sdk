@@ -3,6 +3,7 @@ package tracing
 import (
 	"context"
 
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -28,7 +29,7 @@ func (s *otelSpan) End() {
 }
 
 type Tracer interface {
-	StartSpan(ctx context.Context, spanName string) (context.Context, Span)
+	StartSpan(ctx context.Context, tracerName, spanName string) (context.Context, Span)
 }
 
 type otelTracer struct {
@@ -41,8 +42,8 @@ func NewOtelTracer(t trace.Tracer) Tracer {
 	}
 }
 
-func (t *otelTracer) StartSpan(pctx context.Context, spanName string) (context.Context, Span) {
-	ctx, span := t.tracer.Start(pctx, spanName)
+func (t *otelTracer) StartSpan(pctx context.Context, tracerName, spanName string) (context.Context, Span) {
+	ctx, span := otel.Tracer(tracerName).Start(pctx, spanName)
 	return ctx, &otelSpan{
 		span: span,
 	}
@@ -50,7 +51,7 @@ func (t *otelTracer) StartSpan(pctx context.Context, spanName string) (context.C
 
 type NoopTracer struct{}
 
-func (t *NoopTracer) StartSpan(ctx context.Context, spanName string) (context.Context, Span) {
+func (t *NoopTracer) StartSpan(ctx context.Context, tracerName string, spanName string) (context.Context, Span) {
 	return ctx, &NoopSpan{}
 }
 
