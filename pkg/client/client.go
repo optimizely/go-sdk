@@ -858,9 +858,10 @@ func (o *OptimizelyClient) Track(ctx context.Context, eventKey string, userConte
 		}
 	}()
 
-	// TODO: we need to change userContext to carry a context from the caller to use in StartSpan
 	_, span := o.tracer.StartSpan(ctx, "trackHandler", "trackSDK")
 	defer span.End()
+
+	span.SetAttibutes("testTrackKey", "testTrackValue")
 
 	projectConfig, e := o.getProjectConfig()
 	if e != nil {

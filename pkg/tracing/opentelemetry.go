@@ -33,12 +33,12 @@ type Tracer interface {
 }
 
 type otelTracer struct {
-	tracer trace.Tracer
+	enabled bool
 }
 
 func NewOtelTracer(t trace.Tracer) Tracer {
 	return &otelTracer{
-		tracer: t,
+		enabled: true,
 	}
 }
 
