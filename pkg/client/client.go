@@ -26,6 +26,8 @@ import (
 	"runtime/debug"
 	"strconv"
 
+	"github.com/hashicorp/go-multierror"
+
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/decision"
@@ -40,8 +42,6 @@ import (
 	"github.com/optimizely/go-sdk/pkg/optimizelyjson"
 	"github.com/optimizely/go-sdk/pkg/tracing"
 	"github.com/optimizely/go-sdk/pkg/utils"
-
-	"github.com/hashicorp/go-multierror"
 )
 
 // OptimizelyClient is the entry point to the Optimizely SDK
@@ -68,7 +68,7 @@ func (o *OptimizelyClient) CreateUserContext(userID string, attributes map[strin
 	return newOptimizelyUserContext(o, userID, attributes, nil, nil)
 }
 
-func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string, options *decide.Options) OptimizelyDecision {
+func (o *OptimizelyClient) decide(ctx context.Context, userContext OptimizelyUserContext, key string, options *decide.Options) OptimizelyDecision {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
@@ -85,10 +85,14 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 			o.logger.Debug(string(debug.Stack()))
 		}
 	}()
+
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "decide")
+	defer span.End()
+
 	decisionContext := decision.FeatureDecisionContext{
 		ForcedDecisionService: userContext.forcedDecisionService,
 	}
-	projectConfig, err := o.getProjectConfig()
+	projectConfig, err := o.getProjectConfig(ctx)
 	if err != nil {
 		return NewErrorDecision(key, userContext, decide.GetDecideError(decide.SDKNotReady))
 	}
@@ -154,7 +158,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 
 	variableMap := map[string]interface{}{}
 	if !allOptions.ExcludeVariables {
-		variableMap, reasons = o.getDecisionVariableMap(feature, featureDecision.Variation, flagEnabled)
+		variableMap, reasons = o.getDecisionVariableMap(ctx, feature, featureDecision.Variation, flagEnabled)
 		decisionReasons.Append(reasons)
 	}
 	optimizelyJSON := optimizelyjson.NewOptimizelyJSONfromMap(variableMap)
@@ -172,7 +176,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, userContext, reasonsToReport)
 }
 
-func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options *decide.Options) map[string]OptimizelyDecision {
+func (o *OptimizelyClient) decideForKeys(ctx context.Context, userContext OptimizelyUserContext, keys []string, options *decide.Options) map[string]OptimizelyDecision {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
@@ -190,8 +194,11 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 		}
 	}()
 
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "decideForKeys")
+	defer span.End()
+
 	decisionMap := map[string]OptimizelyDecision{}
-	if _, err = o.getProjectConfig(); err != nil {
+	if _, err = o.getProjectConfig(ctx); err != nil {
 		o.logger.Error("Optimizely instance is not valid, failing decideForKeys call.", err)
 		return decisionMap
 	}
@@ -202,7 +209,7 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 
 	enabledFlagsOnly := o.getAllOptions(options).EnabledFlagsOnly
 	for _, key := range keys {
-		optimizelyDecision := o.decide(userContext, key, options)
+		optimizelyDecision := o.decide(ctx, userContext, key, options)
 		if !enabledFlagsOnly || optimizelyDecision.Enabled {
 			decisionMap[key] = optimizelyDecision
 		}
@@ -211,7 +218,7 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 	return decisionMap
 }
 
-func (o *OptimizelyClient) decideAll(userContext OptimizelyUserContext, options *decide.Options) map[string]OptimizelyDecision {
+func (o *OptimizelyClient) decideAll(ctx context.Context, userContext OptimizelyUserContext, options *decide.Options) map[string]OptimizelyDecision {
 
 	var err error
 	defer func() {
@@ -230,7 +237,10 @@ func (o *OptimizelyClient) decideAll(userContext OptimizelyUserContext, options 
 		}
 	}()
 
-	projectConfig, err := o.getProjectConfig()
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "decideForKeys")
+	defer span.End()
+
+	projectConfig, err := o.getProjectConfig(ctx)
 	if err != nil {
 		o.logger.Error("Optimizely instance is not valid, failing decideAll call.", err)
 		return map[string]OptimizelyDecision{}
@@ -241,12 +251,12 @@ func (o *OptimizelyClient) decideAll(userContext OptimizelyUserContext, options 
 		allFlagKeys = append(allFlagKeys, flag.Key)
 	}
 
-	return o.decideForKeys(userContext, allFlagKeys, options)
+	return o.decideForKeys(ctx, userContext, allFlagKeys, options)
 }
 
 // fetchQualifiedSegments fetches all qualified segments for the user context.
 // request is performed asynchronously only when callback is provided
-func (o *OptimizelyClient) fetchQualifiedSegments(userContext *OptimizelyUserContext, options []pkgOdpSegment.OptimizelySegmentOption, callback func(success bool)) {
+func (o *OptimizelyClient) fetchQualifiedSegments(ctx context.Context, userContext *OptimizelyUserContext, options []pkgOdpSegment.OptimizelySegmentOption, callback func(success bool)) {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
@@ -263,10 +273,13 @@ func (o *OptimizelyClient) fetchQualifiedSegments(userContext *OptimizelyUserCon
 		}
 	}()
 
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "fetchQualifiedSegments")
+	defer span.End()
+
 	// on failure, qualifiedSegments should be reset if a previous value exists.
 	userContext.SetQualifiedSegments(nil)
 
-	if _, err = o.getProjectConfig(); err != nil {
+	if _, err = o.getProjectConfig(ctx); err != nil {
 		o.logger.Error("fetchQualifiedSegments failed with error:", decide.GetDecideError(decide.SDKNotReady))
 		if callback != nil {
 			callback(false)
@@ -289,7 +302,7 @@ func (o *OptimizelyClient) fetchQualifiedSegments(userContext *OptimizelyUserCon
 }
 
 // SendOdpEvent sends an event to the ODP server.
-func (o *OptimizelyClient) SendOdpEvent(eventType, action string, identifiers map[string]string, data map[string]interface{}) (err error) {
+func (o *OptimizelyClient) SendOdpEvent(ctx context.Context, eventType, action string, identifiers map[string]string, data map[string]interface{}) (err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -307,7 +320,10 @@ func (o *OptimizelyClient) SendOdpEvent(eventType, action string, identifiers ma
 		}
 	}()
 
-	if _, err = o.getProjectConfig(); err != nil {
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "SendOdpEvent")
+	defer span.End()
+
+	if _, err = o.getProjectConfig(ctx); err != nil {
 		o.logger.Error("SendOdpEvent failed with error:", decide.GetDecideError(decide.SDKNotReady))
 		return err
 	}
@@ -328,7 +344,7 @@ func (o *OptimizelyClient) SendOdpEvent(eventType, action string, identifiers ma
 
 // Activate returns the key of the variation the user is bucketed into and queues up an impression event to be sent to
 // the Optimizely log endpoint for results processing.
-func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.UserContext) (result string, err error) {
+func (o *OptimizelyClient) Activate(ctx context.Context, experimentKey string, userContext entities.UserContext) (result string, err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -346,7 +362,10 @@ func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.U
 		}
 	}()
 
-	decisionContext, experimentDecision, err := o.getExperimentDecision(experimentKey, userContext)
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "SendOdpEvent")
+	defer span.End()
+
+	decisionContext, experimentDecision, err := o.getExperimentDecision(ctx, experimentKey, userContext)
 	if err != nil {
 		o.logger.Error("received an error while computing experiment decision", err)
 		return result, err
@@ -366,7 +385,7 @@ func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.U
 
 // IsFeatureEnabled returns true if the feature is enabled for the given user. If the user is part of a feature test
 // then an impression event will be queued up to be sent to the Optimizely log endpoint for results processing.
-func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entities.UserContext) (result bool, err error) {
+func (o *OptimizelyClient) IsFeatureEnabled(ctx context.Context, featureKey string, userContext entities.UserContext) (result bool, err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -384,7 +403,10 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 		}
 	}()
 
-	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, "", userContext)
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "IsFeatureEnabled")
+	defer span.End()
+
+	decisionContext, featureDecision, err := o.getFeatureDecision(ctx, featureKey, "", userContext)
 	if err != nil {
 		o.logger.Error("received an error while computing feature decision", err)
 		return result, err
@@ -420,7 +442,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 
 // GetEnabledFeatures returns an array containing the keys of all features in the project that are enabled for the given
 // user. For features tests, impression events will be queued up to be sent to the Optimizely log endpoint for results processing.
-func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) (enabledFeatures []string, err error) {
+func (o *OptimizelyClient) GetEnabledFeatures(ctx context.Context, userContext entities.UserContext) (enabledFeatures []string, err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -438,7 +460,10 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 		}
 	}()
 
-	projectConfig, err := o.getProjectConfig()
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "IsFeatureEnabled")
+	defer span.End()
+
+	projectConfig, err := o.getProjectConfig(ctx)
 	if err != nil {
 		o.logger.Error("Error retrieving ProjectConfig", err)
 		return enabledFeatures, err
@@ -446,7 +471,7 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 
 	featureList := projectConfig.GetFeatureList()
 	for _, feature := range featureList {
-		if isEnabled, _ := o.IsFeatureEnabled(feature.Key, userContext); isEnabled {
+		if isEnabled, _ := o.IsFeatureEnabled(ctx, feature.Key, userContext); isEnabled {
 			enabledFeatures = append(enabledFeatures, feature.Key)
 		}
 	}
@@ -454,9 +479,11 @@ func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) 
 }
 
 // GetFeatureVariableBoolean returns the feature variable value of type bool associated with the given feature and variable keys.
-func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey, variableKey string, userContext entities.UserContext) (convertedValue bool, err error) {
+func (o *OptimizelyClient) GetFeatureVariableBoolean(ctx context.Context, featureKey, variableKey string, userContext entities.UserContext) (convertedValue bool, err error) {
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "GetFeatureVariableBoolean")
+	defer span.End()
 
-	stringValue, variableType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+	stringValue, variableType, featureDecision, err := o.getFeatureVariable(ctx, featureKey, variableKey, userContext)
 	defer func() {
 		if o.notificationCenter != nil {
 			variableMap := map[string]interface{}{
@@ -487,9 +514,11 @@ func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey, variableKey str
 }
 
 // GetFeatureVariableDouble returns the feature variable value of type double associated with the given feature and variable keys.
-func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey, variableKey string, userContext entities.UserContext) (convertedValue float64, err error) {
+func (o *OptimizelyClient) GetFeatureVariableDouble(ctx context.Context, featureKey, variableKey string, userContext entities.UserContext) (convertedValue float64, err error) {
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "GetFeatureVariableDouble")
+	defer span.End()
 
-	stringValue, variableType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+	stringValue, variableType, featureDecision, err := o.getFeatureVariable(ctx, featureKey, variableKey, userContext)
 	defer func() {
 		if o.notificationCenter != nil {
 			variableMap := map[string]interface{}{
@@ -520,9 +549,11 @@ func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey, variableKey stri
 }
 
 // GetFeatureVariableInteger returns the feature variable value of type int associated with the given feature and variable keys.
-func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey, variableKey string, userContext entities.UserContext) (convertedValue int, err error) {
+func (o *OptimizelyClient) GetFeatureVariableInteger(ctx context.Context, featureKey, variableKey string, userContext entities.UserContext) (convertedValue int, err error) {
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "GetFeatureVariableInteger")
+	defer span.End()
 
-	stringValue, variableType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+	stringValue, variableType, featureDecision, err := o.getFeatureVariable(ctx, featureKey, variableKey, userContext)
 	defer func() {
 		if o.notificationCenter != nil {
 			variableMap := map[string]interface{}{
@@ -553,9 +584,11 @@ func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey, variableKey str
 }
 
 // GetFeatureVariableString returns the feature variable value of type string associated with the given feature and variable keys.
-func (o *OptimizelyClient) GetFeatureVariableString(featureKey, variableKey string, userContext entities.UserContext) (stringValue string, err error) {
+func (o *OptimizelyClient) GetFeatureVariableString(ctx context.Context, featureKey, variableKey string, userContext entities.UserContext) (stringValue string, err error) {
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "GetFeatureVariableStrings")
+	defer span.End()
 
-	stringValue, variableType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+	stringValue, variableType, featureDecision, err := o.getFeatureVariable(ctx, featureKey, variableKey, userContext)
 
 	defer func() {
 		if o.notificationCenter != nil {
@@ -584,9 +617,11 @@ func (o *OptimizelyClient) GetFeatureVariableString(featureKey, variableKey stri
 }
 
 // GetFeatureVariableJSON returns the feature variable value of type json associated with the given feature and variable keys.
-func (o *OptimizelyClient) GetFeatureVariableJSON(featureKey, variableKey string, userContext entities.UserContext) (optlyJSON *optimizelyjson.OptimizelyJSON, err error) {
+func (o *OptimizelyClient) GetFeatureVariableJSON(ctx context.Context, featureKey, variableKey string, userContext entities.UserContext) (optlyJSON *optimizelyjson.OptimizelyJSON, err error) {
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "GetFeatureVariableStrings")
+	defer span.End()
 
-	stringVal, variableType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+	stringVal, variableType, featureDecision, err := o.getFeatureVariable(ctx, featureKey, variableKey, userContext)
 	defer func() {
 		if o.notificationCenter != nil {
 			var variableValue interface{}
@@ -621,9 +656,11 @@ func (o *OptimizelyClient) GetFeatureVariableJSON(featureKey, variableKey string
 }
 
 // getFeatureVariable is a helper function, returns feature variable as a string along with it's associated type and feature decision
-func (o *OptimizelyClient) getFeatureVariable(featureKey, variableKey string, userContext entities.UserContext) (string, entities.VariableType, *decision.FeatureDecision, error) {
+func (o *OptimizelyClient) getFeatureVariable(ctx context.Context, featureKey, variableKey string, userContext entities.UserContext) (string, entities.VariableType, *decision.FeatureDecision, error) {
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "GetFeatureVariableStrings")
+	defer span.End()
 
-	featureDecisionContext, featureDecision, err := o.getFeatureDecision(featureKey, variableKey, userContext)
+	featureDecisionContext, featureDecision, err := o.getFeatureDecision(ctx, featureKey, variableKey, userContext)
 	if err != nil {
 		return "", "", &featureDecision, err
 	}
@@ -640,9 +677,11 @@ func (o *OptimizelyClient) getFeatureVariable(featureKey, variableKey string, us
 }
 
 // GetFeatureVariable returns feature variable as a string along with it's associated type.
-func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, userContext entities.UserContext) (string, entities.VariableType, error) {
+func (o *OptimizelyClient) GetFeatureVariable(ctx context.Context, featureKey, variableKey string, userContext entities.UserContext) (string, entities.VariableType, error) {
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "GetFeatureVariable")
+	defer span.End()
 
-	stringValue, variableType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+	stringValue, variableType, featureDecision, err := o.getFeatureVariable(ctx, featureKey, variableKey, userContext)
 
 	func() {
 		var convertedValue interface{}
@@ -681,10 +720,12 @@ func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, us
 }
 
 // GetAllFeatureVariablesWithDecision returns all the variables for a given feature along with the enabled state.
-func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]interface{}, err error) {
+func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(ctx context.Context, featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]interface{}, err error) {
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "GetAllFeatureVariablesWithDecision")
+	defer span.End()
 
 	variableMap = make(map[string]interface{})
-	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, "", userContext)
+	decisionContext, featureDecision, err := o.getFeatureDecision(ctx, featureKey, "", userContext)
 	if err != nil {
 		o.logger.Error("Optimizely SDK tracking error", err)
 		return enabled, variableMap, err
@@ -731,11 +772,13 @@ func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string,
 // GetDetailedFeatureDecisionUnsafe triggers an impression event and returns all the variables
 // for a given feature along with the experiment key, variation key and the enabled state.
 // Usage of this method is unsafe and not recommended since it can be removed in any of the next releases.
-func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, userContext entities.UserContext, disableTracking bool) (decisionInfo decision.UnsafeFeatureDecisionInfo, err error) {
+func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(ctx context.Context, featureKey string, userContext entities.UserContext, disableTracking bool) (decisionInfo decision.UnsafeFeatureDecisionInfo, err error) {
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "GetDetailedFeatureDecisionUnsafe")
+	defer span.End()
 
 	decisionInfo = decision.UnsafeFeatureDecisionInfo{}
 	decisionInfo.VariableMap = make(map[string]interface{})
-	decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, "", userContext)
+	decisionContext, featureDecision, err := o.getFeatureDecision(ctx, featureKey, "", userContext)
 	if err != nil {
 		o.logger.Error("Optimizely SDK tracking error", err)
 		return decisionInfo, err
@@ -798,8 +841,11 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 }
 
 // GetAllFeatureVariables returns all the variables as OptimizelyJSON object for a given feature.
-func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext entities.UserContext) (optlyJSON *optimizelyjson.OptimizelyJSON, err error) {
-	_, variableMap, err := o.GetAllFeatureVariablesWithDecision(featureKey, userContext)
+func (o *OptimizelyClient) GetAllFeatureVariables(ctx context.Context, featureKey string, userContext entities.UserContext) (optlyJSON *optimizelyjson.OptimizelyJSON, err error) {
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "GetAllFeatureVariables")
+	defer span.End()
+
+	_, variableMap, err := o.GetAllFeatureVariablesWithDecision(ctx, featureKey, userContext)
 	if err != nil {
 		return optlyJSON, err
 	}
@@ -808,7 +854,7 @@ func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext
 }
 
 // GetVariation returns the key of the variation the user is bucketed into. Does not generate impression events.
-func (o *OptimizelyClient) GetVariation(experimentKey string, userContext entities.UserContext) (result string, err error) {
+func (o *OptimizelyClient) GetVariation(ctx context.Context, experimentKey string, userContext entities.UserContext) (result string, err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -826,7 +872,10 @@ func (o *OptimizelyClient) GetVariation(experimentKey string, userContext entiti
 		}
 	}()
 
-	_, experimentDecision, err := o.getExperimentDecision(experimentKey, userContext)
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "GetVariation")
+	defer span.End()
+
+	_, experimentDecision, err := o.getExperimentDecision(ctx, experimentKey, userContext)
 	if err != nil {
 		o.logger.Error("received an error while computing experiment decision", err)
 	}
@@ -858,12 +907,10 @@ func (o *OptimizelyClient) Track(ctx context.Context, eventKey string, userConte
 		}
 	}()
 
-	_, span := o.tracer.StartSpan(ctx, "trackHandler", "trackSDK")
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "Track")
 	defer span.End()
 
-	span.SetAttibutes("testTrackKey", "testTrackValue")
-
-	projectConfig, e := o.getProjectConfig()
+	projectConfig, e := o.getProjectConfig(ctx)
 	if e != nil {
 		o.logger.Error("Optimizely SDK tracking error", e)
 		return e
@@ -888,7 +935,7 @@ func (o *OptimizelyClient) Track(ctx context.Context, eventKey string, userConte
 	return nil
 }
 
-func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, userContext entities.UserContext) (decisionContext decision.FeatureDecisionContext, featureDecision decision.FeatureDecision, err error) {
+func (o *OptimizelyClient) getFeatureDecision(ctx context.Context, featureKey, variableKey string, userContext entities.UserContext) (decisionContext decision.FeatureDecisionContext, featureDecision decision.FeatureDecision, err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -906,10 +953,13 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 		}
 	}()
 
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "getFeatureDecision")
+	defer span.End()
+
 	userID := userContext.ID
 	o.logger.Debug(fmt.Sprintf(`Evaluating feature %q for user %q.`, featureKey, userID))
 
-	projectConfig, e := o.getProjectConfig()
+	projectConfig, e := o.getProjectConfig(ctx)
 	if e != nil {
 		o.logger.Error("Error calling getFeatureDecision", e)
 		return decisionContext, featureDecision, e
@@ -943,12 +993,14 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 	return decisionContext, featureDecision, nil
 }
 
-func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userContext entities.UserContext) (decisionContext decision.ExperimentDecisionContext, experimentDecision decision.ExperimentDecision, err error) {
+func (o *OptimizelyClient) getExperimentDecision(ctx context.Context, experimentKey string, userContext entities.UserContext) (decisionContext decision.ExperimentDecisionContext, experimentDecision decision.ExperimentDecision, err error) {
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "getExperimentDecision")
+	defer span.End()
 
 	userID := userContext.ID
 	o.logger.Debug(fmt.Sprintf(`Evaluating experiment %q for user %q.`, experimentKey, userID))
 
-	projectConfig, e := o.getProjectConfig()
+	projectConfig, e := o.getProjectConfig(ctx)
 	if e != nil {
 		return decisionContext, experimentDecision, e
 	}
@@ -1039,7 +1091,9 @@ func (o *OptimizelyClient) getTypedValue(value string, variableType entities.Var
 	return convertedValue, err
 }
 
-func (o *OptimizelyClient) getProjectConfig() (projectConfig config.ProjectConfig, err error) {
+func (o *OptimizelyClient) getProjectConfig(ctx context.Context) (projectConfig config.ProjectConfig, err error) {
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "getProjectConfig")
+	defer span.End()
 
 	if isNil(o.ConfigManager) {
 		return nil, errors.New("project config manager is not initialized")
@@ -1063,8 +1117,9 @@ func (o *OptimizelyClient) getAllOptions(options *decide.Options) decide.Options
 }
 
 // GetOptimizelyConfig returns OptimizelyConfig object
-func (o *OptimizelyClient) GetOptimizelyConfig() (optimizelyConfig *config.OptimizelyConfig) {
-
+func (o *OptimizelyClient) GetOptimizelyConfig(ctx context.Context) (optimizelyConfig *config.OptimizelyConfig) {
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "GetOptimizelyConfig")
+	defer span.End()
 	return o.ConfigManager.GetOptimizelyConfig()
 }
 
@@ -1078,7 +1133,10 @@ func (o *OptimizelyClient) Close() {
 	o.execGroup.TerminateAndWait()
 }
 
-func (o *OptimizelyClient) getDecisionVariableMap(feature entities.Feature, variation *entities.Variation, featureEnabled bool) (map[string]interface{}, decide.DecisionReasons) {
+func (o *OptimizelyClient) getDecisionVariableMap(ctx context.Context, feature entities.Feature, variation *entities.Variation, featureEnabled bool) (map[string]interface{}, decide.DecisionReasons) {
+	_, span := o.tracer.StartSpan(ctx, "OptimizelySDK", "GetOptimizelyConfig")
+	defer span.End()
+
 	reasons := decide.NewDecisionReasons(nil)
 	valuesMap := map[string]interface{}{}
 

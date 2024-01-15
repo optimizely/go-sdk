@@ -17,19 +17,21 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/odp"
 	"github.com/optimizely/go-sdk/pkg/odp/event"
 	"github.com/optimizely/go-sdk/pkg/odp/segment"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/suite"
 )
 
 type OptimizelyUserContextODPTestSuite struct {
@@ -112,7 +114,7 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSuccessDef
 	userContext := optimizelyClient.CreateUserContext(o.userID, nil)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	userContext.FetchQualifiedSegmentsAsync(nil, func(success bool) {
+	userContext.FetchQualifiedSegmentsAsync(context.Background(), nil, func(success bool) {
 		o.True(success)
 		o.Equal([]string{"odp-segment-1"}, userContext.GetQualifiedSegments())
 		wg.Done()
@@ -130,7 +132,7 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSuccessDef
 	optimizelyClient, _ := factory.Client()
 	userContext := optimizelyClient.CreateUserContext(o.userID, nil)
 	o.Nil(userContext.GetQualifiedSegments())
-	userContext.FetchQualifiedSegments(nil)
+	userContext.FetchQualifiedSegments(context.Background(), nil)
 	o.Equal(userContext.GetQualifiedSegments(), []string{"odp-segment-1"})
 	segmentManager.AssertExpectations(o.T())
 }
@@ -141,7 +143,7 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSDKNotRead
 	userContext := client.CreateUserContext(o.userID, nil)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	userContext.FetchQualifiedSegmentsAsync(nil, func(success bool) {
+	userContext.FetchQualifiedSegmentsAsync(context.Background(), nil, func(success bool) {
 		o.False(success)
 		wg.Done()
 	})
@@ -157,7 +159,7 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsFetchFaile
 	userContext.SetQualifiedSegments([]string{"dummy"})
 	var wg sync.WaitGroup
 	wg.Add(1)
-	userContext.FetchQualifiedSegmentsAsync(nil, func(success bool) {
+	userContext.FetchQualifiedSegmentsAsync(context.Background(), nil, func(success bool) {
 		o.False(success)
 		o.Nil(userContext.GetQualifiedSegments())
 		wg.Done()
@@ -172,7 +174,7 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSegmentsTo
 	userContext := optimizelyClient.CreateUserContext(o.userID, nil)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	userContext.FetchQualifiedSegmentsAsync(nil, func(success bool) {
+	userContext.FetchQualifiedSegmentsAsync(context.Background(), nil, func(success bool) {
 		wg.Done()
 	})
 	wg.Wait()
@@ -187,7 +189,7 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsSegmentsSe
 	userContext := optimizelyClient.CreateUserContext(o.userID, nil)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	userContext.FetchQualifiedSegmentsAsync(nil, func(success bool) {
+	userContext.FetchQualifiedSegmentsAsync(context.Background(), nil, func(success bool) {
 		o.True(success)
 		o.Equal([]string{}, userContext.GetQualifiedSegments())
 		wg.Done()
@@ -203,7 +205,7 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsParameters
 	factory := OptimizelyFactory{Datafile: o.datafile, odpManager: odpManager}
 	optimizelyClient, _ := factory.Client()
 	userContext := optimizelyClient.CreateUserContext(o.userID, nil)
-	userContext.FetchQualifiedSegments([]segment.OptimizelySegmentOption{segment.IgnoreCache})
+	userContext.FetchQualifiedSegments(context.Background(), []segment.OptimizelySegmentOption{segment.IgnoreCache})
 	o.Equal([]string{"odp-segment-1"}, userContext.GetQualifiedSegments())
 	o.Equal([]string{"odp-segment-1", "odp-segment-2", "odp-segment-3"}, odpManager.OdpConfig.GetSegmentsToCheck())
 	segmentManager.AssertExpectations(o.T())
