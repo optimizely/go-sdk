@@ -308,6 +308,7 @@ func WithNotificationCenter(nc notification.Center) OptionFunc {
 	}
 }
 
+// WithTracer allows user to pass in their own implementation of the Tracer interface
 func WithTracer(tracer tracing.Tracer) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.tracer = tracer
