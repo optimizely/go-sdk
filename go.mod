@@ -1,6 +1,6 @@
 module github.com/optimizely/go-sdk
 
-go 1.21.0
+go 1.21.6
 
 require (
 	github.com/google/uuid v1.3.0
