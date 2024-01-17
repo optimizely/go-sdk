@@ -46,32 +46,57 @@ import (
 
 const (
 	// DefaultTracerName is the name of the tracer used by the Optimizely SDK
-	DefaultTracerName                          = "OptimizelySDK"
-	SpanNameDecide                             = "decide"
-	SpanNameDecideForKeys                      = "decideForKeys"
-	SpanNameDecideAll                          = "decideAll"
-	SpanNameActivate                           = "Activate"
-	SpanNameFetchQualifiedSegments             = "fetchQualifiedSegments"
-	SpanNameSendOdpEvent                       = "SendOdpEvent"
-	SpanNameIsFeatureEnabled                   = "IsFeatureEnabled"
-	SpanNameGetEnabledFeatures                 = "GetEnabledFeatures"
-	SpanNameGetFeatureVariableBoolean          = "GetFeatureVariableBoolean"
-	SpanNameGetFeatureVariableDouble           = "GetFeatureVariableDouble"
-	SpanNameGetFeatureVariableInteger          = "GetFeatureVariableInteger"
-	SpanNameGetFeatureVariableString           = "GetFeatureVariableString"
-	SpanNameGetFeatureVariableJSON             = "GetFeatureVariableJSON"
-	SpanNameGetFeatureVariablePrivate          = "getFeatureVariable"
-	SpanNameGetFeatureVariablePublic           = "GetFeatureVariable"
+	DefaultTracerName = "OptimizelySDK"
+	// SpanNameDecide is the name of the span used by the Optimizely SDK for tracing decide call
+	SpanNameDecide = "decide"
+	// SpanNameDecideForKeys is the name of the span used by the Optimizely SDK for tracing decideForKeys call
+	SpanNameDecideForKeys = "decideForKeys"
+	// SpanNameDecideAll is the name of the span used by the Optimizely SDK for tracing decideAll call
+	SpanNameDecideAll = "decideAll"
+	// SpanNameActivate is the name of the span used by the Optimizely SDK for tracing Activate call
+	SpanNameActivate = "Activate"
+	// SpanNameFetchQualifiedSegments is the name of the span used by the Optimizely SDK for tracing fetchQualifiedSegments call
+	SpanNameFetchQualifiedSegments = "fetchQualifiedSegments"
+	// SpanNameSendOdpEvent is the name of the span used by the Optimizely SDK for tracing SendOdpEvent call
+	SpanNameSendOdpEvent = "SendOdpEvent"
+	// SpanNameIsFeatureEnabled is the name of the span used by the Optimizely SDK for tracing IsFeatureEnabled call
+	SpanNameIsFeatureEnabled = "IsFeatureEnabled"
+	// SpanNameGetEnabledFeatures is the name of the span used by the Optimizely SDK for tracing GetEnabledFeatures call
+	SpanNameGetEnabledFeatures = "GetEnabledFeatures"
+	// SpanNameGetFeatureVariableBoolean is the name of the span used by the Optimizely SDK for tracing GetFeatureVariableBoolean call
+	SpanNameGetFeatureVariableBoolean = "GetFeatureVariableBoolean"
+	// SpanNameGetFeatureVariableDouble is the name of the span used by the Optimizely SDK for tracing GetFeatureVariableDouble call
+	SpanNameGetFeatureVariableDouble = "GetFeatureVariableDouble"
+	// SpanNameGetFeatureVariableInteger is the name of the span used by the Optimizely SDK for tracing GetFeatureVariableInteger call
+	SpanNameGetFeatureVariableInteger = "GetFeatureVariableInteger"
+	// SpanNameGetFeatureVariableString is the name of the span used by the Optimizely SDK for tracing GetFeatureVariableString call
+	SpanNameGetFeatureVariableString = "GetFeatureVariableString"
+	// SpanNameGetFeatureVariableJSON is the name of the span used by the Optimizely SDK for tracing GetFeatureVariableJSON call
+	SpanNameGetFeatureVariableJSON = "GetFeatureVariableJSON"
+	// SpanNameGetFeatureVariablePrivate is the name of the span used by the Optimizely SDK for tracing getFeatureVariable call
+	SpanNameGetFeatureVariablePrivate = "getFeatureVariable"
+	// SpanNameGetFeatureVariablePublic is the name of the span used by the Optimizely SDK for tracing GetFeatureVariable call
+	SpanNameGetFeatureVariablePublic = "GetFeatureVariable"
+	// SpanNameGetAllFeatureVariablesWithDecision is the name of the span used by the Optimizely SDK for tracing GetAllFeatureVariablesWithDecision call
 	SpanNameGetAllFeatureVariablesWithDecision = "GetAllFeatureVariablesWithDecision"
-	SpanNameGetDetailedFeatureDecisionUnsafe   = "GetDetailedFeatureDecisionUnsafe"
-	SpanNameGetAllFeatureVariables             = "GetAllFeatureVariables"
-	SpanNameGetVariation                       = "GetVariation"
-	SpanNameTrack                              = "Track"
-	SpanNameGetFeatureDecision                 = "getFeatureDecision"
-	SpanNameGetExperimentDecision              = "getExperimentDecision"
-	SpanNameGetProjectConfig                   = "getProjectConfig"
-	SpanNameGetOptimizelyConfig                = "GetOptimizelyConfig"
-	SpanNameGetDecisionVariableMap             = "getDecisionVariableMap"
+	// SpanNameGetDetailedFeatureDecisionUnsafe is the name of the span used by the Optimizely SDK for tracing GetDetailedFeatureDecisionUnsafe call
+	SpanNameGetDetailedFeatureDecisionUnsafe = "GetDetailedFeatureDecisionUnsafe"
+	// SpanNameGetAllFeatureVariables is the name of the span used by the Optimizely SDK for tracing GetAllFeatureVariables call
+	SpanNameGetAllFeatureVariables = "GetAllFeatureVariables"
+	// SpanNameGetVariation is the name of the span used by the Optimizely SDK for tracing GetVariation call
+	SpanNameGetVariation = "GetVariation"
+	// SpanNameTrack is the name of the span used by the Optimizely SDK for tracing Track call
+	SpanNameTrack = "Track"
+	// SpanNameGetFeatureDecision is the name of the span used by the Optimizely SDK for tracing getFeatureDecision call
+	SpanNameGetFeatureDecision = "getFeatureDecision"
+	// SpanNameGetExperimentDecision is the name of the span used by the Optimizely SDK for tracing getExperimentDecision call
+	SpanNameGetExperimentDecision = "getExperimentDecision"
+	// SpanNameGetProjectConfig is the name of the span used by the Optimizely SDK for tracing getProjectConfig call
+	SpanNameGetProjectConfig = "getProjectConfig"
+	// SpanNameGetOptimizelyConfig is the name of the span used by the Optimizely SDK for tracing GetOptimizelyConfig call
+	SpanNameGetOptimizelyConfig = "GetOptimizelyConfig"
+	// SpanNameGetDecisionVariableMap is the name of the span used by the Optimizely SDK for tracing getDecisionVariableMap call
+	SpanNameGetDecisionVariableMap = "getDecisionVariableMap"
 )
 
 // OptimizelyClient is the entry point to the Optimizely SDK
