@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020-2022 Optimizely, Inc. and contributors                    *
+ * Copyright 2020-2022, 2024 Optimizely, Inc. and contributors              *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -18,6 +18,7 @@
 package client
 
 import (
+	"context"
 	"errors"
 	"sync"
 
@@ -78,6 +79,11 @@ func (o *OptimizelyUserContext) GetQualifiedSegments() []string {
 	o.mutex.RLock()
 	defer o.mutex.RUnlock()
 	return copyQualifiedSegments(o.qualifiedSegments)
+}
+
+func (o *OptimizelyUserContext) WithTraceContext(ctx context.Context) *OptimizelyUserContext {
+	o.optimizely.WithTraceContext(ctx)
+	return o
 }
 
 func (o OptimizelyUserContext) getForcedDecisionService() *pkgDecision.ForcedDecisionService {
