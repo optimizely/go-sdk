@@ -208,10 +208,17 @@ func (m *MockODPManager) Update(apiKey, apiHost string, segmentsToCheck []string
 
 type MockTracer struct {
 	StartSpanCalled bool
+	TracerName      string
+	CalledSpans     []string
 }
 
 func (m *MockTracer) StartSpan(ctx context.Context, tracerName, spanName string) (context.Context, tracing.Span) {
 	m.StartSpanCalled = true
+	m.TracerName = tracerName
+	if m.CalledSpans == nil {
+		m.CalledSpans = make([]string, 0)
+	}
+	m.CalledSpans = append(m.CalledSpans, spanName)
 	return ctx, &MockSpan{}
 }
 
@@ -281,6 +288,8 @@ func TestSendODPEventEmptyType(t *testing.T) {
 	assert.NoError(t, err)
 	mockOdpManager.AssertExpectations(t)
 	assert.True(t, optimizelyClient.tracer.(*MockTracer).StartSpanCalled)
+	assert.Equal(t, DefaultTracerName, optimizelyClient.tracer.(*MockTracer).TracerName)
+	assert.Contains(t, optimizelyClient.tracer.(*MockTracer).CalledSpans, SpanNameSendOdpEvent)
 }
 
 func TestSendODPEventEmptyIdentifiers(t *testing.T) {
