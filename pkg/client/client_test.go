@@ -224,7 +224,7 @@ func (m *MockSpan) End() {}
 func TestSendODPEventWhenSDKNotReady(t *testing.T) {
 	factory := OptimizelyFactory{SDKKey: "121"}
 	client, _ := factory.Client()
-	err := client.SendOdpEvent(context.Background(), "123", "456", map[string]string{
+	err := client.SendOdpEvent("123", "456", map[string]string{
 		"abc": "123",
 	}, map[string]interface{}{
 		"abc":                 nil,
@@ -245,7 +245,7 @@ func TestSendODPEventWhenODPDisabled(t *testing.T) {
 	optimizelyClient.ConfigManager = getMockConfigManager()
 
 	assert.NoError(t, err)
-	err = optimizelyClient.SendOdpEvent(context.Background(), "123", "456", map[string]string{
+	err = optimizelyClient.SendOdpEvent("123", "456", map[string]string{
 		"abc": "123",
 	}, map[string]interface{}{
 		"abc":                 nil,
@@ -277,7 +277,7 @@ func TestSendODPEventEmptyType(t *testing.T) {
 		ConfigManager: getMockConfigManager(),
 		tracer:        &MockTracer{},
 	}
-	err := optimizelyClient.SendOdpEvent(context.Background(), "", action, identifiers, data)
+	err := optimizelyClient.SendOdpEvent("", action, identifiers, data)
 	assert.NoError(t, err)
 	mockOdpManager.AssertExpectations(t)
 	assert.True(t, optimizelyClient.tracer.(*MockTracer).StartSpanCalled)
@@ -298,7 +298,7 @@ func TestSendODPEventEmptyIdentifiers(t *testing.T) {
 		ConfigManager: getMockConfigManager(),
 		tracer:        &MockTracer{},
 	}
-	err := optimizelyClient.SendOdpEvent(context.Background(), "", action, identifiers, data)
+	err := optimizelyClient.SendOdpEvent("", action, identifiers, data)
 	assert.Equal(t, errors.New("ODP events must have at least one key-value pair in identifiers"), err)
 	assert.True(t, optimizelyClient.tracer.(*MockTracer).StartSpanCalled)
 }
@@ -317,7 +317,7 @@ func TestSendODPEventNilIdentifiers(t *testing.T) {
 		ConfigManager: getMockConfigManager(),
 		tracer:        &MockTracer{},
 	}
-	err := optimizelyClient.SendOdpEvent(context.Background(), "", action, nil, data)
+	err := optimizelyClient.SendOdpEvent("", action, nil, data)
 	assert.Equal(t, errors.New("ODP events must have at least one key-value pair in identifiers"), err)
 	assert.True(t, optimizelyClient.tracer.(*MockTracer).StartSpanCalled)
 }
@@ -330,7 +330,7 @@ func TestSendODPEvent(t *testing.T) {
 		ConfigManager: getMockConfigManager(),
 		tracer:        &MockTracer{},
 	}
-	err := optimizelyClient.SendOdpEvent(context.Background(), "123", "", map[string]string{"identifier": "123"}, nil)
+	err := optimizelyClient.SendOdpEvent("123", "", map[string]string{"identifier": "123"}, nil)
 	assert.NoError(t, err)
 	mockOdpManager.AssertExpectations(t)
 	assert.True(t, optimizelyClient.tracer.(*MockTracer).StartSpanCalled)
@@ -349,7 +349,7 @@ func TestTrack(t *testing.T) {
 		tracer:          &MockTracer{},
 	}
 
-	err := client.Track(context.Background(), "sample_conversion", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
+	err := client.Track("sample_conversion", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
 
 	assert.NoError(t, err)
 	assert.True(t, len(mockProcessor.Events) == 1)
@@ -370,7 +370,7 @@ func TestTrackFailEventNotFound(t *testing.T) {
 		tracer:          &MockTracer{},
 	}
 
-	err := client.Track(context.Background(), "bob", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
+	err := client.Track("bob", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
 
 	assert.NoError(t, err)
 	assert.True(t, len(mockProcessor.Events) == 0)
@@ -389,7 +389,7 @@ func TestTrackPanics(t *testing.T) {
 		tracer:          &MockTracer{},
 	}
 
-	err := client.Track(context.Background(), "bob", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
+	err := client.Track("bob", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
 
 	assert.Error(t, err)
 	assert.True(t, len(mockProcessor.Events) == 0)
@@ -408,7 +408,7 @@ func TestGetEnabledFeaturesPanic(t *testing.T) {
 	}
 
 	// ensure that the client calms back down and recovers
-	result, err := client.GetEnabledFeatures(context.Background(), testUserContext)
+	result, err := client.GetEnabledFeatures(testUserContext)
 	assert.Empty(t, result)
 	assert.True(t, assert.Error(t, err))
 	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
@@ -479,7 +479,7 @@ func TestGetFeatureVariableBool(t *testing.T) {
 			logger:          logging.GetLogger("", ""),
 			tracer:          &MockTracer{},
 		}
-		result, err := client.GetFeatureVariableBoolean(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+		result, err := client.GetFeatureVariableBoolean(testFeatureKey, testVariableKey, testUserContext)
 		if ts.validBool {
 			assert.NoError(t, err)
 			assert.Equal(t, ts.result, result)
@@ -572,7 +572,7 @@ func TestGetFeatureVariableBoolWithNotification(t *testing.T) {
 		id, _ := mockDecisionService.OnDecision(callback)
 
 		assert.NotEqual(t, id, 0)
-		client.GetFeatureVariableBoolean(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+		client.GetFeatureVariableBoolean(testFeatureKey, testVariableKey, testUserContext)
 
 		assert.Equal(t, numberOfCalls, 1)
 		assert.Equal(t, ts.decisionInfo, note.DecisionInfo)
@@ -599,7 +599,7 @@ func TestGetFeatureVariableBoolPanic(t *testing.T) {
 	}
 
 	// ensure that the client calms back down and recovers
-	result, err := client.GetFeatureVariableBoolean(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+	result, err := client.GetFeatureVariableBoolean(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, false, result)
 	assert.True(t, assert.Error(t, err))
 	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
@@ -670,7 +670,7 @@ func TestGetFeatureVariableDouble(t *testing.T) {
 			logger:          logging.GetLogger("", ""),
 			tracer:          &MockTracer{},
 		}
-		result, err := client.GetFeatureVariableDouble(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+		result, err := client.GetFeatureVariableDouble(testFeatureKey, testVariableKey, testUserContext)
 		if ts.validDouble {
 			assert.NoError(t, err)
 			assert.Equal(t, ts.result, result)
@@ -763,7 +763,7 @@ func TestGetFeatureVariableDoubleWithNotification(t *testing.T) {
 		id, _ := mockDecisionService.OnDecision(callback)
 
 		assert.NotEqual(t, id, 0)
-		client.GetFeatureVariableDouble(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+		client.GetFeatureVariableDouble(testFeatureKey, testVariableKey, testUserContext)
 
 		assert.Equal(t, numberOfCalls, 1)
 		assert.Equal(t, ts.decisionInfo, note.DecisionInfo)
@@ -790,7 +790,7 @@ func TestGetFeatureVariableDoublePanic(t *testing.T) {
 	}
 
 	// ensure that the client calms back down and recovers
-	result, err := client.GetFeatureVariableDouble(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+	result, err := client.GetFeatureVariableDouble(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, float64(0), result)
 	assert.True(t, assert.Error(t, err))
 	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
@@ -861,7 +861,7 @@ func TestGetFeatureVariableInteger(t *testing.T) {
 			logger:          logging.GetLogger("", ""),
 			tracer:          &MockTracer{},
 		}
-		result, err := client.GetFeatureVariableInteger(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+		result, err := client.GetFeatureVariableInteger(testFeatureKey, testVariableKey, testUserContext)
 		if ts.validInteger {
 			assert.NoError(t, err)
 			assert.Equal(t, ts.result, result)
@@ -954,7 +954,7 @@ func TestGetFeatureVariableIntegerWithNotification(t *testing.T) {
 		id, _ := mockDecisionService.OnDecision(callback)
 
 		assert.NotEqual(t, id, 0)
-		client.GetFeatureVariableInteger(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+		client.GetFeatureVariableInteger(testFeatureKey, testVariableKey, testUserContext)
 
 		assert.Equal(t, numberOfCalls, 1)
 		assert.Equal(t, ts.decisionInfo, note.DecisionInfo)
@@ -981,7 +981,7 @@ func TestGetFeatureVariableIntegerPanic(t *testing.T) {
 	}
 
 	// ensure that the client calms back down and recovers
-	result, err := client.GetFeatureVariableInteger(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+	result, err := client.GetFeatureVariableInteger(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, 0, result)
 	assert.True(t, assert.Error(t, err))
 	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
@@ -1050,7 +1050,7 @@ func TestGetFeatureVariableSting(t *testing.T) {
 			logger:          logging.GetLogger("", ""),
 			tracer:          &MockTracer{},
 		}
-		result, err := client.GetFeatureVariableString(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+		result, err := client.GetFeatureVariableString(testFeatureKey, testVariableKey, testUserContext)
 		if ts.validString {
 			assert.NoError(t, err)
 			assert.Equal(t, ts.result, result)
@@ -1141,7 +1141,7 @@ func TestGetFeatureVariableStringWithNotification(t *testing.T) {
 		id, _ := mockDecisionService.OnDecision(callback)
 
 		assert.NotEqual(t, id, 0)
-		client.GetFeatureVariableString(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+		client.GetFeatureVariableString(testFeatureKey, testVariableKey, testUserContext)
 
 		assert.Equal(t, numberOfCalls, 1)
 		assert.Equal(t, ts.decisionInfo, note.DecisionInfo)
@@ -1167,7 +1167,7 @@ func TestGetFeatureVariableStringPanic(t *testing.T) {
 	}
 
 	// ensure that the client calms back down and recovers
-	result, err := client.GetFeatureVariableString(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+	result, err := client.GetFeatureVariableString(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, "", result)
 	assert.True(t, assert.Error(t, err))
 	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
@@ -1239,7 +1239,7 @@ func TestGetFeatureVariableJSON(t *testing.T) {
 			logger:          logging.GetLogger("", ""),
 			tracer:          &MockTracer{},
 		}
-		result, err := client.GetFeatureVariableJSON(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+		result, err := client.GetFeatureVariableJSON(testFeatureKey, testVariableKey, testUserContext)
 		if ts.validJson {
 			assert.NoError(t, err)
 			assert.NotNil(t, result)
@@ -1338,7 +1338,7 @@ func TestGetFeatureVariableJSONWithNotification(t *testing.T) {
 		id, _ := mockDecisionService.OnDecision(callback)
 
 		assert.NotEqual(t, id, 0)
-		client.GetFeatureVariableJSON(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+		client.GetFeatureVariableJSON(testFeatureKey, testVariableKey, testUserContext)
 
 		assert.Equal(t, numberOfCalls, 1)
 		assert.Equal(t, ts.decisionInfo, note.DecisionInfo)
@@ -1364,14 +1364,13 @@ func TestGetFeatureVariableJSONPanic(t *testing.T) {
 	}
 
 	// ensure that the client calms back down and recovers
-	result, err := client.GetFeatureVariableJSON(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+	result, err := client.GetFeatureVariableJSON(testFeatureKey, testVariableKey, testUserContext)
 	assert.Nil(t, result)
 	assert.True(t, assert.Error(t, err))
 	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetFeatureVariableErrorCases(t *testing.T) {
-	ctx := context.Background()
 	testUserContext := entities.UserContext{ID: "test_user_1"}
 
 	mockConfigManager := new(MockProjectConfigManager)
@@ -1384,11 +1383,11 @@ func TestGetFeatureVariableErrorCases(t *testing.T) {
 		logger:          logging.GetLogger("", ""),
 		tracer:          &MockTracer{},
 	}
-	_, err1 := client.GetFeatureVariableBoolean(ctx, "test_feature_key", "test_variable_key", testUserContext)
-	_, err2 := client.GetFeatureVariableDouble(ctx, "test_feature_key", "test_variable_key", testUserContext)
-	_, err3 := client.GetFeatureVariableInteger(ctx, "test_feature_key", "test_variable_key", testUserContext)
-	_, err4 := client.GetFeatureVariableString(ctx, "test_feature_key", "test_variable_key", testUserContext)
-	_, err5 := client.GetFeatureVariableJSON(ctx, "test_feature_key", "test_variable_key", testUserContext)
+	_, err1 := client.GetFeatureVariableBoolean("test_feature_key", "test_variable_key", testUserContext)
+	_, err2 := client.GetFeatureVariableDouble("test_feature_key", "test_variable_key", testUserContext)
+	_, err3 := client.GetFeatureVariableInteger("test_feature_key", "test_variable_key", testUserContext)
+	_, err4 := client.GetFeatureVariableString("test_feature_key", "test_variable_key", testUserContext)
+	_, err5 := client.GetFeatureVariableJSON("test_feature_key", "test_variable_key", testUserContext)
 	assert.Error(t, err1)
 	assert.Error(t, err2)
 	assert.Error(t, err3)
@@ -1409,7 +1408,7 @@ func TestGetProjectConfigIsValid(t *testing.T) {
 		tracer:        &MockTracer{},
 	}
 
-	actual, err := client.getProjectConfig(context.Background())
+	actual, err := client.getProjectConfig()
 
 	assert.Nil(t, err)
 	assert.Equal(t, mockConfigManager.projectConfig, actual)
@@ -1424,7 +1423,7 @@ func TestGetProjectConfigIsInValid(t *testing.T) {
 		tracer:        &MockTracer{},
 	}
 
-	actual, err := client.getProjectConfig(context.Background())
+	actual, err := client.getProjectConfig()
 
 	assert.NotNil(t, err)
 	assert.Nil(t, actual)
@@ -1440,7 +1439,7 @@ func TestGetOptimizelyConfig(t *testing.T) {
 		tracer:        &MockTracer{},
 	}
 
-	optimizelyConfig := client.GetOptimizelyConfig(context.Background())
+	optimizelyConfig := client.GetOptimizelyConfig()
 
 	assert.Equal(t, &config.OptimizelyConfig{Revision: "232"}, optimizelyConfig)
 	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
@@ -1498,7 +1497,7 @@ func TestGetFeatureDecisionValid(t *testing.T) {
 		tracer:          &MockTracer{},
 	}
 
-	_, featureDecision, err := client.getFeatureDecision(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+	_, featureDecision, err := client.getFeatureDecision(testFeatureKey, testVariableKey, testUserContext)
 	assert.Nil(t, err)
 	assert.Equal(t, expectedFeatureDecision, featureDecision)
 	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
@@ -1546,7 +1545,7 @@ func TestGetFeatureDecisionErrProjectConfig(t *testing.T) {
 		tracer:          &MockTracer{},
 	}
 
-	_, _, err := client.getFeatureDecision(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+	_, _, err := client.getFeatureDecision(testFeatureKey, testVariableKey, testUserContext)
 	assert.Error(t, err)
 	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
@@ -1592,7 +1591,7 @@ func TestGetFeatureDecisionPanicProjectConfig(t *testing.T) {
 		tracer:          &MockTracer{},
 	}
 
-	_, _, err := client.getFeatureDecision(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+	_, _, err := client.getFeatureDecision(testFeatureKey, testVariableKey, testUserContext)
 	assert.Error(t, err)
 	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
@@ -1629,7 +1628,7 @@ func TestGetFeatureDecisionPanicDecisionService(t *testing.T) {
 		tracer:          &MockTracer{},
 	}
 
-	_, _, err := client.getFeatureDecision(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+	_, _, err := client.getFeatureDecision(testFeatureKey, testVariableKey, testUserContext)
 	assert.Error(t, err)
 	assert.EqualError(t, err, "I'm panicking")
 	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
@@ -1677,7 +1676,7 @@ func TestGetFeatureDecisionErrFeatureDecision(t *testing.T) {
 		tracer:          &MockTracer{},
 	}
 
-	_, decision, err := client.getFeatureDecision(context.Background(), testFeatureKey, testVariableKey, testUserContext)
+	_, decision, err := client.getFeatureDecision(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, expectedFeatureDecision, decision)
 	assert.NoError(t, err)
 	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
@@ -1734,7 +1733,7 @@ func TestGetAllFeatureVariablesWithDecision(t *testing.T) {
 		tracer:          &MockTracer{},
 	}
 
-	enabled, variationMap, err := client.GetAllFeatureVariablesWithDecision(context.Background(), testFeatureKey, testUserContext)
+	enabled, variationMap, err := client.GetAllFeatureVariablesWithDecision(testFeatureKey, testUserContext)
 	assert.NoError(t, err)
 	assert.True(t, enabled)
 
@@ -1805,7 +1804,7 @@ func TestGetAllFeatureVariablesWithDecisionWithNotification(t *testing.T) {
 	id, _ := mockDecisionService.OnDecision(callback)
 
 	assert.NotEqual(t, id, 0)
-	client.GetAllFeatureVariablesWithDecision(context.Background(), testFeatureKey, testUserContext)
+	client.GetAllFeatureVariablesWithDecision(testFeatureKey, testUserContext)
 
 	decisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": true, "featureKey": "test_feature_key", "source": decision.Source(""),
 		"sourceInfo": map[string]string{}, "variableValues": map[string]interface{}{"var_bool": true, "var_double": 2.0, "var_int": 20,
@@ -1857,7 +1856,7 @@ func TestGetAllFeatureVariablesWithDecisionWithError(t *testing.T) {
 		tracer:          &MockTracer{},
 	}
 
-	enabled, variationMap, err := client.GetAllFeatureVariablesWithDecision(context.Background(), testFeatureKey, testUserContext)
+	enabled, variationMap, err := client.GetAllFeatureVariablesWithDecision(testFeatureKey, testUserContext)
 
 	// if we have a decision, but also a non-fatal error, we should return the decision
 	assert.True(t, enabled)
@@ -1883,7 +1882,7 @@ func TestGetAllFeatureVariablesWithDecisionWithoutFeature(t *testing.T) {
 		tracer:          &MockTracer{},
 	}
 
-	enabled, variationMap, err := client.GetAllFeatureVariablesWithDecision(context.Background(), invalidFeatureKey, testUserContext)
+	enabled, variationMap, err := client.GetAllFeatureVariablesWithDecision(invalidFeatureKey, testUserContext)
 
 	// if we have a decision, but also a non-fatal error, we should return the decision
 	assert.False(t, enabled)
@@ -1953,7 +1952,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithNotification(t *testing.T) {
 	id, _ := mockDecisionService.OnDecision(callback)
 
 	assert.NotEqual(t, id, 0)
-	client.GetDetailedFeatureDecisionUnsafe(context.Background(), testFeatureKey, testUserContext, true)
+	client.GetDetailedFeatureDecisionUnsafe(testFeatureKey, testUserContext, true)
 
 	decisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": true, "featureKey": "test_feature_key", "source": decision.Source(""),
 		"sourceInfo": map[string]string{}, "variableValues": map[string]interface{}{"var_bool": true, "var_double": 2.0, "var_int": 20,
@@ -2014,7 +2013,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithTrackingDisabled(t *testing.T) {
 		tracer:          &MockTracer{},
 	}
 
-	decision, err := client.GetDetailedFeatureDecisionUnsafe(context.Background(), testFeatureKey, testUserContext, true)
+	decision, err := client.GetDetailedFeatureDecisionUnsafe(testFeatureKey, testUserContext, true)
 	assert.NoError(t, err)
 	assert.True(t, decision.Enabled)
 
@@ -2043,7 +2042,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithoutFeature(t *testing.T) {
 		tracer:          &MockTracer{},
 	}
 
-	decision, err := client.GetDetailedFeatureDecisionUnsafe(context.Background(), invalidFeatureKey, testUserContext, true)
+	decision, err := client.GetDetailedFeatureDecisionUnsafe(invalidFeatureKey, testUserContext, true)
 
 	// if we have a decision, but also a non-fatal error, we should return the decision
 	assert.False(t, decision.Enabled)
@@ -2078,7 +2077,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithError(t *testing.T) {
 		tracer:          &MockTracer{},
 	}
 
-	decision, err := client.GetDetailedFeatureDecisionUnsafe(context.Background(), testFeatureKey, testUserContext, true)
+	decision, err := client.GetDetailedFeatureDecisionUnsafe(testFeatureKey, testUserContext, true)
 	assert.False(t, decision.Enabled)
 	assert.Error(t, err)
 	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
@@ -2121,7 +2120,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithFeatureTestAndTrackingEnabled(t *te
 		tracer:          &MockTracer{},
 	}
 
-	decision, err := client.GetDetailedFeatureDecisionUnsafe(context.Background(), testFeature.Key, testUserContext, false)
+	decision, err := client.GetDetailedFeatureDecisionUnsafe(testFeature.Key, testUserContext, false)
 	assert.NoError(t, err)
 	assert.True(t, decision.Enabled)
 	assert.Equal(t, decision.ExperimentKey, "number_1")
@@ -2183,7 +2182,7 @@ func TestGetAllFeatureVariables(t *testing.T) {
 		tracer:          &MockTracer{},
 	}
 
-	optlyJSON, err := client.GetAllFeatureVariables(context.Background(), testFeatureKey, testUserContext)
+	optlyJSON, err := client.GetAllFeatureVariables(testFeatureKey, testUserContext)
 	assert.NoError(t, err)
 	assert.NotNil(t, optlyJSON)
 	variationMap := optlyJSON.ToMap()
@@ -2218,7 +2217,7 @@ func TestGetAllFeatureVariablesWithoutFeature(t *testing.T) {
 		tracer:          &MockTracer{},
 	}
 
-	optlyJson, err := client.GetAllFeatureVariables(context.Background(), invalidFeatureKey, testUserContext)
+	optlyJson, err := client.GetAllFeatureVariables(invalidFeatureKey, testUserContext)
 	assert.NoError(t, err)
 	assert.NotNil(t, optlyJson)
 
@@ -2312,12 +2311,12 @@ func (s *ClientTestSuiteAB) TestActivate() {
 		tracer:          &MockTracer{},
 	}
 
-	variationKey1, err1 := testClient.Activate(context.Background(), "test_exp_1", testUserContext)
+	variationKey1, err1 := testClient.Activate("test_exp_1", testUserContext)
 	s.NoError(err1)
 	s.Equal(expectedVariation.Key, variationKey1)
 
 	// should not return error for experiment not found.
-	variationKey2, err2 := testClient.Activate(context.Background(), "test_exp_2", testUserContext)
+	variationKey2, err2 := testClient.Activate("test_exp_2", testUserContext)
 	s.NoError(err2)
 	s.Equal("", variationKey2)
 
@@ -2336,7 +2335,7 @@ func (s *ClientTestSuiteAB) TestActivatePanics() {
 		tracer:          &MockTracer{},
 	}
 
-	variationKey, err := testClient.Activate(context.Background(), "test_exp_1", testUserContext)
+	variationKey, err := testClient.Activate("test_exp_1", testUserContext)
 	s.Equal("", variationKey)
 	s.EqualError(err, "I'm panicking")
 }
@@ -2353,7 +2352,7 @@ func (s *ClientTestSuiteAB) TestActivateInvalidConfig() {
 		tracer:        &MockTracer{},
 	}
 
-	variationKey, err := testClient.Activate(context.Background(), "test_exp_1", testUserContext)
+	variationKey, err := testClient.Activate("test_exp_1", testUserContext)
 	s.Equal("", variationKey)
 	s.Error(err)
 	s.Equal(expectedError, err)
@@ -2382,7 +2381,7 @@ func (s *ClientTestSuiteAB) TestGetVariation() {
 		tracer:          &MockTracer{},
 	}
 
-	variationKey, err := testClient.GetVariation(context.Background(), "test_exp_1", testUserContext)
+	variationKey, err := testClient.GetVariation("test_exp_1", testUserContext)
 	s.NoError(err)
 	s.Equal(expectedVariation.Key, variationKey)
 	s.mockConfig.AssertExpectations(s.T())
@@ -2413,7 +2412,7 @@ func (s *ClientTestSuiteAB) TestGetVariationWithDecisionError() {
 		tracer:          &MockTracer{},
 	}
 
-	variationKey, err := testClient.GetVariation(context.Background(), "test_exp_1", testUserContext)
+	variationKey, err := testClient.GetVariation("test_exp_1", testUserContext)
 	s.NoError(err)
 	s.Equal(expectedVariation.Key, variationKey)
 	s.mockConfig.AssertExpectations(s.T())
@@ -2431,7 +2430,7 @@ func (s *ClientTestSuiteAB) TestGetVariationPanics() {
 		tracer:          &MockTracer{},
 	}
 
-	variationKey, err := testClient.GetVariation(context.Background(), "test_exp_1", testUserContext)
+	variationKey, err := testClient.GetVariation("test_exp_1", testUserContext)
 	s.Equal("", variationKey)
 	s.EqualError(err, "I'm panicking")
 }
@@ -2483,7 +2482,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabled() {
 		logger:          logging.GetLogger("", ""),
 		tracer:          &MockTracer{},
 	}
-	result, _ := client.IsFeatureEnabled(context.Background(), testFeature.Key, testUserContext)
+	result, _ := client.IsFeatureEnabled(testFeature.Key, testUserContext)
 	s.True(result)
 	s.mockConfig.AssertExpectations(s.T())
 	s.mockConfigManager.AssertExpectations(s.T())
@@ -2533,7 +2532,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledWithNotification() {
 	id, _ := s.mockDecisionService.OnDecision(callback)
 
 	s.NotEqual(id, 0)
-	client.IsFeatureEnabled(context.Background(), testFeature.Key, testUserContext)
+	client.IsFeatureEnabled(testFeature.Key, testUserContext)
 
 	decisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": true, "featureKey": "feature_1",
 		"source": decision.FeatureTest, "sourceInfo": map[string]string{"experimentKey": "number_1", "variationKey": "green"}}}
@@ -2579,7 +2578,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledWithDecisionError() {
 	}
 
 	// should still return the decision because the error is non-fatal
-	result, err := client.IsFeatureEnabled(context.Background(), testFeature.Key, testUserContext)
+	result, err := client.IsFeatureEnabled(testFeature.Key, testUserContext)
 	s.True(result)
 	s.NoError(err)
 	s.mockConfig.AssertExpectations(s.T())
@@ -2600,7 +2599,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledErrorConfig() {
 		logger:          logging.GetLogger("", ""),
 		tracer:          &MockTracer{},
 	}
-	result, _ := client.IsFeatureEnabled(context.Background(), testFeatureKey, testUserContext)
+	result, _ := client.IsFeatureEnabled(testFeatureKey, testUserContext)
 	s.False(result)
 	s.mockDecisionService.AssertNotCalled(s.T(), "GetFeatureDecision")
 }
@@ -2624,7 +2623,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledErrorFeatureKey() {
 		logger:          logging.GetLogger("", ""),
 		tracer:          &MockTracer{},
 	}
-	result, err := client.IsFeatureEnabled(context.Background(), testFeatureKey, testUserContext)
+	result, err := client.IsFeatureEnabled(testFeatureKey, testUserContext)
 	s.NoError(err)
 	s.False(result)
 	s.mockConfigManager.AssertExpectations(s.T())
@@ -2642,7 +2641,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledPanic() {
 	}
 
 	// ensure that the client calms back down and recovers
-	result, err := client.IsFeatureEnabled(context.Background(), testFeatureKey, testUserContext)
+	result, err := client.IsFeatureEnabled(testFeatureKey, testUserContext)
 	s.False(result)
 	s.Error(err)
 }
@@ -2689,7 +2688,7 @@ func (s *ClientTestSuiteFM) TestGetEnabledFeatures() {
 		logger:          logging.GetLogger("", ""),
 		tracer:          &MockTracer{},
 	}
-	result, err := client.GetEnabledFeatures(context.Background(), testUserContext)
+	result, err := client.GetEnabledFeatures(testUserContext)
 	s.NoError(err)
 	s.ElementsMatch(result, []string{testFeatureEnabled.Key})
 	s.mockConfig.AssertExpectations(s.T())
@@ -2711,7 +2710,7 @@ func (s *ClientTestSuiteFM) TestGetEnabledFeaturesErrorCases() {
 		logger:          logging.GetLogger("", ""),
 		tracer:          &MockTracer{},
 	}
-	result, err := client.GetEnabledFeatures(context.Background(), testUserContext)
+	result, err := client.GetEnabledFeatures(testUserContext)
 	s.Error(err)
 	s.Equal(expectedError, err)
 	s.Empty(result)
@@ -2866,7 +2865,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackWithNotification() {
 	s.Equal(1, id)
 	s.NoError(err)
 
-	err = s.client.Track(context.Background(), "sample_conversion", expectedUserContext, map[string]interface{}{})
+	err = s.client.Track("sample_conversion", expectedUserContext, map[string]interface{}{})
 	s.NoError(err)
 	s.True(isTrackCalled)
 	s.Equal(1, len(s.mockProcessor.Events))
@@ -2892,7 +2891,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackWithNotificationAndEventTag() {
 	}
 
 	s.client.OnTrack(onTrack)
-	err := s.client.Track(context.Background(), "sample_conversion", expectedUserContext, expectedEvenTags)
+	err := s.client.Track("sample_conversion", expectedUserContext, expectedEvenTags)
 
 	s.NoError(err)
 	s.True(isTrackCalled)
@@ -2920,7 +2919,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackWithNotificationAndUserEvent() {
 	}
 
 	s.client.OnTrack(onTrack)
-	err := s.client.Track(context.Background(), "sample_conversion", expectedUserContext, expectedEventTags)
+	err := s.client.Track("sample_conversion", expectedUserContext, expectedEventTags)
 
 	s.NoError(err)
 	s.True(isTrackCalled)
@@ -2938,7 +2937,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenEventProce
 	}
 
 	s.client.OnTrack(onTrack)
-	err := s.client.Track(context.Background(), "sample_conversion", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
+	err := s.client.Track("sample_conversion", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
 	s.NoError(err)
 	s.Equal(0, len(s.mockProcessor.Events))
 	s.False(isTrackCalled)
@@ -2956,7 +2955,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenNoNotifica
 	}
 	s.client.notificationCenter = nil
 	s.client.OnTrack(onTrack)
-	err := s.client.Track(context.Background(), "sample_conversion", userContext, map[string]interface{}{})
+	err := s.client.Track("sample_conversion", userContext, map[string]interface{}{})
 
 	s.NoError(err)
 	s.False(isTrackCalled)
@@ -2970,7 +2969,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenInvalidEve
 	}
 
 	s.client.OnTrack(onTrack)
-	err := s.client.Track(context.Background(), "bob", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
+	err := s.client.Track("bob", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
 
 	s.NoError(err)
 	s.Equal(0, len(s.mockProcessor.Events))
@@ -2988,7 +2987,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenSendThrows
 	}
 
 	mockNotificationCenter := new(MockNotificationCenter)
-	config, err := s.client.getProjectConfig(context.Background())
+	config, err := s.client.getProjectConfig()
 	s.NoError(err)
 	configEvent, err := config.GetEventByKey("sample_conversion")
 	s.NoError(err)
@@ -2999,7 +2998,7 @@ func (s *ClientTestSuiteTrackEvent) TestTrackNotificationNotCalledWhenSendThrows
 	mockNotificationCenter.On("AddHandler", notification.Track, mock.AnythingOfType("func(interface {})")).Return(1, nil)
 	s.client.notificationCenter = mockNotificationCenter
 	s.client.OnTrack(onTrack)
-	err = s.client.Track(context.Background(), "sample_conversion", expectedUserContext, map[string]interface{}{})
+	err = s.client.Track("sample_conversion", expectedUserContext, map[string]interface{}{})
 
 	s.NoError(err)
 	s.Equal(1, len(s.mockProcessor.Events))
@@ -3048,7 +3047,7 @@ func (s *ClientTestSuiteTrackNotification) TestMultipleOnTrack() {
 
 	// Add 5 on track callbacks
 	addOnTrack(5)
-	err := s.client.Track(context.Background(), "sample_conversion", userContext, map[string]interface{}{})
+	err := s.client.Track("sample_conversion", userContext, map[string]interface{}{})
 	s.NoError(err)
 	s.Equal(5, numberOfCalls)
 }
@@ -3071,7 +3070,7 @@ func (s *ClientTestSuiteTrackNotification) TestMultipleRemoveOnTrack() {
 		s.NoError(err)
 	}
 
-	err := s.client.Track(context.Background(), "sample_conversion", userContext, map[string]interface{}{})
+	err := s.client.Track("sample_conversion", userContext, map[string]interface{}{})
 	s.NoError(err)
 	s.Equal(5, numberOfCalls)
 
@@ -3082,7 +3081,7 @@ func (s *ClientTestSuiteTrackNotification) TestMultipleRemoveOnTrack() {
 		s.NoError(err)
 	}
 
-	err = s.client.Track(context.Background(), "sample_conversion", userContext, map[string]interface{}{})
+	err = s.client.Track("sample_conversion", userContext, map[string]interface{}{})
 	s.NoError(err)
 	s.Equal(0, numberOfCalls)
 }
@@ -3106,7 +3105,7 @@ func (s *ClientTestSuiteTrackNotification) TestOnTrackAfterRemoveOnTrack() {
 
 	// Add 5 on track callbacks
 	addOnTrack(5)
-	err := s.client.Track(context.Background(), "sample_conversion", userContext, map[string]interface{}{})
+	err := s.client.Track("sample_conversion", userContext, map[string]interface{}{})
 	s.NoError(err)
 	s.Equal(5, numberOfCalls)
 
@@ -3116,13 +3115,13 @@ func (s *ClientTestSuiteTrackNotification) TestOnTrackAfterRemoveOnTrack() {
 		err = s.client.RemoveOnTrack(callbackIds[i])
 		s.NoError(err)
 	}
-	err = s.client.Track(context.Background(), "sample_conversion", userContext, map[string]interface{}{})
+	err = s.client.Track("sample_conversion", userContext, map[string]interface{}{})
 	s.NoError(err)
 	s.Equal(0, numberOfCalls)
 
 	// Add 2 on track callbacks
 	addOnTrack(2)
-	err = s.client.Track(context.Background(), "sample_conversion", userContext, map[string]interface{}{})
+	err = s.client.Track("sample_conversion", userContext, map[string]interface{}{})
 	s.NoError(err)
 	s.Equal(2, numberOfCalls)
 }

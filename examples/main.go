@@ -4,7 +4,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -17,7 +16,6 @@ import (
 func main() {
 	sdkKey := "RZKHh5HhUExLvpeieGZnD"
 	logging.SetLogLevel(logging.LogLevelDebug)
-	ctx := context.Background()
 
 	/************* Bad SDK Key  ********************/
 
@@ -26,7 +24,7 @@ func main() {
 			"country":      "Unknown",
 			"likes_donuts": true,
 		})
-		decision := userContext.Decide(ctx, "mutext_feat", nil)
+		decision := userContext.Decide("mutext_feat", nil)
 		fmt.Printf("Is feature enabled? %v\n", decision.Enabled)
 		if len(decision.Reasons[0]) > 0 {
 			fmt.Println("A Valid 403 error received:", decision.Reasons[0])
@@ -40,7 +38,7 @@ func main() {
 			"country":      "US",
 			"likes_donuts": false,
 		})
-		decision := userContext.Decide(ctx, "mutext_feat", nil)
+		decision := userContext.Decide("mutext_feat", nil)
 		fmt.Printf("Is feature enabled? %v\n", decision.Enabled)
 	}
 
@@ -60,7 +58,7 @@ func main() {
 		"country":      "Unknown",
 		"likes_donuts": true,
 	})
-	decision := userContext.Decide(ctx, "mutext_feat", nil)
+	decision := userContext.Decide("mutext_feat", nil)
 	fmt.Printf("Is feature enabled? %v\n", decision.Enabled)
 
 	fmt.Println()
@@ -84,7 +82,7 @@ func main() {
 		"country":      "Unknown",
 		"likes_donuts": true,
 	})
-	decision = userContext.Decide(ctx, "mutext_feat", nil)
+	decision = userContext.Decide("mutext_feat", nil)
 	fmt.Printf("Is feature enabled? %v\n", decision.Enabled)
 
 	optimizelyClient.Close() //  user can close dispatcher

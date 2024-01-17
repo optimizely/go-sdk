@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020-2022, 2024 Optimizely, Inc. and contributors              *
+ * Copyright 2020-2022 Optimizely, Inc. and contributors                    *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -18,7 +18,6 @@
 package client
 
 import (
-	"context"
 	"errors"
 	"sync"
 
@@ -99,16 +98,16 @@ func (o *OptimizelyUserContext) SetAttribute(key string, value interface{}) {
 }
 
 // FetchQualifiedSegments fetches all qualified segments for the user context.
-func (o *OptimizelyUserContext) FetchQualifiedSegments(ctx context.Context, options []pkgOdpSegment.OptimizelySegmentOption) (success bool) {
-	o.optimizely.fetchQualifiedSegments(ctx, o, options, func(result bool) {
+func (o *OptimizelyUserContext) FetchQualifiedSegments(options []pkgOdpSegment.OptimizelySegmentOption) (success bool) {
+	o.optimizely.fetchQualifiedSegments(o, options, func(result bool) {
 		success = result
 	})
 	return
 }
 
 // FetchQualifiedSegmentsAsync fetches all qualified segments aysnchronously for the user context.
-func (o *OptimizelyUserContext) FetchQualifiedSegmentsAsync(ctx context.Context, options []pkgOdpSegment.OptimizelySegmentOption, callback func(success bool)) {
-	go o.optimizely.fetchQualifiedSegments(ctx, o, options, callback)
+func (o *OptimizelyUserContext) FetchQualifiedSegmentsAsync(options []pkgOdpSegment.OptimizelySegmentOption, callback func(success bool)) {
+	go o.optimizely.fetchQualifiedSegments(o, options, callback)
 }
 
 // SetQualifiedSegments clears and adds qualified segments for Optimizely user context
@@ -128,24 +127,24 @@ func (o *OptimizelyUserContext) IsQualifiedFor(segment string) bool {
 
 // Decide returns a decision result for a given flag key and a user context, which contains
 // all data required to deliver the flag or experiment.
-func (o *OptimizelyUserContext) Decide(ctx context.Context, key string, options []decide.OptimizelyDecideOptions) OptimizelyDecision {
+func (o *OptimizelyUserContext) Decide(key string, options []decide.OptimizelyDecideOptions) OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
 	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
-	return o.optimizely.decide(ctx, userContextCopy, key, convertDecideOptions(options))
+	return o.optimizely.decide(userContextCopy, key, convertDecideOptions(options))
 }
 
 // DecideAll returns a key-map of decision results for all active flag keys with options.
-func (o *OptimizelyUserContext) DecideAll(ctx context.Context, options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
+func (o *OptimizelyUserContext) DecideAll(options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
 	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
-	return o.optimizely.decideAll(ctx, userContextCopy, convertDecideOptions(options))
+	return o.optimizely.decideAll(userContextCopy, convertDecideOptions(options))
 }
 
 // DecideForKeys returns a key-map of decision results for multiple flag keys and options.
-func (o *OptimizelyUserContext) DecideForKeys(ctx context.Context, keys []string, options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
+func (o *OptimizelyUserContext) DecideForKeys(keys []string, options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
 	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
-	return o.optimizely.decideForKeys(ctx, userContextCopy, keys, convertDecideOptions(options))
+	return o.optimizely.decideForKeys(userContextCopy, keys, convertDecideOptions(options))
 }
 
 // TrackEvent generates a conversion event with the given event key if it exists and queues it up to be sent to the Optimizely
@@ -155,7 +154,7 @@ func (o *OptimizelyUserContext) TrackEvent(eventKey string, eventTags map[string
 		ID:         o.GetUserID(),
 		Attributes: o.GetUserAttributes(),
 	}
-	return o.optimizely.Track(context.Background(), eventKey, userContext, eventTags)
+	return o.optimizely.Track(eventKey, userContext, eventTags)
 }
 
 // SetForcedDecision sets the forced decision (variation key) for a given decision context (flag key and optional rule key).

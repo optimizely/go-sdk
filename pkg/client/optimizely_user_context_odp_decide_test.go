@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2022,2024 Optimizely, Inc. and contributors                    *
+ * Copyright 2022,2023 Optimizely, Inc. and contributors                    *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -17,7 +17,6 @@
 package client
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"sync"
@@ -50,41 +49,41 @@ func (o *OptimizelyUserContextODPDecideTestSuite) SetupTest() {
 func (o *OptimizelyUserContextODPDecideTestSuite) TestDecideWithQualifiedSegmentsSegmentHitInABTest() {
 	userContext := o.optimizelyClient.CreateUserContext(o.userID, nil)
 	userContext.SetQualifiedSegments([]string{"odp-segment-1", "odp-segment-none"})
-	decision := userContext.Decide(context.Background(), o.flagKey, nil)
+	decision := userContext.Decide(o.flagKey, nil)
 	o.Equal("variation-a", decision.VariationKey)
 }
 
 func (o *OptimizelyUserContextODPDecideTestSuite) TestDecideWithQualifiedSegmentsOtherAudienceHitInABTest() {
 	userContext := o.optimizelyClient.CreateUserContext(o.userID, map[string]interface{}{"age": 30})
 	userContext.SetQualifiedSegments([]string{"odp-segment-none"})
-	decision := userContext.Decide(context.Background(), o.flagKey, nil)
+	decision := userContext.Decide(o.flagKey, nil)
 	o.Equal("variation-a", decision.VariationKey)
 }
 
 func (o *OptimizelyUserContextODPDecideTestSuite) TestDecideWithQualifiedSegmentsSegmentHitInRollout() {
 	userContext := o.optimizelyClient.CreateUserContext(o.userID, nil)
 	userContext.SetQualifiedSegments([]string{"odp-segment-2"})
-	decision := userContext.Decide(context.Background(), o.flagKey, nil)
+	decision := userContext.Decide(o.flagKey, nil)
 	o.Equal("rollout-variation-on", decision.VariationKey)
 }
 
 func (o *OptimizelyUserContextODPDecideTestSuite) TestDecideWithQualifiedSegmentsSegmentMissInRollout() {
 	userContext := o.optimizelyClient.CreateUserContext(o.userID, nil)
 	userContext.SetQualifiedSegments([]string{"odp-segment-none"})
-	decision := userContext.Decide(context.Background(), o.flagKey, nil)
+	decision := userContext.Decide(o.flagKey, nil)
 	o.Equal("rollout-variation-off", decision.VariationKey)
 }
 
 func (o *OptimizelyUserContextODPDecideTestSuite) TestDecideWithQualifiedSegmentsEmptySegments() {
 	userContext := o.optimizelyClient.CreateUserContext(o.userID, nil)
 	userContext.SetQualifiedSegments([]string{})
-	decision := userContext.Decide(context.Background(), o.flagKey, nil)
+	decision := userContext.Decide(o.flagKey, nil)
 	o.Equal("rollout-variation-off", decision.VariationKey)
 }
 
 func (o *OptimizelyUserContextODPDecideTestSuite) TestDecideWithQualifiedSegmentsDefault() {
 	userContext := o.optimizelyClient.CreateUserContext(o.userID, nil)
-	decision := userContext.Decide(context.Background(), o.flagKey, nil)
+	decision := userContext.Decide(o.flagKey, nil)
 	o.Equal("rollout-variation-off", decision.VariationKey)
 }
 

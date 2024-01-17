@@ -3,7 +3,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"os"
 	"path"
@@ -47,7 +46,7 @@ func stressTest() {
 		log.Print(err)
 	}
 
-	clientApp.IsFeatureEnabled(context.Background(), "feature_5", user)
+	clientApp.IsFeatureEnabled("feature_5", user)
 }
 
 var ProfileMode = ""

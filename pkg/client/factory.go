@@ -107,6 +107,7 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		defaultDecideOptions: decideOptions,
 		execGroup:            eg,
 		logger:               logging.GetLogger(f.SDKKey, "OptimizelyClient"),
+		ctx:                  ctx,
 	}
 
 	if f.notificationCenter != nil {

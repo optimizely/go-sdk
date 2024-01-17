@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020-2022,2024 Optimizely, Inc. and contributors               *
+ * Copyright 2020-2022 Optimizely, Inc. and contributors                    *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -17,7 +17,6 @@
 package client
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"sync"
@@ -259,7 +258,7 @@ func (s *OptimizelyUserContextTestSuite) TestIsQualifiedFor() {
 func (s *OptimizelyUserContextTestSuite) TestDecideResponseContainsUserContextCopy() {
 	flagKey := "feature_2"
 	userContext := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-	decision := userContext.Decide(context.Background(), flagKey, nil)
+	decision := userContext.Decide(flagKey, nil)
 	decisionUserContext := decision.UserContext
 
 	// Change attributes for user context
@@ -275,11 +274,11 @@ func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTest() {
 	flagKey := "feature_2"
 	ruleKey := "exp_no_audience"
 	variationKey := "variation_with_traffic"
-	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(context.Background(), flagKey, entities.UserContext{ID: s.userID})
+	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
 	s.Nil(err)
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-	decision := user.Decide(context.Background(), flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+	decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 
 	s.Equal(variationKey, decision.VariationKey)
 	s.Equal(true, decision.Enabled)
@@ -307,7 +306,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTest() {
 func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTestWithForcedDecision() {
 	numberOfNotifications := 0
 	testForcedDecision := func(flagKey, ruleKey, experimentID, variationKey, reason string, expectedEventCount int) {
-		variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(context.Background(), flagKey, entities.UserContext{ID: s.userID})
+		variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
 		s.Nil(err)
 
 		note := notification.DecisionNotification{}
@@ -320,7 +319,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTestWithForcedDecision
 
 		user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 		user.SetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKey, RuleKey: ruleKey}, decision.OptimizelyForcedDecision{VariationKey: variationKey})
-		decision := user.Decide(context.Background(), flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+		decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 		s.OptimizelyClient.DecisionService.RemoveOnDecision(notificationID)
 
 		s.Equal(variationKey, decision.VariationKey)
@@ -375,12 +374,12 @@ func (s *OptimizelyUserContextTestSuite) TestDecideFeatureTestWithForcedDecision
 	flagKey := "feature_1"
 	ruleKey := ""
 	variationKey := "b"
-	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(context.Background(), flagKey, entities.UserContext{ID: s.userID})
+	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
 	s.Nil(err)
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 	user.SetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKey, RuleKey: ruleKey}, decision.OptimizelyForcedDecision{VariationKey: variationKey})
-	decision := user.Decide(context.Background(), flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+	decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 
 	s.Equal(variationKey, decision.VariationKey)
 	s.Equal(false, decision.Enabled)
@@ -409,11 +408,11 @@ func (s *OptimizelyUserContextTestSuite) TestDecideRollout() {
 	flagKey := "feature_1"
 	ruleKey := "18322080788"
 	variationKey := "18257766532"
-	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(context.Background(), flagKey, entities.UserContext{ID: s.userID})
+	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
 	s.Nil(err)
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-	decision := user.Decide(context.Background(), flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+	decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 
 	s.Equal(variationKey, decision.VariationKey)
 	s.Equal(true, decision.Enabled)
@@ -457,12 +456,12 @@ func (s *OptimizelyUserContextTestSuite) TestDecideRolloutWithForcedDecision() {
 	flagKey := "feature_1"
 	ruleKey := "3332020515"
 	variationKey := "3324490633"
-	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(context.Background(), flagKey, entities.UserContext{ID: s.userID})
+	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
 	s.Nil(err)
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 	user.SetForcedDecision(decision.OptimizelyDecisionContext{FlagKey: flagKey, RuleKey: ruleKey}, decision.OptimizelyForcedDecision{VariationKey: variationKey})
-	decision := user.Decide(context.Background(), flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+	decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 
 	s.Equal(variationKey, decision.VariationKey)
 	s.Equal(true, decision.Enabled)
@@ -502,7 +501,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideNullVariation() {
 	variablesExpected := optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{})
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-	decision := user.Decide(context.Background(), flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+	decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 
 	s.Equal("", decision.VariationKey)
 	s.Equal(false, decision.Enabled)
@@ -532,11 +531,11 @@ func (s *OptimizelyUserContextTestSuite) TestDecideForKeysOneFlag() {
 	flagKeys := []string{flagKey}
 	ruleKey := "exp_no_audience"
 	variationKey := "variation_with_traffic"
-	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(context.Background(), flagKey, entities.UserContext{ID: s.userID})
+	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
 	s.Nil(err)
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-	decisions := user.DecideForKeys(context.Background(), flagKeys, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+	decisions := user.DecideForKeys(flagKeys, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 	s.Len(decisions, 1)
 
 	decision1 := decisions[flagKey]
@@ -573,13 +572,13 @@ func (s *OptimizelyUserContextTestSuite) TestDecideForKeysWithMultipleFlags() {
 	variationKey1 := "a"
 	variationKey2 := "variation_with_traffic"
 	flagKeys := []string{flagKey1, flagKey2}
-	variablesExpected1, err := s.OptimizelyClient.GetAllFeatureVariables(context.Background(), flagKey1, entities.UserContext{ID: s.userID})
+	variablesExpected1, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey1, entities.UserContext{ID: s.userID})
 	s.Nil(err)
-	variablesExpected2, err := s.OptimizelyClient.GetAllFeatureVariables(context.Background(), flagKey2, entities.UserContext{ID: s.userID})
+	variablesExpected2, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey2, entities.UserContext{ID: s.userID})
 	s.Nil(err)
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, map[string]interface{}{"gender": "f"})
-	decisions := user.DecideForKeys(context.Background(), flagKeys, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+	decisions := user.DecideForKeys(flagKeys, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 	s.Len(decisions, 2)
 
 	decision1 := decisions[flagKey1]
@@ -647,14 +646,14 @@ func (s *OptimizelyUserContextTestSuite) TestDecideAllFlags() {
 	ruleKey2 := "exp_no_audience"
 	ruleKey3 := ""
 
-	variablesExpected1, err := s.OptimizelyClient.GetAllFeatureVariables(context.Background(), flagKey1, entities.UserContext{ID: s.userID})
+	variablesExpected1, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey1, entities.UserContext{ID: s.userID})
 	s.Nil(err)
-	variablesExpected2, err := s.OptimizelyClient.GetAllFeatureVariables(context.Background(), flagKey2, entities.UserContext{ID: s.userID})
+	variablesExpected2, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey2, entities.UserContext{ID: s.userID})
 	s.Nil(err)
 	variablesExpected3 := optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{})
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, map[string]interface{}{"gender": "f"})
-	decisions := user.DecideAll(context.Background(), nil)
+	decisions := user.DecideAll(nil)
 	s.Len(decisions, 3)
 
 	decision1 := decisions[flagKey1]
@@ -729,11 +728,11 @@ func (s *OptimizelyUserContextTestSuite) TestDecideAllFlags() {
 
 func (s *OptimizelyUserContextTestSuite) TestDecideAllEnabledFlagsOnly() {
 	flagKey1 := "feature_1"
-	variablesExpected1, err := s.OptimizelyClient.GetAllFeatureVariables(context.Background(), flagKey1, entities.UserContext{ID: s.userID})
+	variablesExpected1, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey1, entities.UserContext{ID: s.userID})
 	s.Nil(err)
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, map[string]interface{}{"gender": "f"})
-	decisions := user.DecideAll(context.Background(), []decide.OptimizelyDecideOptions{decide.EnabledFlagsOnly, decide.IncludeReasons})
+	decisions := user.DecideAll([]decide.OptimizelyDecideOptions{decide.EnabledFlagsOnly, decide.IncludeReasons})
 	s.Len(decisions, 2)
 
 	decision1 := decisions[flagKey1]
@@ -797,7 +796,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideSendEvent() {
 	variationID := "10418551353"
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-	decision := user.Decide(context.Background(), flagKey, nil)
+	decision := user.Decide(flagKey, nil)
 
 	s.Equal("variation_with_traffic", decision.VariationKey)
 	s.True(len(s.eventProcessor.Events) == 1)
@@ -810,7 +809,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideDoNotSendEvent() {
 	flagKey := "feature_2"
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-	decision := user.Decide(context.Background(), flagKey, []decide.OptimizelyDecideOptions{decide.DisableDecisionEvent})
+	decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.DisableDecisionEvent})
 
 	s.Equal("variation_with_traffic", decision.VariationKey)
 	s.True(len(s.eventProcessor.Events) == 0)
@@ -820,7 +819,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecisionNotification() {
 	flagKey := "feature_2"
 	variationKey := "variation_with_traffic"
 	enabled := true
-	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(context.Background(), flagKey, entities.UserContext{ID: s.userID})
+	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
 	s.Nil(err)
 
 	ruleKey := "exp_no_audience"
@@ -842,7 +841,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecisionNotification() {
 		"decisionEventDispatched": true,
 	}
 	s.OptimizelyClient.DecisionService.OnDecision(callback)
-	_ = user.Decide(context.Background(), flagKey, nil)
+	_ = user.Decide(flagKey, nil)
 
 	s.Equal(notification.Flag, receivedNotification.Type)
 	s.Equal(s.userID, receivedNotification.UserContext.ID)
@@ -851,7 +850,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecisionNotification() {
 
 	receivedNotification = notification.DecisionNotification{}
 	expectedDecisionInfo["decisionEventDispatched"] = false
-	_ = user.Decide(context.Background(), flagKey, []decide.OptimizelyDecideOptions{decide.DisableDecisionEvent})
+	_ = user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.DisableDecisionEvent})
 	s.Equal(expectedDecisionInfo, receivedNotification.DecisionInfo)
 }
 
@@ -878,7 +877,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsBypassUps() {
 	userProfileService.On("Save", mock.Anything)
 
 	userContext := s.OptimizelyClient.CreateUserContext(s.userID, map[string]interface{}{})
-	decision := userContext.Decide(context.Background(), flagKey, options)
+	decision := userContext.Decide(flagKey, options)
 	reasons := decision.Reasons
 	s.Len(reasons, 1)
 	s.Equal(`User "tester" was previously bucketed into variation "variation_no_traffic" of experiment "exp_no_audience".`, reasons[0])
@@ -888,7 +887,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsBypassUps() {
 	userProfileService.AssertNotCalled(s.T(), "Save", mock.Anything)
 
 	options = append(options, decide.IgnoreUserProfileService)
-	decision = userContext.Decide(context.Background(), flagKey, options)
+	decision = userContext.Decide(flagKey, options)
 	reasons = decision.Reasons
 	s.Len(reasons, 1)
 	s.Equal(`Audiences for experiment exp_no_audience collectively evaluated to true.`, reasons[0])
@@ -904,11 +903,11 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsExcludeVariables() {
 	options := []decide.OptimizelyDecideOptions{}
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 
-	decision := user.Decide(context.Background(), flagKey, options)
+	decision := user.Decide(flagKey, options)
 	s.True(len(decision.Variables.ToMap()) > 0)
 
 	options = append(options, decide.ExcludeVariables)
-	decision = user.Decide(context.Background(), flagKey, options)
+	decision = user.Decide(flagKey, options)
 	s.Len(decision.Variables.ToMap(), 0)
 }
 
@@ -918,19 +917,19 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsIncludeReasons() {
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 
 	// invalid flag key
-	decision := user.Decide(context.Background(), flagKey, options)
+	decision := user.Decide(flagKey, options)
 	s.Len(decision.Reasons, 1)
 	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey), decision.Reasons[0])
 
 	// invalid flag key with includeReasons
 	options = append(options, decide.IncludeReasons)
-	decision = user.Decide(context.Background(), flagKey, options)
+	decision = user.Decide(flagKey, options)
 	s.Len(decision.Reasons, 1)
 	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey), decision.Reasons[0])
 
 	// valid flag key
 	flagKey = "feature_1"
-	decision = user.Decide(context.Background(), flagKey, options)
+	decision = user.Decide(flagKey, options)
 	reasons := decision.Reasons
 	s.Len(reasons, 9)
 
@@ -958,7 +957,7 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsExcludeVariable
 	userContext := client.CreateUserContext(s.userID, nil)
 
 	// should be excluded by DefaultDecideOption
-	decision := userContext.Decide(context.Background(), flagKey, nil)
+	decision := userContext.Decide(flagKey, nil)
 	s.Len(decision.Variables.ToMap(), 0)
 	reasons := decision.Reasons
 	s.Len(reasons, 0)
@@ -967,7 +966,7 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsExcludeVariable
 	client, _ = s.factory.Client(WithEventProcessor(s.eventProcessor), WithDefaultDecideOptions(options))
 	userContext = client.CreateUserContext(s.userID, nil)
 
-	decision = userContext.Decide(context.Background(), flagKey, nil)
+	decision = userContext.Decide(flagKey, nil)
 	reasons = decision.Reasons
 	s.Len(reasons, 9)
 
@@ -990,13 +989,13 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsExcludeVariable
 
 func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsEnabledFlagsOnly() {
 	flagKey := "feature_1"
-	variablesExpected, _ := s.OptimizelyClient.GetAllFeatureVariables(context.Background(), flagKey, entities.UserContext{ID: s.userID})
+	variablesExpected, _ := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
 	options := []decide.OptimizelyDecideOptions{decide.EnabledFlagsOnly, decide.IncludeReasons}
 	client, _ := s.factory.Client(WithEventProcessor(s.eventProcessor), WithDefaultDecideOptions(options))
 	user := client.CreateUserContext(s.userID, map[string]interface{}{"gender": "f"})
 
 	// should get EnabledFlagsOnly by DefaultDecideOption
-	decisions := user.DecideAll(context.Background(), nil)
+	decisions := user.DecideAll(nil)
 	s.Len(decisions, 2)
 
 	decision1 := decisions[flagKey]
@@ -1018,7 +1017,7 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsIncludeReasons(
 	user := client.CreateUserContext(s.userID, nil)
 
 	// should get IncludeReasons by DefaultDecideOption
-	decision := user.Decide(context.Background(), flagKey, options)
+	decision := user.Decide(flagKey, options)
 	s.Len(decision.Reasons, 1)
 	s.Equal(decide.GetDecideMessage(decide.FlagKeyInvalid, flagKey), decision.Reasons[0])
 }
@@ -1046,7 +1045,7 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsBypassUps() {
 	options := []decide.OptimizelyDecideOptions{decide.IgnoreUserProfileService}
 	client, _ := s.factory.Client(WithEventProcessor(s.eventProcessor), WithDefaultDecideOptions(options))
 	user := client.CreateUserContext(s.userID, nil)
-	decision := user.Decide(context.Background(), flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+	decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 	s.Len(decision.Reasons, 1)
 
 	// should get IgnoreUserProfileService by DefaultDecideOption
@@ -1082,7 +1081,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideSDKNotReady() {
 	factory := OptimizelyFactory{SDKKey: "121"}
 	client, _ := factory.Client()
 	userContext := client.CreateUserContext(s.userID, nil)
-	decision := userContext.Decide(context.Background(), flagKey, nil)
+	decision := userContext.Decide(flagKey, nil)
 
 	s.Equal("", decision.VariationKey)
 	s.False(decision.Enabled)
@@ -1096,7 +1095,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideSDKNotReady() {
 func (s *OptimizelyUserContextTestSuite) TestDecideInvalidFeatureKey() {
 	flagKey := "invalid_key"
 	userContext := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-	decision := userContext.Decide(context.Background(), flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+	decision := userContext.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 
 	s.Equal("", decision.VariationKey)
 	s.False(decision.Enabled)
@@ -1112,7 +1111,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideForKeySDKNotReady() {
 	factory := OptimizelyFactory{SDKKey: "121"}
 	client, _ := factory.Client()
 	userContext := client.CreateUserContext(s.userID, nil)
-	decisions := userContext.DecideForKeys(context.Background(), flagKeys, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+	decisions := userContext.DecideForKeys(flagKeys, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 
 	s.Len(decisions, 0)
 }
@@ -1121,7 +1120,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideAllSDKNotReady() {
 	factory := OptimizelyFactory{SDKKey: "121"}
 	client, _ := factory.Client()
 	userContext := client.CreateUserContext(s.userID, nil)
-	decisions := userContext.DecideAll(context.Background(), nil)
+	decisions := userContext.DecideAll(nil)
 
 	s.Len(decisions, 0)
 }
@@ -1130,11 +1129,11 @@ func (s *OptimizelyUserContextTestSuite) TestDecideForKeysErrorDecisionIncluded(
 	flagKey1 := "feature_2"
 	flagKey2 := "invalid_key"
 	flagKeys := []string{flagKey1, flagKey2}
-	variablesExpected1, err := s.OptimizelyClient.GetAllFeatureVariables(context.Background(), flagKey1, entities.UserContext{ID: s.userID})
+	variablesExpected1, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey1, entities.UserContext{ID: s.userID})
 	s.Nil(err)
 
 	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
-	decisions := user.DecideForKeys(context.Background(), flagKeys, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+	decisions := user.DecideForKeys(flagKeys, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 	s.Len(decisions, 2)
 
 	decision := decisions[flagKey1]
