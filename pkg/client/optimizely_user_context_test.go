@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020-2022 Optimizely, Inc. and contributors                    *
+ * Copyright 2020-2022, 2024 Optimizely, Inc. and contributors              *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -17,6 +17,7 @@
 package client
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"sync"
@@ -76,6 +77,17 @@ func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextNoAttributesAn
 	s.Equal(s.userID, optimizelyUserContext.GetUserID())
 	s.Equal(attributes, optimizelyUserContext.GetUserAttributes())
 	s.Nil(optimizelyUserContext.GetQualifiedSegments())
+}
+
+func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextWithTraceContext() {
+	attributes := map[string]interface{}{}
+	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes, nil, nil)
+	ctx := context.WithValue(context.Background(), "testContext", true)
+	optimizelyUserContext.WithTraceContext(ctx)
+
+	clientCtx := s.OptimizelyClient.ctx
+	s.Equal(clientCtx, ctx)
+	s.Equal(clientCtx.Value("testContext"), true)
 }
 
 func (s *OptimizelyUserContextTestSuite) TestUpatingProvidedUserContextHasNoImpactOnOptimizelyUserContext() {

@@ -81,6 +81,7 @@ func (o *OptimizelyUserContext) GetQualifiedSegments() []string {
 	return copyQualifiedSegments(o.qualifiedSegments)
 }
 
+// WithTraceContext sets the trace context for the OptimizelyClient instance's context
 func (o *OptimizelyUserContext) WithTraceContext(ctx context.Context) *OptimizelyUserContext {
 	o.optimizely.WithTraceContext(ctx)
 	return o
