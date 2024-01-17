@@ -39,6 +39,7 @@ import (
 	pkgOdpSegment "github.com/optimizely/go-sdk/pkg/odp/segment"
 	pkgOdpUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/optimizely/go-sdk/pkg/registry"
+	"github.com/optimizely/go-sdk/pkg/tracing"
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
@@ -373,5 +374,14 @@ func TestOptimizelyClientWithTracer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, optimizelyClient.tracer)
 	tracer := optimizelyClient.tracer.(*MockTracer)
+	assert.NotNil(t, tracer)
+}
+
+func TestOptimizelyClientWithNoTracer(t *testing.T) {
+	factory := OptimizelyFactory{SDKKey: "1212"}
+	optimizelyClient, err := factory.Client()
+	assert.NoError(t, err)
+	assert.NotNil(t, optimizelyClient.tracer)
+	tracer := optimizelyClient.tracer.(*tracing.NoopTracer)
 	assert.NotNil(t, tracer)
 }
