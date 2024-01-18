@@ -17,7 +17,6 @@
 package client
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"sync"
@@ -77,17 +76,6 @@ func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextNoAttributesAn
 	s.Equal(s.userID, optimizelyUserContext.GetUserID())
 	s.Equal(attributes, optimizelyUserContext.GetUserAttributes())
 	s.Nil(optimizelyUserContext.GetQualifiedSegments())
-}
-
-func (s *OptimizelyUserContextTestSuite) TestOptimizelyUserContextWithTraceContext() {
-	attributes := map[string]interface{}{}
-	optimizelyUserContext := newOptimizelyUserContext(s.OptimizelyClient, s.userID, attributes, nil, nil)
-	ctx := context.WithValue(context.Background(), "testContext", true)
-	optimizelyUserContext.WithTraceContext(ctx)
-
-	clientCtx := s.OptimizelyClient.ctx
-	s.Equal(clientCtx, ctx)
-	s.Equal(clientCtx.Value("testContext"), true)
 }
 
 func (s *OptimizelyUserContextTestSuite) TestUpatingProvidedUserContextHasNoImpactOnOptimizelyUserContext() {

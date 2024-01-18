@@ -18,7 +18,6 @@
 package client
 
 import (
-	"context"
 	"errors"
 	"sync"
 
@@ -79,12 +78,6 @@ func (o *OptimizelyUserContext) GetQualifiedSegments() []string {
 	o.mutex.RLock()
 	defer o.mutex.RUnlock()
 	return copyQualifiedSegments(o.qualifiedSegments)
-}
-
-// WithTraceContext sets the trace context for the OptimizelyClient instance's context
-func (o *OptimizelyUserContext) WithTraceContext(ctx context.Context) *OptimizelyUserContext {
-	o.optimizely.WithTraceContext(ctx)
-	return o
 }
 
 func (o OptimizelyUserContext) getForcedDecisionService() *pkgDecision.ForcedDecisionService {
