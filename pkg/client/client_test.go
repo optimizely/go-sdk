@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020,2022-2023 Optimizely, Inc. and contributors          *
+ * Copyright 2019-2020,2022-2024 Optimizely, Inc. and contributors          *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -25,6 +25,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/decision"
@@ -35,11 +39,8 @@ import (
 	"github.com/optimizely/go-sdk/pkg/odp"
 	"github.com/optimizely/go-sdk/pkg/odp/segment"
 	pkgOdpUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
+	"github.com/optimizely/go-sdk/pkg/tracing"
 	"github.com/optimizely/go-sdk/pkg/utils"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/suite"
 )
 
 func ValidProjectConfigManager() *MockProjectConfigManager {
@@ -205,6 +206,28 @@ func (m *MockODPManager) Update(apiKey, apiHost string, segmentsToCheck []string
 	m.Called(apiKey, apiHost, segmentsToCheck)
 }
 
+type MockTracer struct {
+	StartSpanCalled bool
+	TracerName      string
+	CalledSpans     []string
+}
+
+func (m *MockTracer) StartSpan(ctx context.Context, tracerName, spanName string) (context.Context, tracing.Span) {
+	m.StartSpanCalled = true
+	m.TracerName = tracerName
+	if m.CalledSpans == nil {
+		m.CalledSpans = make([]string, 0)
+	}
+	m.CalledSpans = append(m.CalledSpans, spanName)
+	return ctx, &MockSpan{}
+}
+
+type MockSpan struct{}
+
+func (m *MockSpan) SetAttibutes(key string, value interface{}) {}
+
+func (m *MockSpan) End() {}
+
 func TestSendODPEventWhenSDKNotReady(t *testing.T) {
 	factory := OptimizelyFactory{SDKKey: "121"}
 	client, _ := factory.Client()
@@ -259,10 +282,14 @@ func TestSendODPEventEmptyType(t *testing.T) {
 	optimizelyClient := OptimizelyClient{
 		OdpManager:    mockOdpManager,
 		ConfigManager: getMockConfigManager(),
+		tracer:        &MockTracer{},
 	}
 	err := optimizelyClient.SendOdpEvent("", action, identifiers, data)
 	assert.NoError(t, err)
 	mockOdpManager.AssertExpectations(t)
+	assert.True(t, optimizelyClient.tracer.(*MockTracer).StartSpanCalled)
+	assert.Equal(t, DefaultTracerName, optimizelyClient.tracer.(*MockTracer).TracerName)
+	assert.Contains(t, optimizelyClient.tracer.(*MockTracer).CalledSpans, SpanNameSendOdpEvent)
 }
 
 func TestSendODPEventEmptyIdentifiers(t *testing.T) {
@@ -278,9 +305,11 @@ func TestSendODPEventEmptyIdentifiers(t *testing.T) {
 	optimizelyClient := OptimizelyClient{
 		logger:        logging.GetLogger("", ""),
 		ConfigManager: getMockConfigManager(),
+		tracer:        &MockTracer{},
 	}
 	err := optimizelyClient.SendOdpEvent("", action, identifiers, data)
 	assert.Equal(t, errors.New("ODP events must have at least one key-value pair in identifiers"), err)
+	assert.True(t, optimizelyClient.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestSendODPEventNilIdentifiers(t *testing.T) {
@@ -295,9 +324,11 @@ func TestSendODPEventNilIdentifiers(t *testing.T) {
 	optimizelyClient := OptimizelyClient{
 		logger:        logging.GetLogger("", ""),
 		ConfigManager: getMockConfigManager(),
+		tracer:        &MockTracer{},
 	}
 	err := optimizelyClient.SendOdpEvent("", action, nil, data)
 	assert.Equal(t, errors.New("ODP events must have at least one key-value pair in identifiers"), err)
+	assert.True(t, optimizelyClient.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestSendODPEvent(t *testing.T) {
@@ -306,10 +337,12 @@ func TestSendODPEvent(t *testing.T) {
 	optimizelyClient := OptimizelyClient{
 		OdpManager:    mockOdpManager,
 		ConfigManager: getMockConfigManager(),
+		tracer:        &MockTracer{},
 	}
 	err := optimizelyClient.SendOdpEvent("123", "", map[string]string{"identifier": "123"}, nil)
 	assert.NoError(t, err)
 	mockOdpManager.AssertExpectations(t)
+	assert.True(t, optimizelyClient.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestTrack(t *testing.T) {
@@ -322,6 +355,7 @@ func TestTrack(t *testing.T) {
 		DecisionService: mockDecisionService,
 		EventProcessor:  mockProcessor,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	err := client.Track("sample_conversion", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
@@ -330,7 +364,7 @@ func TestTrack(t *testing.T) {
 	assert.True(t, len(mockProcessor.Events) == 1)
 	assert.True(t, mockProcessor.Events[0].VisitorID == "1212121")
 	assert.True(t, mockProcessor.Events[0].EventContext.ProjectID == "15389410617")
-
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestTrackFailEventNotFound(t *testing.T) {
@@ -342,13 +376,14 @@ func TestTrackFailEventNotFound(t *testing.T) {
 		DecisionService: mockDecisionService,
 		EventProcessor:  mockProcessor,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	err := client.Track("bob", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
 
 	assert.NoError(t, err)
 	assert.True(t, len(mockProcessor.Events) == 0)
-
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestTrackPanics(t *testing.T) {
@@ -360,13 +395,14 @@ func TestTrackPanics(t *testing.T) {
 		DecisionService: mockDecisionService,
 		EventProcessor:  mockProcessor,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	err := client.Track("bob", entities.UserContext{ID: "1212121", Attributes: map[string]interface{}{}}, map[string]interface{}{})
 
 	assert.Error(t, err)
 	assert.True(t, len(mockProcessor.Events) == 0)
-
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetEnabledFeaturesPanic(t *testing.T) {
@@ -377,12 +413,14 @@ func TestGetEnabledFeaturesPanic(t *testing.T) {
 		ConfigManager:   &PanickingConfigManager{},
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	// ensure that the client calms back down and recovers
 	result, err := client.GetEnabledFeatures(testUserContext)
 	assert.Empty(t, result)
 	assert.True(t, assert.Error(t, err))
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetFeatureVariableBool(t *testing.T) {
@@ -448,6 +486,7 @@ func TestGetFeatureVariableBool(t *testing.T) {
 			ConfigManager:   mockConfigManager,
 			DecisionService: mockDecisionService,
 			logger:          logging.GetLogger("", ""),
+			tracer:          &MockTracer{},
 		}
 		result, err := client.GetFeatureVariableBoolean(testFeatureKey, testVariableKey, testUserContext)
 		if ts.validBool {
@@ -461,6 +500,7 @@ func TestGetFeatureVariableBool(t *testing.T) {
 		mockConfig.AssertExpectations(t)
 		mockConfigManager.AssertExpectations(t)
 		mockDecisionService.AssertExpectations(t)
+		assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 	}
 }
 
@@ -528,6 +568,7 @@ func TestGetFeatureVariableBoolWithNotification(t *testing.T) {
 			DecisionService:    mockDecisionService,
 			logger:             logging.GetLogger("", ""),
 			notificationCenter: notificationCenter,
+			tracer:             &MockTracer{},
 		}
 		var numberOfCalls = 0
 		note := notification.DecisionNotification{}
@@ -548,6 +589,7 @@ func TestGetFeatureVariableBoolWithNotification(t *testing.T) {
 		mockConfig.AssertExpectations(t)
 		mockConfigManager.AssertExpectations(t)
 		mockDecisionService.AssertExpectations(t)
+		assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 	}
 }
 
@@ -562,12 +604,14 @@ func TestGetFeatureVariableBoolPanic(t *testing.T) {
 		ConfigManager:   &PanickingConfigManager{},
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	// ensure that the client calms back down and recovers
 	result, err := client.GetFeatureVariableBoolean(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, false, result)
 	assert.True(t, assert.Error(t, err))
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetFeatureVariableDouble(t *testing.T) {
@@ -633,6 +677,7 @@ func TestGetFeatureVariableDouble(t *testing.T) {
 			ConfigManager:   mockConfigManager,
 			DecisionService: mockDecisionService,
 			logger:          logging.GetLogger("", ""),
+			tracer:          &MockTracer{},
 		}
 		result, err := client.GetFeatureVariableDouble(testFeatureKey, testVariableKey, testUserContext)
 		if ts.validDouble {
@@ -646,6 +691,7 @@ func TestGetFeatureVariableDouble(t *testing.T) {
 		mockConfig.AssertExpectations(t)
 		mockConfigManager.AssertExpectations(t)
 		mockDecisionService.AssertExpectations(t)
+		assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 	}
 }
 
@@ -713,6 +759,7 @@ func TestGetFeatureVariableDoubleWithNotification(t *testing.T) {
 			DecisionService:    mockDecisionService,
 			logger:             logging.GetLogger("", ""),
 			notificationCenter: notificationCenter,
+			tracer:             &MockTracer{},
 		}
 		var numberOfCalls = 0
 		note := notification.DecisionNotification{}
@@ -733,6 +780,7 @@ func TestGetFeatureVariableDoubleWithNotification(t *testing.T) {
 		mockConfig.AssertExpectations(t)
 		mockConfigManager.AssertExpectations(t)
 		mockDecisionService.AssertExpectations(t)
+		assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 	}
 }
 
@@ -747,12 +795,14 @@ func TestGetFeatureVariableDoublePanic(t *testing.T) {
 		ConfigManager:   &PanickingConfigManager{},
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	// ensure that the client calms back down and recovers
 	result, err := client.GetFeatureVariableDouble(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, float64(0), result)
 	assert.True(t, assert.Error(t, err))
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetFeatureVariableInteger(t *testing.T) {
@@ -818,6 +868,7 @@ func TestGetFeatureVariableInteger(t *testing.T) {
 			ConfigManager:   mockConfigManager,
 			DecisionService: mockDecisionService,
 			logger:          logging.GetLogger("", ""),
+			tracer:          &MockTracer{},
 		}
 		result, err := client.GetFeatureVariableInteger(testFeatureKey, testVariableKey, testUserContext)
 		if ts.validInteger {
@@ -831,6 +882,7 @@ func TestGetFeatureVariableInteger(t *testing.T) {
 		mockConfig.AssertExpectations(t)
 		mockConfigManager.AssertExpectations(t)
 		mockDecisionService.AssertExpectations(t)
+		assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 	}
 }
 
@@ -898,6 +950,7 @@ func TestGetFeatureVariableIntegerWithNotification(t *testing.T) {
 			DecisionService:    mockDecisionService,
 			logger:             logging.GetLogger("", ""),
 			notificationCenter: notificationCenter,
+			tracer:             &MockTracer{},
 		}
 		var numberOfCalls = 0
 		note := notification.DecisionNotification{}
@@ -918,6 +971,7 @@ func TestGetFeatureVariableIntegerWithNotification(t *testing.T) {
 		mockConfig.AssertExpectations(t)
 		mockConfigManager.AssertExpectations(t)
 		mockDecisionService.AssertExpectations(t)
+		assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 	}
 }
 
@@ -932,12 +986,14 @@ func TestGetFeatureVariableIntegerPanic(t *testing.T) {
 		ConfigManager:   &PanickingConfigManager{},
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	// ensure that the client calms back down and recovers
 	result, err := client.GetFeatureVariableInteger(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, 0, result)
 	assert.True(t, assert.Error(t, err))
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetFeatureVariableSting(t *testing.T) {
@@ -1001,6 +1057,7 @@ func TestGetFeatureVariableSting(t *testing.T) {
 			ConfigManager:   mockConfigManager,
 			DecisionService: mockDecisionService,
 			logger:          logging.GetLogger("", ""),
+			tracer:          &MockTracer{},
 		}
 		result, err := client.GetFeatureVariableString(testFeatureKey, testVariableKey, testUserContext)
 		if ts.validString {
@@ -1014,6 +1071,7 @@ func TestGetFeatureVariableSting(t *testing.T) {
 		mockConfig.AssertExpectations(t)
 		mockConfigManager.AssertExpectations(t)
 		mockDecisionService.AssertExpectations(t)
+		assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 	}
 }
 
@@ -1079,6 +1137,7 @@ func TestGetFeatureVariableStringWithNotification(t *testing.T) {
 			DecisionService:    mockDecisionService,
 			logger:             logging.GetLogger("", ""),
 			notificationCenter: notificationCenter,
+			tracer:             &MockTracer{},
 		}
 		var numberOfCalls = 0
 		note := notification.DecisionNotification{}
@@ -1099,6 +1158,7 @@ func TestGetFeatureVariableStringWithNotification(t *testing.T) {
 		mockConfig.AssertExpectations(t)
 		mockConfigManager.AssertExpectations(t)
 		mockDecisionService.AssertExpectations(t)
+		assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 	}
 }
 func TestGetFeatureVariableStringPanic(t *testing.T) {
@@ -1112,12 +1172,14 @@ func TestGetFeatureVariableStringPanic(t *testing.T) {
 		ConfigManager:   &PanickingConfigManager{},
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	// ensure that the client calms back down and recovers
 	result, err := client.GetFeatureVariableString(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, "", result)
 	assert.True(t, assert.Error(t, err))
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetFeatureVariableJSON(t *testing.T) {
@@ -1184,6 +1246,7 @@ func TestGetFeatureVariableJSON(t *testing.T) {
 			ConfigManager:   mockConfigManager,
 			DecisionService: mockDecisionService,
 			logger:          logging.GetLogger("", ""),
+			tracer:          &MockTracer{},
 		}
 		result, err := client.GetFeatureVariableJSON(testFeatureKey, testVariableKey, testUserContext)
 		if ts.validJson {
@@ -1203,6 +1266,7 @@ func TestGetFeatureVariableJSON(t *testing.T) {
 		mockConfig.AssertExpectations(t)
 		mockConfigManager.AssertExpectations(t)
 		mockDecisionService.AssertExpectations(t)
+		assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 	}
 }
 
@@ -1270,6 +1334,7 @@ func TestGetFeatureVariableJSONWithNotification(t *testing.T) {
 			DecisionService:    mockDecisionService,
 			logger:             logging.GetLogger("", ""),
 			notificationCenter: notificationCenter,
+			tracer:             &MockTracer{},
 		}
 		var numberOfCalls = 0
 		note := notification.DecisionNotification{}
@@ -1290,6 +1355,7 @@ func TestGetFeatureVariableJSONWithNotification(t *testing.T) {
 		mockConfig.AssertExpectations(t)
 		mockConfigManager.AssertExpectations(t)
 		mockDecisionService.AssertExpectations(t)
+		assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 	}
 }
 func TestGetFeatureVariableJSONPanic(t *testing.T) {
@@ -1303,12 +1369,14 @@ func TestGetFeatureVariableJSONPanic(t *testing.T) {
 		ConfigManager:   &PanickingConfigManager{},
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	// ensure that the client calms back down and recovers
 	result, err := client.GetFeatureVariableJSON(testFeatureKey, testVariableKey, testUserContext)
 	assert.Nil(t, result)
 	assert.True(t, assert.Error(t, err))
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetFeatureVariableErrorCases(t *testing.T) {
@@ -1322,6 +1390,7 @@ func TestGetFeatureVariableErrorCases(t *testing.T) {
 		ConfigManager:   mockConfigManager,
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 	_, err1 := client.GetFeatureVariableBoolean("test_feature_key", "test_variable_key", testUserContext)
 	_, err2 := client.GetFeatureVariableDouble("test_feature_key", "test_variable_key", testUserContext)
@@ -1336,6 +1405,7 @@ func TestGetFeatureVariableErrorCases(t *testing.T) {
 	mockConfigManager.AssertNotCalled(t, "GetFeatureByKey")
 	mockConfigManager.AssertNotCalled(t, "GetVariableByKey")
 	mockDecisionService.AssertNotCalled(t, "GetFeatureDecision")
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetProjectConfigIsValid(t *testing.T) {
@@ -1344,12 +1414,14 @@ func TestGetProjectConfigIsValid(t *testing.T) {
 	client := OptimizelyClient{
 		ConfigManager: mockConfigManager,
 		logger:        logging.GetLogger("", ""),
+		tracer:        &MockTracer{},
 	}
 
 	actual, err := client.getProjectConfig()
 
 	assert.Nil(t, err)
 	assert.Equal(t, mockConfigManager.projectConfig, actual)
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetProjectConfigIsInValid(t *testing.T) {
@@ -1357,12 +1429,14 @@ func TestGetProjectConfigIsInValid(t *testing.T) {
 	client := OptimizelyClient{
 		ConfigManager: InValidProjectConfigManager(),
 		logger:        logging.GetLogger("", ""),
+		tracer:        &MockTracer{},
 	}
 
 	actual, err := client.getProjectConfig()
 
 	assert.NotNil(t, err)
 	assert.Nil(t, actual)
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetOptimizelyConfig(t *testing.T) {
@@ -1371,17 +1445,20 @@ func TestGetOptimizelyConfig(t *testing.T) {
 	client := OptimizelyClient{
 		ConfigManager: mockConfigManager,
 		logger:        logging.GetLogger("", ""),
+		tracer:        &MockTracer{},
 	}
 
 	optimizelyConfig := client.GetOptimizelyConfig()
 
 	assert.Equal(t, &config.OptimizelyConfig{Revision: "232"}, optimizelyConfig)
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetNotificationCenter(t *testing.T) {
 	nc := &MockNotificationCenter{}
 	client := OptimizelyClient{
 		notificationCenter: nc,
+		tracer:             &MockTracer{},
 	}
 
 	assert.Equal(t, client.GetNotificationCenter(), nc)
@@ -1426,11 +1503,13 @@ func TestGetFeatureDecisionValid(t *testing.T) {
 		ConfigManager:   mockConfigManager,
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	_, featureDecision, err := client.getFeatureDecision(testFeatureKey, testVariableKey, testUserContext)
 	assert.Nil(t, err)
 	assert.Equal(t, expectedFeatureDecision, featureDecision)
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetFeatureDecisionErrProjectConfig(t *testing.T) {
@@ -1472,10 +1551,12 @@ func TestGetFeatureDecisionErrProjectConfig(t *testing.T) {
 		ConfigManager:   mockConfigManager,
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	_, _, err := client.getFeatureDecision(testFeatureKey, testVariableKey, testUserContext)
 	assert.Error(t, err)
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetFeatureDecisionPanicProjectConfig(t *testing.T) {
@@ -1516,10 +1597,12 @@ func TestGetFeatureDecisionPanicProjectConfig(t *testing.T) {
 		ConfigManager:   &PanickingConfigManager{},
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	_, _, err := client.getFeatureDecision(testFeatureKey, testVariableKey, testUserContext)
 	assert.Error(t, err)
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetFeatureDecisionPanicDecisionService(t *testing.T) {
@@ -1551,11 +1634,13 @@ func TestGetFeatureDecisionPanicDecisionService(t *testing.T) {
 		ConfigManager:   mockConfigManager,
 		DecisionService: &PanickingDecisionService{},
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	_, _, err := client.getFeatureDecision(testFeatureKey, testVariableKey, testUserContext)
 	assert.Error(t, err)
 	assert.EqualError(t, err, "I'm panicking")
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetFeatureDecisionErrFeatureDecision(t *testing.T) {
@@ -1597,11 +1682,13 @@ func TestGetFeatureDecisionErrFeatureDecision(t *testing.T) {
 		ConfigManager:   mockConfigManager,
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	_, decision, err := client.getFeatureDecision(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, expectedFeatureDecision, decision)
 	assert.NoError(t, err)
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetAllFeatureVariablesWithDecision(t *testing.T) {
@@ -1652,6 +1739,7 @@ func TestGetAllFeatureVariablesWithDecision(t *testing.T) {
 		ConfigManager:   mockConfigManager,
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	enabled, variationMap, err := client.GetAllFeatureVariablesWithDecision(testFeatureKey, testUserContext)
@@ -1661,6 +1749,7 @@ func TestGetAllFeatureVariablesWithDecision(t *testing.T) {
 	for _, v := range variables {
 		assert.Equal(t, v.expected, variationMap[v.key])
 	}
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetAllFeatureVariablesWithDecisionWithNotification(t *testing.T) {
@@ -1711,6 +1800,7 @@ func TestGetAllFeatureVariablesWithDecisionWithNotification(t *testing.T) {
 		DecisionService:    mockDecisionService,
 		logger:             logging.GetLogger("", ""),
 		notificationCenter: notificationCenter,
+		tracer:             &MockTracer{},
 	}
 	var numberOfCalls = 0
 	note := notification.DecisionNotification{}
@@ -1730,6 +1820,7 @@ func TestGetAllFeatureVariablesWithDecisionWithNotification(t *testing.T) {
 			"var_json": map[string]interface{}{"field1": 12.0, "field2": "some_value"}, "var_str": "var"}}}
 	assert.Equal(t, numberOfCalls, 1)
 	assert.Equal(t, decisionInfo, note.DecisionInfo)
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 
 }
 func TestGetAllFeatureVariablesWithDecisionWithError(t *testing.T) {
@@ -1771,6 +1862,7 @@ func TestGetAllFeatureVariablesWithDecisionWithError(t *testing.T) {
 		ConfigManager:   mockConfigManager,
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	enabled, variationMap, err := client.GetAllFeatureVariablesWithDecision(testFeatureKey, testUserContext)
@@ -1779,6 +1871,7 @@ func TestGetAllFeatureVariablesWithDecisionWithError(t *testing.T) {
 	assert.True(t, enabled)
 	assert.Equal(t, testVariableValue, variationMap[testVariableKey])
 	assert.NoError(t, err)
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetAllFeatureVariablesWithDecisionWithoutFeature(t *testing.T) {
@@ -1795,6 +1888,7 @@ func TestGetAllFeatureVariablesWithDecisionWithoutFeature(t *testing.T) {
 		ConfigManager:   mockConfigManager,
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	enabled, variationMap, err := client.GetAllFeatureVariablesWithDecision(invalidFeatureKey, testUserContext)
@@ -1803,6 +1897,7 @@ func TestGetAllFeatureVariablesWithDecisionWithoutFeature(t *testing.T) {
 	assert.False(t, enabled)
 	assert.Equal(t, 0, len(variationMap))
 	assert.NoError(t, err)
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetDetailedFeatureDecisionUnsafeWithNotification(t *testing.T) {
@@ -1853,6 +1948,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithNotification(t *testing.T) {
 		DecisionService:    mockDecisionService,
 		logger:             logging.GetLogger("", ""),
 		notificationCenter: notificationCenter,
+		tracer:             &MockTracer{},
 	}
 	var numberOfCalls = 0
 	note := notification.DecisionNotification{}
@@ -1872,6 +1968,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithNotification(t *testing.T) {
 			"var_json": map[string]interface{}{"field1": 12.0, "field2": "some_value"}, "var_str": "var"}}}
 	assert.Equal(t, numberOfCalls, 1)
 	assert.Equal(t, decisionInfo, note.DecisionInfo)
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetDetailedFeatureDecisionUnsafeWithTrackingDisabled(t *testing.T) {
@@ -1922,6 +2019,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithTrackingDisabled(t *testing.T) {
 		ConfigManager:   mockConfigManager,
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	decision, err := client.GetDetailedFeatureDecisionUnsafe(testFeatureKey, testUserContext, true)
@@ -1933,6 +2031,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithTrackingDisabled(t *testing.T) {
 	}
 	assert.Equal(t, decision.ExperimentKey, "")
 	assert.Equal(t, decision.VariationKey, "")
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetDetailedFeatureDecisionUnsafeWithoutFeature(t *testing.T) {
@@ -1949,6 +2048,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithoutFeature(t *testing.T) {
 		ConfigManager:   mockConfigManager,
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	decision, err := client.GetDetailedFeatureDecisionUnsafe(invalidFeatureKey, testUserContext, true)
@@ -1957,6 +2057,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithoutFeature(t *testing.T) {
 	assert.False(t, decision.Enabled)
 	assert.Equal(t, 0, len(decision.VariableMap))
 	assert.NoError(t, err)
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetDetailedFeatureDecisionUnsafeWithError(t *testing.T) {
@@ -1982,11 +2083,13 @@ func TestGetDetailedFeatureDecisionUnsafeWithError(t *testing.T) {
 		ConfigManager:   mockConfigManager,
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	decision, err := client.GetDetailedFeatureDecisionUnsafe(testFeatureKey, testUserContext, true)
 	assert.False(t, decision.Enabled)
 	assert.Error(t, err)
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetDetailedFeatureDecisionUnsafeWithFeatureTestAndTrackingEnabled(t *testing.T) {
@@ -2023,6 +2126,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithFeatureTestAndTrackingEnabled(t *te
 		DecisionService: mockDecisionService,
 		EventProcessor:  mockEventProcessor,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	decision, err := client.GetDetailedFeatureDecisionUnsafe(testFeature.Key, testUserContext, false)
@@ -2035,6 +2139,7 @@ func TestGetDetailedFeatureDecisionUnsafeWithFeatureTestAndTrackingEnabled(t *te
 	mockConfigManager.AssertExpectations(t)
 	mockDecisionService.AssertExpectations(t)
 	mockEventProcessor.AssertExpectations(t)
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetAllFeatureVariables(t *testing.T) {
@@ -2083,6 +2188,7 @@ func TestGetAllFeatureVariables(t *testing.T) {
 		ConfigManager:   mockConfigManager,
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	optlyJSON, err := client.GetAllFeatureVariables(testFeatureKey, testUserContext)
@@ -2100,6 +2206,7 @@ func TestGetAllFeatureVariables(t *testing.T) {
 
 	assert.Equal(t, 12.0, jsonVarMap["field1"])
 	assert.Equal(t, "some_value", jsonVarMap["field2"])
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 func TestGetAllFeatureVariablesWithoutFeature(t *testing.T) {
@@ -2116,6 +2223,7 @@ func TestGetAllFeatureVariablesWithoutFeature(t *testing.T) {
 		ConfigManager:   mockConfigManager,
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	optlyJson, err := client.GetAllFeatureVariables(invalidFeatureKey, testUserContext)
@@ -2128,6 +2236,7 @@ func TestGetAllFeatureVariablesWithoutFeature(t *testing.T) {
 
 	variationString, err := optlyJson.ToString()
 	assert.Equal(t, "{}", variationString)
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
 // Helper Methods
@@ -2208,6 +2317,7 @@ func (s *ClientTestSuiteAB) TestActivate() {
 		DecisionService: s.mockDecisionService,
 		EventProcessor:  s.mockEventProcessor,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	variationKey1, err1 := testClient.Activate("test_exp_1", testUserContext)
@@ -2231,6 +2341,7 @@ func (s *ClientTestSuiteAB) TestActivatePanics() {
 		ConfigManager:   new(PanickingConfigManager),
 		DecisionService: s.mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	variationKey, err := testClient.Activate("test_exp_1", testUserContext)
@@ -2247,6 +2358,7 @@ func (s *ClientTestSuiteAB) TestActivateInvalidConfig() {
 	testClient := OptimizelyClient{
 		ConfigManager: mockConfigManager,
 		logger:        logging.GetLogger("", ""),
+		tracer:        &MockTracer{},
 	}
 
 	variationKey, err := testClient.Activate("test_exp_1", testUserContext)
@@ -2275,6 +2387,7 @@ func (s *ClientTestSuiteAB) TestGetVariation() {
 		ConfigManager:   s.mockConfigManager,
 		DecisionService: s.mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	variationKey, err := testClient.GetVariation("test_exp_1", testUserContext)
@@ -2305,6 +2418,7 @@ func (s *ClientTestSuiteAB) TestGetVariationWithDecisionError() {
 		ConfigManager:   s.mockConfigManager,
 		DecisionService: s.mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	variationKey, err := testClient.GetVariation("test_exp_1", testUserContext)
@@ -2322,6 +2436,7 @@ func (s *ClientTestSuiteAB) TestGetVariationPanics() {
 		ConfigManager:   new(PanickingConfigManager),
 		DecisionService: s.mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	variationKey, err := testClient.GetVariation("test_exp_1", testUserContext)
@@ -2374,6 +2489,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabled() {
 		DecisionService: s.mockDecisionService,
 		EventProcessor:  s.mockEventProcessor,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 	result, _ := client.IsFeatureEnabled(testFeature.Key, testUserContext)
 	s.True(result)
@@ -2412,6 +2528,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledWithNotification() {
 		DecisionService:    s.mockDecisionService,
 		logger:             logging.GetLogger("", ""),
 		notificationCenter: notificationCenter,
+		tracer:             &MockTracer{},
 	}
 	var numberOfCalls = 0
 	note := notification.DecisionNotification{}
@@ -2466,6 +2583,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledWithDecisionError() {
 		DecisionService: s.mockDecisionService,
 		EventProcessor:  s.mockEventProcessor,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 
 	// should still return the decision because the error is non-fatal
@@ -2488,6 +2606,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledErrorConfig() {
 		ConfigManager:   s.mockConfigManager,
 		DecisionService: s.mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 	result, _ := client.IsFeatureEnabled(testFeatureKey, testUserContext)
 	s.False(result)
@@ -2511,6 +2630,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledErrorFeatureKey() {
 		ConfigManager:   s.mockConfigManager,
 		DecisionService: s.mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 	result, err := client.IsFeatureEnabled(testFeatureKey, testUserContext)
 	s.NoError(err)
@@ -2526,6 +2646,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledPanic() {
 	client := OptimizelyClient{
 		ConfigManager: &PanickingConfigManager{},
 		logger:        logging.GetLogger("", ""),
+		tracer:        &MockTracer{},
 	}
 
 	// ensure that the client calms back down and recovers
@@ -2574,6 +2695,7 @@ func (s *ClientTestSuiteFM) TestGetEnabledFeatures() {
 		ConfigManager:   s.mockConfigManager,
 		DecisionService: s.mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 	result, err := client.GetEnabledFeatures(testUserContext)
 	s.NoError(err)
@@ -2595,6 +2717,7 @@ func (s *ClientTestSuiteFM) TestGetEnabledFeaturesErrorCases() {
 		ConfigManager:   mockConfigManager,
 		DecisionService: s.mockDecisionService,
 		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
 	}
 	result, err := client.GetEnabledFeatures(testUserContext)
 	s.Error(err)
@@ -2730,6 +2853,7 @@ func (s *ClientTestSuiteTrackEvent) SetupTest() {
 		EventProcessor:     s.mockProcessor,
 		notificationCenter: notification.NewNotificationCenter(),
 		logger:             logging.GetLogger("", ""),
+		tracer:             &MockTracer{},
 	}
 }
 
@@ -2909,6 +3033,7 @@ func (s *ClientTestSuiteTrackNotification) SetupTest() {
 		EventProcessor:     s.mockProcessor,
 		notificationCenter: notification.NewNotificationCenter(),
 		logger:             logging.GetLogger("", ""),
+		tracer:             &MockTracer{},
 	}
 }
 

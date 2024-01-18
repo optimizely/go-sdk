@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020-2022, Optimizely, Inc. and contributors                   *
+ * Copyright 2020-2022, 2024 Optimizely, Inc. and contributors              *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -159,27 +159,27 @@ func (o *OptimizelyUserContext) TrackEvent(eventKey string, eventTags map[string
 
 // SetForcedDecision sets the forced decision (variation key) for a given decision context (flag key and optional rule key).
 // returns true if the forced decision has been set successfully.
-func (o *OptimizelyUserContext) SetForcedDecision(context pkgDecision.OptimizelyDecisionContext, decision pkgDecision.OptimizelyForcedDecision) bool {
+func (o *OptimizelyUserContext) SetForcedDecision(ctx pkgDecision.OptimizelyDecisionContext, decision pkgDecision.OptimizelyForcedDecision) bool {
 	if o.forcedDecisionService == nil {
 		o.forcedDecisionService = pkgDecision.NewForcedDecisionService(o.GetUserID())
 	}
-	return o.forcedDecisionService.SetForcedDecision(context, decision)
+	return o.forcedDecisionService.SetForcedDecision(ctx, decision)
 }
 
 // GetForcedDecision returns the forced decision for a given flag and an optional rule
-func (o *OptimizelyUserContext) GetForcedDecision(context pkgDecision.OptimizelyDecisionContext) (pkgDecision.OptimizelyForcedDecision, error) {
+func (o *OptimizelyUserContext) GetForcedDecision(ctx pkgDecision.OptimizelyDecisionContext) (pkgDecision.OptimizelyForcedDecision, error) {
 	if o.forcedDecisionService == nil {
 		return pkgDecision.OptimizelyForcedDecision{}, errors.New("decision not found")
 	}
-	return o.forcedDecisionService.GetForcedDecision(context)
+	return o.forcedDecisionService.GetForcedDecision(ctx)
 }
 
 // RemoveForcedDecision removes the forced decision for a given flag and an optional rule.
-func (o *OptimizelyUserContext) RemoveForcedDecision(context pkgDecision.OptimizelyDecisionContext) bool {
+func (o *OptimizelyUserContext) RemoveForcedDecision(ctx pkgDecision.OptimizelyDecisionContext) bool {
 	if o.forcedDecisionService == nil {
 		return false
 	}
-	return o.forcedDecisionService.RemoveForcedDecision(context)
+	return o.forcedDecisionService.RemoveForcedDecision(ctx)
 }
 
 // RemoveAllForcedDecisions removes all forced decisions bound to this user context.

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020,2022 Optimizely, Inc. and contributors               *
+ * Copyright 2019-2020,2022,2024 Optimizely, Inc. and contributors          *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -24,6 +24,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+
 	"github.com/optimizely/go-sdk/pkg/config"
 	"github.com/optimizely/go-sdk/pkg/decide"
 	"github.com/optimizely/go-sdk/pkg/decision"
@@ -36,10 +39,8 @@ import (
 	pkgOdpSegment "github.com/optimizely/go-sdk/pkg/odp/segment"
 	pkgOdpUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/optimizely/go-sdk/pkg/registry"
+	"github.com/optimizely/go-sdk/pkg/tracing"
 	"github.com/optimizely/go-sdk/pkg/utils"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 type MockRequester struct {
@@ -365,4 +366,22 @@ func TestClientWithDefaultDecideOptions(t *testing.T) {
 	optimizelyClient, err = factory.Client()
 	assert.NoError(t, err)
 	assert.Equal(t, &decide.Options{}, optimizelyClient.defaultDecideOptions)
+}
+
+func TestOptimizelyClientWithTracer(t *testing.T) {
+	factory := OptimizelyFactory{SDKKey: "1212"}
+	optimizelyClient, err := factory.Client(WithTracer(&MockTracer{}))
+	assert.NoError(t, err)
+	assert.NotNil(t, optimizelyClient.tracer)
+	tracer := optimizelyClient.tracer.(*MockTracer)
+	assert.NotNil(t, tracer)
+}
+
+func TestOptimizelyClientWithNoTracer(t *testing.T) {
+	factory := OptimizelyFactory{SDKKey: "1212"}
+	optimizelyClient, err := factory.Client()
+	assert.NoError(t, err)
+	assert.NotNil(t, optimizelyClient.tracer)
+	tracer := optimizelyClient.tracer.(*tracing.NoopTracer)
+	assert.NotNil(t, tracer)
 }

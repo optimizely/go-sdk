@@ -23,13 +23,14 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/pkg/logging"
 	"github.com/optimizely/go-sdk/pkg/odp"
 	"github.com/optimizely/go-sdk/pkg/odp/event"
 	"github.com/optimizely/go-sdk/pkg/odp/segment"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/suite"
 )
 
 type OptimizelyUserContextODPTestSuite struct {

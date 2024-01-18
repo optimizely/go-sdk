@@ -3,16 +3,15 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
 
+	"github.com/pkg/profile"
+
 	"github.com/optimizely/go-sdk/pkg/client"
 	"github.com/optimizely/go-sdk/pkg/decision"
 	"github.com/optimizely/go-sdk/pkg/entities"
-
-	"github.com/pkg/profile"
 )
 
 func stressTest() {
@@ -23,7 +22,7 @@ func stressTest() {
 
 	var datafileDir = path.Join(os.Getenv("DATAFILES_DIR"), "100_entities.json")
 
-	datafile, err := ioutil.ReadFile(datafileDir)
+	datafile, err := os.ReadFile(datafileDir)
 	if err != nil {
 		log.Print(err)
 	}
