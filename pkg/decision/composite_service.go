@@ -20,11 +20,11 @@ package decision
 import (
 	"fmt"
 
-	"github.com/optimizely/go-sdk/pkg/decide"
-	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/notification"
-	"github.com/optimizely/go-sdk/pkg/registry"
+	"github.com/optimizely/go-sdk/v2/pkg/decide"
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
+	"github.com/optimizely/go-sdk/v2/pkg/notification"
+	"github.com/optimizely/go-sdk/v2/pkg/registry"
 )
 
 // CompositeService is the entry-point into the decision service. It provides out of the box decision making for Features and Experiments.

@@ -25,7 +25,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
 
 	jsoniter "github.com/json-iterator/go"
 )

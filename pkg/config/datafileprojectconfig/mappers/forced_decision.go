@@ -18,7 +18,7 @@
 package mappers
 
 import (
-	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
 )
 
 // MapFlagVariations all variations for each flag

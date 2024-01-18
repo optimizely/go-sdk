@@ -18,8 +18,11 @@ Refer to the [Go SDK's developer documentation](https://docs.developers.optimize
 
 Requires Golang version:
 
-- For v2: 1.21.0 or higher
-- For < v2: 1.12 or higher 
+| SDK Version  | Required Golang Version  |
+|--------------|--------------------------|
+|   v2.0.0     |     1.21.0 or higher     |
+| < v2.0.0     |     1.13 or higher       |
+
 
 ### Install the SDK
 

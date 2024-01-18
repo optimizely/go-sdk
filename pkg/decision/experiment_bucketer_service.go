@@ -20,12 +20,12 @@ package decision
 import (
 	"fmt"
 
-	"github.com/optimizely/go-sdk/pkg/decide"
-	"github.com/optimizely/go-sdk/pkg/decision/bucketer"
-	"github.com/optimizely/go-sdk/pkg/decision/evaluator"
-	pkgReasons "github.com/optimizely/go-sdk/pkg/decision/reasons"
-	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/v2/pkg/decide"
+	"github.com/optimizely/go-sdk/v2/pkg/decision/bucketer"
+	"github.com/optimizely/go-sdk/v2/pkg/decision/evaluator"
+	pkgReasons "github.com/optimizely/go-sdk/v2/pkg/decision/reasons"
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
 
 // ExperimentBucketerService makes a decision using the experiment bucketer

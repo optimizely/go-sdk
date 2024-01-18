@@ -22,8 +22,8 @@ import (
 	"reflect"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers"
-	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/decision/evaluator/matchers"
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
 )
 
 var errEmptyTree = errors.New("empty tree")

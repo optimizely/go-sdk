@@ -2,10 +2,11 @@ package bucketer
 
 import (
 	"fmt"
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"testing"
 
-	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
+
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/stretchr/testify/assert"
 )
 

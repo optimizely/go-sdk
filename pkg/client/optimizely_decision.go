@@ -18,7 +18,7 @@
 package client
 
 import (
-	"github.com/optimizely/go-sdk/pkg/optimizelyjson"
+	"github.com/optimizely/go-sdk/v2/pkg/optimizelyjson"
 )
 
 // OptimizelyDecision defines the decision returned by decide api.

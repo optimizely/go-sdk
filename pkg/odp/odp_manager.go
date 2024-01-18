@@ -21,12 +21,12 @@ import (
 	"errors"
 	"time"
 
-	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/odp/cache"
-	"github.com/optimizely/go-sdk/pkg/odp/config"
-	"github.com/optimizely/go-sdk/pkg/odp/event"
-	"github.com/optimizely/go-sdk/pkg/odp/segment"
-	"github.com/optimizely/go-sdk/pkg/odp/utils"
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
+	"github.com/optimizely/go-sdk/v2/pkg/odp/cache"
+	"github.com/optimizely/go-sdk/v2/pkg/odp/config"
+	"github.com/optimizely/go-sdk/v2/pkg/odp/event"
+	"github.com/optimizely/go-sdk/v2/pkg/odp/segment"
+	"github.com/optimizely/go-sdk/v2/pkg/odp/utils"
 )
 
 // OMOptionFunc are the ODPManager options that give you the ability to add one more more options before the odp manager is initialized.

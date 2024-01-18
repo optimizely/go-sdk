@@ -24,11 +24,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
-	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/notification"
-	"github.com/optimizely/go-sdk/pkg/registry"
-	"github.com/optimizely/go-sdk/pkg/utils"
+	"github.com/optimizely/go-sdk/v2/pkg/config/datafileprojectconfig"
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
+	"github.com/optimizely/go-sdk/v2/pkg/notification"
+	"github.com/optimizely/go-sdk/v2/pkg/registry"
+	"github.com/optimizely/go-sdk/v2/pkg/utils"
 
 	"github.com/pkg/errors"
 )

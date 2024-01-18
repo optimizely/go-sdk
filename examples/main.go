@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"time"
 
-	optimizely "github.com/optimizely/go-sdk"
-	"github.com/optimizely/go-sdk/pkg/client"
-	"github.com/optimizely/go-sdk/pkg/event"
-	"github.com/optimizely/go-sdk/pkg/logging"
+	optimizely "github.com/optimizely/go-sdk/v2"
+	"github.com/optimizely/go-sdk/v2/pkg/client"
+	"github.com/optimizely/go-sdk/v2/pkg/event"
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
 
 func main() {

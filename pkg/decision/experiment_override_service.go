@@ -22,10 +22,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/optimizely/go-sdk/pkg/decide"
-	pkgReasons "github.com/optimizely/go-sdk/pkg/decision/reasons"
-	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/v2/pkg/decide"
+	pkgReasons "github.com/optimizely/go-sdk/v2/pkg/decision/reasons"
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
 
 // ExperimentOverrideKey represents the user ID and experiment associated with an override variation

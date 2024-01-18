@@ -20,9 +20,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
-	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/notification"
+	"github.com/optimizely/go-sdk/v2/pkg/config/datafileprojectconfig"
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
+	"github.com/optimizely/go-sdk/v2/pkg/notification"
 
 	"github.com/stretchr/testify/assert"
 )

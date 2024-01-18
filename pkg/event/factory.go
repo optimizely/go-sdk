@@ -24,10 +24,10 @@ import (
 
 	guuid "github.com/google/uuid"
 
-	"github.com/optimizely/go-sdk/pkg/config"
-	decisionPkg "github.com/optimizely/go-sdk/pkg/decision"
-	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/optimizely/go-sdk/pkg/utils"
+	"github.com/optimizely/go-sdk/v2/pkg/config"
+	decisionPkg "github.com/optimizely/go-sdk/v2/pkg/decision"
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/utils"
 )
 
 const impressionKey string = "campaign_activated"

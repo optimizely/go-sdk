@@ -18,7 +18,7 @@
 package notification
 
 import (
-	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
 )
 
 // Type is the type of notification

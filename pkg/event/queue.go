@@ -20,7 +20,7 @@ package event
 import (
 	"sync"
 
-	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
 
 // Queue represents a queue

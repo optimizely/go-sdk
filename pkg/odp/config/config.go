@@ -20,7 +20,7 @@ package config
 import (
 	"sync"
 
-	"github.com/optimizely/go-sdk/pkg/odp/utils"
+	"github.com/optimizely/go-sdk/v2/pkg/odp/utils"
 )
 
 // Config is used to represent odp config

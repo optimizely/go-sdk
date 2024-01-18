@@ -26,10 +26,10 @@ import (
 	"time"
 
 	guuid "github.com/google/uuid"
-	"github.com/optimizely/go-sdk/pkg/event"
-	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/odp/config"
-	"github.com/optimizely/go-sdk/pkg/odp/utils"
+	"github.com/optimizely/go-sdk/v2/pkg/event"
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
+	"github.com/optimizely/go-sdk/v2/pkg/odp/config"
+	"github.com/optimizely/go-sdk/v2/pkg/odp/utils"
 	"golang.org/x/sync/semaphore"
 )
 

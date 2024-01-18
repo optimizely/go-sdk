@@ -17,7 +17,7 @@
 // Package entities has entity definitions
 package entities
 
-import "github.com/optimizely/go-sdk/pkg/entities"
+import "github.com/optimizely/go-sdk/v2/pkg/entities"
 
 // Audience represents an Audience object from the Optimizely datafile
 type Audience struct {

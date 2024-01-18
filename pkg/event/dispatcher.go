@@ -25,9 +25,9 @@ import (
 
 	"golang.org/x/sync/semaphore"
 
-	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/metrics"
-	"github.com/optimizely/go-sdk/pkg/utils"
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
+	"github.com/optimizely/go-sdk/v2/pkg/metrics"
+	"github.com/optimizely/go-sdk/v2/pkg/utils"
 )
 
 const maxWorkers = int64(1)
