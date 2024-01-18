@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020,2022-2023 Optimizely, Inc. and contributors          *
+ * Copyright 2019-2020,2022-2024 Optimizely, Inc. and contributors          *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -32,6 +32,7 @@ import (
 	"github.com/optimizely/go-sdk/pkg/odp"
 	pkgUtils "github.com/optimizely/go-sdk/pkg/odp/utils"
 	"github.com/optimizely/go-sdk/pkg/registry"
+	"github.com/optimizely/go-sdk/pkg/tracing"
 	"github.com/optimizely/go-sdk/pkg/utils"
 )
 
@@ -48,6 +49,7 @@ type OptimizelyFactory struct {
 	eventDispatcher      event.Dispatcher
 	eventProcessor       event.Processor
 	metricsRegistry      metrics.Registry
+	tracer               tracing.Tracer
 	overrideStore        decision.ExperimentOverrideStore
 	userProfileService   decision.UserProfileService
 	notificationCenter   notification.Center
@@ -105,12 +107,19 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		defaultDecideOptions: decideOptions,
 		execGroup:            eg,
 		logger:               logging.GetLogger(f.SDKKey, "OptimizelyClient"),
+		ctx:                  ctx,
 	}
 
 	if f.notificationCenter != nil {
 		appClient.notificationCenter = f.notificationCenter
 	} else {
 		appClient.notificationCenter = registry.GetNotificationCenter(f.SDKKey)
+	}
+
+	if f.tracer != nil {
+		appClient.tracer = f.tracer
+	} else {
+		appClient.tracer = &tracing.NoopTracer{}
 	}
 
 	if f.configManager != nil {
@@ -297,6 +306,13 @@ func WithMetricsRegistry(metricsRegistry metrics.Registry) OptionFunc {
 func WithNotificationCenter(nc notification.Center) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.notificationCenter = nc
+	}
+}
+
+// WithTracer allows user to pass in their own implementation of the Tracer interface
+func WithTracer(tracer tracing.Tracer) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.tracer = tracer
 	}
 }
 
