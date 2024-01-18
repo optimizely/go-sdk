@@ -28,14 +28,8 @@ This version includes the following changes:
 * New APIs added to `OptimizelyClient`: 
 
 	- `SendOdpEvent()`: customers can build/send arbitrary ODP events that will bind user identifiers and data to user profiles in ODP.
-  
-The release also introduces basic OpenTelemetry tracing on Client methods. ([#385](https://github.com/optimizely/go-sdk/pull/385))
 
-* New ClientOptionFunc `WithTracer()` is added to initiate OptimizelyClient with OpenTelemetry tracer.
-
-* New method `WithTraceContext()` is added to `OptimizelyClient` & `OptimizelyUserContext` to pass the trace context while calling APIs.
-
-For details, refer to our documentation pages:  
+For details, refer to our documentation pages:
 
 * [Advanced Audience Targeting](https://docs.developers.optimizely.com/feature-experimentation/docs/optimizely-data-platform-advanced-audience-targeting)  
 
@@ -54,6 +48,18 @@ For details, refer to our documentation pages:
 * ODPManager in the SDK is enabled by default. Unless an ODP account is integrated into the Optimizely projects, most ODPManager functions will be ignored. If needed, ODPManager can be disabled when `OptimizelyClient` is instantiated. 
 * Minimum golang version changed from 1.13 to 1.21.0. ([#369](https://github.com/optimizely/go-sdk/pull/369), [#380](https://github.com/optimizely/go-sdk/pull/380))
 
+### Bug Fixes
+* Logged correct error message in HTTP requests. ([#374](https://github.com/optimizely/go-sdk/pull/374))
+* Stopped all tickers to prevent goroutine leak. ([#375](https://github.com/optimizely/go-sdk/pull/375)).
+* Client is closed gracefully to dispatch queued events. ([#376](https://github.com/optimizely/go-sdk/pull/376))
+* Convert warning into error log for SyncConfig failure. ([#383](https://github.com/optimizely/go-sdk/pull/383))
+
+### Functionality Enhancement
+* Github issue template is updated. ([#379](https://github.com/optimizely/go-sdk/pull/379))
+* Helper function for passing notification center is added. ([#381](https://github.com/optimizely/go-sdk/pull/381))
+* OpenTelemetry tracing support is added. ([#385](https://github.com/optimizely/go-sdk/pull/385))
+  - New ClientOptionFunc `WithTracer()` is added to initiate `OptimizelyClient` with OpenTelemetry tracer.
+  - New method `WithTraceContext()` is added to `OptimizelyClient` to set the trace context before calling APIs.
 
 ## [1.8.5] - October 5th, 2023
 
