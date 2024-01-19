@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/optimizely/go-sdk/pkg/odp/cache"
-	"github.com/optimizely/go-sdk/pkg/odp/utils"
+	"github.com/optimizely/go-sdk/v2/pkg/odp/cache"
+	"github.com/optimizely/go-sdk/v2/pkg/odp/utils"
 )
 
 // SMOptionFunc are the SegmentManager options that give you the ability to add one more more options before the segment manager is initialized.

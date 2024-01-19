@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/mappers"
-	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/config/datafileprojectconfig/mappers"
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
 )
 
 // OptimizelyConfig is a snapshot of the experiments and features in the project config

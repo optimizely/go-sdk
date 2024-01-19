@@ -20,7 +20,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/optimizely/go-sdk/pkg/optimizelyjson"
+	"github.com/optimizely/go-sdk/v2/pkg/optimizelyjson"
 
 	"github.com/stretchr/testify/suite"
 )

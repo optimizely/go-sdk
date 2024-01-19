@@ -20,8 +20,8 @@ package mappers
 import (
 	"testing"
 
-	datafileEntities "github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
-	"github.com/optimizely/go-sdk/pkg/entities"
+	datafileEntities "github.com/optimizely/go-sdk/v2/pkg/config/datafileprojectconfig/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
 
 	"github.com/stretchr/testify/assert"
 )

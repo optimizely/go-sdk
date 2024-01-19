@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
 )
 
 var leMatcher, _ = Get(LeMatchType)

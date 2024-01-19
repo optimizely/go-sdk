@@ -21,10 +21,10 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/optimizely/go-sdk/pkg/decide"
-	pkgDecision "github.com/optimizely/go-sdk/pkg/decision"
-	"github.com/optimizely/go-sdk/pkg/entities"
-	pkgOdpSegment "github.com/optimizely/go-sdk/pkg/odp/segment"
+	"github.com/optimizely/go-sdk/v2/pkg/decide"
+	pkgDecision "github.com/optimizely/go-sdk/v2/pkg/decision"
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
+	pkgOdpSegment "github.com/optimizely/go-sdk/v2/pkg/odp/segment"
 )
 
 // OptimizelyUserContext defines user contexts that the SDK will use to make decisions for.

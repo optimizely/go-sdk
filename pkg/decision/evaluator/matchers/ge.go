@@ -20,10 +20,10 @@ package matchers
 import (
 	"fmt"
 
-	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
 
-	"github.com/optimizely/go-sdk/pkg/decision/evaluator/matchers/utils"
-	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/decision/evaluator/matchers/utils"
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
 )
 
 // GeMatcher matches against the "ge" match type

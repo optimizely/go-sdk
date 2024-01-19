@@ -26,11 +26,11 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig"
-	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/odp"
-	"github.com/optimizely/go-sdk/pkg/odp/event"
-	"github.com/optimizely/go-sdk/pkg/odp/segment"
+	"github.com/optimizely/go-sdk/v2/pkg/config/datafileprojectconfig"
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
+	"github.com/optimizely/go-sdk/v2/pkg/odp"
+	"github.com/optimizely/go-sdk/v2/pkg/odp/event"
+	"github.com/optimizely/go-sdk/v2/pkg/odp/segment"
 )
 
 type OptimizelyUserContextODPTestSuite struct {

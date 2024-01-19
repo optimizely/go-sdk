@@ -18,8 +18,8 @@
 package config
 
 import (
-	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/optimizely/go-sdk/pkg/notification"
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/notification"
 )
 
 // ProjectConfig represents the project's experiments and feature flags and contains methods for accessing the them.

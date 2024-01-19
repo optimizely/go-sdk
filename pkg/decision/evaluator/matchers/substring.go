@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/optimizely/go-sdk/pkg/entities"
-	"github.com/optimizely/go-sdk/pkg/logging"
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
 
 // SubstringMatcher matches against the "substring" match type

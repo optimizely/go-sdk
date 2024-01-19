@@ -18,9 +18,9 @@
 package datafileprojectconfig
 
 import (
-	"github.com/optimizely/go-sdk/pkg/config/datafileprojectconfig/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/config/datafileprojectconfig/entities"
 
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary

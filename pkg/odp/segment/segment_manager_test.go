@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/optimizely/go-sdk/pkg/odp/utils"
+	"github.com/optimizely/go-sdk/v2/pkg/odp/utils"
 	"github.com/stretchr/testify/suite"
 )
 

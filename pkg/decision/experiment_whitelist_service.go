@@ -20,9 +20,9 @@ package decision
 import (
 	"errors"
 
-	"github.com/optimizely/go-sdk/pkg/decide"
-	pkgReasons "github.com/optimizely/go-sdk/pkg/decision/reasons"
-	"github.com/optimizely/go-sdk/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/decide"
+	pkgReasons "github.com/optimizely/go-sdk/v2/pkg/decision/reasons"
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
 )
 
 // ExperimentWhitelistService makes a decision using an experiment's whitelist (a map of user id to variation keys)

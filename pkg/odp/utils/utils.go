@@ -17,7 +17,7 @@
 // Package utils //
 package utils
 
-import "github.com/optimizely/go-sdk/pkg/utils"
+import "github.com/optimizely/go-sdk/v2/pkg/utils"
 
 // CompareSlices determines if two string slices are equal
 func CompareSlices(a, b []string) bool {

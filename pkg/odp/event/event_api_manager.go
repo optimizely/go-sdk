@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/optimizely/go-sdk/pkg/logging"
-	"github.com/optimizely/go-sdk/pkg/odp/utils"
-	pkgUtils "github.com/optimizely/go-sdk/pkg/utils"
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
+	"github.com/optimizely/go-sdk/v2/pkg/odp/utils"
+	pkgUtils "github.com/optimizely/go-sdk/v2/pkg/utils"
 )
 
 // APIManager represents the event API manager.

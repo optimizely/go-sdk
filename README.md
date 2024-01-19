@@ -16,20 +16,26 @@ Refer to the [Go SDK's developer documentation](https://docs.developers.optimize
   
 ### Requirements  
 
-Requires Golang version 1.19 or higher.
+Requires Golang version:
+
+| SDK Version  | Required Golang Version  |
+|--------------|--------------------------|
+|   v2.0.0     |     1.21.0 or higher     |
+| < v2.0.0     |     1.13 or higher       |
+
 
 ### Install the SDK
 
 #### Install from github:
 
 ```$sh
-go get github.com/optimizely/go-sdk
+go get github.com/optimizely/go-sdk/v2
 ```
 
 #### Install from source:
 ```$sh
-go get github.com/optimizely/go-sdk
-cd $GOPATH/src/github.com/optimizely/go-sdk
+go get github.com/optimizely/go-sdk/v2
+cd $GOPATH/src/github.com/optimizely/go-sdk/v2
 go install
 ```
 
@@ -44,23 +50,23 @@ module mymodule
 go 1.21.0
 
 require (
-	github.com/optimizely/go-sdk v2.0.0-beta
+	github.com/optimizely/go-sdk/v2 v2.0.0
 )
 ```
 
 If you are already using `go.mod` in your application you can run the following:
 
 ```
-go mod edit -require github.com/optimizely/go-sdk@v2.0.0-beta
+go mod edit -require github.com/optimizely/go-sdk/v2@v2.0.0
 ```
 
 NOTE:
 ```$sh
-go get github.com/optimizely/go-sdk/...
+go get github.com/optimizely/go-sdk/v2/...
 ```
 or
 ```$sh
-go get github.com/optimizely/go-sdk/pkg
+go get github.com/optimizely/go-sdk/v2/pkg
 ```
 will install it as a package to pkg directory, rather than src directory. It could be useful for future development and vendoring.
 
@@ -72,8 +78,8 @@ See the example file in examples/main.go.
 ### Initialization
 
 ```
-import optly "github.com/optimizely/go-sdk"
-import "github.com/optimizely/go-sdk/client"
+import optly "github.com/optimizely/go-sdk/v2"
+import "github.com/optimizely/go-sdk/v2/client"
 
 // Simple one-line initialization with the SDK key    
 optlyClient, err := optly.Client("SDK_KEY")    
@@ -87,7 +93,7 @@ optlyClient, err = optimizelyFactory.Client()
 ### Make Decisions
 ```
 import ( 
-  optly "github.com/optimizely/go-sdk" 
+  optly "github.com/optimizely/go-sdk/v2" 
 ) 
 
 // instantiate a client 
@@ -160,6 +166,10 @@ License (BSD): https://github.com/pkg/profile/blob/master/LICENSE
 sync
 Copyright (c) 2009 The Go Authors. All rights reserved.
 https://github.com/golang/sync/blob/master/LICENSE
+
+opentelemetry-go
+Copyright The OpenTelemetry Authors
+License (Apache-2.0): https://github.com/open-telemetry/opentelemetry-go/blob/main/LICENSE
 
 ### Other Optimizely SDKs
 

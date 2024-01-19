@@ -1,4 +1,4 @@
-module github.com/optimizely/go-sdk
+module github.com/optimizely/go-sdk/v2
 
 go 1.21.0
 

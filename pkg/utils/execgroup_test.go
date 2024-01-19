@@ -19,9 +19,10 @@ package utils
 
 import (
 	"context"
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"sync"
 	"testing"
+
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
 
 func TestWithContextCancelFunc(t *testing.T) {

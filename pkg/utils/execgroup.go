@@ -19,8 +19,9 @@ package utils
 
 import (
 	"context"
-	"github.com/optimizely/go-sdk/pkg/logging"
 	"sync"
+
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
 
 // ExecGroup is a utility for managing graceful, blocking cancellation of goroutines.
