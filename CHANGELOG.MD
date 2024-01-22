@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 Changes that have landed but are not yet released.
 
-## [2.0.0] - January 19th, 2024
+## [2.0.0] - January 22th, 2024
 
 ### New Features  
 
@@ -47,6 +47,7 @@ For details, refer to our documentation pages:
 
 * ODPManager in the SDK is enabled by default. Unless an ODP account is integrated into the Optimizely projects, most ODPManager functions will be ignored. If needed, ODPManager can be disabled when `OptimizelyClient` is instantiated. 
 * Minimum golang version changed from 1.13 to 1.21.0. ([#369](https://github.com/optimizely/go-sdk/pull/369), [#380](https://github.com/optimizely/go-sdk/pull/380))
+* Module name has been changed to `github.com/optimizely/go-sdk/v2`.
 
 ### Bug Fixes
 * Logged correct error message in HTTP requests. ([#374](https://github.com/optimizely/go-sdk/pull/374))
