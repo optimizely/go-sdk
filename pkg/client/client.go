@@ -115,7 +115,14 @@ type OptimizelyClient struct {
 
 // CreateUserContext creates a context of the user for which decision APIs will be called.
 // A user context will be created successfully even when the SDK is not fully configured yet.
-func (o *OptimizelyClient) CreateUserContext(userID string, attributes map[string]interface{}) OptimizelyUserContext {
+func (o *OptimizelyClient) CreateUserContext(userID string, attributes map[string]interface{}) (userContext OptimizelyUserContext) {
+	defer func() {
+		if r := recover(); r != nil {
+			o.logger.Error("recovered panic in CreateUserContext: %v", r)
+			userContext = OptimizelyUserContext{}
+		}
+	}()
+
 	if o.OdpManager != nil {
 		// Identify user to odp server
 		o.OdpManager.IdentifyUser(userID)
