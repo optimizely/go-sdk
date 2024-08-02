@@ -229,7 +229,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 
 	if o.notificationCenter != nil {
 		decisionNotification := decision.FlagNotification(key, variationKey, ruleKey, flagEnabled, eventSent, usrContext, variableMap, reasonsToReport)
-		o.logger.Info(fmt.Sprintf(`Feature %q is enabled for user %q? %v`, key, usrContext.ID, flagEnabled))
+		o.logger.Debug(fmt.Sprintf(`Feature %q is enabled for user %q? %v`, key, usrContext.ID, flagEnabled))
 		if e := o.notificationCenter.Send(notification.Decision, *decisionNotification); e != nil {
 			o.logger.Warning("Problem with sending notification")
 		}
@@ -481,9 +481,9 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 	}
 
 	if result {
-		o.logger.Info(fmt.Sprintf(`Feature %q is enabled for user %q.`, featureKey, userContext.ID))
+		o.logger.Debug(fmt.Sprintf(`Feature %q is enabled for user %q.`, featureKey, userContext.ID))
 	} else {
-		o.logger.Info(fmt.Sprintf(`Feature %q is not enabled for user %q.`, featureKey, userContext.ID))
+		o.logger.Debug(fmt.Sprintf(`Feature %q is not enabled for user %q.`, featureKey, userContext.ID))
 	}
 
 	if o.notificationCenter != nil {
@@ -1087,9 +1087,9 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 
 	if experimentDecision.Variation != nil {
 		result := experimentDecision.Variation.Key
-		o.logger.Info(fmt.Sprintf(`User %q is bucketed into variation %q of experiment %q.`, userContext.ID, result, experimentKey))
+		o.logger.Debug(fmt.Sprintf(`User %q is bucketed into variation %q of experiment %q.`, userContext.ID, result, experimentKey))
 	} else {
-		o.logger.Info(fmt.Sprintf(`User %q is not bucketed into any variation for experiment %q: %s.`, userContext.ID, experimentKey, experimentDecision.Reason))
+		o.logger.Debug(fmt.Sprintf(`User %q is not bucketed into any variation for experiment %q: %s.`, userContext.ID, experimentKey, experimentDecision.Reason))
 	}
 
 	return decisionContext, experimentDecision, err
