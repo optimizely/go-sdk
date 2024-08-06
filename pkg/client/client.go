@@ -148,9 +148,6 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 		}
 	}()
 
-	_, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameDecide)
-	defer span.End()
-
 	decisionContext := decision.FeatureDecisionContext{
 		ForcedDecisionService: userContext.forcedDecisionService,
 	}
