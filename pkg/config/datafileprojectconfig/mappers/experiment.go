@@ -18,6 +18,8 @@
 package mappers
 
 import (
+	"strings"
+
 	datafileEntities "github.com/optimizely/go-sdk/v2/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 )
@@ -79,18 +81,21 @@ func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experimen
 		func() {}() // cheat the linters
 	}
 
+	_, defaultRolloutsPrefixFound := strings.CutPrefix(rawExperiment.Key, "default-rollout-")
+
 	experiment := entities.Experiment{
-		AudienceIds:           rawExperiment.AudienceIds,
-		AudienceConditions:    rawExperiment.AudienceConditions,
-		ID:                    rawExperiment.ID,
-		LayerID:               rawExperiment.LayerID,
-		Key:                   rawExperiment.Key,
-		Variations:            make(map[string]entities.Variation),
-		VariationKeyToIDMap:   make(map[string]string),
-		TrafficAllocation:     make([]entities.Range, len(rawExperiment.TrafficAllocation)),
-		AudienceConditionTree: audienceConditionTree,
-		Whitelist:             rawExperiment.ForcedVariations,
-		IsFeatureExperiment:   false,
+		AudienceIds:             rawExperiment.AudienceIds,
+		AudienceConditions:      rawExperiment.AudienceConditions,
+		ID:                      rawExperiment.ID,
+		LayerID:                 rawExperiment.LayerID,
+		Key:                     rawExperiment.Key,
+		Variations:              make(map[string]entities.Variation),
+		VariationKeyToIDMap:     make(map[string]string),
+		TrafficAllocation:       make([]entities.Range, len(rawExperiment.TrafficAllocation)),
+		AudienceConditionTree:   audienceConditionTree,
+		Whitelist:               rawExperiment.ForcedVariations,
+		IsFeatureExperiment:     false,
+		IsEveryoneElseVariation: rawExperiment.ID == rawExperiment.Key && defaultRolloutsPrefixFound,
 	}
 
 	for _, variation := range rawExperiment.Variations {

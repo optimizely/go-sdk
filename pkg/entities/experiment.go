@@ -27,18 +27,19 @@ type Variation struct {
 
 // Experiment represents an experiment
 type Experiment struct {
-	AudienceIds           []string
-	AudienceConditions    interface{}
-	ID                    string
-	LayerID               string
-	Key                   string
-	Variations            map[string]Variation // keyed by variation ID
-	VariationKeyToIDMap   map[string]string
-	TrafficAllocation     []Range
-	GroupID               string
-	AudienceConditionTree *TreeNode
-	Whitelist             map[string]string
-	IsFeatureExperiment   bool
+	AudienceIds             []string
+	AudienceConditions      interface{}
+	ID                      string
+	LayerID                 string
+	Key                     string
+	Variations              map[string]Variation // keyed by variation ID
+	VariationKeyToIDMap     map[string]string
+	TrafficAllocation       []Range
+	GroupID                 string
+	AudienceConditionTree   *TreeNode
+	Whitelist               map[string]string
+	IsFeatureExperiment     bool
+	IsEveryoneElseVariation bool
 }
 
 // Range represents bucketing range that the specify entityID falls into
