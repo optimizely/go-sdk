@@ -23,13 +23,13 @@ import (
 
 // OptimizelyDecision defines the decision returned by decide api.
 type OptimizelyDecision struct {
-	VariationKey            string                         `json:"variationKey"`
-	Enabled                 bool                           `json:"enabled"`
-	Variables               *optimizelyjson.OptimizelyJSON `json:"-"`
-	RuleKey                 string                         `json:"ruleKey"`
-	FlagKey                 string                         `json:"flagKey"`
 	UserContext             OptimizelyUserContext          `json:"userContext"`
 	Reasons                 []string                       `json:"reasons"`
+	VariationKey            string                         `json:"variationKey"`
+	RuleKey                 string                         `json:"ruleKey"`
+	FlagKey                 string                         `json:"flagKey"`
+	Variables               *optimizelyjson.OptimizelyJSON `json:"-"`
+	Enabled                 bool                           `json:"enabled"`
 	IsEveryoneElseVariation bool                           `json:"isEveryoneElseVariation"`
 }
 

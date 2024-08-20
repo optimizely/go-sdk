@@ -235,9 +235,9 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 		}
 	}
 
-	decision := NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, userContext, reasonsToReport)
-	decision.IsEveryoneElseVariation = featureDecision.Experiment.IsEveryoneElseVariation
-	return decision
+	optiDecision := NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, userContext, reasonsToReport)
+	optiDecision.IsEveryoneElseVariation = featureDecision.Experiment.IsEveryoneElseVariation
+	return optiDecision
 }
 
 func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options *decide.Options) map[string]OptimizelyDecision {
