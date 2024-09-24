@@ -24,18 +24,19 @@ jobs:
         ref: 'master'
     - name: set SDK Branch if PR
       if: ${{ github.event_name == 'pull_request' }}
+      env:
+        HEAD_REF: ${{ github.head_ref }}
+        BASE_REF: ${{ github.base_ref }}
       run: |
-        echo "SDK_BRANCH=${{ github.head_ref }}" >> $GITHUB_ENV
-        echo "TRAVIS_BRANCH=${{ github.base_ref }}" >> $GITHUB_ENV
-        ## Need to remove
-        echo ${{ github.ref_name }}
+        echo "SDK_BRANCH=$HEAD_REF" >> $GITHUB_ENV
+        echo "TRAVIS_BRANCH=$BASE_REF" >> $GITHUB_ENV
     - name: set SDK Branch if not pull request
       if: ${{ github.event_name != 'pull_request' }}
+      env:
+        REF_NAME: ${{ github.ref_name }}
       run: |
-        echo "SDK_BRANCH=${{ github.ref_name }}" >> $GITHUB_ENV
-        echo "TRAVIS_BRANCH=${{ github.ref_name }}" >> $GITHUB_ENV
-        ## Need to remove        
-        echo ${{ github.ref_name }}        
+        echo "SDK_BRANCH=$REF_NAME" >> $GITHUB_ENV
+        echo "TRAVIS_BRANCH=$REF_NAME" >> $GITHUB_ENV    
     - name: Trigger build
       env:
         SDK: go
