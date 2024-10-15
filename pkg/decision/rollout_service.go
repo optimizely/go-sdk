@@ -47,6 +47,7 @@ func NewRolloutService(sdkKey string) *RolloutService {
 
 // GetDecision returns a decision for the given feature and user context
 func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options) (FeatureDecision, decide.DecisionReasons, error) {
+	fmt.Println("============ Rollout Service Start ===============")
 	featureDecision := FeatureDecision{
 		Source: Rollout,
 	}
@@ -153,6 +154,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		return finalFeatureDecision, reasons, nil
 	}
 
+	fmt.Println("============ Rollout Service End ===============")
 	return featureDecision, reasons, nil
 }
 

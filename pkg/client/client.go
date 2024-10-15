@@ -104,6 +104,7 @@ type OptimizelyClient struct {
 	ctx                  context.Context
 	ConfigManager        config.ProjectConfigManager
 	DecisionService      decision.Service
+	UserProfileService   decision.UserProfileService
 	EventProcessor       event.Processor
 	OdpManager           odp.Manager
 	notificationCenter   notification.Center
@@ -130,7 +131,7 @@ func (o *OptimizelyClient) WithTraceContext(ctx context.Context) *OptimizelyClie
 	return o
 }
 
-func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string, options *decide.Options) OptimizelyDecision {
+func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, decisionContext decision.FeatureDecisionContext, userProfile *decision.UserProfile, key string, options *decide.Options) OptimizelyDecision {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
@@ -151,20 +152,24 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	_, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameDecide)
 	defer span.End()
 
-	decisionContext := decision.FeatureDecisionContext{
+	decisionContext = decision.FeatureDecisionContext{
 		ForcedDecisionService: userContext.forcedDecisionService,
 	}
 	projectConfig, err := o.getProjectConfig()
 	if err != nil {
-		return NewErrorDecision(key, userContext, decide.GetDecideError(decide.SDKNotReady))
+		o.logger.Error("Optimizely instance is not valid, failing decideForKeys call.", err)
+		return NewErrorDecision(key, userContext, err)
 	}
 	decisionContext.ProjectConfig = projectConfig
 
 	feature, err := projectConfig.GetFeatureByKey(key)
 	if err != nil {
-		return NewErrorDecision(key, userContext, decide.GetDecideError(decide.FlagKeyInvalid, key))
+		o.logger.Error("Feature key is invalid, failing decideForKeys call.", err)
+		return NewErrorDecision(key, userContext, err)
 	}
 	decisionContext.Feature = &feature
+	fmt.Println("=========== Feature ============")
+	fmt.Println(feature)
 
 	usrContext := entities.UserContext{
 		ID:                userContext.GetUserID(),
@@ -182,7 +187,19 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	// To avoid cyclo-complexity warning
 	findRegularDecision := func() {
 		// regular decision
-		featureDecision, reasons, err = o.DecisionService.GetFeatureDecision(decisionContext, usrContext, &allOptions)
+		if o.UserProfileService != nil {
+			// decisionKey := decision.NewUserDecisionKey(feature.ID)
+			// if savedVariationKey, ok := userProfile.ExperimentBucketMap[decisionKey]; ok {
+			// 	fmt.Println("=========== Found save variation ============")
+			// 	featureDecision = decision.FeatureDecision{
+			// 		Decision: decision.Decision{Reason: pkgReasons.BucketedIntoVariation},
+			// 		Source:   decision.FeatureTest,
+			// 	}
+			// }
+		} else {
+			featureDecision, reasons, err = o.DecisionService.GetFeatureDecision(decisionContext, usrContext, &allOptions)
+		}
+		// featureDecision, reasons, err = o.DecisionService.GetFeatureDecision(decisionContext, usrContext, &allOptions)
 		decisionReasons.Append(reasons)
 	}
 
@@ -269,12 +286,49 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 		return decisionMap
 	}
 
+	var userProfile decision.UserProfile
+	if o.UserProfileService != nil {
+		fmt.Println("=========== Lookup =================")
+		userProfile = o.UserProfileService.Lookup(userContext.GetUserID())
+	}
+
 	enabledFlagsOnly := o.getAllOptions(options).EnabledFlagsOnly
+	savedUserProfile := decision.UserProfile{
+		ID:                  userContext.GetUserID(),
+		ExperimentBucketMap: make(map[decision.UserDecisionKey]string),
+	}
+
 	for _, key := range keys {
-		optimizelyDecision := o.decide(userContext, key, options)
+		decisionContext := decision.FeatureDecisionContext{
+			ForcedDecisionService: userContext.forcedDecisionService,
+		}
+		projectConfig, err := o.getProjectConfig()
+		if err != nil {
+			o.logger.Error("Optimizely instance is not valid, failing decideForKeys call.", err)
+			return decisionMap
+		}
+		decisionContext.ProjectConfig = projectConfig
+
+		feature, err := projectConfig.GetFeatureByKey(key)
+		if err != nil {
+			o.logger.Error("Feature key is invalid, failing decideForKeys call.", err)
+			return decisionMap
+		}
+		decisionContext.Feature = &feature
+
+		optimizelyDecision := o.decide(userContext, decisionContext, &userProfile, key, options)
 		if !enabledFlagsOnly || optimizelyDecision.Enabled {
 			decisionMap[key] = optimizelyDecision
+			if o.UserProfileService != nil && optimizelyDecision.Enabled {
+				decisionKey := decision.NewUserDecisionKey(optimizelyDecision.VariationKey)
+				savedUserProfile.ExperimentBucketMap[decisionKey] = optimizelyDecision.VariationKey
+			}
 		}
+	}
+
+	if len(savedUserProfile.ExperimentBucketMap) > 0 {
+		fmt.Println("=========== Save =================")
+		o.UserProfileService.Save(savedUserProfile)
 	}
 
 	return decisionMap

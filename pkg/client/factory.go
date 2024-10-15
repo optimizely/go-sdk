@@ -160,6 +160,10 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		appClient.DecisionService = compositeService
 	}
 
+	if f.userProfileService != nil {
+		appClient.UserProfileService = f.userProfileService
+	}
+
 	// Initialize the default services with the execution context
 	if pollingConfigManager, ok := appClient.ConfigManager.(*config.PollingProjectConfigManager); ok {
 		eg.Go(pollingConfigManager.Start)

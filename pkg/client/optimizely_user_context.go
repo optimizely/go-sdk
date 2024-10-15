@@ -130,7 +130,7 @@ func (o *OptimizelyUserContext) IsQualifiedFor(segment string) bool {
 func (o *OptimizelyUserContext) Decide(key string, options []decide.OptimizelyDecideOptions) OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
 	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
-	return o.optimizely.decide(userContextCopy, key, convertDecideOptions(options))
+	return o.optimizely.decide(userContextCopy, pkgDecision.FeatureDecisionContext{}, &pkgDecision.UserProfile{}, key, convertDecideOptions(options))
 }
 
 // DecideAll returns a key-map of decision results for all active flag keys with options.
