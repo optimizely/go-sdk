@@ -36,6 +36,7 @@ type OptimizelyUserContext struct {
 	optimizely            *OptimizelyClient
 	forcedDecisionService *pkgDecision.ForcedDecisionService
 	mutex                 *sync.RWMutex
+	userProfile           *pkgDecision.UserProfile
 }
 
 // returns an instance of the optimizely user context.
@@ -188,6 +189,11 @@ func (o *OptimizelyUserContext) RemoveAllForcedDecisions() bool {
 		return true
 	}
 	return o.forcedDecisionService.RemoveAllForcedDecisions()
+}
+
+// SetUserProfile set the user profile for the user context
+func (o *OptimizelyUserContext) SetUserProfile(userProfile *pkgDecision.UserProfile) {
+	o.userProfile = userProfile
 }
 
 func copyUserAttributes(attributes map[string]interface{}) (attributesCopy map[string]interface{}) {
