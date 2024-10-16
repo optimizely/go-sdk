@@ -196,7 +196,8 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 				o.logger.Debug(infoMessage)
 				variationList := projectConfig.GetFlagVariationsMap()[key]
 				var variation *entities.Variation
-				for _, v := range variationList {
+				for i := range variationList {
+					v := variationList[i]
 					if v.ID == savedVariationID {
 						variation = &v
 						foundSavedVariation = true

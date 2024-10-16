@@ -22,7 +22,6 @@ import (
 	"sync"
 
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
-	"github.com/optimizely/go-sdk/v2/pkg/decision"
 	pkgDecision "github.com/optimizely/go-sdk/v2/pkg/decision"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	pkgOdpSegment "github.com/optimizely/go-sdk/v2/pkg/odp/segment"
@@ -37,7 +36,7 @@ type OptimizelyUserContext struct {
 	optimizely            *OptimizelyClient
 	forcedDecisionService *pkgDecision.ForcedDecisionService
 	mutex                 *sync.RWMutex
-	userProfile           *decision.UserProfile
+	userProfile           *pkgDecision.UserProfile
 }
 
 // returns an instance of the optimizely user context.
@@ -192,7 +191,8 @@ func (o *OptimizelyUserContext) RemoveAllForcedDecisions() bool {
 	return o.forcedDecisionService.RemoveAllForcedDecisions()
 }
 
-func (o *OptimizelyUserContext) SetUserProfile(userProfile *decision.UserProfile) {
+// SetUserProfile set the user profile for the user context
+func (o *OptimizelyUserContext) SetUserProfile(userProfile *pkgDecision.UserProfile) {
 	o.userProfile = userProfile
 }
 
