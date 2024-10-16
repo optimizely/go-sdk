@@ -104,6 +104,7 @@ type OptimizelyClient struct {
 	ctx                  context.Context
 	ConfigManager        config.ProjectConfigManager
 	DecisionService      decision.Service
+	UserProfileService   decision.UserProfileService
 	EventProcessor       event.Processor
 	OdpManager           odp.Manager
 	notificationCenter   notification.Center
@@ -178,12 +179,37 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	decisionContext.Variable = entities.Variable{}
 	var featureDecision decision.FeatureDecision
 	var reasons decide.DecisionReasons
+	foundSavedVariation := false
 
 	// To avoid cyclo-complexity warning
 	findRegularDecision := func() {
 		// regular decision
 		featureDecision, reasons, err = o.DecisionService.GetFeatureDecision(decisionContext, usrContext, &allOptions)
 		decisionReasons.Append(reasons)
+
+		if o.UserProfileService != nil && featureDecision.Variation != nil {
+			decisionKey := decision.NewUserDecisionKey(featureDecision.Experiment.ID)
+			savedUserProfile := o.UserProfileService.Lookup(userContext.GetUserID())
+
+			if savedVariationID, ok := savedUserProfile.ExperimentBucketMap[decisionKey]; ok {
+				infoMessage := reasons.AddInfo(`User "%s" was previously bucketed into variation "%s" of experiment "%s".`, userContext.GetUserID(), savedVariationID, featureDecision.Experiment.ID)
+				o.logger.Debug(infoMessage)
+				variationList := projectConfig.GetFlagVariationsMap()[key]
+				var variation *entities.Variation
+				for _, v := range variationList {
+					if v.ID == savedVariationID {
+						variation = &v
+						foundSavedVariation = true
+						break
+					}
+				}
+				if !foundSavedVariation {
+					warningMessage := reasons.AddInfo(`User "%s" was previously bucketed into variation with ID "%s" for experiment "%s", but no matching variation was found.`, userContext.GetUserID(), savedVariationID, featureDecision.Experiment.ID)
+					o.logger.Warning(warningMessage)
+				}
+				featureDecision = decision.FeatureDecision{Decision: decision.Decision{Reason: pkgReasons.BucketedIntoVariation}, Variation: variation, Source: featureDecision.Source}
+			}
+		}
 	}
 
 	// check forced-decisions first
@@ -235,6 +261,12 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 		}
 	}
 
+	if !foundSavedVariation && o.UserProfileService != nil && featureDecision.Variation != nil {
+		decisionKey := decision.NewUserDecisionKey(featureDecision.Experiment.ID)
+		userContext.userProfile.ExperimentBucketMap[decisionKey] = featureDecision.Variation.ID
+		o.logger.Debug(fmt.Sprintf(`Decision saved for user %q experiment %s variation %s.`, userContext.GetUserID(), featureDecision.Experiment.ID, featureDecision.Variation.ID))
+	}
+
 	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, userContext, reasonsToReport)
 }
 
@@ -269,12 +301,22 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 		return decisionMap
 	}
 
+	userProfile := decision.UserProfile{
+		ID:                  userContext.GetUserID(),
+		ExperimentBucketMap: make(map[decision.UserDecisionKey]string),
+	}
+	userContext.SetUserProfile(&userProfile)
+
 	enabledFlagsOnly := o.getAllOptions(options).EnabledFlagsOnly
 	for _, key := range keys {
 		optimizelyDecision := o.decide(userContext, key, options)
 		if !enabledFlagsOnly || optimizelyDecision.Enabled {
 			decisionMap[key] = optimizelyDecision
 		}
+	}
+
+	if o.UserProfileService != nil && len(userContext.userProfile.ExperimentBucketMap) > 0 {
+		o.UserProfileService.Save(userProfile)
 	}
 
 	return decisionMap
