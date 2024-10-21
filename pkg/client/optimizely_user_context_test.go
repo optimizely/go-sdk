@@ -863,10 +863,12 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsBypassUps() {
 	options := []decide.OptimizelyDecideOptions{decide.IncludeReasons}
 
 	userProfileService := new(MockUserProfileService)
-	s.OptimizelyClient, _ = s.factory.Client(
+	var err error
+	s.OptimizelyClient, err = s.factory.Client(
 		WithEventProcessor(s.eventProcessor),
 		WithUserProfileService(userProfileService),
 	)
+	s.Nil(err)
 
 	decisionKey := decision.NewUserDecisionKey(experimentID)
 	savedUserProfile := decision.UserProfile{

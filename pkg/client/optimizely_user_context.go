@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
+	"github.com/optimizely/go-sdk/v2/pkg/decision"
 	pkgDecision "github.com/optimizely/go-sdk/v2/pkg/decision"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	pkgOdpSegment "github.com/optimizely/go-sdk/v2/pkg/odp/segment"
@@ -35,6 +36,7 @@ type OptimizelyUserContext struct {
 	qualifiedSegments     []string
 	optimizely            *OptimizelyClient
 	forcedDecisionService *pkgDecision.ForcedDecisionService
+	userProfileService    pkgDecision.UserProfileService
 	mutex                 *sync.RWMutex
 	userProfile           *pkgDecision.UserProfile
 }
@@ -53,6 +55,7 @@ func newOptimizelyUserContext(optimizely *OptimizelyClient, userID string, attri
 		qualifiedSegments:     qualifiedSegmentsCopy,
 		optimizely:            optimizely,
 		forcedDecisionService: forcedDecisionService,
+		userProfileService:    optimizely.UserProfileService,
 		mutex:                 new(sync.RWMutex),
 	}
 }
@@ -131,21 +134,60 @@ func (o *OptimizelyUserContext) IsQualifiedFor(segment string) bool {
 func (o *OptimizelyUserContext) Decide(key string, options []decide.OptimizelyDecideOptions) OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
 	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
-	return o.optimizely.decide(userContextCopy, key, convertDecideOptions(options))
+
+	if o.userProfileService != nil {
+		userProfile := decision.UserProfile{
+			ID:                  userContextCopy.GetUserID(),
+			ExperimentBucketMap: make(map[decision.UserDecisionKey]string),
+		}
+		userContextCopy.SetUserProfile(&userProfile)
+	}
+
+	decision := o.optimizely.decide(userContextCopy, key, convertDecideOptions(options))
+	if o.userProfileService != nil && len(userContextCopy.userProfile.ExperimentBucketMap) > 0 {
+		o.userProfileService.Save(*userContextCopy.userProfile)
+	}
+	return decision
 }
 
 // DecideAll returns a key-map of decision results for all active flag keys with options.
 func (o *OptimizelyUserContext) DecideAll(options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
 	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
-	return o.optimizely.decideAll(userContextCopy, convertDecideOptions(options))
+
+	if o.userProfileService != nil {
+		userProfile := decision.UserProfile{
+			ID:                  userContextCopy.GetUserID(),
+			ExperimentBucketMap: make(map[decision.UserDecisionKey]string),
+		}
+		userContextCopy.SetUserProfile(&userProfile)
+	}
+
+	decision := o.optimizely.decideAll(userContextCopy, convertDecideOptions(options))
+	if o.userProfileService != nil && len(userContextCopy.userProfile.ExperimentBucketMap) > 0 {
+		o.userProfileService.Save(*userContextCopy.userProfile)
+	}
+	return decision
 }
 
 // DecideForKeys returns a key-map of decision results for multiple flag keys and options.
 func (o *OptimizelyUserContext) DecideForKeys(keys []string, options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
 	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
-	return o.optimizely.decideForKeys(userContextCopy, keys, convertDecideOptions(options))
+
+	if o.userProfileService != nil {
+		userProfile := decision.UserProfile{
+			ID:                  userContextCopy.GetUserID(),
+			ExperimentBucketMap: make(map[decision.UserDecisionKey]string),
+		}
+		userContextCopy.SetUserProfile(&userProfile)
+	}
+
+	decision := o.optimizely.decideForKeys(userContextCopy, keys, convertDecideOptions(options))
+	if o.userProfileService != nil && len(userContextCopy.userProfile.ExperimentBucketMap) > 0 {
+		o.userProfileService.Save(*userContextCopy.userProfile)
+	}
+	return decision
 }
 
 // TrackEvent generates a conversion event with the given event key if it exists and queues it up to be sent to the Optimizely
