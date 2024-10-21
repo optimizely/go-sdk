@@ -185,15 +185,16 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	findRegularDecision := func() {
 		// regular decision
 		featureDecision, reasons, err = o.DecisionService.GetFeatureDecision(decisionContext, usrContext, &allOptions)
-		decisionReasons.Append(reasons)
+		if err != nil {
+			o.logger.Error("failed to get feature decision from decision service", err)
+			return
+		}
 
-		if o.UserProfileService != nil && featureDecision.Variation != nil {
+		if !options.IgnoreUserProfileService && o.UserProfileService != nil && featureDecision.Variation != nil {
 			decisionKey := decision.NewUserDecisionKey(featureDecision.Experiment.ID)
 			savedUserProfile := o.UserProfileService.Lookup(userContext.GetUserID())
 
 			if savedVariationID, ok := savedUserProfile.ExperimentBucketMap[decisionKey]; ok {
-				infoMessage := reasons.AddInfo(`User "%s" was previously bucketed into variation "%s" of experiment "%s".`, userContext.GetUserID(), savedVariationID, featureDecision.Experiment.ID)
-				o.logger.Debug(infoMessage)
 				variationList := projectConfig.GetFlagVariationsMap()[key]
 				var variation *entities.Variation
 				for i := range variationList {
@@ -204,12 +205,20 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 						break
 					}
 				}
-				if !foundSavedVariation {
+				if foundSavedVariation {
+					infoMessage := fmt.Sprintf(`User "%s" was previously bucketed into variation "%s" of experiment "%s".`, userContext.GetUserID(), variation.Key, featureDecision.Experiment.Key)
+					o.logger.Debug(infoMessage)
+					featureDecision = decision.FeatureDecision{Variation: variation, Source: featureDecision.Source}
+					newDecideReason := decide.NewDecisionReasons(options)
+					newDecideReason.AddInfo(infoMessage)
+					decisionReasons.Append(newDecideReason)
+				} else {
 					warningMessage := reasons.AddInfo(`User "%s" was previously bucketed into variation with ID "%s" for experiment "%s", but no matching variation was found.`, userContext.GetUserID(), savedVariationID, featureDecision.Experiment.ID)
 					o.logger.Warning(warningMessage)
 				}
-				featureDecision = decision.FeatureDecision{Decision: decision.Decision{Reason: pkgReasons.BucketedIntoVariation}, Variation: variation, Source: featureDecision.Source}
 			}
+		} else {
+			decisionReasons.Append(reasons)
 		}
 	}
 
@@ -262,7 +271,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 		}
 	}
 
-	if !foundSavedVariation && o.UserProfileService != nil && featureDecision.Variation != nil {
+	if !options.IgnoreUserProfileService && !foundSavedVariation && o.UserProfileService != nil && featureDecision.Variation != nil {
 		decisionKey := decision.NewUserDecisionKey(featureDecision.Experiment.ID)
 		userContext.userProfile.ExperimentBucketMap[decisionKey] = featureDecision.Variation.ID
 		o.logger.Debug(fmt.Sprintf(`Decision saved for user %q experiment %s variation %s.`, userContext.GetUserID(), featureDecision.Experiment.ID, featureDecision.Variation.ID))

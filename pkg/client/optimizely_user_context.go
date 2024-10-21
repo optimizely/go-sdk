@@ -134,8 +134,9 @@ func (o *OptimizelyUserContext) IsQualifiedFor(segment string) bool {
 func (o *OptimizelyUserContext) Decide(key string, options []decide.OptimizelyDecideOptions) OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
 	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
+	decideOptions := convertDecideOptions(options)
 
-	if o.userProfileService != nil {
+	if !decideOptions.IgnoreUserProfileService && o.userProfileService != nil {
 		userProfile := decision.UserProfile{
 			ID:                  userContextCopy.GetUserID(),
 			ExperimentBucketMap: make(map[decision.UserDecisionKey]string),
@@ -143,8 +144,8 @@ func (o *OptimizelyUserContext) Decide(key string, options []decide.OptimizelyDe
 		userContextCopy.SetUserProfile(&userProfile)
 	}
 
-	decision := o.optimizely.decide(userContextCopy, key, convertDecideOptions(options))
-	if o.userProfileService != nil && len(userContextCopy.userProfile.ExperimentBucketMap) > 0 {
+	decision := o.optimizely.decide(userContextCopy, key, decideOptions)
+	if !decideOptions.IgnoreUserProfileService && o.userProfileService != nil && len(userContextCopy.userProfile.ExperimentBucketMap) > 0 {
 		o.userProfileService.Save(*userContextCopy.userProfile)
 	}
 	return decision
