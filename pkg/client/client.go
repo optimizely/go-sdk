@@ -190,7 +190,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 			return
 		}
 
-		if !options.IgnoreUserProfileService && o.UserProfileService != nil && featureDecision.Variation != nil {
+		if !allOptions.IgnoreUserProfileService && o.UserProfileService != nil && featureDecision.Variation != nil {
 			decisionKey := decision.NewUserDecisionKey(featureDecision.Experiment.ID)
 			savedUserProfile := o.UserProfileService.Lookup(userContext.GetUserID())
 
@@ -208,8 +208,8 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 				if foundSavedVariation {
 					infoMessage := fmt.Sprintf(`User "%s" was previously bucketed into variation "%s" of experiment "%s".`, userContext.GetUserID(), variation.Key, featureDecision.Experiment.Key)
 					o.logger.Debug(infoMessage)
-					featureDecision = decision.FeatureDecision{Variation: variation, Source: featureDecision.Source}
-					newDecideReason := decide.NewDecisionReasons(options)
+					featureDecision = decision.FeatureDecision{Decision: decision.Decision{Reason: pkgReasons.BucketedIntoVariation}, Variation: variation, Source: featureDecision.Source}
+					newDecideReason := decide.NewDecisionReasons(&allOptions)
 					newDecideReason.AddInfo(infoMessage)
 					decisionReasons.Append(newDecideReason)
 				} else {
@@ -271,7 +271,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 		}
 	}
 
-	if !options.IgnoreUserProfileService && !foundSavedVariation && o.UserProfileService != nil && featureDecision.Variation != nil {
+	if !allOptions.IgnoreUserProfileService && !foundSavedVariation && o.UserProfileService != nil && featureDecision.Variation != nil {
 		decisionKey := decision.NewUserDecisionKey(featureDecision.Experiment.ID)
 		userContext.userProfile.ExperimentBucketMap[decisionKey] = featureDecision.Variation.ID
 		o.logger.Debug(fmt.Sprintf(`Decision saved for user %q experiment %s variation %s.`, userContext.GetUserID(), featureDecision.Experiment.ID, featureDecision.Variation.ID))
