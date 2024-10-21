@@ -306,7 +306,9 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 		ID:                  userContext.GetUserID(),
 		ExperimentBucketMap: make(map[decision.UserDecisionKey]string),
 	}
-	userContext.SetUserProfile(&userProfile)
+	if o.UserProfileService != nil {
+		userContext.SetUserProfile(&userProfile)
+	}
 
 	enabledFlagsOnly := o.getAllOptions(options).EnabledFlagsOnly
 	for _, key := range keys {
