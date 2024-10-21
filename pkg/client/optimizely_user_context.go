@@ -36,7 +36,6 @@ type OptimizelyUserContext struct {
 	qualifiedSegments     []string
 	optimizely            *OptimizelyClient
 	forcedDecisionService *pkgDecision.ForcedDecisionService
-	userProfileService    pkgDecision.UserProfileService
 	mutex                 *sync.RWMutex
 	userProfile           *pkgDecision.UserProfile
 }
@@ -55,7 +54,6 @@ func newOptimizelyUserContext(optimizely *OptimizelyClient, userID string, attri
 		qualifiedSegments:     qualifiedSegmentsCopy,
 		optimizely:            optimizely,
 		forcedDecisionService: forcedDecisionService,
-		userProfileService:    optimizely.UserProfileService,
 		mutex:                 new(sync.RWMutex),
 	}
 }
@@ -136,7 +134,7 @@ func (o *OptimizelyUserContext) Decide(key string, options []decide.OptimizelyDe
 	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
 	decideOptions := convertDecideOptions(options)
 
-	if !decideOptions.IgnoreUserProfileService && o.userProfileService != nil {
+	if !decideOptions.IgnoreUserProfileService && o.optimizely.UserProfileService != nil {
 		userProfile := decision.UserProfile{
 			ID:                  userContextCopy.GetUserID(),
 			ExperimentBucketMap: make(map[decision.UserDecisionKey]string),
@@ -145,8 +143,8 @@ func (o *OptimizelyUserContext) Decide(key string, options []decide.OptimizelyDe
 	}
 
 	decision := o.optimizely.decide(userContextCopy, key, decideOptions)
-	if !decideOptions.IgnoreUserProfileService && o.userProfileService != nil && len(userContextCopy.userProfile.ExperimentBucketMap) > 0 {
-		o.userProfileService.Save(*userContextCopy.userProfile)
+	if userContextCopy.userProfile != nil && len(userContextCopy.userProfile.ExperimentBucketMap) > 0 {
+		o.optimizely.UserProfileService.Save(*userContextCopy.userProfile)
 	}
 	return decision
 }
@@ -155,8 +153,9 @@ func (o *OptimizelyUserContext) Decide(key string, options []decide.OptimizelyDe
 func (o *OptimizelyUserContext) DecideAll(options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
 	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
+	decideOptions := convertDecideOptions(options)
 
-	if o.userProfileService != nil {
+	if !decideOptions.IgnoreUserProfileService && o.optimizely.UserProfileService != nil {
 		userProfile := decision.UserProfile{
 			ID:                  userContextCopy.GetUserID(),
 			ExperimentBucketMap: make(map[decision.UserDecisionKey]string),
@@ -164,9 +163,9 @@ func (o *OptimizelyUserContext) DecideAll(options []decide.OptimizelyDecideOptio
 		userContextCopy.SetUserProfile(&userProfile)
 	}
 
-	decision := o.optimizely.decideAll(userContextCopy, convertDecideOptions(options))
-	if o.userProfileService != nil && len(userContextCopy.userProfile.ExperimentBucketMap) > 0 {
-		o.userProfileService.Save(*userContextCopy.userProfile)
+	decision := o.optimizely.decideAll(userContextCopy, decideOptions)
+	if userContextCopy.userProfile != nil && len(userContextCopy.userProfile.ExperimentBucketMap) > 0 {
+		o.optimizely.UserProfileService.Save(*userContextCopy.userProfile)
 	}
 	return decision
 }
@@ -175,8 +174,9 @@ func (o *OptimizelyUserContext) DecideAll(options []decide.OptimizelyDecideOptio
 func (o *OptimizelyUserContext) DecideForKeys(keys []string, options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
 	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
+	decideOptions := convertDecideOptions(options)
 
-	if o.userProfileService != nil {
+	if !decideOptions.IgnoreUserProfileService && o.optimizely.UserProfileService != nil {
 		userProfile := decision.UserProfile{
 			ID:                  userContextCopy.GetUserID(),
 			ExperimentBucketMap: make(map[decision.UserDecisionKey]string),
@@ -185,8 +185,8 @@ func (o *OptimizelyUserContext) DecideForKeys(keys []string, options []decide.Op
 	}
 
 	decision := o.optimizely.decideForKeys(userContextCopy, keys, convertDecideOptions(options))
-	if o.userProfileService != nil && len(userContextCopy.userProfile.ExperimentBucketMap) > 0 {
-		o.userProfileService.Save(*userContextCopy.userProfile)
+	if userContextCopy.userProfile != nil && len(userContextCopy.userProfile.ExperimentBucketMap) > 0 {
+		o.optimizely.UserProfileService.Save(*userContextCopy.userProfile)
 	}
 	return decision
 }

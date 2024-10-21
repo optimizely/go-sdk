@@ -145,7 +145,7 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		appClient.EventProcessor = event.NewBatchEventProcessor(eventProcessorOptions...)
 	}
 
-	if f.userProfileService != nil {
+	if f.userProfileService != nil && !decideOptions.IgnoreUserProfileService {
 		appClient.UserProfileService = f.userProfileService
 	}
 

@@ -1045,7 +1045,8 @@ func (s *OptimizelyUserContextTestSuite) TestDefaultDecideOptionsBypassUps() {
 	userProfileService.On("Save", mock.Anything)
 
 	options := []decide.OptimizelyDecideOptions{decide.IgnoreUserProfileService}
-	client, _ := s.factory.Client(WithEventProcessor(s.eventProcessor), WithDefaultDecideOptions(options))
+	client, err := s.factory.Client(WithEventProcessor(s.eventProcessor), WithDefaultDecideOptions(options))
+	s.Nil(err)
 	user := client.CreateUserContext(s.userID, nil)
 	decision := user.Decide(flagKey, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
 	s.Len(decision.Reasons, 1)
