@@ -2309,7 +2309,7 @@ func (s *ClientTestSuiteAB) TestActivate() {
 	expectedExperimentDecision := decision.ExperimentDecision{
 		Variation: &expectedVariation,
 	}
-	s.mockDecisionService.On("GetExperimentDecision", testDecisionContext, testUserContext, &decide.Options{}).Return(expectedExperimentDecision, decide.NewDecisionReasons(nil), nil)
+	s.mockDecisionService.On("GetExperimentDecision", testDecisionContext, testUserContext, &decide.Options{Legacy: true}).Return(expectedExperimentDecision, decide.NewDecisionReasons(nil), nil)
 	s.mockEventProcessor.On("ProcessEvent", mock.AnythingOfType("event.UserEvent"))
 
 	testClient := OptimizelyClient{
@@ -2381,7 +2381,7 @@ func (s *ClientTestSuiteAB) TestGetVariation() {
 	expectedExperimentDecision := decision.ExperimentDecision{
 		Variation: &expectedVariation,
 	}
-	s.mockDecisionService.On("GetExperimentDecision", testDecisionContext, testUserContext, &decide.Options{}).Return(expectedExperimentDecision, decide.NewDecisionReasons(nil), nil)
+	s.mockDecisionService.On("GetExperimentDecision", testDecisionContext, testUserContext, &decide.Options{Legacy: true}).Return(expectedExperimentDecision, decide.NewDecisionReasons(nil), nil)
 
 	testClient := OptimizelyClient{
 		ConfigManager:   s.mockConfigManager,
@@ -2412,7 +2412,7 @@ func (s *ClientTestSuiteAB) TestGetVariationWithDecisionError() {
 	expectedExperimentDecision := decision.ExperimentDecision{
 		Variation: &expectedVariation,
 	}
-	s.mockDecisionService.On("GetExperimentDecision", testDecisionContext, testUserContext, &decide.Options{}).Return(expectedExperimentDecision, decide.NewDecisionReasons(nil), errors.New(""))
+	s.mockDecisionService.On("GetExperimentDecision", testDecisionContext, testUserContext, &decide.Options{Legacy: true}).Return(expectedExperimentDecision, decide.NewDecisionReasons(nil), errors.New(""))
 
 	testClient := OptimizelyClient{
 		ConfigManager:   s.mockConfigManager,

@@ -1120,7 +1120,9 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 		ProjectConfig: projectConfig,
 	}
 
-	options := &decide.Options{}
+	options := &decide.Options{
+		Legacy: true,
+	}
 	experimentDecision, _, err = o.DecisionService.GetExperimentDecision(decisionContext, userContext, options)
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for experiment %q: %s`, experimentKey, err))
@@ -1217,6 +1219,7 @@ func (o *OptimizelyClient) getAllOptions(options *decide.Options) decide.Options
 		ExcludeVariables:         o.defaultDecideOptions.ExcludeVariables || options.ExcludeVariables,
 		IgnoreUserProfileService: o.defaultDecideOptions.IgnoreUserProfileService || options.IgnoreUserProfileService,
 		IncludeReasons:           o.defaultDecideOptions.IncludeReasons || options.IncludeReasons,
+		Legacy:                   options.Legacy,
 	}
 }
 

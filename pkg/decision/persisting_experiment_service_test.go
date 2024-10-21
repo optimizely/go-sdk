@@ -20,12 +20,12 @@ package decision
 import (
 	"testing"
 
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
-
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/suite"
 )
 
 var testUserContext entities.UserContext = entities.UserContext{
@@ -56,7 +56,7 @@ func (s *PersistingExperimentServiceTestSuite) SetupTest() {
 	s.testComputedDecision = ExperimentDecision{
 		Variation: &computedVariation,
 	}
-	s.options = &decide.Options{}
+	s.options = &decide.Options{Legacy: true}
 	s.reasons = decide.NewDecisionReasons(s.options)
 	s.mockExperimentService.On("GetDecision", s.testDecisionContext, testUserContext, s.options).Return(s.testComputedDecision, s.reasons, nil)
 }

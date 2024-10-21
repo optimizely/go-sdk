@@ -42,6 +42,7 @@ type Options struct {
 	IgnoreUserProfileService bool
 	IncludeReasons           bool
 	ExcludeVariables         bool
+	Legacy                   bool
 }
 
 // TranslateOptions converts string options array to array of OptimizelyDecideOptions
