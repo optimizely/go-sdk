@@ -145,13 +145,14 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		appClient.EventProcessor = event.NewBatchEventProcessor(eventProcessorOptions...)
 	}
 
+	if f.userProfileService != nil {
+		appClient.UserProfileService = f.userProfileService
+	}
+
 	if f.decisionService != nil {
 		appClient.DecisionService = f.decisionService
 	} else {
 		var experimentServiceOptions []decision.CESOptionFunc
-		if f.userProfileService != nil {
-			appClient.UserProfileService = f.userProfileService
-		}
 		if f.overrideStore != nil {
 			experimentServiceOptions = append(experimentServiceOptions, decision.WithOverrideStore(f.overrideStore))
 		}
