@@ -145,6 +145,10 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		appClient.EventProcessor = event.NewBatchEventProcessor(eventProcessorOptions...)
 	}
 
+	if f.userProfileService != nil {
+		appClient.UserProfileService = f.userProfileService
+	}
+
 	if f.decisionService != nil {
 		appClient.DecisionService = f.decisionService
 	} else {

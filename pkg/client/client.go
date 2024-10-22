@@ -104,6 +104,7 @@ type OptimizelyClient struct {
 	ctx                  context.Context
 	ConfigManager        config.ProjectConfigManager
 	DecisionService      decision.Service
+	UserProfileService   decision.UserProfileService
 	EventProcessor       event.Processor
 	OdpManager           odp.Manager
 	notificationCenter   notification.Center
@@ -153,6 +154,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 
 	decisionContext := decision.FeatureDecisionContext{
 		ForcedDecisionService: userContext.forcedDecisionService,
+		UserProfile:           userContext.userProfile,
 	}
 	projectConfig, err := o.getProjectConfig()
 	if err != nil {
@@ -268,12 +270,30 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 	if len(keys) == 0 {
 		return decisionMap
 	}
+	allOptions := o.getAllOptions(options)
 
-	enabledFlagsOnly := o.getAllOptions(options).EnabledFlagsOnly
+	var userProfile *decision.UserProfile
+	userProfileLen := 0
+	ignoreUserProfileSvc := o.UserProfileService == nil || allOptions.IgnoreUserProfileService
+	if !ignoreUserProfileSvc {
+		up := o.UserProfileService.Lookup(userContext.GetUserID())
+		userProfile = &up
+		userContext.userProfile = userProfile
+		userProfileLen = len(userProfile.ExperimentBucketMap)
+	}
+
+	enabledFlagsOnly := allOptions.EnabledFlagsOnly
 	for _, key := range keys {
 		optimizelyDecision := o.decide(userContext, key, options)
 		if !enabledFlagsOnly || optimizelyDecision.Enabled {
 			decisionMap[key] = optimizelyDecision
+		}
+	}
+
+	if !ignoreUserProfileSvc {
+		isUserProfileUpdated := userProfile != nil && len(userProfile.ExperimentBucketMap) != userProfileLen
+		if isUserProfileUpdated {
+			o.UserProfileService.Save(*userProfile)
 		}
 	}
 

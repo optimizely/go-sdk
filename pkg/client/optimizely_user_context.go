@@ -35,6 +35,7 @@ type OptimizelyUserContext struct {
 	qualifiedSegments     []string
 	optimizely            *OptimizelyClient
 	forcedDecisionService *pkgDecision.ForcedDecisionService
+	userProfile           *pkgDecision.UserProfile
 	mutex                 *sync.RWMutex
 }
 
@@ -130,7 +131,11 @@ func (o *OptimizelyUserContext) IsQualifiedFor(segment string) bool {
 func (o *OptimizelyUserContext) Decide(key string, options []decide.OptimizelyDecideOptions) OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
 	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
-	return o.optimizely.decide(userContextCopy, key, convertDecideOptions(options))
+	decision, found := o.optimizely.decideForKeys(userContextCopy, []string{key}, convertDecideOptions(options))[key]
+	if !found {
+		return NewErrorDecision(key, *o, decide.GetDecideError(decide.SDKNotReady))
+	}
+	return decision
 }
 
 // DecideAll returns a key-map of decision results for all active flag keys with options.
