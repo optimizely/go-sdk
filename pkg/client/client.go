@@ -131,7 +131,7 @@ func (o *OptimizelyClient) WithTraceContext(ctx context.Context) *OptimizelyClie
 	return o
 }
 
-func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string, options *decide.Options) OptimizelyDecision {
+func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string, options *decide.Options) OptimizelyDecision {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
@@ -158,13 +158,13 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	}
 	projectConfig, err := o.getProjectConfig()
 	if err != nil {
-		return NewErrorDecision(key, userContext, decide.GetDecideError(decide.SDKNotReady))
+		return NewErrorDecision(key, *userContext, decide.GetDecideError(decide.SDKNotReady))
 	}
 	decisionContext.ProjectConfig = projectConfig
 
 	feature, err := projectConfig.GetFeatureByKey(key)
 	if err != nil {
-		return NewErrorDecision(key, userContext, decide.GetDecideError(decide.FlagKeyInvalid, key))
+		return NewErrorDecision(key, *userContext, decide.GetDecideError(decide.FlagKeyInvalid, key))
 	}
 	decisionContext.Feature = &feature
 
@@ -237,7 +237,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 		}
 	}
 
-	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, userContext, reasonsToReport)
+	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, *userContext, reasonsToReport)
 }
 
 func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options *decide.Options) map[string]OptimizelyDecision {
@@ -277,13 +277,19 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 	ignoreUserProfileSvc := o.UserProfileService == nil || allOptions.IgnoreUserProfileService
 	if !ignoreUserProfileSvc {
 		up := o.UserProfileService.Lookup(userContext.GetUserID())
+		if up.ID == "" {
+			up = decision.UserProfile{
+				ID:                  userContext.GetUserID(),
+				ExperimentBucketMap: map[decision.UserDecisionKey]string{},
+			}
+		}
 		userProfile = &up
 		userContext.userProfile = userProfile
 		userProfileLen = len(userProfile.ExperimentBucketMap)
 	}
 
 	for _, key := range keys {
-		optimizelyDecision := o.decide(userContext, key, options)
+		optimizelyDecision := o.decide(&userContext, key, options)
 		decisionMap[key] = optimizelyDecision
 	}
 
