@@ -102,15 +102,15 @@ func (up *UserProfile) DeepCopy() *UserProfile {
 		return nil
 	}
 
-	copy := *up
+	userProfileCopy := *up
 
 	// Deep copy the ExperimentBucketMap
 	if up.ExperimentBucketMap != nil {
-		copy.ExperimentBucketMap = make(map[UserDecisionKey]string)
+		userProfileCopy.ExperimentBucketMap = make(map[UserDecisionKey]string)
 		for k, v := range up.ExperimentBucketMap {
-			copy.ExperimentBucketMap[k] = v
+			userProfileCopy.ExperimentBucketMap[k] = v
 		}
 	}
 
-	return &copy
+	return &userProfileCopy
 }
