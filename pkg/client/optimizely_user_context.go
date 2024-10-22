@@ -142,14 +142,37 @@ func (o *OptimizelyUserContext) Decide(key string, options []decide.OptimizelyDe
 func (o *OptimizelyUserContext) DecideAll(options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
 	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
-	return o.optimizely.decideAll(userContextCopy, convertDecideOptions(options))
+	decideOptions := convertDecideOptions(options)
+	decisionMap := o.optimizely.decideAll(userContextCopy, decideOptions)
+	allOptions := o.optimizely.getAllOptions(decideOptions)
+	enabledFlagsOnly := allOptions.EnabledFlagsOnly
+
+	filteredDecision := make(map[string]OptimizelyDecision)
+	for key, decision := range decisionMap {
+		if !enabledFlagsOnly || decision.Enabled {
+			filteredDecision[key] = decision
+		}
+	}
+	return filteredDecision
 }
 
 // DecideForKeys returns a key-map of decision results for multiple flag keys and options.
 func (o *OptimizelyUserContext) DecideForKeys(keys []string, options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
 	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
-	return o.optimizely.decideForKeys(userContextCopy, keys, convertDecideOptions(options))
+	decisionMap := o.optimizely.decideForKeys(userContextCopy, keys, convertDecideOptions(options))
+
+	decideOptions := convertDecideOptions(options)
+	allOptions := o.optimizely.getAllOptions(decideOptions)
+	enabledFlagsOnly := allOptions.EnabledFlagsOnly
+
+	filteredDecision := make(map[string]OptimizelyDecision)
+	for key, decision := range decisionMap {
+		if !enabledFlagsOnly || decision.Enabled {
+			filteredDecision[key] = decision
+		}
+	}
+	return filteredDecision
 }
 
 // TrackEvent generates a conversion event with the given event key if it exists and queues it up to be sent to the Optimizely
