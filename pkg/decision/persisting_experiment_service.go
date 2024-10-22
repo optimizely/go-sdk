@@ -52,7 +52,7 @@ func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecis
 		return p.experimentBucketedService.GetDecision(decisionContext, userContext, options)
 	}
 
-	var userProfile *UserProfile
+	var userProfile UserProfile
 	var decisionReasons decide.DecisionReasons
 	// check to see if there is a saved decision for the user
 	experimentDecision, userProfile, decisionReasons = p.getSavedDecision(decisionContext, userContext, options)
@@ -72,13 +72,14 @@ func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecis
 	return experimentDecision, reasons, err
 }
 
-func (p PersistingExperimentService) getSavedDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options) (ExperimentDecision, *UserProfile, decide.DecisionReasons) {
+func (p PersistingExperimentService) getSavedDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options) (ExperimentDecision, UserProfile, decide.DecisionReasons) {
 	reasons := decide.NewDecisionReasons(options)
 	experimentDecision := ExperimentDecision{}
-	userProfile := decisionContext.UserProfile
-	if userProfile == nil {
-		up := p.userProfileService.Lookup(userContext.ID)
-		userProfile = &up
+	var userProfile UserProfile
+	if decisionContext.UserProfile == nil {
+		userProfile = p.userProfileService.Lookup(userContext.ID)
+	} else {
+		userProfile = *decisionContext.UserProfile
 	}
 
 	// look up experiment decision from user profile
@@ -101,15 +102,17 @@ func (p PersistingExperimentService) getSavedDecision(decisionContext Experiment
 	return experimentDecision, userProfile, reasons
 }
 
-func (p PersistingExperimentService) saveDecision(userProfile *UserProfile, decisionContext ExperimentDecisionContext, decision ExperimentDecision) {
+func (p PersistingExperimentService) saveDecision(userProfile UserProfile, decisionContext ExperimentDecisionContext, decision ExperimentDecision) {
 	if p.userProfileService != nil {
 		decisionKey := NewUserDecisionKey(decisionContext.Experiment.ID)
 		if userProfile.ExperimentBucketMap == nil {
 			userProfile.ExperimentBucketMap = map[UserDecisionKey]string{}
 		}
-		userProfile.ExperimentBucketMap[decisionKey] = decision.Variation.ID
 		if decisionContext.UserProfile == nil {
-			p.userProfileService.Save(*userProfile)
+			userProfile.ExperimentBucketMap[decisionKey] = decision.Variation.ID
+			p.userProfileService.Save(userProfile)
+		} else {
+			decisionContext.UserProfile.ExperimentBucketMap[decisionKey] = decision.Variation.ID
 		}
 		p.logger.Debug(fmt.Sprintf(`Decision saved for user %q.`, userProfile.ID))
 	}

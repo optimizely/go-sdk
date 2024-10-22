@@ -144,35 +144,18 @@ func (o *OptimizelyUserContext) DecideAll(options []decide.OptimizelyDecideOptio
 	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
 	decideOptions := convertDecideOptions(options)
 	decisionMap := o.optimizely.decideAll(userContextCopy, decideOptions)
-	allOptions := o.optimizely.getAllOptions(decideOptions)
-	enabledFlagsOnly := allOptions.EnabledFlagsOnly
 
-	filteredDecision := make(map[string]OptimizelyDecision)
-	for key, decision := range decisionMap {
-		if !enabledFlagsOnly || decision.Enabled {
-			filteredDecision[key] = decision
-		}
-	}
-	return filteredDecision
+	return filteredDecision(decisionMap, o.optimizely.getAllOptions(decideOptions).EnabledFlagsOnly)
 }
 
 // DecideForKeys returns a key-map of decision results for multiple flag keys and options.
 func (o *OptimizelyUserContext) DecideForKeys(keys []string, options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
 	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
-	decisionMap := o.optimizely.decideForKeys(userContextCopy, keys, convertDecideOptions(options))
-
 	decideOptions := convertDecideOptions(options)
-	allOptions := o.optimizely.getAllOptions(decideOptions)
-	enabledFlagsOnly := allOptions.EnabledFlagsOnly
+	decisionMap := o.optimizely.decideForKeys(userContextCopy, keys, decideOptions)
 
-	filteredDecision := make(map[string]OptimizelyDecision)
-	for key, decision := range decisionMap {
-		if !enabledFlagsOnly || decision.Enabled {
-			filteredDecision[key] = decision
-		}
-	}
-	return filteredDecision
+	return filteredDecision(decisionMap, o.optimizely.getAllOptions(decideOptions).EnabledFlagsOnly)
 }
 
 // TrackEvent generates a conversion event with the given event key if it exists and queues it up to be sent to the Optimizely
@@ -235,4 +218,14 @@ func copyQualifiedSegments(qualifiedSegments []string) (qualifiedSegmentsCopy []
 	qualifiedSegmentsCopy = make([]string, len(qualifiedSegments))
 	copy(qualifiedSegmentsCopy, qualifiedSegments)
 	return
+}
+
+func filteredDecision(decisionMap map[string]OptimizelyDecision, enabledFlagsOnly bool) map[string]OptimizelyDecision {
+	filteredDecision := make(map[string]OptimizelyDecision)
+	for key, decision := range decisionMap {
+		if !enabledFlagsOnly || decision.Enabled {
+			filteredDecision[key] = decision
+		}
+	}
+	return filteredDecision
 }
