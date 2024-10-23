@@ -116,6 +116,7 @@ func (p PersistingExperimentService) saveDecision(userProfile UserProfile, decis
 				decisionContext.UserProfile.ExperimentBucketMap = make(map[UserDecisionKey]string)
 			}
 			decisionContext.UserProfile.ExperimentBucketMap[decisionKey] = decision.Variation.ID
+			p.userProfileService.Save(*decisionContext.UserProfile)
 		}
 		p.logger.Debug(fmt.Sprintf(`Decision saved for user %q.`, userProfile.ID))
 	}
