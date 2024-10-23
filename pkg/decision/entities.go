@@ -27,6 +27,7 @@ import (
 type ExperimentDecisionContext struct {
 	Experiment    *entities.Experiment
 	ProjectConfig config.ProjectConfig
+	UserProfile   *UserProfile
 }
 
 // FeatureDecisionContext contains the information needed to be able to make a decision for a given feature
@@ -35,6 +36,7 @@ type FeatureDecisionContext struct {
 	ProjectConfig         config.ProjectConfig
 	Variable              entities.Variable
 	ForcedDecisionService *ForcedDecisionService
+	UserProfile           *UserProfile
 }
 
 // UnsafeFeatureDecisionInfo represents response for GetDetailedFeatureDecisionUnsafe api
@@ -92,4 +94,25 @@ func NewUserDecisionKey(experimentID string) UserDecisionKey {
 type UserProfile struct {
 	ID                  string
 	ExperimentBucketMap map[UserDecisionKey]string
+}
+
+// DeepCopy creates a deep copy of the UserProfile.
+func (up *UserProfile) DeepCopy() *UserProfile {
+	if up == nil {
+		return nil
+	}
+
+	userProfileCopy := UserProfile{
+		ID: up.ID,
+	}
+
+	// Deep copy the ExperimentBucketMap
+	if up.ExperimentBucketMap != nil {
+		userProfileCopy.ExperimentBucketMap = make(map[UserDecisionKey]string)
+		for k, v := range up.ExperimentBucketMap {
+			userProfileCopy.ExperimentBucketMap[k] = v
+		}
+	}
+
+	return &userProfileCopy
 }
