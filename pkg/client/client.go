@@ -1099,6 +1099,7 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 	decisionContext = decision.ExperimentDecisionContext{
 		Experiment:    &experiment,
 		ProjectConfig: projectConfig,
+		UserProfile:   nil,
 	}
 
 	options := &decide.Options{}
