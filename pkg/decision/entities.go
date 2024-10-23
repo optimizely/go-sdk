@@ -102,7 +102,9 @@ func (up *UserProfile) DeepCopy() *UserProfile {
 		return nil
 	}
 
-	userProfileCopy := *up
+	userProfileCopy := UserProfile{
+		ID: up.ID,
+	}
 
 	// Deep copy the ExperimentBucketMap
 	if up.ExperimentBucketMap != nil {
