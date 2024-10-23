@@ -69,7 +69,6 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		return ExperimentDecisionContext{
 			Experiment:    experiment,
 			ProjectConfig: decisionContext.ProjectConfig,
-			UserProfile:   decisionContext.UserProfile,
 		}
 	}
 
