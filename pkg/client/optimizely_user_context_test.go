@@ -884,6 +884,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsBypassUps() {
 	// should return variationId2 set by UPS
 	s.Equal(variationKey2, decision.VariationKey)
 	userProfileService.AssertCalled(s.T(), "Lookup", s.userID)
+	userProfileService.AssertNotCalled(s.T(), "Save", mock.Anything)
 
 	options = append(options, decide.IgnoreUserProfileService)
 	decision = userContext.Decide(flagKey, options)
@@ -893,6 +894,8 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsBypassUps() {
 	// should not lookup, ignore variationId2 set by UPS and return variationId1
 	s.Equal(variationKey1, decision.VariationKey)
 	userProfileService.AssertNumberOfCalls(s.T(), "Lookup", 1)
+	// also should not save either
+	userProfileService.AssertNotCalled(s.T(), "Save", mock.Anything)
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDecideOptionsExcludeVariables() {
