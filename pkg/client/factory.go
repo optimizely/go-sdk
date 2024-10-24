@@ -145,6 +145,17 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		appClient.EventProcessor = event.NewBatchEventProcessor(eventProcessorOptions...)
 	}
 
+	if f.userProfileService != nil {
+		appClient.UserProfileService = f.userProfileService
+		var experimentServiceOptions []decision.CESOptionFunc
+		if f.overrideStore != nil {
+			experimentServiceOptions = append(experimentServiceOptions, decision.WithOverrideStore(f.overrideStore))
+		}
+		compositeExperimentServiceWithoutUPS := decision.NewCompositeExperimentService(f.SDKKey, experimentServiceOptions...)
+		compositeServiceWithoutUPS := decision.NewCompositeService(f.SDKKey, decision.WithCompositeExperimentService(compositeExperimentServiceWithoutUPS))
+		appClient.DecisionServiceWithoutUPS = compositeServiceWithoutUPS
+	}
+
 	if f.decisionService != nil {
 		appClient.DecisionService = f.decisionService
 	} else {
