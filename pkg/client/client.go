@@ -236,15 +236,15 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, userProfile
 }
 
 func (o *OptimizelyClient) findRegularDecision(decisionContext decision.FeatureDecisionContext, userContext entities.UserContext, userProfile *decision.UserProfile, options *decide.Options) (decision.FeatureDecision, decide.DecisionReasons, error) {
-	if decisionContext.Feature != nil && userProfile != nil && o.UserProfileService != nil && !options.IgnoreUserProfileService {
-		featureDecision := decision.FeatureDecision{}
-		reasons := decide.NewDecisionReasons(options)
+	if o.UserProfileService == nil || options.IgnoreUserProfileService {
+		return o.DecisionService.GetFeatureDecision(decisionContext, userContext, options)
+	}
+
+	featureDecision := decision.FeatureDecision{}
+	reasons := decide.NewDecisionReasons(options)
+	if decisionContext.Feature != nil {
 		for _, featureExperiment := range decisionContext.Feature.FeatureExperiments {
 			decisionKey := decision.NewUserDecisionKey(featureExperiment.ID)
-
-			if userProfile.ExperimentBucketMap == nil {
-				break
-			}
 
 			if featureExperiment.Variations == nil {
 				continue
@@ -268,20 +268,21 @@ func (o *OptimizelyClient) findRegularDecision(decisionContext decision.FeatureD
 			}
 
 		}
+	}
 
-		// if no saved decision found, bucket the user
-		featureDecision, reason, err := o.DecisionServiceWithoutUPS.GetFeatureDecision(decisionContext, userContext, options)
-		if err != nil {
-			return featureDecision, reason, err
-		}
+	// if no saved decision found, bucket the user
+	featureDecision, reason, err := o.DecisionServiceWithoutUPS.GetFeatureDecision(decisionContext, userContext, options)
+	if err != nil {
+		return featureDecision, reason, err
+	}
+	if featureDecision.Variation != nil {
 		decisionKey := decision.NewUserDecisionKey(featureDecision.Experiment.ID)
 		if userProfile.ExperimentBucketMap == nil {
 			userProfile.ExperimentBucketMap = make(map[decision.UserDecisionKey]string)
 		}
 		userProfile.ExperimentBucketMap[decisionKey] = featureDecision.Variation.ID
-		return featureDecision, reason, nil
 	}
-	return o.DecisionService.GetFeatureDecision(decisionContext, userContext, options)
+	return featureDecision, reason, nil
 }
 
 func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options *decide.Options) map[string]OptimizelyDecision {
