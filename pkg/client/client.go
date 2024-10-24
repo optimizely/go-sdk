@@ -241,44 +241,44 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, userProfile
 }
 
 func (o *OptimizelyClient) findRegularDecision(decisionContext decision.FeatureDecisionContext, userContext entities.UserContext, userProfile *decision.UserProfile, options *decide.Options) (decision.FeatureDecision, decide.DecisionReasons, error) {
-	allOptions := o.getAllOptions(options)
-	if o.UserProfileService != nil && !allOptions.IgnoreUserProfileService {
-		featureDecision := decision.FeatureDecision{}
-		reasons := decide.NewDecisionReasons(options)
-		for _, featureExperiment := range decisionContext.Feature.FeatureExperiments {
-			decisionKey := decision.NewUserDecisionKey(featureExperiment.ID)
+	// allOptions := o.getAllOptions(options)
+	// if o.UserProfileService != nil && !allOptions.IgnoreUserProfileService {
+	// 	featureDecision := decision.FeatureDecision{}
+	// 	reasons := decide.NewDecisionReasons(options)
+	// 	for _, featureExperiment := range decisionContext.Feature.FeatureExperiments {
+	// 		decisionKey := decision.NewUserDecisionKey(featureExperiment.ID)
 
-			if savedVariationID, ok := userProfile.ExperimentBucketMap[decisionKey]; ok {
-				if variation, ok := featureExperiment.Variations[savedVariationID]; ok {
-					featureDecision.Variation = &variation
-					infoMessage := reasons.AddInfo(`User "%s" was previously bucketed into variation "%s" of experiment "%s".`, userContext.ID, variation.Key, featureExperiment.Key)
-					o.logger.Debug(infoMessage)
-				} else {
-					warningMessage := reasons.AddInfo(`User "%s" was previously bucketed into variation with ID "%s" for experiment "%s", but no matching variation was found.`, userContext.ID, savedVariationID, featureExperiment.Key)
-					o.logger.Warning(warningMessage)
-				}
-			}
+	// 		if savedVariationID, ok := userProfile.ExperimentBucketMap[decisionKey]; ok {
+	// 			if variation, ok := featureExperiment.Variations[savedVariationID]; ok {
+	// 				featureDecision.Variation = &variation
+	// 				infoMessage := reasons.AddInfo(`User "%s" was previously bucketed into variation "%s" of experiment "%s".`, userContext.ID, variation.Key, featureExperiment.Key)
+	// 				o.logger.Debug(infoMessage)
+	// 			} else {
+	// 				warningMessage := reasons.AddInfo(`User "%s" was previously bucketed into variation with ID "%s" for experiment "%s", but no matching variation was found.`, userContext.ID, savedVariationID, featureExperiment.Key)
+	// 				o.logger.Warning(warningMessage)
+	// 			}
+	// 		}
 
-			if featureDecision.Variation != nil {
-				featureDecision.Experiment = featureExperiment
-				featureDecision.Source = decision.FeatureTest
-				return featureDecision, reasons, nil
-			}
+	// 		if featureDecision.Variation != nil {
+	// 			featureDecision.Experiment = featureExperiment
+	// 			featureDecision.Source = decision.FeatureTest
+	// 			return featureDecision, reasons, nil
+	// 		}
 
-		}
+	// 	}
 
-		// if no saved decision found, bucket the user
-		featureDecision, reason, err := o.DecisionServiceWithoutUPS.GetFeatureDecision(decisionContext, userContext, options)
-		if err != nil {
-			return featureDecision, reason, err
-		}
-		decisionKey := decision.NewUserDecisionKey(featureDecision.Experiment.ID)
-		if userProfile.ExperimentBucketMap == nil {
-			userProfile.ExperimentBucketMap = make(map[decision.UserDecisionKey]string)
-		}
-		userProfile.ExperimentBucketMap[decisionKey] = featureDecision.Variation.ID
-		return featureDecision, reason, nil
-	}
+	// 	// if no saved decision found, bucket the user
+	// 	featureDecision, reason, err := o.DecisionServiceWithoutUPS.GetFeatureDecision(decisionContext, userContext, options)
+	// 	if err != nil {
+	// 		return featureDecision, reason, err
+	// 	}
+	// 	decisionKey := decision.NewUserDecisionKey(featureDecision.Experiment.ID)
+	// 	if userProfile.ExperimentBucketMap == nil {
+	// 		userProfile.ExperimentBucketMap = make(map[decision.UserDecisionKey]string)
+	// 	}
+	// 	userProfile.ExperimentBucketMap[decisionKey] = featureDecision.Variation.ID
+	// 	return featureDecision, reason, nil
+	// }
 	return o.DecisionService.GetFeatureDecision(decisionContext, userContext, options)
 }
 
