@@ -149,15 +149,25 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		appClient.DecisionService = f.decisionService
 	} else {
 		var experimentServiceOptions []decision.CESOptionFunc
+		var experimentServiceWithoutUPS []decision.CESOptionFunc
 		if f.userProfileService != nil {
+			appClient.UserProfileService = f.userProfileService
 			experimentServiceOptions = append(experimentServiceOptions, decision.WithUserProfileService(f.userProfileService))
 		}
 		if f.overrideStore != nil {
 			experimentServiceOptions = append(experimentServiceOptions, decision.WithOverrideStore(f.overrideStore))
+			experimentServiceWithoutUPS = append(experimentServiceWithoutUPS, decision.WithOverrideStore(f.overrideStore))
 		}
 		compositeExperimentService := decision.NewCompositeExperimentService(f.SDKKey, experimentServiceOptions...)
 		compositeService := decision.NewCompositeService(f.SDKKey, decision.WithCompositeExperimentService(compositeExperimentService))
 		appClient.DecisionService = compositeService
+
+		// Create a separate instance of composite service without user profile service
+		if f.userProfileService != nil {
+			compositeExperimentServiceWithoutUPS := decision.NewCompositeExperimentService(f.SDKKey, experimentServiceWithoutUPS...)
+			compositeServiceWithoutUPS := decision.NewCompositeService(f.SDKKey, decision.WithCompositeExperimentService(compositeExperimentServiceWithoutUPS))
+			appClient.DecisionServiceWithoutUPS = compositeServiceWithoutUPS
+		}
 	}
 
 	// Initialize the default services with the execution context

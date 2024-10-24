@@ -101,16 +101,18 @@ const (
 
 // OptimizelyClient is the entry point to the Optimizely SDK
 type OptimizelyClient struct {
-	ctx                  context.Context
-	ConfigManager        config.ProjectConfigManager
-	DecisionService      decision.Service
-	EventProcessor       event.Processor
-	OdpManager           odp.Manager
-	notificationCenter   notification.Center
-	execGroup            *utils.ExecGroup
-	logger               logging.OptimizelyLogProducer
-	defaultDecideOptions *decide.Options
-	tracer               tracing.Tracer
+	ctx                       context.Context
+	ConfigManager             config.ProjectConfigManager
+	DecisionService           decision.Service
+	DecisionServiceWithoutUPS decision.Service
+	UserProfileService        decision.UserProfileService
+	EventProcessor            event.Processor
+	OdpManager                odp.Manager
+	notificationCenter        notification.Center
+	execGroup                 *utils.ExecGroup
+	logger                    logging.OptimizelyLogProducer
+	defaultDecideOptions      *decide.Options
+	tracer                    tracing.Tracer
 }
 
 // CreateUserContext creates a context of the user for which decision APIs will be called.
@@ -130,7 +132,7 @@ func (o *OptimizelyClient) WithTraceContext(ctx context.Context) *OptimizelyClie
 	return o
 }
 
-func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string, options *decide.Options) OptimizelyDecision {
+func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, userProfile *decision.UserProfile, key string, options *decide.Options) OptimizelyDecision {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
@@ -182,7 +184,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	// To avoid cyclo-complexity warning
 	findRegularDecision := func() {
 		// regular decision
-		featureDecision, reasons, err = o.DecisionService.GetFeatureDecision(decisionContext, usrContext, &allOptions)
+		featureDecision, reasons, err = o.findRegularDecision(decisionContext, usrContext, userProfile, &allOptions)
 		decisionReasons.Append(reasons)
 	}
 
@@ -238,6 +240,48 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, userContext, reasonsToReport)
 }
 
+func (o *OptimizelyClient) findRegularDecision(decisionContext decision.FeatureDecisionContext, userContext entities.UserContext, userProfile *decision.UserProfile, options *decide.Options) (decision.FeatureDecision, decide.DecisionReasons, error) {
+	allOptions := o.getAllOptions(options)
+	if o.UserProfileService != nil && !allOptions.IgnoreUserProfileService {
+		featureDecision := decision.FeatureDecision{}
+		reasons := decide.NewDecisionReasons(options)
+		for _, featureExperiment := range decisionContext.Feature.FeatureExperiments {
+			decisionKey := decision.NewUserDecisionKey(featureExperiment.ID)
+
+			if savedVariationID, ok := userProfile.ExperimentBucketMap[decisionKey]; ok {
+				if variation, ok := featureExperiment.Variations[savedVariationID]; ok {
+					featureDecision.Variation = &variation
+					infoMessage := reasons.AddInfo(`User "%s" was previously bucketed into variation "%s" of experiment "%s".`, userContext.ID, variation.Key, featureExperiment.Key)
+					o.logger.Debug(infoMessage)
+				} else {
+					warningMessage := reasons.AddInfo(`User "%s" was previously bucketed into variation with ID "%s" for experiment "%s", but no matching variation was found.`, userContext.ID, savedVariationID, featureExperiment.Key)
+					o.logger.Warning(warningMessage)
+				}
+			}
+
+			if featureDecision.Variation != nil {
+				featureDecision.Experiment = featureExperiment
+				featureDecision.Source = decision.FeatureTest
+				return featureDecision, reasons, nil
+			}
+
+		}
+
+		// if no saved decision found, bucket the user
+		featureDecision, reason, err := o.DecisionServiceWithoutUPS.GetFeatureDecision(decisionContext, userContext, options)
+		if err != nil {
+			return featureDecision, reason, err
+		}
+		decisionKey := decision.NewUserDecisionKey(featureDecision.Experiment.ID)
+		if userProfile.ExperimentBucketMap == nil {
+			userProfile.ExperimentBucketMap = make(map[decision.UserDecisionKey]string)
+		}
+		userProfile.ExperimentBucketMap[decisionKey] = featureDecision.Variation.ID
+		return featureDecision, reason, nil
+	}
+	return o.DecisionService.GetFeatureDecision(decisionContext, userContext, options)
+}
+
 func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options *decide.Options) map[string]OptimizelyDecision {
 	var err error
 	defer func() {
@@ -269,12 +313,32 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 		return decisionMap
 	}
 
+	allOptions := o.getAllOptions(options)
+
+	var userProfile *decision.UserProfile
+	ignoreUserProfileSvc := o.UserProfileService == nil || allOptions.IgnoreUserProfileService
+	if !ignoreUserProfileSvc {
+		up := o.UserProfileService.Lookup(userContext.GetUserID())
+		if up.ID == "" {
+			up = decision.UserProfile{
+				ID:                  userContext.GetUserID(),
+				ExperimentBucketMap: make(map[decision.UserDecisionKey]string),
+			}
+		}
+		userProfile = &up
+	}
+	// userProfileBucketLen := len(userProfile.ExperimentBucketMap)
+
 	enabledFlagsOnly := o.getAllOptions(options).EnabledFlagsOnly
 	for _, key := range keys {
-		optimizelyDecision := o.decide(userContext, key, options)
+		optimizelyDecision := o.decide(userContext, userProfile, key, options)
 		if !enabledFlagsOnly || optimizelyDecision.Enabled {
 			decisionMap[key] = optimizelyDecision
 		}
+	}
+
+	if !ignoreUserProfileSvc && len(userProfile.ExperimentBucketMap) != 0 {
+		o.UserProfileService.Save(*userProfile)
 	}
 
 	return decisionMap
