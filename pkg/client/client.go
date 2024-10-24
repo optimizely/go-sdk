@@ -241,13 +241,33 @@ func (o *OptimizelyClient) findRegularDecision(decisionContext decision.FeatureD
 	}
 
 	featureDecision := decision.FeatureDecision{}
-	reasons := decide.NewDecisionReasons(options)
 	if decisionContext.Feature != nil {
 		for _, featureExperiment := range decisionContext.Feature.FeatureExperiments {
 			decisionKey := decision.NewUserDecisionKey(featureExperiment.ID)
 
-			if featureExperiment.Variations == nil {
-				continue
+			experimentDecisionContext := decision.ExperimentDecisionContext{
+				ProjectConfig: decisionContext.ProjectConfig,
+				Experiment:    &featureExperiment,
+			}
+
+			expDecision, reasons, err := decision.NewExperimentWhitelistService().GetDecision(experimentDecisionContext, userContext, options)
+			if err == nil && expDecision.Variation != nil {
+				featureDecision.Variation = expDecision.Variation
+				featureDecision.Experiment = featureExperiment
+				featureDecision.Source = decision.FeatureTest
+				return featureDecision, reasons, nil
+			}
+
+			if decisionContext.ForcedDecisionService != nil {
+				forcedDecision, _reasons, err := decisionContext.ForcedDecisionService.FindValidatedForcedDecision(decisionContext.ProjectConfig, decision.OptimizelyDecisionContext{FlagKey: decisionContext.Feature.Key, RuleKey: featureExperiment.Key}, options)
+				reasons.Append(_reasons)
+				if err == nil {
+					return decision.FeatureDecision{
+						Experiment: featureExperiment,
+						Variation:  forcedDecision,
+						Source:     decision.FeatureTest,
+					}, reasons, nil
+				}
 			}
 
 			if savedVariationID, ok := userProfile.ExperimentBucketMap[decisionKey]; ok {

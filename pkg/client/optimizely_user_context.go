@@ -151,7 +151,10 @@ func (o *OptimizelyUserContext) DecideAll(options []decide.OptimizelyDecideOptio
 func (o *OptimizelyUserContext) DecideForKeys(keys []string, options []decide.OptimizelyDecideOptions) map[string]OptimizelyDecision {
 	// use a copy of the user context so that any changes to the original context are not reflected inside the decision
 	userContextCopy := newOptimizelyUserContext(o.GetOptimizely(), o.GetUserID(), o.GetUserAttributes(), o.getForcedDecisionService(), o.GetQualifiedSegments())
-	return o.optimizely.decideForKeys(userContextCopy, keys, convertDecideOptions(options))
+	decideOptions := convertDecideOptions(options)
+	decisionMap := o.optimizely.decideForKeys(userContextCopy, keys, decideOptions)
+
+	return filteredDecision(decisionMap, o.optimizely.getAllOptions(decideOptions).EnabledFlagsOnly)
 }
 
 // TrackEvent generates a conversion event with the given event key if it exists and queues it up to be sent to the Optimizely
