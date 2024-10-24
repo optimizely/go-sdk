@@ -245,9 +245,10 @@ func (o *OptimizelyClient) findRegularDecision(decisionContext decision.FeatureD
 		for _, featureExperiment := range decisionContext.Feature.FeatureExperiments {
 			decisionKey := decision.NewUserDecisionKey(featureExperiment.ID)
 
+			fx := featureExperiment
 			experimentDecisionContext := decision.ExperimentDecisionContext{
 				ProjectConfig: decisionContext.ProjectConfig,
-				Experiment:    &featureExperiment,
+				Experiment:    &fx,
 			}
 
 			expDecision, reasons, err := decision.NewExperimentWhitelistService().GetDecision(experimentDecisionContext, userContext, options)
