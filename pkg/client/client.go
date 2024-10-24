@@ -316,6 +316,7 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 	allOptions := o.getAllOptions(options)
 
 	var userProfile *decision.UserProfile
+	userProfileBucketLen := 0
 	ignoreUserProfileSvc := o.UserProfileService == nil || allOptions.IgnoreUserProfileService
 	if !ignoreUserProfileSvc {
 		up := o.UserProfileService.Lookup(userContext.GetUserID())
@@ -326,8 +327,8 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 			}
 		}
 		userProfile = &up
+		userProfileBucketLen = len(userProfile.ExperimentBucketMap)
 	}
-	// userProfileBucketLen := len(userProfile.ExperimentBucketMap)
 
 	enabledFlagsOnly := o.getAllOptions(options).EnabledFlagsOnly
 	for _, key := range keys {
@@ -337,8 +338,10 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 		}
 	}
 
-	if !ignoreUserProfileSvc && len(userProfile.ExperimentBucketMap) != 0 {
-		o.UserProfileService.Save(*userProfile)
+	if !ignoreUserProfileSvc {
+		if userProfile != nil && len(userProfile.ExperimentBucketMap) > userProfileBucketLen {
+			o.UserProfileService.Save(*userProfile)
+		}
 	}
 
 	return decisionMap
