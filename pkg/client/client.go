@@ -330,12 +330,9 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 		userProfileBucketLen = len(userProfile.ExperimentBucketMap)
 	}
 
-	enabledFlagsOnly := o.getAllOptions(options).EnabledFlagsOnly
 	for _, key := range keys {
 		optimizelyDecision := o.decide(userContext, userProfile, key, options)
-		if !enabledFlagsOnly || optimizelyDecision.Enabled {
-			decisionMap[key] = optimizelyDecision
-		}
+		decisionMap[key] = optimizelyDecision
 	}
 
 	if !ignoreUserProfileSvc {
