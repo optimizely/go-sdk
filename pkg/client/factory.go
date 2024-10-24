@@ -148,7 +148,6 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 	if f.userProfileService != nil {
 		appClient.UserProfileService = f.userProfileService
 		var experimentServiceOptions []decision.CESOptionFunc
-		experimentServiceOptions = append(experimentServiceOptions, decision.WithUserProfileService(f.userProfileService))
 		if f.overrideStore != nil {
 			experimentServiceOptions = append(experimentServiceOptions, decision.WithOverrideStore(f.overrideStore))
 		}
@@ -162,7 +161,6 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 	} else {
 		var experimentServiceOptions []decision.CESOptionFunc
 		if f.userProfileService != nil {
-			appClient.UserProfileService = f.userProfileService
 			experimentServiceOptions = append(experimentServiceOptions, decision.WithUserProfileService(f.userProfileService))
 		}
 		if f.overrideStore != nil {
