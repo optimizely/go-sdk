@@ -76,6 +76,7 @@ func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecis
 				decisionContext.UserProfile.ExperimentBucketMap = make(map[UserDecisionKey]string)
 			}
 			decisionContext.UserProfile.ExperimentBucketMap[decisionKey] = experimentDecision.Variation.ID
+			decisionContext.UserProfile.HasUnsavedChange = true
 		}
 	}
 

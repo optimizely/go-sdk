@@ -291,8 +291,9 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 		decisionMap[key] = optimizelyDecision
 	}
 
-	if !ignoreUserProfileSvc && userProfile != nil {
+	if !ignoreUserProfileSvc && userProfile != nil && userProfile.HasUnsavedChange {
 		o.UserProfileService.Save(*userProfile)
+		userProfile.HasUnsavedChange = false
 	}
 
 	return decisionMap

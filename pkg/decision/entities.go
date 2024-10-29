@@ -94,4 +94,5 @@ func NewUserDecisionKey(experimentID string) UserDecisionKey {
 type UserProfile struct {
 	ID                  string
 	ExperimentBucketMap map[UserDecisionKey]string
+	HasUnsavedChange    bool
 }

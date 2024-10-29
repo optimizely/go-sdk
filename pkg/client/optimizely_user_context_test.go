@@ -884,6 +884,7 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsBypassUps() {
 	// should return variationId2 set by UPS
 	s.Equal(variationKey2, decision.VariationKey)
 	userProfileService.AssertCalled(s.T(), "Lookup", s.userID)
+	userProfileService.AssertNotCalled(s.T(), "Save", mock.Anything)
 
 	options = append(options, decide.IgnoreUserProfileService)
 	decision = userContext.Decide(flagKey, options)
@@ -893,6 +894,8 @@ func (s *OptimizelyUserContextTestSuite) TestDecideOptionsBypassUps() {
 	// should not lookup, ignore variationId2 set by UPS and return variationId1
 	s.Equal(variationKey1, decision.VariationKey)
 	userProfileService.AssertNumberOfCalls(s.T(), "Lookup", 1)
+	// also should not save either
+	userProfileService.AssertNotCalled(s.T(), "Save", mock.Anything)
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDecideOptionsExcludeVariables() {
@@ -1219,71 +1222,19 @@ func (s *OptimizelyUserContextTestSuite) TestForcedDecision() {
 }
 
 func (s *OptimizelyUserContextTestSuite) TestDecideAllFlagsWithBatchUPS() {
-	experimentID1 := "10420810910"
-	experimentID2 := "10420810911"
-	experimentID3 := "10420810912"
-	variationID1 := "10418510623"
-	variationID2 := "10418510624"
-	variationID3 := "10418510625"
-
 	userProfileService := new(MockUserProfileService)
 	s.OptimizelyClient, _ = s.factory.Client(
 		WithEventProcessor(s.eventProcessor),
 		WithUserProfileService(userProfileService),
 	)
-
-	decisionKey1 := decision.NewUserDecisionKey(experimentID1)
-	decisionKey2 := decision.NewUserDecisionKey(experimentID2)
-	decisionKey3 := decision.NewUserDecisionKey(experimentID3)
 	savedUserProfile := decision.UserProfile{
 		ID: s.userID,
-		ExperimentBucketMap: map[decision.UserDecisionKey]string{
-			decisionKey1: variationID1,
-			decisionKey2: variationID2,
-			decisionKey3: variationID3,
-		},
 	}
 	userProfileService.On("Lookup", s.userID).Return(savedUserProfile)
 	userProfileService.On("Save", mock.Anything)
 
-	user := s.OptimizelyClient.CreateUserContext(s.userID, map[string]interface{}{"gender": "f"})
+	user := s.OptimizelyClient.CreateUserContext(s.userID, nil)
 	decisions := user.DecideAll(nil)
-	s.Len(decisions, 3)
-
-	userProfileService.AssertNumberOfCalls(s.T(), "Lookup", 1)
-	userProfileService.AssertNumberOfCalls(s.T(), "Save", 1)
-}
-
-func (s *OptimizelyUserContextTestSuite) TestDecideForKeysFlagsWithBatchUPS() {
-	experimentID1 := "10420810910"
-	experimentID2 := "10420810911"
-	experimentID3 := "10420810912"
-	variationID1 := "10418510623"
-	variationID2 := "10418510624"
-	variationID3 := "10418510625"
-
-	userProfileService := new(MockUserProfileService)
-	s.OptimizelyClient, _ = s.factory.Client(
-		WithEventProcessor(s.eventProcessor),
-		WithUserProfileService(userProfileService),
-	)
-
-	decisionKey1 := decision.NewUserDecisionKey(experimentID1)
-	decisionKey2 := decision.NewUserDecisionKey(experimentID2)
-	decisionKey3 := decision.NewUserDecisionKey(experimentID3)
-	savedUserProfile := decision.UserProfile{
-		ID: s.userID,
-		ExperimentBucketMap: map[decision.UserDecisionKey]string{
-			decisionKey1: variationID1,
-			decisionKey2: variationID2,
-			decisionKey3: variationID3,
-		},
-	}
-	userProfileService.On("Lookup", s.userID).Return(savedUserProfile)
-	userProfileService.On("Save", mock.Anything)
-
-	user := s.OptimizelyClient.CreateUserContext(s.userID, map[string]interface{}{"gender": "f"})
-	decisions := user.DecideForKeys([]string{"feature-1", "feature-2", "feature-3"}, nil)
 	s.Len(decisions, 3)
 
 	userProfileService.AssertNumberOfCalls(s.T(), "Lookup", 1)
