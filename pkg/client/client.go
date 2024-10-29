@@ -273,7 +273,6 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 	allOptions := o.getAllOptions(options)
 
 	var userProfile *decision.UserProfile
-	userProfileLen := 0
 	ignoreUserProfileSvc := o.UserProfileService == nil || allOptions.IgnoreUserProfileService
 	if !ignoreUserProfileSvc {
 		up := o.UserProfileService.Lookup(userContext.GetUserID())
@@ -285,7 +284,6 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 		}
 		userProfile = &up
 		userContext.userProfile = userProfile
-		userProfileLen = len(userProfile.ExperimentBucketMap)
 	}
 
 	for _, key := range keys {
@@ -293,11 +291,8 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 		decisionMap[key] = optimizelyDecision
 	}
 
-	if !ignoreUserProfileSvc {
-		isUserProfileUpdated := userProfile != nil && len(userProfile.ExperimentBucketMap) != userProfileLen
-		if isUserProfileUpdated {
-			o.UserProfileService.Save(*userProfile)
-		}
+	if !ignoreUserProfileSvc && userProfile != nil {
+		o.UserProfileService.Save(*userProfile)
 	}
 
 	return decisionMap
