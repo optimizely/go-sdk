@@ -95,24 +95,3 @@ type UserProfile struct {
 	ID                  string
 	ExperimentBucketMap map[UserDecisionKey]string
 }
-
-// DeepCopy creates a deep copy of the UserProfile.
-func (up *UserProfile) DeepCopy() *UserProfile {
-	if up == nil {
-		return nil
-	}
-
-	userProfileCopy := UserProfile{
-		ID: up.ID,
-	}
-
-	// Deep copy the ExperimentBucketMap
-	if up.ExperimentBucketMap != nil {
-		userProfileCopy.ExperimentBucketMap = make(map[UserDecisionKey]string)
-		for k, v := range up.ExperimentBucketMap {
-			userProfileCopy.ExperimentBucketMap[k] = v
-		}
-	}
-
-	return &userProfileCopy
-}

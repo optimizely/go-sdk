@@ -89,7 +89,7 @@ func (p PersistingExperimentService) getSavedDecision(decisionContext Experiment
 	if decisionContext.UserProfile == nil {
 		userProfile = p.userProfileService.Lookup(userContext.ID)
 	} else {
-		userProfile = *decisionContext.UserProfile.DeepCopy()
+		userProfile = *decisionContext.UserProfile
 	}
 
 	// look up experiment decision from user profile
