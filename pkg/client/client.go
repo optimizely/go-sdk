@@ -104,6 +104,7 @@ type OptimizelyClient struct {
 	ctx                  context.Context
 	ConfigManager        config.ProjectConfigManager
 	DecisionService      decision.Service
+	UserProfileService   decision.UserProfileService
 	EventProcessor       event.Processor
 	OdpManager           odp.Manager
 	notificationCenter   notification.Center
@@ -130,7 +131,7 @@ func (o *OptimizelyClient) WithTraceContext(ctx context.Context) *OptimizelyClie
 	return o
 }
 
-func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string, options *decide.Options) OptimizelyDecision {
+func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string, options *decide.Options) OptimizelyDecision {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
@@ -153,16 +154,17 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 
 	decisionContext := decision.FeatureDecisionContext{
 		ForcedDecisionService: userContext.forcedDecisionService,
+		UserProfile:           userContext.userProfile,
 	}
 	projectConfig, err := o.getProjectConfig()
 	if err != nil {
-		return NewErrorDecision(key, userContext, decide.GetDecideError(decide.SDKNotReady))
+		return NewErrorDecision(key, *userContext, decide.GetDecideError(decide.SDKNotReady))
 	}
 	decisionContext.ProjectConfig = projectConfig
 
 	feature, err := projectConfig.GetFeatureByKey(key)
 	if err != nil {
-		return NewErrorDecision(key, userContext, decide.GetDecideError(decide.FlagKeyInvalid, key))
+		return NewErrorDecision(key, *userContext, decide.GetDecideError(decide.FlagKeyInvalid, key))
 	}
 	decisionContext.Feature = &feature
 
@@ -235,7 +237,7 @@ func (o *OptimizelyClient) decide(userContext OptimizelyUserContext, key string,
 		}
 	}
 
-	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, userContext, reasonsToReport)
+	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, *userContext, reasonsToReport)
 }
 
 func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options *decide.Options) map[string]OptimizelyDecision {
@@ -268,13 +270,30 @@ func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys
 	if len(keys) == 0 {
 		return decisionMap
 	}
+	allOptions := o.getAllOptions(options)
 
-	enabledFlagsOnly := o.getAllOptions(options).EnabledFlagsOnly
-	for _, key := range keys {
-		optimizelyDecision := o.decide(userContext, key, options)
-		if !enabledFlagsOnly || optimizelyDecision.Enabled {
-			decisionMap[key] = optimizelyDecision
+	var userProfile *decision.UserProfile
+	ignoreUserProfileSvc := o.UserProfileService == nil || allOptions.IgnoreUserProfileService
+	if !ignoreUserProfileSvc {
+		up := o.UserProfileService.Lookup(userContext.GetUserID())
+		if up.ID == "" {
+			up = decision.UserProfile{
+				ID:                  userContext.GetUserID(),
+				ExperimentBucketMap: map[decision.UserDecisionKey]string{},
+			}
 		}
+		userProfile = &up
+		userContext.userProfile = userProfile
+	}
+
+	for _, key := range keys {
+		optimizelyDecision := o.decide(&userContext, key, options)
+		decisionMap[key] = optimizelyDecision
+	}
+
+	if !ignoreUserProfileSvc && userProfile != nil && userProfile.HasUnsavedChange {
+		o.UserProfileService.Save(*userProfile)
+		userProfile.HasUnsavedChange = false
 	}
 
 	return decisionMap
@@ -1076,6 +1095,7 @@ func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userConte
 	decisionContext = decision.ExperimentDecisionContext{
 		Experiment:    &experiment,
 		ProjectConfig: projectConfig,
+		UserProfile:   nil,
 	}
 
 	options := &decide.Options{}

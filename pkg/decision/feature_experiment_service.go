@@ -64,6 +64,7 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 		experimentDecisionContext := ExperimentDecisionContext{
 			Experiment:    &experiment,
 			ProjectConfig: decisionContext.ProjectConfig,
+			UserProfile:   decisionContext.UserProfile,
 		}
 
 		experimentDecision, decisionReasons, err := f.compositeExperimentService.GetDecision(experimentDecisionContext, userContext, options)
