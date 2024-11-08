@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [2.1.0] - November 5, 2024
+## [2.1.0] - November 8, 2024
 
 ### Enhancements
 - **Batch Processing for User Profile Service (UPS)**: Added support for batch processing in `decideAll` and `decideForKeys`, enabling more efficient handling of multiple decisions in the User Profile Service. ([#394](https://github.com/optimizely/go-sdk/pull/394))
