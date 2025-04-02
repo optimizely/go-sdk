@@ -97,6 +97,12 @@ const (
 	SpanNameGetOptimizelyConfig = "GetOptimizelyConfig"
 	// SpanNameGetDecisionVariableMap is the name of the span used by the Optimizely SDK for tracing getDecisionVariableMap call
 	SpanNameGetDecisionVariableMap = "getDecisionVariableMap"
+	// SpanNameGetCMABDecision is the name of the span used by the Optimizely SDK for tracing GetCMABDecision call
+    SpanNameGetCMABDecision = "GetCMABDecision"
+    // SpanNameResetCMABCache is the name of the span used by the Optimizely SDK for tracing ResetCMABCache call
+    SpanNameResetCMABCache = "ResetCMABCache"
+    // SpanNameInvalidateUserCMABCache is the name of the span used by the Optimizely SDK for tracing InvalidateUserCMABCache call
+    SpanNameInvalidateUserCMABCache = "InvalidateUserCMABCache"
 )
 
 // OptimizelyClient is the entry point to the Optimizely SDK
@@ -112,6 +118,7 @@ type OptimizelyClient struct {
 	logger               logging.OptimizelyLogProducer
 	defaultDecideOptions *decide.Options
 	tracer               tracing.Tracer
+	cmabService          decision.CmabService
 }
 
 // CreateUserContext creates a context of the user for which decision APIs will be called.
@@ -1243,4 +1250,127 @@ func (o *OptimizelyClient) getDecisionVariableMap(feature entities.Feature, vari
 
 func isNil(v interface{}) bool {
 	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
+}
+
+// GetCMABDecision returns a variation for a CMAB experiment
+func (o *OptimizelyClient) GetCMABDecision(ruleID string, userContext OptimizelyUserContext, options ...decide.OptimizelyDecideOptions) (result *decision.CmabDecision, err error) {
+    defer func() {
+        if r := recover(); r != nil {
+            switch t := r.(type) {
+            case error:
+                err = t
+            case string:
+                err = errors.New(t)
+            default:
+                err = errors.New("unexpected error")
+            }
+            errorMessage := "GetCMABDecision call, optimizely SDK is panicking with the error:"
+            o.logger.Error(errorMessage, err)
+            o.logger.Debug(string(debug.Stack()))
+        }
+    }()
+
+    _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameGetCMABDecision)
+    defer span.End()
+
+    projectConfig, err := o.getProjectConfig()
+    if err != nil {
+        o.logger.Error("Optimizely instance is not valid, failing GetCMABDecision call.", err)
+        return nil, err
+    }
+
+    // Convert decide options to CmabDecisionOptions
+    cmabOptions := &decision.CmabDecisionOptions{
+        IncludeReasons: false,
+    }
+
+    for _, opt := range options {
+        switch opt {
+        case decide.IgnoreCMABCache:
+            cmabOptions.IgnoreCmabCache = true
+        case decide.IncludeReasons:
+            cmabOptions.IncludeReasons = true
+        }
+    }
+
+    // Create user context for CMAB service
+    cmabUserContext := entities.UserContext{
+        ID:         userContext.GetUserID(),
+        Attributes: userContext.GetUserAttributes(),
+    }
+
+    // Call CMAB service - use the config.ProjectConfig interface
+    cmabDecision, err := o.cmabService.GetDecision(projectConfig, cmabUserContext, ruleID, cmabOptions)
+    if err != nil {
+        o.logger.Error(fmt.Sprintf("Error getting CMAB decision: %v", err), nil)
+        return nil, err
+    }
+
+    return &cmabDecision, nil
+}
+
+// ResetCMABCache resets the entire CMAB cache
+func (o *OptimizelyClient) ResetCMABCache() error {
+    var err error
+    defer func() {
+        if r := recover(); r != nil {
+            switch t := r.(type) {
+            case error:
+                err = t
+            case string:
+                err = errors.New(t)
+            default:
+                err = errors.New("unexpected error")
+            }
+            errorMessage := "ResetCMABCache call, optimizely SDK is panicking with the error:"
+            o.logger.Error(errorMessage, err)
+            o.logger.Debug(string(debug.Stack()))
+        }
+    }()
+
+    _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameResetCMABCache)
+    defer span.End()
+
+    if _, err = o.getProjectConfig(); err != nil {
+        o.logger.Error("Optimizely instance is not valid, failing ResetCMABCache call.", err)
+        return err
+    }
+
+    o.logger.Debug("Resetting CMAB cache")
+
+    // Call the interface method instead of accessing fields directly
+    return o.cmabService.ResetCache()
+}
+
+// InvalidateUserCMABCache invalidates cache entries for a specific user
+func (o *OptimizelyClient) InvalidateUserCMABCache(userID string) error {
+    var err error
+    defer func() {
+        if r := recover(); r != nil {
+            switch t := r.(type) {
+            case error:
+                err = t
+            case string:
+                err = errors.New(t)
+            default:
+                err = errors.New("unexpected error")
+            }
+            errorMessage := "InvalidateUserCMABCache call, optimizely SDK is panicking with the error:"
+            o.logger.Error(errorMessage, err)
+            o.logger.Debug(string(debug.Stack()))
+        }
+    }()
+
+    _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameInvalidateUserCMABCache)
+    defer span.End()
+
+    if _, err = o.getProjectConfig(); err != nil {
+        o.logger.Error("Optimizely instance is not valid, failing InvalidateUserCMABCache call.", err)
+        return err
+    }
+
+    o.logger.Debug(fmt.Sprintf("Invalidating CMAB cache for user %s", userID))
+
+    // Call the interface method instead of accessing fields directly
+    return o.cmabService.InvalidateUserCache(userID)
 }

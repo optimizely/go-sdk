@@ -13,6 +13,77 @@ import (
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
 
+// /************* CMAB Example ********************/
+
+// func cmabExample() {
+//     sdkKey := "RZKHh5HhUExLvpeieGZnD"
+//     logging.SetLogLevel(logging.LogLevelDebug)
+
+//     fmt.Println("\n/************* CMAB Example ********************/")
+
+//     // Initialize client with CMAB support
+//     optimizelyFactory := &client.OptimizelyFactory{
+//         SDKKey: sdkKey,
+//     }
+
+//     optimizelyClient, err := optimizelyFactory.Client()
+//     if err != nil {
+//         fmt.Printf("Error instantiating client: %s\n", err)
+//         return
+//     }
+//     defer optimizelyClient.Close()
+
+//     // Create user context with attributes that might influence CMAB decisions
+//     userContext := optimizelyClient.CreateUserContext("user123", map[string]interface{}{
+//         "age":      28,
+//         "location": "San Francisco",
+//         "device":   "mobile",
+//     })
+
+//     // Get CMAB decision with reasons included
+// 	cmabDecision, err := optimizelyClient.GetCMABDecision("cmab-rule-123", userContext, client.IncludeReasons)
+//     if err != nil {
+//         fmt.Printf("Error getting CMAB decision: %s\n", err)
+//         return
+//     }
+
+//     // Display decision details
+//     fmt.Printf("CMAB Decision for rule %s and user %s:\n", cmabDecision.RuleID, cmabDecision.UserID)
+//     fmt.Printf("  Variant ID: %s\n", cmabDecision.VariantID)
+//     fmt.Printf("  Attributes: %v\n", cmabDecision.Attributes)
+
+//     if len(cmabDecision.Reasons) > 0 {
+//         fmt.Println("  Reasons:")
+//         for _, reason := range cmabDecision.Reasons {
+//             fmt.Printf("    - %s\n", reason)
+//         }
+//     }
+
+//     // Demonstrate cache usage
+//     fmt.Println("\nGetting second decision (should use cache):")
+// 	secondDecision, _ := optimizelyClient.GetCMABDecision("cmab-rule-123", userContext, client.IncludeReasons)
+//     if len(secondDecision.Reasons) > 0 {
+//         for _, reason := range secondDecision.Reasons {
+//             fmt.Printf("    - %s\n", reason)
+//         }
+//     }
+
+//     // Demonstrate cache invalidation
+//     fmt.Println("\nInvalidating user cache and getting new decision:")
+//     _ = optimizelyClient.InvalidateUserCMABCache(userContext.GetUserID())
+// 	thirdDecision, _ := optimizelyClient.GetCMABDecision("cmab-rule-123", userContext, client.IncludeReasons)
+//     if len(thirdDecision.Reasons) > 0 {
+//         for _, reason := range thirdDecision.Reasons {
+//             fmt.Printf("    - %s\n", reason)
+//         }
+//     }
+
+//     // Demonstrate full cache reset
+//     fmt.Println("\nResetting entire CMAB cache:")
+//     _ = optimizelyClient.ResetCMABCache()
+//     fmt.Println("Cache reset complete")
+// }
+
 func main() {
 	sdkKey := "RZKHh5HhUExLvpeieGZnD"
 	logging.SetLogLevel(logging.LogLevelDebug)
@@ -95,4 +166,7 @@ func main() {
 	)
 
 	optimizelyClient.Close()
+
+	// /************* Contextual Multi-Armed Bandit Example (CMAB) ********************/
+    // cmabExample()
 }

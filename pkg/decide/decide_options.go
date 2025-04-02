@@ -33,6 +33,8 @@ const (
 	IncludeReasons OptimizelyDecideOptions = "INCLUDE_REASONS"
 	// ExcludeVariables when set, excludes variable values from the decision result.
 	ExcludeVariables OptimizelyDecideOptions = "EXCLUDE_VARIABLES"
+	// IgnoreCMABCache instructs the SDK to ignore the CMAB cache and make a fresh request
+    IgnoreCMABCache OptimizelyDecideOptions = "IGNORE_CMAB_CACHE"
 )
 
 // Options defines options for controlling flag decisions.
