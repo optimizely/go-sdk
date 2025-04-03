@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020,2022-2024 Optimizely, Inc. and contributors          *
+ * Copyright 2019-2020,2022-2025 Optimizely, Inc. and contributors          *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -59,6 +59,9 @@ type OptimizelyFactory struct {
 	segmentsCacheTimeout time.Duration
 	odpDisabled          bool
 	odpManager           odp.Manager
+
+	// CMAB
+    cmabService decision.CmabService
 }
 
 // OptionFunc is used to provide custom client configuration to the OptimizelyFactory.
@@ -171,6 +174,16 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 
 	if batchProcessor, ok := appClient.EventProcessor.(*event.BatchEventProcessor); ok {
 		eg.Go(batchProcessor.Start)
+	}
+
+	// Initialize CMAB service if not provided
+    // Initialize CMAB service
+	if f.cmabService != nil {
+		appClient.cmabService = f.cmabService
+	} else {
+		appClient.cmabService = decision.NewDefaultCmabService(
+			decision.WithCmabLogger(logging.GetLogger(f.SDKKey, "CmabService")),
+		)
 	}
 
 	// Initialize and Start odp manager if possible
@@ -409,4 +422,11 @@ func convertDecideOptions(options []decide.OptimizelyDecideOptions) *decide.Opti
 		}
 	}
 	return &finalOptions
+}
+
+// WithCmabService sets the CMAB service on a client.
+func WithCmabService(cmabService decision.CmabService) OptionFunc {
+    return func(f *OptimizelyFactory) {
+        f.cmabService = cmabService
+    }
 }
