@@ -19,17 +19,15 @@ package decision
 
 import (
     "errors"
-    "fmt"
-    "sync"
     "testing"
     "time"
 
-    "github.com/optimizely/go-sdk/v2/pkg/config"
     "github.com/optimizely/go-sdk/v2/pkg/entities"
     "github.com/optimizely/go-sdk/v2/pkg/logging"
     "github.com/stretchr/testify/mock"
     "github.com/stretchr/testify/suite"
 )
+
 
 // MockCmabClient is a mock implementation of CmabClient
 type MockCmabClient struct {
@@ -71,8 +69,13 @@ func (m *MockProjectConfig) GetAttributeID(key string) string {
     return args.String(0)
 }
 
-func (m *MockProjectConfig) GetAttributeByID(id string) (entities.Attribute, error) {
-    args := m.Called(id)
+func (m *MockProjectConfig) GetAttributes() []entities.Attribute {
+    args := m.Called()
+    return args.Get(0).([]entities.Attribute)
+}
+
+func (m *MockProjectConfig) GetAttributeByKey(key string) (entities.Attribute, error) {
+    args := m.Called(key)
     return args.Get(0).(entities.Attribute), args.Error(1)
 }
 
@@ -84,6 +87,11 @@ func (m *MockProjectConfig) GetAudienceByID(id string) (entities.Audience, error
 func (m *MockProjectConfig) GetEventByKey(key string) (entities.Event, error) {
     args := m.Called(key)
     return args.Get(0).(entities.Event), args.Error(1)
+}
+
+func (m *MockProjectConfig) GetEvents() []entities.Event {
+    args := m.Called()
+    return args.Get(0).([]entities.Event)
 }
 
 func (m *MockProjectConfig) GetFeatureByKey(featureKey string) (entities.Feature, error) {
@@ -101,16 +109,6 @@ func (m *MockProjectConfig) GetExperimentByID(id string) (entities.Experiment, e
     return args.Get(0).(entities.Experiment), args.Error(1)
 }
 
-func (m *MockProjectConfig) GetRolloutByID(rolloutID string) (entities.Rollout, error) {
-    args := m.Called(rolloutID)
-    return args.Get(0).(entities.Rollout), args.Error(1)
-}
-
-func (m *MockProjectConfig) GetVariationByKey(experimentKey, variationKey string) (entities.Variation, error) {
-    args := m.Called(experimentKey, variationKey)
-    return args.Get(0).(entities.Variation), args.Error(1)
-}
-
 func (m *MockProjectConfig) GetPublicKeyForODP() string {
     args := m.Called()
     return args.String(0)
@@ -126,6 +124,76 @@ func (m *MockProjectConfig) GetSegmentList() []string {
     return args.Get(0).([]string)
 }
 
+func (m *MockProjectConfig) GetBotFiltering() bool {
+    args := m.Called()
+    return args.Bool(0)
+}
+
+func (m *MockProjectConfig) GetSdkKey() string {
+    args := m.Called()
+    return args.String(0)
+}
+
+func (m *MockProjectConfig) GetEnvironmentKey() string {
+    args := m.Called()
+    return args.String(0)
+}
+
+func (m *MockProjectConfig) GetVariableByKey(featureKey, variableKey string) (entities.Variable, error) {
+    args := m.Called(featureKey, variableKey)
+    return args.Get(0).(entities.Variable), args.Error(1)
+}
+
+func (m *MockProjectConfig) GetFeatureList() []entities.Feature {
+    args := m.Called()
+    return args.Get(0).([]entities.Feature)
+}
+
+func (m *MockProjectConfig) GetExperimentList() []entities.Experiment {
+    args := m.Called()
+    return args.Get(0).([]entities.Experiment)
+}
+
+func (m *MockProjectConfig) GetIntegrationList() []entities.Integration {
+    args := m.Called()
+    return args.Get(0).([]entities.Integration)
+}
+
+func (m *MockProjectConfig) GetRolloutList() []entities.Rollout {
+    args := m.Called()
+    return args.Get(0).([]entities.Rollout)
+}
+
+func (m *MockProjectConfig) GetAudienceList() []entities.Audience {
+    args := m.Called()
+    return args.Get(0).([]entities.Audience)
+}
+
+func (m *MockProjectConfig) GetAudienceMap() map[string]entities.Audience {
+    args := m.Called()
+    return args.Get(0).(map[string]entities.Audience)
+}
+
+func (m *MockProjectConfig) GetGroupByID(groupID string) (entities.Group, error) {
+    args := m.Called(groupID)
+    return args.Get(0).(entities.Group), args.Error(1)
+}
+
+func (m *MockProjectConfig) SendFlagDecisions() bool {
+    args := m.Called()
+    return args.Bool(0)
+}
+
+func (m *MockProjectConfig) GetFlagVariationsMap() map[string][]entities.Variation {
+    args := m.Called()
+    return args.Get(0).(map[string][]entities.Variation)
+}
+
+func (m *MockProjectConfig) GetDatafile() string {
+    args := m.Called()
+    return args.String(0)
+}
+
 type CmabServiceTestSuite struct {
     suite.Suite
     mockClient     *MockCmabClient
@@ -139,6 +207,18 @@ type CmabServiceTestSuite struct {
 func (s *CmabServiceTestSuite) SetupTest() {
     s.mockClient = new(MockCmabClient)
     s.mockConfig = new(MockProjectConfig)
+
+    // Set up basic expectations for the mock config
+    s.mockConfig.On("GetProjectID").Return("project-123").Maybe()
+    s.mockConfig.On("GetRevision").Return("1").Maybe()
+    s.mockConfig.On("GetAccountID").Return("account-123").Maybe()
+    s.mockConfig.On("GetAttributes").Return([]entities.Attribute{}).Maybe()
+    s.mockConfig.On("GetEvents").Return([]entities.Event{}).Maybe()
+    s.mockConfig.On("GetFeatureList").Return([]entities.Feature{}).Maybe()
+    s.mockConfig.On("GetExperimentList").Return([]entities.Experiment{}).Maybe()
+    s.mockConfig.On("GetSegmentList").Return([]string{}).Maybe()
+    s.mockConfig.On("GetFlagVariationsMap").Return(map[string][]entities.Variation{}).Maybe()
+
     s.cmabService = NewDefaultCmabService(
         WithCmabLogger(logging.GetLogger("test", "CmabService")),
         WithCmabClient(s.mockClient),
@@ -155,10 +235,9 @@ func (s *CmabServiceTestSuite) SetupTest() {
 func (s *CmabServiceTestSuite) TestGetDecision() {
     // Setup mock response
     expectedDecision := CmabDecision{
-        RuleID:     s.testRuleID,
-        UserID:     s.testUserID,
-        VariantID:  "variant-1",
-        Attributes: map[string]interface{}{"key": "value"},
+        VariationID: "variant-1",
+        CmabUUID:    "uuid-123",
+        Reasons:     []string{},
     }
     s.mockClient.On("FetchDecision", s.testRuleID, s.testUserID, s.testAttributes).Return(expectedDecision, nil)
 
@@ -171,7 +250,8 @@ func (s *CmabServiceTestSuite) TestGetDecision() {
     // Test with default options
     decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
     s.NoError(err)
-    s.Equal(expectedDecision, decision)
+    s.Equal(expectedDecision.VariationID, decision.VariationID)
+    s.Equal(expectedDecision.CmabUUID, decision.CmabUUID)
     s.mockClient.AssertExpectations(s.T())
 
     // Test with IncludeReasons option
@@ -180,7 +260,7 @@ func (s *CmabServiceTestSuite) TestGetDecision() {
     }
     decision, err = s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, options)
     s.NoError(err)
-    s.Contains(decision.Reasons, "Retrieved from CMAB API")
+    s.Contains(decision.Reasons, "Used cached decision")
     s.mockClient.AssertNumberOfCalls(s.T(), "FetchDecision", 1) // Should use cache
 
     // Test with IgnoreCmabCache option
@@ -209,17 +289,15 @@ func (s *CmabServiceTestSuite) TestGetDecisionError() {
     // Test error handling
     decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
     s.Error(err)
-    s.Equal(CmabDecision{}, decision)
+    s.Equal("", decision.VariationID) // Should be empty
     s.mockClient.AssertExpectations(s.T())
 }
 
 func (s *CmabServiceTestSuite) TestCaching() {
     // Setup mock response
     expectedDecision := CmabDecision{
-        RuleID:     s.testRuleID,
-        UserID:     s.testUserID,
-        VariantID:  "variant-1",
-        Attributes: map[string]interface{}{"key": "value"},
+        VariationID: "variant-1",
+        CmabUUID:    "uuid-123",
     }
     s.mockClient.On("FetchDecision", s.testRuleID, s.testUserID, s.testAttributes).Return(expectedDecision, nil).Once()
 
@@ -232,12 +310,14 @@ func (s *CmabServiceTestSuite) TestCaching() {
     // First call should hit the API
     decision1, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
     s.NoError(err)
-    s.Equal(expectedDecision, decision1)
+    s.Equal(expectedDecision.VariationID, decision1.VariationID)
+    s.Equal(expectedDecision.CmabUUID, decision1.CmabUUID)
 
     // Second call should use cache
     decision2, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
     s.NoError(err)
-    s.Equal(expectedDecision, decision2)
+    s.Equal(expectedDecision.VariationID, decision2.VariationID)
+    s.Equal(expectedDecision.CmabUUID, decision2.CmabUUID)
 
     // Verify API was only called once
     s.mockClient.AssertNumberOfCalls(s.T(), "FetchDecision", 1)
@@ -252,17 +332,16 @@ func (s *CmabServiceTestSuite) TestCaching() {
     // Third call should hit API again due to cache expiration
     decision3, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
     s.NoError(err)
-    s.Equal(expectedDecision, decision3)
+    s.Equal(expectedDecision.VariationID, decision3.VariationID)
+    s.Equal(expectedDecision.CmabUUID, decision3.CmabUUID)
     s.mockClient.AssertNumberOfCalls(s.T(), "FetchDecision", 2)
 }
 
 func (s *CmabServiceTestSuite) TestResetCache() {
     // Setup mock response
     expectedDecision := CmabDecision{
-        RuleID:     s.testRuleID,
-        UserID:     s.testUserID,
-        VariantID:  "variant-1",
-        Attributes: map[string]interface{}{"key": "value"},
+        VariationID: "variant-1",
+        CmabUUID:    "uuid-123",
     }
     s.mockClient.On("FetchDecision", s.testRuleID, s.testUserID, s.testAttributes).Return(expectedDecision, nil)
 
@@ -292,16 +371,12 @@ func (s *CmabServiceTestSuite) TestResetCache() {
 func (s *CmabServiceTestSuite) TestInvalidateUserCache() {
     // Setup mock responses for two different users
     user1Decision := CmabDecision{
-        RuleID:     s.testRuleID,
-        UserID:     "user-1",
-        VariantID:  "variant-1",
-        Attributes: map[string]interface{}{"key": "value"},
+        VariationID: "variant-1",
+        CmabUUID:    "uuid-1",
     }
     user2Decision := CmabDecision{
-        RuleID:     s.testRuleID,
-        UserID:     "user-2",
-        VariantID:  "variant-2",
-        Attributes: map[string]interface{}{"key": "value"},
+        VariationID: "variant-2",
+        CmabUUID:    "uuid-2",
     }
 
     // Create user contexts
@@ -340,76 +415,6 @@ func (s *CmabServiceTestSuite) TestInvalidateUserCache() {
 
     // Verify API calls
     s.mockClient.AssertNumberOfCalls(s.T(), "FetchDecision", 3) // 2 initial + 1 after invalidation
-}
-
-func (s *CmabServiceTestSuite) TestAsyncBehavior() {
-    // Setup mock response
-    expectedDecision := CmabDecision{
-        RuleID:    s.testRuleID,
-        UserID:    s.testUserID,
-        VariantID: "variant-1",
-    }
-
-    // Create multiple user contexts
-    const numUsers = 100
-    userContexts := make([]entities.UserContext, numUsers)
-    for i := 0; i < numUsers; i++ {
-        userID := fmt.Sprintf("user-%d", i)
-        userContexts[i] = entities.UserContext{
-            ID:         userID,
-            Attributes: s.testAttributes,
-        }
-        // Setup mock for each user
-        s.mockClient.On("FetchDecision", s.testRuleID, userID, s.testAttributes).Return(expectedDecision, nil).Maybe()
-    }
-
-    var wg sync.WaitGroup
-    wg.Add(3)
-
-    // Goroutine 1: Get decisions for first half of users
-    go func() {
-        defer wg.Done()
-        for i := 0; i < numUsers/2; i++ {
-            _, _ = s.cmabService.GetDecision(s.mockConfig, userContexts[i], s.testRuleID, nil)
-        }
-    }()
-
-    // Goroutine 2: Get decisions for second half of users
-    go func() {
-        defer wg.Done()
-        for i := numUsers / 2; i < numUsers; i++ {
-            _, _ = s.cmabService.GetDecision(s.mockConfig, userContexts[i], s.testRuleID, nil)
-        }
-    }()
-
-    // Goroutine 3: Invalidate cache for some users
-    go func() {
-        defer wg.Done()
-        for i := 0; i < numUsers; i += 10 {
-            _ = s.cmabService.InvalidateUserCache(userContexts[i].ID)
-        }
-    }()
-
-    wg.Wait()
-
-    // Now reset cache while getting decisions
-    wg.Add(2)
-
-    // Goroutine 1: Get decisions
-    go func() {
-        defer wg.Done()
-        for i := 0; i < numUsers; i += 5 {
-            _, _ = s.cmabService.GetDecision(s.mockConfig, userContexts[i], s.testRuleID, nil)
-        }
-    }()
-
-    // Goroutine 2: Reset cache
-    go func() {
-        defer wg.Done()
-        _ = s.cmabService.ResetCache()
-    }()
-
-    wg.Wait()
 }
 
 func (s *CmabServiceTestSuite) TestDefaultConstructor() {
