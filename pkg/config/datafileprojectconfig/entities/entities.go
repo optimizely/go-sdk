@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019,2021-2022, Optimizely, Inc. and contributors              *
+ * Copyright 2019,2021-2025, Optimizely, Inc. and contributors              *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -32,6 +32,10 @@ type Attribute struct {
 	Key string `json:"key"`
 }
 
+type Cmab struct {
+    AttributeIds []string `json:"attributes"`
+}
+
 // Experiment represents an Experiment object from the Optimizely datafile
 type Experiment struct {
 	ID                 string              `json:"id"`
@@ -43,6 +47,7 @@ type Experiment struct {
 	AudienceIds        []string            `json:"audienceIds"`
 	ForcedVariations   map[string]string   `json:"forcedVariations"`
 	AudienceConditions interface{}         `json:"audienceConditions"`
+	Cmab 			   *Cmab               `json:"cmab,omitempty"`	// is optional
 }
 
 // Group represents an Group object from the Optimizely datafile

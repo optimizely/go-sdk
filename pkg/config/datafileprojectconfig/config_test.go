@@ -568,3 +568,43 @@ func TestGetFlagVariationsMap(t *testing.T) {
 	assert.NotNil(t, flagVariationsMap["feature_3"])
 	assert.Len(t, flagVariationsMap["feature_3"], 0)
 }
+
+func TestCmabExperiments(t *testing.T) {
+    // Load the decide-test-datafile.json
+    absPath, _ := filepath.Abs("../../../test-data/decide-test-datafile.json")
+    datafile, err := os.ReadFile(absPath)
+    assert.NoError(t, err)
+
+    // Parse the datafile to modify it
+    var datafileJSON map[string]interface{}
+    err = json.Unmarshal(datafile, &datafileJSON)
+    assert.NoError(t, err)
+
+    // Add CMAB to the first experiment
+    experiments := datafileJSON["experiments"].([]interface{})
+    exp0 := experiments[0].(map[string]interface{})
+    exp0["cmab"] = map[string]interface{}{
+        "attributes": []string{"808797688", "808797689"},
+    }
+
+    // Convert back to JSON
+    modifiedDatafile, err := json.Marshal(datafileJSON)
+    assert.NoError(t, err)
+
+    // Create project config from modified datafile
+    config, err := NewDatafileProjectConfig(modifiedDatafile, logging.GetLogger("", "DatafileProjectConfig"))
+    assert.NoError(t, err)
+
+    // Get the experiment key from the datafile
+    exp0Key := exp0["key"].(string)
+
+    // Test that Cmab fields are correctly mapped for experiment 0
+    experiment0, err := config.GetExperimentByKey(exp0Key)
+    assert.NoError(t, err)
+    assert.NotNil(t, experiment0.Cmab)
+    if experiment0.Cmab != nil {
+        assert.Equal(t, 2, len(experiment0.Cmab.AttributeIds))
+        assert.Contains(t, experiment0.Cmab.AttributeIds, "808797688")
+        assert.Contains(t, experiment0.Cmab.AttributeIds, "808797689")
+    }
+}
