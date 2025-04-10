@@ -25,6 +25,7 @@ type Variation struct {
 	FeatureEnabled bool
 }
 
+// Cmab represents the Contextual Multi-Armed Bandit configuration for an experiment
 type Cmab struct {
 	AttributeIds []string `json:"attributes"`
 }

@@ -32,6 +32,8 @@ type Attribute struct {
 	Key string `json:"key"`
 }
 
+// Cmab represents the Contextual Multi-Armed Bandit configuration for an experiment.
+// It contains a list of attribute IDs that are used for the CMAB algorithm.
 type Cmab struct {
 	AttributeIds []string `json:"attributes"`
 }

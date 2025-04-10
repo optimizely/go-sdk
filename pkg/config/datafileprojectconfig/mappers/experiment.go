@@ -116,7 +116,7 @@ func MergeExperiments(rawExperiments []datafileEntities.Experiment, rawGroups []
 }
 
 func mapCmab(rawCmab *datafileEntities.Cmab) *entities.Cmab {
-	// handle nil case becasue cmab is optional and can be nill
+	// handle nil case because cmab is optional and can be nill
 	if rawCmab == nil {
 		return nil
 	}

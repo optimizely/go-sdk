@@ -316,25 +316,31 @@ func TestGetVariableByKeyWithMissingVariableError(t *testing.T) {
 }
 
 func TestGetAttributeByKey(t *testing.T) {
-	id := "id"
-	key := "key"
-	attributeKeyToIDMap := make(map[string]string)
-	attributeKeyToIDMap[key] = id
+    key := "key"
+    attribute := entities.Attribute{
+        Key: key,
+    }
 
-	attribute := entities.Attribute{
-		Key: key,
-	}
-	attributeMap := make(map[string]entities.Attribute)
-	attributeMap[id] = attribute
+    // The old and new mappings to ensure backward compatibility
+    attributeKeyMap := make(map[string]entities.Attribute)
+    attributeKeyMap[key] = attribute
 
-	config := &DatafileProjectConfig{
-		attributeKeyToIDMap: attributeKeyToIDMap,
-		attributeMap:        attributeMap,
-	}
+    id := "id"
+    attributeKeyToIDMap := make(map[string]string)
+    attributeKeyToIDMap[key] = id
 
-	actual, err := config.GetAttributeByKey(key)
-	assert.Nil(t, err)
-	assert.Equal(t, attribute, actual)
+    attributeMap := make(map[string]entities.Attribute)
+    attributeMap[id] = attribute
+
+    config := &DatafileProjectConfig{
+        attributeKeyMap:      attributeKeyMap,
+        attributeKeyToIDMap:  attributeKeyToIDMap,
+        attributeMap:         attributeMap,
+    }
+
+    actual, err := config.GetAttributeByKey(key)
+    assert.Nil(t, err)
+    assert.Equal(t, attribute, actual)
 }
 
 func TestGetAttributeByKeyWithMissingKeyError(t *testing.T) {
@@ -607,4 +613,50 @@ func TestCmabExperiments(t *testing.T) {
 		assert.Contains(t, experiment0.Cmab.AttributeIds, "808797688")
 		assert.Contains(t, experiment0.Cmab.AttributeIds, "808797689")
 	}
+}
+
+func TestGetAttributeKeyByID(t *testing.T) {
+    // Setup
+    id := "id"
+    key := "key"
+    attributeIDToKeyMap := make(map[string]string)
+    attributeIDToKeyMap[id] = key
+
+    config := &DatafileProjectConfig{
+        attributeIDToKeyMap: attributeIDToKeyMap,
+    }
+
+    // Test successful case
+    actual, err := config.GetAttributeKeyByID(id)
+    assert.Nil(t, err)
+    assert.Equal(t, key, actual)
+}
+
+func TestGetAttributeKeyByIDWithMissingIDError(t *testing.T) {
+    // Setup
+    config := &DatafileProjectConfig{}
+
+    // Test error case
+    _, err := config.GetAttributeKeyByID("id")
+    if assert.Error(t, err) {
+        assert.Equal(t, fmt.Errorf(`attribute with ID "id" not found`), err)
+    }
+}
+
+func TestGetAttributeByKeyWithDirectMapping(t *testing.T) {
+    key := "key"
+    attribute := entities.Attribute{
+        Key: key,
+    }
+
+    attributeKeyMap := make(map[string]entities.Attribute)
+    attributeKeyMap[key] = attribute
+
+    config := &DatafileProjectConfig{
+        attributeKeyMap: attributeKeyMap,
+    }
+
+    actual, err := config.GetAttributeByKey(key)
+    assert.Nil(t, err)
+    assert.Equal(t, attribute, actual)
 }

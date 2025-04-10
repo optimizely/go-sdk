@@ -41,8 +41,10 @@ type DatafileProjectConfig struct {
 	experimentKeyToIDMap map[string]string
 	audienceMap          map[string]entities.Audience
 	attributeMap         map[string]entities.Attribute
+	attributeKeyMap      map[string]entities.Attribute
 	eventMap             map[string]entities.Event
 	attributeKeyToIDMap  map[string]string
+	attributeIDToKeyMap  map[string]string
 	experimentMap        map[string]entities.Experiment
 	featureMap           map[string]entities.Feature
 	groupMap             map[string]entities.Group
@@ -107,6 +109,24 @@ func (c DatafileProjectConfig) GetAttributeID(key string) string {
 	return c.attributeKeyToIDMap[key]
 }
 
+// GetAttributeByKey returns the attribute with the given key
+func (c DatafileProjectConfig) GetAttributeByKey(key string) (entities.Attribute, error) {
+	if attribute, ok := c.attributeKeyMap[key]; ok {
+		return attribute, nil
+	}
+
+	return entities.Attribute{}, fmt.Errorf(`attribute with key "%s" not found`, key)
+}
+
+// GetAttributeKeyByID returns the attribute key for the given ID
+func (c DatafileProjectConfig) GetAttributeKeyByID(id string) (string, error) {
+	if key, ok := c.attributeIDToKeyMap[id]; ok {
+		return key, nil
+	}
+
+	return "", fmt.Errorf(`attribute with ID "%s" not found`, id)
+}
+
 // GetBotFiltering returns botFiltering
 func (c DatafileProjectConfig) GetBotFiltering() bool {
 	return c.botFiltering
@@ -161,17 +181,6 @@ func (c DatafileProjectConfig) GetVariableByKey(featureKey, variableKey string) 
 		}
 	}
 	return variable, err
-}
-
-// GetAttributeByKey returns the attribute with the given key
-func (c DatafileProjectConfig) GetAttributeByKey(key string) (entities.Attribute, error) {
-	if attributeID, ok := c.attributeKeyToIDMap[key]; ok {
-		if attribute, ok := c.attributeMap[attributeID]; ok {
-			return attribute, nil
-		}
-	}
-
-	return entities.Attribute{}, fmt.Errorf(`attribute with key "%s" not found`, key)
 }
 
 // GetFeatureList returns an array of all the features
@@ -300,6 +309,14 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	audienceMap, audienceSegmentList := mappers.MapAudiences(append(datafile.TypedAudiences, datafile.Audiences...))
 	flagVariationsMap := mappers.MapFlagVariations(featureMap)
 
+	attributeKeyMap := make(map[string]entities.Attribute)
+	attributeIDToKeyMap := make(map[string]string)
+
+	for id, attribute := range attributeMap {
+		attributeIDToKeyMap[id] = attribute.Key
+		attributeKeyMap[attribute.Key] = attribute
+	}
+
 	config := &DatafileProjectConfig{
 		hostForODP:           hostForODP,
 		publicKeyForODP:      publicKeyForODP,
@@ -325,6 +342,8 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		rolloutMap:           rolloutMap,
 		sendFlagDecisions:    datafile.SendFlagDecisions,
 		flagVariationsMap:    flagVariationsMap,
+		attributeKeyMap:      attributeKeyMap,
+		attributeIDToKeyMap:  attributeIDToKeyMap,
 	}
 
 	logger.Info("Datafile is valid.")
