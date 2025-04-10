@@ -28,6 +28,7 @@ type Cache interface {
 	Save(key string, value interface{})
 	Lookup(key string) interface{}
 	Reset()
+	Remove(key string)
 }
 
 type cacheElement struct {
@@ -100,6 +101,19 @@ func (l *LRUCache) Reset() {
 	defer l.lock.Unlock()
 	l.queue = list.New()
 	l.items = make(map[string]*cacheElement)
+}
+
+// Remove deletes an element from the cache by key
+func (l *LRUCache) Remove(key string) {
+	if l.maxSize <= 0 {
+		return
+	}
+	l.lock.Lock()
+	defer l.lock.Unlock()
+	if item, ok := l.items[key]; ok {
+		l.queue.Remove(item.keyPtr)
+		delete(l.items, key)
+	}
 }
 
 func (l *LRUCache) isValid(e *cacheElement) bool {

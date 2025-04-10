@@ -204,3 +204,122 @@ func TestTimeout(t *testing.T) {
 	assert.Equal(t, 200, cache2.Lookup("2"))
 	assert.Equal(t, 300, cache2.Lookup("3"))
 }
+
+func TestRemove(t *testing.T) {
+	// Test removing an existing key
+	t.Run("Remove existing key", func(t *testing.T) {
+		cache := NewLRUCache(3, 1000*time.Second)
+
+		// Add items to cache
+		cache.Save("1", 100)
+		cache.Save("2", 200)
+		cache.Save("3", 300)
+
+		// Verify items exist
+		assert.Equal(t, 100, cache.Lookup("1"))
+		assert.Equal(t, 200, cache.Lookup("2"))
+		assert.Equal(t, 300, cache.Lookup("3"))
+		assert.Equal(t, 3, cache.queue.Len())
+		assert.Equal(t, 3, len(cache.items))
+
+		// Remove an item
+		cache.Remove("2")
+
+		// Verify item was removed
+		assert.Equal(t, 100, cache.Lookup("1"))
+		assert.Nil(t, cache.Lookup("2"))
+		assert.Equal(t, 300, cache.Lookup("3"))
+		assert.Equal(t, 2, cache.queue.Len())
+		assert.Equal(t, 2, len(cache.items))
+	})
+
+	// Test removing a non-existent key
+	t.Run("Remove non-existent key", func(t *testing.T) {
+		cache := NewLRUCache(3, 1000*time.Second)
+
+		// Add items to cache
+		cache.Save("1", 100)
+		cache.Save("2", 200)
+
+		// Remove a non-existent key
+		cache.Remove("3")
+
+		// Verify state remains unchanged
+		assert.Equal(t, 100, cache.Lookup("1"))
+		assert.Equal(t, 200, cache.Lookup("2"))
+		assert.Equal(t, 2, cache.queue.Len())
+		assert.Equal(t, 2, len(cache.items))
+	})
+
+	// Test removing from a zero-sized cache
+	t.Run("Remove from zero-sized cache", func(t *testing.T) {
+		cache := NewLRUCache(0, 1000*time.Second)
+
+		// Try to add and remove items
+		cache.Save("1", 100)
+		cache.Remove("1")
+
+		// Verify nothing happened
+		assert.Nil(t, cache.Lookup("1"))
+		assert.Equal(t, 0, cache.queue.Len())
+		assert.Equal(t, 0, len(cache.items))
+	})
+
+	// Test removing and then adding back
+	t.Run("Remove and add back", func(t *testing.T) {
+		cache := NewLRUCache(3, 1000*time.Second)
+
+		// Add items to cache
+		cache.Save("1", 100)
+		cache.Save("2", 200)
+		cache.Save("3", 300)
+
+		// Remove an item
+		cache.Remove("2")
+
+		// Add it back with a different value
+		cache.Save("2", 201)
+
+		// Verify item was added back
+		assert.Equal(t, 100, cache.Lookup("1"))
+		assert.Equal(t, 201, cache.Lookup("2"))
+		assert.Equal(t, 300, cache.Lookup("3"))
+		assert.Equal(t, 3, cache.queue.Len())
+		assert.Equal(t, 3, len(cache.items))
+	})
+
+	// Test thread safety of Remove
+	t.Run("Thread safety", func(t *testing.T) {
+		maxSize := 100
+		cache := NewLRUCache(maxSize, 1000*time.Second)
+		wg := sync.WaitGroup{}
+
+		// Add entries
+		for i := 1; i <= maxSize; i++ {
+			cache.Save(fmt.Sprintf("%d", i), i*100)
+		}
+
+		// Concurrently remove half the entries
+		wg.Add(maxSize / 2)
+		for i := 1; i <= maxSize/2; i++ {
+			go func(k int) {
+				defer wg.Done()
+				cache.Remove(fmt.Sprintf("%d", k))
+			}(i)
+		}
+		wg.Wait()
+
+		// Verify first half is removed, second half remains
+		for i := 1; i <= maxSize; i++ {
+			if i <= maxSize/2 {
+				assert.Nil(t, cache.Lookup(fmt.Sprintf("%d", i)))
+			} else {
+				assert.Equal(t, i*100, cache.Lookup(fmt.Sprintf("%d", i)))
+			}
+		}
+
+		// Verify cache size
+		assert.Equal(t, maxSize/2, cache.queue.Len())
+		assert.Equal(t, maxSize/2, len(cache.items))
+	})
+}
