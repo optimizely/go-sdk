@@ -33,9 +33,11 @@ type Attribute struct {
 }
 
 // Cmab represents the Contextual Multi-Armed Bandit configuration for an experiment.
-// It contains a list of attribute IDs that are used for the CMAB algorithm.
+// It contains a list of attribute IDs that are used for the CMAB algorithm and
+// traffic allocation settings for the CMAB implementation.
 type Cmab struct {
-	AttributeIds []string `json:"attributes"`
+	AttributeIds      []string            `json:"attributes"`
+	TrafficAllocation []TrafficAllocation `json:"trafficAllocation"`
 }
 
 // Experiment represents an Experiment object from the Optimizely datafile

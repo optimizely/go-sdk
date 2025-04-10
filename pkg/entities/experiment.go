@@ -27,7 +27,8 @@ type Variation struct {
 
 // Cmab represents the Contextual Multi-Armed Bandit configuration for an experiment
 type Cmab struct {
-	AttributeIds []string `json:"attributes"`
+	AttributeIds      []string `json:"attributes"`
+	TrafficAllocation []Range  `json:"trafficAllocation"`
 }
 
 // Experiment represents an experiment

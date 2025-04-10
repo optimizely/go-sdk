@@ -116,11 +116,22 @@ func MergeExperiments(rawExperiments []datafileEntities.Experiment, rawGroups []
 }
 
 func mapCmab(rawCmab *datafileEntities.Cmab) *entities.Cmab {
-	// handle nil case because cmab is optional and can be nill
+	// handle nil case because cmab is optional and can be nil
 	if rawCmab == nil {
 		return nil
 	}
+
+	// Map the traffic allocation from datafileEntities.TrafficAllocation to entities.Range
+	trafficAllocation := make([]entities.Range, len(rawCmab.TrafficAllocation))
+	for i, ta := range rawCmab.TrafficAllocation {
+		trafficAllocation[i] = entities.Range{
+			EntityID:   ta.EntityID,
+			EndOfRange: ta.EndOfRange,
+		}
+	}
+
 	return &entities.Cmab{
-		AttributeIds: rawCmab.AttributeIds,
+		AttributeIds:      rawCmab.AttributeIds,
+		TrafficAllocation: trafficAllocation,
 	}
 }
