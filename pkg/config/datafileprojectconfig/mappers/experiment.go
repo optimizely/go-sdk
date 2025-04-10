@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019, 2021-2025, Optimizely, Inc. and contributors                   *
+ * Copyright 2019,2021-2025, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -118,9 +118,9 @@ func MergeExperiments(rawExperiments []datafileEntities.Experiment, rawGroups []
 func mapCmab(rawCmab *datafileEntities.Cmab) *entities.Cmab {
 	// handle nil case becasue cmab is optional and can be nill
 	if rawCmab == nil {
-        return nil
-    }
-    return &entities.Cmab{
-        AttributeIds: rawCmab.AttributeIds,
-    }
+		return nil
+	}
+	return &entities.Cmab{
+		AttributeIds: rawCmab.AttributeIds,
+	}
 }
