@@ -36,8 +36,8 @@ type Attribute struct {
 // It contains a list of attribute IDs that are used for the CMAB algorithm and
 // traffic allocation settings for the CMAB implementation.
 type Cmab struct {
-	AttributeIds      []string            `json:"attributes"`
-	TrafficAllocation []TrafficAllocation `json:"trafficAllocation"`
+	AttributeIds      []string `json:"attributes"`
+	TrafficAllocation int      `json:"trafficAllocation"`
 }
 
 // Experiment represents an Experiment object from the Optimizely datafile

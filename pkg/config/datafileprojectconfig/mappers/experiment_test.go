@@ -238,125 +238,90 @@ func TestMapExperimentsAudienceIdsOnly(t *testing.T) {
 }
 
 func TestMapCmab(t *testing.T) {
-    tests := []struct {
-        name     string
-        input    *datafileEntities.Cmab
-        expected *entities.Cmab
-    }{
-        {
-            name:     "nil input",
-            input:    nil,
-            expected: nil,
-        },
-        {
-            name: "with attributes only",
-            input: &datafileEntities.Cmab{
-                AttributeIds:      []string{"attr1", "attr2"},
-                TrafficAllocation: []datafileEntities.TrafficAllocation{},
-            },
-            expected: &entities.Cmab{
-                AttributeIds:      []string{"attr1", "attr2"},
-                TrafficAllocation: []entities.Range{},
-            },
-        },
-        {
-            name: "with traffic allocation only",
-            input: &datafileEntities.Cmab{
-                AttributeIds: []string{},
-                TrafficAllocation: []datafileEntities.TrafficAllocation{
-                    {EntityID: "var1", EndOfRange: 5000},
-                    {EntityID: "var2", EndOfRange: 10000},
-                },
-            },
-            expected: &entities.Cmab{
-                AttributeIds: []string{},
-                TrafficAllocation: []entities.Range{
-                    {EntityID: "var1", EndOfRange: 5000},
-                    {EntityID: "var2", EndOfRange: 10000},
-                },
-            },
-        },
-        {
-            name: "with both attributes and traffic allocation",
-            input: &datafileEntities.Cmab{
-                AttributeIds: []string{"attr1", "attr2"},
-                TrafficAllocation: []datafileEntities.TrafficAllocation{
-                    {EntityID: "var1", EndOfRange: 5000},
-                    {EntityID: "var2", EndOfRange: 10000},
-                },
-            },
-            expected: &entities.Cmab{
-                AttributeIds: []string{"attr1", "attr2"},
-                TrafficAllocation: []entities.Range{
-                    {EntityID: "var1", EndOfRange: 5000},
-                    {EntityID: "var2", EndOfRange: 10000},
-                },
-            },
-        },
-        {
-            name: "with empty traffic allocation array",
-            input: &datafileEntities.Cmab{
-                AttributeIds:      []string{"attr1", "attr2"},
-                TrafficAllocation: []datafileEntities.TrafficAllocation{},
-            },
-            expected: &entities.Cmab{
-                AttributeIds:      []string{"attr1", "attr2"},
-                TrafficAllocation: []entities.Range{},
-            },
-        },
-    }
+	tests := []struct {
+		name     string
+		input    *datafileEntities.Cmab
+		expected *entities.Cmab
+	}{
+		{
+			name:     "nil input",
+			input:    nil,
+			expected: nil,
+		},
+		{
+			name: "with attributes only",
+			input: &datafileEntities.Cmab{
+				AttributeIds:      []string{"attr1", "attr2"},
+				TrafficAllocation: 0, // Changed from empty array to 0
+			},
+			expected: &entities.Cmab{
+				AttributeIds:      []string{"attr1", "attr2"},
+				TrafficAllocation: 0, // Changed from empty array to 0
+			},
+		},
+		{
+			name: "with traffic allocation",
+			input: &datafileEntities.Cmab{
+				AttributeIds:      []string{},
+				TrafficAllocation: 5000, // Changed from array to int
+			},
+			expected: &entities.Cmab{
+				AttributeIds:      []string{},
+				TrafficAllocation: 5000, // Changed from array to int
+			},
+		},
+		{
+			name: "with both attributes and traffic allocation",
+			input: &datafileEntities.Cmab{
+				AttributeIds:      []string{"attr1", "attr2"},
+				TrafficAllocation: 10000, // Changed from array to int
+			},
+			expected: &entities.Cmab{
+				AttributeIds:      []string{"attr1", "attr2"},
+				TrafficAllocation: 10000, // Changed from array to int
+			},
+		},
+	}
 
-    // Run tests
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            result := mapCmab(tt.input)
+	// Run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := mapCmab(tt.input)
 
-            if tt.expected == nil {
-                assert.Nil(t, result)
-            } else {
-                assert.NotNil(t, result)
-                assert.Equal(t, tt.expected.AttributeIds, result.AttributeIds)
-                assert.Equal(t, len(tt.expected.TrafficAllocation), len(result.TrafficAllocation))
-
-                for i, expectedTA := range tt.expected.TrafficAllocation {
-                    assert.Equal(t, expectedTA.EntityID, result.TrafficAllocation[i].EntityID)
-                    assert.Equal(t, expectedTA.EndOfRange, result.TrafficAllocation[i].EndOfRange)
-                }
-            }
-        })
-    }
+			if tt.expected == nil {
+				assert.Nil(t, result)
+			} else {
+				assert.NotNil(t, result)
+				assert.Equal(t, tt.expected.AttributeIds, result.AttributeIds)
+				assert.Equal(t, tt.expected.TrafficAllocation, result.TrafficAllocation) // Simplified assertion
+			}
+		})
+	}
 }
 
 func TestMapExperimentWithCmab(t *testing.T) {
-    // Create a raw experiment with CMAB configuration
-    rawExperiment := datafileEntities.Experiment{
-        ID:      "exp1",
-        Key:     "experiment_1",
-        LayerID: "layer1",
-        Variations: []datafileEntities.Variation{
-            {ID: "var1", Key: "variation_1"},
-        },
-        TrafficAllocation: []datafileEntities.TrafficAllocation{
-            {EntityID: "var1", EndOfRange: 10000},
-        },
-        Cmab: &datafileEntities.Cmab{
-            AttributeIds: []string{"attr1", "attr2"},
-            TrafficAllocation: []datafileEntities.TrafficAllocation{
-                {EntityID: "var1", EndOfRange: 5000},
-                {EntityID: "var2", EndOfRange: 10000},
-            },
-        },
-    }
+	// Create a raw experiment with CMAB configuration
+	rawExperiment := datafileEntities.Experiment{
+		ID:      "exp1",
+		Key:     "experiment_1",
+		LayerID: "layer1",
+		Variations: []datafileEntities.Variation{
+			{ID: "var1", Key: "variation_1"},
+		},
+		TrafficAllocation: []datafileEntities.TrafficAllocation{
+			{EntityID: "var1", EndOfRange: 10000},
+		},
+		Cmab: &datafileEntities.Cmab{
+			AttributeIds:      []string{"attr1", "attr2"},
+			TrafficAllocation: 5000, // Changed from array to int
+		},
+	}
 
-    // Map the experiment
-    experiment := mapExperiment(rawExperiment)
+	// Map the experiment
+	experiment := mapExperiment(rawExperiment)
 
-    // Verify CMAB mapping
-    assert.NotNil(t, experiment.Cmab)
-    assert.Equal(t, []string{"attr1", "attr2"}, experiment.Cmab.AttributeIds)
-    assert.Equal(t, 2, len(experiment.Cmab.TrafficAllocation))
-    assert.Equal(t, "var1", experiment.Cmab.TrafficAllocation[0].EntityID)
-    assert.Equal(t, 5000, experiment.Cmab.TrafficAllocation[0].EndOfRange)
-    assert.Equal(t, "var2", experiment.Cmab.TrafficAllocation[1].EntityID)
-    assert.Equal(t, 10000, experiment.Cmab.TrafficAllocation[1].EndOfRange)
+	// Verify CMAB mapping
+	assert.NotNil(t, experiment.Cmab)
+	assert.Equal(t, []string{"attr1", "attr2"}, experiment.Cmab.AttributeIds)
+	assert.Equal(t, 5000, experiment.Cmab.TrafficAllocation) // Simplified assertion
 }

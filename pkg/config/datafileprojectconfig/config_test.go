@@ -316,31 +316,31 @@ func TestGetVariableByKeyWithMissingVariableError(t *testing.T) {
 }
 
 func TestGetAttributeByKey(t *testing.T) {
-    key := "key"
-    attribute := entities.Attribute{
-        Key: key,
-    }
+	key := "key"
+	attribute := entities.Attribute{
+		Key: key,
+	}
 
-    // The old and new mappings to ensure backward compatibility
-    attributeKeyMap := make(map[string]entities.Attribute)
-    attributeKeyMap[key] = attribute
+	// The old and new mappings to ensure backward compatibility
+	attributeKeyMap := make(map[string]entities.Attribute)
+	attributeKeyMap[key] = attribute
 
-    id := "id"
-    attributeKeyToIDMap := make(map[string]string)
-    attributeKeyToIDMap[key] = id
+	id := "id"
+	attributeKeyToIDMap := make(map[string]string)
+	attributeKeyToIDMap[key] = id
 
-    attributeMap := make(map[string]entities.Attribute)
-    attributeMap[id] = attribute
+	attributeMap := make(map[string]entities.Attribute)
+	attributeMap[id] = attribute
 
-    config := &DatafileProjectConfig{
-        attributeKeyMap:      attributeKeyMap,
-        attributeKeyToIDMap:  attributeKeyToIDMap,
-        attributeMap:         attributeMap,
-    }
+	config := &DatafileProjectConfig{
+		attributeKeyMap:     attributeKeyMap,
+		attributeKeyToIDMap: attributeKeyToIDMap,
+		attributeMap:        attributeMap,
+	}
 
-    actual, err := config.GetAttributeByKey(key)
-    assert.Nil(t, err)
-    assert.Equal(t, attribute, actual)
+	actual, err := config.GetAttributeByKey(key)
+	assert.Nil(t, err)
+	assert.Equal(t, attribute, actual)
 }
 
 func TestGetAttributeByKeyWithMissingKeyError(t *testing.T) {
@@ -576,105 +576,92 @@ func TestGetFlagVariationsMap(t *testing.T) {
 }
 
 func TestCmabExperiments(t *testing.T) {
-    // Load the decide-test-datafile.json
-    absPath, _ := filepath.Abs("../../../test-data/decide-test-datafile.json")
-    datafile, err := os.ReadFile(absPath)
-    assert.NoError(t, err)
+	// Load the decide-test-datafile.json
+	absPath, _ := filepath.Abs("../../../test-data/decide-test-datafile.json")
+	datafile, err := os.ReadFile(absPath)
+	assert.NoError(t, err)
 
-    // Parse the datafile to modify it
-    var datafileJSON map[string]interface{}
-    err = json.Unmarshal(datafile, &datafileJSON)
-    assert.NoError(t, err)
+	// Parse the datafile to modify it
+	var datafileJSON map[string]interface{}
+	err = json.Unmarshal(datafile, &datafileJSON)
+	assert.NoError(t, err)
 
-    // Add CMAB to the first experiment with traffic allocation
-    experiments := datafileJSON["experiments"].([]interface{})
-    exp0 := experiments[0].(map[string]interface{})
-    exp0["cmab"] = map[string]interface{}{
-        "attributes": []string{"808797688", "808797689"},
-        "trafficAllocation": []map[string]interface{}{
-            {
-                "entityId":   "variation1",
-                "endOfRange": 5000,
-            },
-            {
-                "entityId":   "variation2",
-                "endOfRange": 10000,
-            },
-        },
-    }
+	// Add CMAB to the first experiment with traffic allocation as an integer
+	experiments := datafileJSON["experiments"].([]interface{})
+	exp0 := experiments[0].(map[string]interface{})
+	exp0["cmab"] = map[string]interface{}{
+		"attributes":        []string{"808797688", "808797689"},
+		"trafficAllocation": 5000, // Changed from array to integer
+	}
 
-    // Convert back to JSON
-    modifiedDatafile, err := json.Marshal(datafileJSON)
-    assert.NoError(t, err)
+	// Convert back to JSON
+	modifiedDatafile, err := json.Marshal(datafileJSON)
+	assert.NoError(t, err)
 
-    // Create project config from modified datafile
-    config, err := NewDatafileProjectConfig(modifiedDatafile, logging.GetLogger("", "DatafileProjectConfig"))
-    assert.NoError(t, err)
+	// Create project config from modified datafile
+	config, err := NewDatafileProjectConfig(modifiedDatafile, logging.GetLogger("", "DatafileProjectConfig"))
+	assert.NoError(t, err)
 
-    // Get the experiment key from the datafile
-    exp0Key := exp0["key"].(string)
+	// Get the experiment key from the datafile
+	exp0Key := exp0["key"].(string)
 
-    // Test that Cmab fields are correctly mapped for experiment 0
-    experiment0, err := config.GetExperimentByKey(exp0Key)
-    assert.NoError(t, err)
-    assert.NotNil(t, experiment0.Cmab)
-    if experiment0.Cmab != nil {
-        // Test attribute IDs
-        assert.Equal(t, 2, len(experiment0.Cmab.AttributeIds))
-        assert.Contains(t, experiment0.Cmab.AttributeIds, "808797688")
-        assert.Contains(t, experiment0.Cmab.AttributeIds, "808797689")
+	// Test that Cmab fields are correctly mapped for experiment 0
+	experiment0, err := config.GetExperimentByKey(exp0Key)
+	assert.NoError(t, err)
+	assert.NotNil(t, experiment0.Cmab)
+	if experiment0.Cmab != nil {
+		// Test attribute IDs
+		assert.Equal(t, 2, len(experiment0.Cmab.AttributeIds))
+		assert.Contains(t, experiment0.Cmab.AttributeIds, "808797688")
+		assert.Contains(t, experiment0.Cmab.AttributeIds, "808797689")
 
-        // Test traffic allocation
-        assert.Equal(t, 2, len(experiment0.Cmab.TrafficAllocation))
-        assert.Equal(t, "variation1", experiment0.Cmab.TrafficAllocation[0].EntityID)
-        assert.Equal(t, 5000, experiment0.Cmab.TrafficAllocation[0].EndOfRange)
-        assert.Equal(t, "variation2", experiment0.Cmab.TrafficAllocation[1].EntityID)
-        assert.Equal(t, 10000, experiment0.Cmab.TrafficAllocation[1].EndOfRange)
-    }
+		// Test traffic allocation as integer
+		assert.Equal(t, 5000, experiment0.Cmab.TrafficAllocation)
+	}
 }
 
 func TestGetAttributeKeyByID(t *testing.T) {
-    // Setup
-    id := "id"
-    key := "key"
-    attributeIDToKeyMap := make(map[string]string)
-    attributeIDToKeyMap[id] = key
+	// Setup
+	id := "id"
+	key := "key"
+	attributeIDToKeyMap := make(map[string]string)
+	attributeIDToKeyMap[id] = key
 
-    config := &DatafileProjectConfig{
-        attributeIDToKeyMap: attributeIDToKeyMap,
-    }
+	config := &DatafileProjectConfig{
+		attributeIDToKeyMap: attributeIDToKeyMap,
+	}
 
-    // Test successful case
-    actual, err := config.GetAttributeKeyByID(id)
-    assert.Nil(t, err)
-    assert.Equal(t, key, actual)
+	// Test successful case
+	actual, err := config.GetAttributeKeyByID(id)
+	assert.Nil(t, err)
+	assert.Equal(t, key, actual)
 }
 
 func TestGetAttributeKeyByIDWithMissingIDError(t *testing.T) {
-    // Setup
-    config := &DatafileProjectConfig{}
+	// Setup
+	config := &DatafileProjectConfig{}
 
-    // Test error case
-    _, err := config.GetAttributeKeyByID("id")
-    if assert.Error(t, err) {
-        assert.Equal(t, fmt.Errorf(`attribute with ID "id" not found`), err)
-    }
+	// Test error case
+	_, err := config.GetAttributeKeyByID("id")
+	if assert.Error(t, err) {
+		assert.Equal(t, fmt.Errorf(`attribute with ID "id" not found`), err)
+	}
 }
 
 func TestGetAttributeByKeyWithDirectMapping(t *testing.T) {
-    key := "key"
-    attribute := entities.Attribute{
-        Key: key,
-    }
+	key := "key"
+	attribute := entities.Attribute{
+		Key: key,
+	}
 
-    attributeKeyMap := make(map[string]entities.Attribute)
-    attributeKeyMap[key] = attribute
+	attributeKeyMap := make(map[string]entities.Attribute)
+	attributeKeyMap[key] = attribute
 
-    config := &DatafileProjectConfig{
-        attributeKeyMap: attributeKeyMap,
-    }
+	config := &DatafileProjectConfig{
+		attributeKeyMap: attributeKeyMap,
+	}
 
-    actual, err := config.GetAttributeByKey(key)
-    assert.Nil(t, err)
-    assert.Equal(t, attribute, actual)
+	actual, err := config.GetAttributeByKey(key)
+	assert.Nil(t, err)
+	assert.Equal(t, attribute, actual)
 }

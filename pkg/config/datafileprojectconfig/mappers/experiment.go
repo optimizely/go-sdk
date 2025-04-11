@@ -121,17 +121,8 @@ func mapCmab(rawCmab *datafileEntities.Cmab) *entities.Cmab {
 		return nil
 	}
 
-	// Map the traffic allocation from datafileEntities.TrafficAllocation to entities.Range
-	trafficAllocation := make([]entities.Range, len(rawCmab.TrafficAllocation))
-	for i, ta := range rawCmab.TrafficAllocation {
-		trafficAllocation[i] = entities.Range{
-			EntityID:   ta.EntityID,
-			EndOfRange: ta.EndOfRange,
-		}
-	}
-
 	return &entities.Cmab{
 		AttributeIds:      rawCmab.AttributeIds,
-		TrafficAllocation: trafficAllocation,
+		TrafficAllocation: rawCmab.TrafficAllocation,
 	}
 }
