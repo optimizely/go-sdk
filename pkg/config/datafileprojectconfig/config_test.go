@@ -620,6 +620,41 @@ func TestCmabExperiments(t *testing.T) {
 	}
 }
 
+func TestCmabExperimentsNil(t *testing.T) {
+	// Load the decide-test-datafile.json (which doesn't have CMAB by default)
+	absPath, _ := filepath.Abs("../../../test-data/decide-test-datafile.json")
+	datafile, err := os.ReadFile(absPath)
+	assert.NoError(t, err)
+
+	// Create project config from the original datafile
+	config, err := NewDatafileProjectConfig(datafile, logging.GetLogger("", "DatafileProjectConfig"))
+	assert.NoError(t, err)
+
+	// Parse the datafile to get experiment keys
+	var datafileJSON map[string]interface{}
+	err = json.Unmarshal(datafile, &datafileJSON)
+	assert.NoError(t, err)
+
+	experiments := datafileJSON["experiments"].([]interface{})
+	exp0 := experiments[0].(map[string]interface{})
+	exp0Key := exp0["key"].(string)
+
+	// Test that Cmab field is nil for experiment 0
+	experiment0, err := config.GetExperimentByKey(exp0Key)
+	assert.NoError(t, err)
+	assert.Nil(t, experiment0.Cmab, "CMAB field should be nil when not present in datafile")
+
+	// Test another experiment if available
+	if len(experiments) > 1 {
+		exp1 := experiments[1].(map[string]interface{})
+		exp1Key := exp1["key"].(string)
+
+		experiment1, err := config.GetExperimentByKey(exp1Key)
+		assert.NoError(t, err)
+		assert.Nil(t, experiment1.Cmab, "CMAB field should be nil when not present in datafile")
+	}
+}
+
 func TestGetAttributeKeyByID(t *testing.T) {
 	// Setup
 	id := "id"
