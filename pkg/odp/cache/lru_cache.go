@@ -31,8 +31,9 @@ type Cache interface {
 }
 
 // CacheWithRemove extends the Cache interface with removal capability
+// nolint:golint // Keeping name consistent with other language SDKs
 type CacheWithRemove interface {
-	Cache
+ 	Cache
 	Remove(key string)
 }
 
