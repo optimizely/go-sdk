@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2022, Optimizely, Inc. and contributors                        *
+ * Copyright 2022-2025, Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -28,6 +28,11 @@ type Cache interface {
 	Save(key string, value interface{})
 	Lookup(key string) interface{}
 	Reset()
+}
+
+// CacheWithRemove extends the Cache interface with removal capability
+type CacheWithRemove interface {
+	Cache
 	Remove(key string)
 }
 
