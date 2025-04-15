@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019,2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019,2021-2025, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -91,6 +91,7 @@ func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experimen
 		AudienceConditionTree: audienceConditionTree,
 		Whitelist:             rawExperiment.ForcedVariations,
 		IsFeatureExperiment:   false,
+		Cmab:                  mapCmab(rawExperiment.Cmab),
 	}
 
 	for _, variation := range rawExperiment.Variations {
@@ -112,4 +113,16 @@ func MergeExperiments(rawExperiments []datafileEntities.Experiment, rawGroups []
 		mergedExperiments = append(mergedExperiments, group.Experiments...)
 	}
 	return mergedExperiments
+}
+
+func mapCmab(rawCmab *datafileEntities.Cmab) *entities.Cmab {
+	// handle nil case because cmab is optional and can be nil
+	if rawCmab == nil {
+		return nil
+	}
+
+	return &entities.Cmab{
+		AttributeIds:      rawCmab.AttributeIds,
+		TrafficAllocation: rawCmab.TrafficAllocation,
+	}
 }
