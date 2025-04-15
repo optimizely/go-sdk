@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020,2022,2024 Optimizely, Inc. and contributors          *
+ * Copyright 2019-2020,2022,2025 Optimizely, Inc. and contributors          *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	"github.com/optimizely/go-sdk/v2/pkg/cache"
 	"github.com/optimizely/go-sdk/v2/pkg/config"
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/decision"
@@ -34,7 +35,6 @@ import (
 	"github.com/optimizely/go-sdk/v2/pkg/metrics"
 	"github.com/optimizely/go-sdk/v2/pkg/notification"
 	"github.com/optimizely/go-sdk/v2/pkg/odp"
-	"github.com/optimizely/go-sdk/v2/pkg/odp/cache"
 	pkgOdpEvent "github.com/optimizely/go-sdk/v2/pkg/odp/event"
 	pkgOdpSegment "github.com/optimizely/go-sdk/v2/pkg/odp/segment"
 	pkgOdpUtils "github.com/optimizely/go-sdk/v2/pkg/odp/utils"
