@@ -150,3 +150,5 @@ func (l *TestCache) Lookup(key string) interface{} {
 }
 func (l *TestCache) Reset() {
 }
+func (l *TestCache) Remove(key string) {
+}

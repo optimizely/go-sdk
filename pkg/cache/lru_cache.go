@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2022, Optimizely, Inc. and contributors                        *
+ * Copyright 2022-2025, Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -28,6 +28,13 @@ type Cache interface {
 	Save(key string, value interface{})
 	Lookup(key string) interface{}
 	Reset()
+}
+
+// CacheWithRemove extends the Cache interface with removal capability
+// nolint:golint // Keeping name consistent with other language SDKs
+type CacheWithRemove interface {
+	Cache
+	Remove(key string)
 }
 
 type cacheElement struct {
@@ -100,6 +107,19 @@ func (l *LRUCache) Reset() {
 	defer l.lock.Unlock()
 	l.queue = list.New()
 	l.items = make(map[string]*cacheElement)
+}
+
+// Remove deletes an element from the cache by key
+func (l *LRUCache) Remove(key string) {
+	if l.maxSize <= 0 {
+		return
+	}
+	l.lock.Lock()
+	defer l.lock.Unlock()
+	if item, ok := l.items[key]; ok {
+		l.queue.Remove(item.keyPtr)
+		delete(l.items, key)
+	}
 }
 
 func (l *LRUCache) isValid(e *cacheElement) bool {
