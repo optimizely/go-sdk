@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2020-2025, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -33,6 +33,12 @@ const (
 	IncludeReasons OptimizelyDecideOptions = "INCLUDE_REASONS"
 	// ExcludeVariables when set, excludes variable values from the decision result.
 	ExcludeVariables OptimizelyDecideOptions = "EXCLUDE_VARIABLES"
+	// IgnoreCMABCache instructs the SDK to ignore the CMAB cache and make a fresh request
+	IgnoreCMABCache OptimizelyDecideOptions = "IGNORE_CMAB_CACHE"
+	// ResetCMABCache instructs the SDK to reset the entire CMAB cache
+	ResetCMABCache OptimizelyDecideOptions = "RESET_CMAB_CACHE"
+	// InvalidateUserCMABCache instructs the SDK to invalidate CMAB cache entries for the current user
+	InvalidateUserCMABCache OptimizelyDecideOptions = "INVALIDATE_USER_CMAB_CACHE"
 )
 
 // Options defines options for controlling flag decisions.

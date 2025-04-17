@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2022, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2025, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -31,6 +31,7 @@ type ProjectConfig interface {
 	GetAnonymizeIP() bool
 	GetAttributeID(id string) string // returns "" if there is no id
 	GetAttributeByKey(key string) (entities.Attribute, error)
+	GetAttributeKeyByID(id string) (string, error) // method is intended for internal use only
 	GetAudienceList() (audienceList []entities.Audience)
 	GetAudienceByID(string) (entities.Audience, error)
 	GetAudienceMap() map[string]entities.Audience
