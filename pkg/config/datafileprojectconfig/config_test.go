@@ -590,7 +590,7 @@ func TestCmabExperiments(t *testing.T) {
 	experiments := datafileJSON["experiments"].([]interface{})
 	exp0 := experiments[0].(map[string]interface{})
 	exp0["cmab"] = map[string]interface{}{
-		"attributes":        []string{"808797688", "808797689"},
+		"attributeIds":      []string{"808797688", "808797689"},
 		"trafficAllocation": 5000, // Changed from array to integer
 	}
 
