@@ -19,20 +19,8 @@ package decision
 
 import (
 	"github.com/optimizely/go-sdk/v2/pkg/config"
+	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
-)
-
-// OptimizelyDecideOptions represents options for the Decide method
-type OptimizelyDecideOptions string
-
-// CMAB-specific decide options
-const (
-	// IgnoreCMABCache ignores the CMAB cache and forces a new API request
-	IgnoreCMABCache OptimizelyDecideOptions = "IGNORE_CMAB_CACHE"
-	// ResetCMABCache resets the entire CMAB cache
-	ResetCMABCache OptimizelyDecideOptions = "RESET_CMAB_CACHE"
-	// InvalidateUserCMABCache invalidates cache entries for the current user
-	InvalidateUserCMABCache OptimizelyDecideOptions = "INVALIDATE_USER_CMAB_CACHE"
 )
 
 // CmabDecision represents a decision from the CMAB service
@@ -56,7 +44,7 @@ type CmabService interface {
 		projectConfig config.ProjectConfig,
 		userContext entities.UserContext,
 		ruleID string,
-		options map[OptimizelyDecideOptions]bool,
+		options *decide.Options,
 	) (CmabDecision, error)
 }
 

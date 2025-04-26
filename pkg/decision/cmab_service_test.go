@@ -19,9 +19,11 @@ package decision
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"testing"
 
+	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 	"github.com/stretchr/testify/mock"
@@ -274,7 +276,7 @@ func (s *CmabServiceTestSuite) TestGetDecision() {
 	}
 
 	// Setup cache key
-	cacheKey := s.testUserID + ":" + s.testRuleID
+	cacheKey := s.cmabService.getCacheKey(s.testUserID, s.testRuleID)
 
 	// Setup cache lookup - return nil to simulate cache miss
 	s.mockCache.On("Lookup", cacheKey).Return(nil)
@@ -320,7 +322,7 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithCache() {
 	}
 
 	// Setup cache key
-	cacheKey := s.testUserID + ":" + s.testRuleID
+	cacheKey := s.cmabService.getCacheKey(s.testUserID, s.testRuleID)
 
 	// Setup Remove call - this is needed because your implementation calls Remove
 	// even though we're setting up a cache hit
@@ -372,7 +374,7 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithIgnoreCache() {
 	}
 
 	// Setup cache key
-	cacheKey := s.testUserID + ":" + s.testRuleID
+	cacheKey := s.cmabService.getCacheKey(s.testUserID, s.testRuleID)
 
 	// Setup mock API response
 	expectedVariationID := "variant-1"
@@ -382,9 +384,10 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithIgnoreCache() {
 	s.mockCache.On("Save", cacheKey, mock.Anything).Return()
 
 	// Test with IgnoreCMABCache option
-	options := map[OptimizelyDecideOptions]bool{
+	options := &decide.Options{
 		IgnoreCMABCache: true,
 	}
+
 	decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, options)
 	s.NoError(err)
 	s.Equal(expectedVariationID, decision.VariationID)
@@ -418,7 +421,7 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithResetCache() {
 	s.mockCache.On("Reset").Return()
 
 	// Setup cache key
-	cacheKey := s.testUserID + ":" + s.testRuleID
+	cacheKey := s.cmabService.getCacheKey(s.testUserID, s.testRuleID)
 
 	// Setup cache lookup after reset
 	s.mockCache.On("Lookup", cacheKey).Return(nil)
@@ -431,9 +434,10 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithResetCache() {
 	s.mockCache.On("Save", cacheKey, mock.Anything).Return()
 
 	// Test with ResetCMABCache option
-	options := map[OptimizelyDecideOptions]bool{
+	options := &decide.Options{
 		ResetCMABCache: true,
 	}
+
 	decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, options)
 	s.NoError(err)
 	s.Equal(expectedVariationID, decision.VariationID)
@@ -464,7 +468,7 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithInvalidateUserCache() {
 	}
 
 	// Setup cache key
-	cacheKey := s.testUserID + ":" + s.testRuleID
+	cacheKey := s.cmabService.getCacheKey(s.testUserID, s.testRuleID)
 
 	// Setup cache remove
 	s.mockCache.On("Remove", cacheKey).Return()
@@ -480,9 +484,10 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithInvalidateUserCache() {
 	s.mockCache.On("Save", cacheKey, mock.Anything).Return()
 
 	// Test with InvalidateUserCMABCache option
-	options := map[OptimizelyDecideOptions]bool{
+	options := &decide.Options{
 		InvalidateUserCMABCache: true,
 	}
+
 	decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, options)
 	s.NoError(err)
 	s.Equal(expectedVariationID, decision.VariationID)
@@ -513,7 +518,7 @@ func (s *CmabServiceTestSuite) TestGetDecisionError() {
 	}
 
 	// Setup cache key
-	cacheKey := s.testUserID + ":" + s.testRuleID
+	cacheKey := s.cmabService.getCacheKey(s.testUserID, s.testRuleID)
 
 	// Setup cache miss
 	s.mockCache.On("Lookup", cacheKey).Return(nil)
@@ -583,10 +588,10 @@ func (s *CmabServiceTestSuite) TestGetAttributesJSON() {
 }
 
 func (s *CmabServiceTestSuite) TestGetCacheKey() {
-	// Update test to match your implementation's format
-	key := s.cmabService.getCacheKey("user123", "rule456")
-	expected := "user123:rule456"
-	s.Equal(expected, key)
+	// Update the expected format to include length information
+	expected := fmt.Sprintf("%d:%s:%d:%s", len("user123"), "user123", len("rule456"), "rule456")
+	actual := s.cmabService.getCacheKey("user123", "rule456")
+	s.Equal(expected, actual)
 }
 
 func (s *CmabServiceTestSuite) TestNewDefaultCmabService() {

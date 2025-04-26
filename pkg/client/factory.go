@@ -406,6 +406,12 @@ func convertDecideOptions(options []decide.OptimizelyDecideOptions) *decide.Opti
 			finalOptions.IncludeReasons = true
 		case decide.ExcludeVariables:
 			finalOptions.ExcludeVariables = true
+		case decide.IgnoreCMABCache:
+			finalOptions.IgnoreCMABCache = true
+		case decide.ResetCMABCache:
+			finalOptions.ResetCMABCache = true
+		case decide.InvalidateUserCMABCache:
+			finalOptions.InvalidateUserCMABCache = true
 		}
 	}
 	return &finalOptions

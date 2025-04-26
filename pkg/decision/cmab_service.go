@@ -20,13 +20,14 @@ package decision
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strconv"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/optimizely/go-sdk/v2/pkg/cache"
 	"github.com/optimizely/go-sdk/v2/pkg/config"
+	"github.com/optimizely/go-sdk/v2/pkg/config/datafileprojectconfig"
+	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 	"github.com/twmb/murmur3"
@@ -65,38 +66,51 @@ func (s *DefaultCmabService) GetDecision(
 	projectConfig config.ProjectConfig,
 	userContext entities.UserContext,
 	ruleID string,
-	options map[OptimizelyDecideOptions]bool,
+	options *decide.Options,
 ) (CmabDecision, error) {
+	// Initialize reasons slice for decision
+	reasons := []string{}
+
 	// Filter attributes based on CMAB configuration
 	filteredAttributes := s.filterAttributes(projectConfig, userContext, ruleID)
 
 	// Check if we should ignore the cache
-	if options[IgnoreCMABCache] {
-		return s.fetchDecisionWithRetry(ruleID, userContext.ID, filteredAttributes)
+	if options != nil && hasOption(options, decide.IgnoreCMABCache) {
+		reasons = append(reasons, "Ignoring CMAB cache as requested")
+		decision, err := s.fetchDecisionWithRetry(ruleID, userContext.ID, filteredAttributes)
+		if err != nil {
+			return CmabDecision{Reasons: reasons}, err
+		}
+		decision.Reasons = append(reasons, decision.Reasons...)
+		return decision, nil
 	}
 
 	// Reset cache if requested
-	if options[ResetCMABCache] {
+	if options != nil && hasOption(options, decide.ResetCMABCache) {
 		s.cmabCache.Reset()
+		reasons = append(reasons, "Reset CMAB cache as requested")
 	}
 
 	// Create cache key
 	cacheKey := s.getCacheKey(userContext.ID, ruleID)
 
 	// Invalidate user cache if requested
-	if options[InvalidateUserCMABCache] {
+	if options != nil && hasOption(options, decide.InvalidateUserCMABCache) {
 		s.cmabCache.Remove(cacheKey)
+		reasons = append(reasons, "Invalidated user CMAB cache as requested")
 	}
 
 	// Generate attributes hash for cache validation
 	attributesJSON, err := s.getAttributesJSON(filteredAttributes)
 	if err != nil {
-		return CmabDecision{}, fmt.Errorf("failed to serialize attributes: %w", err)
+		reasons = append(reasons, fmt.Sprintf("Failed to serialize attributes: %v", err))
+		return CmabDecision{Reasons: reasons}, fmt.Errorf("failed to serialize attributes: %w", err)
 	}
 	hasher := murmur3.SeedNew32(1) // Use seed 1 for consistency
 	_, err = hasher.Write([]byte(attributesJSON))
 	if err != nil {
-		return CmabDecision{}, fmt.Errorf("failed to hash attributes: %w", err)
+		reasons = append(reasons, fmt.Sprintf("Failed to hash attributes: %v", err))
+		return CmabDecision{Reasons: reasons}, fmt.Errorf("failed to hash attributes: %w", err)
 	}
 	attributesHash := strconv.FormatUint(uint64(hasher.Sum32()), 10)
 
@@ -108,21 +122,25 @@ func (s *DefaultCmabService) GetDecision(
 			// Check if attributes have changed
 			if cacheVal.AttributesHash == attributesHash {
 				s.logger.Debug(fmt.Sprintf("Returning cached CMAB decision for rule %s and user %s", ruleID, userContext.ID))
+				reasons = append(reasons, "Returning cached CMAB decision")
 				return CmabDecision{
 					VariationID: cacheVal.VariationID,
 					CmabUUID:    cacheVal.CmabUUID,
+					Reasons:     reasons,
 				}, nil
 			}
 
 			// Attributes changed, remove from cache
 			s.cmabCache.Remove(cacheKey)
+			reasons = append(reasons, "Attributes changed, invalidating cache")
 		}
 	}
 
 	// Fetch new decision
 	decision, err := s.fetchDecisionWithRetry(ruleID, userContext.ID, filteredAttributes)
 	if err != nil {
-		return CmabDecision{}, err
+		decision.Reasons = append(reasons, decision.Reasons...)
+		return decision, err
 	}
 
 	// Cache the decision
@@ -133,6 +151,8 @@ func (s *DefaultCmabService) GetDecision(
 	}
 
 	s.cmabCache.Save(cacheKey, cacheValue)
+	reasons = append(reasons, "Fetched new CMAB decision and cached it")
+	decision.Reasons = append(reasons, decision.Reasons...)
 
 	return decision, nil
 }
@@ -144,6 +164,7 @@ func (s *DefaultCmabService) fetchDecisionWithRetry(
 	attributes map[string]interface{},
 ) (CmabDecision, error) {
 	cmabUUID := uuid.New().String()
+	reasons := []string{}
 
 	// Retry configuration
 	maxRetries := 3
@@ -157,6 +178,7 @@ func (s *DefaultCmabService) fetchDecisionWithRetry(
 		if attempt > 0 {
 			backoffDuration := initialBackoff * time.Duration(backoffFactor^attempt)
 			time.Sleep(backoffDuration)
+			reasons = append(reasons, fmt.Sprintf("Retry attempt %d/%d after backoff", attempt+1, maxRetries))
 		}
 
 		s.logger.Debug(fmt.Sprintf("Fetching CMAB decision for rule %s and user %s (attempt %d/%d)",
@@ -164,9 +186,11 @@ func (s *DefaultCmabService) fetchDecisionWithRetry(
 
 		variationID, err := s.cmabClient.FetchDecision(ruleID, userID, attributes, cmabUUID)
 		if err == nil {
+			reasons = append(reasons, fmt.Sprintf("Successfully fetched CMAB decision on attempt %d/%d", attempt+1, maxRetries))
 			return CmabDecision{
 				VariationID: variationID,
 				CmabUUID:    cmabUUID,
+				Reasons:     reasons,
 			}, nil
 		}
 
@@ -175,7 +199,8 @@ func (s *DefaultCmabService) fetchDecisionWithRetry(
 			attempt+1, maxRetries, err))
 	}
 
-	return CmabDecision{}, fmt.Errorf("failed to fetch CMAB decision after %d attempts: %w",
+	reasons = append(reasons, fmt.Sprintf("Failed to fetch CMAB decision after %d attempts", maxRetries))
+	return CmabDecision{Reasons: reasons}, fmt.Errorf("failed to fetch CMAB decision after %d attempts: %w",
 		maxRetries, lastErr)
 }
 
@@ -187,16 +212,27 @@ func (s *DefaultCmabService) filterAttributes(
 ) map[string]interface{} {
 	filteredAttributes := make(map[string]interface{})
 
-	// Get all experiments and find the one with matching ID
-	experimentList := projectConfig.GetExperimentList()
+	// Get experiment by ID efficiently
 	var targetExperiment entities.Experiment
 	found := false
 
-	for _, experiment := range experimentList {
-		if experiment.ID == ruleID {
+	// Try to use direct method if available (O(1))
+	if datafileConfig, ok := projectConfig.(*datafileprojectconfig.DatafileProjectConfig); ok {
+		// If it's a DatafileProjectConfig, we can use GetExperimentByID method
+		experiment, err := datafileConfig.GetExperimentByID(ruleID)
+		if err == nil {
 			targetExperiment = experiment
 			found = true
-			break
+		}
+	} else {
+		// Fall back to iterating through experiments (O(N))
+		experimentList := projectConfig.GetExperimentList()
+		for _, experiment := range experimentList {
+			if experiment.ID == ruleID {
+				targetExperiment = experiment
+				found = true
+				break
+			}
 		}
 	}
 
@@ -224,23 +260,10 @@ func (s *DefaultCmabService) filterAttributes(
 	return filteredAttributes
 }
 
-// getAttributesJSON serializes attributes to a deterministic JSON string
+// getAttributesJSON serializes attributes to a JSON string
 func (s *DefaultCmabService) getAttributesJSON(attributes map[string]interface{}) (string, error) {
-	// Get sorted keys for deterministic serialization
-	keys := make([]string, 0, len(attributes))
-	for k := range attributes {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	// Create a map with sorted keys
-	sortedMap := make(map[string]interface{})
-	for _, k := range keys {
-		sortedMap[k] = attributes[k]
-	}
-
-	// Serialize to JSON
-	jsonBytes, err := json.Marshal(sortedMap)
+	// Serialize to JSON - json.Marshal already sorts map keys alphabetically
+	jsonBytes, err := json.Marshal(attributes)
 	if err != nil {
 		return "", err
 	}
@@ -250,5 +273,24 @@ func (s *DefaultCmabService) getAttributesJSON(attributes map[string]interface{}
 
 // getCacheKey generates a cache key for the user and rule
 func (s *DefaultCmabService) getCacheKey(userID, ruleID string) string {
-	return fmt.Sprintf("%s:%s", userID, ruleID)
+	// Include length information to avoid ambiguity when IDs contain the separator
+	return fmt.Sprintf("%d:%s:%d:%s", len(userID), userID, len(ruleID), ruleID)
+}
+
+// hasOption checks if a specific CMAB option is set
+func hasOption(options *decide.Options, option decide.OptimizelyDecideOptions) bool {
+	if options == nil {
+		return false
+	}
+
+	switch option {
+	case decide.IgnoreCMABCache:
+		return options.IgnoreCMABCache
+	case decide.ResetCMABCache:
+		return options.ResetCMABCache
+	case decide.InvalidateUserCMABCache:
+		return options.InvalidateUserCMABCache
+	default:
+		return false
+	}
 }

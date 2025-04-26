@@ -48,6 +48,9 @@ type Options struct {
 	IgnoreUserProfileService bool
 	IncludeReasons           bool
 	ExcludeVariables         bool
+	IgnoreCMABCache          bool
+	ResetCMABCache           bool
+	InvalidateUserCMABCache  bool
 }
 
 // TranslateOptions converts string options array to array of OptimizelyDecideOptions
@@ -65,6 +68,12 @@ func TranslateOptions(options []string) ([]OptimizelyDecideOptions, error) {
 			decideOptions = append(decideOptions, ExcludeVariables)
 		case IncludeReasons:
 			decideOptions = append(decideOptions, IncludeReasons)
+		case IgnoreCMABCache:
+			decideOptions = append(decideOptions, IgnoreCMABCache)
+		case ResetCMABCache:
+			decideOptions = append(decideOptions, ResetCMABCache)
+		case InvalidateUserCMABCache:
+			decideOptions = append(decideOptions, InvalidateUserCMABCache)
 		default:
 			return []OptimizelyDecideOptions{}, errors.New("invalid option: " + val)
 		}
