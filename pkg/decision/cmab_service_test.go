@@ -20,6 +20,7 @@ package decision
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 	"testing"
 
@@ -380,9 +381,6 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithIgnoreCache() {
 	expectedVariationID := "variant-1"
 	s.mockClient.On("FetchDecision", s.testRuleID, s.testUserID, mock.Anything, mock.Anything).Return(expectedVariationID, nil)
 
-	// Setup cache save
-	s.mockCache.On("Save", cacheKey, mock.Anything).Return()
-
 	// Test with IgnoreCMABCache option
 	options := &decide.Options{
 		IgnoreCMABCache: true,
@@ -394,6 +392,12 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithIgnoreCache() {
 
 	// Verify API was called (cache was ignored)
 	s.mockClient.AssertCalled(s.T(), "FetchDecision", s.testRuleID, s.testUserID, mock.Anything, mock.Anything)
+
+	// Verify cache lookup was not called
+	s.mockCache.AssertNotCalled(s.T(), "Lookup", cacheKey)
+
+	// Verify cache save was not called
+	s.mockCache.AssertNotCalled(s.T(), "Save", cacheKey, mock.Anything)
 }
 
 func (s *CmabServiceTestSuite) TestGetDecisionWithResetCache() {
@@ -567,6 +571,144 @@ func (s *CmabServiceTestSuite) TestFilterAttributes() {
 	s.Equal(30, filteredAttrs["age"])
 	s.Equal("San Francisco", filteredAttrs["location"])
 	s.NotContains(filteredAttrs, "extra_key")
+}
+
+func (s *CmabServiceTestSuite) TestOnlyFilteredAttributesPassedToClient() {
+	// Setup mock experiment with CMAB configuration
+	experiment := entities.Experiment{
+		ID: s.testRuleID,
+		Cmab: &entities.Cmab{
+			AttributeIds: []string{"attr1", "attr2"},
+		},
+	}
+	experiments := []entities.Experiment{experiment}
+
+	// Setup mock config
+	s.mockConfig.On("GetExperimentList").Return(experiments)
+	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
+	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
+
+	// Create user context with extra attributes that should be filtered out
+	userContext := entities.UserContext{
+		ID: s.testUserID,
+		Attributes: map[string]interface{}{
+			"age":       30,
+			"location":  "San Francisco",
+			"extra_key": "should be filtered out",
+		},
+	}
+
+	// Expected filtered attributes
+	expectedFilteredAttrs := map[string]interface{}{
+		"age":      30,
+		"location": "San Francisco",
+	}
+
+	// Setup cache key
+	cacheKey := s.cmabService.getCacheKey(s.testUserID, s.testRuleID)
+
+	// Setup cache lookup
+	s.mockCache.On("Lookup", cacheKey).Return(nil)
+
+	// Setup mock API response with attribute verification
+	expectedVariationID := "variant-1"
+	s.mockClient.On("FetchDecision", s.testRuleID, s.testUserID, mock.MatchedBy(func(attrs map[string]interface{}) bool {
+		// Verify only the filtered attributes are passed
+		if len(attrs) != 2 {
+			return false
+		}
+		if attrs["age"] != 30 {
+			return false
+		}
+		if attrs["location"] != "San Francisco" {
+			return false
+		}
+		if _, exists := attrs["extra_key"]; exists {
+			return false
+		}
+		return true
+	}), mock.Anything).Return(expectedVariationID, nil)
+
+	// Setup cache save
+	s.mockCache.On("Save", cacheKey, mock.Anything).Return()
+
+	// Call GetDecision
+	decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
+	s.NoError(err)
+	s.Equal(expectedVariationID, decision.VariationID)
+
+	// Verify client was called with the filtered attributes
+	s.mockClient.AssertCalled(s.T(), "FetchDecision", s.testRuleID, s.testUserID, mock.MatchedBy(func(attrs map[string]interface{}) bool {
+		return reflect.DeepEqual(attrs, expectedFilteredAttrs)
+	}), mock.Anything)
+}
+
+func (s *CmabServiceTestSuite) TestCacheInvalidatedWhenAttributesChange() {
+	// Setup mock experiment with CMAB configuration
+	experiment := entities.Experiment{
+		ID: s.testRuleID,
+		Cmab: &entities.Cmab{
+			AttributeIds: []string{"attr1", "attr2"},
+		},
+	}
+	experiments := []entities.Experiment{experiment}
+
+	// Setup mock config
+	s.mockConfig.On("GetExperimentList").Return(experiments)
+	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
+	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
+
+	// Create user context
+	userContext := entities.UserContext{
+		ID: s.testUserID,
+		Attributes: map[string]interface{}{
+			"age":      30,
+			"location": "San Francisco",
+		},
+	}
+
+	// Setup cache key
+	cacheKey := s.cmabService.getCacheKey(s.testUserID, s.testRuleID)
+
+	// First, create a cached value with a different attributes hash
+	oldAttributesHash := "old-hash"
+	cachedValue := CmabCacheValue{
+		AttributesHash: oldAttributesHash,
+		VariationID:    "cached-variant",
+		CmabUUID:       "cached-uuid",
+	}
+
+	// Setup cache lookup to return the cached value
+	s.mockCache.On("Lookup", cacheKey).Return(cachedValue)
+
+	// Setup cache remove (should be called when attributes change)
+	s.mockCache.On("Remove", cacheKey).Return()
+
+	// Setup mock API response (should be called when attributes change)
+	expectedVariationID := "new-variant"
+	s.mockClient.On("FetchDecision", s.testRuleID, s.testUserID, mock.Anything, mock.Anything).Return(expectedVariationID, nil)
+
+	// Setup cache save for the new decision
+	s.mockCache.On("Save", cacheKey, mock.Anything).Return()
+
+	// Call GetDecision
+	decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
+	s.NoError(err)
+	s.Equal(expectedVariationID, decision.VariationID)
+
+	// Verify cache was looked up
+	s.mockCache.AssertCalled(s.T(), "Lookup", cacheKey)
+
+	// Verify cache entry was removed due to attribute change
+	s.mockCache.AssertCalled(s.T(), "Remove", cacheKey)
+
+	// Verify API was called to get a new decision
+	s.mockClient.AssertCalled(s.T(), "FetchDecision", s.testRuleID, s.testUserID, mock.Anything, mock.Anything)
+
+	// Verify new decision was cached
+	s.mockCache.AssertCalled(s.T(), "Save", cacheKey, mock.MatchedBy(func(value CmabCacheValue) bool {
+		return value.VariationID == expectedVariationID && value.AttributesHash != oldAttributesHash
+	}))
 }
 
 func (s *CmabServiceTestSuite) TestGetAttributesJSON() {
