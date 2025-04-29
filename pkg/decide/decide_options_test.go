@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2021, Optimizely, Inc. and contributors                        *
+ * Copyright 2021-2025, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -67,4 +67,48 @@ func TestTranslateOptionsInvalidCases(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, fmt.Errorf("invalid option: %v", options[0]), err)
 	assert.Len(t, translatedOptions, 0)
+}
+
+// TestTranslateOptionsCMABOptions tests the new CMAB-related options
+func TestTranslateOptionsCMABOptions(t *testing.T) {
+	// Test IGNORE_CMAB_CACHE option
+	options := []string{"IGNORE_CMAB_CACHE"}
+	translatedOptions, err := TranslateOptions(options)
+	assert.NoError(t, err)
+	assert.Len(t, translatedOptions, 1)
+	assert.Equal(t, IgnoreCMABCache, translatedOptions[0])
+
+	// Test RESET_CMAB_CACHE option
+	options = []string{"RESET_CMAB_CACHE"}
+	translatedOptions, err = TranslateOptions(options)
+	assert.NoError(t, err)
+	assert.Len(t, translatedOptions, 1)
+	assert.Equal(t, ResetCMABCache, translatedOptions[0])
+
+	// Test INVALIDATE_USER_CMAB_CACHE option
+	options = []string{"INVALIDATE_USER_CMAB_CACHE"}
+	translatedOptions, err = TranslateOptions(options)
+	assert.NoError(t, err)
+	assert.Len(t, translatedOptions, 1)
+	assert.Equal(t, InvalidateUserCMABCache, translatedOptions[0])
+
+	// Test all CMAB options together
+	options = []string{"IGNORE_CMAB_CACHE", "RESET_CMAB_CACHE", "INVALIDATE_USER_CMAB_CACHE"}
+	translatedOptions, err = TranslateOptions(options)
+	assert.NoError(t, err)
+	assert.Len(t, translatedOptions, 3)
+	assert.Equal(t, IgnoreCMABCache, translatedOptions[0])
+	assert.Equal(t, ResetCMABCache, translatedOptions[1])
+	assert.Equal(t, InvalidateUserCMABCache, translatedOptions[2])
+
+	// Test CMAB options with other options
+	options = []string{"DISABLE_DECISION_EVENT", "IGNORE_CMAB_CACHE", "ENABLED_FLAGS_ONLY", "RESET_CMAB_CACHE", "INVALIDATE_USER_CMAB_CACHE"}
+	translatedOptions, err = TranslateOptions(options)
+	assert.NoError(t, err)
+	assert.Len(t, translatedOptions, 5)
+	assert.Equal(t, DisableDecisionEvent, translatedOptions[0])
+	assert.Equal(t, IgnoreCMABCache, translatedOptions[1])
+	assert.Equal(t, EnabledFlagsOnly, translatedOptions[2])
+	assert.Equal(t, ResetCMABCache, translatedOptions[3])
+	assert.Equal(t, InvalidateUserCMABCache, translatedOptions[4])
 }
