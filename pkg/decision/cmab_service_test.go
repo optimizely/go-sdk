@@ -263,12 +263,11 @@ func (s *CmabServiceTestSuite) TestGetDecision() {
 			AttributeIds: []string{"attr1", "attr2"},
 		},
 	}
-	experiments := []entities.Experiment{experiment}
 
 	// Setup mock config
-	s.mockConfig.On("GetExperimentList").Return(experiments)
 	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
 	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
+	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
 
 	// Create user context
 	userContext := entities.UserContext{
@@ -309,12 +308,11 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithCache() {
 			AttributeIds: []string{"attr1", "attr2"},
 		},
 	}
-	experiments := []entities.Experiment{experiment}
 
 	// Setup mock config
-	s.mockConfig.On("GetExperimentList").Return(experiments)
 	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
 	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
+	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
 
 	// Create user context
 	userContext := entities.UserContext{
@@ -324,10 +322,6 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithCache() {
 
 	// Setup cache key
 	cacheKey := s.cmabService.getCacheKey(s.testUserID, s.testRuleID)
-
-	// Setup Remove call - this is needed because your implementation calls Remove
-	// even though we're setting up a cache hit
-	s.mockCache.On("Remove", cacheKey).Return()
 
 	// Calculate attributes hash using murmur3 as in your implementation
 	attributesJSON, _ := s.cmabService.getAttributesJSON(s.testAttributes)
@@ -361,12 +355,11 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithIgnoreCache() {
 			AttributeIds: []string{"attr1", "attr2"},
 		},
 	}
-	experiments := []entities.Experiment{experiment}
 
 	// Setup mock config
-	s.mockConfig.On("GetExperimentList").Return(experiments)
 	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
 	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
+	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
 
 	// Create user context
 	userContext := entities.UserContext{
@@ -408,12 +401,11 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithResetCache() {
 			AttributeIds: []string{"attr1", "attr2"},
 		},
 	}
-	experiments := []entities.Experiment{experiment}
 
 	// Setup mock config
-	s.mockConfig.On("GetExperimentList").Return(experiments)
 	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
 	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
+	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
 
 	// Create user context
 	userContext := entities.UserContext{
@@ -458,12 +450,11 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithInvalidateUserCache() {
 			AttributeIds: []string{"attr1", "attr2"},
 		},
 	}
-	experiments := []entities.Experiment{experiment}
 
 	// Setup mock config
-	s.mockConfig.On("GetExperimentList").Return(experiments)
 	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
 	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
+	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
 
 	// Create user context
 	userContext := entities.UserContext{
@@ -508,12 +499,11 @@ func (s *CmabServiceTestSuite) TestGetDecisionError() {
 			AttributeIds: []string{"attr1", "attr2"},
 		},
 	}
-	experiments := []entities.Experiment{experiment}
 
 	// Setup mock config
-	s.mockConfig.On("GetExperimentList").Return(experiments)
 	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
 	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
+	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
 
 	// Create user context
 	userContext := entities.UserContext{
@@ -545,13 +535,12 @@ func (s *CmabServiceTestSuite) TestFilterAttributes() {
 			AttributeIds: []string{"attr1", "attr2", "attr3"},
 		},
 	}
-	experiments := []entities.Experiment{experiment}
 
 	// Setup mock config
-	s.mockConfig.On("GetExperimentList").Return(experiments)
 	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
 	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
 	s.mockConfig.On("GetAttributeKeyByID", "attr3").Return("", errors.New("attribute not found"))
+	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
 
 	// Create user context with extra attributes that should be filtered out
 	userContext := entities.UserContext{
@@ -581,12 +570,11 @@ func (s *CmabServiceTestSuite) TestOnlyFilteredAttributesPassedToClient() {
 			AttributeIds: []string{"attr1", "attr2"},
 		},
 	}
-	experiments := []entities.Experiment{experiment}
 
 	// Setup mock config
-	s.mockConfig.On("GetExperimentList").Return(experiments)
 	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
 	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
+	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
 
 	// Create user context with extra attributes that should be filtered out
 	userContext := entities.UserContext{
@@ -651,12 +639,11 @@ func (s *CmabServiceTestSuite) TestCacheInvalidatedWhenAttributesChange() {
 			AttributeIds: []string{"attr1", "attr2"},
 		},
 	}
-	experiments := []entities.Experiment{experiment}
 
 	// Setup mock config
-	s.mockConfig.On("GetExperimentList").Return(experiments)
 	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
 	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
+	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
 
 	// Create user context
 	userContext := entities.UserContext{
@@ -730,8 +717,8 @@ func (s *CmabServiceTestSuite) TestGetAttributesJSON() {
 }
 
 func (s *CmabServiceTestSuite) TestGetCacheKey() {
-	// Update the expected format to include length information
-	expected := fmt.Sprintf("%d:%s:%d:%s", len("user123"), "user123", len("rule456"), "rule456")
+	// Update the expected format to match the new implementation
+	expected := fmt.Sprintf("%d:%s:%s", len("user123"), "user123", "rule456")
 	actual := s.cmabService.getCacheKey("user123", "rule456")
 	s.Equal(expected, actual)
 }

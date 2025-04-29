@@ -26,7 +26,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/optimizely/go-sdk/v2/pkg/cache"
 	"github.com/optimizely/go-sdk/v2/pkg/config"
-	"github.com/optimizely/go-sdk/v2/pkg/config/datafileprojectconfig"
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
@@ -212,31 +211,9 @@ func (s *DefaultCmabService) filterAttributes(
 ) map[string]interface{} {
 	filteredAttributes := make(map[string]interface{})
 
-	// Get experiment by ID efficiently
-	var targetExperiment entities.Experiment
-	found := false
-
-	// Try to use direct method if available (O(1))
-	if datafileConfig, ok := projectConfig.(*datafileprojectconfig.DatafileProjectConfig); ok {
-		// If it's a DatafileProjectConfig, we can use GetExperimentByID method
-		experiment, err := datafileConfig.GetExperimentByID(ruleID)
-		if err == nil {
-			targetExperiment = experiment
-			found = true
-		}
-	} else {
-		// Fall back to iterating through experiments (O(N))
-		experimentList := projectConfig.GetExperimentList()
-		for _, experiment := range experimentList {
-			if experiment.ID == ruleID {
-				targetExperiment = experiment
-				found = true
-				break
-			}
-		}
-	}
-
-	if !found || targetExperiment.Cmab == nil {
+	// Get experiment by ID directly using the interface method
+	targetExperiment, err := projectConfig.GetExperimentByID(ruleID)
+	if err != nil || targetExperiment.Cmab == nil {
 		return filteredAttributes
 	}
 
@@ -273,8 +250,8 @@ func (s *DefaultCmabService) getAttributesJSON(attributes map[string]interface{}
 
 // getCacheKey generates a cache key for the user and rule
 func (s *DefaultCmabService) getCacheKey(userID, ruleID string) string {
-	// Include length information to avoid ambiguity when IDs contain the separator
-	return fmt.Sprintf("%d:%s:%d:%s", len(userID), userID, len(ruleID), ruleID)
+	// Include length of userID to avoid ambiguity when IDs contain the separator
+	return fmt.Sprintf("%d:%s:%s", len(userID), userID, ruleID)
 }
 
 // hasOption checks if a specific CMAB option is set

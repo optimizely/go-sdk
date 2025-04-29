@@ -31,7 +31,8 @@ type ProjectConfig interface {
 	GetAnonymizeIP() bool
 	GetAttributeID(id string) string // returns "" if there is no id
 	GetAttributeByKey(key string) (entities.Attribute, error)
-	GetAttributeKeyByID(id string) (string, error) // method is intended for internal use only
+	GetAttributeKeyByID(id string) (string, error)            // method is intended for internal use only
+	GetExperimentByID(id string) (entities.Experiment, error) // method is intended for internal use only
 	GetAudienceList() (audienceList []entities.Audience)
 	GetAudienceByID(string) (entities.Audience, error)
 	GetAudienceMap() map[string]entities.Audience
