@@ -36,7 +36,7 @@ type Attribute struct {
 // It contains a list of attribute IDs that are used for the CMAB algorithm and
 // traffic allocation settings for the CMAB implementation.
 type Cmab struct {
-	AttributeIds      []string `json:"attributes"`
+	AttributeIds      []string `json:"attributeIds"`
 	TrafficAllocation int      `json:"trafficAllocation"`
 }
 
