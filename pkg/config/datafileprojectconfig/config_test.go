@@ -655,6 +655,34 @@ func TestCmabExperimentsNil(t *testing.T) {
 	}
 }
 
+func TestGetExperimentByID(t *testing.T) {
+	// Create a test config with some experiments
+	testConfig := DatafileProjectConfig{
+		experimentMap: map[string]entities.Experiment{
+			"exp1": {ID: "exp1", Key: "experiment_1"},
+			"exp2": {ID: "exp2", Key: "experiment_2"},
+		},
+	}
+
+	// Test getting an experiment that exists
+	experiment, err := testConfig.GetExperimentByID("exp1")
+	assert.NoError(t, err)
+	assert.Equal(t, "exp1", experiment.ID)
+	assert.Equal(t, "experiment_1", experiment.Key)
+
+	// Test getting another experiment that exists
+	experiment, err = testConfig.GetExperimentByID("exp2")
+	assert.NoError(t, err)
+	assert.Equal(t, "exp2", experiment.ID)
+	assert.Equal(t, "experiment_2", experiment.Key)
+
+	// Test getting an experiment that doesn't exist
+	experiment, err = testConfig.GetExperimentByID("non_existent")
+	assert.Error(t, err)
+	assert.Equal(t, `experiment with ID "non_existent" not found`, err.Error())
+	assert.Equal(t, entities.Experiment{}, experiment)
+}
+
 func TestGetAttributeKeyByID(t *testing.T) {
 	// Setup
 	id := "id"
