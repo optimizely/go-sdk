@@ -385,3 +385,52 @@ func TestOptimizelyClientWithNoTracer(t *testing.T) {
 	tracer := optimizelyClient.tracer.(*tracing.NoopTracer)
 	assert.NotNil(t, tracer)
 }
+
+func TestConvertDecideOptionsWithCMABOptions(t *testing.T) {
+	// Test with IgnoreCMABCache option
+	options := []decide.OptimizelyDecideOptions{decide.IgnoreCMABCache}
+	convertedOptions := convertDecideOptions(options)
+	assert.True(t, convertedOptions.IgnoreCMABCache)
+	assert.False(t, convertedOptions.ResetCMABCache)
+	assert.False(t, convertedOptions.InvalidateUserCMABCache)
+
+	// Test with ResetCMABCache option
+	options = []decide.OptimizelyDecideOptions{decide.ResetCMABCache}
+	convertedOptions = convertDecideOptions(options)
+	assert.False(t, convertedOptions.IgnoreCMABCache)
+	assert.True(t, convertedOptions.ResetCMABCache)
+	assert.False(t, convertedOptions.InvalidateUserCMABCache)
+
+	// Test with InvalidateUserCMABCache option
+	options = []decide.OptimizelyDecideOptions{decide.InvalidateUserCMABCache}
+	convertedOptions = convertDecideOptions(options)
+	assert.False(t, convertedOptions.IgnoreCMABCache)
+	assert.False(t, convertedOptions.ResetCMABCache)
+	assert.True(t, convertedOptions.InvalidateUserCMABCache)
+
+	// Test with all CMAB options
+	options = []decide.OptimizelyDecideOptions{
+		decide.IgnoreCMABCache,
+		decide.ResetCMABCache,
+		decide.InvalidateUserCMABCache,
+	}
+	convertedOptions = convertDecideOptions(options)
+	assert.True(t, convertedOptions.IgnoreCMABCache)
+	assert.True(t, convertedOptions.ResetCMABCache)
+	assert.True(t, convertedOptions.InvalidateUserCMABCache)
+
+	// Test with CMAB options mixed with other options
+	options = []decide.OptimizelyDecideOptions{
+		decide.DisableDecisionEvent,
+		decide.IgnoreCMABCache,
+		decide.EnabledFlagsOnly,
+		decide.ResetCMABCache,
+		decide.InvalidateUserCMABCache,
+	}
+	convertedOptions = convertDecideOptions(options)
+	assert.True(t, convertedOptions.DisableDecisionEvent)
+	assert.True(t, convertedOptions.EnabledFlagsOnly)
+	assert.True(t, convertedOptions.IgnoreCMABCache)
+	assert.True(t, convertedOptions.ResetCMABCache)
+	assert.True(t, convertedOptions.InvalidateUserCMABCache)
+}
