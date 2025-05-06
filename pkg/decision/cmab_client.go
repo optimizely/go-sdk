@@ -127,11 +127,17 @@ func NewDefaultCmabClient(options CmabClientOptions) *DefaultCmabClient {
 
 // FetchDecision fetches a decision from the CMAB API
 func (c *DefaultCmabClient) FetchDecision(
+	ctx context.Context,
 	ruleID string,
 	userID string,
 	attributes map[string]interface{},
 	cmabUUID string,
 ) (string, error) {
+	// If no context is provided, create a background context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	// Create the URL
 	url := fmt.Sprintf(CMABPredictionEndpoint, ruleID)
 
@@ -163,9 +169,6 @@ func (c *DefaultCmabClient) FetchDecision(
 		return "", fmt.Errorf("failed to marshal CMAB request: %w", err)
 	}
 
-	// Create context for cancellation
-	ctx := context.Background()
-
 	// If no retry config, just do a single fetch
 	if c.retryConfig == nil {
 		return c.doFetch(ctx, url, bodyBytes)
@@ -173,6 +176,11 @@ func (c *DefaultCmabClient) FetchDecision(
 
 	// Retry sending request with exponential backoff
 	for i := 0; i <= c.retryConfig.MaxRetries; i++ {
+		// Check if context is done
+		if ctx.Err() != nil {
+			return "", fmt.Errorf("context canceled or timed out: %w", ctx.Err())
+		}
+
 		// Make the request
 		result, err := c.doFetch(ctx, url, bodyBytes)
 		if err == nil {
@@ -194,8 +202,13 @@ func (c *DefaultCmabClient) FetchDecision(
 		c.logger.Debug(fmt.Sprintf("CMAB request retry %d/%d, backing off for %v",
 			i+1, c.retryConfig.MaxRetries, backoffDuration))
 
-		// Wait for backoff duration
-		time.Sleep(backoffDuration)
+		// Wait for backoff duration with context awareness
+		select {
+		case <-ctx.Done():
+			return "", fmt.Errorf("context canceled or timed out during backoff: %w", ctx.Err())
+		case <-time.After(backoffDuration):
+			// Continue with retry
+		}
 
 		c.logger.Warning(fmt.Sprintf("CMAB API request failed (attempt %d/%d): %v",
 			i+1, c.retryConfig.MaxRetries, err))
