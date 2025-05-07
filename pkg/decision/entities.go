@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2025, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -55,6 +55,8 @@ const (
 	Rollout Source = "rollout"
 	// FeatureTest - the decision came from a feature test
 	FeatureTest Source = "feature-test"
+	// Cmab - the decision came from a CMAB service
+	Cmab Source = "cmab"
 )
 
 // Decision contains base information about a decision

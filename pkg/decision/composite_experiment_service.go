@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2025, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -40,11 +40,19 @@ func WithOverrideStore(overrideStore ExperimentOverrideStore) CESOptionFunc {
 	}
 }
 
+// WithCmabService adds a CMAB service
+func WithCmabService(cmabService CmabService) CESOptionFunc {
+	return func(f *CompositeExperimentService) {
+		f.cmabService = cmabService
+	}
+}
+
 // CompositeExperimentService bridges together the various experiment decision services that ship by default with the SDK
 type CompositeExperimentService struct {
 	experimentServices []ExperimentService
 	overrideStore      ExperimentOverrideStore
 	userProfileService UserProfileService
+	cmabService        CmabService
 	logger             logging.OptimizelyLogProducer
 }
 
@@ -53,7 +61,8 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 	// These decision services are applied in order:
 	// 1. Overrides (if supplied)
 	// 2. Whitelist
-	// 3. Bucketing (with User profile integration if supplied)
+	// 3. CMAB (if experiment is a CMAB experiment)
+	// 4. Bucketing (with User profile integration if supplied)
 	compositeExperimentService := &CompositeExperimentService{logger: logging.GetLogger(sdkKey, "CompositeExperimentService")}
 	for _, opt := range options {
 		opt(compositeExperimentService)
@@ -66,6 +75,12 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 	if compositeExperimentService.overrideStore != nil {
 		overrideService := NewExperimentOverrideService(compositeExperimentService.overrideStore, logging.GetLogger(sdkKey, "ExperimentOverrideService"))
 		experimentServices = append([]ExperimentService{overrideService}, experimentServices...)
+	}
+
+	// Add CMAB service if available
+	if compositeExperimentService.cmabService != nil {
+		cmabService := NewExperimentCmabService(compositeExperimentService.cmabService, logging.GetLogger(sdkKey, "ExperimentCmabService"))
+		experimentServices = append(experimentServices, cmabService)
 	}
 
 	experimentBucketerService := NewExperimentBucketerService(logging.GetLogger(sdkKey, "ExperimentBucketerService"))

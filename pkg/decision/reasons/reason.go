@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2025, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -59,4 +59,6 @@ const (
 	InvalidOverrideVariationAssignment Reason = "Invalid override variation assignment"
 	// OverrideVariationAssignmentFound - A valid override variation was found for the given user and experiment
 	OverrideVariationAssignmentFound Reason = "Override variation assignment found"
+	// CmabVariationAssigned is the reason when a variation is assigned by the CMAB service
+	CmabVariationAssigned Reason = "cmab_variation_assigned"
 )
