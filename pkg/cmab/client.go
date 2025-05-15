@@ -293,11 +293,6 @@ func (c *DefaultCmabClient) LogImpression(
 	attributes map[string]interface{},
 	cmabUUID string,
 ) error {
-	// If no context is provided, create a background context
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
 	// Instead of directly creating an event, we'll delegate this to the client
 	// that has access to the event package
 	return fmt.Errorf("CMAB impression logging not implemented")
