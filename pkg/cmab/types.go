@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package decision provides CMAB decision service interfaces and types
-package decision
+// Package cmab provides CMAB decision service interfaces and types
+package cmab
 
 import (
 	"github.com/optimizely/go-sdk/v2/pkg/config"
@@ -57,4 +57,14 @@ type CmabClient interface {
 		attributes map[string]interface{},
 		cmabUUID string,
 	) (string, error)
+
+	// TrackCMABDecision tracks a CMAB decision event
+	TrackCMABDecision(
+		ruleID string,
+		userID string,
+		variationID string,
+		variationKey string,
+		attributes map[string]interface{},
+		cmabUUID string,
+	)
 }

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019,2022 Optimizely, Inc. and contributors                    *
+ * Copyright 2019,2025 Optimizely, Inc. and contributors                    *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -19,6 +19,7 @@ package event
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -240,4 +241,104 @@ func TestCreateImpressionUserEvent(t *testing.T) {
 			assert.Equal(t, true, metaData.Enabled)
 		}
 	}
+}
+
+func TestCreateCMABImpressionUserEvent(t *testing.T) {
+	// Setup
+	config := TestConfig{}
+
+	experiment := entities.Experiment{
+		ID:  "exp123",
+		Key: "exp_key",
+	}
+
+	variation := entities.Variation{
+		ID:  "var123",
+		Key: "var_key",
+	}
+
+	userContext := entities.UserContext{
+		ID: "user123",
+		Attributes: map[string]interface{}{
+			"attr1": "value1",
+		},
+	}
+
+	flagKey := "flag_key"
+	ruleKey := "rule_key"
+	ruleType := "experiment"
+	enabled := true
+	cmabUUID := "uuid123"
+
+	// Call function
+	userEvent, shouldDispatch := CreateCMABImpressionUserEvent(
+		config,
+		experiment,
+		&variation,
+		userContext,
+		flagKey,
+		ruleKey,
+		ruleType,
+		enabled,
+		cmabUUID,
+	)
+
+	// Assertions
+	assert.True(t, shouldDispatch)
+
+	// Check that it's an impression event (Impression field is set)
+	assert.NotNil(t, userEvent.Impression)
+	assert.Nil(t, userEvent.Conversion)
+
+	// Check impression event fields
+	impressionEvent := userEvent.Impression
+	assert.Equal(t, experiment.ID, impressionEvent.ExperimentID)
+	assert.Equal(t, variation.ID, impressionEvent.VariationID)
+	assert.Equal(t, flagKey, impressionEvent.Metadata.FlagKey)
+	assert.Equal(t, ruleKey, impressionEvent.Metadata.RuleKey)
+	assert.Equal(t, ruleType, impressionEvent.Metadata.RuleType)
+	assert.Equal(t, enabled, impressionEvent.Metadata.Enabled)
+
+	fmt.Printf("CMAB UUID: %s\n", cmabUUID)
+	fmt.Printf("UserEvent UUID: %s\n", userEvent.UUID)
+
+	// Check that the UserEvent.UUID is set to the CMAB UUID
+	assert.Equal(t, cmabUUID, userEvent.UUID)
+}
+
+func TestCreateCMABImpressionUserEventWithNilVariation(t *testing.T) {
+	// Setup
+	config := TestConfig{}
+
+	experiment := entities.Experiment{
+		ID:  "exp123",
+		Key: "exp_key",
+	}
+
+	userContext := entities.UserContext{
+		ID: "user123",
+	}
+
+	flagKey := "flag_key"
+	ruleKey := "rule_key"
+	ruleType := "experiment"
+	enabled := true
+	cmabUUID := "uuid123"
+
+	// Call function with nil variation
+	userEvent, shouldDispatch := CreateCMABImpressionUserEvent(
+		config,
+		experiment,
+		nil,
+		userContext,
+		flagKey,
+		ruleKey,
+		ruleType,
+		enabled,
+		cmabUUID,
+	)
+
+	// Assertions
+	assert.False(t, shouldDispatch)
+	assert.Equal(t, UserEvent{}, userEvent)
 }

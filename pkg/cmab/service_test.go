@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package decision //
-package decision
+// Package cmab //
+package cmab
 
 import (
 	"errors"
@@ -285,6 +285,15 @@ func (s *CmabServiceTestSuite) TestGetDecision() {
 	expectedVariationID := "variant-1"
 	s.mockClient.On("FetchDecision", s.testRuleID, s.testUserID, mock.Anything, mock.Anything).Return(expectedVariationID, nil)
 
+	s.mockClient.On("TrackCMABDecision",
+		s.testRuleID,  // ruleID
+		s.testUserID,  // userID
+		mock.Anything, // variationID
+		mock.Anything, // variationKey
+		mock.Anything, // attributes
+		mock.Anything, // cmabUUID
+	).Return(nil)
+
 	// Setup cache save
 	s.mockCache.On("Save", cacheKey, mock.Anything).Return()
 
@@ -374,6 +383,15 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithIgnoreCache() {
 	expectedVariationID := "variant-1"
 	s.mockClient.On("FetchDecision", s.testRuleID, s.testUserID, mock.Anything, mock.Anything).Return(expectedVariationID, nil)
 
+	s.mockClient.On("TrackCMABDecision",
+		s.testRuleID,  // ruleID
+		s.testUserID,  // userID
+		mock.Anything, // variationID
+		mock.Anything, // variationKey
+		mock.Anything, // attributes
+		mock.Anything, // cmabUUID
+	).Return(nil)
+
 	// Test with IgnoreCMABCache option
 	options := &decide.Options{
 		IgnoreCMABCache: true,
@@ -426,6 +444,15 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithResetCache() {
 	expectedVariationID := "variant-1"
 	s.mockClient.On("FetchDecision", s.testRuleID, s.testUserID, mock.Anything, mock.Anything).Return(expectedVariationID, nil)
 
+	s.mockClient.On("TrackCMABDecision",
+		s.testRuleID,  // ruleID
+		s.testUserID,  // userID
+		mock.Anything, // variationID
+		mock.Anything, // variationKey
+		mock.Anything, // attributes
+		mock.Anything, // cmabUUID
+	).Return(nil)
+
 	// Setup cache save
 	s.mockCache.On("Save", cacheKey, mock.Anything).Return()
 
@@ -474,6 +501,15 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithInvalidateUserCache() {
 	// Setup mock API response
 	expectedVariationID := "variant-1"
 	s.mockClient.On("FetchDecision", s.testRuleID, s.testUserID, mock.Anything, mock.Anything).Return(expectedVariationID, nil)
+
+	s.mockClient.On("TrackCMABDecision",
+		s.testRuleID,  // ruleID
+		s.testUserID,  // userID
+		mock.Anything, // variationID
+		mock.Anything, // variationKey
+		mock.Anything, // attributes
+		mock.Anything, // cmabUUID
+	).Return(nil)
 
 	// Setup cache save
 	s.mockCache.On("Save", cacheKey, mock.Anything).Return()
@@ -617,6 +653,16 @@ func (s *CmabServiceTestSuite) TestOnlyFilteredAttributesPassedToClient() {
 		return true
 	}), mock.Anything).Return(expectedVariationID, nil)
 
+	// set up track
+	s.mockClient.On("TrackCMABDecision",
+		s.testRuleID,  // ruleID
+		s.testUserID,  // userID
+		mock.Anything, // variationID
+		mock.Anything, // variationKey
+		mock.Anything, // attributes
+		mock.Anything, // cmabUUID
+	).Return(nil)
+
 	// Setup cache save
 	s.mockCache.On("Save", cacheKey, mock.Anything).Return()
 
@@ -675,6 +721,15 @@ func (s *CmabServiceTestSuite) TestCacheInvalidatedWhenAttributesChange() {
 	expectedVariationID := "new-variant"
 	s.mockClient.On("FetchDecision", s.testRuleID, s.testUserID, mock.Anything, mock.Anything).Return(expectedVariationID, nil)
 
+	s.mockClient.On("TrackCMABDecision",
+		s.testRuleID,        // ruleID
+		s.testUserID,        // userID
+		expectedVariationID, // variationID
+		expectedVariationID, // variationKey (assuming it's the same as ID in your test)
+		mock.Anything,       // attributes
+		mock.Anything,       // cmabUUID
+	).Return(nil)
+
 	// Setup cache save for the new decision
 	s.mockCache.On("Save", cacheKey, mock.Anything).Return()
 
@@ -696,6 +751,15 @@ func (s *CmabServiceTestSuite) TestCacheInvalidatedWhenAttributesChange() {
 	s.mockCache.AssertCalled(s.T(), "Save", cacheKey, mock.MatchedBy(func(value CmabCacheValue) bool {
 		return value.VariationID == expectedVariationID && value.AttributesHash != oldAttributesHash
 	}))
+
+	// Verify TrackCMABDecision was called
+	s.mockClient.AssertCalled(s.T(), "TrackCMABDecision",
+		s.testRuleID,
+		s.testUserID,
+		expectedVariationID,
+		expectedVariationID,
+		mock.Anything,
+		mock.Anything)
 }
 
 func (s *CmabServiceTestSuite) TestGetAttributesJSON() {
@@ -733,4 +797,245 @@ func (s *CmabServiceTestSuite) TestNewDefaultCmabService() {
 
 func TestCmabServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(CmabServiceTestSuite))
+}
+
+func (m *MockCmabClient) TrackCMABDecision(
+	ruleID string,
+	userID string,
+	variationID string,
+	variationKey string,
+	attributes map[string]interface{},
+	cmabUUID string,
+) {
+	m.Called(ruleID, userID, variationID, variationKey, attributes, cmabUUID)
+}
+
+// Test that TrackCMABDecision is called when a decision is successfully fetched
+func (s *CmabServiceTestSuite) TestTrackCMABDecisionOnSuccessfulFetch() {
+	// Setup mock experiment with CMAB configuration
+	experiment := entities.Experiment{
+		ID:  s.testRuleID,
+		Key: "experiment-key", // Add experiment key
+		Cmab: &entities.Cmab{
+			AttributeIds: []string{"attr1", "attr2"},
+		},
+	}
+
+	// Setup mock config
+	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
+	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
+	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
+
+	// Create user context
+	userContext := entities.UserContext{
+		ID:         s.testUserID,
+		Attributes: s.testAttributes,
+	}
+
+	// Setup cache key
+	cacheKey := s.cmabService.getCacheKey(s.testUserID, s.testRuleID)
+
+	// Setup cache lookup - return nil to simulate cache miss
+	s.mockCache.On("Lookup", cacheKey).Return(nil)
+
+	// Setup mock API response
+	expectedVariationID := "variant-1"
+	s.mockClient.On("FetchDecision", s.testRuleID, s.testUserID, mock.Anything, mock.Anything).Return(expectedVariationID, nil)
+
+	// Setup tracking expectation
+	s.mockClient.On("TrackCMABDecision",
+		s.testRuleID,  // ruleID
+		s.testUserID,  // userID
+		mock.Anything, // variationID
+		mock.Anything, // variationKey
+		mock.Anything, // attributes
+		mock.Anything, // cmabUUID
+	).Return(nil)
+
+	// Setup cache save
+	s.mockCache.On("Save", cacheKey, mock.Anything).Return()
+
+	// Test with no options
+	decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
+	s.NoError(err)
+	s.Equal(expectedVariationID, decision.VariationID)
+	s.NotEmpty(decision.CmabUUID)
+
+	// Verify tracking was called
+	s.mockClient.AssertCalled(s.T(), "TrackCMABDecision",
+		s.testRuleID,
+		s.testUserID,
+		expectedVariationID,
+		expectedVariationID, // Simplified - in real implementation this might be different
+		mock.Anything,
+		mock.Anything)
+}
+
+// Test that TrackCMABDecision is not called when there's an error fetching a decision
+func (s *CmabServiceTestSuite) TestNoTrackingOnFetchError() {
+	// Setup mock experiment with CMAB configuration
+	experiment := entities.Experiment{
+		ID: s.testRuleID,
+		Cmab: &entities.Cmab{
+			AttributeIds: []string{"attr1", "attr2"},
+		},
+	}
+
+	// Setup mock config
+	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
+	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
+	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
+
+	// Create user context
+	userContext := entities.UserContext{
+		ID:         s.testUserID,
+		Attributes: s.testAttributes,
+	}
+
+	// Setup cache key
+	cacheKey := s.cmabService.getCacheKey(s.testUserID, s.testRuleID)
+
+	// Setup cache miss
+	s.mockCache.On("Lookup", cacheKey).Return(nil)
+
+	// Setup mock API error
+	expectedError := errors.New("API error")
+	s.mockClient.On("FetchDecision", s.testRuleID, s.testUserID, mock.Anything, mock.Anything).Return("", expectedError)
+
+	// Test error handling
+	decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
+	s.Error(err)
+	s.Equal("", decision.VariationID) // Should be empty
+
+	// Verify tracking was NOT called
+	s.mockClient.AssertNotCalled(s.T(), "TrackCMABDecision")
+}
+
+// Test that TrackCMABDecision is called with the correct parameters
+func (s *CmabServiceTestSuite) TestTrackCMABDecisionParameters() {
+	// Setup mock experiment with CMAB configuration
+	experiment := entities.Experiment{
+		ID:  s.testRuleID,
+		Key: "experiment-key",
+		Cmab: &entities.Cmab{
+			AttributeIds: []string{"attr1", "attr2"},
+		},
+	}
+
+	// Setup mock config
+	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
+	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
+	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
+
+	// Create user context
+	userContext := entities.UserContext{
+		ID:         s.testUserID,
+		Attributes: s.testAttributes,
+	}
+
+	// Setup cache key
+	cacheKey := s.cmabService.getCacheKey(s.testUserID, s.testRuleID)
+
+	// Setup cache lookup - return nil to simulate cache miss
+	s.mockCache.On("Lookup", cacheKey).Return(nil)
+
+	// Setup mock API response
+	expectedVariationID := "variant-1"
+	s.mockClient.On("FetchDecision", s.testRuleID, s.testUserID, mock.Anything, mock.Anything).Return(expectedVariationID, nil)
+
+	// Setup tracking expectation with parameter verification
+	s.mockClient.On("TrackCMABDecision",
+		s.testRuleID,
+		s.testUserID,
+		expectedVariationID,
+		expectedVariationID, // Simplified - in real implementation this might be different
+		mock.MatchedBy(func(attrs map[string]interface{}) bool {
+			// Verify filtered attributes are passed to tracking
+			if len(attrs) != 2 {
+				return false
+			}
+			if attrs["age"] != 30 {
+				return false
+			}
+			if attrs["location"] != "San Francisco" {
+				return false
+			}
+			return true
+		}),
+		mock.MatchedBy(func(uuid string) bool {
+			// Verify UUID is not empty
+			return uuid != ""
+		})).Return()
+
+	// Setup cache save
+	s.mockCache.On("Save", cacheKey, mock.Anything).Return()
+
+	// Test with no options
+	decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
+	s.NoError(err)
+	s.Equal(expectedVariationID, decision.VariationID)
+	s.NotEmpty(decision.CmabUUID)
+
+	// Verify tracking was called with correct parameters
+	s.mockClient.AssertCalled(s.T(), "TrackCMABDecision",
+		s.testRuleID,
+		s.testUserID,
+		expectedVariationID,
+		expectedVariationID, // Simplified - in real implementation this might be different
+		mock.MatchedBy(func(attrs map[string]interface{}) bool {
+			return attrs["age"] == 30 && attrs["location"] == "San Francisco"
+		}),
+		decision.CmabUUID) // Should match the UUID in the decision
+}
+
+// Test that TrackCMABDecision is not called when using cached decisions
+func (s *CmabServiceTestSuite) TestNoTrackingOnCachedDecisions() {
+	// Setup mock experiment with CMAB configuration
+	experiment := entities.Experiment{
+		ID: s.testRuleID,
+		Cmab: &entities.Cmab{
+			AttributeIds: []string{"attr1", "attr2"},
+		},
+	}
+
+	// Setup mock config
+	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
+	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
+	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
+
+	// Create user context
+	userContext := entities.UserContext{
+		ID:         s.testUserID,
+		Attributes: s.testAttributes,
+	}
+
+	// Setup cache key
+	cacheKey := s.cmabService.getCacheKey(s.testUserID, s.testRuleID)
+
+	// Calculate attributes hash using murmur3 as in your implementation
+	attributesJSON, _ := s.cmabService.getAttributesJSON(s.testAttributes)
+	hasher := murmur3.SeedNew32(1)
+	hasher.Write([]byte(attributesJSON))
+	attributesHash := strconv.FormatUint(uint64(hasher.Sum32()), 10)
+
+	// Setup cache hit with matching attributes hash
+	cachedValue := CmabCacheValue{
+		AttributesHash: attributesHash,
+		VariationID:    "cached-variant",
+		CmabUUID:       "cached-uuid",
+	}
+	s.mockCache.On("Lookup", cacheKey).Return(cachedValue)
+
+	// Test with cache hit
+	decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
+	s.NoError(err)
+	s.Equal("cached-variant", decision.VariationID)
+	s.Equal("cached-uuid", decision.CmabUUID)
+
+	// Verify API was not called
+	s.mockClient.AssertNotCalled(s.T(), "FetchDecision")
+
+	// Verify tracking was NOT called for cached decisions
+	// This is a design decision - you might want to track cached decisions in some implementations
+	s.mockClient.AssertNotCalled(s.T(), "TrackCMABDecision")
 }

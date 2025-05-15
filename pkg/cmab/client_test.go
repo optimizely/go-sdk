@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package decision //
-package decision
+// Package cmab //
+package cmab
 
 import (
 	"context"

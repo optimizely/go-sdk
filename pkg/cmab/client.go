@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package decision provides CMAB client implementation
-package decision
+// Package cmab provides CMAB client implementation
+package cmab
 
 import (
 	"bytes"
@@ -27,6 +27,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/optimizely/go-sdk/v2/pkg/config"
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/event"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
 
@@ -88,16 +91,20 @@ type RetryConfig struct {
 
 // DefaultCmabClient implements the CmabClient interface
 type DefaultCmabClient struct {
-	httpClient  *http.Client
-	retryConfig *RetryConfig
-	logger      logging.OptimizelyLogProducer
+	httpClient     *http.Client
+	retryConfig    *RetryConfig
+	logger         logging.OptimizelyLogProducer
+	eventProcessor event.Processor
+	projectConfig  config.ProjectConfig
 }
 
 // CmabClientOptions defines options for creating a CMAB client
 type CmabClientOptions struct {
-	HTTPClient  *http.Client
-	RetryConfig *RetryConfig
-	Logger      logging.OptimizelyLogProducer
+	HTTPClient     *http.Client
+	RetryConfig    *RetryConfig
+	Logger         logging.OptimizelyLogProducer
+	EventProcessor event.Processor
+	ProjectConfig  config.ProjectConfig
 }
 
 // NewDefaultCmabClient creates a new instance of DefaultCmabClient
@@ -119,9 +126,11 @@ func NewDefaultCmabClient(options CmabClientOptions) *DefaultCmabClient {
 	}
 
 	return &DefaultCmabClient{
-		httpClient:  httpClient,
-		retryConfig: retryConfig,
-		logger:      logger,
+		httpClient:     httpClient,
+		retryConfig:    retryConfig,
+		logger:         logger,
+		eventProcessor: options.EventProcessor,
+		projectConfig:  options.ProjectConfig,
 	}
 }
 
@@ -265,4 +274,98 @@ func (c *DefaultCmabClient) doFetch(ctx context.Context, url string, bodyBytes [
 // validateResponse validates the CMAB response
 func (c *DefaultCmabClient) validateResponse(response CMABResponse) bool {
 	return len(response.Predictions) > 0 && response.Predictions[0].VariationID != ""
+}
+
+// EventProcessor is an interface for processing events
+type EventProcessor interface {
+	Process(userEvent interface{}) bool
+}
+
+// LogImpression logs a CMAB impression event
+func (c *DefaultCmabClient) LogImpression(
+	ctx context.Context,
+	eventProcessor EventProcessor,
+	projectConfig config.ProjectConfig,
+	ruleID string,
+	userID string,
+	variationKey string,
+	variationID string,
+	attributes map[string]interface{},
+	cmabUUID string,
+) error {
+	// If no context is provided, create a background context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	// Instead of directly creating an event, we'll delegate this to the client
+	// that has access to the event package
+	return fmt.Errorf("CMAB impression logging not implemented")
+}
+
+// TrackCMABDecision tracks a CMAB decision event
+func (c *DefaultCmabClient) TrackCMABDecision(
+	ruleID string,
+	userID string,
+	variationID string,
+	variationKey string,
+	attributes map[string]interface{},
+	cmabUUID string,
+) {
+	if c.eventProcessor == nil || c.projectConfig == nil {
+		c.logger.Debug("Event processor or project config not available, not tracking impression")
+		return
+	}
+
+	// Get experiment from project config
+	experiment, err := c.projectConfig.GetExperimentByID(ruleID)
+	if err != nil {
+		c.logger.Error("Error getting experiment", err)
+		return
+	}
+
+	// Create variation object
+	variation := entities.Variation{
+		ID:  variationID,
+		Key: variationKey,
+	}
+
+	// Create user context
+	userContext := entities.UserContext{
+		ID:         userID,
+		Attributes: attributes,
+	}
+
+	// Look for associated feature flag (if any)
+	flagKey := ""
+	featureList := c.projectConfig.GetFeatureList()
+	for _, feature := range featureList {
+		for _, featureExperiment := range feature.FeatureExperiments {
+			if featureExperiment.ID == ruleID {
+				flagKey = feature.Key
+				break
+			}
+		}
+		if flagKey != "" {
+			break
+		}
+	}
+
+	// Create user event with CMAB impression
+	userEvent, shouldDispatch := event.CreateCMABImpressionUserEvent(
+		c.projectConfig,
+		experiment,
+		&variation,
+		userContext,
+		flagKey,
+		experiment.Key, // ruleKey
+		"experiment",   // ruleType
+		true,
+		cmabUUID,
+	)
+
+	// Process the event if it should be dispatched
+	if shouldDispatch {
+		c.eventProcessor.ProcessEvent(userEvent)
+	}
 }

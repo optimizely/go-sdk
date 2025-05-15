@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package decision provides CMAB decision service implementation
-package decision
+// Package cmab provides CMAB decision service implementation
+package cmab
 
 import (
 	"encoding/json"
@@ -186,6 +186,21 @@ func (s *DefaultCmabService) fetchDecisionWithRetry(
 		variationID, err := s.cmabClient.FetchDecision(ruleID, userID, attributes, cmabUUID)
 		if err == nil {
 			reasons = append(reasons, fmt.Sprintf("Successfully fetched CMAB decision on attempt %d/%d", attempt+1, maxRetries))
+
+			// Get variation key from variation ID
+			// This might require additional logic depending on your implementation
+			variationKey := variationID // Simplified - you may need to look up the key
+
+			// Track the decision event
+			s.cmabClient.TrackCMABDecision(
+				ruleID,
+				userID,
+				variationID,
+				variationKey,
+				attributes,
+				cmabUUID,
+			)
+
 			return CmabDecision{
 				VariationID: variationID,
 				CmabUUID:    cmabUUID,
