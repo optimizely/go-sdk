@@ -18,6 +18,12 @@
 package decision
 
 import (
+	"context"
+	"net/http"
+	"time"
+
+	"github.com/optimizely/go-sdk/v2/pkg/cache"
+
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
@@ -40,48 +46,68 @@ func WithOverrideStore(overrideStore ExperimentOverrideStore) CESOptionFunc {
 	}
 }
 
-// WithCmabService adds a CMAB service
-func WithCmabService(cmabService CmabService) CESOptionFunc {
-	return func(f *CompositeExperimentService) {
-		f.cmabService = cmabService
-	}
-}
-
 // CompositeExperimentService bridges together the various experiment decision services that ship by default with the SDK
 type CompositeExperimentService struct {
 	experimentServices []ExperimentService
 	overrideStore      ExperimentOverrideStore
 	userProfileService UserProfileService
-	cmabService        CmabService
 	logger             logging.OptimizelyLogProducer
 }
 
-// NewCompositeExperimentService creates a new instance of the CompositeExperimentService
 func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *CompositeExperimentService {
 	// These decision services are applied in order:
 	// 1. Overrides (if supplied)
 	// 2. Whitelist
-	// 3. CMAB (if experiment is a CMAB experiment)
+	// 3. CMAB (always created)
 	// 4. Bucketing (with User profile integration if supplied)
 	compositeExperimentService := &CompositeExperimentService{logger: logging.GetLogger(sdkKey, "CompositeExperimentService")}
+
 	for _, opt := range options {
 		opt(compositeExperimentService)
 	}
+
 	experimentServices := []ExperimentService{
-		NewExperimentWhitelistService(),
+		NewExperimentWhitelistService(), // No logger argument
 	}
 
-	// Prepend overrides if supplied
 	if compositeExperimentService.overrideStore != nil {
 		overrideService := NewExperimentOverrideService(compositeExperimentService.overrideStore, logging.GetLogger(sdkKey, "ExperimentOverrideService"))
 		experimentServices = append([]ExperimentService{overrideService}, experimentServices...)
 	}
 
-	// Add CMAB service if available
-	if compositeExperimentService.cmabService != nil {
-		cmabService := NewExperimentCmabService(compositeExperimentService.cmabService, logging.GetLogger(sdkKey, "ExperimentCmabService"))
-		experimentServices = append(experimentServices, cmabService)
+	// Always create CMAB service - no conditional check
+	cmabCache := cache.NewLRUCache(100, 0)
+
+	// Create retry config for CMAB client
+	retryConfig := &RetryConfig{
+		MaxRetries:        DefaultMaxRetries,
+		InitialBackoff:    DefaultInitialBackoff,
+		MaxBackoff:        DefaultMaxBackoff,
+		BackoffMultiplier: DefaultBackoffMultiplier,
 	}
+
+	// Create CMAB client options
+	cmabClientOptions := CmabClientOptions{
+		HTTPClient:  &http.Client{Timeout: 10 * time.Second},
+		RetryConfig: retryConfig,
+		Logger:      logging.GetLogger(sdkKey, "DefaultCmabClient"),
+	}
+
+	// Create CMAB client with adapter to match interface
+	defaultCmabClient := NewDefaultCmabClient(cmabClientOptions)
+	cmabClientAdapter := &cmabClientAdapter{client: defaultCmabClient}
+
+	// Create CMAB service options
+	cmabServiceOptions := CmabServiceOptions{
+		CmabCache:  cmabCache,
+		CmabClient: cmabClientAdapter,
+		Logger:     logging.GetLogger(sdkKey, "DefaultCmabService"),
+	}
+
+	// Create CMAB service
+	cmabService := NewDefaultCmabService(cmabServiceOptions)
+	experimentCmabService := NewExperimentCmabService(cmabService, logging.GetLogger(sdkKey, "ExperimentCmabService"))
+	experimentServices = append(experimentServices, experimentCmabService)
 
 	experimentBucketerService := NewExperimentBucketerService(logging.GetLogger(sdkKey, "ExperimentBucketerService"))
 	if compositeExperimentService.userProfileService != nil {
@@ -90,9 +116,20 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 	} else {
 		experimentServices = append(experimentServices, experimentBucketerService)
 	}
-	compositeExperimentService.experimentServices = experimentServices
 
+	compositeExperimentService.experimentServices = experimentServices
 	return compositeExperimentService
+}
+
+// cmabClientAdapter adapts the DefaultCmabClient to the CmabClient interface
+type cmabClientAdapter struct {
+	client *DefaultCmabClient
+}
+
+// FetchDecision implements the CmabClient interface by calling the DefaultCmabClient with a background context
+func (a *cmabClientAdapter) FetchDecision(ruleID, userID string, attributes map[string]interface{}, cmabUUID string) (string, error) {
+	// Use background context for the adapted call
+	return a.client.FetchDecision(context.Background(), ruleID, userID, attributes, cmabUUID)
 }
 
 // GetDecision returns a decision for the given experiment and user context
@@ -103,13 +140,17 @@ func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisi
 		var decisionReasons decide.DecisionReasons
 		decision, decisionReasons, err = experimentService.GetDecision(decisionContext, userContext, options)
 		reasons.Append(decisionReasons)
+
+		// If there's an error, it should only come from CMAB service
+		// We immediately return it without trying other services
 		if err != nil {
-			s.logger.Debug(err.Error())
-		}
-		if decision.Variation != nil && err == nil {
+			s.logger.Error("Error getting decision", err)
 			return decision, reasons, err
 		}
-	}
 
-	return decision, reasons, err
+		if decision.Variation != nil {
+			return decision, reasons, nil
+		}
+	}
+	return decision, reasons, nil
 }
