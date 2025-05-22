@@ -54,6 +54,13 @@ type CompositeExperimentService struct {
 	logger             logging.OptimizelyLogProducer
 }
 
+// NewCompositeExperimentService creates a new composite experiment service with the given SDK key.
+// It initializes a service that combines multiple decision services in a specific order:
+// 1. Overrides (if supplied)
+// 2. Whitelist
+// 3. CMAB (Contextual Multi-Armed Bandit)
+// 4. Bucketing (with User profile integration if supplied)
+// Additional options can be provided via CESOptionFunc parameters.
 func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *CompositeExperimentService {
 	// These decision services are applied in order:
 	// 1. Overrides (if supplied)
@@ -133,24 +140,35 @@ func (a *cmabClientAdapter) FetchDecision(ruleID, userID string, attributes map[
 }
 
 // GetDecision returns a decision for the given experiment and user context
-func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options) (decision ExperimentDecision, reasons decide.DecisionReasons, err error) {
-	// Run through the various decision services until we get a decision
-	reasons = decide.NewDecisionReasons(options)
-	for _, experimentService := range s.experimentServices {
-		var decisionReasons decide.DecisionReasons
-		decision, decisionReasons, err = experimentService.GetDecision(decisionContext, userContext, options)
-		reasons.Append(decisionReasons)
+func (s *CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options) (ExperimentDecision, decide.DecisionReasons, error) {
+	var decision ExperimentDecision
+	reasons := decide.NewDecisionReasons(options)
 
-		// If there's an error, it should only come from CMAB service
-		// We immediately return it without trying other services
-		if err != nil {
-			s.logger.Error("Error getting decision", err)
-			return decision, reasons, err
+	for i, experimentService := range s.experimentServices {
+		var err error
+		var serviceReasons decide.DecisionReasons
+
+		decision, serviceReasons, err = experimentService.GetDecision(decisionContext, userContext, options)
+		reasons.Append(serviceReasons)
+
+		// If we got an error from the CMAB service (index 1), propagate it
+		if err != nil && i == 1 {
+			if _, ok := experimentService.(*ExperimentCmabService); ok {
+				return decision, reasons, err
+			}
 		}
 
+		// For other services, log the error but continue
+		if err != nil {
+			s.logger.Error("Error getting decision: ", err)
+			continue
+		}
+
+		// If we got a valid decision (has a variation), return it
 		if decision.Variation != nil {
 			return decision, reasons, nil
 		}
 	}
+
 	return decision, reasons, nil
 }

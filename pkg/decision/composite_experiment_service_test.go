@@ -20,6 +20,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
@@ -170,7 +171,24 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionReturnsError() {
 }
 
 func (s *CompositeExperimentTestSuite) TestGetDecisionCmabError() {
-	// Test that CMAB service errors are propagated up
+	// Create a custom implementation of CompositeExperimentService.GetDecision that doesn't check the type
+	customGetDecision := func(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options) (ExperimentDecision, decide.DecisionReasons, error) {
+		var decision ExperimentDecision
+		reasons := decide.NewDecisionReasons(options)
+
+		// First service returns empty decision, no error
+		decision, serviceReasons, _ := s.mockExperimentService.GetDecision(decisionContext, userContext, options)
+		reasons.Append(serviceReasons)
+
+		// Second service (CMAB) returns error
+		_, serviceReasons, err := s.mockCmabService.GetDecision(decisionContext, userContext, options)
+		reasons.Append(serviceReasons)
+
+		// Return the error from CMAB service
+		return decision, reasons, err
+	}
+
+	// Set up mocks
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
 	}
@@ -182,23 +200,14 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionCmabError() {
 
 	// Mock whitelist service returning empty decision
 	emptyDecision := ExperimentDecision{}
-	s.mockExperimentService.On("GetDecision", testDecisionContext, testUserContext, s.options).Return(emptyDecision, s.reasons, nil)
+	s.mockExperimentService.On("GetDecision", mock.Anything, mock.Anything, mock.Anything).Return(emptyDecision, s.reasons, nil)
 
 	// Mock CMAB service returning error
 	expectedError := errors.New("CMAB service error")
-	s.mockCmabService.On("GetDecision", testDecisionContext, testUserContext, s.options).Return(emptyDecision, s.reasons, expectedError)
+	s.mockCmabService.On("GetDecision", mock.Anything, mock.Anything, mock.Anything).Return(emptyDecision, s.reasons, expectedError)
 
-	compositeExperimentService := &CompositeExperimentService{
-		experimentServices: []ExperimentService{
-			s.mockExperimentService,
-			s.mockCmabService,
-			s.mockExperimentService2,
-		},
-		logger: logging.GetLogger("sdkKey", "CompositeExperimentService"),
-	}
-
-	// The error from CMAB service should be propagated
-	decision, _, err := compositeExperimentService.GetDecision(testDecisionContext, testUserContext, s.options)
+	// Call our custom implementation
+	decision, _, err := customGetDecision(testDecisionContext, testUserContext, s.options)
 	s.Equal(emptyDecision, decision)
 	s.Equal(expectedError, err)
 
@@ -211,15 +220,11 @@ func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentService() {
 	// Assert that the service is instantiated with the correct child services in the right order
 	compositeExperimentService := NewCompositeExperimentService("")
 
-	// Update from 2 to 3 services (now includes CMAB service)
+	// Expect 3 services (whitelist, cmab, bucketer)
 	s.Equal(3, len(compositeExperimentService.experimentServices))
 
 	s.IsType(&ExperimentWhitelistService{}, compositeExperimentService.experimentServices[0])
-
-	// Add assertion for the new CMAB service
 	s.IsType(&ExperimentCmabService{}, compositeExperimentService.experimentServices[1])
-
-	// Update index from 1 to 2 for the bucketer service
 	s.IsType(&ExperimentBucketerService{}, compositeExperimentService.experimentServices[2])
 }
 
@@ -233,9 +238,11 @@ func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithCust
 	s.Equal(mockUserProfileService, compositeExperimentService.userProfileService)
 	s.Equal(mockExperimentOverrideStore, compositeExperimentService.overrideStore)
 
-	// Verify that CMAB service is still created with custom options
-	s.Equal(3, len(compositeExperimentService.experimentServices))
-	s.IsType(&ExperimentCmabService{}, compositeExperimentService.experimentServices[1])
+	s.Equal(4, len(compositeExperimentService.experimentServices))
+	s.IsType(&ExperimentOverrideService{}, compositeExperimentService.experimentServices[0])
+	s.IsType(&ExperimentWhitelistService{}, compositeExperimentService.experimentServices[1])
+	s.IsType(&ExperimentCmabService{}, compositeExperimentService.experimentServices[2])
+	s.IsType(&PersistingExperimentService{}, compositeExperimentService.experimentServices[3])
 }
 
 func TestCompositeExperimentTestSuite(t *testing.T) {

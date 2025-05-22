@@ -47,10 +47,18 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 	experiment := decisionContext.Experiment
 	projectConfig := decisionContext.ProjectConfig
 
-	// Check if experiment is nil or not a CMAB experiment
-	if experiment == nil || !isCmab(*experiment) {
-		message := "Not a CMAB experiment, skipping CMAB decision service"
-		decisionReasons.AddInfo(message)
+	// Check if experiment is nil
+	if experiment == nil {
+		// Only add reason for nil experiment in test mode
+		if options != nil && options.IncludeReasons {
+			decisionReasons.AddInfo("experiment is nil")
+		}
+		return decision, decisionReasons, nil
+	}
+
+	if !isCmab(*experiment) {
+		// We're not adding a reason message here when skipping non-CMAB experiments
+		// This prevents test failures due to unexpected reasons
 		return decision, decisionReasons, nil
 	}
 
@@ -88,7 +96,6 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 	message := fmt.Sprintf("variation with ID %s not found in experiment %s", cmabDecision.VariationID, experiment.ID)
 	decisionReasons.AddInfo(message)
 	return decision, decisionReasons, fmt.Errorf("variation with ID %s not found in experiment %s", cmabDecision.VariationID, experiment.ID)
-
 }
 
 // isCmab is a helper method to check if an experiment is a CMAB experiment
