@@ -106,7 +106,7 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 	cmabClientAdapter := &cmabClientAdapter{client: defaultCmabClient}
 
 	// Create CMAB service options
-	cmabServiceOptions := cmab.CmabServiceOptions{
+	cmabServiceOptions := cmab.ServiceOptions{
 		CmabCache:  cmabCache,
 		CmabClient: cmabClientAdapter,
 		Logger:     logging.GetLogger(sdkKey, "DefaultCmabService"),

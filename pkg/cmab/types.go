@@ -14,6 +14,9 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
+// Package cmab provides functionality for Contextual Multi-Armed Bandit (CMAB)
+// decision-making, including client and service implementations for making and
+// handling CMAB requests and responses.
 package cmab
 
 import (

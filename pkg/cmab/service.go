@@ -39,15 +39,15 @@ type DefaultCmabService struct {
 	logger     logging.OptimizelyLogProducer
 }
 
-// CmabServiceOptions defines options for creating a CMAB service
-type CmabServiceOptions struct {
+// ServiceOptions defines options for creating a CMAB service
+type ServiceOptions struct {
 	Logger     logging.OptimizelyLogProducer
 	CmabCache  cache.CacheWithRemove
 	CmabClient Client
 }
 
 // NewDefaultCmabService creates a new instance of DefaultCmabService
-func NewDefaultCmabService(options CmabServiceOptions) *DefaultCmabService {
+func NewDefaultCmabService(options ServiceOptions) *DefaultCmabService {
 	logger := options.Logger
 	if logger == nil {
 		logger = logging.GetLogger("", "DefaultCmabService")

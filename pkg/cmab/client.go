@@ -44,34 +44,34 @@ const (
 	DefaultBackoffMultiplier = 2.0
 )
 
-// CMABAttribute represents an attribute in a CMAB request
-type CMABAttribute struct {
+// Attribute represents an attribute in a CMAB request
+type Attribute struct {
 	ID    string      `json:"id"`
 	Value interface{} `json:"value"`
 	Type  string      `json:"type"`
 }
 
-// CMABInstance represents an instance in a CMAB request
-type CMABInstance struct {
-	VisitorID    string          `json:"visitorId"`
-	ExperimentID string          `json:"experimentId"`
-	Attributes   []CMABAttribute `json:"attributes"`
-	CmabUUID     string          `json:"cmabUUID"`
+// Instance represents an instance in a CMAB request
+type Instance struct {
+	VisitorID    string      `json:"visitorId"`
+	ExperimentID string      `json:"experimentId"`
+	Attributes   []Attribute `json:"attributes"`
+	CmabUUID     string      `json:"cmabUUID"`
 }
 
-// CMABRequest represents a request to the CMAB API
-type CMABRequest struct {
-	Instances []CMABInstance `json:"instances"`
+// Request represents a request to the CMAB API
+type Request struct {
+	Instances []Instance `json:"instances"`
 }
 
-// CMABPrediction represents a prediction in a CMAB response
-type CMABPrediction struct {
+// Prediction represents a prediction in a CMAB response
+type Prediction struct {
 	VariationID string `json:"variation_id"`
 }
 
-// CMABResponse represents a response from the CMAB API
-type CMABResponse struct {
-	Predictions []CMABPrediction `json:"predictions"`
+// Response represents a response from the CMAB API
+type Response struct {
+	Predictions []Prediction `json:"predictions"`
 }
 
 // RetryConfig defines configuration for retry behavior
@@ -142,9 +142,9 @@ func (c *DefaultCmabClient) FetchDecision(
 	url := fmt.Sprintf(CMABPredictionEndpoint, ruleID)
 
 	// Convert attributes to CMAB format
-	cmabAttributes := make([]CMABAttribute, 0, len(attributes))
+	cmabAttributes := make([]Attribute, 0, len(attributes))
 	for key, value := range attributes {
-		cmabAttributes = append(cmabAttributes, CMABAttribute{
+		cmabAttributes = append(cmabAttributes, Attribute{
 			ID:    key,
 			Value: value,
 			Type:  "custom_attribute",
@@ -152,8 +152,8 @@ func (c *DefaultCmabClient) FetchDecision(
 	}
 
 	// Create the request body
-	requestBody := CMABRequest{
-		Instances: []CMABInstance{
+	requestBody := Request{
+		Instances: []Instance{
 			{
 				VisitorID:    userID,
 				ExperimentID: ruleID,
@@ -248,7 +248,7 @@ func (c *DefaultCmabClient) doFetch(ctx context.Context, url string, bodyBytes [
 	}
 
 	// Parse response
-	var cmabResponse CMABResponse
+	var cmabResponse Response
 	if err := json.Unmarshal(respBody, &cmabResponse); err != nil {
 		return "", fmt.Errorf("failed to unmarshal CMAB response: %w", err)
 	}
@@ -263,6 +263,6 @@ func (c *DefaultCmabClient) doFetch(ctx context.Context, url string, bodyBytes [
 }
 
 // validateResponse validates the CMAB response
-func (c *DefaultCmabClient) validateResponse(response CMABResponse) bool {
+func (c *DefaultCmabClient) validateResponse(response Response) bool {
 	return len(response.Predictions) > 0 && response.Predictions[0].VariationID != ""
 }

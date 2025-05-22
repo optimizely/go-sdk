@@ -65,7 +65,7 @@ func TestDefaultCmabClient_FetchDecision(t *testing.T) {
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
 		// Parse request body
-		var requestBody CMABRequest
+		var requestBody Request
 		err := json.NewDecoder(r.Body).Decode(&requestBody)
 		assert.NoError(t, err)
 
@@ -80,7 +80,7 @@ func TestDefaultCmabClient_FetchDecision(t *testing.T) {
 		assert.Len(t, instance.Attributes, 5)
 
 		// Create a map for easier attribute checking
-		attrMap := make(map[string]CMABAttribute)
+		attrMap := make(map[string]Attribute)
 		for _, attr := range instance.Attributes {
 			attrMap[attr.ID] = attr
 			assert.Equal(t, "custom_attribute", attr.Type)
@@ -109,8 +109,8 @@ func TestDefaultCmabClient_FetchDecision(t *testing.T) {
 		// Return response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		response := CMABResponse{
-			Predictions: []CMABPrediction{
+		response := Response{
+			Predictions: []Prediction{
 				{
 					VariationID: "var123",
 				},
@@ -167,7 +167,7 @@ func TestDefaultCmabClient_FetchDecision_WithRetry(t *testing.T) {
 		body, err := io.ReadAll(r.Body)
 		assert.NoError(t, err)
 
-		var requestBody CMABRequest
+		var requestBody Request
 		err = json.Unmarshal(body, &requestBody)
 		assert.NoError(t, err)
 
@@ -187,8 +187,8 @@ func TestDefaultCmabClient_FetchDecision_WithRetry(t *testing.T) {
 		// Return success response on third attempt
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		response := CMABResponse{
-			Predictions: []CMABPrediction{
+		response := Response{
+			Predictions: []Prediction{
 				{
 					VariationID: "var123",
 				},
@@ -442,8 +442,8 @@ func TestDefaultCmabClient_ExponentialBackoff(t *testing.T) {
 		// Return success response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		response := CMABResponse{
-			Predictions: []CMABPrediction{
+		response := Response{
+			Predictions: []Prediction{
 				{
 					VariationID: "var123",
 				},
@@ -649,8 +649,8 @@ func TestDefaultCmabClient_FetchDecision_ContextCancellation(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		response := CMABResponse{
-			Predictions: []CMABPrediction{
+		response := Response{
+			Predictions: []Prediction{
 				{
 					VariationID: "var123",
 				},
