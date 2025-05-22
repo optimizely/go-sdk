@@ -70,15 +70,28 @@ func (s *DefaultCmabService) GetDecision(
 	// Initialize reasons slice for decision
 	reasons := []string{}
 
+	// First check if the user is in the experiment based on traffic allocation
+	experiment, err := projectConfig.GetExperimentByID(ruleID)
+	if err != nil {
+		reasons = append(reasons, fmt.Sprintf("Error getting experiment: %v", err))
+		return Decision{Reasons: reasons}, fmt.Errorf("error getting experiment: %w", err)
+	}
+
+	if !s.IsUserInExperiment(projectConfig, userContext.ID, experiment.Key) {
+		reasons = append(reasons, "User not in experiment due to traffic allocation")
+		return Decision{Reasons: reasons}, fmt.Errorf("user %s not in experiment %s due to traffic allocation",
+			userContext.ID, experiment.Key)
+	}
+
 	// Filter attributes based on CMAB configuration
 	filteredAttributes := s.filterAttributes(projectConfig, userContext, ruleID)
 
 	// Check if we should ignore the cache
 	if options != nil && hasOption(options, decide.IgnoreCMABCache) {
 		reasons = append(reasons, "Ignoring CMAB cache as requested")
-		decision, err := s.fetchDecisionWithRetry(ruleID, userContext.ID, filteredAttributes)
-		if err != nil {
-			return Decision{Reasons: reasons}, err
+		decision, fetchErr := s.fetchDecisionWithRetry(ruleID, userContext.ID, filteredAttributes) // Renamed err to fetchErr
+		if fetchErr != nil {
+			return Decision{Reasons: reasons}, fetchErr
 		}
 		decision.Reasons = append(reasons, decision.Reasons...)
 		return decision, nil
@@ -100,17 +113,19 @@ func (s *DefaultCmabService) GetDecision(
 	}
 
 	// Generate attributes hash for cache validation
-	attributesJSON, err := s.getAttributesJSON(filteredAttributes)
-	if err != nil {
-		reasons = append(reasons, fmt.Sprintf("Failed to serialize attributes: %v", err))
-		return Decision{Reasons: reasons}, fmt.Errorf("failed to serialize attributes: %w", err)
+	attributesJSON, jsonErr := s.getAttributesJSON(filteredAttributes) // Renamed err to jsonErr
+	if jsonErr != nil {
+		reasons = append(reasons, fmt.Sprintf("Failed to serialize attributes: %v", jsonErr))
+		return Decision{Reasons: reasons}, fmt.Errorf("failed to serialize attributes: %w", jsonErr)
 	}
-	hasher := murmur3.SeedNew32(1) // Use seed 1 for consistency
-	_, err = hasher.Write([]byte(attributesJSON))
-	if err != nil {
-		reasons = append(reasons, fmt.Sprintf("Failed to hash attributes: %v", err))
-		return Decision{Reasons: reasons}, fmt.Errorf("failed to hash attributes: %w", err)
+
+	hasher := murmur3.SeedNew32(1)                      // Use seed 1 for consistency
+	_, writeErr := hasher.Write([]byte(attributesJSON)) // Renamed err to writeErr
+	if writeErr != nil {
+		reasons = append(reasons, fmt.Sprintf("Failed to hash attributes: %v", writeErr))
+		return Decision{Reasons: reasons}, fmt.Errorf("failed to hash attributes: %w", writeErr)
 	}
+
 	attributesHash := strconv.FormatUint(uint64(hasher.Sum32()), 10)
 
 	// Try to get from cache
@@ -270,4 +285,58 @@ func hasOption(options *decide.Options, option decide.OptimizelyDecideOptions) b
 	default:
 		return false
 	}
+}
+
+// IsUserInExperiment determines if a user should be included in a CMAB experiment based on traffic allocation
+func (s *DefaultCmabService) IsUserInExperiment(
+	projectConfig config.ProjectConfig,
+	userID string,
+	experimentKey string,
+) bool {
+	// Get the experiment from the datafile
+	experiment, err := projectConfig.GetExperimentByKey(experimentKey)
+	if err != nil {
+		s.logger.Debug(fmt.Sprintf("Error getting experiment from key: %s, error: %v", experimentKey, err))
+		return false
+	}
+
+	// Get the traffic allocation for this experiment
+	trafficAllocation := experiment.TrafficAllocation
+
+	// Use userID directly as the bucketing ID
+	bucketingID := userID
+
+	// Calculate the bucket value for this user
+	hasher := murmur3.New32()
+	// Handle error from Write - though it's unlikely to fail for a string
+	_, writeErr := hasher.Write([]byte(bucketingID))
+	if writeErr != nil {
+		s.logger.Debug(fmt.Sprintf("Error hashing bucketingID: %v", writeErr))
+		return false
+	}
+
+	// Fix integer overflow by using uint32 for the modulo operation
+	bucketValue := hasher.Sum32() % uint32(10000)
+
+	// Check if the user falls within any traffic allocation range
+	// Check if the user falls within any traffic allocation range
+	for _, allocation := range trafficAllocation {
+		// Ensure EndOfRange is non-negative and within uint32 range
+		if allocation.EndOfRange < 0 || allocation.EndOfRange > int(^uint32(0)) {
+			s.logger.Debug(fmt.Sprintf("Invalid EndOfRange value: %d", allocation.EndOfRange))
+			continue
+		}
+
+		// Compare as integers to avoid conversion
+		if int(bucketValue) < allocation.EndOfRange {
+			s.logger.Debug(fmt.Sprintf("User is in CMAB experiment due to traffic allocation: userID=%s, experimentKey=%s, bucketValue=%d",
+				userID, experimentKey, bucketValue))
+			return true
+		}
+	}
+
+	s.logger.Debug(fmt.Sprintf("User not in CMAB experiment due to traffic allocation: userID=%s, experimentKey=%s, bucketValue=%d",
+		userID, experimentKey, bucketValue))
+
+	return false
 }
