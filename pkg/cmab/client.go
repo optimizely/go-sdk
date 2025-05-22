@@ -93,15 +93,15 @@ type DefaultCmabClient struct {
 	logger      logging.OptimizelyLogProducer
 }
 
-// CmabClientOptions defines options for creating a CMAB client
-type CmabClientOptions struct {
+// ClientOptions defines options for creating a CMAB client
+type ClientOptions struct {
 	HTTPClient  *http.Client
 	RetryConfig *RetryConfig
 	Logger      logging.OptimizelyLogProducer
 }
 
 // NewDefaultCmabClient creates a new instance of DefaultCmabClient
-func NewDefaultCmabClient(options CmabClientOptions) *DefaultCmabClient {
+func NewDefaultCmabClient(options ClientOptions) *DefaultCmabClient {
 	httpClient := options.HTTPClient
 	if httpClient == nil {
 		httpClient = &http.Client{

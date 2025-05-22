@@ -95,7 +95,7 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 	}
 
 	// Create CMAB client options
-	cmabClientOptions := cmab.CmabClientOptions{
+	cmabClientOptions := cmab.ClientOptions{
 		HTTPClient:  &http.Client{Timeout: 10 * time.Second},
 		RetryConfig: retryConfig,
 		Logger:      logging.GetLogger(sdkKey, "DefaultCmabClient"),

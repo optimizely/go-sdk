@@ -121,7 +121,7 @@ func TestDefaultCmabClient_FetchDecision(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom endpoint
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -199,7 +199,7 @@ func TestDefaultCmabClient_FetchDecision_WithRetry(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom endpoint and retry config
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -247,7 +247,7 @@ func TestDefaultCmabClient_FetchDecision_ExhaustedRetries(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom endpoint and retry config
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -292,7 +292,7 @@ func TestDefaultCmabClient_FetchDecision_NoRetryConfig(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom endpoint but no retry config
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -356,7 +356,7 @@ func TestDefaultCmabClient_FetchDecision_InvalidResponse(t *testing.T) {
 			defer server.Close()
 
 			// Create client with custom endpoint
-			client := NewDefaultCmabClient(CmabClientOptions{
+			client := NewDefaultCmabClient(ClientOptions{
 				HTTPClient: &http.Client{
 					Timeout: 5 * time.Second,
 				},
@@ -393,7 +393,7 @@ func TestDefaultCmabClient_FetchDecision_NetworkErrors(t *testing.T) {
 	}
 
 	// Create client with non-existent server to simulate network errors
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 100 * time.Millisecond, // Short timeout to fail quickly
 		},
@@ -454,7 +454,7 @@ func TestDefaultCmabClient_ExponentialBackoff(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom endpoint and specific retry config
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -504,7 +504,7 @@ func TestDefaultCmabClient_ExponentialBackoff(t *testing.T) {
 
 func TestNewDefaultCmabClient_DefaultValues(t *testing.T) {
 	// Test with empty options
-	client := NewDefaultCmabClient(CmabClientOptions{})
+	client := NewDefaultCmabClient(ClientOptions{})
 
 	// Verify default values
 	assert.NotNil(t, client.httpClient)
@@ -541,7 +541,7 @@ func TestDefaultCmabClient_LoggingBehavior(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom logger
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -610,7 +610,7 @@ func TestDefaultCmabClient_NonSuccessStatusCode(t *testing.T) {
 			defer server.Close()
 
 			// Create client with custom endpoint and no retries
-			client := NewDefaultCmabClient(CmabClientOptions{
+			client := NewDefaultCmabClient(ClientOptions{
 				HTTPClient: &http.Client{
 					Timeout: 5 * time.Second,
 				},
@@ -661,7 +661,7 @@ func TestDefaultCmabClient_FetchDecision_ContextCancellation(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom endpoint
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
