@@ -23,7 +23,7 @@ import (
 )
 
 // FlagNotification constructs default flag notification
-func FlagNotification(flagKey, variationKey, ruleKey, experimentId, variationId string, enabled, decisionEventDispatched bool, userContext entities.UserContext, variables map[string]interface{}, reasons []string) *notification.DecisionNotification {
+func FlagNotification(flagKey, variationKey, ruleKey, experimentID, variationID string, enabled, decisionEventDispatched bool, userContext entities.UserContext, variables map[string]interface{}, reasons []string) *notification.DecisionNotification {
 
 	if flagKey == "" {
 		return nil
@@ -37,8 +37,8 @@ func FlagNotification(flagKey, variationKey, ruleKey, experimentId, variationId 
 		"ruleKey":                 ruleKey,
 		"reasons":                 reasons,
 		"decisionEventDispatched": decisionEventDispatched,
-		"experimentId":            experimentId,
-		"variationId":             variationId,
+		"experimentId":            experimentID,
+		"variationId":             variationID,
 	}
 
 	decisionNotification := &notification.DecisionNotification{
