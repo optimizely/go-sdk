@@ -234,7 +234,7 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 	ruleKey := featureDecision.Experiment.Key
 
 	if o.notificationCenter != nil {
-		decisionNotification := decision.FlagNotification(key, variationKey, ruleKey, flagEnabled, eventSent, usrContext, variableMap, reasonsToReport, experimentID, variationID)
+		decisionNotification := decision.FlagNotification(key, variationKey, ruleKey, experimentID, variationID, flagEnabled, eventSent, usrContext, variableMap, reasonsToReport)
 		o.logger.Debug(fmt.Sprintf(`Feature %q is enabled for user %q? %v`, key, usrContext.ID, flagEnabled))
 		if e := o.notificationCenter.Send(notification.Decision, *decisionNotification); e != nil {
 			o.logger.Warning("Problem with sending notification")
