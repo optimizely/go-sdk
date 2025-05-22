@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package decision //
-package decision
+// Package cmab //
+package cmab
 
 import (
 	"errors"
@@ -330,7 +330,7 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithCache() {
 	attributesHash := strconv.FormatUint(uint64(hasher.Sum32()), 10)
 
 	// Setup cache hit with matching attributes hash
-	cachedValue := CmabCacheValue{
+	cachedValue := CacheValue{
 		AttributesHash: attributesHash,
 		VariationID:    "cached-variant",
 		CmabUUID:       "cached-uuid",
@@ -659,7 +659,7 @@ func (s *CmabServiceTestSuite) TestCacheInvalidatedWhenAttributesChange() {
 
 	// First, create a cached value with a different attributes hash
 	oldAttributesHash := "old-hash"
-	cachedValue := CmabCacheValue{
+	cachedValue := CacheValue{
 		AttributesHash: oldAttributesHash,
 		VariationID:    "cached-variant",
 		CmabUUID:       "cached-uuid",
@@ -693,7 +693,7 @@ func (s *CmabServiceTestSuite) TestCacheInvalidatedWhenAttributesChange() {
 	s.mockClient.AssertCalled(s.T(), "FetchDecision", s.testRuleID, s.testUserID, mock.Anything, mock.Anything)
 
 	// Verify new decision was cached
-	s.mockCache.AssertCalled(s.T(), "Save", cacheKey, mock.MatchedBy(func(value CmabCacheValue) bool {
+	s.mockCache.AssertCalled(s.T(), "Save", cacheKey, mock.MatchedBy(func(value CacheValue) bool {
 		return value.VariationID == expectedVariationID && value.AttributesHash != oldAttributesHash
 	}))
 }

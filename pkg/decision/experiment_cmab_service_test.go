@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/optimizely/go-sdk/v2/pkg/cmab"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
@@ -198,7 +199,7 @@ func (s *ExperimentCmabTestSuite) TestGetDecisionWithCmabServiceError() {
 
 	// Setup mock CMAB service to return error
 	s.mockCmabService.On("GetDecision", s.mockProjectConfig, s.testUserContext, "cmab_exp_1", s.options).
-		Return(CmabDecision{}, errors.New("CMAB service error"))
+		Return(cmab.Decision{}, errors.New("CMAB service error"))
 
 	// Create CMAB service
 	cmabService := NewExperimentCmabService(s.mockCmabService, s.logger)
@@ -236,7 +237,7 @@ func (s *ExperimentCmabTestSuite) TestGetDecisionWithInvalidVariationID() {
 
 	// Setup mock CMAB service to return invalid variation ID
 	s.mockCmabService.On("GetDecision", s.mockProjectConfig, s.testUserContext, "cmab_exp_1", s.options).
-		Return(CmabDecision{VariationID: "invalid_var_id"}, nil)
+		Return(cmab.Decision{VariationID: "invalid_var_id"}, nil)
 
 	// Create CMAB service
 	cmabService := NewExperimentCmabService(s.mockCmabService, s.logger)
@@ -274,7 +275,7 @@ func (s *ExperimentCmabTestSuite) TestGetDecisionSuccess() {
 
 	// Setup mock CMAB service to return valid variation ID
 	s.mockCmabService.On("GetDecision", s.mockProjectConfig, s.testUserContext, "cmab_exp_1", s.options).
-		Return(CmabDecision{VariationID: "var1"}, nil)
+		Return(cmab.Decision{VariationID: "var1"}, nil)
 
 	// Create CMAB service
 	cmabService := NewExperimentCmabService(s.mockCmabService, s.logger)
@@ -310,9 +311,9 @@ type MockCmabService struct {
 	mock.Mock
 }
 
-func (m *MockCmabService) GetDecision(projectConfig config.ProjectConfig, userContext entities.UserContext, ruleID string, options *decide.Options) (CmabDecision, error) {
+func (m *MockCmabService) GetDecision(projectConfig config.ProjectConfig, userContext entities.UserContext, ruleID string, options *decide.Options) (cmab.Decision, error) {
 	args := m.Called(projectConfig, userContext, ruleID, options)
-	return args.Get(0).(CmabDecision), args.Error(1)
+	return args.Get(0).(cmab.Decision), args.Error(1)
 }
 
 func TestExperimentCmabTestSuite(t *testing.T) {

@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/optimizely/go-sdk/v2/pkg/cache"
+	"github.com/optimizely/go-sdk/v2/pkg/cmab"
 
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
@@ -86,33 +87,33 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 	cmabCache := cache.NewLRUCache(100, 0)
 
 	// Create retry config for CMAB client
-	retryConfig := &RetryConfig{
-		MaxRetries:        DefaultMaxRetries,
-		InitialBackoff:    DefaultInitialBackoff,
-		MaxBackoff:        DefaultMaxBackoff,
-		BackoffMultiplier: DefaultBackoffMultiplier,
+	retryConfig := &cmab.RetryConfig{
+		MaxRetries:        cmab.DefaultMaxRetries,
+		InitialBackoff:    cmab.DefaultInitialBackoff,
+		MaxBackoff:        cmab.DefaultMaxBackoff,
+		BackoffMultiplier: cmab.DefaultBackoffMultiplier,
 	}
 
 	// Create CMAB client options
-	cmabClientOptions := CmabClientOptions{
+	cmabClientOptions := cmab.CmabClientOptions{
 		HTTPClient:  &http.Client{Timeout: 10 * time.Second},
 		RetryConfig: retryConfig,
 		Logger:      logging.GetLogger(sdkKey, "DefaultCmabClient"),
 	}
 
 	// Create CMAB client with adapter to match interface
-	defaultCmabClient := NewDefaultCmabClient(cmabClientOptions)
+	defaultCmabClient := cmab.NewDefaultCmabClient(cmabClientOptions)
 	cmabClientAdapter := &cmabClientAdapter{client: defaultCmabClient}
 
 	// Create CMAB service options
-	cmabServiceOptions := CmabServiceOptions{
+	cmabServiceOptions := cmab.CmabServiceOptions{
 		CmabCache:  cmabCache,
 		CmabClient: cmabClientAdapter,
 		Logger:     logging.GetLogger(sdkKey, "DefaultCmabService"),
 	}
 
 	// Create CMAB service
-	cmabService := NewDefaultCmabService(cmabServiceOptions)
+	cmabService := cmab.NewDefaultCmabService(cmabServiceOptions)
 	experimentCmabService := NewExperimentCmabService(cmabService, logging.GetLogger(sdkKey, "ExperimentCmabService"))
 	experimentServices = append(experimentServices, experimentCmabService)
 
@@ -130,7 +131,7 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 
 // cmabClientAdapter adapts the DefaultCmabClient to the CmabClient interface
 type cmabClientAdapter struct {
-	client *DefaultCmabClient
+	client *cmab.DefaultCmabClient
 }
 
 // FetchDecision implements the CmabClient interface by calling the DefaultCmabClient with a background context

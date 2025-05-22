@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/optimizely/go-sdk/v2/pkg/cmab"
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
@@ -29,12 +30,12 @@ import (
 
 // ExperimentCmabService makes decisions for CMAB experiments
 type ExperimentCmabService struct {
-	cmabService CmabService
+	cmabService cmab.Service
 	logger      logging.OptimizelyLogProducer
 }
 
 // NewExperimentCmabService creates a new instance of ExperimentCmabService
-func NewExperimentCmabService(cmabService CmabService, logger logging.OptimizelyLogProducer) *ExperimentCmabService {
+func NewExperimentCmabService(cmabService cmab.Service, logger logging.OptimizelyLogProducer) *ExperimentCmabService {
 	return &ExperimentCmabService{
 		cmabService: cmabService,
 		logger:      logger,

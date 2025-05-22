@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package decision provides CMAB client implementation
-package decision
+// Package cmab provides contextual multi-armed bandit functionality
+package cmab
 
 import (
 	"bytes"
