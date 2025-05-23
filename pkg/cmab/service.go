@@ -319,7 +319,6 @@ func (s *DefaultCmabService) IsUserInExperiment(
 	bucketValue := hasher.Sum32() % uint32(10000)
 
 	// Check if the user falls within any traffic allocation range
-	// Check if the user falls within any traffic allocation range
 	for _, allocation := range trafficAllocation {
 		// Ensure EndOfRange is non-negative and within uint32 range
 		if allocation.EndOfRange < 0 || allocation.EndOfRange > int(^uint32(0)) {
