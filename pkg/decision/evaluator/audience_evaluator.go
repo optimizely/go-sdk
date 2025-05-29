@@ -37,7 +37,7 @@ func CheckIfUserInAudience(experiment *entities.Experiment, userContext entities
 
 	if experiment.AudienceConditionTree != nil {
 		condTreeParams := entities.NewTreeParameters(&userContext, projectConfig.GetAudienceMap())
-		logger.Debug(fmt.Sprintf("Evaluating audiences for experiment \"%q\".", experiment.Key))
+		logger.Debug(fmt.Sprintf("Evaluating audiences for experiment %q.", experiment.Key))
 
 		evalResult, _, audienceReasons := audienceEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams, options)
 		decisionReasons.Append(audienceReasons)
