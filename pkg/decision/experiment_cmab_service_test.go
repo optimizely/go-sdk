@@ -27,32 +27,60 @@ import (
 
 	"github.com/optimizely/go-sdk/v2/pkg/config"
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
+	"github.com/optimizely/go-sdk/v2/pkg/decision/evaluator"
 	"github.com/optimizely/go-sdk/v2/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
 
+// Mock types - MUST be at package level, not inside functions
+type MockCmabService struct {
+	mock.Mock
+}
+
+func (m *MockCmabService) GetDecision(projectConfig config.ProjectConfig, userContext entities.UserContext, ruleID string, options *decide.Options) (cmab.Decision, error) {
+	args := m.Called(projectConfig, userContext, ruleID, options)
+	return args.Get(0).(cmab.Decision), args.Error(1)
+}
+
+type MockExperimentBucketer struct {
+	mock.Mock
+}
+
+func (m *MockExperimentBucketer) Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (*entities.Variation, reasons.Reason, error) {
+	args := m.Called(bucketingID, experiment, group)
+
+	var variation *entities.Variation
+	if args.Get(0) != nil {
+		variation = args.Get(0).(*entities.Variation)
+	}
+
+	return variation, args.Get(1).(reasons.Reason), args.Error(2)
+}
+
 type ExperimentCmabTestSuite struct {
 	suite.Suite
-	mockCmabService       *MockCmabService
-	mockProjectConfig     *mockProjectConfig
-	experimentCmabService *ExperimentCmabService
-	testUserContext       entities.UserContext
-	options               *decide.Options
-	logger                logging.OptimizelyLogProducer
-	cmabExperiment        entities.Experiment
-	nonCmabExperiment     entities.Experiment
+	mockCmabService        *MockCmabService
+	mockProjectConfig      *mockProjectConfig
+	mockExperimentBucketer *MockExperimentBucketer
+	experimentCmabService  *ExperimentCmabService
+	testUserContext        entities.UserContext
+	options                *decide.Options
+	logger                 logging.OptimizelyLogProducer
+	cmabExperiment         entities.Experiment
+	nonCmabExperiment      entities.Experiment
 }
 
 func (s *ExperimentCmabTestSuite) SetupTest() {
 	s.mockCmabService = new(MockCmabService)
+	s.mockExperimentBucketer = new(MockExperimentBucketer)
 	s.mockProjectConfig = new(mockProjectConfig)
 	s.logger = logging.GetLogger("test_sdk_key", "ExperimentCmabService")
 	s.options = &decide.Options{
 		IncludeReasons: true,
 	}
 
-	s.experimentCmabService = NewExperimentCmabService(s.mockCmabService, s.logger)
+	s.experimentCmabService = NewExperimentCmabService("test_sdk_key")
 
 	// Setup test user context
 	s.testUserContext = entities.UserContext{
@@ -106,6 +134,56 @@ func (s *ExperimentCmabTestSuite) TestIsCmab() {
 	s.False(isCmab(s.nonCmabExperiment))
 }
 
+func (s *ExperimentCmabTestSuite) TestGetDecisionSuccess() {
+	// Create decision context with CMAB experiment
+	decisionContext := ExperimentDecisionContext{
+		Experiment:    &s.cmabExperiment,
+		ProjectConfig: s.mockProjectConfig,
+	}
+
+	// Mock bucketer to return valid variation (so traffic allocation passes)
+	mockVariation := entities.Variation{ID: "var1", Key: "variation_1"}
+	s.mockExperimentBucketer.On("Bucket", mock.Anything, mock.Anything, mock.Anything).
+		Return(&mockVariation, reasons.CmabVariationAssigned, nil)
+
+	// Setup mock CMAB service (only once!)
+	s.mockCmabService.On("GetDecision", s.mockProjectConfig, s.testUserContext, "cmab_exp_1", s.options).
+		Return(cmab.Decision{VariationID: "var1"}, nil)
+
+	// Create CMAB service with mocked dependencies
+	cmabService := &ExperimentCmabService{
+		bucketer:    s.mockExperimentBucketer,
+		cmabService: s.mockCmabService,
+		logger:      s.logger,
+	}
+
+	// Get decision
+	decision, decisionReasons, err := cmabService.GetDecision(decisionContext, s.testUserContext, s.options)
+
+	// Verify results
+	s.NotNil(decision.Variation)
+	s.Equal("var1", decision.Variation.ID)
+	s.Equal("variation_1", decision.Variation.Key)
+	s.Equal(reasons.CmabVariationAssigned, decision.Reason)
+	s.NoError(err)
+
+	// Check for the message in the reasons
+	report := decisionReasons.ToReport()
+	s.NotEmpty(report, "Decision reasons report should not be empty")
+	found := false
+	for _, msg := range report {
+		if msg == "User bucketed into variation variation_1 by CMAB service" {
+			found = true
+			break
+		}
+	}
+	s.True(found, "Expected message not found in decision reasons")
+
+	// Verify mock expectations
+	s.mockCmabService.AssertExpectations(s.T())
+	s.mockExperimentBucketer.AssertExpectations(s.T())
+}
+
 func (s *ExperimentCmabTestSuite) TestGetDecisionWithNilExperiment() {
 	// Test that nil experiment returns empty decision with appropriate reason
 	testUserContext := entities.UserContext{
@@ -122,15 +200,24 @@ func (s *ExperimentCmabTestSuite) TestGetDecisionWithNilExperiment() {
 		IncludeReasons: true,
 	}
 
-	decision, reasons, err := s.experimentCmabService.GetDecision(testDecisionContext, testUserContext, options)
+	// Create CMAB service with mocked dependencies
+	cmabService := &ExperimentCmabService{
+		bucketer:    s.mockExperimentBucketer,
+		cmabService: s.mockCmabService,
+		logger:      s.logger,
+	}
+
+	decision, decisionReasons, err := cmabService.GetDecision(testDecisionContext, testUserContext, options)
+
+	// Should NOT return an error for nil experiment (based on your implementation)
 	s.NoError(err)
 	s.Equal(ExperimentDecision{}, decision)
 
 	// Check that reasons are populated
-	s.NotEmpty(reasons.ToReport())
+	s.NotEmpty(decisionReasons.ToReport())
 
 	// Check for specific reason message
-	reasonsReport := reasons.ToReport()
+	reasonsReport := decisionReasons.ToReport()
 	expectedMessage := "experiment is nil"
 	found := false
 	for _, msg := range reasonsReport {
@@ -166,13 +253,18 @@ func (s *ExperimentCmabTestSuite) TestGetDecisionWithNilCmabService() {
 		ProjectConfig: s.mockProjectConfig,
 	}
 
-	// Create CMAB service with nil CMAB service
-	cmabService := NewExperimentCmabService(nil, s.logger)
+	// Create CMAB service with EXPLICITLY nil CMAB service
+	cmabService := &ExperimentCmabService{
+		audienceTreeEvaluator: evaluator.NewMixedTreeEvaluator(s.logger),
+		bucketer:              s.mockExperimentBucketer,
+		cmabService:           nil, // ← Explicitly set to nil
+		logger:                s.logger,
+	}
 
 	// Get decision
 	decision, decisionReasons, err := cmabService.GetDecision(decisionContext, s.testUserContext, s.options)
 
-	// Verify results
+	// Now it should hit the nil check and return an error
 	s.Nil(decision.Variation)
 	s.Error(err)
 	s.Equal("CMAB service is not available", err.Error())
@@ -197,12 +289,21 @@ func (s *ExperimentCmabTestSuite) TestGetDecisionWithCmabServiceError() {
 		ProjectConfig: s.mockProjectConfig,
 	}
 
+	// Mock bucketer since it gets called before CMAB service
+	mockVariation := entities.Variation{ID: "var1", Key: "variation_1"}
+	s.mockExperimentBucketer.On("Bucket", mock.Anything, mock.Anything, mock.Anything).
+		Return(&mockVariation, reasons.CmabVariationAssigned, nil)
+
 	// Setup mock CMAB service to return error
 	s.mockCmabService.On("GetDecision", s.mockProjectConfig, s.testUserContext, "cmab_exp_1", s.options).
 		Return(cmab.Decision{}, errors.New("CMAB service error"))
 
-	// Create CMAB service
-	cmabService := NewExperimentCmabService(s.mockCmabService, s.logger)
+	// Create CMAB service with mocked dependencies
+	cmabService := &ExperimentCmabService{
+		bucketer:    s.mockExperimentBucketer,
+		cmabService: s.mockCmabService,
+		logger:      s.logger,
+	}
 
 	// Get decision
 	decision, decisionReasons, err := cmabService.GetDecision(decisionContext, s.testUserContext, s.options)
@@ -226,6 +327,7 @@ func (s *ExperimentCmabTestSuite) TestGetDecisionWithCmabServiceError() {
 
 	// Verify mock expectations
 	s.mockCmabService.AssertExpectations(s.T())
+	s.mockExperimentBucketer.AssertExpectations(s.T())
 }
 
 func (s *ExperimentCmabTestSuite) TestGetDecisionWithInvalidVariationID() {
@@ -235,12 +337,21 @@ func (s *ExperimentCmabTestSuite) TestGetDecisionWithInvalidVariationID() {
 		ProjectConfig: s.mockProjectConfig,
 	}
 
+	// Mock bucketer since it gets called before CMAB service
+	mockVariation := entities.Variation{ID: "var1", Key: "variation_1"}
+	s.mockExperimentBucketer.On("Bucket", mock.Anything, mock.Anything, mock.Anything).
+		Return(&mockVariation, reasons.CmabVariationAssigned, nil)
+
 	// Setup mock CMAB service to return invalid variation ID
 	s.mockCmabService.On("GetDecision", s.mockProjectConfig, s.testUserContext, "cmab_exp_1", s.options).
 		Return(cmab.Decision{VariationID: "invalid_var_id"}, nil)
 
-	// Create CMAB service
-	cmabService := NewExperimentCmabService(s.mockCmabService, s.logger)
+	// Create CMAB service with mocked dependencies
+	cmabService := &ExperimentCmabService{
+		bucketer:    s.mockExperimentBucketer,
+		cmabService: s.mockCmabService,
+		logger:      s.logger,
+	}
 
 	// Get decision
 	decision, decisionReasons, err := cmabService.GetDecision(decisionContext, s.testUserContext, s.options)
@@ -264,56 +375,7 @@ func (s *ExperimentCmabTestSuite) TestGetDecisionWithInvalidVariationID() {
 
 	// Verify mock expectations
 	s.mockCmabService.AssertExpectations(s.T())
-}
-
-func (s *ExperimentCmabTestSuite) TestGetDecisionSuccess() {
-	// Create decision context with CMAB experiment
-	decisionContext := ExperimentDecisionContext{
-		Experiment:    &s.cmabExperiment,
-		ProjectConfig: s.mockProjectConfig,
-	}
-
-	// Setup mock CMAB service to return valid variation ID
-	s.mockCmabService.On("GetDecision", s.mockProjectConfig, s.testUserContext, "cmab_exp_1", s.options).
-		Return(cmab.Decision{VariationID: "var1"}, nil)
-
-	// Create CMAB service
-	cmabService := NewExperimentCmabService(s.mockCmabService, s.logger)
-
-	// Get decision
-	decision, decisionReasons, err := cmabService.GetDecision(decisionContext, s.testUserContext, s.options)
-
-	// Verify results
-	s.NotNil(decision.Variation)
-	s.Equal("var1", decision.Variation.ID)
-	s.Equal("variation_1", decision.Variation.Key)
-	s.Equal(reasons.CmabVariationAssigned, decision.Reason)
-	s.NoError(err)
-
-	// Check for the message in the reasons
-	report := decisionReasons.ToReport()
-	s.NotEmpty(report, "Decision reasons report should not be empty")
-	found := false
-	for _, msg := range report {
-		if msg == "User bucketed into variation variation_1 by CMAB service" {
-			found = true
-			break
-		}
-	}
-	s.True(found, "Expected message not found in decision reasons")
-
-	// Verify mock expectations
-	s.mockCmabService.AssertExpectations(s.T())
-}
-
-// Mock CMAB service for testing
-type MockCmabService struct {
-	mock.Mock
-}
-
-func (m *MockCmabService) GetDecision(projectConfig config.ProjectConfig, userContext entities.UserContext, ruleID string, options *decide.Options) (cmab.Decision, error) {
-	args := m.Called(projectConfig, userContext, ruleID, options)
-	return args.Get(0).(cmab.Decision), args.Error(1)
+	s.mockExperimentBucketer.AssertExpectations(s.T())
 }
 
 func TestExperimentCmabTestSuite(t *testing.T) {

@@ -250,21 +250,3 @@ func (s *DefaultCmabService) getCacheKey(userID, ruleID string) string {
 	// Include length of userID to avoid ambiguity when IDs contain the separator
 	return fmt.Sprintf("%d:%s:%s", len(userID), userID, ruleID)
 }
-
-// hasOption checks if a specific CMAB option is set
-func hasOption(options *decide.Options, option decide.OptimizelyDecideOptions) bool {
-	if options == nil {
-		return false
-	}
-
-	switch option {
-	case decide.IgnoreCMABCache:
-		return options.IgnoreCMABCache
-	case decide.ResetCMABCache:
-		return options.ResetCMABCache
-	case decide.InvalidateUserCMABCache:
-		return options.InvalidateUserCMABCache
-	default:
-		return false
-	}
-}

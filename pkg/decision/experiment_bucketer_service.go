@@ -56,7 +56,7 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	reasons.Append(audienceReasons)
 
 	if !inAudience {
-		logMessage := reasons.AddInfo("User %s not in audience for experiment %s", userContext.ID, experiment.Key)
+		logMessage := reasons.AddInfo("User \"%s\" does not meet conditions to be in experiment \"%s\".", userContext.ID, experiment.Key)
 		s.logger.Debug(logMessage)
 		experimentDecision.Reason = pkgReasons.FailedAudienceTargeting
 		return experimentDecision, reasons, nil

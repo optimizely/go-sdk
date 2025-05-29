@@ -29,20 +29,26 @@ import (
 func CheckIfUserInAudience(experiment *entities.Experiment, userContext entities.UserContext, projectConfig config.ProjectConfig, audienceEvaluator TreeEvaluator, options *decide.Options, logger logging.OptimizelyLogProducer) (bool, decide.DecisionReasons) {
 	decisionReasons := decide.NewDecisionReasons(options)
 
+	if experiment == nil {
+		logMessage := decisionReasons.AddInfo("Experiment is nil, defaulting to false")
+		logger.Debug(logMessage)
+		return false, decisionReasons
+	}
+
 	if experiment.AudienceConditionTree != nil {
 		condTreeParams := entities.NewTreeParameters(&userContext, projectConfig.GetAudienceMap())
-		logger.Debug(fmt.Sprintf("Evaluating audiences for experiment %s", experiment.Key))
+		logger.Debug(fmt.Sprintf("Evaluating audiences for experiment \"%q\".", experiment.Key))
 
 		evalResult, _, audienceReasons := audienceEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams, options)
 		decisionReasons.Append(audienceReasons)
 
-		logMessage := decisionReasons.AddInfo("Experiment audiences evaluated to: %v for experiment %s", evalResult, experiment.Key)
+		logMessage := decisionReasons.AddInfo("Audiences for experiment %s collectively evaluated to %v.", experiment.Key, evalResult)
 		logger.Debug(logMessage)
 
 		return evalResult, decisionReasons
 	}
 
-	logMessage := decisionReasons.AddInfo("Experiment audiences evaluated to: true for experiment %s", experiment.Key)
+	logMessage := decisionReasons.AddInfo("Audiences for experiment %s collectively evaluated to true.", experiment.Key)
 	logger.Debug(logMessage)
 	return true, decisionReasons
 }

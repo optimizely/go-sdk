@@ -92,21 +92,22 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 	return compositeExperimentService
 }
 
-// GetDecision returns a decision for the given experiment and user context
 func (s *CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options) (ExperimentDecision, decide.DecisionReasons, error) {
-	var decision ExperimentDecision
+	var experDecision ExperimentDecision
 	var err error
 	reasons := decide.NewDecisionReasons(options)
 
 	for _, experimentService := range s.experimentServices {
 		var serviceReasons decide.DecisionReasons
 
-		decision, serviceReasons, err = experimentService.GetDecision(decisionContext, userContext, options)
+		decision, serviceReasons, serviceErr := experimentService.GetDecision(decisionContext, userContext, options)
 		reasons.Append(serviceReasons)
 
-		// If there's an actual error (not just "no decision"), stop and return it
-		if err != nil {
-			return decision, reasons, err
+		// If there's an error, log it and continue to next service
+		if serviceErr != nil {
+			// Optionally store the last error for potential logging
+			err = serviceErr
+			continue
 		}
 
 		// If we got a valid decision (has a variation), return it
@@ -118,5 +119,5 @@ func (s *CompositeExperimentService) GetDecision(decisionContext ExperimentDecis
 	}
 
 	// No service could make a decision
-	return decision, reasons, err
+	return experDecision, reasons, err // Returns last error (or nil if no errors)
 }

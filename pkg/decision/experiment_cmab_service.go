@@ -19,6 +19,7 @@ package decision
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -28,7 +29,6 @@ import (
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/decision/bucketer"
 	"github.com/optimizely/go-sdk/v2/pkg/decision/evaluator"
-	"github.com/optimizely/go-sdk/v2/pkg/decision/reasons"
 	pkgReasons "github.com/optimizely/go-sdk/v2/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
@@ -120,7 +120,7 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 	if s.cmabService == nil {
 		message := "CMAB service is not available"
 		decisionReasons.AddInfo(message)
-		return decision, decisionReasons, fmt.Errorf(message)
+		return decision, decisionReasons, errors.New(message)
 	}
 
 	// Audience evaluation using common function
@@ -186,7 +186,7 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 		// Create a copy of the variation to avoid memory aliasing
 		variationCopy := variation
 		decision.Variation = &variationCopy
-		decision.Reason = reasons.CmabVariationAssigned
+		decision.Reason = pkgReasons.CmabVariationAssigned
 		message := fmt.Sprintf("User bucketed into variation %s by CMAB service", variation.Key)
 		decisionReasons.AddInfo(message)
 		return decision, decisionReasons, nil

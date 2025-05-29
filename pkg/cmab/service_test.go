@@ -275,7 +275,6 @@ func (s *CmabServiceTestSuite) TestGetDecision() {
 	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
 	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
 	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
-	s.mockConfig.On("GetExperimentByKey", "test_experiment").Return(experiment, nil)
 
 	// Create user context
 	userContext := entities.UserContext{
@@ -798,227 +797,18 @@ func TestCmabServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(CmabServiceTestSuite))
 }
 
-// TestIsUserInExperiment tests the traffic allocation logic
-func (s *CmabServiceTestSuite) TestIsUserInExperiment() {
-	// Test cases
-	testCases := []struct {
-		name           string
-		userID         string
-		experimentKey  string
-		experiment     entities.Experiment
-		expectedResult bool
-	}{
-		{
-			name:          "User in experiment with 100% traffic allocation",
-			userID:        "user1",
-			experimentKey: "test_experiment",
-			experiment: entities.Experiment{
-				Key: "test_experiment",
-				TrafficAllocation: []entities.Range{
-					{
-						EntityID:   "variation1",
-						EndOfRange: 10000,
-					},
-				},
-			},
-			expectedResult: true,
-		},
-		{
-			name:          "User not in experiment with 0% traffic allocation",
-			userID:        "user2",
-			experimentKey: "test_experiment",
-			experiment: entities.Experiment{
-				Key: "test_experiment",
-				TrafficAllocation: []entities.Range{
-					{
-						EntityID:   "variation1",
-						EndOfRange: 0,
-					},
-				},
-			},
-			expectedResult: false,
-		},
-		{
-			name:          "User in experiment with multiple variations",
-			userID:        "user3",
-			experimentKey: "test_experiment",
-			experiment: entities.Experiment{
-				Key: "test_experiment",
-				TrafficAllocation: []entities.Range{
-					{
-						EntityID:   "variation1",
-						EndOfRange: 3333,
-					},
-					{
-						EntityID:   "variation2",
-						EndOfRange: 6666,
-					},
-					{
-						EntityID:   "variation3",
-						EndOfRange: 10000,
-					},
-				},
-			},
-			expectedResult: true,
-		},
-	}
+func (s *CmabServiceTestSuite) TestGetDecisionApiError() {
+	// Setup cache key
+	cacheKey := s.cmabService.getCacheKey(s.testUserID, s.testRuleID)
 
-	for _, tc := range testCases {
-		s.Run(tc.name, func() {
-			// Setup mock expectations
-			s.mockConfig.On("GetExperimentByKey", tc.experimentKey).Return(tc.experiment, nil).Once()
+	// Setup cache lookup (cache miss)
+	s.mockCache.On("Lookup", cacheKey).Return(nil)
 
-			// Call the method
-			result := s.cmabService.IsUserInExperiment(s.mockConfig, tc.userID, tc.experimentKey)
-
-			// Assert the result
-			s.Equal(tc.expectedResult, result)
-
-			// Verify expectations
-			s.mockConfig.AssertExpectations(s.T())
-		})
-	}
-}
-
-// TestGetDecisionWithTrafficAllocation tests the integration of traffic allocation in GetDecision
-func (s *CmabServiceTestSuite) TestGetDecisionWithTrafficAllocation() {
-	// Test cases
-	testCases := []struct {
-		name           string
-		userID         string
-		experimentKey  string
-		experiment     entities.Experiment
-		inExperiment   bool
-		expectedError  bool
-		expectedReason string
-	}{
-		{
-			name:          "User in experiment",
-			userID:        "user1",
-			experimentKey: "test_experiment",
-			experiment: entities.Experiment{
-				ID:  s.testRuleID,
-				Key: "test_experiment",
-				TrafficAllocation: []entities.Range{
-					{
-						EntityID:   "variation1",
-						EndOfRange: 10000,
-					},
-				},
-				Cmab: &entities.Cmab{
-					AttributeIds: []string{"attr1"},
-				},
-			},
-			inExperiment:   true,
-			expectedError:  false,
-			expectedReason: "",
-		},
-		{
-			name:          "User not in experiment",
-			userID:        "user2",
-			experimentKey: "test_experiment2",
-			experiment: entities.Experiment{
-				ID:  s.testRuleID,
-				Key: "test_experiment2",
-				TrafficAllocation: []entities.Range{
-					{
-						EntityID:   "variation1",
-						EndOfRange: 0, // 0% traffic allocation
-					},
-				},
-			},
-			inExperiment:   false,
-			expectedError:  true,
-			expectedReason: "User not in experiment due to traffic allocation",
-		},
-	}
-
-	for _, tc := range testCases {
-		s.Run(tc.name, func() {
-			// Create fresh mocks for each test case to avoid mock expectation conflicts
-			mockClient := new(MockCmabClient)
-			mockCache := new(MockCache)
-			mockConfig := new(MockProjectConfig)
-
-			// Create a new service instance with the fresh mocks
-			cmabService := NewDefaultCmabService(ServiceOptions{
-				Logger:     logging.GetLogger("test", "CmabService"),
-				CmabCache:  mockCache,
-				CmabClient: mockClient,
-			})
-
-			// Setup mock expectations for GetExperimentByID - allow any number of calls
-			mockConfig.On("GetExperimentByID", s.testRuleID).Return(tc.experiment, nil).Maybe()
-
-			// Setup mock for GetExperimentByKey
-			mockConfig.On("GetExperimentByKey", tc.experimentKey).Return(tc.experiment, nil)
-
-			if tc.inExperiment {
-				// Setup mocks for the rest of the decision flow
-				mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
-
-				// Setup cache key
-				cacheKey := cmabService.getCacheKey(tc.userID, s.testRuleID)
-
-				// Setup cache lookup
-				mockCache.On("Lookup", cacheKey).Return(nil)
-
-				// Setup mock API response
-				mockClient.On("FetchDecision", s.testRuleID, tc.userID, mock.Anything, mock.Anything).Return("variation1", nil)
-
-				// Setup cache save
-				mockCache.On("Save", cacheKey, mock.Anything).Return()
-			}
-
-			// Call the method
-			userContext := entities.UserContext{
-				ID: tc.userID,
-				Attributes: map[string]interface{}{
-					"age": 30,
-				},
-			}
-
-			decision, err := cmabService.GetDecision(mockConfig, userContext, s.testRuleID, nil)
-
-			// Assert the results
-			if tc.expectedError {
-				s.Error(err)
-				s.Contains(decision.Reasons, tc.expectedReason)
-			} else {
-				s.NoError(err)
-				s.Equal("variation1", decision.VariationID)
-			}
-
-			// Verify expectations
-			mockConfig.AssertExpectations(s.T())
-			if tc.inExperiment {
-				mockCache.AssertExpectations(s.T())
-				mockClient.AssertExpectations(s.T())
-			}
-		})
-	}
-}
-
-// TestIsUserInExperimentError tests error handling in IsUserInExperiment
-func (s *CmabServiceTestSuite) TestIsUserInExperimentError() {
-	// Setup mock to return error
-	experimentKey := "nonexistent_experiment"
-	s.mockConfig.On("GetExperimentByKey", experimentKey).Return(entities.Experiment{}, fmt.Errorf("experiment not found")).Once()
-
-	// Call the method
-	result := s.cmabService.IsUserInExperiment(s.mockConfig, "user1", experimentKey)
-
-	// Should return false when experiment not found
-	s.False(result)
-
-	// Verify expectations
-	s.mockConfig.AssertExpectations(s.T())
-}
-
-// TestGetDecisionExperimentNotFound tests error handling when experiment is not found
-func (s *CmabServiceTestSuite) TestGetDecisionExperimentNotFound() {
-	// Setup mock to return error
+	// Setup mock to return error for experiment lookup (but this won't stop the flow anymore)
 	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(entities.Experiment{}, fmt.Errorf("experiment not found")).Once()
+
+	// Mock the FetchDecision call that will now happen
+	s.mockClient.On("FetchDecision", s.testRuleID, s.testUserID, mock.Anything, mock.Anything).Return("", fmt.Errorf("invalid rule ID"))
 
 	// Call the method
 	userContext := entities.UserContext{
@@ -1028,12 +818,14 @@ func (s *CmabServiceTestSuite) TestGetDecisionExperimentNotFound() {
 		},
 	}
 
-	decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
+	_, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
 
-	// Should return error
+	// Should return error from FetchDecision, not from experiment validation
 	s.Error(err)
-	s.Contains(decision.Reasons, "Error getting experiment: experiment not found")
+	s.Contains(err.Error(), "CMAB API error")
 
 	// Verify expectations
 	s.mockConfig.AssertExpectations(s.T())
+	s.mockCache.AssertExpectations(s.T())
+	s.mockClient.AssertExpectations(s.T())
 }
