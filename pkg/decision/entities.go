@@ -55,8 +55,6 @@ const (
 	Rollout Source = "rollout"
 	// FeatureTest - the decision came from a feature test
 	FeatureTest Source = "feature-test"
-	// Cmab - the decision came from a CMAB service
-	Cmab Source = "cmab"
 )
 
 // Decision contains base information about a decision

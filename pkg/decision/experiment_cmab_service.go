@@ -18,27 +18,83 @@
 package decision
 
 import (
-	"errors"
+	"context"
 	"fmt"
+	"net/http"
+	"time"
 
+	"github.com/optimizely/go-sdk/v2/pkg/cache"
 	"github.com/optimizely/go-sdk/v2/pkg/cmab"
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
+	"github.com/optimizely/go-sdk/v2/pkg/decision/bucketer"
+	"github.com/optimizely/go-sdk/v2/pkg/decision/evaluator"
 	"github.com/optimizely/go-sdk/v2/pkg/decision/reasons"
+	pkgReasons "github.com/optimizely/go-sdk/v2/pkg/decision/reasons"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
 
-// ExperimentCmabService makes decisions for CMAB experiments
+// ExperimentCmabService makes a decision using CMAB
 type ExperimentCmabService struct {
-	cmabService cmab.Service
-	logger      logging.OptimizelyLogProducer
+	audienceTreeEvaluator evaluator.TreeEvaluator
+	bucketer              bucketer.ExperimentBucketer
+	cmabService           cmab.Service
+	logger                logging.OptimizelyLogProducer
 }
 
-// NewExperimentCmabService creates a new instance of ExperimentCmabService
-func NewExperimentCmabService(cmabService cmab.Service, logger logging.OptimizelyLogProducer) *ExperimentCmabService {
+// cmabClientAdapter adapts the DefaultCmabClient to the CmabClient interface
+type cmabClientAdapter struct {
+	client *cmab.DefaultCmabClient
+}
+
+// FetchDecision implements the CmabClient interface by calling the DefaultCmabClient with a background context
+func (a *cmabClientAdapter) FetchDecision(ruleID, userID string, attributes map[string]interface{}, cmabUUID string) (string, error) {
+	// Use background context for the adapted call
+	return a.client.FetchDecision(context.Background(), ruleID, userID, attributes, cmabUUID)
+}
+
+// NewExperimentCmabService creates a new instance of ExperimentCmabService with all dependencies initialized
+func NewExperimentCmabService(sdkKey string) *ExperimentCmabService {
+	// Initialize CMAB cache
+	cmabCache := cache.NewLRUCache(100, 0)
+
+	// Create retry config for CMAB client
+	retryConfig := &cmab.RetryConfig{
+		MaxRetries:        cmab.DefaultMaxRetries,
+		InitialBackoff:    cmab.DefaultInitialBackoff,
+		MaxBackoff:        cmab.DefaultMaxBackoff,
+		BackoffMultiplier: cmab.DefaultBackoffMultiplier,
+	}
+
+	// Create CMAB client options
+	cmabClientOptions := cmab.ClientOptions{
+		HTTPClient:  &http.Client{Timeout: 10 * time.Second},
+		RetryConfig: retryConfig,
+		Logger:      logging.GetLogger(sdkKey, "DefaultCmabClient"),
+	}
+
+	// Create CMAB client with adapter to match interface
+	defaultCmabClient := cmab.NewDefaultCmabClient(cmabClientOptions)
+	cmabClientAdapter := &cmabClientAdapter{client: defaultCmabClient}
+
+	// Create CMAB service options
+	cmabServiceOptions := cmab.ServiceOptions{
+		CmabCache:  cmabCache,
+		CmabClient: cmabClientAdapter,
+		Logger:     logging.GetLogger(sdkKey, "DefaultCmabService"),
+	}
+
+	// Create CMAB service
+	cmabService := cmab.NewDefaultCmabService(cmabServiceOptions)
+
+	// Create logger for this service
+	logger := logging.GetLogger(sdkKey, "ExperimentCmabService")
+
 	return &ExperimentCmabService{
-		cmabService: cmabService,
-		logger:      logger,
+		audienceTreeEvaluator: evaluator.NewMixedTreeEvaluator(logger),
+		bucketer:              *bucketer.NewMurmurhashExperimentBucketer(logger, bucketer.DefaultHashSeed),
+		cmabService:           cmabService,
+		logger:                logger,
 	}
 }
 
@@ -50,7 +106,6 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 
 	// Check if experiment is nil
 	if experiment == nil {
-		// Only add reason for nil experiment in test mode
 		if options != nil && options.IncludeReasons {
 			decisionReasons.AddInfo("experiment is nil")
 		}
@@ -58,8 +113,6 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 	}
 
 	if !isCmab(*experiment) {
-		// We're not adding a reason message here when skipping non-CMAB experiments
-		// This prevents test failures due to unexpected reasons
 		return decision, decisionReasons, nil
 	}
 
@@ -67,9 +120,55 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 	if s.cmabService == nil {
 		message := "CMAB service is not available"
 		decisionReasons.AddInfo(message)
-		return decision, decisionReasons, errors.New(message)
+		return decision, decisionReasons, fmt.Errorf(message)
 	}
 
+	// Audience evaluation using common function
+	inAudience, audienceReasons := evaluator.CheckIfUserInAudience(experiment, userContext, projectConfig, s.audienceTreeEvaluator, options, s.logger)
+	decisionReasons.Append(audienceReasons)
+
+	if !inAudience {
+		logMessage := decisionReasons.AddInfo("User %s not in audience for CMAB experiment %s", userContext.ID, experiment.Key)
+		s.logger.Debug(logMessage)
+		decision.Reason = pkgReasons.FailedAudienceTargeting
+		return decision, decisionReasons, nil
+	}
+
+	// Traffic allocation check with CMAB-specific traffic allocation
+	var group entities.Group
+	if experiment.GroupID != "" {
+		group, _ = projectConfig.GetGroupByID(experiment.GroupID)
+	}
+
+	bucketingID, err := userContext.GetBucketingID()
+	if err != nil {
+		errorMessage := decisionReasons.AddInfo("Error computing bucketing ID for CMAB experiment %s: %s", experiment.Key, err.Error())
+		s.logger.Debug(errorMessage)
+	}
+
+	if bucketingID != userContext.ID {
+		s.logger.Debug(fmt.Sprintf("Using bucketing ID: %s for user %s in CMAB experiment", bucketingID, userContext.ID))
+	}
+
+	// Update traffic allocation for CMAB experiments (100% allocation)
+	updatedExperiment := *experiment
+	updatedExperiment.TrafficAllocation = []entities.Range{
+		{
+			EntityID:   "",    // Empty entity ID
+			EndOfRange: 10000, // 100% traffic allocation
+		},
+	}
+
+	// Check if user is in experiment traffic allocation
+	variation, reason, _ := s.bucketer.Bucket(bucketingID, updatedExperiment, group)
+	if variation == nil {
+		logMessage := decisionReasons.AddInfo("User %s not in CMAB experiment %s due to traffic allocation", userContext.ID, experiment.Key)
+		s.logger.Debug(logMessage)
+		decision.Reason = reason
+		return decision, decisionReasons, nil
+	}
+
+	// User passed audience and traffic allocation - now use CMAB service
 	// Get CMAB decision
 	cmabDecision, err := s.cmabService.GetDecision(projectConfig, userContext, experiment.ID, options)
 	if err != nil {

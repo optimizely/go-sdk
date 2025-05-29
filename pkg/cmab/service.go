@@ -70,19 +70,6 @@ func (s *DefaultCmabService) GetDecision(
 	// Initialize reasons slice for decision
 	reasons := []string{}
 
-	// First check if the user is in the experiment based on traffic allocation
-	experiment, err := projectConfig.GetExperimentByID(ruleID)
-	if err != nil {
-		reasons = append(reasons, fmt.Sprintf("Error getting experiment: %v", err))
-		return Decision{Reasons: reasons}, fmt.Errorf("error getting experiment: %w", err)
-	}
-
-	if !s.IsUserInExperiment(projectConfig, userContext.ID, experiment.Key) {
-		reasons = append(reasons, "User not in experiment due to traffic allocation")
-		return Decision{Reasons: reasons}, fmt.Errorf("user %s not in experiment %s due to traffic allocation",
-			userContext.ID, experiment.Key)
-	}
-
 	// Filter attributes based on CMAB configuration
 	filteredAttributes := s.filterAttributes(projectConfig, userContext, ruleID)
 
@@ -285,57 +272,4 @@ func hasOption(options *decide.Options, option decide.OptimizelyDecideOptions) b
 	default:
 		return false
 	}
-}
-
-// IsUserInExperiment determines if a user should be included in a CMAB experiment based on traffic allocation
-func (s *DefaultCmabService) IsUserInExperiment(
-	projectConfig config.ProjectConfig,
-	userID string,
-	experimentKey string,
-) bool {
-	// Get the experiment from the datafile
-	experiment, err := projectConfig.GetExperimentByKey(experimentKey)
-	if err != nil {
-		s.logger.Debug(fmt.Sprintf("Error getting experiment from key: %s, error: %v", experimentKey, err))
-		return false
-	}
-
-	// Get the traffic allocation for this experiment
-	trafficAllocation := experiment.TrafficAllocation
-
-	// Use userID directly as the bucketing ID
-	bucketingID := userID
-
-	// Calculate the bucket value for this user
-	hasher := murmur3.New32()
-	// Handle error from Write - though it's unlikely to fail for a string
-	_, writeErr := hasher.Write([]byte(bucketingID))
-	if writeErr != nil {
-		s.logger.Debug(fmt.Sprintf("Error hashing bucketingID: %v", writeErr))
-		return false
-	}
-
-	// Fix integer overflow by using uint32 for the modulo operation
-	bucketValue := hasher.Sum32() % uint32(10000)
-
-	// Check if the user falls within any traffic allocation range
-	for _, allocation := range trafficAllocation {
-		// Ensure EndOfRange is non-negative and within uint32 range
-		if allocation.EndOfRange < 0 || allocation.EndOfRange > int(^uint32(0)) {
-			s.logger.Debug(fmt.Sprintf("Invalid EndOfRange value: %d", allocation.EndOfRange))
-			continue
-		}
-
-		// Compare as integers to avoid conversion
-		if int(bucketValue) < allocation.EndOfRange {
-			s.logger.Debug(fmt.Sprintf("User is in CMAB experiment due to traffic allocation: userID=%s, experimentKey=%s, bucketValue=%d",
-				userID, experimentKey, bucketValue))
-			return true
-		}
-	}
-
-	s.logger.Debug(fmt.Sprintf("User not in CMAB experiment due to traffic allocation: userID=%s, experimentKey=%s, bucketValue=%d",
-		userID, experimentKey, bucketValue))
-
-	return false
 }

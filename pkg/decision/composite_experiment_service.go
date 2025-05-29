@@ -18,13 +18,6 @@
 package decision
 
 import (
-	"context"
-	"net/http"
-	"time"
-
-	"github.com/optimizely/go-sdk/v2/pkg/cache"
-	"github.com/optimizely/go-sdk/v2/pkg/cmab"
-
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
@@ -83,38 +76,8 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 		experimentServices = append([]ExperimentService{overrideService}, experimentServices...)
 	}
 
-	// Always create CMAB service - no conditional check
-	cmabCache := cache.NewLRUCache(100, 0)
-
-	// Create retry config for CMAB client
-	retryConfig := &cmab.RetryConfig{
-		MaxRetries:        cmab.DefaultMaxRetries,
-		InitialBackoff:    cmab.DefaultInitialBackoff,
-		MaxBackoff:        cmab.DefaultMaxBackoff,
-		BackoffMultiplier: cmab.DefaultBackoffMultiplier,
-	}
-
-	// Create CMAB client options
-	cmabClientOptions := cmab.ClientOptions{
-		HTTPClient:  &http.Client{Timeout: 10 * time.Second},
-		RetryConfig: retryConfig,
-		Logger:      logging.GetLogger(sdkKey, "DefaultCmabClient"),
-	}
-
-	// Create CMAB client with adapter to match interface
-	defaultCmabClient := cmab.NewDefaultCmabClient(cmabClientOptions)
-	cmabClientAdapter := &cmabClientAdapter{client: defaultCmabClient}
-
-	// Create CMAB service options
-	cmabServiceOptions := cmab.ServiceOptions{
-		CmabCache:  cmabCache,
-		CmabClient: cmabClientAdapter,
-		Logger:     logging.GetLogger(sdkKey, "DefaultCmabService"),
-	}
-
-	// Create CMAB service
-	cmabService := cmab.NewDefaultCmabService(cmabServiceOptions)
-	experimentCmabService := NewExperimentCmabService(cmabService, logging.GetLogger(sdkKey, "ExperimentCmabService"))
+	// Create CMAB service with all initialization handled internally
+	experimentCmabService := NewExperimentCmabService(sdkKey)
 	experimentServices = append(experimentServices, experimentCmabService)
 
 	experimentBucketerService := NewExperimentBucketerService(logging.GetLogger(sdkKey, "ExperimentBucketerService"))
@@ -129,47 +92,31 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 	return compositeExperimentService
 }
 
-// cmabClientAdapter adapts the DefaultCmabClient to the CmabClient interface
-type cmabClientAdapter struct {
-	client *cmab.DefaultCmabClient
-}
-
-// FetchDecision implements the CmabClient interface by calling the DefaultCmabClient with a background context
-func (a *cmabClientAdapter) FetchDecision(ruleID, userID string, attributes map[string]interface{}, cmabUUID string) (string, error) {
-	// Use background context for the adapted call
-	return a.client.FetchDecision(context.Background(), ruleID, userID, attributes, cmabUUID)
-}
-
 // GetDecision returns a decision for the given experiment and user context
 func (s *CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options) (ExperimentDecision, decide.DecisionReasons, error) {
 	var decision ExperimentDecision
+	var err error
 	reasons := decide.NewDecisionReasons(options)
 
-	for i, experimentService := range s.experimentServices {
-		var err error
+	for _, experimentService := range s.experimentServices {
 		var serviceReasons decide.DecisionReasons
 
 		decision, serviceReasons, err = experimentService.GetDecision(decisionContext, userContext, options)
 		reasons.Append(serviceReasons)
 
-		// If we got an error from the CMAB service (index 1), propagate it
-		if err != nil && i == 1 {
-			if _, ok := experimentService.(*ExperimentCmabService); ok {
-				return decision, reasons, err
-			}
-		}
-
-		// For other services, log the error but continue
+		// If there's an actual error (not just "no decision"), stop and return it
 		if err != nil {
-			s.logger.Error("Error getting decision: ", err)
-			continue
+			return decision, reasons, err
 		}
 
 		// If we got a valid decision (has a variation), return it
 		if decision.Variation != nil {
 			return decision, reasons, nil
 		}
+
+		// No error and no decision - continue to next service
 	}
 
-	return decision, reasons, nil
+	// No service could make a decision
+	return decision, reasons, err
 }
