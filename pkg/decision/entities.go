@@ -74,6 +74,7 @@ type FeatureDecision struct {
 type ExperimentDecision struct {
 	Decision
 	Variation *entities.Variation
+	CmabUUID  *string
 }
 
 // UserDecisionKey is used to access the saved decisions in a user profile

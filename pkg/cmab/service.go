@@ -67,90 +67,144 @@ func (s *DefaultCmabService) GetDecision(
 	ruleID string,
 	options *decide.Options,
 ) (Decision, error) {
-	// Handle cache options first
-	if options != nil {
-		if options.ResetCMABCache {
-			s.cmabCache.Reset()
-		}
-		if options.InvalidateUserCMABCache {
-			cacheKey := s.getCacheKey(userContext.ID, ruleID)
-			s.cmabCache.Remove(cacheKey)
-		}
+	// Handle cache bypass early
+	if s.shouldIgnoreCache(options) {
+		filteredAttrs := s.filterAttributes(projectConfig, userContext, ruleID)
+		return s.fetchDecisionWithRetry(ruleID, userContext.ID, filteredAttrs)
 	}
 
-	// Check cache first
-	if options == nil || !options.IgnoreCMABCache {
-		cacheKey := s.getCacheKey(userContext.ID, ruleID)
-		if cachedValue := s.cmabCache.Lookup(cacheKey); cachedValue != nil {
-			if cv, ok := cachedValue.(CacheValue); ok {
-				// Filter attributes to validate cache
-				filteredAttrs := s.filterAttributes(projectConfig, userContext, ruleID)
-				currentAttrsJSON, _ := s.getAttributesJSON(filteredAttrs)
-				hasher := murmur3.SeedNew32(1)
-				if _, err := hasher.Write([]byte(currentAttrsJSON)); err != nil {
-					s.logger.Debug(fmt.Sprintf("Failed to hash attributes: %v", err))
-				} else {
-					currentHash := strconv.FormatUint(uint64(hasher.Sum32()), 10)
+	// Handle cache management options
+	s.handleCacheOptions(options, userContext.ID, ruleID)
 
-					if cv.AttributesHash == currentHash {
-						// Cache hit with matching attributes
-						s.logger.Debug(fmt.Sprintf("Returning cached CMAB decision for rule %s and user %s", ruleID, userContext.ID))
-						return Decision{
-							VariationID: cv.VariationID,
-							CmabUUID:    cv.CmabUUID,
-						}, nil
-					}
-				}
-
-				// Attributes changed, invalidate cache
-				s.cmabCache.Remove(cacheKey)
-				s.logger.Debug(fmt.Sprintf("Attributes changed for rule %s and user %s, invalidating cache", ruleID, userContext.ID))
-			}
-		}
+	// Try cache lookup
+	if cachedDecision, found := s.tryGetCachedDecision(projectConfig, userContext, ruleID); found {
+		return cachedDecision, nil
 	}
 
-	// Filter attributes (experiment is guaranteed to exist by ExperimentCmabService)
+	// Make fresh decision and cache it
+	return s.makeFreshDecision(projectConfig, userContext, ruleID, options)
+}
+
+func (s *DefaultCmabService) shouldIgnoreCache(options *decide.Options) bool {
+	return options != nil && options.IgnoreCMABCache
+}
+
+func (s *DefaultCmabService) handleCacheOptions(options *decide.Options, userID, ruleID string) {
+	if options == nil {
+		return
+	}
+
+	if options.ResetCMABCache {
+		s.cmabCache.Reset()
+	}
+
+	if options.InvalidateUserCMABCache {
+		cacheKey := s.getCacheKey(userID, ruleID)
+		s.cmabCache.Remove(cacheKey)
+	}
+}
+
+func (s *DefaultCmabService) tryGetCachedDecision(
+	projectConfig config.ProjectConfig,
+	userContext entities.UserContext,
+	ruleID string,
+) (Decision, bool) {
+	cacheKey := s.getCacheKey(userContext.ID, ruleID)
+	cachedValue := s.cmabCache.Lookup(cacheKey)
+
+	if cachedValue == nil {
+		return Decision{}, false
+	}
+
+	cv, ok := cachedValue.(CacheValue)
+	if !ok {
+		return Decision{}, false
+	}
+
+	// Validate cache with current attributes
+	if s.isCacheValid(projectConfig, userContext, ruleID, cv) {
+		s.logger.Debug(fmt.Sprintf("Returning cached CMAB decision for rule %s and user %s", ruleID, userContext.ID))
+		return Decision{
+			VariationID: cv.VariationID,
+			CmabUUID:    cv.CmabUUID,
+		}, true
+	}
+
+	// Cache invalid, remove it
+	s.cmabCache.Remove(cacheKey)
+	s.logger.Debug(fmt.Sprintf("Attributes changed for rule %s and user %s, invalidating cache", ruleID, userContext.ID))
+	return Decision{}, false
+}
+
+func (s *DefaultCmabService) isCacheValid(
+	projectConfig config.ProjectConfig,
+	userContext entities.UserContext,
+	ruleID string,
+	cv CacheValue,
+) bool {
 	filteredAttrs := s.filterAttributes(projectConfig, userContext, ruleID)
+	currentAttrsJSON, _ := s.getAttributesJSON(filteredAttrs)
 
-	// Generate UUID for this decision
+	hasher := murmur3.SeedNew32(1)
+	if _, err := hasher.Write([]byte(currentAttrsJSON)); err != nil {
+		s.logger.Debug(fmt.Sprintf("Failed to hash attributes: %v", err))
+		return false
+	}
+
+	currentHash := strconv.FormatUint(uint64(hasher.Sum32()), 10)
+	return cv.AttributesHash == currentHash
+}
+
+func (s *DefaultCmabService) makeFreshDecision(
+	projectConfig config.ProjectConfig,
+	userContext entities.UserContext,
+	ruleID string,
+	options *decide.Options,
+) (Decision, error) {
+	filteredAttrs := s.filterAttributes(projectConfig, userContext, ruleID)
 	cmabUUID := uuid.New().String()
 
-	// Make API call with retry (pass attributes directly)
+	// Make API call
 	decisionResult, err := s.fetchDecisionWithRetry(ruleID, userContext.ID, filteredAttrs)
 	if err != nil {
 		return Decision{}, fmt.Errorf("CMAB API error: %w", err)
 	}
 
-	// Cache the result (if not ignoring cache)
-	if options == nil || !options.IgnoreCMABCache {
-		cacheKey := s.getCacheKey(userContext.ID, ruleID)
-
-		// Generate hash for caching
-		attributesJSON, err := s.getAttributesJSON(filteredAttrs)
-		if err != nil {
-			s.logger.Debug(fmt.Sprintf("Failed to serialize attributes for caching: %v", err))
-		} else {
-			hasher := murmur3.SeedNew32(1)
-			if _, err := hasher.Write([]byte(attributesJSON)); err != nil {
-				s.logger.Debug(fmt.Sprintf("Failed to hash attributes for caching: %v", err))
-			} else {
-				attributesHash := strconv.FormatUint(uint64(hasher.Sum32()), 10)
-
-				cacheValue := CacheValue{
-					AttributesHash: attributesHash,
-					VariationID:    decisionResult.VariationID,
-					CmabUUID:       cmabUUID,
-				}
-				s.cmabCache.Save(cacheKey, cacheValue)
-				s.logger.Debug(fmt.Sprintf("Cached CMAB decision for rule %s and user %s", ruleID, userContext.ID))
-			}
-		}
+	// Cache the result if not ignoring cache
+	if !s.shouldIgnoreCache(options) {
+		s.cacheDecision(userContext.ID, ruleID, filteredAttrs, decisionResult.VariationID, cmabUUID)
 	}
 
 	return Decision{
 		VariationID: decisionResult.VariationID,
 		CmabUUID:    cmabUUID,
 	}, nil
+}
+
+func (s *DefaultCmabService) cacheDecision(userID, ruleID string, filteredAttrs map[string]interface{}, variationID, cmabUUID string) {
+	cacheKey := s.getCacheKey(userID, ruleID)
+
+	attributesJSON, err := s.getAttributesJSON(filteredAttrs)
+	if err != nil {
+		s.logger.Debug(fmt.Sprintf("Failed to serialize attributes for caching: %v", err))
+		return
+	}
+
+	hasher := murmur3.SeedNew32(1)
+	if _, err := hasher.Write([]byte(attributesJSON)); err != nil {
+		s.logger.Debug(fmt.Sprintf("Failed to hash attributes for caching: %v", err))
+		return
+	}
+
+	attributesHash := strconv.FormatUint(uint64(hasher.Sum32()), 10)
+	cacheValue := CacheValue{
+		AttributesHash: attributesHash,
+		VariationID:    variationID,
+		CmabUUID:       cmabUUID,
+	}
+
+	s.cmabCache.Save(cacheKey, cacheValue)
+	s.logger.Debug(fmt.Sprintf("Cached CMAB decision for rule %s and user %s", ruleID, userID))
 }
 
 // fetchDecisionWithRetry fetches a decision from the CMAB API with retry logic

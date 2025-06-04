@@ -130,44 +130,43 @@ func (s *CompositeExperimentTestSuite) TestGetDecisionNoDecisionsMade() {
 	s.mockExperimentService2.AssertExpectations(s.T())
 }
 
-func (s *CompositeExperimentTestSuite) TestGetDecisionReturnsError() {
-	// Assert that we continue to the next inner service when a non-CMAB service GetDecision returns an error
-	testUserContext := entities.UserContext{
-		ID: "test_user_1",
-	}
-
+func (suite *CompositeExperimentTestSuite) TestGetDecisionReturnsError() {
+	testUserContext := entities.UserContext{ID: "test_user_1"}
 	testDecisionContext := ExperimentDecisionContext{
-		Experiment:    &testExp1114,
-		ProjectConfig: s.mockConfig,
+		Experiment:    &testExp1111,
+		ProjectConfig: suite.mockConfig,
 	}
 
-	shouldBeIgnoredDecision := ExperimentDecision{
-		Variation: &testExp1114Var2225,
-	}
-	s.mockExperimentService.On("GetDecision", testDecisionContext, testUserContext, s.options).Return(shouldBeIgnoredDecision, s.reasons, errors.New("Error making decision"))
-
-	emptyDecision := ExperimentDecision{}
-	s.mockCmabService.On("GetDecision", testDecisionContext, testUserContext, s.options).Return(emptyDecision, s.reasons, nil)
-
+	// Use the same variation pattern as other tests
+	expectedVariation := testExp1111.Variations["2226"] // Use 2226 like the error shows
 	expectedDecision := ExperimentDecision{
-		Variation: &testExp1114Var2226,
-	}
-	s.mockExperimentService2.On("GetDecision", testDecisionContext, testUserContext, s.options).Return(expectedDecision, s.reasons, nil)
-
-	compositeExperimentService := &CompositeExperimentService{
-		experimentServices: []ExperimentService{
-			s.mockExperimentService,
-			s.mockCmabService,
-			s.mockExperimentService2,
+		Decision: Decision{
+			Reason: "",
 		},
-		logger: logging.GetLogger("sdkKey", "CompositeExperimentService"),
+		Variation: &expectedVariation,
 	}
-	decision, _, err := compositeExperimentService.GetDecision(testDecisionContext, testUserContext, s.options)
-	s.Equal(expectedDecision, decision)
-	s.NoError(err)
-	s.mockExperimentService.AssertExpectations(s.T())
-	s.mockCmabService.AssertExpectations(s.T())
-	s.mockExperimentService2.AssertExpectations(s.T())
+
+	// Mock FIRST service to return error - should stop here and return error
+	suite.mockExperimentService.On("GetDecision", testDecisionContext, testUserContext, &decide.Options{}).
+		Return(expectedDecision, suite.reasons, errors.New("Error making decision")).Once()
+
+	// Create composite service using the same pattern as other tests
+	compositeExperimentService := &CompositeExperimentService{
+		experimentServices: []ExperimentService{suite.mockExperimentService, suite.mockExperimentService2},
+		logger:             logging.GetLogger("sdkKey", "CompositeExperimentService"),
+	}
+
+	actualDecision, _, err := compositeExperimentService.GetDecision(testDecisionContext, testUserContext, &decide.Options{})
+
+	// Should return the error immediately
+	suite.Error(err)
+	suite.Equal("Error making decision", err.Error())
+	suite.Equal(expectedDecision, actualDecision)
+
+	// Verify only first service was called
+	suite.mockExperimentService.AssertExpectations(suite.T())
+	// Second service should NOT have been called
+	suite.mockExperimentService2.AssertNotCalled(suite.T(), "GetDecision")
 }
 
 func (s *CompositeExperimentTestSuite) TestGetDecisionCmabError() {

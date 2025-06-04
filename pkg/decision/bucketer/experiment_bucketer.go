@@ -26,11 +26,34 @@ import (
 // ExperimentBucketer is used to bucket the user into a particular entity in the experiment's traffic alloc range
 type ExperimentBucketer interface {
 	Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (*entities.Variation, reasons.Reason, error)
+	// New method for CMAB - returns entity ID instead of variation
+	BucketToEntityID(bucketingID string, experiment entities.Experiment, group entities.Group) (string, reasons.Reason, error)
 }
 
 // MurmurhashExperimentBucketer buckets the user using the mmh3 algorightm
 type MurmurhashExperimentBucketer struct {
 	bucketer Bucketer
+}
+
+// BucketToEntityID buckets the user and returns the entity ID (for CMAB experiments)
+func (b MurmurhashExperimentBucketer) BucketToEntityID(bucketingID string, experiment entities.Experiment, group entities.Group) (string, reasons.Reason, error) {
+	if experiment.GroupID != "" && group.Policy == "random" {
+		bucketKey := bucketingID + group.ID
+		bucketedExperimentID := b.bucketer.BucketToEntity(bucketKey, group.TrafficAllocation)
+		if bucketedExperimentID == "" || bucketedExperimentID != experiment.ID {
+			// User is not bucketed into provided experiment in mutex group
+			return "", reasons.NotBucketedIntoVariation, nil
+		}
+	}
+
+	bucketKey := bucketingID + experiment.ID
+	bucketedEntityID := b.bucketer.BucketToEntity(bucketKey, experiment.TrafficAllocation)
+	if bucketedEntityID == "" {
+		// User is not bucketed into any entity in the experiment
+		return "", reasons.NotBucketedIntoVariation, nil
+	}
+
+	return bucketedEntityID, reasons.BucketedIntoVariation, nil
 }
 
 // NewMurmurhashExperimentBucketer returns a new instance of the murmurhash experiment bucketer

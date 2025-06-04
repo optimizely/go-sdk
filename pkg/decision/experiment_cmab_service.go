@@ -18,7 +18,6 @@
 package decision
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -34,23 +33,15 @@ import (
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
 
+// CmabDummyEntityID is the special entity ID used for CMAB traffic allocation
+const CmabDummyEntityID = "$"
+
 // ExperimentCmabService makes a decision using CMAB
 type ExperimentCmabService struct {
 	audienceTreeEvaluator evaluator.TreeEvaluator
 	bucketer              bucketer.ExperimentBucketer
 	cmabService           cmab.Service
 	logger                logging.OptimizelyLogProducer
-}
-
-// cmabClientAdapter adapts the DefaultCmabClient to the CmabClient interface
-type cmabClientAdapter struct {
-	client *cmab.DefaultCmabClient
-}
-
-// FetchDecision implements the CmabClient interface by calling the DefaultCmabClient with a background context
-func (a *cmabClientAdapter) FetchDecision(ruleID, userID string, attributes map[string]interface{}, cmabUUID string) (string, error) {
-	// Use background context for the adapted call
-	return a.client.FetchDecision(context.Background(), ruleID, userID, attributes, cmabUUID)
 }
 
 // NewExperimentCmabService creates a new instance of ExperimentCmabService with all dependencies initialized
@@ -75,12 +66,11 @@ func NewExperimentCmabService(sdkKey string) *ExperimentCmabService {
 
 	// Create CMAB client with adapter to match interface
 	defaultCmabClient := cmab.NewDefaultCmabClient(cmabClientOptions)
-	cmabClientAdapter := &cmabClientAdapter{client: defaultCmabClient}
 
 	// Create CMAB service options
 	cmabServiceOptions := cmab.ServiceOptions{
 		CmabCache:  cmabCache,
-		CmabClient: cmabClientAdapter,
+		CmabClient: defaultCmabClient,
 		Logger:     logging.GetLogger(sdkKey, "DefaultCmabService"),
 	}
 
@@ -154,14 +144,18 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 	updatedExperiment := *experiment
 	updatedExperiment.TrafficAllocation = []entities.Range{
 		{
-			EntityID:   "",    // Empty entity ID
-			EndOfRange: 10000, // 100% traffic allocation
+			EntityID:   CmabDummyEntityID,                 // Use special dummy ID like JavaScript
+			EndOfRange: experiment.Cmab.TrafficAllocation, // Use CMAB traffic allocation from config
 		},
 	}
 
-	// Check if user is in experiment traffic allocation
-	variation, reason, _ := s.bucketer.Bucket(bucketingID, updatedExperiment, group)
-	if variation == nil {
+	// Check if user is in experiment traffic allocation using new bucketer method
+	entityID, reason, err := s.bucketer.BucketToEntityID(bucketingID, updatedExperiment, group)
+	if err != nil {
+		return decision, decisionReasons, err
+	}
+
+	if entityID != CmabDummyEntityID {
 		logMessage := decisionReasons.AddInfo("User %s not in CMAB experiment %s due to traffic allocation", userContext.ID, experiment.Key)
 		s.logger.Debug(logMessage)
 		decision.Reason = reason
@@ -187,6 +181,13 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 		variationCopy := variation
 		decision.Variation = &variationCopy
 		decision.Reason = pkgReasons.CmabVariationAssigned
+
+		// Set the CMAB UUID as pointer to string
+		if cmabDecision.CmabUUID != "" {
+			decision.CmabUUID = &cmabDecision.CmabUUID
+		}
+		// If cmabDecision.CmabUUID is empty, decision.CmabUUID stays nil
+
 		message := fmt.Sprintf("User bucketed into variation %s by CMAB service", variation.Key)
 		decisionReasons.AddInfo(message)
 		return decision, decisionReasons, nil
