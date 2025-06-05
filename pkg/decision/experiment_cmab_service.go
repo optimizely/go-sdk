@@ -68,7 +68,7 @@ func NewExperimentCmabService(sdkKey string) *ExperimentCmabService {
 	defaultCmabClient := cmab.NewDefaultCmabClient(cmabClientOptions)
 
 	// Create CMAB service options
-	cmabServiceOptions := cmab.CmabServiceOptions{
+	cmabServiceOptions := cmab.ServiceOptions{
 		CmabCache:  cmabCache,
 		CmabClient: defaultCmabClient,
 		Logger:     logging.GetLogger(sdkKey, "DefaultCmabService"),

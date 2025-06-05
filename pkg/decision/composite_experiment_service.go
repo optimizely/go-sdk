@@ -92,6 +92,7 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 	return compositeExperimentService
 }
 
+// GetDecision attempts to get an experiment decision by trying each registered service until one returns a variation or error
 func (s *CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options) (ExperimentDecision, decide.DecisionReasons, error) {
 	var experDecision ExperimentDecision
 	reasons := decide.NewDecisionReasons(options)

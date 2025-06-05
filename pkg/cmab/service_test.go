@@ -241,7 +241,7 @@ func (s *CmabServiceTestSuite) SetupTest() {
 	s.mockConfig = new(MockProjectConfig)
 
 	// Set up the CMAB service
-	s.cmabService = NewDefaultCmabService(CmabServiceOptions{
+	s.cmabService = NewDefaultCmabService(ServiceOptions{
 		Logger:     logging.GetLogger("test", "CmabService"),
 		CmabCache:  s.mockCache,
 		CmabClient: s.mockClient,
@@ -787,7 +787,7 @@ func (s *CmabServiceTestSuite) TestGetCacheKey() {
 
 func (s *CmabServiceTestSuite) TestNewDefaultCmabService() {
 	// Test with default options
-	service := NewDefaultCmabService(CmabServiceOptions{})
+	service := NewDefaultCmabService(ServiceOptions{})
 
 	// Only check that the service is created, not the specific fields
 	s.NotNil(service)
