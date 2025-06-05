@@ -86,7 +86,15 @@ func (s *ExperimentCmabTestSuite) SetupTest() {
 		IncludeReasons: true,
 	}
 
+	// Create service with real dependencies first
 	s.experimentCmabService = NewExperimentCmabService("test_sdk_key")
+
+	// inject the mocks
+	s.experimentCmabService.bucketer = s.mockExperimentBucketer
+	s.experimentCmabService.cmabService = s.mockCmabService
+
+	// Initialize the audience tree evaluator w logger
+	s.experimentCmabService.audienceTreeEvaluator = evaluator.NewMixedTreeEvaluator(s.logger)
 
 	// Setup test user context
 	s.testUserContext = entities.UserContext{
@@ -353,6 +361,110 @@ func (s *ExperimentCmabTestSuite) TestGetDecisionWithInvalidVariationID() {
 
 	s.mockExperimentBucketer.AssertExpectations(s.T())
 	s.mockCmabService.AssertExpectations(s.T())
+}
+
+func (s *ExperimentCmabTestSuite) TestGetDecisionCmabExperimentUserNotBucketed() {
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &s.cmabExperiment,
+		ProjectConfig: s.mockProjectConfig,
+	}
+
+	// Mock bucketer - expect the MODIFIED experiment with traffic allocation
+	s.mockExperimentBucketer.On("BucketToEntityID",
+		s.testUserContext.ID, // User ID
+		mock.MatchedBy(func(exp entities.Experiment) bool {
+			// Check that it's our experiment with the modified traffic allocation
+			return exp.ID == "cmab_exp_1" &&
+				exp.Key == "cmab_experiment" &&
+				len(exp.TrafficAllocation) == 1 &&
+				exp.TrafficAllocation[0].EntityID == CmabDummyEntityID
+		}),
+		entities.Group{}, // Empty group
+	).Return("different_entity_id", reasons.NotBucketedIntoVariation, nil) // Return something != CmabDummyEntityID
+
+	decision, _, err := s.experimentCmabService.GetDecision(testDecisionContext, s.testUserContext, s.options)
+
+	// Rest of your assertions...
+	s.NoError(err)
+	s.Equal(reasons.NotBucketedIntoVariation, decision.Reason)
+	s.Nil(decision.Variation)
+	s.Nil(decision.CmabUUID)
+
+	s.mockExperimentBucketer.AssertExpectations(s.T())
+}
+
+func (s *ExperimentCmabTestSuite) TestGetDecisionCmabExperimentAudienceConditionNotMet() {
+	// Create experiment with audience that will actually fail
+	cmabExperimentWithAudience := entities.Experiment{
+		ID:  "cmab_exp_with_audience",
+		Key: "cmab_experiment_with_audience",
+		Cmab: &entities.Cmab{
+			AttributeIds:      []string{"attr1", "attr2"},
+			TrafficAllocation: 10000,
+		},
+		AudienceIds: []string{"audience_1"},
+		// CORRECT AudienceConditionTree structure:
+		AudienceConditionTree: &entities.TreeNode{
+			Operator: "or",
+			Nodes: []*entities.TreeNode{
+				{
+					Item: "audience_1", // Reference the audience ID
+				},
+			},
+		},
+		Variations: map[string]entities.Variation{
+			"var1": {ID: "var1", Key: "variation_1"},
+		},
+		TrafficAllocation: []entities.Range{
+			{EntityID: "$", EndOfRange: 10000},
+		},
+	}
+
+	// User that will NOT match the audience
+	userContextNoAudience := entities.UserContext{
+		ID: "test_user_no_audience",
+		Attributes: map[string]interface{}{
+			"country": "US", // This won't match our audience condition
+		},
+	}
+
+	// Create audience with condition tree that requires Canada
+	audienceMap := map[string]entities.Audience{
+		"audience_1": {
+			ID:   "audience_1",
+			Name: "Test Audience",
+			ConditionTree: &entities.TreeNode{
+				Operator: "or",
+				Nodes: []*entities.TreeNode{
+					{
+						Item: entities.Condition{
+							Type:  "custom_attribute",
+							Match: "exact",
+							Name:  "country",
+							Value: "Canada",
+						},
+					},
+				},
+			},
+		},
+	}
+	s.mockProjectConfig.On("GetAudienceMap").Return(audienceMap)
+
+	// This mock should NOT be called if audience fails
+	s.mockExperimentBucketer.On("BucketToEntityID", mock.Anything, mock.Anything, mock.Anything).Return("", reasons.NotBucketedIntoVariation, nil).Maybe()
+
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &cmabExperimentWithAudience,
+		ProjectConfig: s.mockProjectConfig,
+	}
+
+	decision, _, err := s.experimentCmabService.GetDecision(testDecisionContext, userContextNoAudience, s.options)
+
+	s.NoError(err)
+	s.Equal(reasons.FailedAudienceTargeting, decision.Reason)
+	s.Nil(decision.Variation)
+
+	s.mockProjectConfig.AssertExpectations(s.T())
 }
 
 func TestExperimentCmabTestSuite(t *testing.T) {

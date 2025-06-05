@@ -140,14 +140,7 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 		s.logger.Debug(fmt.Sprintf("Using bucketing ID: %s for user %s in CMAB experiment", bucketingID, userContext.ID))
 	}
 
-	// Update traffic allocation for CMAB experiments (100% allocation)
-	updatedExperiment := *experiment
-	updatedExperiment.TrafficAllocation = []entities.Range{
-		{
-			EntityID:   CmabDummyEntityID,                 // Use special dummy ID like JavaScript
-			EndOfRange: experiment.Cmab.TrafficAllocation, // Use CMAB traffic allocation from config
-		},
-	}
+	updatedExperiment := s.createCmabExperiment(experiment)
 
 	// Check if user is in experiment traffic allocation using new bucketer method
 	entityID, reason, err := s.bucketer.BucketToEntityID(bucketingID, updatedExperiment, group)
@@ -182,12 +175,6 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 		decision.Variation = &variationCopy
 		decision.Reason = pkgReasons.CmabVariationAssigned
 
-		// Set the CMAB UUID as pointer to string
-		if cmabDecision.CmabUUID != "" {
-			decision.CmabUUID = &cmabDecision.CmabUUID
-		}
-		// If cmabDecision.CmabUUID is empty, decision.CmabUUID stays nil
-
 		message := fmt.Sprintf("User bucketed into variation %s by CMAB service", variation.Key)
 		decisionReasons.AddInfo(message)
 		return decision, decisionReasons, nil
@@ -197,6 +184,61 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 	message := fmt.Sprintf("variation with ID %s not found in experiment %s", cmabDecision.VariationID, experiment.ID)
 	decisionReasons.AddInfo(message)
 	return decision, decisionReasons, fmt.Errorf("variation with ID %s not found in experiment %s", cmabDecision.VariationID, experiment.ID)
+}
+
+func (s *ExperimentCmabService) createCmabExperiment(experiment *entities.Experiment) entities.Experiment {
+	// Create a proper deep copy for CMAB experiments
+	updatedExperiment := *experiment
+	updatedExperiment.TrafficAllocation = []entities.Range{
+		{
+			EntityID:   CmabDummyEntityID,                 // Use special dummy ID like JavaScript
+			EndOfRange: experiment.Cmab.TrafficAllocation, // Use CMAB traffic allocation from config
+		},
+	}
+
+	// Deep copy the Cmab pointer if it exists
+	if experiment.Cmab != nil {
+		cmabCopy := *experiment.Cmab
+		updatedExperiment.Cmab = &cmabCopy
+	}
+
+	// Deep copy the AudienceConditionTree pointer if it exists
+	if experiment.AudienceConditionTree != nil {
+		treeCopy := *experiment.AudienceConditionTree
+		updatedExperiment.AudienceConditionTree = &treeCopy
+	}
+
+	// Deep copy the Variations map
+	if len(experiment.Variations) > 0 {
+		updatedExperiment.Variations = make(map[string]entities.Variation)
+		for k, v := range experiment.Variations {
+			updatedExperiment.Variations[k] = v
+		}
+	}
+
+	// Deep copy the VariationKeyToIDMap if it exists
+	if len(experiment.VariationKeyToIDMap) > 0 {
+		updatedExperiment.VariationKeyToIDMap = make(map[string]string)
+		for k, v := range experiment.VariationKeyToIDMap {
+			updatedExperiment.VariationKeyToIDMap[k] = v
+		}
+	}
+
+	// Deep copy the Whitelist map if it exists
+	if len(experiment.Whitelist) > 0 {
+		updatedExperiment.Whitelist = make(map[string]string)
+		for k, v := range experiment.Whitelist {
+			updatedExperiment.Whitelist[k] = v
+		}
+	}
+
+	// Deep copy slices
+	if len(experiment.AudienceIds) > 0 {
+		updatedExperiment.AudienceIds = make([]string, len(experiment.AudienceIds))
+		copy(updatedExperiment.AudienceIds, experiment.AudienceIds)
+	}
+
+	return updatedExperiment
 }
 
 // isCmab is a helper method to check if an experiment is a CMAB experiment

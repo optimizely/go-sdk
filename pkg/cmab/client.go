@@ -170,22 +170,22 @@ func (c *DefaultCmabClient) FetchDecision(
 	}
 
 	// Retry sending request with exponential backoff
+	var lastErr error
 	for i := 0; i <= c.retryConfig.MaxRetries; i++ {
-		// Check if context is done
-		if context.Background().Err() != nil {
-			return "", fmt.Errorf("context canceled or timed out: %w", context.Background().Err())
-		}
-
 		// Make the request
 		result, err := c.doFetch(context.Background(), url, bodyBytes)
 		if err == nil {
 			return result, nil
 		}
 
-		// If this is the last retry, return the error
-		if i == c.retryConfig.MaxRetries {
-			return "", fmt.Errorf("failed to fetch CMAB decision after %d attempts: %w",
-				c.retryConfig.MaxRetries, err)
+		lastErr = err
+
+		// Don't wait after the last attempt
+		if i < c.retryConfig.MaxRetries {
+			backoffDuration := c.retryConfig.InitialBackoff * time.Duration(1<<i)
+
+			// Wait for backoff duration
+			time.Sleep(backoffDuration)
 		}
 
 		// Calculate backoff duration
@@ -210,7 +210,7 @@ func (c *DefaultCmabClient) FetchDecision(
 	}
 
 	// This should never be reached due to the return in the loop above
-	return "", fmt.Errorf("unexpected error in retry loop")
+	return "", fmt.Errorf("failed to fetch CMAB decision after %d attempts: %w", c.retryConfig.MaxRetries, lastErr)
 }
 
 // doFetch performs a single fetch operation to the CMAB API

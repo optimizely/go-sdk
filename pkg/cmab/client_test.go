@@ -268,6 +268,14 @@ func TestDefaultCmabClient_FetchDecision_ExhaustedRetries(t *testing.T) {
 
 	variationID, err := client.FetchDecision("rule456", "user123", attributes, "test-uuid")
 
+	t.Logf("Actual error: %q", err.Error())
+	t.Logf("Request count: %d", requestCount)
+
+	// Verify results
+	assert.Error(t, err)
+	assert.Equal(t, "", variationID)
+	assert.Equal(t, 3, requestCount, "Expected 3 request attempts (initial + 2 retries)")
+
 	// Verify results
 	assert.Error(t, err)
 	assert.Equal(t, "", variationID)
