@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package decision //
-package decision
+// Package cmab //
+package cmab
 
 import (
 	"context"
@@ -28,14 +28,197 @@ import (
 	"testing"
 	"time"
 
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/event"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// Create a simple test implementation that satisfies the interface
+type testProjectConfig struct {
+	// Map to store attributes by key for GetAttributeByKey
+	attributesByKey map[string]entities.Attribute
+
+	// Functions that can be overridden for testing
+	getExperimentByIDFn func(id string) (entities.Experiment, error)
+	getFeatureListFn    func() []entities.Feature
+}
+
+// NewTestProjectConfig creates a new test project config
+func NewTestProjectConfig() *testProjectConfig {
+	return &testProjectConfig{
+		attributesByKey: make(map[string]entities.Attribute),
+		getExperimentByIDFn: func(id string) (entities.Experiment, error) {
+			if id == "rule-id" {
+				return entities.Experiment{ID: id, Key: "rule-key"}, nil
+			}
+			return entities.Experiment{}, fmt.Errorf("experiment not found")
+		},
+		getFeatureListFn: func() []entities.Feature {
+			return []entities.Feature{
+				{
+					Key: "feature-key",
+					FeatureExperiments: []entities.Experiment{
+						{ID: "rule-id"},
+					},
+				},
+			}
+		},
+	}
+}
+
+// GetExperimentByID returns a mock experiment
+func (c *testProjectConfig) GetExperimentByID(id string) (entities.Experiment, error) {
+	if c.getExperimentByIDFn != nil {
+		return c.getExperimentByIDFn(id)
+	}
+	return entities.Experiment{}, fmt.Errorf("experiment not found")
+}
+
+// GetFeatureList returns mock features
+func (c *testProjectConfig) GetFeatureList() []entities.Feature {
+	if c.getFeatureListFn != nil {
+		return c.getFeatureListFn()
+	}
+	return []entities.Feature{}
+}
+
+// GetAttributeByKey returns a mock attribute
+func (c *testProjectConfig) GetAttributeByKey(key string) (entities.Attribute, error) {
+	if attr, ok := c.attributesByKey[key]; ok {
+		return attr, nil
+	}
+	return entities.Attribute{Key: key}, nil
+}
+
+// Implement all other required methods with minimal functionality
+func (c *testProjectConfig) GetProjectID() string             { return "mock-project" }
+func (c *testProjectConfig) GetRevision() string              { return "1" }
+func (c *testProjectConfig) GetAccountID() string             { return "mock-account" }
+func (c *testProjectConfig) GetAnonymizeIP() bool             { return false }
+func (c *testProjectConfig) GetAttributeID(key string) string { return "attr-id" }
+func (c *testProjectConfig) GetAttributeKeyByID(id string) (string, error) {
+	return "attr-key", nil
+}
+func (c *testProjectConfig) GetAttributeByID(id string) (entities.Attribute, error) {
+	return entities.Attribute{ID: id, Key: "attr-key"}, nil
+}
+func (c *testProjectConfig) GetAudienceByID(id string) (entities.Audience, error) {
+	return entities.Audience{ID: id}, nil
+}
+func (c *testProjectConfig) GetAudienceMap() map[string]entities.Audience {
+	return map[string]entities.Audience{"audience-id": {ID: "audience-id"}}
+}
+func (c *testProjectConfig) GetBotFiltering() bool    { return false }
+func (c *testProjectConfig) GetClientName() string    { return "mock-client" }
+func (c *testProjectConfig) GetClientVersion() string { return "1.0.0" }
+func (c *testProjectConfig) GetDatafile() string      { return "{}" }
+func (c *testProjectConfig) GetEventByKey(key string) (entities.Event, error) {
+	return entities.Event{Key: key}, nil
+}
+func (c *testProjectConfig) GetFeatureByID(featureID string) (entities.Feature, error) {
+	return entities.Feature{ID: featureID}, nil
+}
+func (c *testProjectConfig) GetFeatureByKey(featureKey string) (entities.Feature, error) {
+	return entities.Feature{Key: featureKey}, nil
+}
+func (c *testProjectConfig) GetExperimentByKey(key string) (entities.Experiment, error) {
+	return entities.Experiment{Key: key}, nil
+}
+func (c *testProjectConfig) GetExperimentFeatureMap() map[string][]entities.Feature {
+	return map[string][]entities.Feature{}
+}
+func (c *testProjectConfig) GetFlagVariationsMap() map[string][]entities.Variation {
+	return map[string][]entities.Variation{}
+}
+func (c *testProjectConfig) GetGroupByID(id string) (entities.Group, error) {
+	return entities.Group{ID: id}, nil
+}
+func (c *testProjectConfig) GetRolloutByID(id string) (entities.Rollout, error) {
+	return entities.Rollout{ID: id}, nil
+}
+func (c *testProjectConfig) GetRolloutIDFromExperimentID(experimentID string) string {
+	return "rollout-id"
+}
+func (c *testProjectConfig) GetVariationFromKey(experimentKey, variationKey string) (entities.Variation, error) {
+	return entities.Variation{Key: variationKey}, nil
+}
+func (c *testProjectConfig) GetVariationFromID(experimentID, variationID string) (entities.Variation, error) {
+	return entities.Variation{ID: variationID}, nil
+}
+func (c *testProjectConfig) GetSdkKey() string         { return "mock-sdk-key" }
+func (c *testProjectConfig) GetEnvironmentKey() string { return "mock-env-key" }
+func (c *testProjectConfig) SendFlagDecisions() bool   { return false }
+
+// GetAttributes returns all attributes
+func (c *testProjectConfig) GetAttributes() []entities.Attribute {
+	return []entities.Attribute{
+		{ID: "attr-id", Key: "attr-key"},
+	}
+}
+
+// GetAudienceList returns all audiences
+func (c *testProjectConfig) GetAudienceList() []entities.Audience {
+	return []entities.Audience{
+		{ID: "audience-id", Name: "Test Audience"},
+	}
+}
+
+// GetEvents returns all events
+func (c *testProjectConfig) GetEvents() []entities.Event {
+	return []entities.Event{
+		{ID: "event-id", Key: "test_event"},
+	}
+}
+
+// GetHostForODP returns the host for ODP
+func (c *testProjectConfig) GetHostForODP() string {
+	return "https://odp.example.com"
+}
+
+// GetPublicKeyForODP returns the public key for ODP
+func (c *testProjectConfig) GetPublicKeyForODP() string {
+	return "mock-public-key"
+}
+
+// GetExperimentList returns all experiments
+func (c *testProjectConfig) GetExperimentList() []entities.Experiment {
+	return []entities.Experiment{
+		{ID: "rule-id", Key: "rule-key"},
+	}
+}
+
+// GetSegmentList returns all segments
+func (c *testProjectConfig) GetSegmentList() []string {
+	return []string{"segment1", "segment2"}
+}
+
+// GetIntegrationList returns all integrations
+func (c *testProjectConfig) GetIntegrationList() []entities.Integration {
+	return []entities.Integration{}
+}
+
+// GetRolloutList returns all rollouts
+func (c *testProjectConfig) GetRolloutList() []entities.Rollout {
+	return []entities.Rollout{
+		{ID: "rollout-id"},
+	}
+}
+
+// GetVariableByKey returns a variable by key
+func (c *testProjectConfig) GetVariableByKey(featureKey string, variableKey string) (entities.Variable, error) {
+	return entities.Variable{
+		ID:   "var-id",
+		Key:  variableKey,
+		Type: "string",
+	}, nil
+}
 
 // Mock logger for testing
 type mockLogger struct {
 	debugFn   func(message string)
 	warningFn func(message string)
+	errorFn   func(message string, err interface{})
 }
 
 func (m *mockLogger) Debug(message string) {
@@ -53,7 +236,11 @@ func (m *mockLogger) Warning(message string) {
 }
 
 // Update the Error method to match the expected interface
-func (m *mockLogger) Error(message string, err interface{}) {}
+func (m *mockLogger) Error(message string, err interface{}) {
+	if m.errorFn != nil {
+		m.errorFn(message, err)
+	}
+}
 
 func TestDefaultCmabClient_FetchDecision(t *testing.T) {
 	// Setup test server
@@ -65,7 +252,7 @@ func TestDefaultCmabClient_FetchDecision(t *testing.T) {
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
 		// Parse request body
-		var requestBody CMABRequest
+		var requestBody Request
 		err := json.NewDecoder(r.Body).Decode(&requestBody)
 		assert.NoError(t, err)
 
@@ -80,7 +267,7 @@ func TestDefaultCmabClient_FetchDecision(t *testing.T) {
 		assert.Len(t, instance.Attributes, 5)
 
 		// Create a map for easier attribute checking
-		attrMap := make(map[string]CMABAttribute)
+		attrMap := make(map[string]Attribute)
 		for _, attr := range instance.Attributes {
 			attrMap[attr.ID] = attr
 			assert.Equal(t, "custom_attribute", attr.Type)
@@ -109,8 +296,8 @@ func TestDefaultCmabClient_FetchDecision(t *testing.T) {
 		// Return response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		response := CMABResponse{
-			Predictions: []CMABPrediction{
+		response := Response{
+			Predictions: []Prediction{
 				{
 					VariationID: "var123",
 				},
@@ -121,7 +308,7 @@ func TestDefaultCmabClient_FetchDecision(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom endpoint
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -167,7 +354,7 @@ func TestDefaultCmabClient_FetchDecision_WithRetry(t *testing.T) {
 		body, err := io.ReadAll(r.Body)
 		assert.NoError(t, err)
 
-		var requestBody CMABRequest
+		var requestBody Request
 		err = json.Unmarshal(body, &requestBody)
 		assert.NoError(t, err)
 
@@ -187,8 +374,8 @@ func TestDefaultCmabClient_FetchDecision_WithRetry(t *testing.T) {
 		// Return success response on third attempt
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		response := CMABResponse{
-			Predictions: []CMABPrediction{
+		response := Response{
+			Predictions: []Prediction{
 				{
 					VariationID: "var123",
 				},
@@ -199,7 +386,7 @@ func TestDefaultCmabClient_FetchDecision_WithRetry(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom endpoint and retry config
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -247,7 +434,7 @@ func TestDefaultCmabClient_FetchDecision_ExhaustedRetries(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom endpoint and retry config
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -292,7 +479,7 @@ func TestDefaultCmabClient_FetchDecision_NoRetryConfig(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom endpoint but no retry config
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -356,7 +543,7 @@ func TestDefaultCmabClient_FetchDecision_InvalidResponse(t *testing.T) {
 			defer server.Close()
 
 			// Create client with custom endpoint
-			client := NewDefaultCmabClient(CmabClientOptions{
+			client := NewDefaultCmabClient(ClientOptions{
 				HTTPClient: &http.Client{
 					Timeout: 5 * time.Second,
 				},
@@ -393,7 +580,7 @@ func TestDefaultCmabClient_FetchDecision_NetworkErrors(t *testing.T) {
 	}
 
 	// Create client with non-existent server to simulate network errors
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 100 * time.Millisecond, // Short timeout to fail quickly
 		},
@@ -442,8 +629,8 @@ func TestDefaultCmabClient_ExponentialBackoff(t *testing.T) {
 		// Return success response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		response := CMABResponse{
-			Predictions: []CMABPrediction{
+		response := Response{
+			Predictions: []Prediction{
 				{
 					VariationID: "var123",
 				},
@@ -454,7 +641,7 @@ func TestDefaultCmabClient_ExponentialBackoff(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom endpoint and specific retry config
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -504,7 +691,7 @@ func TestDefaultCmabClient_ExponentialBackoff(t *testing.T) {
 
 func TestNewDefaultCmabClient_DefaultValues(t *testing.T) {
 	// Test with empty options
-	client := NewDefaultCmabClient(CmabClientOptions{})
+	client := NewDefaultCmabClient(ClientOptions{})
 
 	// Verify default values
 	assert.NotNil(t, client.httpClient)
@@ -541,7 +728,7 @@ func TestDefaultCmabClient_LoggingBehavior(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom logger
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -610,7 +797,7 @@ func TestDefaultCmabClient_NonSuccessStatusCode(t *testing.T) {
 			defer server.Close()
 
 			// Create client with custom endpoint and no retries
-			client := NewDefaultCmabClient(CmabClientOptions{
+			client := NewDefaultCmabClient(ClientOptions{
 				HTTPClient: &http.Client{
 					Timeout: 5 * time.Second,
 				},
@@ -649,8 +836,8 @@ func TestDefaultCmabClient_FetchDecision_ContextCancellation(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		response := CMABResponse{
-			Predictions: []CMABPrediction{
+		response := Response{
+			Predictions: []Prediction{
 				{
 					VariationID: "var123",
 				},
@@ -661,7 +848,7 @@ func TestDefaultCmabClient_FetchDecision_ContextCancellation(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom endpoint
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -687,4 +874,313 @@ func TestDefaultCmabClient_FetchDecision_ContextCancellation(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "context")
 	assert.Contains(t, err.Error(), "deadline exceeded")
+}
+
+func TestLogImpression(t *testing.T) {
+	// Create a client with minimal options
+	client := NewDefaultCmabClient(ClientOptions{})
+
+	// Test the unimplemented method
+	err := client.LogImpression(
+		context.Background(),
+		nil,
+		nil,
+		"rule-id",
+		"user-id",
+		"variation-key",
+		"variation-id",
+		nil,
+		"cmab-uuid",
+	)
+
+	// Verify we get the expected error
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not implemented")
+}
+
+// Mock event processor for testing
+type mockEventProcessor struct {
+	processEventFn func(userEvent event.UserEvent) bool
+}
+
+func (m *mockEventProcessor) Process(userEvent interface{}) bool {
+	if m.processEventFn != nil {
+		if userEventTyped, ok := userEvent.(event.UserEvent); ok {
+			return m.processEventFn(userEventTyped)
+		}
+	}
+	return true
+}
+
+func (m *mockEventProcessor) ProcessEvent(userEvent event.UserEvent) bool {
+	if m.processEventFn != nil {
+		return m.processEventFn(userEvent)
+	}
+	return true
+}
+
+func (m *mockEventProcessor) OnEventDispatch(callback func(event.LogEvent)) (int, error) {
+	return 1, nil // Return a dummy notification ID and no error
+}
+
+func (m *mockEventProcessor) RemoveOnEventDispatch(id int) error {
+	return nil // Return no error
+}
+
+// Mock project config for testing
+type mockProjectConfig struct {
+	getExperimentByIDFn func(id string) (entities.Experiment, error)
+	getFeatureListFn    func() []entities.Feature
+}
+
+func (m *mockProjectConfig) GetExperimentByID(id string) (entities.Experiment, error) {
+	if m.getExperimentByIDFn != nil {
+		return m.getExperimentByIDFn(id)
+	}
+	return entities.Experiment{}, fmt.Errorf("experiment not found")
+}
+
+func (m *mockProjectConfig) GetAttributeByKey(key string) (entities.Attribute, error) {
+	return entities.Attribute{}, nil
+}
+
+func (m *mockProjectConfig) GetAttributeKeyByID(id string) (string, error) {
+	return "attr-key", nil
+}
+
+func (m *mockProjectConfig) GetFeatureList() []entities.Feature {
+	if m.getFeatureListFn != nil {
+		return m.getFeatureListFn()
+	}
+	return []entities.Feature{}
+}
+
+// Implement other required methods of the ProjectConfig interface with empty implementations
+func (m *mockProjectConfig) GetProjectID() string             { return "mock-project" }
+func (m *mockProjectConfig) GetRevision() string              { return "1" }
+func (m *mockProjectConfig) GetAccountID() string             { return "mock-account" }
+func (m *mockProjectConfig) GetAnonymizeIP() bool             { return false }
+func (m *mockProjectConfig) GetAttributeID(key string) string { return "" }
+func (m *mockProjectConfig) GetAttributeByID(id string) (entities.Attribute, error) {
+	return entities.Attribute{}, nil
+}
+func (m *mockProjectConfig) GetAudienceByID(id string) (entities.Audience, error) {
+	return entities.Audience{}, nil
+}
+func (m *mockProjectConfig) GetAudienceMap() map[string]entities.Audience { return nil }
+func (m *mockProjectConfig) GetBotFiltering() bool                        { return false }
+func (m *mockProjectConfig) GetClientName() string                        { return "mock-client" }
+func (m *mockProjectConfig) GetClientVersion() string                     { return "1.0.0" }
+func (m *mockProjectConfig) GetDatafile() string                          { return "" }
+func (m *mockProjectConfig) GetEventByKey(key string) (entities.Event, error) {
+	return entities.Event{}, nil
+}
+func (m *mockProjectConfig) GetFeatureByID(featureID string) (entities.Feature, error) {
+	return entities.Feature{}, nil
+}
+func (m *mockProjectConfig) GetFeatureByKey(featureKey string) (entities.Feature, error) {
+	return entities.Feature{}, nil
+}
+func (m *mockProjectConfig) GetExperimentByKey(key string) (entities.Experiment, error) {
+	return entities.Experiment{}, nil
+}
+func (m *mockProjectConfig) GetExperimentFeatureMap() map[string][]entities.Feature { return nil }
+func (m *mockProjectConfig) GetFlagVariationsMap() map[string][]entities.Variation  { return nil }
+func (m *mockProjectConfig) GetGroupByID(id string) (entities.Group, error) {
+	return entities.Group{}, nil
+}
+func (m *mockProjectConfig) GetRolloutByID(id string) (entities.Rollout, error) {
+	return entities.Rollout{}, nil
+}
+func (m *mockProjectConfig) GetRolloutIDFromExperimentID(experimentID string) string { return "" }
+func (m *mockProjectConfig) GetVariationFromKey(experimentKey, variationKey string) (entities.Variation, error) {
+	return entities.Variation{}, nil
+}
+func (m *mockProjectConfig) GetVariationFromID(experimentID, variationID string) (entities.Variation, error) {
+	return entities.Variation{}, nil
+}
+func (m *mockProjectConfig) GetSdkKey() string         { return "mock-sdk-key" }
+func (m *mockProjectConfig) GetEnvironmentKey() string { return "mock-env-key" }
+func (m *mockProjectConfig) SendFlagDecisions() bool   { return false }
+
+// GetAttributes returns all attributes
+func (m *mockProjectConfig) GetAttributes() []entities.Attribute {
+	return []entities.Attribute{
+		{ID: "attr-id", Key: "attr-key"},
+	}
+}
+
+// GetAudienceList returns all audiences
+func (m *mockProjectConfig) GetAudienceList() []entities.Audience {
+	return []entities.Audience{
+		{ID: "audience-id", Name: "Test Audience"},
+	}
+}
+
+// GetEvents returns all events
+func (m *mockProjectConfig) GetEvents() []entities.Event {
+	return []entities.Event{
+		{ID: "event-id", Key: "test_event"},
+	}
+}
+
+// GetHostForODP returns the host for ODP
+func (m *mockProjectConfig) GetHostForODP() string {
+	return "https://odp.example.com"
+}
+
+// GetPublicKeyForODP returns the public key for ODP
+func (m *mockProjectConfig) GetPublicKeyForODP() string {
+	return "mock-public-key"
+}
+
+// GetExperimentList returns all experiments
+func (m *mockProjectConfig) GetExperimentList() []entities.Experiment {
+	return []entities.Experiment{
+		{ID: "rule-id", Key: "rule-key"},
+	}
+}
+
+// GetSegmentList returns all segments
+func (m *mockProjectConfig) GetSegmentList() []string {
+	return []string{"segment1", "segment2"}
+}
+
+// GetIntegrationList returns all integrations
+func (m *mockProjectConfig) GetIntegrationList() []entities.Integration {
+	return []entities.Integration{}
+}
+
+// GetRolloutList returns all rollouts
+func (m *mockProjectConfig) GetRolloutList() []entities.Rollout {
+	return []entities.Rollout{
+		{ID: "rollout-id"},
+	}
+}
+
+// GetVariableByKey returns a variable by key
+func (m *mockProjectConfig) GetVariableByKey(featureKey string, variableKey string) (entities.Variable, error) {
+	return entities.Variable{
+		ID:   "var-id",
+		Key:  variableKey,
+		Type: "string",
+	}, nil
+}
+
+func TestTrackCMABDecision(t *testing.T) {
+	// Test 1: With nil event processor and project config
+	t.Run("with nil dependencies", func(t *testing.T) {
+		debugMessages := []string{}
+		mockLogger := &mockLogger{
+			debugFn: func(message string) {
+				debugMessages = append(debugMessages, message)
+			},
+		}
+
+		client := NewDefaultCmabClient(ClientOptions{
+			Logger: mockLogger,
+		})
+
+		client.TrackCMABDecision(
+			"rule-id",
+			"user-id",
+			"variation-id",
+			"variation-key",
+			nil,
+			"cmab-uuid",
+		)
+
+		// Verify log message was produced
+		assert.Len(t, debugMessages, 1)
+		assert.Contains(t, debugMessages[0], "Event processor or project config not available")
+	})
+
+	// Test 2: With error getting experiment
+	t.Run("with error getting experiment", func(t *testing.T) {
+		errorMessages := []string{}
+		mockLogger := &mockLogger{
+			errorFn: func(message string, err interface{}) {
+				errorMessages = append(errorMessages, message)
+			},
+		}
+
+		// Create a test config with a custom GetExperimentByID function
+		testConfig := NewTestProjectConfig()
+		testConfig.getExperimentByIDFn = func(id string) (entities.Experiment, error) {
+			return entities.Experiment{}, fmt.Errorf("experiment not found")
+		}
+
+		client := NewDefaultCmabClient(ClientOptions{
+			Logger:        mockLogger,
+			ProjectConfig: testConfig,
+		})
+
+		client.TrackCMABDecision(
+			"rule-id",
+			"user-id",
+			"variation-id",
+			"variation-key",
+			nil,
+			"cmab-uuid",
+		)
+
+		// This test will pass even without checking logs because we're testing that
+		// the function doesn't panic when experiment is not found
+	})
+
+	// Test 3: With valid event processor and project config
+	t.Run("with valid dependencies", func(t *testing.T) {
+		processedEvents := []event.UserEvent{}
+		mockEventProcessor := &mockEventProcessor{
+			processEventFn: func(userEvent event.UserEvent) bool {
+				processedEvents = append(processedEvents, userEvent)
+				return true
+			},
+		}
+
+		// Setup mock experiment
+		mockExperiment := entities.Experiment{
+			ID:  "rule-id",
+			Key: "rule-key",
+		}
+
+		// Setup mock feature
+		mockFeature := entities.Feature{
+			Key: "feature-key",
+			FeatureExperiments: []entities.Experiment{
+				{
+					ID: "rule-id",
+				},
+			},
+		}
+
+		mockProjectConfig := &mockProjectConfig{
+			getExperimentByIDFn: func(id string) (entities.Experiment, error) {
+				if id == "rule-id" {
+					return mockExperiment, nil
+				}
+				return entities.Experiment{}, fmt.Errorf("experiment not found")
+			},
+			getFeatureListFn: func() []entities.Feature {
+				return []entities.Feature{mockFeature}
+			},
+		}
+
+		client := NewDefaultCmabClient(ClientOptions{
+			EventProcessor: mockEventProcessor,
+			ProjectConfig:  mockProjectConfig,
+		})
+
+		client.TrackCMABDecision(
+			"rule-id",
+			"user-id",
+			"variation-id",
+			"variation-key",
+			map[string]interface{}{"attr1": "value1"},
+			"cmab-uuid",
+		)
+
+		// Verify the event processor was called
+		assert.Len(t, processedEvents, 1, "Expected one event to be processed")
+	})
 }

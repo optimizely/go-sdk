@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020,2022 Optimizely, Inc. and contributors               *
+ * Copyright 2019-2020,2025 Optimizely, Inc. and contributors               *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -131,6 +131,69 @@ func createImpressionVisitor(userEvent UserEvent) Visitor {
 	visitor := createVisitor(userEvent, userEvent.Impression.Attributes, []Decision{decision}, []SnapshotEvent{dispatchEvent})
 
 	return visitor
+}
+
+// CreateCMABImpressionEvent creates a CMAB impression event
+func CreateCMABImpressionEvent(
+	configObj config.ProjectConfig,
+	experiment entities.Experiment,
+	variation *entities.Variation,
+	attributes map[string]interface{},
+	flagKey, ruleKey, ruleType string,
+	enabled bool,
+	cmabUUID string,
+) CMABImpressionEvent {
+	baseImpression := createImpressionEvent(
+		configObj,
+		experiment,
+		variation,
+		attributes,
+		flagKey,
+		ruleKey,
+		ruleType,
+		enabled,
+	)
+
+	return CMABImpressionEvent{
+		ImpressionEvent: baseImpression,
+		CmabUUID:        cmabUUID,
+	}
+}
+
+// CreateCMABImpressionUserEvent creates a UserEvent containing a CMAB impression
+func CreateCMABImpressionUserEvent(
+	projectConfig config.ProjectConfig,
+	experiment entities.Experiment,
+	variation *entities.Variation,
+	userContext entities.UserContext,
+	flagKey, ruleKey, ruleType string,
+	enabled bool,
+	cmabUUID string,
+) (UserEvent, bool) {
+	if (ruleType == decisionPkg.Rollout || variation == nil) && !projectConfig.SendFlagDecisions() {
+		return UserEvent{}, false
+	}
+
+	impression := CreateCMABImpressionEvent(
+		projectConfig,
+		experiment,
+		variation,
+		userContext.Attributes,
+		flagKey,
+		ruleKey,
+		ruleType,
+		enabled,
+		cmabUUID,
+	)
+
+	userEvent := UserEvent{}
+	userEvent.Timestamp = makeTimestamp()
+	userEvent.VisitorID = userContext.ID
+	userEvent.UUID = cmabUUID                          // Use the CMAB UUID instead of generating a new one
+	userEvent.Impression = &impression.ImpressionEvent // Use the embedded ImpressionEvent
+	userEvent.EventContext = CreateEventContext(projectConfig)
+
+	return userEvent, true
 }
 
 // create a conversion event
