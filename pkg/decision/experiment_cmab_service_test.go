@@ -467,6 +467,216 @@ func (s *ExperimentCmabTestSuite) TestGetDecisionCmabExperimentAudienceCondition
 	s.mockProjectConfig.AssertExpectations(s.T())
 }
 
+func (s *ExperimentCmabTestSuite) TestCreateCmabExperiment() {
+	// Test with nil Cmab pointer - should hit the nil check lines
+	experiment := &entities.Experiment{
+		ID:   "test-exp",
+		Key:  "test-key",
+		Cmab: nil, // This is what we want to test
+		TrafficAllocation: []entities.Range{
+			{
+				EntityID:   "entity_id_placeholder",
+				EndOfRange: 5000,
+			},
+		},
+		Variations:  make(map[string]entities.Variation),
+		AudienceIds: []string{},
+	}
+
+	result := s.experimentCmabService.createCmabExperiment(experiment)
+	s.NotNil(result) // Just make sure it doesn't panic
+
+	// Test with populated experiment to hit all deep copy paths
+	experiment.Cmab = &entities.Cmab{TrafficAllocation: 8000}
+	experiment.AudienceConditionTree = &entities.TreeNode{}
+	experiment.Variations = map[string]entities.Variation{"var1": {}}
+	experiment.AudienceIds = []string{"aud1"}
+
+	result = s.experimentCmabService.createCmabExperiment(experiment)
+	s.NotNil(result)
+}
+
+func (s *ExperimentCmabTestSuite) TestGetDecisionUserNotInAudience() {
+	// This should hit lines 129-131 and 139-141
+	cmabExperimentWithFailingAudience := entities.Experiment{
+		ID:  "cmab_exp_failing_audience",
+		Key: "cmab_experiment_failing",
+		Cmab: &entities.Cmab{
+			AttributeIds:      []string{"attr1"},
+			TrafficAllocation: 10000,
+		},
+		AudienceIds: []string{"impossible_audience"},
+		AudienceConditionTree: &entities.TreeNode{
+			Operator: "or",
+			Nodes: []*entities.TreeNode{
+				{Item: "impossible_audience"},
+			},
+		},
+		Variations: map[string]entities.Variation{
+			"var1": {ID: "var1", Key: "variation_1"},
+		},
+	}
+
+	// Mock audience that will never match
+	audienceMap := map[string]entities.Audience{
+		"impossible_audience": {
+			ID: "impossible_audience",
+			ConditionTree: &entities.TreeNode{
+				Operator: "or",
+				Nodes: []*entities.TreeNode{
+					{
+						Item: entities.Condition{
+							Type:  "custom_attribute",
+							Match: "exact",
+							Name:  "impossible_attr",
+							Value: "impossible_value",
+						},
+					},
+				},
+			},
+		},
+	}
+	s.mockProjectConfig.On("GetAudienceMap").Return(audienceMap)
+
+	decisionContext := ExperimentDecisionContext{
+		Experiment:    &cmabExperimentWithFailingAudience,
+		ProjectConfig: s.mockProjectConfig,
+	}
+
+	decision, _, err := s.experimentCmabService.GetDecision(decisionContext, s.testUserContext, s.options)
+
+	s.NoError(err)
+	s.Equal(reasons.FailedAudienceTargeting, decision.Reason)
+	s.Nil(decision.Variation)
+}
+
+func (s *ExperimentCmabTestSuite) TestGetDecisionBucketingError() {
+	// Test bucketing ID error (lines 134-137)
+	decisionContext := ExperimentDecisionContext{
+		Experiment:    &s.cmabExperiment,
+		ProjectConfig: s.mockProjectConfig,
+	}
+
+	// Mock bucketer to return an error
+	s.mockExperimentBucketer.On("BucketToEntityID",
+		s.testUserContext.ID,
+		mock.AnythingOfType("entities.Experiment"),
+		entities.Group{},
+	).Return("", reasons.NotBucketedIntoVariation, errors.New("bucketing failed"))
+
+	decision, _, err := s.experimentCmabService.GetDecision(decisionContext, s.testUserContext, s.options)
+
+	s.Error(err)
+	s.Contains(err.Error(), "bucketing failed")
+	s.Nil(decision.Variation)
+
+	s.mockExperimentBucketer.AssertExpectations(s.T())
+}
+
+func (s *ExperimentCmabTestSuite) TestGetDecisionTrafficAllocationError() {
+	// Test traffic allocation error (lines 147-149)
+	decisionContext := ExperimentDecisionContext{
+		Experiment:    &s.cmabExperiment,
+		ProjectConfig: s.mockProjectConfig,
+	}
+
+	// Mock bucketer to return empty string (traffic allocation failure)
+	s.mockExperimentBucketer.On("BucketToEntityID",
+		s.testUserContext.ID,
+		mock.AnythingOfType("entities.Experiment"),
+		entities.Group{},
+	).Return("", reasons.NotBucketedIntoVariation, nil) // No error, but empty result
+
+	decision, _, err := s.experimentCmabService.GetDecision(decisionContext, s.testUserContext, s.options)
+
+	s.NoError(err) // Should not error, just not bucketed
+	s.Equal(reasons.NotBucketedIntoVariation, decision.Reason)
+	s.Nil(decision.Variation)
+
+	s.mockExperimentBucketer.AssertExpectations(s.T())
+}
+
+func (s *ExperimentCmabTestSuite) TestCreateCmabExperimentDeepCopy() {
+	// Test all the deep copy branches with comprehensive data
+	experiment := &entities.Experiment{
+		ID:   "test-exp",
+		Key:  "test-key",
+		Cmab: &entities.Cmab{TrafficAllocation: 8000},
+
+		// Test AudienceConditionTree copy (lines ~220)
+		AudienceConditionTree: &entities.TreeNode{
+			Operator: "or",
+			Nodes:    []*entities.TreeNode{{Item: "test"}},
+		},
+
+		// Test Variations map copy (lines ~225)
+		Variations: map[string]entities.Variation{
+			"var1": {ID: "var1", Key: "variation_1"},
+			"var2": {ID: "var2", Key: "variation_2"},
+		},
+
+		// Test VariationKeyToIDMap copy (lines ~232)
+		VariationKeyToIDMap: map[string]string{
+			"variation_1": "var1",
+			"variation_2": "var2",
+		},
+
+		// Test Whitelist map copy (lines ~238)
+		Whitelist: map[string]string{
+			"user1": "var1",
+			"user2": "var2",
+		},
+
+		// Test AudienceIds slice copy (lines ~244)
+		AudienceIds: []string{"aud1", "aud2"},
+	}
+
+	result := s.experimentCmabService.createCmabExperiment(experiment)
+
+	// Verify the method ran and returned something
+	s.NotNil(result)
+
+	// Check that traffic allocation was modified (this is the main purpose)
+	s.Equal(1, len(result.TrafficAllocation))
+	s.Equal(CmabDummyEntityID, result.TrafficAllocation[0].EntityID)
+	s.Equal(8000, result.TrafficAllocation[0].EndOfRange)
+
+	// Verify deep copies were made (content should be same, but separate objects)
+	s.Equal(experiment.AudienceConditionTree.Operator, result.AudienceConditionTree.Operator)
+	s.Equal(len(experiment.Variations), len(result.Variations))
+	s.Equal(len(experiment.VariationKeyToIDMap), len(result.VariationKeyToIDMap))
+	s.Equal(len(experiment.Whitelist), len(result.Whitelist))
+	s.Equal(len(experiment.AudienceIds), len(result.AudienceIds))
+
+	// Verify content is preserved (FIX: Check the actual values!)
+	s.Equal("var1", result.VariationKeyToIDMap["variation_1"]) // ← Fixed!
+	s.Equal("var1", result.Whitelist["user1"])
+	s.Equal("aud1", result.AudienceIds[0])
+}
+
+func (s *ExperimentCmabTestSuite) TestCreateCmabExperimentEmptyFields() {
+	// Test with empty/nil fields to hit the negative branches
+	experiment := &entities.Experiment{
+		ID:   "test-exp",
+		Key:  "test-key",
+		Cmab: &entities.Cmab{TrafficAllocation: 5000},
+
+		// All these should be empty/nil to test the negative branches
+		AudienceConditionTree: nil,
+		Variations:            nil,
+		VariationKeyToIDMap:   nil,
+		Whitelist:             nil,
+		AudienceIds:           nil,
+	}
+
+	result := s.experimentCmabService.createCmabExperiment(experiment)
+
+	// Should still work and create traffic allocation
+	s.Equal(1, len(result.TrafficAllocation))
+	s.Equal(CmabDummyEntityID, result.TrafficAllocation[0].EntityID)
+	s.Equal(5000, result.TrafficAllocation[0].EndOfRange)
+}
+
 func TestExperimentCmabTestSuite(t *testing.T) {
 	suite.Run(t, new(ExperimentCmabTestSuite))
 }

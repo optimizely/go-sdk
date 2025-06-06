@@ -187,6 +187,12 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 }
 
 func (s *ExperimentCmabService) createCmabExperiment(experiment *entities.Experiment) entities.Experiment {
+	// Guard: This method should only be called for CMAB experiments
+	if experiment.Cmab == nil {
+		// Return the experiment unchanged - this shouldn't happen in normal flow
+		return *experiment
+	}
+
 	// Create a proper deep copy for CMAB experiments
 	updatedExperiment := *experiment
 	updatedExperiment.TrafficAllocation = []entities.Range{
