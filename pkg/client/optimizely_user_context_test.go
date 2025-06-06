@@ -821,6 +821,8 @@ func (s *OptimizelyUserContextTestSuite) TestDecisionNotification() {
 	enabled := true
 	variablesExpected, err := s.OptimizelyClient.GetAllFeatureVariables(flagKey, entities.UserContext{ID: s.userID})
 	s.Nil(err)
+	experimentId := "10420810910"
+	variationId := "10418551353"
 
 	ruleKey := "exp_no_audience"
 	reasons := []string{}
@@ -839,6 +841,8 @@ func (s *OptimizelyUserContextTestSuite) TestDecisionNotification() {
 		"ruleKey":                 ruleKey,
 		"reasons":                 reasons,
 		"decisionEventDispatched": true,
+		"experimentId":            experimentId,
+		"variationId":             variationId,
 	}
 	s.OptimizelyClient.DecisionService.OnDecision(callback)
 	_ = user.Decide(flagKey, nil)
