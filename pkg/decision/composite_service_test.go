@@ -17,12 +17,15 @@
 package decision
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
 	"github.com/optimizely/go-sdk/v2/pkg/notification"
 )
 
@@ -33,6 +36,25 @@ type CompositeServiceFeatureTestSuite struct {
 	reasons            decide.DecisionReasons
 	mockFeatureService *MockFeatureDecisionService
 	testUserContext    entities.UserContext
+}
+
+type MockNotificationCenter struct {
+	mock.Mock
+}
+
+func (m *MockNotificationCenter) AddHandler(notificationType notification.Type, handler func(interface{})) (int, error) {
+	args := m.Called(notificationType, handler)
+	return args.Int(0), args.Error(1)
+}
+
+func (m *MockNotificationCenter) RemoveHandler(id int, notificationType notification.Type) error {
+	args := m.Called(id, notificationType)
+	return args.Error(0)
+}
+
+func (m *MockNotificationCenter) Send(notificationType notification.Type, notification interface{}) error {
+	args := m.Called(notificationType, notification)
+	return args.Error(0)
 }
 
 func (s *CompositeServiceFeatureTestSuite) SetupTest() {
@@ -150,6 +172,114 @@ func (s *CompositeServiceExperimentTestSuite) TestDecisionListeners() {
 	s.NoError(err)
 	decisionService.GetExperimentDecision(s.decisionContext, s.testUserContext, s.options)
 	s.Equal(numberOfCalls, 1)
+}
+
+// Add these test methods to CompositeServiceExperimentTestSuite
+
+func (s *CompositeServiceExperimentTestSuite) TestGetExperimentDecisionWithError() {
+	// Test line 79: Error from compositeExperimentService.GetDecision
+	expectedError := errors.New("experiment service error")
+	decisionService := &CompositeService{
+		compositeExperimentService: s.mockExperimentService,
+	}
+
+	s.mockExperimentService.On("GetDecision", s.decisionContext, s.testUserContext, s.options).
+		Return(ExperimentDecision{}, s.reasons, expectedError)
+
+	_, _, err := decisionService.GetExperimentDecision(s.decisionContext, s.testUserContext, s.options)
+
+	s.Error(err)
+	s.Equal(expectedError, err)
+	s.mockExperimentService.AssertExpectations(s.T())
+}
+
+func (s *CompositeServiceExperimentTestSuite) TestGetExperimentDecisionNotificationSendError() {
+	// Test line 98: Error from notificationCenter.Send
+	expectedExperimentDecision := ExperimentDecision{
+		Variation: &testExp1111Var2222,
+	}
+
+	// Create a mock notification center that returns an error
+	mockNotificationCenter := &MockNotificationCenter{}
+	mockNotificationCenter.On("Send", notification.Decision, mock.AnythingOfType("notification.DecisionNotification")).
+		Return(errors.New("notification send error"))
+
+	decisionService := &CompositeService{
+		compositeExperimentService: s.mockExperimentService,
+		notificationCenter:         mockNotificationCenter,
+		logger:                     logging.GetLogger("test", "CompositeService"),
+	}
+
+	s.mockExperimentService.On("GetDecision", s.decisionContext, s.testUserContext, s.options).
+		Return(expectedExperimentDecision, s.reasons, nil)
+
+	experimentDecision, _, err := decisionService.GetExperimentDecision(s.decisionContext, s.testUserContext, s.options)
+
+	// FIX: The method DOES return the notification error at the end
+	s.Error(err)
+	s.Contains(err.Error(), "notification send error")
+	s.Equal(expectedExperimentDecision, experimentDecision) // Decision should still be returned
+	s.mockExperimentService.AssertExpectations(s.T())
+	mockNotificationCenter.AssertExpectations(s.T())
+}
+
+func (s *CompositeServiceExperimentTestSuite) TestOnDecisionAddHandlerError() {
+	// Test line 102: Error from notificationCenter.AddHandler
+	mockNotificationCenter := &MockNotificationCenter{}
+	mockNotificationCenter.On("AddHandler", notification.Decision, mock.AnythingOfType("func(interface {})")).
+		Return(0, errors.New("add handler error"))
+
+	decisionService := &CompositeService{
+		notificationCenter: mockNotificationCenter,
+		logger:             logging.GetLogger("test", "CompositeService"),
+	}
+
+	callback := func(notification.DecisionNotification) {}
+	id, err := decisionService.OnDecision(callback)
+
+	s.Error(err)
+	s.Equal(0, id)
+	mockNotificationCenter.AssertExpectations(s.T())
+}
+
+func (s *CompositeServiceExperimentTestSuite) TestRemoveOnDecisionError() {
+	// Test lines 120-123: Error from notificationCenter.RemoveHandler
+	mockNotificationCenter := &MockNotificationCenter{}
+	mockNotificationCenter.On("RemoveHandler", 123, notification.Decision).
+		Return(errors.New("remove handler error"))
+
+	decisionService := &CompositeService{
+		notificationCenter: mockNotificationCenter,
+		logger:             logging.GetLogger("test", "CompositeService"),
+	}
+
+	err := decisionService.RemoveOnDecision(123)
+
+	s.Error(err)
+	mockNotificationCenter.AssertExpectations(s.T())
+}
+
+func (s *CompositeServiceExperimentTestSuite) TestOnDecisionInvalidPayload() {
+	// Test lines 129-132: Invalid payload in OnDecision callback
+	notificationCenter := notification.NewNotificationCenter()
+	decisionService := &CompositeService{
+		notificationCenter: notificationCenter,
+		logger:             logging.GetLogger("test", "CompositeService"),
+	}
+
+	var callbackCalled bool
+	callback := func(notification.DecisionNotification) {
+		callbackCalled = true
+	}
+
+	id, err := decisionService.OnDecision(callback)
+	s.NoError(err)
+	s.NotEqual(0, id)
+
+	// Send invalid payload to trigger the warning path
+	err = notificationCenter.Send(notification.Decision, "invalid_payload")
+	s.NoError(err)          // Send should succeed, but callback shouldn't be called
+	s.False(callbackCalled) // Callback should not be called with invalid payload
 }
 
 func TestCompositeServiceTestSuites(t *testing.T) {

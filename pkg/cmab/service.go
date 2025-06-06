@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package decision provides CMAB decision service implementation
-package decision
+// Package cmab //
+package cmab
 
 import (
 	"encoding/json"
@@ -35,19 +35,19 @@ import (
 // DefaultCmabService implements the CmabService interface
 type DefaultCmabService struct {
 	cmabCache  cache.CacheWithRemove
-	cmabClient CmabClient
+	cmabClient Client
 	logger     logging.OptimizelyLogProducer
 }
 
-// CmabServiceOptions defines options for creating a CMAB service
-type CmabServiceOptions struct {
+// ServiceOptions defines options for creating a CMAB service
+type ServiceOptions struct {
 	Logger     logging.OptimizelyLogProducer
 	CmabCache  cache.CacheWithRemove
-	CmabClient CmabClient
+	CmabClient Client
 }
 
 // NewDefaultCmabService creates a new instance of DefaultCmabService
-func NewDefaultCmabService(options CmabServiceOptions) *DefaultCmabService {
+func NewDefaultCmabService(options ServiceOptions) *DefaultCmabService {
 	logger := options.Logger
 	if logger == nil {
 		logger = logging.GetLogger("", "DefaultCmabService")
@@ -66,7 +66,7 @@ func (s *DefaultCmabService) GetDecision(
 	userContext entities.UserContext,
 	ruleID string,
 	options *decide.Options,
-) (CmabDecision, error) {
+) (Decision, error) {
 	// Initialize reasons slice for decision
 	reasons := []string{}
 
@@ -78,7 +78,7 @@ func (s *DefaultCmabService) GetDecision(
 		reasons = append(reasons, "Ignoring CMAB cache as requested")
 		decision, err := s.fetchDecisionWithRetry(ruleID, userContext.ID, filteredAttributes)
 		if err != nil {
-			return CmabDecision{Reasons: reasons}, err
+			return Decision{Reasons: reasons}, err
 		}
 		decision.Reasons = append(reasons, decision.Reasons...)
 		return decision, nil
@@ -103,13 +103,13 @@ func (s *DefaultCmabService) GetDecision(
 	attributesJSON, err := s.getAttributesJSON(filteredAttributes)
 	if err != nil {
 		reasons = append(reasons, fmt.Sprintf("Failed to serialize attributes: %v", err))
-		return CmabDecision{Reasons: reasons}, fmt.Errorf("failed to serialize attributes: %w", err)
+		return Decision{Reasons: reasons}, fmt.Errorf("failed to serialize attributes: %w", err)
 	}
 	hasher := murmur3.SeedNew32(1) // Use seed 1 for consistency
 	_, err = hasher.Write([]byte(attributesJSON))
 	if err != nil {
 		reasons = append(reasons, fmt.Sprintf("Failed to hash attributes: %v", err))
-		return CmabDecision{Reasons: reasons}, fmt.Errorf("failed to hash attributes: %w", err)
+		return Decision{Reasons: reasons}, fmt.Errorf("failed to hash attributes: %w", err)
 	}
 	attributesHash := strconv.FormatUint(uint64(hasher.Sum32()), 10)
 
@@ -117,12 +117,12 @@ func (s *DefaultCmabService) GetDecision(
 	cachedValue := s.cmabCache.Lookup(cacheKey)
 	if cachedValue != nil {
 		// Need to type assert since Lookup returns interface{}
-		if cacheVal, ok := cachedValue.(CmabCacheValue); ok {
+		if cacheVal, ok := cachedValue.(CacheValue); ok {
 			// Check if attributes have changed
 			if cacheVal.AttributesHash == attributesHash {
 				s.logger.Debug(fmt.Sprintf("Returning cached CMAB decision for rule %s and user %s", ruleID, userContext.ID))
 				reasons = append(reasons, "Returning cached CMAB decision")
-				return CmabDecision{
+				return Decision{
 					VariationID: cacheVal.VariationID,
 					CmabUUID:    cacheVal.CmabUUID,
 					Reasons:     reasons,
@@ -139,11 +139,11 @@ func (s *DefaultCmabService) GetDecision(
 	decision, err := s.fetchDecisionWithRetry(ruleID, userContext.ID, filteredAttributes)
 	if err != nil {
 		decision.Reasons = append(reasons, decision.Reasons...)
-		return decision, err
+		return decision, fmt.Errorf("CMAB API error: %w", err)
 	}
 
 	// Cache the decision
-	cacheValue := CmabCacheValue{
+	cacheValue := CacheValue{
 		AttributesHash: attributesHash,
 		VariationID:    decision.VariationID,
 		CmabUUID:       decision.CmabUUID,
@@ -161,7 +161,7 @@ func (s *DefaultCmabService) fetchDecisionWithRetry(
 	ruleID string,
 	userID string,
 	attributes map[string]interface{},
-) (CmabDecision, error) {
+) (Decision, error) {
 	cmabUUID := uuid.New().String()
 	reasons := []string{}
 
@@ -186,7 +186,7 @@ func (s *DefaultCmabService) fetchDecisionWithRetry(
 		variationID, err := s.cmabClient.FetchDecision(ruleID, userID, attributes, cmabUUID)
 		if err == nil {
 			reasons = append(reasons, fmt.Sprintf("Successfully fetched CMAB decision on attempt %d/%d", attempt+1, maxRetries))
-			return CmabDecision{
+			return Decision{
 				VariationID: variationID,
 				CmabUUID:    cmabUUID,
 				Reasons:     reasons,
@@ -199,7 +199,7 @@ func (s *DefaultCmabService) fetchDecisionWithRetry(
 	}
 
 	reasons = append(reasons, fmt.Sprintf("Failed to fetch CMAB decision after %d attempts", maxRetries))
-	return CmabDecision{Reasons: reasons}, fmt.Errorf("failed to fetch CMAB decision after %d attempts: %w",
+	return Decision{Reasons: reasons}, fmt.Errorf("failed to fetch CMAB decision after %d attempts: %w",
 		maxRetries, lastErr)
 }
 

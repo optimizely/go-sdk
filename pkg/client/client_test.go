@@ -1682,8 +1682,7 @@ func TestGetFeatureDecisionErrFeatureDecision(t *testing.T) {
 		ConfigManager:   mockConfigManager,
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
-		tracer:          &MockTracer{},
-	}
+		tracer:          &MockTracer{}}
 
 	_, decision, err := client.getFeatureDecision(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, expectedFeatureDecision, decision)

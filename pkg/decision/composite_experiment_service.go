@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2025, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -48,25 +48,37 @@ type CompositeExperimentService struct {
 	logger             logging.OptimizelyLogProducer
 }
 
-// NewCompositeExperimentService creates a new instance of the CompositeExperimentService
+// NewCompositeExperimentService creates a new composite experiment service with the given SDK key.
+// It initializes a service that combines multiple decision services in a specific order:
+// 1. Overrides (if supplied)
+// 2. Whitelist
+// 3. CMAB (Contextual Multi-Armed Bandit)
+// 4. Bucketing (with User profile integration if supplied)
+// Additional options can be provided via CESOptionFunc parameters.
 func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *CompositeExperimentService {
 	// These decision services are applied in order:
 	// 1. Overrides (if supplied)
 	// 2. Whitelist
-	// 3. Bucketing (with User profile integration if supplied)
+	// 3. CMAB (always created)
+	// 4. Bucketing (with User profile integration if supplied)
 	compositeExperimentService := &CompositeExperimentService{logger: logging.GetLogger(sdkKey, "CompositeExperimentService")}
+
 	for _, opt := range options {
 		opt(compositeExperimentService)
 	}
+
 	experimentServices := []ExperimentService{
-		NewExperimentWhitelistService(),
+		NewExperimentWhitelistService(), // No logger argument
 	}
 
-	// Prepend overrides if supplied
 	if compositeExperimentService.overrideStore != nil {
 		overrideService := NewExperimentOverrideService(compositeExperimentService.overrideStore, logging.GetLogger(sdkKey, "ExperimentOverrideService"))
 		experimentServices = append([]ExperimentService{overrideService}, experimentServices...)
 	}
+
+	// Create CMAB service with all initialization handled internally
+	experimentCmabService := NewExperimentCmabService(sdkKey)
+	experimentServices = append(experimentServices, experimentCmabService)
 
 	experimentBucketerService := NewExperimentBucketerService(logging.GetLogger(sdkKey, "ExperimentBucketerService"))
 	if compositeExperimentService.userProfileService != nil {
@@ -75,26 +87,35 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 	} else {
 		experimentServices = append(experimentServices, experimentBucketerService)
 	}
-	compositeExperimentService.experimentServices = experimentServices
 
+	compositeExperimentService.experimentServices = experimentServices
 	return compositeExperimentService
 }
 
-// GetDecision returns a decision for the given experiment and user context
-func (s CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options) (decision ExperimentDecision, reasons decide.DecisionReasons, err error) {
-	// Run through the various decision services until we get a decision
-	reasons = decide.NewDecisionReasons(options)
+// GetDecision attempts to get an experiment decision by trying each registered service until one returns a variation or error
+func (s *CompositeExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options) (ExperimentDecision, decide.DecisionReasons, error) {
+	var experDecision ExperimentDecision
+	reasons := decide.NewDecisionReasons(options)
+
 	for _, experimentService := range s.experimentServices {
-		var decisionReasons decide.DecisionReasons
-		decision, decisionReasons, err = experimentService.GetDecision(decisionContext, userContext, options)
-		reasons.Append(decisionReasons)
+		var serviceReasons decide.DecisionReasons
+
+		decision, serviceReasons, err := experimentService.GetDecision(decisionContext, userContext, options)
+		reasons.Append(serviceReasons)
+
+		// If there's an actual error (not just "no decision"), stop and return it
 		if err != nil {
-			s.logger.Debug(err.Error())
+			return decision, reasons, err // RETURN ERROR - don't continue!
 		}
-		if decision.Variation != nil && err == nil {
-			return decision, reasons, err
+
+		// If we got a valid decision (has a variation), return it
+		if decision.Variation != nil {
+			return decision, reasons, nil
 		}
+
+		// No error and no decision - continue to next service
 	}
 
-	return decision, reasons, err
+	// No service could make a decision
+	return experDecision, reasons, nil // No error, just no decision
 }

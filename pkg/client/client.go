@@ -206,7 +206,7 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 	}
 
 	if err != nil {
-		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature %q: %s`, key, err))
+		return o.handleDecisionServiceError(err, key, *userContext)
 	}
 
 	if featureDecision.Variation != nil {
@@ -1247,4 +1247,10 @@ func (o *OptimizelyClient) getDecisionVariableMap(feature entities.Feature, vari
 
 func isNil(v interface{}) bool {
 	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
+}
+
+func (o *OptimizelyClient) handleDecisionServiceError(err error, key string, userContext OptimizelyUserContext) OptimizelyDecision {
+	o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature %q: %s`, key, err))
+
+	return NewErrorDecision(key, userContext, err)
 }

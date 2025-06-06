@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package decision provides CMAB client implementation
-package decision
+// Package cmab provides contextual multi-armed bandit functionality
+package cmab
 
 import (
 	"bytes"
@@ -44,34 +44,34 @@ const (
 	DefaultBackoffMultiplier = 2.0
 )
 
-// CMABAttribute represents an attribute in a CMAB request
-type CMABAttribute struct {
+// Attribute represents an attribute in a CMAB request
+type Attribute struct {
 	ID    string      `json:"id"`
 	Value interface{} `json:"value"`
 	Type  string      `json:"type"`
 }
 
-// CMABInstance represents an instance in a CMAB request
-type CMABInstance struct {
-	VisitorID    string          `json:"visitorId"`
-	ExperimentID string          `json:"experimentId"`
-	Attributes   []CMABAttribute `json:"attributes"`
-	CmabUUID     string          `json:"cmabUUID"`
+// Instance represents an instance in a CMAB request
+type Instance struct {
+	VisitorID    string      `json:"visitorId"`
+	ExperimentID string      `json:"experimentId"`
+	Attributes   []Attribute `json:"attributes"`
+	CmabUUID     string      `json:"cmabUUID"`
 }
 
-// CMABRequest represents a request to the CMAB API
-type CMABRequest struct {
-	Instances []CMABInstance `json:"instances"`
+// Request represents a request to the CMAB API
+type Request struct {
+	Instances []Instance `json:"instances"`
 }
 
-// CMABPrediction represents a prediction in a CMAB response
-type CMABPrediction struct {
+// Prediction represents a prediction in a CMAB response
+type Prediction struct {
 	VariationID string `json:"variation_id"`
 }
 
-// CMABResponse represents a response from the CMAB API
-type CMABResponse struct {
-	Predictions []CMABPrediction `json:"predictions"`
+// Response represents a response from the CMAB API
+type Response struct {
+	Predictions []Prediction `json:"predictions"`
 }
 
 // RetryConfig defines configuration for retry behavior
@@ -93,15 +93,15 @@ type DefaultCmabClient struct {
 	logger      logging.OptimizelyLogProducer
 }
 
-// CmabClientOptions defines options for creating a CMAB client
-type CmabClientOptions struct {
+// ClientOptions defines options for creating a CMAB client
+type ClientOptions struct {
 	HTTPClient  *http.Client
 	RetryConfig *RetryConfig
 	Logger      logging.OptimizelyLogProducer
 }
 
 // NewDefaultCmabClient creates a new instance of DefaultCmabClient
-func NewDefaultCmabClient(options CmabClientOptions) *DefaultCmabClient {
+func NewDefaultCmabClient(options ClientOptions) *DefaultCmabClient {
 	httpClient := options.HTTPClient
 	if httpClient == nil {
 		httpClient = &http.Client{
@@ -127,24 +127,19 @@ func NewDefaultCmabClient(options CmabClientOptions) *DefaultCmabClient {
 
 // FetchDecision fetches a decision from the CMAB API
 func (c *DefaultCmabClient) FetchDecision(
-	ctx context.Context,
 	ruleID string,
 	userID string,
 	attributes map[string]interface{},
 	cmabUUID string,
 ) (string, error) {
-	// If no context is provided, create a background context
-	if ctx == nil {
-		ctx = context.Background()
-	}
 
 	// Create the URL
 	url := fmt.Sprintf(CMABPredictionEndpoint, ruleID)
 
 	// Convert attributes to CMAB format
-	cmabAttributes := make([]CMABAttribute, 0, len(attributes))
+	cmabAttributes := make([]Attribute, 0, len(attributes))
 	for key, value := range attributes {
-		cmabAttributes = append(cmabAttributes, CMABAttribute{
+		cmabAttributes = append(cmabAttributes, Attribute{
 			ID:    key,
 			Value: value,
 			Type:  "custom_attribute",
@@ -152,8 +147,8 @@ func (c *DefaultCmabClient) FetchDecision(
 	}
 
 	// Create the request body
-	requestBody := CMABRequest{
-		Instances: []CMABInstance{
+	requestBody := Request{
+		Instances: []Instance{
 			{
 				VisitorID:    userID,
 				ExperimentID: ruleID,
@@ -171,26 +166,26 @@ func (c *DefaultCmabClient) FetchDecision(
 
 	// If no retry config, just do a single fetch
 	if c.retryConfig == nil {
-		return c.doFetch(ctx, url, bodyBytes)
+		return c.doFetch(context.Background(), url, bodyBytes)
 	}
 
 	// Retry sending request with exponential backoff
+	var lastErr error
 	for i := 0; i <= c.retryConfig.MaxRetries; i++ {
-		// Check if context is done
-		if ctx.Err() != nil {
-			return "", fmt.Errorf("context canceled or timed out: %w", ctx.Err())
-		}
-
 		// Make the request
-		result, err := c.doFetch(ctx, url, bodyBytes)
+		result, err := c.doFetch(context.Background(), url, bodyBytes)
 		if err == nil {
 			return result, nil
 		}
 
-		// If this is the last retry, return the error
-		if i == c.retryConfig.MaxRetries {
-			return "", fmt.Errorf("failed to fetch CMAB decision after %d attempts: %w",
-				c.retryConfig.MaxRetries, err)
+		lastErr = err
+
+		// Don't wait after the last attempt
+		if i < c.retryConfig.MaxRetries {
+			backoffDuration := c.retryConfig.InitialBackoff * time.Duration(1<<i)
+
+			// Wait for backoff duration
+			time.Sleep(backoffDuration)
 		}
 
 		// Calculate backoff duration
@@ -204,8 +199,8 @@ func (c *DefaultCmabClient) FetchDecision(
 
 		// Wait for backoff duration with context awareness
 		select {
-		case <-ctx.Done():
-			return "", fmt.Errorf("context canceled or timed out during backoff: %w", ctx.Err())
+		case <-context.Background().Done():
+			return "", fmt.Errorf("context canceled or timed out during backoff: %w", context.Background().Err())
 		case <-time.After(backoffDuration):
 			// Continue with retry
 		}
@@ -215,7 +210,7 @@ func (c *DefaultCmabClient) FetchDecision(
 	}
 
 	// This should never be reached due to the return in the loop above
-	return "", fmt.Errorf("unexpected error in retry loop")
+	return "", fmt.Errorf("failed to fetch CMAB decision after %d attempts: %w", c.retryConfig.MaxRetries, lastErr)
 }
 
 // doFetch performs a single fetch operation to the CMAB API
@@ -248,7 +243,7 @@ func (c *DefaultCmabClient) doFetch(ctx context.Context, url string, bodyBytes [
 	}
 
 	// Parse response
-	var cmabResponse CMABResponse
+	var cmabResponse Response
 	if err := json.Unmarshal(respBody, &cmabResponse); err != nil {
 		return "", fmt.Errorf("failed to unmarshal CMAB response: %w", err)
 	}
@@ -263,6 +258,6 @@ func (c *DefaultCmabClient) doFetch(ctx context.Context, url string, bodyBytes [
 }
 
 // validateResponse validates the CMAB response
-func (c *DefaultCmabClient) validateResponse(response CMABResponse) bool {
+func (c *DefaultCmabClient) validateResponse(response Response) bool {
 	return len(response.Predictions) > 0 && response.Predictions[0].VariationID != ""
 }

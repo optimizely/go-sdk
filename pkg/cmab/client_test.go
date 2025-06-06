@@ -14,11 +14,10 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package decision //
-package decision
+// Package cmab //
+package cmab
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -65,7 +64,7 @@ func TestDefaultCmabClient_FetchDecision(t *testing.T) {
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
 		// Parse request body
-		var requestBody CMABRequest
+		var requestBody Request
 		err := json.NewDecoder(r.Body).Decode(&requestBody)
 		assert.NoError(t, err)
 
@@ -80,7 +79,7 @@ func TestDefaultCmabClient_FetchDecision(t *testing.T) {
 		assert.Len(t, instance.Attributes, 5)
 
 		// Create a map for easier attribute checking
-		attrMap := make(map[string]CMABAttribute)
+		attrMap := make(map[string]Attribute)
 		for _, attr := range instance.Attributes {
 			attrMap[attr.ID] = attr
 			assert.Equal(t, "custom_attribute", attr.Type)
@@ -109,8 +108,8 @@ func TestDefaultCmabClient_FetchDecision(t *testing.T) {
 		// Return response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		response := CMABResponse{
-			Predictions: []CMABPrediction{
+		response := Response{
+			Predictions: []Prediction{
 				{
 					VariationID: "var123",
 				},
@@ -121,7 +120,7 @@ func TestDefaultCmabClient_FetchDecision(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom endpoint
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -141,10 +140,7 @@ func TestDefaultCmabClient_FetchDecision(t *testing.T) {
 		"null_attr":   nil,
 	}
 
-	// Create a context for the request
-	ctx := context.Background()
-
-	variationID, err := client.FetchDecision(ctx, "rule456", "user123", attributes, "test-uuid")
+	variationID, err := client.FetchDecision("rule456", "user123", attributes, "test-uuid")
 
 	// Verify results
 	assert.NoError(t, err)
@@ -167,7 +163,7 @@ func TestDefaultCmabClient_FetchDecision_WithRetry(t *testing.T) {
 		body, err := io.ReadAll(r.Body)
 		assert.NoError(t, err)
 
-		var requestBody CMABRequest
+		var requestBody Request
 		err = json.Unmarshal(body, &requestBody)
 		assert.NoError(t, err)
 
@@ -187,8 +183,8 @@ func TestDefaultCmabClient_FetchDecision_WithRetry(t *testing.T) {
 		// Return success response on third attempt
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		response := CMABResponse{
-			Predictions: []CMABPrediction{
+		response := Response{
+			Predictions: []Prediction{
 				{
 					VariationID: "var123",
 				},
@@ -199,7 +195,7 @@ func TestDefaultCmabClient_FetchDecision_WithRetry(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom endpoint and retry config
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -223,7 +219,7 @@ func TestDefaultCmabClient_FetchDecision_WithRetry(t *testing.T) {
 	}
 
 	startTime := time.Now()
-	variationID, err := client.FetchDecision(context.Background(), "rule456", "user123", attributes, "test-uuid")
+	variationID, err := client.FetchDecision("rule456", "user123", attributes, "test-uuid")
 	duration := time.Since(startTime)
 
 	// Verify results
@@ -247,7 +243,7 @@ func TestDefaultCmabClient_FetchDecision_ExhaustedRetries(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom endpoint and retry config
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -270,7 +266,15 @@ func TestDefaultCmabClient_FetchDecision_ExhaustedRetries(t *testing.T) {
 		"isMobile": true,
 	}
 
-	variationID, err := client.FetchDecision(context.Background(), "rule456", "user123", attributes, "test-uuid")
+	variationID, err := client.FetchDecision("rule456", "user123", attributes, "test-uuid")
+
+	t.Logf("Actual error: %q", err.Error())
+	t.Logf("Request count: %d", requestCount)
+
+	// Verify results
+	assert.Error(t, err)
+	assert.Equal(t, "", variationID)
+	assert.Equal(t, 3, requestCount, "Expected 3 request attempts (initial + 2 retries)")
 
 	// Verify results
 	assert.Error(t, err)
@@ -292,7 +296,7 @@ func TestDefaultCmabClient_FetchDecision_NoRetryConfig(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom endpoint but no retry config
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -309,7 +313,7 @@ func TestDefaultCmabClient_FetchDecision_NoRetryConfig(t *testing.T) {
 		"browser": "chrome",
 	}
 
-	_, err := client.FetchDecision(context.Background(), "rule456", "user123", attributes, "test-uuid")
+	_, err := client.FetchDecision("rule456", "user123", attributes, "test-uuid")
 
 	// Verify results
 	assert.Error(t, err)
@@ -356,7 +360,7 @@ func TestDefaultCmabClient_FetchDecision_InvalidResponse(t *testing.T) {
 			defer server.Close()
 
 			// Create client with custom endpoint
-			client := NewDefaultCmabClient(CmabClientOptions{
+			client := NewDefaultCmabClient(ClientOptions{
 				HTTPClient: &http.Client{
 					Timeout: 5 * time.Second,
 				},
@@ -372,7 +376,7 @@ func TestDefaultCmabClient_FetchDecision_InvalidResponse(t *testing.T) {
 				"browser": "chrome",
 			}
 
-			_, err := client.FetchDecision(context.Background(), "rule456", "user123", attributes, "test-uuid")
+			_, err := client.FetchDecision("rule456", "user123", attributes, "test-uuid")
 
 			// Verify results
 			assert.Error(t, err)
@@ -393,7 +397,7 @@ func TestDefaultCmabClient_FetchDecision_NetworkErrors(t *testing.T) {
 	}
 
 	// Create client with non-existent server to simulate network errors
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 100 * time.Millisecond, // Short timeout to fail quickly
 		},
@@ -416,7 +420,7 @@ func TestDefaultCmabClient_FetchDecision_NetworkErrors(t *testing.T) {
 		"browser": "chrome",
 	}
 
-	_, err := client.FetchDecision(context.Background(), "rule456", "user123", attributes, "test-uuid")
+	_, err := client.FetchDecision("rule456", "user123", attributes, "test-uuid")
 
 	// Verify results
 	assert.Error(t, err)
@@ -442,8 +446,8 @@ func TestDefaultCmabClient_ExponentialBackoff(t *testing.T) {
 		// Return success response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		response := CMABResponse{
-			Predictions: []CMABPrediction{
+		response := Response{
+			Predictions: []Prediction{
 				{
 					VariationID: "var123",
 				},
@@ -454,7 +458,7 @@ func TestDefaultCmabClient_ExponentialBackoff(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom endpoint and specific retry config
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -476,7 +480,7 @@ func TestDefaultCmabClient_ExponentialBackoff(t *testing.T) {
 		"browser": "chrome",
 	}
 
-	variationID, err := client.FetchDecision(context.Background(), "rule456", "user123", attributes, "test-uuid")
+	variationID, err := client.FetchDecision("rule456", "user123", attributes, "test-uuid")
 
 	// Verify results
 	require.NoError(t, err)
@@ -504,7 +508,7 @@ func TestDefaultCmabClient_ExponentialBackoff(t *testing.T) {
 
 func TestNewDefaultCmabClient_DefaultValues(t *testing.T) {
 	// Test with empty options
-	client := NewDefaultCmabClient(CmabClientOptions{})
+	client := NewDefaultCmabClient(ClientOptions{})
 
 	// Verify default values
 	assert.NotNil(t, client.httpClient)
@@ -541,7 +545,7 @@ func TestDefaultCmabClient_LoggingBehavior(t *testing.T) {
 	defer server.Close()
 
 	// Create client with custom logger
-	client := NewDefaultCmabClient(CmabClientOptions{
+	client := NewDefaultCmabClient(ClientOptions{
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -564,7 +568,7 @@ func TestDefaultCmabClient_LoggingBehavior(t *testing.T) {
 		"browser": "chrome",
 	}
 
-	_, err := client.FetchDecision(context.Background(), "rule456", "user123", attributes, "test-uuid")
+	_, err := client.FetchDecision("rule456", "user123", attributes, "test-uuid")
 	assert.NoError(t, err)
 
 	// Verify log messages
@@ -610,7 +614,7 @@ func TestDefaultCmabClient_NonSuccessStatusCode(t *testing.T) {
 			defer server.Close()
 
 			// Create client with custom endpoint and no retries
-			client := NewDefaultCmabClient(CmabClientOptions{
+			client := NewDefaultCmabClient(ClientOptions{
 				HTTPClient: &http.Client{
 					Timeout: 5 * time.Second,
 				},
@@ -627,10 +631,7 @@ func TestDefaultCmabClient_NonSuccessStatusCode(t *testing.T) {
 				"browser": "chrome",
 			}
 
-			// Create a context for the request
-			ctx := context.Background()
-
-			variationID, err := client.FetchDecision(ctx, "rule456", "user123", attributes, "test-uuid")
+			variationID, err := client.FetchDecision("rule456", "user123", attributes, "test-uuid")
 
 			// Verify results
 			assert.Error(t, err, "Expected error for non-success status code")
@@ -639,52 +640,4 @@ func TestDefaultCmabClient_NonSuccessStatusCode(t *testing.T) {
 			assert.Contains(t, err.Error(), fmt.Sprintf("%d", tc.statusCode))
 		})
 	}
-}
-
-func TestDefaultCmabClient_FetchDecision_ContextCancellation(t *testing.T) {
-	// Setup test server that delays response
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Sleep to simulate a slow response
-		time.Sleep(500 * time.Millisecond)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		response := CMABResponse{
-			Predictions: []CMABPrediction{
-				{
-					VariationID: "var123",
-				},
-			},
-		}
-		json.NewEncoder(w).Encode(response)
-	}))
-	defer server.Close()
-
-	// Create client with custom endpoint
-	client := NewDefaultCmabClient(CmabClientOptions{
-		HTTPClient: &http.Client{
-			Timeout: 5 * time.Second,
-		},
-	})
-
-	// Override the endpoint for testing
-	originalEndpoint := CMABPredictionEndpoint
-	CMABPredictionEndpoint = server.URL + "/%s"
-	defer func() { CMABPredictionEndpoint = originalEndpoint }()
-
-	// Create a context with a short timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-	defer cancel()
-
-	// Test fetch decision with a context that will time out
-	attributes := map[string]interface{}{
-		"browser": "chrome",
-	}
-
-	_, err := client.FetchDecision(ctx, "rule456", "user123", attributes, "test-uuid")
-
-	// Verify that we got a context deadline exceeded error
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "context")
-	assert.Contains(t, err.Error(), "deadline exceeded")
 }

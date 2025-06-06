@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2025, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -51,23 +51,15 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	experiment := decisionContext.Experiment
 	reasons := decide.NewDecisionReasons(options)
 
-	// Determine if user can be part of the experiment
-	if experiment.AudienceConditionTree != nil {
-		condTreeParams := entities.NewTreeParameters(&userContext, decisionContext.ProjectConfig.GetAudienceMap())
-		s.logger.Debug(fmt.Sprintf(logging.EvaluatingAudiencesForExperiment.String(), experiment.Key))
-		evalResult, _, decisionReasons := s.audienceTreeEvaluator.Evaluate(experiment.AudienceConditionTree, condTreeParams, options)
-		reasons.Append(decisionReasons)
-		logMessage := reasons.AddInfo(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, evalResult)
+	// Audience evaluation using common function
+	inAudience, audienceReasons := evaluator.CheckIfUserInAudience(experiment, userContext, decisionContext.ProjectConfig, s.audienceTreeEvaluator, options, s.logger)
+	reasons.Append(audienceReasons)
+
+	if !inAudience {
+		logMessage := reasons.AddInfo("User \"%s\" does not meet conditions to be in experiment \"%s\".", userContext.ID, experiment.Key)
 		s.logger.Debug(logMessage)
-		if !evalResult {
-			logMessage := reasons.AddInfo(logging.UserNotInExperiment.String(), userContext.ID, experiment.Key)
-			s.logger.Debug(logMessage)
-			experimentDecision.Reason = pkgReasons.FailedAudienceTargeting
-			return experimentDecision, reasons, nil
-		}
-	} else {
-		logMessage := reasons.AddInfo(logging.ExperimentAudiencesEvaluatedTo.String(), experiment.Key, true)
-		s.logger.Debug(logMessage)
+		experimentDecision.Reason = pkgReasons.FailedAudienceTargeting
+		return experimentDecision, reasons, nil
 	}
 
 	var group entities.Group

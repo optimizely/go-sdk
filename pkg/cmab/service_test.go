@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package decision //
-package decision
+// Package cmab //
+package cmab
 
 import (
 	"errors"
@@ -241,7 +241,7 @@ func (s *CmabServiceTestSuite) SetupTest() {
 	s.mockConfig = new(MockProjectConfig)
 
 	// Set up the CMAB service
-	s.cmabService = NewDefaultCmabService(CmabServiceOptions{
+	s.cmabService = NewDefaultCmabService(ServiceOptions{
 		Logger:     logging.GetLogger("test", "CmabService"),
 		CmabCache:  s.mockCache,
 		CmabClient: s.mockClient,
@@ -258,9 +258,16 @@ func (s *CmabServiceTestSuite) SetupTest() {
 func (s *CmabServiceTestSuite) TestGetDecision() {
 	// Setup mock experiment with CMAB configuration
 	experiment := entities.Experiment{
-		ID: s.testRuleID,
+		ID:  s.testRuleID,
+		Key: "test_experiment",
 		Cmab: &entities.Cmab{
 			AttributeIds: []string{"attr1", "attr2"},
+		},
+		TrafficAllocation: []entities.Range{
+			{
+				EntityID:   "variation1",
+				EndOfRange: 10000,
+			},
 		},
 	}
 
@@ -303,16 +310,24 @@ func (s *CmabServiceTestSuite) TestGetDecision() {
 func (s *CmabServiceTestSuite) TestGetDecisionWithCache() {
 	// Setup mock experiment with CMAB configuration
 	experiment := entities.Experiment{
-		ID: s.testRuleID,
+		ID:  s.testRuleID,
+		Key: "test_experiment",
 		Cmab: &entities.Cmab{
 			AttributeIds: []string{"attr1", "attr2"},
+		},
+		TrafficAllocation: []entities.Range{
+			{
+				EntityID:   "variation1",
+				EndOfRange: 10000,
+			},
 		},
 	}
 
 	// Setup mock config
 	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
 	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
-	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
+	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil).Maybe()
+	s.mockConfig.On("GetExperimentByKey", "test_experiment").Return(experiment, nil)
 
 	// Create user context
 	userContext := entities.UserContext{
@@ -330,12 +345,15 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithCache() {
 	attributesHash := strconv.FormatUint(uint64(hasher.Sum32()), 10)
 
 	// Setup cache hit with matching attributes hash
-	cachedValue := CmabCacheValue{
+	cachedValue := CacheValue{
 		AttributesHash: attributesHash,
 		VariationID:    "cached-variant",
 		CmabUUID:       "cached-uuid",
 	}
 	s.mockCache.On("Lookup", cacheKey).Return(cachedValue)
+
+	// Mock the Remove method - it might be called if attributes hash doesn't match
+	s.mockCache.On("Remove", cacheKey).Maybe()
 
 	// Test with cache hit
 	decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
@@ -350,9 +368,16 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithCache() {
 func (s *CmabServiceTestSuite) TestGetDecisionWithIgnoreCache() {
 	// Setup mock experiment with CMAB configuration
 	experiment := entities.Experiment{
-		ID: s.testRuleID,
+		ID:  s.testRuleID,
+		Key: "test_experiment",
 		Cmab: &entities.Cmab{
 			AttributeIds: []string{"attr1", "attr2"},
+		},
+		TrafficAllocation: []entities.Range{
+			{
+				EntityID:   "variation1",
+				EndOfRange: 10000,
+			},
 		},
 	}
 
@@ -360,6 +385,7 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithIgnoreCache() {
 	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
 	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
 	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
+	s.mockConfig.On("GetExperimentByKey", "test_experiment").Return(experiment, nil)
 
 	// Create user context
 	userContext := entities.UserContext{
@@ -396,9 +422,16 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithIgnoreCache() {
 func (s *CmabServiceTestSuite) TestGetDecisionWithResetCache() {
 	// Setup mock experiment with CMAB configuration
 	experiment := entities.Experiment{
-		ID: s.testRuleID,
+		ID:  s.testRuleID,
+		Key: "test_experiment",
 		Cmab: &entities.Cmab{
 			AttributeIds: []string{"attr1", "attr2"},
+		},
+		TrafficAllocation: []entities.Range{
+			{
+				EntityID:   "variation1",
+				EndOfRange: 10000,
+			},
 		},
 	}
 
@@ -406,6 +439,7 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithResetCache() {
 	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
 	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
 	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
+	s.mockConfig.On("GetExperimentByKey", "test_experiment").Return(experiment, nil)
 
 	// Create user context
 	userContext := entities.UserContext{
@@ -445,9 +479,16 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithResetCache() {
 func (s *CmabServiceTestSuite) TestGetDecisionWithInvalidateUserCache() {
 	// Setup mock experiment with CMAB configuration
 	experiment := entities.Experiment{
-		ID: s.testRuleID,
+		ID:  s.testRuleID,
+		Key: "test_experiment",
 		Cmab: &entities.Cmab{
 			AttributeIds: []string{"attr1", "attr2"},
+		},
+		TrafficAllocation: []entities.Range{
+			{
+				EntityID:   "variation1",
+				EndOfRange: 10000,
+			},
 		},
 	}
 
@@ -455,6 +496,7 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithInvalidateUserCache() {
 	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
 	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
 	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
+	s.mockConfig.On("GetExperimentByKey", "test_experiment").Return(experiment, nil)
 
 	// Create user context
 	userContext := entities.UserContext{
@@ -494,9 +536,14 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithInvalidateUserCache() {
 func (s *CmabServiceTestSuite) TestGetDecisionError() {
 	// Setup mock experiment with CMAB configuration
 	experiment := entities.Experiment{
-		ID: s.testRuleID,
-		Cmab: &entities.Cmab{
-			AttributeIds: []string{"attr1", "attr2"},
+		ID:  s.testRuleID,
+		Key: "test_experiment", // Add experiment key
+		// Other experiment properties...
+		TrafficAllocation: []entities.Range{ // Add traffic allocation
+			{
+				EntityID:   "variation1",
+				EndOfRange: 10000,
+			},
 		},
 	}
 
@@ -504,6 +551,7 @@ func (s *CmabServiceTestSuite) TestGetDecisionError() {
 	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
 	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
 	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
+	s.mockConfig.On("GetExperimentByKey", "test_experiment").Return(experiment, nil)
 
 	// Create user context
 	userContext := entities.UserContext{
@@ -565,9 +613,16 @@ func (s *CmabServiceTestSuite) TestFilterAttributes() {
 func (s *CmabServiceTestSuite) TestOnlyFilteredAttributesPassedToClient() {
 	// Setup mock experiment with CMAB configuration
 	experiment := entities.Experiment{
-		ID: s.testRuleID,
+		ID:  s.testRuleID,
+		Key: "test_experiment",
 		Cmab: &entities.Cmab{
 			AttributeIds: []string{"attr1", "attr2"},
+		},
+		TrafficAllocation: []entities.Range{
+			{
+				EntityID:   "variation1",
+				EndOfRange: 10000,
+			},
 		},
 	}
 
@@ -575,6 +630,7 @@ func (s *CmabServiceTestSuite) TestOnlyFilteredAttributesPassedToClient() {
 	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
 	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
 	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
+	s.mockConfig.On("GetExperimentByKey", "test_experiment").Return(experiment, nil)
 
 	// Create user context with extra attributes that should be filtered out
 	userContext := entities.UserContext{
@@ -634,9 +690,14 @@ func (s *CmabServiceTestSuite) TestOnlyFilteredAttributesPassedToClient() {
 func (s *CmabServiceTestSuite) TestCacheInvalidatedWhenAttributesChange() {
 	// Setup mock experiment with CMAB configuration
 	experiment := entities.Experiment{
-		ID: s.testRuleID,
-		Cmab: &entities.Cmab{
-			AttributeIds: []string{"attr1", "attr2"},
+		ID:  s.testRuleID,
+		Key: "test_experiment", // Add experiment key
+		// Other experiment properties...
+		TrafficAllocation: []entities.Range{ // Add traffic allocation
+			{
+				EntityID:   "variation1",
+				EndOfRange: 10000,
+			},
 		},
 	}
 
@@ -644,6 +705,7 @@ func (s *CmabServiceTestSuite) TestCacheInvalidatedWhenAttributesChange() {
 	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("age", nil)
 	s.mockConfig.On("GetAttributeKeyByID", "attr2").Return("location", nil)
 	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
+	s.mockConfig.On("GetExperimentByKey", "test_experiment").Return(experiment, nil)
 
 	// Create user context
 	userContext := entities.UserContext{
@@ -659,7 +721,7 @@ func (s *CmabServiceTestSuite) TestCacheInvalidatedWhenAttributesChange() {
 
 	// First, create a cached value with a different attributes hash
 	oldAttributesHash := "old-hash"
-	cachedValue := CmabCacheValue{
+	cachedValue := CacheValue{
 		AttributesHash: oldAttributesHash,
 		VariationID:    "cached-variant",
 		CmabUUID:       "cached-uuid",
@@ -693,7 +755,7 @@ func (s *CmabServiceTestSuite) TestCacheInvalidatedWhenAttributesChange() {
 	s.mockClient.AssertCalled(s.T(), "FetchDecision", s.testRuleID, s.testUserID, mock.Anything, mock.Anything)
 
 	// Verify new decision was cached
-	s.mockCache.AssertCalled(s.T(), "Save", cacheKey, mock.MatchedBy(func(value CmabCacheValue) bool {
+	s.mockCache.AssertCalled(s.T(), "Save", cacheKey, mock.MatchedBy(func(value CacheValue) bool {
 		return value.VariationID == expectedVariationID && value.AttributesHash != oldAttributesHash
 	}))
 }
@@ -725,7 +787,7 @@ func (s *CmabServiceTestSuite) TestGetCacheKey() {
 
 func (s *CmabServiceTestSuite) TestNewDefaultCmabService() {
 	// Test with default options
-	service := NewDefaultCmabService(CmabServiceOptions{})
+	service := NewDefaultCmabService(ServiceOptions{})
 
 	// Only check that the service is created, not the specific fields
 	s.NotNil(service)
@@ -733,4 +795,37 @@ func (s *CmabServiceTestSuite) TestNewDefaultCmabService() {
 
 func TestCmabServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(CmabServiceTestSuite))
+}
+
+func (s *CmabServiceTestSuite) TestGetDecisionApiError() {
+	// Setup cache key
+	cacheKey := s.cmabService.getCacheKey(s.testUserID, s.testRuleID)
+
+	// Setup cache lookup (cache miss)
+	s.mockCache.On("Lookup", cacheKey).Return(nil)
+
+	// Setup mock to return error for experiment lookup (but this won't stop the flow anymore)
+	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(entities.Experiment{}, fmt.Errorf("experiment not found")).Once()
+
+	// Mock the FetchDecision call that will now happen
+	s.mockClient.On("FetchDecision", s.testRuleID, s.testUserID, mock.Anything, mock.Anything).Return("", fmt.Errorf("invalid rule ID"))
+
+	// Call the method
+	userContext := entities.UserContext{
+		ID: s.testUserID,
+		Attributes: map[string]interface{}{
+			"age": 30,
+		},
+	}
+
+	_, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
+
+	// Should return error from FetchDecision, not from experiment validation
+	s.Error(err)
+	s.Contains(err.Error(), "CMAB API error")
+
+	// Verify expectations
+	s.mockConfig.AssertExpectations(s.T())
+	s.mockCache.AssertExpectations(s.T())
+	s.mockClient.AssertExpectations(s.T())
 }
