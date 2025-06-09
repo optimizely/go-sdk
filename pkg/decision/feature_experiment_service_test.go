@@ -177,6 +177,59 @@ func (s *FeatureExperimentServiceTestSuite) TestNewFeatureExperimentService() {
 	s.IsType(compositeExperimentService, featureExperimentService.compositeExperimentService)
 }
 
+func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithCmabUUID() {
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	// Create test UUID
+	testUUID := "test-cmab-uuid-12345"
+
+	// Create experiment decision with UUID
+	expectedVariation := testExp1113.Variations["2223"]
+	returnExperimentDecision := ExperimentDecision{
+		Variation: &expectedVariation,
+		CmabUUID:  &testUUID,
+	}
+
+	// Setup experiment decision context
+	testExperimentDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1113,
+		ProjectConfig: s.mockConfig,
+	}
+
+	// Setup mock to return experiment decision with UUID
+	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext, testUserContext, s.options).
+		Return(returnExperimentDecision, s.reasons, nil)
+
+	// Create service under test
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	// Create expected feature decision with propagated UUID
+	expectedFeatureDecision := FeatureDecision{
+		Experiment: *testExperimentDecisionContext.Experiment,
+		Variation:  &expectedVariation,
+		Source:     FeatureTest,
+		CmabUUID:   &testUUID, // UUID should be propagated
+	}
+
+	// Call GetDecision
+	actualFeatureDecision, _, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options)
+
+	// Verify results
+	s.NoError(err)
+	s.Equal(expectedFeatureDecision, actualFeatureDecision)
+
+	// Verify CMAB UUID specifically
+	s.NotNil(actualFeatureDecision.CmabUUID, "CmabUUID should not be nil")
+	s.Equal(testUUID, *actualFeatureDecision.CmabUUID, "CmabUUID should match the expected value")
+
+	s.mockExperimentService.AssertExpectations(s.T())
+}
+
 func TestFeatureExperimentServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(FeatureExperimentServiceTestSuite))
 }

@@ -218,7 +218,7 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 
 	if !allOptions.DisableDecisionEvent {
 		if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
-			featureDecision.Variation, usrContext, key, featureDecision.Experiment.Key, featureDecision.Source, flagEnabled); ok {
+			featureDecision.Variation, usrContext, key, featureDecision.Experiment.Key, featureDecision.Source, flagEnabled, featureDecision.CmabUUID); ok {
 			o.EventProcessor.ProcessEvent(ue)
 			eventSent = true
 		}
@@ -460,7 +460,7 @@ func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.U
 		// send an impression event
 		result = experimentDecision.Variation.Key
 		if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *decisionContext.Experiment,
-			experimentDecision.Variation, userContext, "", experimentKey, "experiment", true); ok {
+			experimentDecision.Variation, userContext, "", experimentKey, "experiment", true, experimentDecision.CmabUUID); ok {
 			o.EventProcessor.ProcessEvent(ue)
 		}
 	}
@@ -518,7 +518,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 	}
 
 	if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
-		featureDecision.Variation, userContext, featureKey, featureDecision.Experiment.Key, featureDecision.Source, result); ok && featureDecision.Source != "" {
+		featureDecision.Variation, userContext, featureKey, featureDecision.Experiment.Key, featureDecision.Source, result, featureDecision.CmabUUID); ok && featureDecision.Source != "" {
 		o.EventProcessor.ProcessEvent(ue)
 	}
 
@@ -883,7 +883,7 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 		if !disableTracking {
 			// send impression event for feature tests
 			if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
-				featureDecision.Variation, userContext, featureKey, featureDecision.Experiment.Key, featureDecision.Source, decisionInfo.Enabled); ok {
+				featureDecision.Variation, userContext, featureKey, featureDecision.Experiment.Key, featureDecision.Source, decisionInfo.Enabled, featureDecision.CmabUUID); ok {
 				o.EventProcessor.ProcessEvent(ue)
 			}
 		}

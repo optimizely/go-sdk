@@ -68,6 +68,7 @@ type FeatureDecision struct {
 	Source     Source
 	Experiment entities.Experiment
 	Variation  *entities.Variation
+	CmabUUID   *string
 }
 
 // ExperimentDecision contains the decision information about an experiment

@@ -103,7 +103,7 @@ var userContext = entities.UserContext{
 
 func BuildTestImpressionEvent() UserEvent {
 	tc := TestConfig{}
-	impressionUserEvent, _ := CreateImpressionUserEvent(tc, testExperiment, &testVariation, userContext, "", testExperiment.Key, "experiment", true)
+	impressionUserEvent, _ := CreateImpressionUserEvent(tc, testExperiment, &testVariation, userContext, "", testExperiment.Key, "experiment", true, nil)
 	return impressionUserEvent
 }
 
@@ -202,7 +202,7 @@ func TestCreateImpressionUserEvent(t *testing.T) {
 	}
 
 	for _, scenario := range scenarios {
-		userEvent, ok := CreateImpressionUserEvent(tc, testExperiment, &testVariation, userContext, "", testExperiment.Key, scenario.flagType, true)
+		userEvent, ok := CreateImpressionUserEvent(tc, testExperiment, &testVariation, userContext, "", testExperiment.Key, scenario.flagType, true, nil)
 		assert.Equal(t, ok, scenario.expected)
 
 		if ok {
@@ -216,7 +216,7 @@ func TestCreateImpressionUserEvent(t *testing.T) {
 
 	// nil variation should _always_ return false
 	for _, scenario := range scenarios {
-		userEvent, ok := CreateImpressionUserEvent(tc, testExperiment, nil, userContext, "", testExperiment.Key, scenario.flagType, false)
+		userEvent, ok := CreateImpressionUserEvent(tc, testExperiment, nil, userContext, "", testExperiment.Key, scenario.flagType, false, nil)
 		assert.False(t, ok)
 		if ok {
 			metaData := userEvent.Impression.Metadata
@@ -230,7 +230,7 @@ func TestCreateImpressionUserEvent(t *testing.T) {
 	// should _always_ return true if sendFlagDecisions is set
 	tc.sendFlagDecisions = true
 	for _, scenario := range scenarios {
-		userEvent, ok := CreateImpressionUserEvent(tc, testExperiment, nil, userContext, "", testExperiment.Key, scenario.flagType, true)
+		userEvent, ok := CreateImpressionUserEvent(tc, testExperiment, nil, userContext, "", testExperiment.Key, scenario.flagType, true, nil)
 		assert.True(t, ok)
 		if ok {
 			metaData := userEvent.Impression.Metadata
@@ -240,4 +240,92 @@ func TestCreateImpressionUserEvent(t *testing.T) {
 			assert.Equal(t, true, metaData.Enabled)
 		}
 	}
+}
+
+func TestCreateImpressionUserEventWithCmabUUID(t *testing.T) {
+	tc := TestConfig{}
+
+	// Create a test UUID
+	testUUID := "test-cmab-uuid-12345"
+
+	// Test with various rule types
+	scenarios := []struct {
+		flagType string
+		enabled  bool
+		expected bool
+	}{
+		{decision.FeatureTest, true, true},
+		{"experiment", true, true},
+		{"anything-else", true, true},
+		{decision.Rollout, true, false}, // Should return false for Rollout
+	}
+
+	for _, scenario := range scenarios {
+		// Call CreateImpressionUserEvent with CMAB UUID
+		userEvent, ok := CreateImpressionUserEvent(
+			tc,
+			testExperiment,
+			&testVariation,
+			userContext,
+			"test-flag",
+			testExperiment.Key,
+			scenario.flagType,
+			scenario.enabled,
+			&testUUID, // Add CMAB UUID
+		)
+
+		assert.Equal(t, scenario.expected, ok)
+
+		if ok {
+			// Verify basic metadata
+			metaData := userEvent.Impression.Metadata
+			assert.Equal(t, "test-flag", metaData.FlagKey)
+			assert.Equal(t, testExperiment.Key, metaData.RuleKey)
+			assert.Equal(t, scenario.flagType, metaData.RuleType)
+			assert.Equal(t, scenario.enabled, metaData.Enabled)
+
+			// Verify CMAB UUID
+			assert.NotNil(t, metaData.CmabUUID)
+			assert.Equal(t, testUUID, *metaData.CmabUUID)
+		}
+	}
+
+	// Test with nil CMAB UUID - should still work but with nil UUID
+	for _, scenario := range scenarios {
+		userEvent, ok := CreateImpressionUserEvent(
+			tc,
+			testExperiment,
+			&testVariation,
+			userContext,
+			"test-flag",
+			testExperiment.Key,
+			scenario.flagType,
+			scenario.enabled,
+			nil, // Nil CMAB UUID
+		)
+
+		assert.Equal(t, scenario.expected, ok)
+
+		if ok {
+			metaData := userEvent.Impression.Metadata
+			assert.Nil(t, metaData.CmabUUID, "CmabUUID should be nil when not provided")
+		}
+	}
+
+	// Test with sendFlagDecisions=true
+	tc.sendFlagDecisions = true
+	userEvent, ok := CreateImpressionUserEvent(
+		tc,
+		testExperiment,
+		&testVariation,
+		userContext,
+		"test-flag",
+		testExperiment.Key,
+		decision.Rollout, // This would normally return false
+		true,
+		&testUUID,
+	)
+	assert.True(t, ok)
+	metaData := userEvent.Impression.Metadata
+	assert.Equal(t, testUUID, *metaData.CmabUUID)
 }
