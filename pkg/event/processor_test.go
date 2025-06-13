@@ -538,17 +538,6 @@ func TestCmabUUIDPropagationInEvents(t *testing.T) {
 
 	// Verify the UUID is present in the JSON representation
 	assert.Contains(t, jsonString, testUUID, "CMAB UUID should be present in JSON")
-
-	// Optional: Unmarshal to inspect structure
-	var eventMap map[string]interface{}
-	err = json.Unmarshal(jsonData, &eventMap)
-	assert.NoError(t, err, "Should unmarshal JSON without error")
-
-	// Print the structure to see where the UUID is
-	t.Logf("Event structure: %+v", eventMap)
-
-	// At this point, you'd inspect the structure to see where the UUID appears
-	// and add more specific assertions based on that knowledge
 }
 
 func TestCmabUUIDNullInImpressionEvent(t *testing.T) {
