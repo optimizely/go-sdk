@@ -19,6 +19,7 @@ package event
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -29,6 +30,7 @@ import (
 
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 	"github.com/optimizely/go-sdk/v2/pkg/utils"
+	// Import the package containing the Impression type
 )
 
 type CountingDispatcher struct {
@@ -491,6 +493,143 @@ func TestChanQueueEventProcessor_ProcessBatch(t *testing.T) {
 	evs := dispatcher.Events.Get(1)
 	logEvent, _ := evs[0].(LogEvent)
 	assert.True(t, len(logEvent.Event.Visitors) >= 1)
+}
+
+func TestCmabUUIDPropagationInEvents(t *testing.T) {
+	// Setup test UUID
+	testUUID := "test-uuid-12345"
+
+	// Create a mock dispatcher to capture the final event
+	mockDispatcher := NewMockDispatcher(100, false)
+
+	// Create the processor with our mock dispatcher
+	processor := NewBatchEventProcessor(
+		WithQueueSize(100),
+		WithQueue(NewInMemoryQueue(100)),
+		WithEventDispatcher(mockDispatcher))
+
+	// Create an impression event
+	impressionEvent := BuildTestImpressionEvent()
+
+	// Add CMAB UUID to the impression metadata
+	impressionEvent.Impression.Metadata.CmabUUID = &testUUID
+
+	// Process the event
+	success := processor.ProcessEvent(impressionEvent)
+	assert.True(t, success, "Event should be processed successfully")
+
+	// Manually trigger a flush to ensure the event is dispatched
+	processor.flushEvents()
+
+	// Verify the event was dispatched
+	assert.Equal(t, 1, mockDispatcher.Events.Size(), "One event should be dispatched")
+
+	// Get the dispatched log event
+	events := mockDispatcher.Events.Get(1)
+	assert.Len(t, events, 1, "Should have one dispatched event")
+
+	logEvent, ok := events[0].(LogEvent)
+	assert.True(t, ok, "Event should be a LogEvent")
+
+	// Serialize to JSON to inspect the structure
+	jsonData, err := json.Marshal(logEvent)
+	assert.NoError(t, err, "Should marshal to JSON without error")
+	jsonString := string(jsonData)
+
+	// Verify the UUID is present in the JSON representation
+	assert.Contains(t, jsonString, testUUID, "CMAB UUID should be present in JSON")
+}
+
+func TestCmabUUIDNullInImpressionEvent(t *testing.T) {
+	// Create processor with mock dispatcher
+	mockDispatcher := NewMockDispatcher(100, false)
+	processor := NewBatchEventProcessor(
+		WithQueueSize(100),
+		WithQueue(NewInMemoryQueue(100)),
+		WithEventDispatcher(mockDispatcher))
+
+	// Create impression event with a nil CMAB UUID
+	impressionEvent := BuildTestImpressionEvent()
+	impressionEvent.Impression.Metadata.CmabUUID = nil
+
+	// Process event and flush
+	processor.ProcessEvent(impressionEvent)
+	processor.flushEvents()
+
+	// Get dispatched event
+	events := mockDispatcher.Events.Get(1)
+	logEvent, _ := events[0].(LogEvent)
+
+	// Verify JSON doesn't contain cmab_uuid field
+	jsonData, _ := json.Marshal(logEvent)
+	jsonString := string(jsonData)
+	assert.NotContains(t, jsonString, "cmab_uuid",
+		"Nil CMAB UUID should be omitted from JSON")
+}
+
+func TestCmabUUIDEmptyStringInImpressionEvent(t *testing.T) {
+	// Create processor with mock dispatcher
+	mockDispatcher := NewMockDispatcher(100, false)
+	processor := NewBatchEventProcessor(
+		WithQueueSize(100),
+		WithQueue(NewInMemoryQueue(100)),
+		WithEventDispatcher(mockDispatcher))
+
+	// Create impression event with empty string UUID
+	impressionEvent := BuildTestImpressionEvent()
+	emptyUUID := ""
+	impressionEvent.Impression.Metadata.CmabUUID = &emptyUUID
+
+	// Process event and flush
+	processor.ProcessEvent(impressionEvent)
+	processor.flushEvents()
+
+	// Get dispatched event
+	events := mockDispatcher.Events.Get(1)
+	logEvent, _ := events[0].(LogEvent)
+
+	// Verify JSON contains the empty string cmab_uuid
+	jsonData, _ := json.Marshal(logEvent)
+	jsonString := string(jsonData)
+
+	// Check for empty UUID in JSON - it will appear as "cmab_uuid":""
+	assert.Contains(t, jsonString, `"cmab_uuid":""`,
+		"Empty string UUID should be included in JSON")
+}
+
+func TestMultipleEventsWithDifferentUUIDs(t *testing.T) {
+	// Create processor with mock dispatcher
+	mockDispatcher := NewMockDispatcher(100, false)
+	processor := NewBatchEventProcessor(
+		WithQueueSize(100),
+		WithQueue(NewInMemoryQueue(100)),
+		WithEventDispatcher(mockDispatcher))
+
+	// Create two impression events with different UUIDs
+	uuid1 := "uuid-1-test"
+	uuid2 := "uuid-2-test"
+
+	impression1 := BuildTestImpressionEvent()
+	impression1.Impression.Metadata.CmabUUID = &uuid1
+
+	impression2 := BuildTestImpressionEvent()
+	impression2.Impression.Metadata.CmabUUID = &uuid2
+
+	// Process both events
+	processor.ProcessEvent(impression1)
+	processor.ProcessEvent(impression2)
+	processor.flushEvents()
+
+	// Get dispatched event batch
+	events := mockDispatcher.Events.Get(1)
+	logEvent, _ := events[0].(LogEvent)
+
+	// Verify both UUIDs are in the batch
+	jsonData, _ := json.Marshal(logEvent)
+	jsonString := string(jsonData)
+
+	assert.Contains(t, jsonString, uuid1, "First UUID should be in the JSON output")
+	assert.Contains(t, jsonString, uuid2, "Second UUID should be in the JSON output")
 }
 
 // The NoOpLogger is used during benchmarking so that results are printed nicely.

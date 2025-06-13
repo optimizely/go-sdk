@@ -677,6 +677,58 @@ func (s *ExperimentCmabTestSuite) TestCreateCmabExperimentEmptyFields() {
 	s.Equal(5000, result.TrafficAllocation[0].EndOfRange)
 }
 
+func (s *ExperimentCmabTestSuite) TestGetDecisionWithCmabUUID() {
+	// Create decision context with CMAB experiment
+	decisionContext := ExperimentDecisionContext{
+		Experiment:    &s.cmabExperiment,
+		ProjectConfig: s.mockProjectConfig,
+	}
+
+	// Expected UUID that should be propagated
+	expectedUUID := "test-uuid-12345"
+
+	// Mock bucketer to return CMAB dummy entity ID (so traffic allocation passes)
+	s.mockExperimentBucketer.On("BucketToEntityID", mock.Anything, mock.AnythingOfType("entities.Experiment"), mock.Anything).
+		Return(CmabDummyEntityID, reasons.BucketedIntoVariation, nil)
+
+	// Setup mock CMAB service to return a decision with UUID
+	cmabDecision := cmab.Decision{
+		VariationID: "var1", // This matches an existing variation in s.cmabExperiment
+		CmabUUID:    expectedUUID,
+	}
+	s.mockCmabService.On("GetDecision", s.mockProjectConfig, s.testUserContext, "cmab_exp_1", s.options).
+		Return(cmabDecision, nil)
+
+	// Get decision
+	decision, decisionReasons, err := s.experimentCmabService.GetDecision(decisionContext, s.testUserContext, s.options)
+
+	// Verify basic results
+	s.NoError(err, "Should not return an error")
+	s.NotNil(decision.Variation, "Should return a variation")
+	s.Equal("var1", decision.Variation.ID, "Should return the correct variation ID")
+	s.Equal(reasons.CmabVariationAssigned, decision.Reason, "Should have the correct reason")
+
+	// Verify CMAB UUID was captured
+	s.NotNil(decision.CmabUUID, "CMAB UUID should not be nil")
+	s.Equal(expectedUUID, *decision.CmabUUID, "CMAB UUID should match the expected value")
+
+	// Check for the message in the reasons
+	report := decisionReasons.ToReport()
+	s.NotEmpty(report, "Decision reasons report should not be empty")
+	messageFound := false
+	for _, msg := range report {
+		if strings.Contains(msg, "User bucketed into variation") {
+			messageFound = true
+			break
+		}
+	}
+	s.True(messageFound, "Expected bucketing message not found in decision reasons")
+
+	// Verify mock expectations
+	s.mockCmabService.AssertExpectations(s.T())
+	s.mockExperimentBucketer.AssertExpectations(s.T())
+}
+
 func TestExperimentCmabTestSuite(t *testing.T) {
 	suite.Run(t, new(ExperimentCmabTestSuite))
 }

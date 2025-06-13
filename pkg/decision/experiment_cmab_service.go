@@ -175,6 +175,12 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 		decision.Variation = &variationCopy
 		decision.Reason = pkgReasons.CmabVariationAssigned
 
+		// Store CMAB UUID in the decision
+		if cmabDecision.CmabUUID != "" {
+			cmabUUIDCopy := cmabDecision.CmabUUID
+			decision.CmabUUID = &cmabUUIDCopy
+		}
+
 		message := fmt.Sprintf("User bucketed into variation %s by CMAB service", variation.Key)
 		decisionReasons.AddInfo(message)
 		return decision, decisionReasons, nil

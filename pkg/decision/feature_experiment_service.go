@@ -83,6 +83,7 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 				Decision:   experimentDecision.Decision,
 				Variation:  experimentDecision.Variation,
 				Source:     FeatureTest,
+				CmabUUID:   experimentDecision.CmabUUID,
 			}
 
 			return featureDecision, reasons, err

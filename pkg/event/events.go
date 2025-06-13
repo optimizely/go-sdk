@@ -51,11 +51,12 @@ type ImpressionEvent struct {
 
 // DecisionMetadata captures additional information regarding the decision
 type DecisionMetadata struct {
-	FlagKey      string `json:"flag_key"`
-	RuleKey      string `json:"rule_key"`
-	RuleType     string `json:"rule_type"`
-	VariationKey string `json:"variation_key"`
-	Enabled      bool   `json:"enabled"`
+	FlagKey      string  `json:"flag_key"`
+	RuleKey      string  `json:"rule_key"`
+	RuleType     string  `json:"rule_type"`
+	VariationKey string  `json:"variation_key"`
+	Enabled      bool    `json:"enabled"`
+	CmabUUID     *string `json:"cmab_uuid,omitempty"`
 }
 
 // ConversionEvent represents a conversion event
