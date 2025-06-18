@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/optimizely/go-sdk/v2/pkg/cache"
@@ -76,7 +75,7 @@ func (s *DefaultCmabService) GetDecision(
 	// Check if we should ignore the cache
 	if options != nil && hasOption(options, decide.IgnoreCMABCache) {
 		reasons = append(reasons, "Ignoring CMAB cache as requested")
-		decision, err := s.fetchDecisionWithRetry(ruleID, userContext.ID, filteredAttributes)
+		decision, err := s.fetchDecision(ruleID, userContext.ID, filteredAttributes)
 		if err != nil {
 			return Decision{Reasons: reasons}, err
 		}
@@ -136,7 +135,7 @@ func (s *DefaultCmabService) GetDecision(
 	}
 
 	// Fetch new decision
-	decision, err := s.fetchDecisionWithRetry(ruleID, userContext.ID, filteredAttributes)
+	decision, err := s.fetchDecision(ruleID, userContext.ID, filteredAttributes)
 	if err != nil {
 		decision.Reasons = append(reasons, decision.Reasons...)
 		return decision, fmt.Errorf("CMAB API error: %w", err)
@@ -156,8 +155,8 @@ func (s *DefaultCmabService) GetDecision(
 	return decision, nil
 }
 
-// fetchDecisionWithRetry fetches a decision from the CMAB API with retry logic
-func (s *DefaultCmabService) fetchDecisionWithRetry(
+// fetchDecision fetches a decision from the CMAB API
+func (s *DefaultCmabService) fetchDecision(
 	ruleID string,
 	userID string,
 	attributes map[string]interface{},
@@ -165,42 +164,20 @@ func (s *DefaultCmabService) fetchDecisionWithRetry(
 	cmabUUID := uuid.New().String()
 	reasons := []string{}
 
-	// Retry configuration
-	maxRetries := 3
-	backoffFactor := 2
-	initialBackoff := 100 * time.Millisecond
+	s.logger.Debug(fmt.Sprintf("Fetching CMAB decision for rule %s and user %s", ruleID, userID))
 
-	var lastErr error
-
-	for attempt := 0; attempt < maxRetries; attempt++ {
-		// Exponential backoff if this is a retry
-		if attempt > 0 {
-			backoffDuration := initialBackoff * time.Duration(backoffFactor^attempt)
-			time.Sleep(backoffDuration)
-			reasons = append(reasons, fmt.Sprintf("Retry attempt %d/%d after backoff", attempt+1, maxRetries))
-		}
-
-		s.logger.Debug(fmt.Sprintf("Fetching CMAB decision for rule %s and user %s (attempt %d/%d)",
-			ruleID, userID, attempt+1, maxRetries))
-
-		variationID, err := s.cmabClient.FetchDecision(ruleID, userID, attributes, cmabUUID)
-		if err == nil {
-			reasons = append(reasons, fmt.Sprintf("Successfully fetched CMAB decision on attempt %d/%d", attempt+1, maxRetries))
-			return Decision{
-				VariationID: variationID,
-				CmabUUID:    cmabUUID,
-				Reasons:     reasons,
-			}, nil
-		}
-
-		lastErr = err
-		s.logger.Warning(fmt.Sprintf("CMAB API request failed (attempt %d/%d): %v",
-			attempt+1, maxRetries, err))
+	variationID, err := s.cmabClient.FetchDecision(ruleID, userID, attributes, cmabUUID)
+	if err != nil {
+		reasons = append(reasons, "Failed to fetch CMAB decision")
+		return Decision{Reasons: reasons}, fmt.Errorf("CMAB API error: %w", err)
 	}
 
-	reasons = append(reasons, fmt.Sprintf("Failed to fetch CMAB decision after %d attempts", maxRetries))
-	return Decision{Reasons: reasons}, fmt.Errorf("failed to fetch CMAB decision after %d attempts: %w",
-		maxRetries, lastErr)
+	reasons = append(reasons, "Successfully fetched CMAB decision")
+	return Decision{
+		VariationID: variationID,
+		CmabUUID:    cmabUUID,
+		Reasons:     reasons,
+	}, nil
 }
 
 // filterAttributes filters user attributes based on CMAB configuration
