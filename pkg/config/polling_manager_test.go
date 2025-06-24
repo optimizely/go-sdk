@@ -19,7 +19,6 @@ package config
 import (
 	"context"
 	"net/http"
-	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -594,8 +593,7 @@ func TestPollingInterval(t *testing.T) {
 	assert.Equal(t, configManager.pollingInterval, 5*time.Second)
 	assert.Equal(t, asyncConfigManager.pollingInterval, 5*time.Second)
 
-	assert.True(t, configManager.err == Err403Forbidden || 
-		strings.Contains(configManager.err.Error(), "context deadline exceeded"))
+	assert.Equal(t, configManager.err, Err403Forbidden)
 	assert.Nil(t, asyncConfigManager.err)
 }
 
