@@ -22,6 +22,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/optimizely/go-sdk/v2/pkg/cmab"
 	"github.com/optimizely/go-sdk/v2/pkg/config"
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/decision"
@@ -53,6 +54,7 @@ type OptimizelyFactory struct {
 	overrideStore        decision.ExperimentOverrideStore
 	userProfileService   decision.UserProfileService
 	notificationCenter   notification.Center
+	cmabService          cmab.Service
 
 	// ODP
 	segmentsCacheSize    int
@@ -171,6 +173,10 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 
 	if batchProcessor, ok := appClient.EventProcessor.(*event.BatchEventProcessor); ok {
 		eg.Go(batchProcessor.Start)
+	}
+
+	if f.cmabService != nil {
+		appClient.cmabService = f.cmabService
 	}
 
 	// Initialize and Start odp manager if possible
@@ -317,6 +323,13 @@ func WithNotificationCenter(nc notification.Center) OptionFunc {
 func WithTracer(tracer tracing.Tracer) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.tracer = tracer
+	}
+}
+
+// WithCmabService sets the CMAB service on the client
+func WithCmabService(cmabService cmab.Service) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.cmabService = cmabService
 	}
 }
 

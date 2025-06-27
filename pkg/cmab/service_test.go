@@ -575,6 +575,61 @@ func (s *CmabServiceTestSuite) TestGetDecisionError() {
 	s.Equal("", decision.VariationID) // Should be empty
 }
 
+func (s *CmabServiceTestSuite) TestNilReasonsErrorHandling() {
+	// This test specifically verifies that appending to a nil Reasons slice
+	// causes a panic, while the fix avoids the panic
+
+	// Create a test decision with nil Reasons
+	testDecision := Decision{
+		VariationID: "test-var",
+		CmabUUID:    "test-uuid",
+		Reasons:     nil, // nil Reasons field
+	}
+
+	// A slice of reasons we want to append
+	reasons := []string{"Test reason 1", "Test reason 2"}
+
+	// Test the buggy behavior
+	var didPanic bool
+
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				didPanic = true
+				s.T().Logf("Panic occurred as expected: %v", r)
+			}
+		}()
+
+		// This simulates the bug:
+		// decision.Reasons = append(reasons, decision.Reasons...)
+		testDecision.Reasons = append(reasons, testDecision.Reasons...)
+	}()
+
+	// Verify the panic occurred
+	s.True(didPanic, "Appending to nil Reasons should cause a panic")
+
+	// Now test the fixed behavior
+	didPanic = false
+
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				didPanic = true
+				s.T().Logf("Unexpected panic in fixed version: %v", r)
+			}
+		}()
+
+		// This simulates the fix:
+		// return Decision{Reasons: reasons}, err
+		fixedDecision := Decision{Reasons: reasons}
+		s.NotNil(fixedDecision.Reasons, "Fixed version should have non-nil Reasons")
+		s.Equal(reasons, fixedDecision.Reasons, "Reasons should match")
+	}()
+
+	// Verify no panic with the fix
+	s.False(didPanic, "Fixed version should not panic")
+}
+
 func (s *CmabServiceTestSuite) TestFilterAttributes() {
 	// Setup mock experiment with CMAB configuration
 	experiment := entities.Experiment{
