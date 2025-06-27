@@ -321,7 +321,7 @@ func (s *ExperimentCmabTestSuite) TestGetDecisionWithCmabServiceError() {
 
 	// Should return the CMAB service error with exact format - updated to match new format
 	s.Error(err)
-	s.Contains(err.Error(), "Failed to fetch CMAB data for experiment")
+	s.Contains(err.Error(), "failed to fetch CMAB data for experiment")
 	s.Nil(decision.Variation) // No variation when error occurs
 
 	s.mockExperimentBucketer.AssertExpectations(s.T())
