@@ -137,8 +137,8 @@ func (s *DefaultCmabService) GetDecision(
 	// Fetch new decision
 	decision, err := s.fetchDecision(ruleID, userContext.ID, filteredAttributes)
 	if err != nil {
-		decision.Reasons = append(reasons, decision.Reasons...)
-		return decision, fmt.Errorf("CMAB API error: %w", err)
+		// properly propagate error reasons in Decision object
+		return Decision{Reasons: reasons}, fmt.Errorf("CMAB API error: %w", err)
 	}
 
 	// Cache the decision

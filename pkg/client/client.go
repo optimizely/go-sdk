@@ -28,6 +28,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 
+	"github.com/optimizely/go-sdk/v2/pkg/cmab"
 	"github.com/optimizely/go-sdk/v2/pkg/config"
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/decision"
@@ -112,6 +113,7 @@ type OptimizelyClient struct {
 	logger               logging.OptimizelyLogProducer
 	defaultDecideOptions *decide.Options
 	tracer               tracing.Tracer
+	cmabService          cmab.Service
 }
 
 // CreateUserContext creates a context of the user for which decision APIs will be called.
@@ -173,6 +175,7 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 		Attributes:        userContext.GetUserAttributes(),
 		QualifiedSegments: userContext.GetQualifiedSegments(),
 	}
+
 	var variationKey string
 	var eventSent, flagEnabled bool
 	allOptions := o.getAllOptions(options)
@@ -182,6 +185,7 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 	var reasons decide.DecisionReasons
 	var experimentID string
 	var variationID string
+	var useCMAB bool
 
 	// To avoid cyclo-complexity warning
 	findRegularDecision := func() {
@@ -190,19 +194,55 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 		decisionReasons.Append(reasons)
 	}
 
-	// check forced-decisions first
-	// Passing empty rule-key because checking mapping with flagKey only
-	if userContext.forcedDecisionService != nil {
-		var variation *entities.Variation
-		variation, reasons, err = userContext.forcedDecisionService.FindValidatedForcedDecision(projectConfig, decision.OptimizelyDecisionContext{FlagKey: key, RuleKey: ""}, &allOptions)
-		decisionReasons.Append(reasons)
-		if err != nil {
-			findRegularDecision()
-		} else {
-			featureDecision = decision.FeatureDecision{Decision: decision.Decision{Reason: pkgReasons.ForcedDecisionFound}, Variation: variation, Source: decision.FeatureTest}
+	if o.cmabService != nil {
+		for _, experimentID := range feature.ExperimentIDs {
+			experiment, err := projectConfig.GetExperimentByID(experimentID)
+
+			if err == nil && experiment.Cmab != nil {
+				cmabDecision, cmabErr := o.cmabService.GetDecision(projectConfig, usrContext, experiment.ID, &allOptions)
+
+				// Handle CMAB error properly - check for errors BEFORE using the decision
+				if cmabErr != nil {
+					o.logger.Warning(fmt.Sprintf("CMAB decision failed for experiment %s: %v", experiment.ID, cmabErr))
+					continue // Skip to next experiment or fall back to regular decision
+				}
+
+				if selectedVariation, exists := experiment.Variations[cmabDecision.VariationID]; exists {
+					featureDecision = decision.FeatureDecision{
+						Decision:   decision.Decision{Reason: "CMAB decision"},
+						Variation:  &selectedVariation,
+						Experiment: experiment,
+						Source:     decision.FeatureTest,
+						CmabUUID:   &cmabDecision.CmabUUID,
+					}
+					useCMAB = true
+					decisionReasons.AddInfo("Used CMAB service for decision")
+					break
+				} else {
+					o.logger.Warning(fmt.Sprintf("CMAB returned invalid variation ID %s for experiment %s", cmabDecision.VariationID, experiment.ID))
+				}
+			} else {
+				o.logger.Warning(fmt.Sprintf("CMAB decision failed for experiment %s: %v", experiment.ID, err))
+			}
 		}
-	} else {
-		findRegularDecision()
+	}
+
+	// Only do regular decision logic if CMAB didn't work
+	if !useCMAB {
+		// check forced-decisions first
+		// Passing empty rule-key because checking mapping with flagKey only
+		if userContext.forcedDecisionService != nil {
+			var variation *entities.Variation
+			variation, reasons, err = userContext.forcedDecisionService.FindValidatedForcedDecision(projectConfig, decision.OptimizelyDecisionContext{FlagKey: key, RuleKey: ""}, &allOptions)
+			decisionReasons.Append(reasons)
+			if err != nil {
+				findRegularDecision()
+			} else {
+				featureDecision = decision.FeatureDecision{Decision: decision.Decision{Reason: pkgReasons.ForcedDecisionFound}, Variation: variation, Source: decision.FeatureTest}
+			}
+		} else {
+			findRegularDecision()
+		}
 	}
 
 	if err != nil {
@@ -1199,6 +1239,9 @@ func (o *OptimizelyClient) getAllOptions(options *decide.Options) decide.Options
 		ExcludeVariables:         o.defaultDecideOptions.ExcludeVariables || options.ExcludeVariables,
 		IgnoreUserProfileService: o.defaultDecideOptions.IgnoreUserProfileService || options.IgnoreUserProfileService,
 		IncludeReasons:           o.defaultDecideOptions.IncludeReasons || options.IncludeReasons,
+		IgnoreCMABCache:          o.defaultDecideOptions.IgnoreCMABCache || options.IgnoreCMABCache,
+		ResetCMABCache:           o.defaultDecideOptions.ResetCMABCache || options.ResetCMABCache,
+		InvalidateUserCMABCache:  o.defaultDecideOptions.InvalidateUserCMABCache || options.InvalidateUserCMABCache,
 	}
 }
 
