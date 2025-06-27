@@ -1199,6 +1199,9 @@ func (o *OptimizelyClient) getAllOptions(options *decide.Options) decide.Options
 		ExcludeVariables:         o.defaultDecideOptions.ExcludeVariables || options.ExcludeVariables,
 		IgnoreUserProfileService: o.defaultDecideOptions.IgnoreUserProfileService || options.IgnoreUserProfileService,
 		IncludeReasons:           o.defaultDecideOptions.IncludeReasons || options.IncludeReasons,
+		IgnoreCMABCache:          o.defaultDecideOptions.IgnoreCMABCache || options.IgnoreCMABCache,
+		ResetCMABCache:           o.defaultDecideOptions.ResetCMABCache || options.ResetCMABCache,
+		InvalidateUserCMABCache:  o.defaultDecideOptions.InvalidateUserCMABCache || options.InvalidateUserCMABCache,
 	}
 }
 
