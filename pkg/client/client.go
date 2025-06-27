@@ -151,57 +151,35 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 		}
 	}()
 
-	// ✅ Add debug logging here:
-	fmt.Printf("DEBUG: decide() - Starting with key: %s\n", key)
-	fmt.Printf("DEBUG: decide() - o.tracer is nil? %v\n", o.tracer == nil)
-	fmt.Printf("DEBUG: decide() - o.ctx is nil? %v\n", o.ctx == nil)
-
 	_, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameDecide)
 	defer span.End()
-	fmt.Printf("DEBUG: decide() - Tracer span created successfully\n")
-
-	fmt.Printf("DEBUG: decide() - userContext is nil? %v\n", userContext == nil)
-	fmt.Printf("DEBUG: decide() - userContext.forcedDecisionService is nil? %v\n", userContext.forcedDecisionService == nil)
-	fmt.Printf("DEBUG: decide() - userContext.userProfile is nil? %v\n", userContext.userProfile == nil)
 
 	decisionContext := decision.FeatureDecisionContext{
 		ForcedDecisionService: userContext.forcedDecisionService,
 		UserProfile:           userContext.userProfile,
 	}
-	fmt.Printf("DEBUG: decide() - Decision context created\n")
-
-	fmt.Printf("DEBUG: decide() - About to call getProjectConfig\n")
 	projectConfig, err := o.getProjectConfig()
-	fmt.Printf("DEBUG: decide() - getProjectConfig returned, err: %v\n", err)
 	if err != nil {
 		return NewErrorDecision(key, *userContext, decide.GetDecideError(decide.SDKNotReady))
 	}
 	decisionContext.ProjectConfig = projectConfig
 
-	fmt.Printf("DEBUG: decide() - About to call GetFeatureByKey\n")
 	feature, err := projectConfig.GetFeatureByKey(key)
-	fmt.Printf("DEBUG: decide() - GetFeatureByKey returned, err: %v\n", err)
 	if err != nil {
 		return NewErrorDecision(key, *userContext, decide.GetDecideError(decide.FlagKeyInvalid, key))
 	}
 	decisionContext.Feature = &feature
 
-	fmt.Printf("DEBUG: decide() - About to create usrContext\n")
 	usrContext := entities.UserContext{
 		ID:                userContext.GetUserID(),
 		Attributes:        userContext.GetUserAttributes(),
 		QualifiedSegments: userContext.GetQualifiedSegments(),
 	}
-	fmt.Printf("DEBUG: decide() - usrContext created: %+v\n", usrContext)
 
 	var variationKey string
 	var eventSent, flagEnabled bool
-	fmt.Printf("DEBUG: decide() - About to call getAllOptions\n")
 	allOptions := o.getAllOptions(options)
-	fmt.Printf("DEBUG: decide() - getAllOptions completed\n")
-	fmt.Printf("DEBUG: decide() - About to create NewDecisionReasons\n")
 	decisionReasons := decide.NewDecisionReasons(&allOptions)
-	fmt.Printf("DEBUG: decide() - NewDecisionReasons completed\n")
 	decisionContext.Variable = entities.Variable{}
 	var featureDecision decision.FeatureDecision
 	var reasons decide.DecisionReasons
@@ -216,32 +194,20 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 		decisionReasons.Append(reasons)
 	}
 
-	fmt.Printf("DEBUG: decide() - About to check CMAB service\n")
-	fmt.Printf("DEBUG: decide() - o.cmabService is nil? %v\n", o.cmabService == nil)
-
 	if o.cmabService != nil {
-		fmt.Printf("DEBUG: decide() - CMAB service exists, checking experiments\n")
-		fmt.Printf("DEBUG: decide() - feature.ExperimentIDs: %v\n", feature.ExperimentIDs)
-
 		for _, experimentID := range feature.ExperimentIDs {
-			fmt.Printf("DEBUG: decide() - Processing experiment ID: %s\n", experimentID)
 			experiment, err := projectConfig.GetExperimentByID(experimentID)
-			fmt.Printf("DEBUG: decide() - GetExperimentByID returned, err: %v\n", err)
 
 			if err == nil && experiment.Cmab != nil {
-				fmt.Printf("DEBUG: decide() - Found CMAB experiment, calling GetDecision\n")
 				cmabDecision, cmabErr := o.cmabService.GetDecision(projectConfig, usrContext, experiment.ID, &allOptions)
 
 				// Handle CMAB error properly - check for errors BEFORE using the decision
 				if cmabErr != nil {
-					fmt.Printf("DEBUG: decide() - CMAB GetDecision returned error: %v\n", cmabErr)
 					o.logger.Warning(fmt.Sprintf("CMAB decision failed for experiment %s: %v", experiment.ID, cmabErr))
 					continue // Skip to next experiment or fall back to regular decision
 				}
 
-				fmt.Printf("DEBUG: decide() - CMAB decision successful, looking for variation: %s\n", cmabDecision.VariationID)
 				if selectedVariation, exists := experiment.Variations[cmabDecision.VariationID]; exists {
-					fmt.Printf("DEBUG: decide() - Found variation, creating feature decision\n")
 					featureDecision = decision.FeatureDecision{
 						Decision:   decision.Decision{Reason: "CMAB decision"},
 						Variation:  &selectedVariation,
@@ -263,33 +229,26 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 
 	// Only do regular decision logic if CMAB didn't work
 	if !useCMAB {
-		fmt.Printf("DEBUG: decide() - Using regular decision logic\n")
 		// check forced-decisions first
 		// Passing empty rule-key because checking mapping with flagKey only
 		if userContext.forcedDecisionService != nil {
-			fmt.Printf("DEBUG: decide() - Checking forced decisions\n")
 			var variation *entities.Variation
 			variation, reasons, err = userContext.forcedDecisionService.FindValidatedForcedDecision(projectConfig, decision.OptimizelyDecisionContext{FlagKey: key, RuleKey: ""}, &allOptions)
 			decisionReasons.Append(reasons)
 			if err != nil {
-				fmt.Printf("DEBUG: decide() - Forced decision failed, using regular decision\n")
 				findRegularDecision()
 			} else {
-				fmt.Printf("DEBUG: decide() - Using forced decision\n")
 				featureDecision = decision.FeatureDecision{Decision: decision.Decision{Reason: pkgReasons.ForcedDecisionFound}, Variation: variation, Source: decision.FeatureTest}
 			}
 		} else {
-			fmt.Printf("DEBUG: decide() - No forced decision service, using regular decision\n")
 			findRegularDecision()
 		}
 	}
 
-	fmt.Printf("DEBUG: decide() - Decision logic complete, checking for errors\n")
 	if err != nil {
 		return o.handleDecisionServiceError(err, key, *userContext)
 	}
 
-	fmt.Printf("DEBUG: decide() - Processing feature decision results\n")
 	if featureDecision.Variation != nil {
 		variationKey = featureDecision.Variation.Key
 		flagEnabled = featureDecision.Variation.FeatureEnabled
@@ -297,7 +256,6 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 		variationID = featureDecision.Variation.ID
 	}
 
-	fmt.Printf("DEBUG: decide() - About to process events\n")
 	if !allOptions.DisableDecisionEvent {
 		if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
 			featureDecision.Variation, usrContext, key, featureDecision.Experiment.Key, featureDecision.Source, flagEnabled, featureDecision.CmabUUID); ok {
@@ -306,7 +264,6 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 		}
 	}
 
-	fmt.Printf("DEBUG: decide() - About to get variable map\n")
 	variableMap := map[string]interface{}{}
 	if !allOptions.ExcludeVariables {
 		variableMap, reasons = o.getDecisionVariableMap(feature, featureDecision.Variation, flagEnabled)
@@ -316,7 +273,6 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 	reasonsToReport := decisionReasons.ToReport()
 	ruleKey := featureDecision.Experiment.Key
 
-	fmt.Printf("DEBUG: decide() - About to send notifications\n")
 	if o.notificationCenter != nil {
 		decisionNotification := decision.FlagNotification(key, variationKey, ruleKey, experimentID, variationID, flagEnabled, eventSent, usrContext, variableMap, reasonsToReport)
 		o.logger.Debug(fmt.Sprintf(`Feature %q is enabled for user %q? %v`, key, usrContext.ID, flagEnabled))
@@ -325,7 +281,6 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 		}
 	}
 
-	fmt.Printf("DEBUG: decide() - About to return final decision\n")
 	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, *userContext, reasonsToReport)
 }
 
