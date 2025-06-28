@@ -1259,8 +1259,8 @@ func (o *OptimizelyClient) handleDecisionServiceError(err error, key string, use
 	return OptimizelyDecision{
 		FlagKey:      key,
 		UserContext:  userContext,
-		VariationKey: "", // Empty string is correct according to tests
-		RuleKey:      "", // Empty string is correct according to tests
+		VariationKey: "",
+		RuleKey:      "",
 		Enabled:      false,
 		Variables:    optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{}),
 		Reasons:      []string{err.Error()},

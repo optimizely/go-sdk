@@ -3186,6 +3186,36 @@ func (s *ClientTestSuiteTrackNotification) TestRemoveOnTrackThrowsErrorWhenRemov
 	mockNotificationCenter.AssertExpectations(s.T())
 }
 
+func TestOptimizelyClient_handleDecisionServiceError(t *testing.T) {
+	// Create the client
+	client := &OptimizelyClient{
+		logger: logging.GetLogger("", ""),
+	}
+
+	// Create a CMAB error
+	cmabErrorMessage := "Failed to fetch CMAB data for experiment exp_1."
+	cmabError := fmt.Errorf(cmabErrorMessage)
+
+	// Create a user context - needs to match the signature expected by handleDecisionServiceError
+	testUserContext := OptimizelyUserContext{
+		UserID:     "test_user",
+		Attributes: map[string]interface{}{},
+	}
+
+	// Call the error handler directly
+	decision := client.handleDecisionServiceError(cmabError, "test_flag", testUserContext)
+
+	// Verify the decision is correctly formatted
+	assert.False(t, decision.Enabled)
+	assert.Equal(t, "", decision.VariationKey) // Should be empty string, not nil
+	assert.Equal(t, "", decision.RuleKey)      // Should be empty string, not nil
+	assert.Contains(t, decision.Reasons, cmabErrorMessage)
+
+	// Check that reasons contains exactly the expected message
+	assert.Equal(t, 1, len(decision.Reasons), "Reasons array should have exactly one item")
+	assert.Equal(t, cmabErrorMessage, decision.Reasons[0], "Error message should be added verbatim")
+}
+
 func TestClientTestSuiteAB(t *testing.T) {
 	suite.Run(t, new(ClientTestSuiteAB))
 }
