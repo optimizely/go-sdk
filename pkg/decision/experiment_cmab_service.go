@@ -159,9 +159,8 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 	// Get CMAB decision
 	cmabDecision, err := s.cmabService.GetDecision(projectConfig, userContext, experiment.ID, options)
 	if err != nil {
-		message := fmt.Sprintf("Failed to get CMAB decision: %v", err)
-		decisionReasons.AddInfo(message)
-		return decision, decisionReasons, fmt.Errorf("failed to get CMAB decision: %w", err)
+		// Format the error correctly with the experiment key we already have
+		return decision, decisionReasons, fmt.Errorf(cmab.CmabFetchFailed, experiment.Key)
 	}
 
 	// Find variation by ID
