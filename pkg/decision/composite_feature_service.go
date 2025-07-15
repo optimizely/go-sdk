@@ -55,6 +55,8 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 			f.logger.Debug(err.Error())
 			// Check if this is a CMAB error - if so, stop the loop and return empty decision
 			if strings.Contains(err.Error(), "Failed to fetch CMAB data") {
+				// Add the CMAB error to reasons before returning
+				reasons.AddInfo(err.Error())
 				return FeatureDecision{}, reasons, nil // Return empty decision for CMAB errors
 			}
 		}
