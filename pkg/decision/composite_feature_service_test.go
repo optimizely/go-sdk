@@ -117,6 +117,7 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsError() {
 	shouldBeIgnoredDecision := FeatureDecision{
 		Variation: &testExp1113Var2223,
 	}
+
 	// Any error now causes immediate return (no fallthrough)
 	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options).Return(shouldBeIgnoredDecision, s.reasons, errors.New("Generic experiment error"))
 
