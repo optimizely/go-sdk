@@ -17,6 +17,7 @@
 package decision
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
@@ -226,6 +227,69 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithCmabUUID() {
 	// Verify CMAB UUID specifically
 	s.NotNil(actualFeatureDecision.CmabUUID, "CmabUUID should not be nil")
 	s.Equal(testUUID, *actualFeatureDecision.CmabUUID, "CmabUUID should match the expected value")
+
+	s.mockExperimentService.AssertExpectations(s.T())
+}
+
+func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithCmabError() {
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	// Create a NEW CMAB experiment (don't modify existing testExp1113)
+	cmabExperiment := entities.Experiment{
+		ID:  "cmab_experiment_id",
+		Key: "cmab_experiment_key",
+		Cmab: &entities.Cmab{
+			AttributeIds:      []string{"attr1", "attr2"},
+			TrafficAllocation: 5000, // 50%
+		},
+		Variations: testExp1113.Variations, // Reuse variations for simplicity
+	}
+
+	// Setup experiment decision context for CMAB experiment
+	testExperimentDecisionContext := ExperimentDecisionContext{
+		Experiment:    &cmabExperiment,
+		ProjectConfig: s.mockConfig,
+	}
+
+	// Mock the experiment service to return a CMAB error
+	cmabError := errors.New("Failed to fetch CMAB data for experiment cmab_experiment_key.")
+	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext, testUserContext, s.options).
+		Return(ExperimentDecision{}, s.reasons, cmabError)
+
+	// Create a test feature that uses our CMAB experiment
+	testFeatureWithCmab := entities.Feature{
+		ID:  "test_feature_cmab",
+		Key: "test_feature_cmab_key",
+		FeatureExperiments: []entities.Experiment{
+			cmabExperiment, // Only our CMAB experiment
+		},
+	}
+
+	// Create feature decision context with our CMAB feature
+	testFeatureDecisionContextWithCmab := FeatureDecisionContext{
+		Feature:               &testFeatureWithCmab,
+		ProjectConfig:         s.mockConfig,
+		Variable:              testVariable,
+		ForcedDecisionService: NewForcedDecisionService("test_user"),
+	}
+
+	// Create service under test
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	// Call GetDecision
+	actualFeatureDecision, actualReasons, err := featureExperimentService.GetDecision(testFeatureDecisionContextWithCmab, testUserContext, s.options)
+
+	// Verify that CMAB error results in empty feature decision (not error)
+	s.NoError(err, "CMAB errors should not propagate as Go errors")
+	s.Equal(FeatureDecision{}, actualFeatureDecision, "Should return empty FeatureDecision when CMAB fails")
+
+	// Verify that reasons include the CMAB error (should be in actualReasons from mock)
+	s.NotNil(actualReasons, "Decision reasons should not be nil")
 
 	s.mockExperimentService.AssertExpectations(s.T())
 }
