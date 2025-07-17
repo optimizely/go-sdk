@@ -252,10 +252,9 @@ func (o *OptimizelyClient) tryGetCMABDecision(feature entities.Feature, projectC
 				}
 				decisionReasons.AddInfo("Used CMAB service for decision")
 				return true
-			} else {
-				// Log invalid variation ID returned by CMAB service
-				o.logger.Warning(fmt.Sprintf("CMAB returned invalid variation ID %s for experiment %s", cmabDecision.VariationID, experiment.ID))
 			}
+			// Log invalid variation ID returned by CMAB service
+			o.logger.Warning(fmt.Sprintf("CMAB returned invalid variation ID %s for experiment %s", cmabDecision.VariationID, experiment.ID))
 		}
 	}
 	return false
