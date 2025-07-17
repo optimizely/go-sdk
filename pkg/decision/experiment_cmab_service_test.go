@@ -297,7 +297,7 @@ func (s *ExperimentCmabTestSuite) TestGetDecisionWithNilCmabService() {
 
 func (s *ExperimentCmabTestSuite) TestGetDecisionWithCmabServiceError() {
 	testDecisionContext := ExperimentDecisionContext{
-		Experiment:    &s.cmabExperiment, // Use s.cmabExperiment from setup
+		Experiment:    &s.cmabExperiment,
 		ProjectConfig: s.mockProjectConfig,
 	}
 
@@ -305,11 +305,12 @@ func (s *ExperimentCmabTestSuite) TestGetDecisionWithCmabServiceError() {
 	s.mockExperimentBucketer.On("BucketToEntityID", "test_user_1", mock.AnythingOfType("entities.Experiment"), entities.Group{}).
 		Return(CmabDummyEntityID, reasons.BucketedIntoVariation, nil)
 
-	// Mock CMAB service to return error
+	// Mock CMAB service to return error with the exact format expected
+	expectedError := errors.New("Failed to fetch CMAB data for experiment cmab_exp_1.")
 	s.mockCmabService.On("GetDecision", s.mockProjectConfig, s.testUserContext, "cmab_exp_1", s.options).
-		Return(cmab.Decision{}, errors.New("CMAB service error"))
+		Return(cmab.Decision{}, expectedError)
 
-	// Create CMAB service with mocked dependencies (same pattern as TestGetDecisionSuccess)
+	// Create CMAB service with mocked dependencies
 	cmabService := &ExperimentCmabService{
 		bucketer:    s.mockExperimentBucketer,
 		cmabService: s.mockCmabService,
@@ -318,9 +319,9 @@ func (s *ExperimentCmabTestSuite) TestGetDecisionWithCmabServiceError() {
 
 	decision, _, err := cmabService.GetDecision(testDecisionContext, s.testUserContext, s.options)
 
-	// Should return the CMAB service error
+	// Should return the CMAB service error with exact format - updated to match new format
 	s.Error(err)
-	s.Contains(err.Error(), "CMAB service error")
+	s.Contains(err.Error(), "Failed to fetch CMAB data for experiment") // Updated from "failed" to "Failed"
 	s.Nil(decision.Variation) // No variation when error occurs
 
 	s.mockExperimentBucketer.AssertExpectations(s.T())

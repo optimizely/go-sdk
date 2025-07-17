@@ -109,7 +109,7 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionFallthrough() {
 }
 
 func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsError() {
-	// test that we move onto the next decision service if an inner service returns an error
+	// test that we move onto the next decision service if an inner service returns a non-CMAB error
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
 	}
@@ -117,7 +117,8 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsError() {
 	shouldBeIgnoredDecision := FeatureDecision{
 		Variation: &testExp1113Var2223,
 	}
-	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options).Return(shouldBeIgnoredDecision, s.reasons, errors.New("Error making decision"))
+	// Use a non-CMAB error to ensure fallthrough still works for other errors
+	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options).Return(shouldBeIgnoredDecision, s.reasons, errors.New("Generic experiment error"))
 
 	expectedDecision := FeatureDecision{
 		Variation: &testExp1113Var2224,
@@ -163,6 +164,38 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsLastDecisionWit
 	s.Equal(err.Error(), "test error")
 	s.mockFeatureService.AssertExpectations(s.T())
 	s.mockFeatureService2.AssertExpectations(s.T())
+}
+
+func (s *CompositeFeatureServiceTestSuite) TestGetDecisionWithCmabError() {
+	// Test that CMAB errors are terminal and don't fall through to rollout service
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	// Mock the first service (FeatureExperimentService) to return a CMAB error
+	cmabError := errors.New("Failed to fetch CMAB data for experiment exp_1.")
+	emptyDecision := FeatureDecision{}
+	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options).Return(emptyDecision, s.reasons, cmabError)
+
+	// The second service (RolloutService) should NOT be called for CMAB errors
+
+	compositeFeatureService := &CompositeFeatureService{
+		featureServices: []FeatureService{
+			s.mockFeatureService,
+			s.mockFeatureService2,
+		},
+		logger: logging.GetLogger("sdkKey", "CompositeFeatureService"),
+	}
+
+	decision, _, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options)
+
+	// CMAB errors should result in empty decision with no error
+	s.Equal(FeatureDecision{}, decision)
+	s.NoError(err, "CMAB errors should not propagate as Go errors")
+
+	s.mockFeatureService.AssertExpectations(s.T())
+	// Verify that the rollout service was NOT called
+	s.mockFeatureService2.AssertNotCalled(s.T(), "GetDecision")
 }
 
 func (s *CompositeFeatureServiceTestSuite) TestNewCompositeFeatureService() {

@@ -18,6 +18,8 @@
 package decision
 
 import (
+	"strings"
+
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
@@ -51,6 +53,21 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 		reasons.Append(decisionReasons)
 		if err != nil {
 			f.logger.Debug(err.Error())
+			// Check if this is a CMAB error - if so, stop the loop and return empty decision
+			if strings.Contains(err.Error(), "Failed to fetch CMAB data") {
+				// Add the CMAB error to reasons before returning - use AddError for critical failures
+				reasons.AddError(err.Error())
+				return FeatureDecision{}, reasons, nil // Return empty decision for CMAB errors
+			}
+		}
+
+		// Also check for CMAB errors in decision reasons (when err is nil)
+		if decisionReasons != nil {
+			for _, reason := range decisionReasons.ToReport() {
+				if strings.Contains(reason, "Failed to fetch CMAB data") {
+					return FeatureDecision{}, reasons, nil
+				}
+			}
 		}
 
 		if featureDecision.Variation != nil && err == nil {

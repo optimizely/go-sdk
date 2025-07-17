@@ -1295,5 +1295,14 @@ func isNil(v interface{}) bool {
 func (o *OptimizelyClient) handleDecisionServiceError(err error, key string, userContext OptimizelyUserContext) OptimizelyDecision {
 	o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature %q: %s`, key, err))
 
-	return NewErrorDecision(key, userContext, err)
+	// Return the error decision with the correct format for decision fields
+	return OptimizelyDecision{
+		FlagKey:      key,
+		UserContext:  userContext,
+		VariationKey: "",
+		RuleKey:      "",
+		Enabled:      false,
+		Variables:    optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{}),
+		Reasons:      []string{err.Error()},
+	}
 }

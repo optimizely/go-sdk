@@ -159,9 +159,12 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 	// Get CMAB decision
 	cmabDecision, err := s.cmabService.GetDecision(projectConfig, userContext, experiment.ID, options)
 	if err != nil {
-		message := fmt.Sprintf("Failed to get CMAB decision: %v", err)
-		decisionReasons.AddInfo(message)
-		return decision, decisionReasons, fmt.Errorf("failed to get CMAB decision: %w", err)
+		// Add CMAB error to decision reasons
+		errorMessage := fmt.Sprintf(cmab.CmabFetchFailed, experiment.Key)
+		decisionReasons.AddInfo(errorMessage)
+
+		// Use same format for Go error - FSC compatibility takes precedence
+		return decision, decisionReasons, errors.New(errorMessage) //nolint:ST1005 // Required exact format for FSC test compatibility
 	}
 
 	// Find variation by ID
