@@ -196,10 +196,9 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 				decisionReasons.Append(decisionReasonsList)
 				if forcedErr != nil {
 					return false
-				} else {
-					featureDecision = decision.FeatureDecision{Decision: decision.Decision{Reason: pkgReasons.ForcedDecisionFound}, Variation: variation, Source: decision.FeatureTest}
-					return true
 				}
+				featureDecision = decision.FeatureDecision{Decision: decision.Decision{Reason: pkgReasons.ForcedDecisionFound}, Variation: variation, Source: decision.FeatureTest}
+				return true
 			}
 			return false
 		}
