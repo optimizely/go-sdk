@@ -575,61 +575,6 @@ func (s *CmabServiceTestSuite) TestGetDecisionError() {
 	s.Equal("", decision.VariationID) // Should be empty
 }
 
-func (s *CmabServiceTestSuite) TestNilReasonsErrorHandling() {
-	// This test specifically verifies that appending to a nil Reasons slice
-	// causes a panic, while the fix avoids the panic
-
-	// Create a test decision with nil Reasons
-	testDecision := Decision{
-		VariationID: "test-var",
-		CmabUUID:    "test-uuid",
-		Reasons:     nil, // nil Reasons field
-	}
-
-	// A slice of reasons we want to append
-	reasons := []string{"Test reason 1", "Test reason 2"}
-
-	// Test the buggy behavior
-	var didPanic bool
-
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				didPanic = true
-				s.T().Logf("Panic occurred as expected: %v", r)
-			}
-		}()
-
-		// This simulates the bug:
-		// decision.Reasons = append(reasons, decision.Reasons...)
-		testDecision.Reasons = append(reasons, testDecision.Reasons...)
-	}()
-
-	// Verify the panic occurred
-	s.True(didPanic, "Appending to nil Reasons should cause a panic")
-
-	// Now test the fixed behavior
-	didPanic = false
-
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				didPanic = true
-				s.T().Logf("Unexpected panic in fixed version: %v", r)
-			}
-		}()
-
-		// This simulates the fix:
-		// return Decision{Reasons: reasons}, err
-		fixedDecision := Decision{Reasons: reasons}
-		s.NotNil(fixedDecision.Reasons, "Fixed version should have non-nil Reasons")
-		s.Equal(reasons, fixedDecision.Reasons, "Reasons should match")
-	}()
-
-	// Verify no panic with the fix
-	s.False(didPanic, "Fixed version should not panic")
-}
-
 func (s *CmabServiceTestSuite) TestFilterAttributes() {
 	// Setup mock experiment with CMAB configuration
 	experiment := entities.Experiment{
@@ -853,38 +798,38 @@ func TestCmabServiceTestSuite(t *testing.T) {
 }
 
 func (s *CmabServiceTestSuite) TestGetDecisionApiError() {
-    // Setup experiment with CMAB config
-    experiment := entities.Experiment{
-        ID: "rule-123",
-        Cmab: &entities.Cmab{
-            AttributeIds: []string{"attr1"},
-        },
-    }
-    s.mockConfig.On("GetExperimentByID", "rule-123").Return(experiment, nil)
-    s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("category", nil)
+	// Setup experiment with CMAB config
+	experiment := entities.Experiment{
+		ID: "rule-123",
+		Cmab: &entities.Cmab{
+			AttributeIds: []string{"attr1"},
+		},
+	}
+	s.mockConfig.On("GetExperimentByID", "rule-123").Return(experiment, nil)
+	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("category", nil)
 
-    // Configure client to return error
-    s.mockClient.On("FetchDecision", "rule-123", s.testUserID, mock.Anything, mock.Anything).Return("", errors.New("API error"))
+	// Configure client to return error
+	s.mockClient.On("FetchDecision", "rule-123", s.testUserID, mock.Anything, mock.Anything).Return("", errors.New("API error"))
 
-    // Setup cache miss
-    cacheKey := s.cmabService.getCacheKey(s.testUserID, "rule-123")
-    s.mockCache.On("Lookup", cacheKey).Return(nil)
+	// Setup cache miss
+	cacheKey := s.cmabService.getCacheKey(s.testUserID, "rule-123")
+	s.mockCache.On("Lookup", cacheKey).Return(nil)
 
-    userContext := entities.UserContext{
-        ID: s.testUserID,
-        Attributes: map[string]interface{}{
-            "category": "cmab",
-        },
-    }
+	userContext := entities.UserContext{
+		ID: s.testUserID,
+		Attributes: map[string]interface{}{
+			"category": "cmab",
+		},
+	}
 
-    decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, "rule-123", nil)
+	decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, "rule-123", nil)
 
-    // Should return the exact error format expected by FSC tests
-    s.Error(err)
-    s.Contains(err.Error(), "Failed to fetch CMAB data for experiment") // Updated expectation
-    s.Contains(decision.Reasons, "Failed to fetch CMAB data for experiment rule-123.")
+	// Should return the exact error format expected by FSC tests
+	s.Error(err)
+	s.Contains(err.Error(), "Failed to fetch CMAB data for experiment") // Updated expectation
+	s.Contains(decision.Reasons, "Failed to fetch CMAB data for experiment rule-123.")
 
-    s.mockConfig.AssertExpectations(s.T())
-    s.mockCache.AssertExpectations(s.T())
-    s.mockClient.AssertExpectations(s.T())
+	s.mockConfig.AssertExpectations(s.T())
+	s.mockCache.AssertExpectations(s.T())
+	s.mockClient.AssertExpectations(s.T())
 }

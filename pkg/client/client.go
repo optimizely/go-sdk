@@ -176,71 +176,42 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 		QualifiedSegments: userContext.GetQualifiedSegments(),
 	}
 
-	var variationKey string
-	var eventSent, flagEnabled bool
 	allOptions := o.getAllOptions(options)
 	decisionReasons := decide.NewDecisionReasons(&allOptions)
 	decisionContext.Variable = entities.Variable{}
 	var featureDecision decision.FeatureDecision
-	var reasons decide.DecisionReasons
-	var experimentID string
-	var variationID string
-	var useCMAB bool
+	var decisionReasonsList decide.DecisionReasons // Fix shadowing - renamed from "reasons"
 
-	// To avoid cyclo-complexity warning
-	findRegularDecision := func() {
-		// regular decision
-		featureDecision, reasons, err = o.DecisionService.GetFeatureDecision(decisionContext, usrContext, &allOptions)
-		decisionReasons.Append(reasons)
-	}
+	// Try CMAB decision first
+	useCMAB := o.tryGetCMABDecision(feature, projectConfig, usrContext, &allOptions, decisionReasons, &featureDecision)
 
-	if o.cmabService != nil {
-		for _, experimentID := range feature.ExperimentIDs {
-			experiment, err := projectConfig.GetExperimentByID(experimentID)
-
-			if err == nil && experiment.Cmab != nil {
-				cmabDecision, cmabErr := o.cmabService.GetDecision(projectConfig, usrContext, experiment.ID, &allOptions)
-
-				// Handle CMAB error properly - check for errors BEFORE using the decision
-				if cmabErr != nil {
-					o.logger.Warning(fmt.Sprintf("CMAB decision failed for experiment %s: %v", experiment.ID, cmabErr))
-					continue // Skip to next experiment or fall back to regular decision
-				}
-
-				if selectedVariation, exists := experiment.Variations[cmabDecision.VariationID]; exists {
-					featureDecision = decision.FeatureDecision{
-						Decision:   decision.Decision{Reason: "CMAB decision"},
-						Variation:  &selectedVariation,
-						Experiment: experiment,
-						Source:     decision.FeatureTest,
-						CmabUUID:   &cmabDecision.CmabUUID,
-					}
-					useCMAB = true
-					decisionReasons.AddInfo("Used CMAB service for decision")
-					break
-				} else {
-					o.logger.Warning(fmt.Sprintf("CMAB returned invalid variation ID %s for experiment %s", cmabDecision.VariationID, experiment.ID))
-				}
-			} else {
-				o.logger.Warning(fmt.Sprintf("CMAB decision failed for experiment %s: %v", experiment.ID, err))
-			}
-		}
-	}
-
-	// Only do regular decision logic if CMAB didn't work
+	// Fall back to other decision types if CMAB didn't work
 	if !useCMAB {
-		// check forced-decisions first
-		// Passing empty rule-key because checking mapping with flagKey only
-		if userContext.forcedDecisionService != nil {
-			var variation *entities.Variation
-			variation, reasons, err = userContext.forcedDecisionService.FindValidatedForcedDecision(projectConfig, decision.OptimizelyDecisionContext{FlagKey: key, RuleKey: ""}, &allOptions)
-			decisionReasons.Append(reasons)
-			if err != nil {
-				findRegularDecision()
-			} else {
-				featureDecision = decision.FeatureDecision{Decision: decision.Decision{Reason: pkgReasons.ForcedDecisionFound}, Variation: variation, Source: decision.FeatureTest}
+		// To avoid cyclo-complexity warning - forced decision logic
+		findForcedDecision := func() bool {
+			if userContext.forcedDecisionService != nil {
+				var variation *entities.Variation
+				var forcedErr error
+				variation, decisionReasonsList, forcedErr = userContext.forcedDecisionService.FindValidatedForcedDecision(projectConfig, decision.OptimizelyDecisionContext{FlagKey: key, RuleKey: ""}, &allOptions) // Fix shadowing by using assignment instead of declaration
+				decisionReasons.Append(decisionReasonsList)
+				if forcedErr != nil {
+					return false
+				} else {
+					featureDecision = decision.FeatureDecision{Decision: decision.Decision{Reason: pkgReasons.ForcedDecisionFound}, Variation: variation, Source: decision.FeatureTest}
+					return true
+				}
 			}
-		} else {
+			return false
+		}
+
+		// To avoid cyclo-complexity warning - regular decision logic
+		findRegularDecision := func() {
+			// regular decision
+			featureDecision, decisionReasonsList, err = o.DecisionService.GetFeatureDecision(decisionContext, usrContext, &allOptions)
+			decisionReasons.Append(decisionReasonsList)
+		}
+
+		if !findForcedDecision() {
 			findRegularDecision()
 		}
 	}
@@ -249,6 +220,54 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 		return o.handleDecisionServiceError(err, key, *userContext)
 	}
 
+	return o.buildDecisionResponse(featureDecision, feature, key, userContext, &allOptions, decisionReasons, decisionContext)
+}
+
+// tryGetCMABDecision attempts to get a CMAB decision for the feature
+func (o *OptimizelyClient) tryGetCMABDecision(feature entities.Feature, projectConfig config.ProjectConfig, usrContext entities.UserContext, options *decide.Options, decisionReasons decide.DecisionReasons, featureDecision *decision.FeatureDecision) bool {
+	if o.cmabService == nil {
+		return false
+	}
+
+	for _, experimentID := range feature.ExperimentIDs {
+		experiment, expErr := projectConfig.GetExperimentByID(experimentID) // Fix shadowing
+
+		// Handle CMAB error properly - check for errors BEFORE using the experiment
+		if expErr == nil && experiment.Cmab != nil {
+			cmabDecision, cmabErr := o.cmabService.GetDecision(projectConfig, usrContext, experiment.ID, options)
+
+			// Handle CMAB service errors gracefully - log and continue to next experiment
+			if cmabErr != nil {
+				o.logger.Warning(fmt.Sprintf("CMAB decision failed for experiment %s: %v", experiment.ID, cmabErr))
+				continue
+			}
+
+			// Validate CMAB response - ensure variation exists before using it
+			if selectedVariation, exists := experiment.Variations[cmabDecision.VariationID]; exists {
+				*featureDecision = decision.FeatureDecision{
+					Decision:   decision.Decision{Reason: "CMAB decision"},
+					Variation:  &selectedVariation,
+					Experiment: experiment,
+					Source:     decision.FeatureTest,
+					CmabUUID:   &cmabDecision.CmabUUID, // Include CMAB UUID for tracking
+				}
+				decisionReasons.AddInfo("Used CMAB service for decision")
+				return true
+			} else {
+				// Log invalid variation ID returned by CMAB service
+				o.logger.Warning(fmt.Sprintf("CMAB returned invalid variation ID %s for experiment %s", cmabDecision.VariationID, experiment.ID))
+			}
+		}
+	}
+	return false
+}
+
+// buildDecisionResponse constructs the final OptimizelyDecision response
+func (o *OptimizelyClient) buildDecisionResponse(featureDecision decision.FeatureDecision, feature entities.Feature, key string, userContext *OptimizelyUserContext, options *decide.Options, decisionReasons decide.DecisionReasons, decisionContext decision.FeatureDecisionContext) OptimizelyDecision {
+	var variationKey string
+	var eventSent, flagEnabled bool
+	var experimentID, variationID string
+
 	if featureDecision.Variation != nil {
 		variationKey = featureDecision.Variation.Key
 		flagEnabled = featureDecision.Variation.FeatureEnabled
@@ -256,7 +275,14 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 		variationID = featureDecision.Variation.ID
 	}
 
-	if !allOptions.DisableDecisionEvent {
+	usrContext := entities.UserContext{
+		ID:                userContext.GetUserID(),
+		Attributes:        userContext.GetUserAttributes(),
+		QualifiedSegments: userContext.GetQualifiedSegments(),
+	}
+
+	// Send impression event
+	if !options.DisableDecisionEvent {
 		if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
 			featureDecision.Variation, usrContext, key, featureDecision.Experiment.Key, featureDecision.Source, flagEnabled, featureDecision.CmabUUID); ok {
 			o.EventProcessor.ProcessEvent(ue)
@@ -264,22 +290,28 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 		}
 	}
 
+	// Get variable map
 	variableMap := map[string]interface{}{}
-	if !allOptions.ExcludeVariables {
+	if !options.ExcludeVariables {
+		var reasons decide.DecisionReasons
 		variableMap, reasons = o.getDecisionVariableMap(feature, featureDecision.Variation, flagEnabled)
 		decisionReasons.Append(reasons)
 	}
-	optimizelyJSON := optimizelyjson.NewOptimizelyJSONfromMap(variableMap)
-	reasonsToReport := decisionReasons.ToReport()
-	ruleKey := featureDecision.Experiment.Key
 
+	// Send notification
 	if o.notificationCenter != nil {
+		reasonsToReport := decisionReasons.ToReport()
+		ruleKey := featureDecision.Experiment.Key
 		decisionNotification := decision.FlagNotification(key, variationKey, ruleKey, experimentID, variationID, flagEnabled, eventSent, usrContext, variableMap, reasonsToReport)
 		o.logger.Debug(fmt.Sprintf(`Feature %q is enabled for user %q? %v`, key, usrContext.ID, flagEnabled))
 		if e := o.notificationCenter.Send(notification.Decision, *decisionNotification); e != nil {
 			o.logger.Warning("Problem with sending notification")
 		}
 	}
+
+	optimizelyJSON := optimizelyjson.NewOptimizelyJSONfromMap(variableMap)
+	reasonsToReport := decisionReasons.ToReport()
+	ruleKey := featureDecision.Experiment.Key
 
 	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, *userContext, reasonsToReport)
 }
@@ -509,7 +541,7 @@ func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.U
 }
 
 // IsFeatureEnabled returns true if the feature is enabled for the given user. If the user is part of a feature test
-// then an impression event will be queued up to be sent to the Optimizely log endpoint for results processing.
+// then an impression event will be queued up to the Optimizely log endpoint for results processing.
 func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entities.UserContext) (result bool, err error) {
 
 	defer func() {
