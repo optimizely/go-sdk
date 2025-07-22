@@ -109,7 +109,7 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionFallthrough() {
 }
 
 func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsError() {
-	// test that we move onto the next decision service if an inner service returns a non-CMAB error
+	// test that errors now propagate up instead of continuing to next service
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
 	}
@@ -117,13 +117,8 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsError() {
 	shouldBeIgnoredDecision := FeatureDecision{
 		Variation: &testExp1113Var2223,
 	}
-	// Use a non-CMAB error to ensure fallthrough still works for other errors
+	// Any error now causes immediate return (no fallthrough)
 	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options).Return(shouldBeIgnoredDecision, s.reasons, errors.New("Generic experiment error"))
-
-	expectedDecision := FeatureDecision{
-		Variation: &testExp1113Var2224,
-	}
-	s.mockFeatureService2.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options).Return(expectedDecision, s.reasons, nil)
 
 	compositeFeatureService := &CompositeFeatureService{
 		featureServices: []FeatureService{
@@ -133,14 +128,19 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsError() {
 		logger: logging.GetLogger("sdkKey", "CompositeFeatureService"),
 	}
 	decision, _, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options)
-	s.Equal(expectedDecision, decision)
-	s.NoError(err)
+
+	// Change: Now we expect error propagation and empty decision
+	s.Equal(FeatureDecision{}, decision)
+	s.Error(err)
+	s.Equal("Generic experiment error", err.Error())
 	s.mockFeatureService.AssertExpectations(s.T())
-	s.mockFeatureService2.AssertExpectations(s.T())
+	// Change: Second service should NOT be called when first service returns error
+	s.mockFeatureService2.AssertNotCalled(s.T(), "GetDecision")
 }
 
 func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsLastDecisionWithError() {
-	// test that GetDecision returns the last decision with error if all decision services return error
+	// This test is now invalid - rename to reflect new behavior
+	// Test that first error stops evaluation (no "last decision" concept anymore)
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
 	}
@@ -148,8 +148,7 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsLastDecisionWit
 	expectedDecision := FeatureDecision{
 		Variation: &testExp1113Var2223,
 	}
-	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options).Return(expectedDecision, s.reasons, errors.New("Error making decision"))
-	s.mockFeatureService2.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options).Return(expectedDecision, s.reasons, errors.New("test error"))
+	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options).Return(expectedDecision, s.reasons, errors.New("test error"))
 
 	compositeFeatureService := &CompositeFeatureService{
 		featureServices: []FeatureService{
@@ -159,15 +158,18 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsLastDecisionWit
 		logger: logging.GetLogger("sdkKey", "CompositeFeatureService"),
 	}
 	decision, _, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options)
-	s.Equal(expectedDecision, decision)
+
+	// Change: Now we expect empty decision and error from first service
+	s.Equal(FeatureDecision{}, decision)
 	s.Error(err)
-	s.Equal(err.Error(), "test error")
+	s.Equal("test error", err.Error())
 	s.mockFeatureService.AssertExpectations(s.T())
-	s.mockFeatureService2.AssertExpectations(s.T())
+	// Change: Second service should NOT be called
+	s.mockFeatureService2.AssertNotCalled(s.T(), "GetDecision")
 }
 
 func (s *CompositeFeatureServiceTestSuite) TestGetDecisionWithCmabError() {
-	// Test that CMAB errors are terminal and don't fall through to rollout service
+	// Test that CMAB errors are now propagated as Go errors
 	testUserContext := entities.UserContext{
 		ID: "test_user_1",
 	}
@@ -177,8 +179,6 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionWithCmabError() {
 	emptyDecision := FeatureDecision{}
 	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options).Return(emptyDecision, s.reasons, cmabError)
 
-	// The second service (RolloutService) should NOT be called for CMAB errors
-
 	compositeFeatureService := &CompositeFeatureService{
 		featureServices: []FeatureService{
 			s.mockFeatureService,
@@ -189,9 +189,10 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionWithCmabError() {
 
 	decision, _, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options)
 
-	// CMAB errors should result in empty decision with no error
+	// Change: CMAB errors now propagate as Go errors (this is the expected behavior now)
 	s.Equal(FeatureDecision{}, decision)
-	s.NoError(err, "CMAB errors should not propagate as Go errors")
+	s.Error(err, "CMAB errors should now propagate as Go errors")
+	s.Equal(cmabError.Error(), err.Error())
 
 	s.mockFeatureService.AssertExpectations(s.T())
 	// Verify that the rollout service was NOT called
