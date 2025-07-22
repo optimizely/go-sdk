@@ -798,36 +798,35 @@ func TestCmabServiceTestSuite(t *testing.T) {
 }
 
 func (s *CmabServiceTestSuite) TestGetDecisionApiError() {
-	// Setup experiment with CMAB config
+	// Setup mock experiment - needed for filterAttributes method
 	experiment := entities.Experiment{
-		ID: "rule-123",
+		ID:  s.testRuleID, // This should be "rule-123"
+		Key: "test_experiment",
 		Cmab: &entities.Cmab{
-			AttributeIds: []string{"attr1"},
+			AttributeIds: []string{}, // Empty for this error test
 		},
 	}
-	s.mockConfig.On("GetExperimentByID", "rule-123").Return(experiment, nil)
-	s.mockConfig.On("GetAttributeKeyByID", "attr1").Return("category", nil)
 
-	// Configure client to return error
-	s.mockClient.On("FetchDecision", "rule-123", s.testUserID, mock.Anything, mock.Anything).Return("", errors.New("API error"))
+	// Setup mock config to return the experiment when queried by ID
+	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
 
 	// Setup cache miss
-	cacheKey := s.cmabService.getCacheKey(s.testUserID, "rule-123")
+	cacheKey := s.cmabService.getCacheKey("test-user", s.testRuleID)
 	s.mockCache.On("Lookup", cacheKey).Return(nil)
 
-	userContext := entities.UserContext{
-		ID: s.testUserID,
-		Attributes: map[string]interface{}{
-			"category": "cmab",
-		},
-	}
+	// Setup mock to return API error
+	s.mockClient.On("FetchDecision", s.testRuleID, "test-user", mock.AnythingOfType("map[string]interface {}"), mock.AnythingOfType("string")).Return("", errors.New("API error"))
 
-	decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, "rule-123", nil)
+	userContext := entities.UserContext{ID: "test-user", Attributes: map[string]interface{}{}}
+	decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
 
-	// Should return the exact error format expected by FSC tests
+	// Test the FSC-compatible error message format
 	s.Error(err)
-	s.Contains(err.Error(), "Failed to fetch CMAB data for experiment") // Updated expectation
-	s.Contains(decision.Reasons, "Failed to fetch CMAB data for experiment rule-123.")
+	s.Contains(err.Error(), "Failed to fetch CMAB data for experiment")
+	s.Contains(err.Error(), s.testRuleID)
+	// Note: FSC format doesn't include the original API error, just the formatted message
+	s.Contains(decision.Reasons, fmt.Sprintf("Failed to fetch CMAB data for experiment %s.", s.testRuleID))
+	s.Equal("", decision.VariationID)
 
 	s.mockConfig.AssertExpectations(s.T())
 	s.mockCache.AssertExpectations(s.T())

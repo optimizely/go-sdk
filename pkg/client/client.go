@@ -1142,7 +1142,7 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 	featureDecision, _, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext, options)
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature %q: %s`, featureKey, err))
-		return decisionContext, featureDecision, nil
+		return decisionContext, featureDecision, err
 	}
 
 	return decisionContext, featureDecision, nil
