@@ -117,7 +117,6 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsError() {
 	shouldBeIgnoredDecision := FeatureDecision{
 		Variation: &testExp1113Var2223,
 	}
-
 	// Any error now causes immediate return (no fallthrough)
 	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options).Return(shouldBeIgnoredDecision, s.reasons, errors.New("Generic experiment error"))
 
@@ -138,7 +137,6 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsError() {
 	// Change: Second service should NOT be called when first service returns error
 	s.mockFeatureService2.AssertNotCalled(s.T(), "GetDecision")
 }
-
 func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsLastDecisionWithError() {
 	// This test is now invalid - rename to reflect new behavior
 	// Test that first error stops evaluation (no "last decision" concept anymore)
