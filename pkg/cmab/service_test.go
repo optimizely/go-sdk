@@ -815,17 +815,23 @@ func (s *CmabServiceTestSuite) TestGetDecisionApiError() {
 	s.mockCache.On("Lookup", cacheKey).Return(nil)
 
 	// Setup mock to return API error
-	s.mockClient.On("FetchDecision", s.testRuleID, "test-user", mock.AnythingOfType("map[string]interface {}"), mock.AnythingOfType("string")).Return("", errors.New("API error"))
+	originalError := errors.New("API error")
+	s.mockClient.On("FetchDecision", s.testRuleID, "test-user", mock.AnythingOfType("map[string]interface {}"), mock.AnythingOfType("string")).Return("", originalError)
 
 	userContext := entities.UserContext{ID: "test-user", Attributes: map[string]interface{}{}}
 	decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
 
-	// Test the FSC-compatible error message format
+	// Test that we get the original error
 	s.Error(err)
-	s.Contains(err.Error(), "Failed to fetch CMAB data for experiment")
-	s.Contains(err.Error(), s.testRuleID)
-	// Note: FSC format doesn't include the original API error, just the formatted message
-	s.Contains(decision.Reasons, fmt.Sprintf("Failed to fetch CMAB data for experiment %s.", s.testRuleID))
+	s.Equal("API error", err.Error()) // Should be the original error message
+
+	// Test that decision reasons contain the formatted context message
+	s.Len(decision.Reasons, 1)
+	reason := decision.Reasons[0]
+	s.Contains(reason, "Failed to fetch CMAB data for experiment")
+	s.Contains(reason, s.testRuleID)
+
+	// Verify the decision has empty variation ID on error
 	s.Equal("", decision.VariationID)
 
 	s.mockConfig.AssertExpectations(s.T())

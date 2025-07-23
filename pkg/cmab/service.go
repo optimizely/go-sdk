@@ -19,7 +19,6 @@ package cmab
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 
@@ -174,7 +173,8 @@ func (s *DefaultCmabService) fetchDecision(
 		reason := fmt.Sprintf(CmabFetchFailed, ruleID)
 		reasons = append(reasons, reason)
 		// Use same format for Go error - FSC compatibility takes precedence
-		return Decision{Reasons: reasons}, errors.New(reason) //nolint:ST1005 // Required exact format for FSC test compatibility
+		// Return the original error from s.cmabClient.FetchDecision()
+		return Decision{Reasons: reasons}, err //nolint:ST1005 // Required exact format for FSC test compatibility
 	}
 
 	reasons = append(reasons, "Successfully fetched CMAB decision")
