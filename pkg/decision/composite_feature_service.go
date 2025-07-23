@@ -51,9 +51,12 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 		reasons.Append(decisionReasons)
 		if err != nil {
 			f.logger.Debug(err.Error())
+			reasons.AddError(err.Error())
+			// Return the error to let the caller handle it properly
+			return FeatureDecision{}, reasons, err
 		}
 
-		if featureDecision.Variation != nil && err == nil {
+		if featureDecision.Variation != nil {
 			return featureDecision, reasons, err
 		}
 	}

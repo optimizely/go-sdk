@@ -798,33 +798,42 @@ func TestCmabServiceTestSuite(t *testing.T) {
 }
 
 func (s *CmabServiceTestSuite) TestGetDecisionApiError() {
-	// Setup cache key
-	cacheKey := s.cmabService.getCacheKey(s.testUserID, s.testRuleID)
-
-	// Setup cache lookup (cache miss)
-	s.mockCache.On("Lookup", cacheKey).Return(nil)
-
-	// Setup mock to return error for experiment lookup (but this won't stop the flow anymore)
-	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(entities.Experiment{}, fmt.Errorf("experiment not found")).Once()
-
-	// Mock the FetchDecision call that will now happen
-	s.mockClient.On("FetchDecision", s.testRuleID, s.testUserID, mock.Anything, mock.Anything).Return("", fmt.Errorf("invalid rule ID"))
-
-	// Call the method
-	userContext := entities.UserContext{
-		ID: s.testUserID,
-		Attributes: map[string]interface{}{
-			"age": 30,
+	// Setup mock experiment - needed for filterAttributes method
+	experiment := entities.Experiment{
+		ID:  s.testRuleID, // This should be "rule-123"
+		Key: "test_experiment",
+		Cmab: &entities.Cmab{
+			AttributeIds: []string{}, // Empty for this error test
 		},
 	}
 
-	_, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
+	// Setup mock config to return the experiment when queried by ID
+	s.mockConfig.On("GetExperimentByID", s.testRuleID).Return(experiment, nil)
 
-	// Should return error from FetchDecision, not from experiment validation
+	// Setup cache miss
+	cacheKey := s.cmabService.getCacheKey("test-user", s.testRuleID)
+	s.mockCache.On("Lookup", cacheKey).Return(nil)
+
+	// Setup mock to return API error
+	originalError := errors.New("API error")
+	s.mockClient.On("FetchDecision", s.testRuleID, "test-user", mock.AnythingOfType("map[string]interface {}"), mock.AnythingOfType("string")).Return("", originalError)
+
+	userContext := entities.UserContext{ID: "test-user", Attributes: map[string]interface{}{}}
+	decision, err := s.cmabService.GetDecision(s.mockConfig, userContext, s.testRuleID, nil)
+
+	// Test that we get the original error
 	s.Error(err)
-	s.Contains(err.Error(), "CMAB API error")
+	s.Equal("API error", err.Error()) // Should be the original error message
 
-	// Verify expectations
+	// Test that decision reasons contain the formatted context message
+	s.Len(decision.Reasons, 1)
+	reason := decision.Reasons[0]
+	s.Contains(reason, "Failed to fetch CMAB data for experiment")
+	s.Contains(reason, s.testRuleID)
+
+	// Verify the decision has empty variation ID on error
+	s.Equal("", decision.VariationID)
+
 	s.mockConfig.AssertExpectations(s.T())
 	s.mockCache.AssertExpectations(s.T())
 	s.mockClient.AssertExpectations(s.T())

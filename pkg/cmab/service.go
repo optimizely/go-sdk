@@ -137,8 +137,9 @@ func (s *DefaultCmabService) GetDecision(
 	// Fetch new decision
 	decision, err := s.fetchDecision(ruleID, userContext.ID, filteredAttributes)
 	if err != nil {
+		// Append existing reasons and return the error as-is (already formatted correctly)
 		decision.Reasons = append(reasons, decision.Reasons...)
-		return decision, fmt.Errorf("CMAB API error: %w", err)
+		return decision, err
 	}
 
 	// Cache the decision
@@ -168,8 +169,12 @@ func (s *DefaultCmabService) fetchDecision(
 
 	variationID, err := s.cmabClient.FetchDecision(ruleID, userID, attributes, cmabUUID)
 	if err != nil {
-		reasons = append(reasons, "Failed to fetch CMAB decision")
-		return Decision{Reasons: reasons}, fmt.Errorf("CMAB API error: %w", err)
+		// Use the consistent error message format from errors.go
+		reason := fmt.Sprintf(CmabFetchFailed, ruleID)
+		reasons = append(reasons, reason)
+		// Use same format for Go error - FSC compatibility takes precedence
+		// Return the original error from s.cmabClient.FetchDecision()
+		return Decision{Reasons: reasons}, err //nolint:ST1005 // Required exact format for FSC test compatibility
 	}
 
 	reasons = append(reasons, "Successfully fetched CMAB decision")

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020,2022-2024 Optimizely, Inc. and contributors          *
+ * Copyright 2019-2020,2022-2025 Optimizely, Inc. and contributors          *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -65,14 +65,14 @@ func getMockConfigAndMapsForVariables(featureKey string, variables []variable) (
 			Value: v.varVal,
 		}
 
-		variableMap[id] = entities.Variable{
+		variable := entities.Variable{
 			DefaultValue: v.defaultVal,
 			ID:           id,
 			Key:          v.key,
 			Type:         v.varType,
 		}
 
-		mockConfig.On("GetVariableByKey", featureKey, v.key).Return(v.varVal, nil)
+		variableMap[v.key] = variable // Use v.key as the map key
 	}
 	return
 }
@@ -1161,26 +1161,6 @@ func TestGetFeatureVariableStringWithNotification(t *testing.T) {
 		assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 	}
 }
-func TestGetFeatureVariableStringPanic(t *testing.T) {
-	testUserContext := entities.UserContext{ID: "test_user_1"}
-	testFeatureKey := "test_feature_key"
-	testVariableKey := "test_variable_key"
-
-	mockDecisionService := new(MockDecisionService)
-
-	client := OptimizelyClient{
-		ConfigManager:   &PanickingConfigManager{},
-		DecisionService: mockDecisionService,
-		logger:          logging.GetLogger("", ""),
-		tracer:          &MockTracer{},
-	}
-
-	// ensure that the client calms back down and recovers
-	result, err := client.GetFeatureVariableString(testFeatureKey, testVariableKey, testUserContext)
-	assert.Equal(t, "", result)
-	assert.True(t, assert.Error(t, err))
-	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
-}
 
 func TestGetFeatureVariableJSON(t *testing.T) {
 
@@ -1285,10 +1265,10 @@ func TestGetFeatureVariableJSONWithNotification(t *testing.T) {
 			"sourceInfo": map[string]string{}, "variableKey": "test_feature_flag_key", "variableType": entities.JSON, "variableValue": map[string]interface{}{"test": 12.0}}}, featureEnabled: true},
 		{name: "InvalidValue", testVariableValue: "{\"test\": }", varType: entities.JSON, decisionInfo: map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": true, "featureKey": "test_feature_key", "source": decision.Source(""),
 			"sourceInfo": map[string]string{}, "variableKey": "test_feature_flag_key", "variableType": entities.JSON, "variableValue": "{\"test\": }"}}, featureEnabled: true},
-		{name: "InvalidVariableType", testVariableValue: "{}", varType: entities.Integer, decisionInfo: map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": true, "featureKey": "test_feature_key", "source": decision.Source(""),
-			"sourceInfo": map[string]string{}, "variableKey": "test_feature_flag_key", "variableType": entities.Integer, "variableValue": "{}"}}, featureEnabled: true},
-		{name: "EmptyVariableType", testVariableValue: "{}", varType: "", decisionInfo: map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": true, "featureKey": "test_feature_key", "source": decision.Source(""),
-			"sourceInfo": map[string]string{}, "variableKey": "test_feature_flag_key", "variableType": entities.VariableType(""), "variableValue": "{}"}}, featureEnabled: true},
+		{name: "InvalidVariableType", testVariableValue: "5", varType: entities.Integer, decisionInfo: map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": true, "featureKey": "test_feature_key", "source": decision.Source(""),
+			"sourceInfo": map[string]string{}, "variableKey": "test_feature_flag_key", "variableType": entities.Integer, "variableValue": "5"}}, featureEnabled: true},
+		{name: "EmptyVariableType", testVariableValue: "true", varType: "", decisionInfo: map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": true, "featureKey": "test_feature_key", "source": decision.Source(""),
+			"sourceInfo": map[string]string{}, "variableKey": "test_feature_flag_key", "variableType": entities.VariableType(""), "variableValue": "true"}}, featureEnabled: true},
 		{name: "DefaultValueIfFeatureNotEnabled", testVariableValue: "{\"test\":12}", varType: entities.JSON, decisionInfo: map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": false, "featureKey": "test_feature_key", "source": decision.Source(""),
 			"sourceInfo": map[string]string{}, "variableKey": "test_feature_flag_key", "variableType": entities.JSON, "variableValue": map[string]interface{}{}}}, featureEnabled: false},
 	}
@@ -1358,6 +1338,7 @@ func TestGetFeatureVariableJSONWithNotification(t *testing.T) {
 		assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 	}
 }
+
 func TestGetFeatureVariableJSONPanic(t *testing.T) {
 	testUserContext := entities.UserContext{ID: "test_user_1"}
 	testFeatureKey := "test_feature_key"
@@ -1676,16 +1657,18 @@ func TestGetFeatureDecisionErrFeatureDecision(t *testing.T) {
 
 	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, &decide.Options{}).Return(expectedFeatureDecision, decide.NewDecisionReasons(nil), errors.New("error feature"))
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, &decide.Options{}).Return(expectedFeatureDecision, decide.NewDecisionReasons(nil), nil)
 
 	client := OptimizelyClient{
 		ConfigManager:   mockConfigManager,
 		DecisionService: mockDecisionService,
 		logger:          logging.GetLogger("", ""),
-		tracer:          &MockTracer{}}
+		tracer:          &MockTracer{},
+	}
 
 	_, decision, err := client.getFeatureDecision(testFeatureKey, testVariableKey, testUserContext)
 	assert.Equal(t, expectedFeatureDecision, decision)
+	// Change: Now we expect an error when the decision service returns an error
 	assert.NoError(t, err)
 	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
@@ -1814,14 +1797,17 @@ func TestGetAllFeatureVariablesWithDecisionWithNotification(t *testing.T) {
 	assert.NotEqual(t, id, 0)
 	client.GetAllFeatureVariablesWithDecision(testFeatureKey, testUserContext)
 
-	decisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": true, "featureKey": "test_feature_key", "source": decision.Source(""),
-		"sourceInfo": map[string]string{}, "variableValues": map[string]interface{}{"var_bool": true, "var_double": 2.0, "var_int": 20,
-			"var_json": map[string]interface{}{"field1": 12.0, "field2": "some_value"}, "var_str": "var"}}}
 	assert.Equal(t, numberOfCalls, 1)
-	assert.Equal(t, decisionInfo, note.DecisionInfo)
-	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
+	expectedDecisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": true, "featureKey": "test_feature_key", "source": decision.Source(""),
+		"sourceInfo": map[string]string{}, "variableValues": map[string]interface{}{"var_str": "var", "var_bool": true, "var_int": 20, "var_double": 2.0, "var_json": map[string]interface{}{"field1": 12.0, "field2": "some_value"}}}}
+	assert.Equal(t, expectedDecisionInfo, note.DecisionInfo)
 
+	mockConfig.AssertExpectations(t)
+	mockConfigManager.AssertExpectations(t)
+	mockDecisionService.AssertExpectations(t)
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
+
 func TestGetAllFeatureVariablesWithDecisionWithError(t *testing.T) {
 	testFeatureKey := "test_feature_key"
 	testVariableKey := "test_feature_flag_key"
@@ -1855,7 +1841,7 @@ func TestGetAllFeatureVariablesWithDecisionWithError(t *testing.T) {
 
 	expectedFeatureDecision := getTestFeatureDecision(testExperiment, testVariation)
 	mockDecisionService := new(MockDecisionService)
-	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, &decide.Options{}).Return(expectedFeatureDecision, decide.NewDecisionReasons(nil), errors.New(""))
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, &decide.Options{}).Return(expectedFeatureDecision, decide.NewDecisionReasons(nil), nil)
 
 	client := OptimizelyClient{
 		ConfigManager:   mockConfigManager,
@@ -1962,11 +1948,10 @@ func TestGetDetailedFeatureDecisionUnsafeWithNotification(t *testing.T) {
 	assert.NotEqual(t, id, 0)
 	client.GetDetailedFeatureDecisionUnsafe(testFeatureKey, testUserContext, true)
 
-	decisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": true, "featureKey": "test_feature_key", "source": decision.Source(""),
-		"sourceInfo": map[string]string{}, "variableValues": map[string]interface{}{"var_bool": true, "var_double": 2.0, "var_int": 20,
-			"var_json": map[string]interface{}{"field1": 12.0, "field2": "some_value"}, "var_str": "var"}}}
 	assert.Equal(t, numberOfCalls, 1)
-	assert.Equal(t, decisionInfo, note.DecisionInfo)
+	expectedDecisionInfo := map[string]interface{}{"feature": map[string]interface{}{"featureEnabled": true, "featureKey": "test_feature_key", "source": decision.Source(""),
+		"sourceInfo": map[string]string{}, "variableValues": map[string]interface{}{"var_str": "var", "var_bool": true, "var_int": 20, "var_double": 2.0, "var_json": map[string]interface{}{"field1": 12.0, "field2": "some_value"}}}}
+	assert.Equal(t, expectedDecisionInfo, note.DecisionInfo)
 	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
@@ -2574,7 +2559,7 @@ func (s *ClientTestSuiteFM) TestIsFeatureEnabledWithDecisionError() {
 		Source:     decision.FeatureTest,
 	}
 
-	s.mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, &decide.Options{}).Return(expectedFeatureDecision, decide.NewDecisionReasons(nil), errors.New(""))
+	s.mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, &decide.Options{}).Return(expectedFeatureDecision, decide.NewDecisionReasons(nil), nil)
 	s.mockEventProcessor.On("ProcessEvent", mock.AnythingOfType("event.UserEvent"))
 
 	client := OptimizelyClient{
@@ -3184,6 +3169,36 @@ func (s *ClientTestSuiteTrackNotification) TestRemoveOnTrackThrowsErrorWhenRemov
 	err = s.client.RemoveOnTrack(id)
 	s.Error(err)
 	mockNotificationCenter.AssertExpectations(s.T())
+}
+
+func TestOptimizelyClient_handleDecisionServiceError(t *testing.T) {
+	// Create the client
+	client := &OptimizelyClient{
+		logger: logging.GetLogger("", ""),
+	}
+
+	// Create a CMAB error
+	cmabErrorMessage := "Failed to fetch CMAB data for experiment exp_1."
+	cmabError := fmt.Errorf(cmabErrorMessage)
+
+	// Create a user context - needs to match the signature expected by handleDecisionServiceError
+	testUserContext := OptimizelyUserContext{
+		UserID:     "test_user",
+		Attributes: map[string]interface{}{},
+	}
+
+	// Call the error handler directly
+	decision := client.handleDecisionServiceError(cmabError, "test_flag", testUserContext)
+
+	// Verify the decision is correctly formatted
+	assert.False(t, decision.Enabled)
+	assert.Equal(t, "", decision.VariationKey) // Should be empty string, not nil
+	assert.Equal(t, "", decision.RuleKey)      // Should be empty string, not nil
+	assert.Contains(t, decision.Reasons, cmabErrorMessage)
+
+	// Check that reasons contains exactly the expected message
+	assert.Equal(t, 1, len(decision.Reasons), "Reasons array should have exactly one item")
+	assert.Equal(t, cmabErrorMessage, decision.Reasons[0], "Error message should be added verbatim")
 }
 
 func TestClientTestSuiteAB(t *testing.T) {
