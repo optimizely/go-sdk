@@ -168,7 +168,8 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 		s.logger.Debug(fmt.Sprintf("CMAB service error for experiment %s: %v", experiment.Key, err))
 
 		// Create FSC-compatible error using local variable to isolate linter issue
-		return decision, decisionReasons, cmab.CmabFetchFailedError(experiment.Key)
+		// This FetchFailedError is uded for compatibility with FSC test that requires uppercase string
+		return decision, decisionReasons, cmab.FetchFailedError(experiment.Key)
 	}
 
 	// Find variation by ID

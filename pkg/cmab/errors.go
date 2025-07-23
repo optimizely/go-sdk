@@ -25,8 +25,8 @@ import (
 // Format required for FSC test compatibility - capitalized and with period
 const CmabFetchFailed = "Failed to fetch CMAB data for experiment %s." //nolint:ST1005 // Required exact format for FSC test compatibility
 
-// CmabFetchFailedError creates a new CMAB fetch failed error with FSC-compatible formatting
-func CmabFetchFailedError(experimentKey string) error {
+// FetchFailedError creates a new CMAB fetch failed error with FSC-compatible formatting
+func FetchFailedError(experimentKey string) error {
 	// Build the FSC-required error message without using a constant or fmt functions
 	// This avoids linter detection while maintaining exact FSC format
 	return errors.New("Failed to fetch CMAB data for experiment " + experimentKey + ".")
