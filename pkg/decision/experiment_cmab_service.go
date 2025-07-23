@@ -159,8 +159,17 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 	// Get CMAB decision
 	cmabDecision, err := s.cmabService.GetDecision(projectConfig, userContext, experiment.ID, options)
 	if err != nil {
-		// Use same format for Go error - FSC compatibility takes precedence
-		return decision, decisionReasons, err //nolint:ST1005 // Required exact format for FSC test compatibility
+		// Add FSC-compatible error message to decision reasons using the constant
+		fscErrorMessage := fmt.Sprintf(cmab.CmabFetchFailed, experiment.Key)
+		decisionReasons.AddInfo(fscErrorMessage)
+
+		// For FSC compatibility, return an error with the expected message format
+		// but log the original error for debugging
+		s.logger.Debug(fmt.Sprintf("CMAB service error for experiment %s: %v", experiment.Key, err))
+
+		// Create FSC-compatible error using local variable to isolate linter issue
+		fscError := fmt.Errorf(cmab.CmabFetchFailed, experiment.Key) //nolint:ST1005 // Required exact format for FSC test compatibility
+		return decision, decisionReasons, fscError
 	}
 
 	// Find variation by ID
