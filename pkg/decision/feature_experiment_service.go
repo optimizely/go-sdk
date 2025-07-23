@@ -78,9 +78,9 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 
 		// Handle CMAB experiment errors - they should terminate the decision process
 		if err != nil && experiment.Cmab != nil {
-			// For CMAB experiments, errors should prevent fallback to other experiments
-			// The error is already in reasons from decisionReasons, so return nil error
-			return FeatureDecision{}, reasons, nil
+			// For CMAB experiments, errors should prevent fallback to other experiments AND rollouts
+			// Return the error so CompositeFeatureService can detect it
+			return FeatureDecision{}, reasons, err
 		}
 
 		// Variation not nil means we got a decision and should return it
