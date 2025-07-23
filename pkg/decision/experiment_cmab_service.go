@@ -168,8 +168,7 @@ func (s *ExperimentCmabService) GetDecision(decisionContext ExperimentDecisionCo
 		s.logger.Debug(fmt.Sprintf("CMAB service error for experiment %s: %v", experiment.Key, err))
 
 		// Create FSC-compatible error using local variable to isolate linter issue
-		fscError := fmt.Errorf(cmab.CmabFetchFailed, experiment.Key) //nolint:ST1005 // Required exact format for FSC test compatibility
-		return decision, decisionReasons, fscError
+		return decision, decisionReasons, cmab.CmabFetchFailedError(experiment.Key)
 	}
 
 	// Find variation by ID
