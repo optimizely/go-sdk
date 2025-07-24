@@ -3321,6 +3321,51 @@ func TestDecide_CmabSuccess(t *testing.T) {
 	}
 }
 
+func TestHandleDecisionServiceError(t *testing.T) {
+	client := OptimizelyClient{
+		logger: logging.GetLogger("", ""),
+	}
+
+	// Create test error
+	testError := errors.New("Failed to fetch CMAB data for experiment exp_123")
+
+	// Create user context
+	userContext := client.CreateUserContext("test_user", map[string]interface{}{
+		"age":     25,
+		"country": "US",
+	})
+
+	// Call the uncovered method directly
+	result := client.handleDecisionServiceError(testError, "test_feature", userContext)
+
+	// Verify the error decision structure
+	assert.Equal(t, "test_feature", result.FlagKey)
+	assert.Equal(t, userContext, result.UserContext)
+	assert.Equal(t, "", result.VariationKey)
+	assert.Equal(t, "", result.RuleKey)
+	assert.Equal(t, false, result.Enabled)
+	assert.NotNil(t, result.Variables)
+	assert.Equal(t, []string{"Failed to fetch CMAB data for experiment exp_123"}, result.Reasons)
+}
+
+func TestHandleDecisionServiceError_CoversAllLines(t *testing.T) {
+	client := OptimizelyClient{
+		logger: logging.GetLogger("", ""),
+	}
+	testErr := errors.New("some error")
+	userContext := client.CreateUserContext("user1", map[string]interface{}{"foo": "bar"})
+
+	decision := client.handleDecisionServiceError(testErr, "feature_key", userContext)
+
+	assert.Equal(t, "feature_key", decision.FlagKey)
+	assert.Equal(t, userContext, decision.UserContext)
+	assert.Equal(t, "", decision.VariationKey)
+	assert.Equal(t, "", decision.RuleKey)
+	assert.False(t, decision.Enabled)
+	assert.NotNil(t, decision.Variables)
+	assert.Equal(t, []string{"some error"}, decision.Reasons)
+}
+
 func TestClientTestSuiteAB(t *testing.T) {
 	suite.Run(t, new(ClientTestSuiteAB))
 }
