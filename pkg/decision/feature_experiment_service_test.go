@@ -284,11 +284,12 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithCmabError() {
 	// Call GetDecision
 	actualFeatureDecision, actualReasons, err := featureExperimentService.GetDecision(testFeatureDecisionContextWithCmab, testUserContext, s.options)
 
-	// Verify that CMAB error results in empty feature decision (not error)
-	s.NoError(err, "CMAB errors should not propagate as Go errors")
+	// Verify that CMAB error is propagated (UPDATE THIS)
+	s.Error(err, "CMAB errors should be propagated to prevent rollout fallback")
+	s.Contains(err.Error(), "Failed to fetch CMAB data for experiment cmab_experiment_key")
 	s.Equal(FeatureDecision{}, actualFeatureDecision, "Should return empty FeatureDecision when CMAB fails")
 
-	// Verify that reasons include the CMAB error (should be in actualReasons from mock)
+	// Verify that reasons include the CMAB error
 	s.NotNil(actualReasons, "Decision reasons should not be nil")
 
 	s.mockExperimentService.AssertExpectations(s.T())
