@@ -434,3 +434,27 @@ func TestConvertDecideOptionsWithCMABOptions(t *testing.T) {
 	assert.True(t, convertedOptions.ResetCMABCache)
 	assert.True(t, convertedOptions.InvalidateUserCMABCache)
 }
+
+func TestAllOptionFunctions(t *testing.T) {
+	f := &OptimizelyFactory{}
+
+	// Test all option functions to ensure they're covered
+	WithDatafileAccessToken("token")(f)
+	WithSegmentsCacheSize(123)(f)
+	WithSegmentsCacheTimeout(2 * time.Second)(f)
+	WithOdpDisabled(true)(f)
+	WithCmabService(nil)(f)
+
+	// Verify some options were set
+	assert.Equal(t, "token", f.DatafileAccessToken)
+	assert.Equal(t, 123, f.segmentsCacheSize)
+	assert.True(t, f.odpDisabled)
+}
+
+func TestStaticClientError(t *testing.T) {
+	// Use invalid datafile to force an error
+	factory := OptimizelyFactory{Datafile: []byte("invalid json"), SDKKey: ""}
+	client, err := factory.StaticClient()
+	assert.Error(t, err)
+	assert.Nil(t, client)
+}

@@ -3366,6 +3366,54 @@ func TestHandleDecisionServiceError_CoversAllLines(t *testing.T) {
 	assert.Equal(t, []string{"some error"}, decision.Reasons)
 }
 
+func TestDecideWithCmabServiceSimple(t *testing.T) {
+	// Use a real static config with minimal datafile
+	datafile := []byte(`{
+        "version": "4",
+        "projectId": "test_project",
+        "featureFlags": [],
+        "experiments": [],
+        "groups": [],
+        "attributes": [],
+        "events": [],
+        "revision": "1"
+    }`)
+
+	configManager := config.NewStaticProjectConfigManagerWithOptions("", config.WithInitialDatafile(datafile))
+	mockCmabService := new(MockCmabService)
+
+	client := OptimizelyClient{
+		ConfigManager: configManager,
+		cmabService:   mockCmabService,
+		logger:        logging.GetLogger("", ""),
+		tracer:        &MockTracer{},
+	}
+
+	userContext := client.CreateUserContext("user1", map[string]interface{}{"country": "US"})
+	result := client.decide(&userContext, "nonexistent_flag", nil)
+
+	// This should complete without panic and return error decision
+	assert.Equal(t, "nonexistent_flag", result.FlagKey)
+	assert.False(t, result.Enabled)
+}
+
+func TestDecideWithCmabError(t *testing.T) {
+	// Test the handleDecisionServiceError method directly
+	client := OptimizelyClient{
+		logger: logging.GetLogger("", ""),
+	}
+
+	userContext := client.CreateUserContext("user1", map[string]interface{}{"country": "US"})
+
+	// Test the error handler directly - this covers the missing lines
+	result := client.handleDecisionServiceError(errors.New("test error"), "cmab_feature", userContext)
+
+	assert.Equal(t, "cmab_feature", result.FlagKey)
+	assert.Equal(t, userContext, result.UserContext)
+	assert.False(t, result.Enabled)
+	assert.Equal(t, []string{"test error"}, result.Reasons)
+}
+
 func TestClientTestSuiteAB(t *testing.T) {
 	suite.Run(t, new(ClientTestSuiteAB))
 }
