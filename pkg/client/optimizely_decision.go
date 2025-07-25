@@ -30,10 +30,18 @@ type OptimizelyDecision struct {
 	FlagKey      string                         `json:"flagKey"`
 	UserContext  OptimizelyUserContext          `json:"userContext"`
 	Reasons      []string                       `json:"reasons"`
+	CmabUUID     *string                        `json:"cmabUUID,omitempty"`
 }
 
 // NewOptimizelyDecision creates and returns a new instance of OptimizelyDecision
-func NewOptimizelyDecision(variationKey, ruleKey, flagKey string, enabled bool, variables *optimizelyjson.OptimizelyJSON, userContext OptimizelyUserContext, reasons []string) OptimizelyDecision {
+func NewOptimizelyDecision(
+	variationKey, ruleKey, flagKey string,
+	enabled bool,
+	variables *optimizelyjson.OptimizelyJSON,
+	userContext OptimizelyUserContext,
+	reasons []string,
+	cmabUUID *string,
+) OptimizelyDecision {
 	return OptimizelyDecision{
 		VariationKey: variationKey,
 		Enabled:      enabled,
@@ -42,6 +50,7 @@ func NewOptimizelyDecision(variationKey, ruleKey, flagKey string, enabled bool, 
 		FlagKey:      flagKey,
 		UserContext:  userContext,
 		Reasons:      reasons,
+		CmabUUID:     cmabUUID,
 	}
 }
 
@@ -52,5 +61,6 @@ func NewErrorDecision(key string, user OptimizelyUserContext, err error) Optimiz
 		UserContext: user,
 		Variables:   optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{}),
 		Reasons:     []string{err.Error()},
+		CmabUUID:    nil, // CmabUUID is optional and defaults to nil
 	}
 }

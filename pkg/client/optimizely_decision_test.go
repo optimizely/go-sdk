@@ -46,7 +46,7 @@ func (s *OptimizelyDecisionTestSuite) TestOptimizelyDecision() {
 	attributes := map[string]interface{}{"key": 1212}
 
 	optimizelyUserContext := s.OptimizelyClient.CreateUserContext(userID, attributes)
-	decision := NewOptimizelyDecision(variationKey, ruleKey, flagKey, enabled, variables, optimizelyUserContext, reasons)
+	decision := NewOptimizelyDecision(variationKey, ruleKey, flagKey, enabled, variables, optimizelyUserContext, reasons, nil)
 
 	s.Equal(variationKey, decision.VariationKey)
 	s.Equal(enabled, decision.Enabled)
