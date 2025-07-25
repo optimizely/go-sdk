@@ -3533,6 +3533,98 @@ func TestDecideWithCmabUUID(t *testing.T) {
 	// This should cover the CMAB UUID handling lines
 }
 
+func TestTryGetCMABDecision_NoService(t *testing.T) {
+	client := OptimizelyClient{
+		cmabService: nil,
+		logger:      logging.GetLogger("", ""),
+	}
+	feature := entities.Feature{}
+	projectConfig := new(MockProjectConfig)
+	userContext := entities.UserContext{}
+	options := &decide.Options{}
+	decisionReasons := decide.NewDecisionReasons(options)
+	var featureDecision decision.FeatureDecision
+
+	result := client.tryGetCMABDecision(feature, projectConfig, userContext, options, decisionReasons, &featureDecision)
+	assert.False(t, result)
+}
+
+func (m *MockProjectConfig) GetExperimentByID(experimentID string) (entities.Experiment, error) {
+	args := m.Called(experimentID)
+	return args.Get(0).(entities.Experiment), args.Error(1)
+}
+
+func TestTryGetCMABDecision_AllBranches(t *testing.T) {
+	// Helper to create a feature with experiment IDs
+	makeFeature := func(expIDs ...string) entities.Feature {
+		return entities.Feature{ExperimentIDs: expIDs}
+	}
+
+	// Helper to create an experiment with or without CMAB
+	makeExperiment := func(id string, withCmab bool, variations map[string]entities.Variation) entities.Experiment {
+		var cmabConfig *entities.Cmab
+		if withCmab {
+			cmabConfig = &entities.Cmab{}
+		}
+		return entities.Experiment{ID: id, Cmab: cmabConfig, Variations: variations}
+	}
+
+	feature := makeFeature("exp1")
+	userContext := entities.UserContext{}
+	options := &decide.Options{}
+	decisionReasons := decide.NewDecisionReasons(options)
+	var featureDecision decision.FeatureDecision
+
+	// 1. No CMAB service
+	client := OptimizelyClient{cmabService: nil, logger: logging.GetLogger("", "")}
+	mockConfig := new(MockProjectConfig)
+	assert.False(t, client.tryGetCMABDecision(feature, mockConfig, userContext, options, decisionReasons, &featureDecision))
+
+	// 2. Experiment lookup error
+	mockConfig2 := new(MockProjectConfig)
+	mockConfig2.On("GetExperimentByID", "exp1").Return(entities.Experiment{}, errors.New("not found"))
+	client2 := OptimizelyClient{cmabService: new(MockCmabService), logger: logging.GetLogger("", "")}
+	assert.False(t, client2.tryGetCMABDecision(feature, mockConfig2, userContext, options, decisionReasons, &featureDecision))
+
+	// 3. Experiment with no CMAB
+	mockConfig3 := new(MockProjectConfig)
+	expNoCmab := makeExperiment("exp1", false, nil)
+	mockConfig3.On("GetExperimentByID", "exp1").Return(expNoCmab, nil)
+	client3 := OptimizelyClient{cmabService: new(MockCmabService), logger: logging.GetLogger("", "")}
+	assert.False(t, client3.tryGetCMABDecision(feature, mockConfig3, userContext, options, decisionReasons, &featureDecision))
+
+	// 4. CMAB service error
+	mockConfig4 := new(MockProjectConfig)
+	expWithCmab := makeExperiment("exp1", true, nil)
+	mockConfig4.On("GetExperimentByID", "exp1").Return(expWithCmab, nil)
+	mockCmabService4 := new(MockCmabService)
+	mockCmabService4.On("GetDecision", mockConfig4, userContext, "exp1", options).Return(cmab.Decision{}, errors.New("cmab error"))
+	client4 := OptimizelyClient{cmabService: mockCmabService4, logger: logging.GetLogger("", "")}
+	assert.False(t, client4.tryGetCMABDecision(feature, mockConfig4, userContext, options, decisionReasons, &featureDecision))
+
+	// 5. CMAB returns invalid variation
+	mockConfig5 := new(MockProjectConfig)
+	expWithCmab2 := makeExperiment("exp1", true, map[string]entities.Variation{})
+	mockConfig5.On("GetExperimentByID", "exp1").Return(expWithCmab2, nil)
+	mockCmabService5 := new(MockCmabService)
+	mockCmabService5.On("GetDecision", mockConfig5, userContext, "exp1", options).Return(cmab.Decision{VariationID: "not_found"}, nil)
+	client5 := OptimizelyClient{cmabService: mockCmabService5, logger: logging.GetLogger("", "")}
+	assert.False(t, client5.tryGetCMABDecision(feature, mockConfig5, userContext, options, decisionReasons, &featureDecision))
+
+	// 6. CMAB returns valid variation
+	mockConfig6 := new(MockProjectConfig)
+	variation := entities.Variation{ID: "var1", Key: "v1"}
+	expWithCmab3 := makeExperiment("exp1", true, map[string]entities.Variation{"var1": variation})
+	mockConfig6.On("GetExperimentByID", "exp1").Return(expWithCmab3, nil)
+	mockCmabService6 := new(MockCmabService)
+	mockCmabService6.On("GetDecision", mockConfig6, userContext, "exp1", options).Return(cmab.Decision{VariationID: "var1", CmabUUID: "uuid123"}, nil)
+	client6 := OptimizelyClient{cmabService: mockCmabService6, logger: logging.GetLogger("", "")}
+	var featureDecision6 decision.FeatureDecision
+	assert.True(t, client6.tryGetCMABDecision(feature, mockConfig6, userContext, options, decisionReasons, &featureDecision6))
+	assert.Equal(t, "v1", featureDecision6.Variation.Key)
+	assert.NotNil(t, featureDecision6.CmabUUID)
+}
+
 func TestClientTestSuiteAB(t *testing.T) {
 	suite.Run(t, new(ClientTestSuiteAB))
 }
