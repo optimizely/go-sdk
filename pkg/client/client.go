@@ -311,7 +311,7 @@ func (o *OptimizelyClient) buildDecisionResponse(featureDecision decision.Featur
 	reasonsToReport := decisionReasons.ToReport()
 	ruleKey := featureDecision.Experiment.Key
 
-	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, *userContext, reasonsToReport)
+	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, *userContext, reasonsToReport, featureDecision.CmabUUID)
 }
 
 func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options *decide.Options) map[string]OptimizelyDecision {
@@ -1334,5 +1334,6 @@ func (o *OptimizelyClient) handleDecisionServiceError(err error, key string, use
 		Enabled:      false,
 		Variables:    optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{}),
 		Reasons:      []string{err.Error()},
+		CmabUUID:     nil,
 	}
 }
