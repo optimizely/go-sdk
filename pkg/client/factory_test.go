@@ -468,3 +468,28 @@ func TestFactoryWithCmabService(t *testing.T) {
 
 	assert.Equal(t, mockCmabService, factory.cmabService)
 }
+
+func TestFactoryOptionFunctions(t *testing.T) {
+	factory := &OptimizelyFactory{}
+
+	// Test all option functions to ensure they're covered
+	WithDatafileAccessToken("test_token")(factory)
+	WithSegmentsCacheSize(100)(factory)
+	WithSegmentsCacheTimeout(5 * time.Second)(factory)
+	WithOdpDisabled(true)(factory)
+	WithCmabService(nil)(factory)
+
+	// Verify options were set
+	assert.Equal(t, "test_token", factory.DatafileAccessToken)
+	assert.Equal(t, 100, factory.segmentsCacheSize)
+	assert.Equal(t, 5*time.Second, factory.segmentsCacheTimeout)
+	assert.True(t, factory.odpDisabled)
+	assert.Nil(t, factory.cmabService)
+}
+
+func TestWithCmabServiceOption(t *testing.T) {
+	factory := &OptimizelyFactory{}
+	mockCmabService := new(MockCmabService)
+	WithCmabService(mockCmabService)(factory)
+	assert.Equal(t, mockCmabService, factory.cmabService)
+}

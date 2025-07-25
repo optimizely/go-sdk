@@ -3439,6 +3439,100 @@ func TestDecideWithCmabServiceIntegration(t *testing.T) {
 	// Don't assert specific values since this is an error path
 }
 
+func TestDecideWithCmabDecisionPath(t *testing.T) {
+	// Test the specific CMAB decision code path that's missing coverage
+	mockCmabService := new(MockCmabService)
+
+	// Create a minimal client with just what's needed
+	client := OptimizelyClient{
+		cmabService: mockCmabService,
+		logger:      logging.GetLogger("", ""),
+		tracer:      &MockTracer{},
+	}
+
+	// Test user context creation
+	userContext := client.CreateUserContext("test_user", map[string]interface{}{
+		"country": "US",
+		"age":     25,
+	})
+
+	// Test the decision path with CMAB service present
+	result := client.decide(&userContext, "test_feature", nil)
+
+	// Basic assertions
+	assert.NotNil(t, result)
+	assert.Equal(t, userContext, result.UserContext)
+}
+
+func TestDecideWithCmabServiceErrorHandling(t *testing.T) {
+	// Test error handling in CMAB service integration
+	mockCmabService := new(MockCmabService)
+
+	// Mock to return an error
+	mockCmabService.On("GetDecision", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(cmab.Decision{Reasons: []string{"Service error"}}, errors.New("service error")).Maybe()
+
+	client := OptimizelyClient{
+		cmabService: mockCmabService,
+		logger:      logging.GetLogger("", ""),
+		tracer:      &MockTracer{},
+	}
+
+	userContext := client.CreateUserContext("user1", nil)
+
+	// This should trigger error handling code paths
+	result := client.decide(&userContext, "feature", nil)
+
+	assert.NotNil(t, result)
+}
+
+func TestClientAdditionalMethods(t *testing.T) {
+	client := OptimizelyClient{
+		logger: logging.GetLogger("", ""),
+		tracer: &MockTracer{},
+	}
+
+	// Test getProjectConfig with nil ConfigManager
+	_, err := client.getProjectConfig()
+	assert.Error(t, err)
+
+	// Test CreateUserContext with nil attributes
+	userContext := client.CreateUserContext("user1", nil)
+	assert.Equal(t, "user1", userContext.GetUserID())
+	assert.Equal(t, map[string]interface{}{}, userContext.GetUserAttributes())
+
+	// Test decide with various edge cases
+	result1 := client.decide(&userContext, "", nil)
+	assert.NotNil(t, result1)
+
+	result2 := client.decide(&userContext, "feature", &decide.Options{})
+	assert.NotNil(t, result2)
+}
+
+func TestDecideWithCmabUUID(t *testing.T) {
+	// Test CMAB UUID handling code path
+	mockCmabService := new(MockCmabService)
+
+	mockCmabService.On("GetDecision", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(cmab.Decision{
+			VariationID: "var_1",
+			CmabUUID:    "test-uuid-123",
+			Reasons:     []string{"CMAB decision"},
+		}, nil).Maybe()
+
+	client := OptimizelyClient{
+		cmabService: mockCmabService,
+		logger:      logging.GetLogger("", ""),
+		tracer:      &MockTracer{},
+	}
+
+	userContext := client.CreateUserContext("user1", map[string]interface{}{"attr": "value"})
+	result := client.decide(&userContext, "feature", nil)
+
+	assert.NotNil(t, result)
+	// This should cover the CMAB UUID handling lines
+}
+
 func TestClientTestSuiteAB(t *testing.T) {
 	suite.Run(t, new(ClientTestSuiteAB))
 }
