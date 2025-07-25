@@ -458,3 +458,13 @@ func TestStaticClientError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, client)
 }
+
+func TestFactoryWithCmabService(t *testing.T) {
+	factory := OptimizelyFactory{}
+	mockCmabService := new(MockCmabService)
+
+	// Test the option function
+	WithCmabService(mockCmabService)(&factory)
+
+	assert.Equal(t, mockCmabService, factory.cmabService)
+}
