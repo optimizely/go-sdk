@@ -18,6 +18,7 @@
 package decision
 
 import (
+	"github.com/optimizely/go-sdk/v2/pkg/cmab"
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
@@ -40,11 +41,19 @@ func WithOverrideStore(overrideStore ExperimentOverrideStore) CESOptionFunc {
 	}
 }
 
+// WithCmabConfig adds CMAB configuration
+func WithCmabConfig(config cmab.Config) CESOptionFunc {
+	return func(f *CompositeExperimentService) {
+		f.cmabConfig = config
+	}
+}
+
 // CompositeExperimentService bridges together the various experiment decision services that ship by default with the SDK
 type CompositeExperimentService struct {
 	experimentServices []ExperimentService
 	overrideStore      ExperimentOverrideStore
 	userProfileService UserProfileService
+	cmabConfig         cmab.Config
 	logger             logging.OptimizelyLogProducer
 }
 
@@ -61,7 +70,10 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 	// 2. Whitelist
 	// 3. CMAB (always created)
 	// 4. Bucketing (with User profile integration if supplied)
-	compositeExperimentService := &CompositeExperimentService{logger: logging.GetLogger(sdkKey, "CompositeExperimentService")}
+	compositeExperimentService := &CompositeExperimentService{
+		cmabConfig: cmab.NewDefaultConfig(), // Initialize with defaults
+		logger:     logging.GetLogger(sdkKey, "CompositeExperimentService"),
+	}
 
 	for _, opt := range options {
 		opt(compositeExperimentService)
@@ -76,8 +88,8 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 		experimentServices = append([]ExperimentService{overrideService}, experimentServices...)
 	}
 
-	// Create CMAB service with all initialization handled internally
-	experimentCmabService := NewExperimentCmabService(sdkKey)
+	// Create CMAB service with config
+	experimentCmabService := NewExperimentCmabService(sdkKey, compositeExperimentService.cmabConfig)
 	experimentServices = append(experimentServices, experimentCmabService)
 
 	experimentBucketerService := NewExperimentBucketerService(logging.GetLogger(sdkKey, "ExperimentBucketerService"))

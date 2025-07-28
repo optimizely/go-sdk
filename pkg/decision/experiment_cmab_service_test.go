@@ -87,7 +87,7 @@ func (s *ExperimentCmabTestSuite) SetupTest() {
 	}
 
 	// Create service with real dependencies first
-	s.experimentCmabService = NewExperimentCmabService("test_sdk_key")
+	s.experimentCmabService = NewExperimentCmabService("test_sdk_key", cmab.NewDefaultConfig())
 
 	// inject the mocks
 	s.experimentCmabService.bucketer = s.mockExperimentBucketer

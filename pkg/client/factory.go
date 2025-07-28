@@ -20,6 +20,7 @@ package client
 import (
 	"context"
 	"errors"
+	"reflect"
 	"time"
 
 	"github.com/optimizely/go-sdk/v2/pkg/cmab"
@@ -54,7 +55,7 @@ type OptimizelyFactory struct {
 	overrideStore        decision.ExperimentOverrideStore
 	userProfileService   decision.UserProfileService
 	notificationCenter   notification.Center
-	cmabService          cmab.Service
+	cmabConfig           cmab.Config
 
 	// ODP
 	segmentsCacheSize    int
@@ -161,6 +162,10 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		if f.overrideStore != nil {
 			experimentServiceOptions = append(experimentServiceOptions, decision.WithOverrideStore(f.overrideStore))
 		}
+		// Add CMAB config option if provided
+		if !reflect.DeepEqual(f.cmabConfig, cmab.Config{}) {
+			experimentServiceOptions = append(experimentServiceOptions, decision.WithCmabConfig(f.cmabConfig))
+		}
 		compositeExperimentService := decision.NewCompositeExperimentService(f.SDKKey, experimentServiceOptions...)
 		compositeService := decision.NewCompositeService(f.SDKKey, decision.WithCompositeExperimentService(compositeExperimentService))
 		appClient.DecisionService = compositeService
@@ -175,9 +180,6 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		eg.Go(batchProcessor.Start)
 	}
 
-	if f.cmabService != nil {
-		appClient.cmabService = f.cmabService
-	}
 
 	// Initialize and Start odp manager if possible
 	// Needed a separate functions for this to avoid cyclo-complexity warning
@@ -326,10 +328,10 @@ func WithTracer(tracer tracing.Tracer) OptionFunc {
 	}
 }
 
-// WithCmabService sets the CMAB service on the client
-func WithCmabService(cmabService cmab.Service) OptionFunc {
+// WithCmabConfig sets the CMAB configuration options
+func WithCmabConfig(config cmab.Config) OptionFunc {
 	return func(f *OptimizelyFactory) {
-		f.cmabService = cmabService
+		f.cmabConfig = config
 	}
 }
 
