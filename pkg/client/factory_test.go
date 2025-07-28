@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"github.com/optimizely/go-sdk/v2/pkg/cache"
+	"github.com/optimizely/go-sdk/v2/pkg/cmab"
 	"github.com/optimizely/go-sdk/v2/pkg/config"
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/decision"
@@ -443,7 +444,6 @@ func TestAllOptionFunctions(t *testing.T) {
 	WithSegmentsCacheSize(123)(f)
 	WithSegmentsCacheTimeout(2 * time.Second)(f)
 	WithOdpDisabled(true)(f)
-	WithCmabService(nil)(f)
 
 	// Verify some options were set
 	assert.Equal(t, "token", f.DatafileAccessToken)
@@ -459,14 +459,17 @@ func TestStaticClientError(t *testing.T) {
 	assert.Nil(t, client)
 }
 
-func TestFactoryWithCmabService(t *testing.T) {
+func TestFactoryWithCmabConfig(t *testing.T) {
 	factory := OptimizelyFactory{}
-	mockCmabService := new(MockCmabService)
+	cmabConfig := cmab.Config{
+		CacheSize: 100,
+		CacheTTL:  time.Minute,
+	}
 
 	// Test the option function
-	WithCmabService(mockCmabService)(&factory)
+	WithCmabConfig(cmabConfig)(&factory)
 
-	assert.Equal(t, mockCmabService, factory.cmabService)
+	assert.Equal(t, cmabConfig, factory.cmabConfig)
 }
 
 func TestFactoryOptionFunctions(t *testing.T) {
@@ -477,19 +480,22 @@ func TestFactoryOptionFunctions(t *testing.T) {
 	WithSegmentsCacheSize(100)(factory)
 	WithSegmentsCacheTimeout(5 * time.Second)(factory)
 	WithOdpDisabled(true)(factory)
-	WithCmabService(nil)(factory)
+	WithCmabConfig(cmab.Config{CacheSize: 50})(factory)
 
 	// Verify options were set
 	assert.Equal(t, "test_token", factory.DatafileAccessToken)
 	assert.Equal(t, 100, factory.segmentsCacheSize)
 	assert.Equal(t, 5*time.Second, factory.segmentsCacheTimeout)
 	assert.True(t, factory.odpDisabled)
-	assert.Nil(t, factory.cmabService)
+	assert.Equal(t, cmab.Config{CacheSize: 50}, factory.cmabConfig)
 }
 
-func TestWithCmabServiceOption(t *testing.T) {
+func TestWithCmabConfigOption(t *testing.T) {
 	factory := &OptimizelyFactory{}
-	mockCmabService := new(MockCmabService)
-	WithCmabService(mockCmabService)(factory)
-	assert.Equal(t, mockCmabService, factory.cmabService)
+	testConfig := cmab.Config{
+		CacheSize: 200,
+		CacheTTL:  2 * time.Minute,
+	}
+	WithCmabConfig(testConfig)(factory)
+	assert.Equal(t, testConfig, factory.cmabConfig)
 }

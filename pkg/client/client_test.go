@@ -3201,7 +3201,6 @@ func TestDecide_CmabSuccess(t *testing.T) {
 	mockConfig := new(MockProjectConfig)
 	mockConfigManager := new(MockProjectConfigManager)
 	mockEventProcessor := new(MockProcessor)
-	mockCmabService := new(MockCmabService)
 	mockDecisionService := new(MockDecisionService)
 	mockNotificationCenter := new(MockNotificationCenter)
 
@@ -3250,15 +3249,6 @@ func TestDecide_CmabSuccess(t *testing.T) {
 	// Mock GetFeatureByKey
 	mockConfig.On("GetFeatureByKey", featureKey).Return(testFeature, nil)
 
-	// Track calls to CMAB service
-	cmabCalls := make([]string, 0)
-	mockCmabService.On("GetDecision", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(cmab.Decision{VariationID: variationID, CmabUUID: "uuid"}, nil).
-		Run(func(args mock.Arguments) {
-			id := args.Get(2).(string)
-			cmabCalls = append(cmabCalls, id)
-			t.Logf("GetDecision called with id: %s", id)
-		})
 
 	// Mock event processor
 	mockEventProcessor.On("ProcessEvent", mock.Anything).Return(true)
@@ -3272,7 +3262,6 @@ func TestDecide_CmabSuccess(t *testing.T) {
 		DecisionService:      mockDecisionService,
 		EventProcessor:       mockEventProcessor,
 		notificationCenter:   mockNotificationCenter,
-		cmabService:          mockCmabService,
 		logger:               logging.GetLogger("debug", "TestCMAB"),
 		ctx:                  context.Background(),
 		tracer:               &MockTracer{},
@@ -3303,7 +3292,6 @@ func TestDecide_CmabSuccess(t *testing.T) {
 		t.Logf("Panic value: %v", panicValue)
 	}
 	t.Logf("GetExperimentByID calls: %v", experimentCalls)
-	t.Logf("GetDecision calls: %v", cmabCalls)
 	t.Logf("Decision: %+v", decision)
 
 	// Skip further assertions if we panicked
@@ -3313,12 +3301,7 @@ func TestDecide_CmabSuccess(t *testing.T) {
 	}
 
 	// Basic assertions on the decision
-	if len(cmabCalls) > 0 {
-		assert.Equal(t, featureKey, decision.FlagKey)
-		assert.Equal(t, "variation_1", decision.VariationKey)
-		assert.Equal(t, "exp_key", decision.RuleKey)
-		assert.True(t, decision.Enabled)
-	}
+	assert.Equal(t, featureKey, decision.FlagKey)
 }
 
 func TestHandleDecisionServiceError(t *testing.T) {
@@ -3380,11 +3363,9 @@ func TestDecideWithCmabServiceSimple(t *testing.T) {
     }`)
 
 	configManager := config.NewStaticProjectConfigManagerWithOptions("", config.WithInitialDatafile(datafile))
-	mockCmabService := new(MockCmabService)
 
 	client := OptimizelyClient{
 		ConfigManager: configManager,
-		cmabService:   mockCmabService,
 		logger:        logging.GetLogger("", ""),
 		tracer:        &MockTracer{},
 	}
@@ -3417,17 +3398,9 @@ func TestDecideWithCmabError(t *testing.T) {
 func TestDecideWithCmabServiceIntegration(t *testing.T) {
 	// Just test that CMAB service is called and doesn't crash
 	// Don't try to test the entire decision flow
-
-	mockCmabService := new(MockCmabService)
-
-	// Simple mock - just ensure it returns safely
-	mockCmabService.On("GetDecision", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(cmab.Decision{VariationID: "var_1", Reasons: []string{}}, nil).Maybe()
-
 	client := OptimizelyClient{
-		cmabService: mockCmabService,
-		logger:      logging.GetLogger("", ""),
-		tracer:      &MockTracer{},
+		logger: logging.GetLogger("", ""),
+		tracer: &MockTracer{},
 	}
 
 	// Test with nil ConfigManager (safe error path)
@@ -3441,13 +3414,10 @@ func TestDecideWithCmabServiceIntegration(t *testing.T) {
 
 func TestDecideWithCmabDecisionPath(t *testing.T) {
 	// Test the specific CMAB decision code path that's missing coverage
-	mockCmabService := new(MockCmabService)
-
 	// Create a minimal client with just what's needed
 	client := OptimizelyClient{
-		cmabService: mockCmabService,
-		logger:      logging.GetLogger("", ""),
-		tracer:      &MockTracer{},
+		logger: logging.GetLogger("", ""),
+		tracer: &MockTracer{},
 	}
 
 	// Test user context creation
@@ -3466,16 +3436,9 @@ func TestDecideWithCmabDecisionPath(t *testing.T) {
 
 func TestDecideWithCmabServiceErrorHandling(t *testing.T) {
 	// Test error handling in CMAB service integration
-	mockCmabService := new(MockCmabService)
-
-	// Mock to return an error
-	mockCmabService.On("GetDecision", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(cmab.Decision{Reasons: []string{"Service error"}}, errors.New("service error")).Maybe()
-
 	client := OptimizelyClient{
-		cmabService: mockCmabService,
-		logger:      logging.GetLogger("", ""),
-		tracer:      &MockTracer{},
+		logger: logging.GetLogger("", ""),
+		tracer: &MockTracer{},
 	}
 
 	userContext := client.CreateUserContext("user1", nil)
@@ -3511,19 +3474,9 @@ func TestClientAdditionalMethods(t *testing.T) {
 
 func TestDecideWithCmabUUID(t *testing.T) {
 	// Test CMAB UUID handling code path
-	mockCmabService := new(MockCmabService)
-
-	mockCmabService.On("GetDecision", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(cmab.Decision{
-			VariationID: "var_1",
-			CmabUUID:    "test-uuid-123",
-			Reasons:     []string{"CMAB decision"},
-		}, nil).Maybe()
-
 	client := OptimizelyClient{
-		cmabService: mockCmabService,
-		logger:      logging.GetLogger("", ""),
-		tracer:      &MockTracer{},
+		logger: logging.GetLogger("", ""),
+		tracer: &MockTracer{},
 	}
 
 	userContext := client.CreateUserContext("user1", map[string]interface{}{"attr": "value"})
@@ -3533,97 +3486,12 @@ func TestDecideWithCmabUUID(t *testing.T) {
 	// This should cover the CMAB UUID handling lines
 }
 
-func TestTryGetCMABDecision_NoService(t *testing.T) {
-	client := OptimizelyClient{
-		cmabService: nil,
-		logger:      logging.GetLogger("", ""),
-	}
-	feature := entities.Feature{}
-	projectConfig := new(MockProjectConfig)
-	userContext := entities.UserContext{}
-	options := &decide.Options{}
-	decisionReasons := decide.NewDecisionReasons(options)
-	var featureDecision decision.FeatureDecision
-
-	result := client.tryGetCMABDecision(feature, projectConfig, userContext, options, decisionReasons, &featureDecision)
-	assert.False(t, result)
-}
 
 func (m *MockProjectConfig) GetExperimentByID(experimentID string) (entities.Experiment, error) {
 	args := m.Called(experimentID)
 	return args.Get(0).(entities.Experiment), args.Error(1)
 }
 
-func TestTryGetCMABDecision_AllBranches(t *testing.T) {
-	// Helper to create a feature with experiment IDs
-	makeFeature := func(expIDs ...string) entities.Feature {
-		return entities.Feature{ExperimentIDs: expIDs}
-	}
-
-	// Helper to create an experiment with or without CMAB
-	makeExperiment := func(id string, withCmab bool, variations map[string]entities.Variation) entities.Experiment {
-		var cmabConfig *entities.Cmab
-		if withCmab {
-			cmabConfig = &entities.Cmab{}
-		}
-		return entities.Experiment{ID: id, Cmab: cmabConfig, Variations: variations}
-	}
-
-	feature := makeFeature("exp1")
-	userContext := entities.UserContext{}
-	options := &decide.Options{}
-	decisionReasons := decide.NewDecisionReasons(options)
-	var featureDecision decision.FeatureDecision
-
-	// 1. No CMAB service
-	client := OptimizelyClient{cmabService: nil, logger: logging.GetLogger("", "")}
-	mockConfig := new(MockProjectConfig)
-	assert.False(t, client.tryGetCMABDecision(feature, mockConfig, userContext, options, decisionReasons, &featureDecision))
-
-	// 2. Experiment lookup error
-	mockConfig2 := new(MockProjectConfig)
-	mockConfig2.On("GetExperimentByID", "exp1").Return(entities.Experiment{}, errors.New("not found"))
-	client2 := OptimizelyClient{cmabService: new(MockCmabService), logger: logging.GetLogger("", "")}
-	assert.False(t, client2.tryGetCMABDecision(feature, mockConfig2, userContext, options, decisionReasons, &featureDecision))
-
-	// 3. Experiment with no CMAB
-	mockConfig3 := new(MockProjectConfig)
-	expNoCmab := makeExperiment("exp1", false, nil)
-	mockConfig3.On("GetExperimentByID", "exp1").Return(expNoCmab, nil)
-	client3 := OptimizelyClient{cmabService: new(MockCmabService), logger: logging.GetLogger("", "")}
-	assert.False(t, client3.tryGetCMABDecision(feature, mockConfig3, userContext, options, decisionReasons, &featureDecision))
-
-	// 4. CMAB service error
-	mockConfig4 := new(MockProjectConfig)
-	expWithCmab := makeExperiment("exp1", true, nil)
-	mockConfig4.On("GetExperimentByID", "exp1").Return(expWithCmab, nil)
-	mockCmabService4 := new(MockCmabService)
-	mockCmabService4.On("GetDecision", mockConfig4, userContext, "exp1", options).Return(cmab.Decision{}, errors.New("cmab error"))
-	client4 := OptimizelyClient{cmabService: mockCmabService4, logger: logging.GetLogger("", "")}
-	assert.False(t, client4.tryGetCMABDecision(feature, mockConfig4, userContext, options, decisionReasons, &featureDecision))
-
-	// 5. CMAB returns invalid variation
-	mockConfig5 := new(MockProjectConfig)
-	expWithCmab2 := makeExperiment("exp1", true, map[string]entities.Variation{})
-	mockConfig5.On("GetExperimentByID", "exp1").Return(expWithCmab2, nil)
-	mockCmabService5 := new(MockCmabService)
-	mockCmabService5.On("GetDecision", mockConfig5, userContext, "exp1", options).Return(cmab.Decision{VariationID: "not_found"}, nil)
-	client5 := OptimizelyClient{cmabService: mockCmabService5, logger: logging.GetLogger("", "")}
-	assert.False(t, client5.tryGetCMABDecision(feature, mockConfig5, userContext, options, decisionReasons, &featureDecision))
-
-	// 6. CMAB returns valid variation
-	mockConfig6 := new(MockProjectConfig)
-	variation := entities.Variation{ID: "var1", Key: "v1"}
-	expWithCmab3 := makeExperiment("exp1", true, map[string]entities.Variation{"var1": variation})
-	mockConfig6.On("GetExperimentByID", "exp1").Return(expWithCmab3, nil)
-	mockCmabService6 := new(MockCmabService)
-	mockCmabService6.On("GetDecision", mockConfig6, userContext, "exp1", options).Return(cmab.Decision{VariationID: "var1", CmabUUID: "uuid123"}, nil)
-	client6 := OptimizelyClient{cmabService: mockCmabService6, logger: logging.GetLogger("", "")}
-	var featureDecision6 decision.FeatureDecision
-	assert.True(t, client6.tryGetCMABDecision(feature, mockConfig6, userContext, options, decisionReasons, &featureDecision6))
-	assert.Equal(t, "v1", featureDecision6.Variation.Key)
-	assert.NotNil(t, featureDecision6.CmabUUID)
-}
 
 func TestClientTestSuiteAB(t *testing.T) {
 	suite.Run(t, new(ClientTestSuiteAB))
