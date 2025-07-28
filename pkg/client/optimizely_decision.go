@@ -30,7 +30,7 @@ type OptimizelyDecision struct {
 	FlagKey      string                         `json:"flagKey"`
 	UserContext  OptimizelyUserContext          `json:"userContext"`
 	Reasons      []string                       `json:"reasons"`
-	CmabUUID     *string `json:"cmabUUID,omitempty"` // Pointer to CMAB UUID: set for CMAB decisions, nil for non-CMAB decisions
+	CmabUUID     *string                        `json:"cmabUUID,omitempty"` // Pointer to CMAB UUID: set for CMAB decisions, nil for non-CMAB decisions
 }
 
 // NewOptimizelyDecision creates and returns a new instance of OptimizelyDecision
@@ -50,7 +50,7 @@ func NewOptimizelyDecision(
 		FlagKey:      flagKey,
 		UserContext:  userContext,
 		Reasons:      reasons,
-		CmabUUID:     cmabUUID,	// <-- Set field for CMAB support
+		CmabUUID:     cmabUUID, // <-- Set field for CMAB support
 	}
 }
 
