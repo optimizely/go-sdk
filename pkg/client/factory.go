@@ -180,7 +180,6 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		eg.Go(batchProcessor.Start)
 	}
 
-
 	// Initialize and Start odp manager if possible
 	// Needed a separate functions for this to avoid cyclo-complexity warning
 	f.initializeOdpManager(appClient)
@@ -329,9 +328,9 @@ func WithTracer(tracer tracing.Tracer) OptionFunc {
 }
 
 // WithCmabConfig sets the CMAB configuration options
-func WithCmabConfig(config cmab.Config) OptionFunc {
+func WithCmabConfig(cmabConfig cmab.Config) OptionFunc {
 	return func(f *OptimizelyFactory) {
-		f.cmabConfig = config
+		f.cmabConfig = cmabConfig
 	}
 }
 

@@ -20,11 +20,12 @@ package cmab
 import "time"
 
 const (
-	// Default cache configuration
+	// DefaultCacheSize is the default size for CMAB cache
 	DefaultCacheSize = 100
-	DefaultCacheTTL  = 0 * time.Second
+	// DefaultCacheTTL is the default TTL for CMAB cache
+	DefaultCacheTTL = 0 * time.Second
 
-	// Default HTTP timeout
+	// DefaultHTTPTimeout is the default HTTP timeout for CMAB requests
 	DefaultHTTPTimeout = 10 * time.Second
 )
 

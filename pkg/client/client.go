@@ -245,7 +245,6 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, *userContext, reasonsToReport, featureDecision.CmabUUID)
 }
 
-
 func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options *decide.Options) map[string]OptimizelyDecision {
 	var err error
 	defer func() {
