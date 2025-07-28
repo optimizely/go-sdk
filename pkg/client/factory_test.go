@@ -464,12 +464,50 @@ func TestFactoryWithCmabConfig(t *testing.T) {
 	cmabConfig := cmab.Config{
 		CacheSize: 100,
 		CacheTTL:  time.Minute,
+		HTTPTimeout: 30 * time.Second,
+		RetryConfig: &cmab.RetryConfig{
+			MaxRetries:        5,
+			InitialBackoff:    200 * time.Millisecond,
+			MaxBackoff:        20 * time.Second,
+			BackoffMultiplier: 3.0,
+		},
 	}
 
 	// Test the option function
 	WithCmabConfig(cmabConfig)(&factory)
 
 	assert.Equal(t, cmabConfig, factory.cmabConfig)
+	assert.Equal(t, 100, factory.cmabConfig.CacheSize)
+	assert.Equal(t, time.Minute, factory.cmabConfig.CacheTTL)
+	assert.Equal(t, 30*time.Second, factory.cmabConfig.HTTPTimeout)
+	assert.NotNil(t, factory.cmabConfig.RetryConfig)
+	assert.Equal(t, 5, factory.cmabConfig.RetryConfig.MaxRetries)
+}
+
+func TestFactoryCmabConfigPassedToDecisionService(t *testing.T) {
+	// Test that CMAB config is correctly passed to decision service when creating client
+	cmabConfig := cmab.Config{
+		CacheSize:   200,
+		CacheTTL:    2 * time.Minute,
+		HTTPTimeout: 20 * time.Second,
+		RetryConfig: &cmab.RetryConfig{
+			MaxRetries:        3,
+			InitialBackoff:    100 * time.Millisecond,
+			MaxBackoff:        10 * time.Second,
+			BackoffMultiplier: 2.0,
+		},
+	}
+
+	factory := OptimizelyFactory{
+		SDKKey:     "test_sdk_key",
+		cmabConfig: cmabConfig,
+	}
+
+	// Verify the config is set
+	assert.Equal(t, cmabConfig, factory.cmabConfig)
+	assert.Equal(t, 200, factory.cmabConfig.CacheSize)
+	assert.Equal(t, 2*time.Minute, factory.cmabConfig.CacheTTL)
+	assert.NotNil(t, factory.cmabConfig.RetryConfig)
 }
 
 func TestFactoryOptionFunctions(t *testing.T) {

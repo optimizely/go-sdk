@@ -40,6 +40,7 @@ import (
 	"github.com/optimizely/go-sdk/v2/pkg/odp"
 	"github.com/optimizely/go-sdk/v2/pkg/odp/segment"
 	pkgOdpUtils "github.com/optimizely/go-sdk/v2/pkg/odp/utils"
+	"github.com/optimizely/go-sdk/v2/pkg/optimizelyjson"
 	"github.com/optimizely/go-sdk/v2/pkg/tracing"
 	"github.com/optimizely/go-sdk/v2/pkg/utils"
 )
@@ -3400,4 +3401,92 @@ func TestClientTestSuiteTrackEvent(t *testing.T) {
 
 func TestClientTestSuiteTrackNotification(t *testing.T) {
 	suite.Run(t, new(ClientTestSuiteTrackNotification))
+}
+
+func TestHandleDecisionServiceError_MoreCoverage(t *testing.T) {
+	// Create client with logger
+	client := OptimizelyClient{
+		logger: logging.GetLogger("", ""),
+	}
+
+	// Create user context
+	userContext := newOptimizelyUserContext(&client, "test_user", map[string]interface{}{"age": 25}, nil, nil)
+
+	// Test with different error messages
+	tests := []struct {
+		name     string
+		err      error
+		key      string
+		expected OptimizelyDecision
+	}{
+		{
+			name: "CMAB fetch error",
+			err:  errors.New("Failed to fetch CMAB data for experiment exp_123"),
+			key:  "feature_key",
+			expected: OptimizelyDecision{
+				FlagKey:      "feature_key",
+				UserContext:  userContext,
+				VariationKey: "",
+				RuleKey:      "",
+				Enabled:      false,
+				Variables:    optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{}),
+				Reasons:      []string{"Failed to fetch CMAB data for experiment exp_123"},
+				CmabUUID:     nil,
+			},
+		},
+		{
+			name: "Generic error",
+			err:  errors.New("some other error"),
+			key:  "another_feature",
+			expected: OptimizelyDecision{
+				FlagKey:      "another_feature",
+				UserContext:  userContext,
+				VariationKey: "",
+				RuleKey:      "",
+				Enabled:      false,
+				Variables:    optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{}),
+				Reasons:      []string{"some other error"},
+				CmabUUID:     nil,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := client.handleDecisionServiceError(tt.err, tt.key, userContext)
+			
+			assert.Equal(t, tt.expected.FlagKey, result.FlagKey)
+			assert.Equal(t, tt.expected.UserContext, result.UserContext)
+			assert.Equal(t, tt.expected.VariationKey, result.VariationKey)
+			assert.Equal(t, tt.expected.RuleKey, result.RuleKey)
+			assert.Equal(t, tt.expected.Enabled, result.Enabled)
+			assert.Equal(t, tt.expected.Reasons, result.Reasons)
+			assert.Nil(t, result.CmabUUID)
+		})
+	}
+}
+
+func TestGetAllOptionsWithCMABOptions(t *testing.T) {
+	client := OptimizelyClient{
+		defaultDecideOptions: &decide.Options{
+			DisableDecisionEvent: true,
+			IgnoreCMABCache:      true,
+		},
+	}
+
+	// Test with user options that have different CMAB settings
+	userOptions := &decide.Options{
+		ResetCMABCache:          true,
+		InvalidateUserCMABCache: true,
+	}
+
+	result := client.getAllOptions(userOptions)
+
+	// Verify all CMAB-related options are properly merged
+	assert.True(t, result.DisableDecisionEvent) // from default
+	assert.True(t, result.IgnoreCMABCache)      // from default
+	assert.True(t, result.ResetCMABCache)       // from user
+	assert.True(t, result.InvalidateUserCMABCache) // from user
+	assert.False(t, result.EnabledFlagsOnly)    // neither
+	assert.False(t, result.ExcludeVariables)    // neither
 }
