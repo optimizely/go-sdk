@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2025, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -284,9 +284,9 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithCmabError() {
 	// Call GetDecision
 	actualFeatureDecision, actualReasons, err := featureExperimentService.GetDecision(testFeatureDecisionContextWithCmab, testUserContext, s.options)
 
-	// CMAB errors should result in empty feature decision with the error returned
-	s.Error(err, "CMAB errors should be returned as errors") // ← Changed from s.NoError
-	s.Contains(err.Error(), "Failed to fetch CMAB data", "Error should contain CMAB failure message")
+	// Verify that CMAB error is propagated (UPDATE THIS)
+	s.Error(err, "CMAB errors should be propagated to prevent rollout fallback")
+	s.Contains(err.Error(), "Failed to fetch CMAB data for experiment cmab_experiment_key")
 	s.Equal(FeatureDecision{}, actualFeatureDecision, "Should return empty FeatureDecision when CMAB fails")
 
 	// Verify that reasons include the CMAB error

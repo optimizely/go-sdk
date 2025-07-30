@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/optimizely/go-sdk/v2/pkg/cache"
 	"github.com/optimizely/go-sdk/v2/pkg/cmab"
@@ -45,22 +44,19 @@ type ExperimentCmabService struct {
 }
 
 // NewExperimentCmabService creates a new instance of ExperimentCmabService with all dependencies initialized
-func NewExperimentCmabService(sdkKey string) *ExperimentCmabService {
-	// Initialize CMAB cache
-	cmabCache := cache.NewLRUCache(100, 0)
+func NewExperimentCmabService(sdkKey string, config cmab.Config) *ExperimentCmabService {
+	// Initialize CMAB cache with config values
+	cmabCache := cache.NewLRUCache(config.CacheSize, config.CacheTTL)
 
-	// Create retry config for CMAB client
-	retryConfig := &cmab.RetryConfig{
-		MaxRetries:        cmab.DefaultMaxRetries,
-		InitialBackoff:    cmab.DefaultInitialBackoff,
-		MaxBackoff:        cmab.DefaultMaxBackoff,
-		BackoffMultiplier: cmab.DefaultBackoffMultiplier,
+	// Create HTTP client with config timeout
+	httpClient := &http.Client{
+		Timeout: config.HTTPTimeout,
 	}
 
 	// Create CMAB client options
 	cmabClientOptions := cmab.ClientOptions{
-		HTTPClient:  &http.Client{Timeout: 10 * time.Second},
-		RetryConfig: retryConfig,
+		HTTPClient:  httpClient,
+		RetryConfig: config.RetryConfig,
 		Logger:      logging.GetLogger(sdkKey, "DefaultCmabClient"),
 	}
 

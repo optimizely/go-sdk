@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2024, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2025, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -173,6 +173,7 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 		Attributes:        userContext.GetUserAttributes(),
 		QualifiedSegments: userContext.GetQualifiedSegments(),
 	}
+
 	var variationKey string
 	var eventSent, flagEnabled bool
 	allOptions := o.getAllOptions(options)
@@ -241,7 +242,7 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 		}
 	}
 
-	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, *userContext, reasonsToReport)
+	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, *userContext, reasonsToReport, featureDecision.CmabUUID)
 }
 
 func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options *decide.Options) map[string]OptimizelyDecision {
@@ -469,7 +470,7 @@ func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.U
 }
 
 // IsFeatureEnabled returns true if the feature is enabled for the given user. If the user is part of a feature test
-// then an impression event will be queued up to be sent to the Optimizely log endpoint for results processing.
+// then an impression event will be queued up to the Optimizely log endpoint for results processing.
 func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entities.UserContext) (result bool, err error) {
 
 	defer func() {
@@ -1072,7 +1073,7 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 	featureDecision, _, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext, options)
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature %q: %s`, featureKey, err))
-		return decisionContext, featureDecision, nil
+		return decisionContext, featureDecision, err
 	}
 
 	return decisionContext, featureDecision, nil
@@ -1264,5 +1265,6 @@ func (o *OptimizelyClient) handleDecisionServiceError(err error, key string, use
 		Enabled:      false,
 		Variables:    optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{}),
 		Reasons:      []string{err.Error()},
+		CmabUUID:     nil,
 	}
 }
