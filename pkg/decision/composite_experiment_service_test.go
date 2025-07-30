@@ -311,7 +311,7 @@ func (s *CompositeExperimentTestSuite) TestCmabServiceReturnsError() {
 	// Test that CMAB service error is properly propagated
 	mockCmabService := new(MockExperimentDecisionService)
 	testErr := errors.New("Failed to fetch CMAB data for experiment exp_123")
-	
+
 	mockCmabService.On("GetDecision", mock.Anything, mock.Anything, mock.Anything).Return(
 		ExperimentDecision{},
 		decide.NewDecisionReasons(s.options),
@@ -320,7 +320,7 @@ func (s *CompositeExperimentTestSuite) TestCmabServiceReturnsError() {
 
 	compositeService := &CompositeExperimentService{
 		experimentServices: []ExperimentService{mockCmabService},
-		logger:            logging.GetLogger("", "CompositeExperimentService"),
+		logger:             logging.GetLogger("", "CompositeExperimentService"),
 	}
 
 	userContext := entities.UserContext{ID: "test_user"}

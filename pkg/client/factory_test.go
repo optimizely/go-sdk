@@ -462,8 +462,8 @@ func TestStaticClientError(t *testing.T) {
 func TestFactoryWithCmabConfig(t *testing.T) {
 	factory := OptimizelyFactory{}
 	cmabConfig := cmab.Config{
-		CacheSize: 100,
-		CacheTTL:  time.Minute,
+		CacheSize:   100,
+		CacheTTL:    time.Minute,
 		HTTPTimeout: 30 * time.Second,
 		RetryConfig: &cmab.RetryConfig{
 			MaxRetries:        5,
@@ -536,4 +536,49 @@ func TestWithCmabConfigOption(t *testing.T) {
 	}
 	WithCmabConfig(testConfig)(factory)
 	assert.Equal(t, testConfig, factory.cmabConfig)
+}
+
+func TestClientWithCmabConfig(t *testing.T) {
+	// Test client creation with non-empty CMAB config (tests reflect.DeepEqual path)
+	cmabConfig := cmab.Config{
+		CacheSize:   200,
+		CacheTTL:    5 * time.Minute,
+		HTTPTimeout: 30 * time.Second,
+		RetryConfig: &cmab.RetryConfig{
+			MaxRetries:        5,
+			InitialBackoff:    200 * time.Millisecond,
+			MaxBackoff:        20 * time.Second,
+			BackoffMultiplier: 3.0,
+		},
+	}
+
+	factory := OptimizelyFactory{
+		SDKKey: "test_sdk_key",
+	}
+
+	client, err := factory.Client(WithCmabConfig(cmabConfig))
+	assert.NoError(t, err)
+	assert.NotNil(t, client)
+
+	// Verify the CMAB config was applied by checking if DecisionService exists
+	// This tests the reflect.DeepEqual check on lines 166-167
+	assert.NotNil(t, client.DecisionService)
+	client.Close()
+}
+
+func TestClientWithEmptyCmabConfig(t *testing.T) {
+	// Test client creation with empty CMAB config (tests reflect.DeepEqual returns true)
+	emptyCmabConfig := cmab.Config{}
+
+	factory := OptimizelyFactory{
+		SDKKey: "test_sdk_key",
+	}
+
+	client, err := factory.Client(WithCmabConfig(emptyCmabConfig))
+	assert.NoError(t, err)
+	assert.NotNil(t, client)
+
+	// Verify client still works with empty config
+	assert.NotNil(t, client.DecisionService)
+	client.Close()
 }

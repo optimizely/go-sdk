@@ -3197,7 +3197,6 @@ func (m *MockCmabService) GetDecision(projectConfig config.ProjectConfig, userCo
 	return decision, args.Error(1)
 }
 
-
 func TestHandleDecisionServiceError(t *testing.T) {
 	client := OptimizelyClient{
 		logger: logging.GetLogger("", ""),
@@ -3380,12 +3379,10 @@ func TestDecideWithCmabUUID(t *testing.T) {
 	// This should cover the CMAB UUID handling lines
 }
 
-
 func (m *MockProjectConfig) GetExperimentByID(experimentID string) (entities.Experiment, error) {
 	args := m.Called(experimentID)
 	return args.Get(0).(entities.Experiment), args.Error(1)
 }
-
 
 func TestClientTestSuiteAB(t *testing.T) {
 	suite.Run(t, new(ClientTestSuiteAB))
@@ -3454,7 +3451,7 @@ func TestHandleDecisionServiceError_MoreCoverage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := client.handleDecisionServiceError(tt.err, tt.key, userContext)
-			
+
 			assert.Equal(t, tt.expected.FlagKey, result.FlagKey)
 			assert.Equal(t, tt.expected.UserContext, result.UserContext)
 			assert.Equal(t, tt.expected.VariationKey, result.VariationKey)
@@ -3483,10 +3480,10 @@ func TestGetAllOptionsWithCMABOptions(t *testing.T) {
 	result := client.getAllOptions(userOptions)
 
 	// Verify all CMAB-related options are properly merged
-	assert.True(t, result.DisableDecisionEvent) // from default
-	assert.True(t, result.IgnoreCMABCache)      // from default
-	assert.True(t, result.ResetCMABCache)       // from user
+	assert.True(t, result.DisableDecisionEvent)    // from default
+	assert.True(t, result.IgnoreCMABCache)         // from default
+	assert.True(t, result.ResetCMABCache)          // from user
 	assert.True(t, result.InvalidateUserCMABCache) // from user
-	assert.False(t, result.EnabledFlagsOnly)    // neither
-	assert.False(t, result.ExcludeVariables)    // neither
+	assert.False(t, result.EnabledFlagsOnly)       // neither
+	assert.False(t, result.ExcludeVariables)       // neither
 }
