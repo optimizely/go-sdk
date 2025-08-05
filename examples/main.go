@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/optimizely/go-sdk/v2/pkg/client"
-	"github.com/optimizely/go-sdk/v2/pkg/cmab"
 	"github.com/optimizely/go-sdk/v2/pkg/config"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
@@ -115,30 +114,17 @@ func main() {
 }
 
 func customTemplateExample() {
-	// sdkKey := "JgzFaGzGXx6F1ocTbMTmn" // Usha CMAB develrc sdk key, proj id 6514950297
 	sdkKey := "JgzFaGzGXx6F1ocTbMTmn" // matjaz editor develrc flag!! Able to run the experiment for cmab field to be included in datafile
 
 	// Enable debug logging to see CMAB activity
 	logging.SetLogLevel(logging.LogLevelDebug)
 
+	fmt.Printf("Testing CMAB with master branch (camelCase JSON tags)\n")
 	fmt.Printf("Attempting to fetch datafile from develrc environment\n")
 
 	// Create config manager with develrc URL template - match Python approach
 	configManager := config.NewPollingProjectConfigManager(sdkKey,
 		config.WithDatafileURLTemplate("https://dev.cdn.optimizely.com/datafiles/%s.json"))
-
-	// Configure CMAB settings (if needed for testing)
-	cmabConfig := cmab.Config{
-		CacheSize:   1000,
-		CacheTTL:    10 * time.Minute,
-		HTTPTimeout: 5 * time.Second,
-		RetryConfig: &cmab.RetryConfig{
-			MaxRetries:        3,
-			InitialBackoff:    100 * time.Millisecond,
-			MaxBackoff:        2 * time.Second,
-			BackoffMultiplier: 2.0,
-		},
-	}
 
 	// Use the proper factory option to set config manager
 	factory := &client.OptimizelyFactory{
@@ -147,7 +133,6 @@ func customTemplateExample() {
 
 	client, err := factory.Client(
 		client.WithConfigManager(configManager),
-		client.WithCmabConfig(cmabConfig),
 	)
 	if err != nil {
 		fmt.Println("Error initializing Optimizely client:", err)
