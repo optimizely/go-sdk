@@ -31,7 +31,7 @@ import (
 )
 
 // CMABPredictionEndpoint is the endpoint for CMAB predictions
-var CMABPredictionEndpoint = "https://prediction.cmab.optimizely.com/predict/%s"
+var CMABPredictionEndpoint = "https://inte.prediction.cmab.optimizely.com/predict/%s"
 
 const (
 	// DefaultMaxRetries is the default number of retries for CMAB requests
@@ -134,7 +134,12 @@ func (c *DefaultCmabClient) FetchDecision(
 ) (string, error) {
 
 	// Create the URL
-	url := fmt.Sprintf(CMABPredictionEndpoint, ruleID)
+	// TEMPORARY: Override with test ruleID
+	testRuleID := "1304618"
+	url := fmt.Sprintf(CMABPredictionEndpoint, testRuleID)
+	
+	// Log the prediction endpoint URL
+	c.logger.Debug(fmt.Sprintf("CMAB prediction endpoint URL: %s (original ruleID: %s)", url, ruleID))
 
 	// Convert attributes to CMAB format
 	cmabAttributes := make([]Attribute, 0, len(attributes))
@@ -151,7 +156,7 @@ func (c *DefaultCmabClient) FetchDecision(
 		Instances: []Instance{
 			{
 				VisitorID:    userID,
-				ExperimentID: ruleID,
+				ExperimentID: testRuleID, // Use testRuleID to match the URL
 				Attributes:   cmabAttributes,
 				CmabUUID:     cmabUUID,
 			},
@@ -163,6 +168,9 @@ func (c *DefaultCmabClient) FetchDecision(
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal CMAB request: %w", err)
 	}
+	
+	// Log the request body
+	c.logger.Debug(fmt.Sprintf("CMAB request body: %s", string(bodyBytes)))
 
 	// If no retry config, just do a single fetch
 	if c.retryConfig == nil {
@@ -241,6 +249,9 @@ func (c *DefaultCmabClient) doFetch(ctx context.Context, url string, bodyBytes [
 	if err != nil {
 		return "", fmt.Errorf("failed to read CMAB response body: %w", err)
 	}
+	
+	// Log the raw response
+	c.logger.Debug(fmt.Sprintf("CMAB raw response: %s", string(respBody)))
 
 	// Parse response
 	var cmabResponse Response
@@ -253,8 +264,12 @@ func (c *DefaultCmabClient) doFetch(ctx context.Context, url string, bodyBytes [
 		return "", fmt.Errorf("invalid CMAB response: missing predictions or variation_id")
 	}
 
+	// Log the parsed variation ID
+	variationID := cmabResponse.Predictions[0].VariationID
+	c.logger.Debug(fmt.Sprintf("CMAB parsed variation ID: %s", variationID))
+	
 	// Return the variation ID
-	return cmabResponse.Predictions[0].VariationID, nil
+	return variationID, nil
 }
 
 // validateResponse validates the CMAB response

@@ -1,0 +1,3480 @@
+
+ 
+ 
+ 
+ 
+ 
+ 
+ optimizely / go-sdk / 16484430703
+Committed 23 Jul 2025 05:02PM PDTcoverage: 91.113% (-0.6%) from 91.684%
+Build #
+16484430703	
+Build Type
+Pull #412
+
+github
+
+Committed by
+Mat001	
+Commit Message
+fix tests
+Pull Request
+Pull Request #412: [FSSDK-11589] Add go-sdk logic to support agent for cmab	
+Run Details
+54 of 85 new or added lines in 2 files covered. (63.53%)
+
+14 existing lines in 1 file now uncovered.
+5321 of 5840 relevant lines covered (91.11%)
+
+9454.93 hits per line
+
+Source FilePress 'n' to go to next uncovered line, 'b' for previous
+79.58 /pkg/client/client.go
+1	
+/****************************************************************************
+2	
+ * Copyright 2019-2025, Optimizely, Inc. and contributors                   *
+3	
+ *                                                                          *
+4	
+ * Licensed under the Apache License, Version 2.0 (the "License");          *
+5	
+ * you may not use this file except in compliance with the License.         *
+6	
+ * You may obtain a copy of the License at                                  *
+7	
+ *                                                                          *
+8	
+ *    https://www.apache.org/licenses/LICENSE-2.0                           *
+9	
+ *                                                                          *
+10	
+ * Unless required by applicable law or agreed to in writing, software      *
+11	
+ * distributed under the License is distributed on an "AS IS" BASIS,        *
+12	
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+13	
+ * See the License for the specific language governing permissions and      *
+14	
+ * limitations under the License.                                           *
+15	
+ ***************************************************************************/
+16	
+17	
+// Package client has client definitions
+18	
+package client
+19	
+20	
+import (
+21	
+        "context"
+22	
+        "encoding/json"
+23	
+        "errors"
+24	
+        "fmt"
+25	
+        "reflect"
+26	
+        "runtime/debug"
+27	
+        "strconv"
+28	
+29	
+        "github.com/hashicorp/go-multierror"
+30	
+31	
+        "github.com/optimizely/go-sdk/v2/pkg/cmab"
+32	
+        "github.com/optimizely/go-sdk/v2/pkg/config"
+33	
+        "github.com/optimizely/go-sdk/v2/pkg/decide"
+34	
+        "github.com/optimizely/go-sdk/v2/pkg/decision"
+35	
+        pkgReasons "github.com/optimizely/go-sdk/v2/pkg/decision/reasons"
+36	
+        "github.com/optimizely/go-sdk/v2/pkg/entities"
+37	
+        "github.com/optimizely/go-sdk/v2/pkg/event"
+38	
+        "github.com/optimizely/go-sdk/v2/pkg/logging"
+39	
+        "github.com/optimizely/go-sdk/v2/pkg/notification"
+40	
+        "github.com/optimizely/go-sdk/v2/pkg/odp"
+41	
+        pkgOdpSegment "github.com/optimizely/go-sdk/v2/pkg/odp/segment"
+42	
+        pkgOdpUtils "github.com/optimizely/go-sdk/v2/pkg/odp/utils"
+43	
+        "github.com/optimizely/go-sdk/v2/pkg/optimizelyjson"
+44	
+        "github.com/optimizely/go-sdk/v2/pkg/tracing"
+45	
+        "github.com/optimizely/go-sdk/v2/pkg/utils"
+46	
+)
+47	
+48	
+const (
+49	
+        // DefaultTracerName is the name of the tracer used by the Optimizely SDK
+50	
+        DefaultTracerName = "OptimizelySDK"
+51	
+        // SpanNameDecide is the name of the span used by the Optimizely SDK for tracing decide call
+52	
+        SpanNameDecide = "decide"
+53	
+        // SpanNameDecideForKeys is the name of the span used by the Optimizely SDK for tracing decideForKeys call
+54	
+        SpanNameDecideForKeys = "decideForKeys"
+55	
+        // SpanNameDecideAll is the name of the span used by the Optimizely SDK for tracing decideAll call
+56	
+        SpanNameDecideAll = "decideAll"
+57	
+        // SpanNameActivate is the name of the span used by the Optimizely SDK for tracing Activate call
+58	
+        SpanNameActivate = "Activate"
+59	
+        // SpanNameFetchQualifiedSegments is the name of the span used by the Optimizely SDK for tracing fetchQualifiedSegments call
+60	
+        SpanNameFetchQualifiedSegments = "fetchQualifiedSegments"
+61	
+        // SpanNameSendOdpEvent is the name of the span used by the Optimizely SDK for tracing SendOdpEvent call
+62	
+        SpanNameSendOdpEvent = "SendOdpEvent"
+63	
+        // SpanNameIsFeatureEnabled is the name of the span used by the Optimizely SDK for tracing IsFeatureEnabled call
+64	
+        SpanNameIsFeatureEnabled = "IsFeatureEnabled"
+65	
+        // SpanNameGetEnabledFeatures is the name of the span used by the Optimizely SDK for tracing GetEnabledFeatures call
+66	
+        SpanNameGetEnabledFeatures = "GetEnabledFeatures"
+67	
+        // SpanNameGetFeatureVariableBoolean is the name of the span used by the Optimizely SDK for tracing GetFeatureVariableBoolean call
+68	
+        SpanNameGetFeatureVariableBoolean = "GetFeatureVariableBoolean"
+69	
+        // SpanNameGetFeatureVariableDouble is the name of the span used by the Optimizely SDK for tracing GetFeatureVariableDouble call
+70	
+        SpanNameGetFeatureVariableDouble = "GetFeatureVariableDouble"
+71	
+        // SpanNameGetFeatureVariableInteger is the name of the span used by the Optimizely SDK for tracing GetFeatureVariableInteger call
+72	
+        SpanNameGetFeatureVariableInteger = "GetFeatureVariableInteger"
+73	
+        // SpanNameGetFeatureVariableString is the name of the span used by the Optimizely SDK for tracing GetFeatureVariableString call
+74	
+        SpanNameGetFeatureVariableString = "GetFeatureVariableString"
+75	
+        // SpanNameGetFeatureVariableJSON is the name of the span used by the Optimizely SDK for tracing GetFeatureVariableJSON call
+76	
+        SpanNameGetFeatureVariableJSON = "GetFeatureVariableJSON"
+77	
+        // SpanNameGetFeatureVariablePrivate is the name of the span used by the Optimizely SDK for tracing getFeatureVariable call
+78	
+        SpanNameGetFeatureVariablePrivate = "getFeatureVariable"
+79	
+        // SpanNameGetFeatureVariablePublic is the name of the span used by the Optimizely SDK for tracing GetFeatureVariable call
+80	
+        SpanNameGetFeatureVariablePublic = "GetFeatureVariable"
+81	
+        // SpanNameGetAllFeatureVariablesWithDecision is the name of the span used by the Optimizely SDK for tracing GetAllFeatureVariablesWithDecision call
+82	
+        SpanNameGetAllFeatureVariablesWithDecision = "GetAllFeatureVariablesWithDecision"
+83	
+        // SpanNameGetDetailedFeatureDecisionUnsafe is the name of the span used by the Optimizely SDK for tracing GetDetailedFeatureDecisionUnsafe call
+84	
+        SpanNameGetDetailedFeatureDecisionUnsafe = "GetDetailedFeatureDecisionUnsafe"
+85	
+        // SpanNameGetAllFeatureVariables is the name of the span used by the Optimizely SDK for tracing GetAllFeatureVariables call
+86	
+        SpanNameGetAllFeatureVariables = "GetAllFeatureVariables"
+87	
+        // SpanNameGetVariation is the name of the span used by the Optimizely SDK for tracing GetVariation call
+88	
+        SpanNameGetVariation = "GetVariation"
+89	
+        // SpanNameTrack is the name of the span used by the Optimizely SDK for tracing Track call
+90	
+        SpanNameTrack = "Track"
+91	
+        // SpanNameGetFeatureDecision is the name of the span used by the Optimizely SDK for tracing getFeatureDecision call
+92	
+        SpanNameGetFeatureDecision = "getFeatureDecision"
+93	
+        // SpanNameGetExperimentDecision is the name of the span used by the Optimizely SDK for tracing getExperimentDecision call
+94	
+        SpanNameGetExperimentDecision = "getExperimentDecision"
+95	
+        // SpanNameGetProjectConfig is the name of the span used by the Optimizely SDK for tracing getProjectConfig call
+96	
+        SpanNameGetProjectConfig = "getProjectConfig"
+97	
+        // SpanNameGetOptimizelyConfig is the name of the span used by the Optimizely SDK for tracing GetOptimizelyConfig call
+98	
+        SpanNameGetOptimizelyConfig = "GetOptimizelyConfig"
+99	
+        // SpanNameGetDecisionVariableMap is the name of the span used by the Optimizely SDK for tracing getDecisionVariableMap call
+100	
+        SpanNameGetDecisionVariableMap = "getDecisionVariableMap"
+101	
+)
+102	
+103	
+// OptimizelyClient is the entry point to the Optimizely SDK
+104	
+type OptimizelyClient struct {
+105	
+        ctx                  context.Context
+106	
+        ConfigManager        config.ProjectConfigManager
+107	
+        DecisionService      decision.Service
+108	
+        UserProfileService   decision.UserProfileService
+109	
+        EventProcessor       event.Processor
+110	
+        OdpManager           odp.Manager
+111	
+        notificationCenter   notification.Center
+112	
+        execGroup            *utils.ExecGroup
+113	
+        logger               logging.OptimizelyLogProducer
+114	
+        defaultDecideOptions *decide.Options
+115	
+        tracer               tracing.Tracer
+116	
+        cmabService          cmab.Service
+117	
+}
+118	
+119	
+// CreateUserContext creates a context of the user for which decision APIs will be called.
+120	
+// A user context will be created successfully even when the SDK is not fully configured yet.
+121	
+func (o *OptimizelyClient) CreateUserContext(userID string, attributes map[string]interface{}) OptimizelyUserContext {
+163✔
+122	
+        if o.OdpManager != nil {
+319✔
+123	
+                // Identify user to odp server
+156✔
+124	
+                o.OdpManager.IdentifyUser(userID)
+156✔
+125	
+        }
+156✔
+126	
+        // Passing qualified segments as nil initially since they will be fetched later
+127	
+        return newOptimizelyUserContext(o, userID, attributes, nil, nil)
+163✔
+128	
+}
+129	
+130	
+// WithTraceContext sets the context for the OptimizelyClient which can be used to propagate trace information
+131	
+func (o *OptimizelyClient) WithTraceContext(ctx context.Context) *OptimizelyClient {
+×
+132	
+        o.ctx = ctx
+×
+133	
+        return o
+×
+134	
+}
+×
+135	
+136	
+func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string, options *decide.Options) OptimizelyDecision {
+51✔
+137	
+        var err error
+51✔
+138	
+        defer func() {
+102✔
+139	
+                if r := recover(); r != nil {
+52✔
+140	
+                        switch t := r.(type) {
+1✔
+141	
+                        case error:
+1✔
+142	
+                                err = t
+1✔
+143	
+                        case string:
+×
+144	
+                                err = errors.New(t)
+×
+145	
+                        default:
+×
+146	
+                                err = errors.New("unexpected error")
+×
+147	
+                        }
+148	
+                        errorMessage := "decide call, optimizely SDK is panicking with the error:"
+1✔
+149	
+                        o.logger.Error(errorMessage, err)
+1✔
+150	
+                        o.logger.Debug(string(debug.Stack()))
+1✔
+151	
+                }
+152	
+        }()
+153	
+154	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameDecide)
+51✔
+155	
+        defer span.End()
+51✔
+156	
+51✔
+157	
+        decisionContext := decision.FeatureDecisionContext{
+51✔
+158	
+                ForcedDecisionService: userContext.forcedDecisionService,
+51✔
+159	
+                UserProfile:           userContext.userProfile,
+51✔
+160	
+        }
+51✔
+161	
+        projectConfig, err := o.getProjectConfig()
+51✔
+162	
+        if err != nil {
+51✔
+163	
+                return NewErrorDecision(key, *userContext, decide.GetDecideError(decide.SDKNotReady))
+×
+164	
+        }
+×
+165	
+        decisionContext.ProjectConfig = projectConfig
+51✔
+166	
+51✔
+167	
+        feature, err := projectConfig.GetFeatureByKey(key)
+51✔
+168	
+        if err != nil {
+56✔
+169	
+                return NewErrorDecision(key, *userContext, decide.GetDecideError(decide.FlagKeyInvalid, key))
+5✔
+170	
+        }
+5✔
+171	
+        decisionContext.Feature = &feature
+46✔
+172	
+46✔
+173	
+        usrContext := entities.UserContext{
+46✔
+174	
+                ID:                userContext.GetUserID(),
+46✔
+175	
+                Attributes:        userContext.GetUserAttributes(),
+46✔
+176	
+                QualifiedSegments: userContext.GetQualifiedSegments(),
+46✔
+177	
+        }
+46✔
+178	
+46✔
+179	
+        allOptions := o.getAllOptions(options)
+46✔
+180	
+        decisionReasons := decide.NewDecisionReasons(&allOptions)
+46✔
+181	
+        decisionContext.Variable = entities.Variable{}
+46✔
+182	
+        var featureDecision decision.FeatureDecision
+46✔
+183	
+        var decisionReasonsList decide.DecisionReasons // Fix shadowing - renamed from "reasons"
+46✔
+184	
+46✔
+185	
+        // Try CMAB decision first
+46✔
+186	
+        useCMAB := o.tryGetCMABDecision(feature, projectConfig, usrContext, &allOptions, decisionReasons, &featureDecision)
+46✔
+187	
+46✔
+188	
+        // Fall back to other decision types if CMAB didn't work
+46✔
+189	
+        if !useCMAB {
+91✔
+190	
+                // To avoid cyclo-complexity warning - forced decision logic
+45✔
+191	
+                findForcedDecision := func() bool {
+90✔
+192	
+                        if userContext.forcedDecisionService != nil {
+49✔
+193	
+                                var variation *entities.Variation
+4✔
+194	
+                                var forcedErr error
+4✔
+195	
+                                variation, decisionReasonsList, forcedErr = userContext.forcedDecisionService.FindValidatedForcedDecision(projectConfig, decision.OptimizelyDecisionContext{FlagKey: key, RuleKey: ""}, &allOptions) // Fix shadowing by using assignment instead of declaration
+4✔
+196	
+                                decisionReasons.Append(decisionReasonsList)
+4✔
+197	
+                                if forcedErr != nil {
+6✔
+198	
+                                        return false
+2✔
+199	
+                                }
+2✔
+200	
+                                featureDecision = decision.FeatureDecision{Decision: decision.Decision{Reason: pkgReasons.ForcedDecisionFound}, Variation: variation, Source: decision.FeatureTest}
+2✔
+201	
+                                return true
+2✔
+202	
+                        }
+203	
+                        return false
+41✔
+204	
+                }
+205	
+206	
+                // To avoid cyclo-complexity warning - regular decision logic
+207	
+                findRegularDecision := func() {
+88✔
+208	
+                        // regular decision
+43✔
+209	
+                        featureDecision, decisionReasonsList, err = o.DecisionService.GetFeatureDecision(decisionContext, usrContext, &allOptions)
+43✔
+210	
+                        decisionReasons.Append(decisionReasonsList)
+43✔
+211	
+                }
+43✔
+212	
+213	
+                if !findForcedDecision() {
+88✔
+214	
+                        findRegularDecision()
+43✔
+215	
+                }
+43✔
+216	
+        }
+217	
+218	
+        if err != nil {
+45✔
+219	
+                return o.handleDecisionServiceError(err, key, *userContext)
+×
+220	
+        }
+×
+221	
+222	
+        return o.buildDecisionResponse(featureDecision, feature, key, userContext, &allOptions, decisionReasons, decisionContext)
+45✔
+223	
+}
+224	
+225	
+// tryGetCMABDecision attempts to get a CMAB decision for the feature
+226	
+func (o *OptimizelyClient) tryGetCMABDecision(feature entities.Feature, projectConfig config.ProjectConfig, usrContext entities.UserContext, options *decide.Options, decisionReasons decide.DecisionReasons, featureDecision *decision.FeatureDecision) bool {
+45✔
+227	
+        if o.cmabService == nil {
+90✔
+228	
+                return false
+45✔
+229	
+        }
+45✔
+230	
+NEW231	
+        for _, experimentID := range feature.ExperimentIDs {
+×
+NEW232	
+                experiment, expErr := projectConfig.GetExperimentByID(experimentID) // Fix shadowing
+×
+NEW233	
+×
+NEW234	
+                // Handle CMAB error properly - check for errors BEFORE using the experiment
+×
+NEW235	
+                if expErr == nil && experiment.Cmab != nil {
+×
+NEW236	
+                        cmabDecision, cmabErr := o.cmabService.GetDecision(projectConfig, usrContext, experiment.ID, options)
+×
+NEW237	
+×
+NEW238	
+                        // Handle CMAB service errors gracefully - log and continue to next experiment
+×
+NEW239	
+                        if cmabErr != nil {
+×
+NEW240	
+                                o.logger.Warning(fmt.Sprintf("CMAB decision failed for experiment %s: %v", experiment.ID, cmabErr))
+×
+NEW241	
+                                continue
+×
+242	
+                        }
+243	
+244	
+                        // Validate CMAB response - ensure variation exists before using it
+NEW245	
+                        if selectedVariation, exists := experiment.Variations[cmabDecision.VariationID]; exists {
+×
+NEW246	
+                                *featureDecision = decision.FeatureDecision{
+×
+NEW247	
+                                        Decision:   decision.Decision{Reason: "CMAB decision"},
+×
+NEW248	
+                                        Variation:  &selectedVariation,
+×
+NEW249	
+                                        Experiment: experiment,
+×
+NEW250	
+                                        Source:     decision.FeatureTest,
+×
+NEW251	
+                                        CmabUUID:   &cmabDecision.CmabUUID, // Include CMAB UUID for tracking
+×
+NEW252	
+                                }
+×
+NEW253	
+                                decisionReasons.AddInfo("Used CMAB service for decision")
+×
+NEW254	
+                                return true
+×
+NEW255	
+                        }
+×
+256	
+                        // Log invalid variation ID returned by CMAB service
+NEW257	
+                        o.logger.Warning(fmt.Sprintf("CMAB returned invalid variation ID %s for experiment %s", cmabDecision.VariationID, experiment.ID))
+×
+258	
+                }
+259	
+        }
+NEW260	
+        return false
+×
+261	
+}
+262	
+263	
+// buildDecisionResponse constructs the final OptimizelyDecision response
+264	
+func (o *OptimizelyClient) buildDecisionResponse(featureDecision decision.FeatureDecision, feature entities.Feature, key string, userContext *OptimizelyUserContext, options *decide.Options, decisionReasons decide.DecisionReasons, decisionContext decision.FeatureDecisionContext) OptimizelyDecision {
+45✔
+265	
+        var variationKey string
+45✔
+266	
+        var eventSent, flagEnabled bool
+45✔
+267	
+        var experimentID, variationID string
+45✔
+268	
+45✔
+269	
+        if featureDecision.Variation != nil {
+85✔
+270	
+                variationKey = featureDecision.Variation.Key
+40✔
+271	
+                flagEnabled = featureDecision.Variation.FeatureEnabled
+40✔
+272	
+                experimentID = featureDecision.Experiment.ID
+40✔
+273	
+                variationID = featureDecision.Variation.ID
+40✔
+274	
+        }
+40✔
+275	
+276	
+        usrContext := entities.UserContext{
+45✔
+277	
+                ID:                userContext.GetUserID(),
+45✔
+278	
+                Attributes:        userContext.GetUserAttributes(),
+45✔
+279	
+                QualifiedSegments: userContext.GetQualifiedSegments(),
+45✔
+280	
+        }
+45✔
+281	
+45✔
+282	
+        // Send impression event
+45✔
+283	
+        if !options.DisableDecisionEvent {
+88✔
+284	
+                if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
+43✔
+285	
+                        featureDecision.Variation, usrContext, key, featureDecision.Experiment.Key, featureDecision.Source, flagEnabled, featureDecision.CmabUUID); ok {
+86✔
+286	
+                        o.EventProcessor.ProcessEvent(ue)
+43✔
+287	
+                        eventSent = true
+43✔
+288	
+                }
+43✔
+289	
+        }
+290	
+291	
+        // Get variable map
+292	
+        variableMap := map[string]interface{}{}
+45✔
+293	
+        if !options.ExcludeVariables {
+87✔
+294	
+                var reasons decide.DecisionReasons
+42✔
+295	
+                variableMap, reasons = o.getDecisionVariableMap(feature, featureDecision.Variation, flagEnabled)
+42✔
+296	
+                decisionReasons.Append(reasons)
+42✔
+297	
+        }
+42✔
+298	
+299	
+        // Send notification
+300	
+        if o.notificationCenter != nil {
+90✔
+301	
+                reasonsToReport := decisionReasons.ToReport()
+45✔
+302	
+                ruleKey := featureDecision.Experiment.Key
+45✔
+303	
+                decisionNotification := decision.FlagNotification(key, variationKey, ruleKey, experimentID, variationID, flagEnabled, eventSent, usrContext, variableMap, reasonsToReport)
+45✔
+304	
+                o.logger.Debug(fmt.Sprintf(`Feature %q is enabled for user %q? %v`, key, usrContext.ID, flagEnabled))
+45✔
+305	
+                if e := o.notificationCenter.Send(notification.Decision, *decisionNotification); e != nil {
+45✔
+306	
+                        o.logger.Warning("Problem with sending notification")
+×
+307	
+                }
+×
+308	
+        }
+309	
+310	
+        optimizelyJSON := optimizelyjson.NewOptimizelyJSONfromMap(variableMap)
+45✔
+311	
+        reasonsToReport := decisionReasons.ToReport()
+45✔
+312	
+        ruleKey := featureDecision.Experiment.Key
+45✔
+313	
+45✔
+314	
+        return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, *userContext, reasonsToReport)
+45✔
+315	
+}
+316	
+317	
+func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options *decide.Options) map[string]OptimizelyDecision {
+41✔
+318	
+        var err error
+41✔
+319	
+        defer func() {
+82✔
+320	
+                if r := recover(); r != nil {
+41✔
+321	
+                        switch t := r.(type) {
+×
+322	
+                        case error:
+×
+323	
+                                err = t
+×
+324	
+                        case string:
+×
+325	
+                                err = errors.New(t)
+×
+326	
+                        default:
+×
+327	
+                                err = errors.New("unexpected error")
+×
+328	
+                        }
+329	
+                        errorMessage := "decideForKeys call, optimizely SDK is panicking with the error:"
+×
+330	
+                        o.logger.Error(errorMessage, err)
+×
+331	
+                        o.logger.Debug(string(debug.Stack()))
+×
+332	
+                }
+333	
+        }()
+334	
+335	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameDecideForKeys)
+41✔
+336	
+        defer span.End()
+41✔
+337	
+41✔
+338	
+        decisionMap := map[string]OptimizelyDecision{}
+41✔
+339	
+        if _, err = o.getProjectConfig(); err != nil {
+43✔
+340	
+                o.logger.Error("Optimizely instance is not valid, failing decideForKeys call.", err)
+2✔
+341	
+                return decisionMap
+2✔
+342	
+        }
+2✔
+343	
+344	
+        if len(keys) == 0 {
+39✔
+345	
+                return decisionMap
+×
+346	
+        }
+×
+347	
+        allOptions := o.getAllOptions(options)
+39✔
+348	
+39✔
+349	
+        var userProfile *decision.UserProfile
+39✔
+350	
+        ignoreUserProfileSvc := o.UserProfileService == nil || allOptions.IgnoreUserProfileService
+39✔
+351	
+        if !ignoreUserProfileSvc {
+43✔
+352	
+                up := o.UserProfileService.Lookup(userContext.GetUserID())
+4✔
+353	
+                if up.ID == "" {
+4✔
+354	
+                        up = decision.UserProfile{
+×
+355	
+                                ID:                  userContext.GetUserID(),
+×
+356	
+                                ExperimentBucketMap: map[decision.UserDecisionKey]string{},
+×
+357	
+                        }
+×
+358	
+                }
+×
+359	
+                userProfile = &up
+4✔
+360	
+                userContext.userProfile = userProfile
+4✔
+361	
+        }
+362	
+363	
+        for _, key := range keys {
+89✔
+364	
+                optimizelyDecision := o.decide(&userContext, key, options)
+50✔
+365	
+                decisionMap[key] = optimizelyDecision
+50✔
+366	
+        }
+50✔
+367	
+368	
+        if !ignoreUserProfileSvc && userProfile != nil && userProfile.HasUnsavedChange {
+40✔
+369	
+                o.UserProfileService.Save(*userProfile)
+1✔
+370	
+                userProfile.HasUnsavedChange = false
+1✔
+371	
+        }
+1✔
+372	
+373	
+        return decisionMap
+39✔
+374	
+}
+375	
+376	
+func (o *OptimizelyClient) decideAll(userContext OptimizelyUserContext, options *decide.Options) map[string]OptimizelyDecision {
+5✔
+377	
+5✔
+378	
+        var err error
+5✔
+379	
+        defer func() {
+10✔
+380	
+                if r := recover(); r != nil {
+5✔
+381	
+                        switch t := r.(type) {
+×
+382	
+                        case error:
+×
+383	
+                                err = t
+×
+384	
+                        case string:
+×
+385	
+                                err = errors.New(t)
+×
+386	
+                        default:
+×
+387	
+                                err = errors.New("unexpected error")
+×
+388	
+                        }
+389	
+                        errorMessage := "decideAll call, optimizely SDK is panicking with the error:"
+×
+390	
+                        o.logger.Error(errorMessage, err)
+×
+391	
+                        o.logger.Debug(string(debug.Stack()))
+×
+392	
+                }
+393	
+        }()
+394	
+395	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameDecideAll)
+5✔
+396	
+        defer span.End()
+5✔
+397	
+5✔
+398	
+        projectConfig, err := o.getProjectConfig()
+5✔
+399	
+        if err != nil {
+6✔
+400	
+                o.logger.Error("Optimizely instance is not valid, failing decideAll call.", err)
+1✔
+401	
+                return map[string]OptimizelyDecision{}
+1✔
+402	
+        }
+1✔
+403	
+404	
+        allFlagKeys := []string{}
+4✔
+405	
+        for _, flag := range projectConfig.GetFeatureList() {
+16✔
+406	
+                allFlagKeys = append(allFlagKeys, flag.Key)
+12✔
+407	
+        }
+12✔
+408	
+409	
+        return o.decideForKeys(userContext, allFlagKeys, options)
+4✔
+410	
+}
+411	
+412	
+// fetchQualifiedSegments fetches all qualified segments for the user context.
+413	
+// request is performed asynchronously only when callback is provided
+414	
+func (o *OptimizelyClient) fetchQualifiedSegments(userContext *OptimizelyUserContext, options []pkgOdpSegment.OptimizelySegmentOption, callback func(success bool)) {
+7✔
+415	
+        var err error
+7✔
+416	
+        defer func() {
+14✔
+417	
+                if r := recover(); r != nil {
+7✔
+418	
+                        switch t := r.(type) {
+×
+419	
+                        case error:
+×
+420	
+                                err = t
+×
+421	
+                        case string:
+×
+422	
+                                err = errors.New(t)
+×
+423	
+                        default:
+×
+424	
+                                err = errors.New("unexpected error")
+×
+425	
+                        }
+426	
+                        o.logger.Error("fetchQualifiedSegments call, optimizely SDK is panicking with the error:", err)
+×
+427	
+                        o.logger.Debug(string(debug.Stack()))
+×
+428	
+                }
+429	
+        }()
+430	
+431	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameFetchQualifiedSegments)
+7✔
+432	
+        defer span.End()
+7✔
+433	
+7✔
+434	
+        // on failure, qualifiedSegments should be reset if a previous value exists.
+7✔
+435	
+        userContext.SetQualifiedSegments(nil)
+7✔
+436	
+7✔
+437	
+        if _, err = o.getProjectConfig(); err != nil {
+8✔
+438	
+                o.logger.Error("fetchQualifiedSegments failed with error:", decide.GetDecideError(decide.SDKNotReady))
+1✔
+439	
+                if callback != nil {
+2✔
+440	
+                        callback(false)
+1✔
+441	
+                }
+1✔
+442	
+                return
+1✔
+443	
+        }
+444	
+445	
+        qualifiedSegments, segmentsError := o.OdpManager.FetchQualifiedSegments(userContext.GetUserID(), options)
+6✔
+446	
+        success := segmentsError == nil
+6✔
+447	
+6✔
+448	
+        if success {
+11✔
+449	
+                userContext.SetQualifiedSegments(qualifiedSegments)
+5✔
+450	
+        } else {
+6✔
+451	
+                o.logger.Error("fetchQualifiedSegments failed with error:", segmentsError)
+1✔
+452	
+        }
+1✔
+453	
+454	
+        if callback != nil {
+12✔
+455	
+                callback(success)
+6✔
+456	
+        }
+6✔
+457	
+}
+458	
+459	
+// SendOdpEvent sends an event to the ODP server.
+460	
+func (o *OptimizelyClient) SendOdpEvent(eventType, action string, identifiers map[string]string, data map[string]interface{}) (err error) {
+6✔
+461	
+6✔
+462	
+        defer func() {
+12✔
+463	
+                if r := recover(); r != nil {
+6✔
+464	
+                        switch t := r.(type) {
+×
+465	
+                        case error:
+×
+466	
+                                err = t
+×
+467	
+                        case string:
+×
+468	
+                                err = errors.New(t)
+×
+469	
+                        default:
+×
+470	
+                                err = errors.New("unexpected error")
+×
+471	
+                        }
+472	
+                        errorMessage := "SendOdpEvent call, optimizely SDK is panicking with the error:"
+×
+473	
+                        o.logger.Error(errorMessage, err)
+×
+474	
+                        o.logger.Debug(string(debug.Stack()))
+×
+475	
+                }
+476	
+        }()
+477	
+478	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameSendOdpEvent)
+6✔
+479	
+        defer span.End()
+6✔
+480	
+6✔
+481	
+        if _, err = o.getProjectConfig(); err != nil {
+7✔
+482	
+                o.logger.Error("SendOdpEvent failed with error:", decide.GetDecideError(decide.SDKNotReady))
+1✔
+483	
+                return err
+1✔
+484	
+        }
+1✔
+485	
+486	
+        // the event type (default = "fullstack").
+487	
+        if eventType == "" {
+8✔
+488	
+                eventType = pkgOdpUtils.OdpEventType
+3✔
+489	
+        }
+3✔
+490	
+491	
+        if len(identifiers) == 0 {
+7✔
+492	
+                err = errors.New("ODP events must have at least one key-value pair in identifiers")
+2✔
+493	
+                o.logger.Error("received an error while sending ODP event", err)
+2✔
+494	
+                return err
+2✔
+495	
+        }
+2✔
+496	
+497	
+        return o.OdpManager.SendOdpEvent(eventType, action, identifiers, data)
+3✔
+498	
+}
+499	
+500	
+// Activate returns the key of the variation the user is bucketed into and queues up an impression event to be sent to
+501	
+// the Optimizely log endpoint for results processing.
+502	
+func (o *OptimizelyClient) Activate(experimentKey string, userContext entities.UserContext) (result string, err error) {
+4✔
+503	
+4✔
+504	
+        defer func() {
+8✔
+505	
+                if r := recover(); r != nil {
+5✔
+506	
+                        switch t := r.(type) {
+1✔
+507	
+                        case error:
+×
+508	
+                                err = t
+×
+509	
+                        case string:
+1✔
+510	
+                                err = errors.New(t)
+1✔
+511	
+                        default:
+×
+512	
+                                err = errors.New("unexpected error")
+×
+513	
+                        }
+514	
+                        errorMessage := "Activate call, optimizely SDK is panicking with the error:"
+1✔
+515	
+                        o.logger.Error(errorMessage, err)
+1✔
+516	
+                        o.logger.Debug(string(debug.Stack()))
+1✔
+517	
+                }
+518	
+        }()
+519	
+520	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameActivate)
+4✔
+521	
+        defer span.End()
+4✔
+522	
+4✔
+523	
+        decisionContext, experimentDecision, err := o.getExperimentDecision(experimentKey, userContext)
+4✔
+524	
+        if err != nil {
+5✔
+525	
+                o.logger.Error("received an error while computing experiment decision", err)
+1✔
+526	
+                return result, err
+1✔
+527	
+        }
+1✔
+528	
+529	
+        if experimentDecision.Variation != nil && decisionContext.Experiment != nil {
+3✔
+530	
+                // send an impression event
+1✔
+531	
+                result = experimentDecision.Variation.Key
+1✔
+532	
+                if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *decisionContext.Experiment,
+1✔
+533	
+                        experimentDecision.Variation, userContext, "", experimentKey, "experiment", true, experimentDecision.CmabUUID); ok {
+2✔
+534	
+                        o.EventProcessor.ProcessEvent(ue)
+1✔
+535	
+                }
+1✔
+536	
+        }
+537	
+538	
+        return result, err
+2✔
+539	
+}
+540	
+541	
+// IsFeatureEnabled returns true if the feature is enabled for the given user. If the user is part of a feature test
+542	
+// then an impression event will be queued up to the Optimizely log endpoint for results processing.
+543	
+func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entities.UserContext) (result bool, err error) {
+8✔
+544	
+8✔
+545	
+        defer func() {
+16✔
+546	
+                if r := recover(); r != nil {
+10✔
+547	
+                        switch t := r.(type) {
+2✔
+548	
+                        case error:
+1✔
+549	
+                                err = t
+1✔
+550	
+                        case string:
+1✔
+551	
+                                err = errors.New(t)
+1✔
+552	
+                        default:
+×
+553	
+                                err = errors.New("unexpected error")
+×
+554	
+                        }
+555	
+                        errorMessage := "IsFeatureEnabled call, optimizely SDK is panicking with the error:"
+2✔
+556	
+                        o.logger.Error(errorMessage, err)
+2✔
+557	
+                        o.logger.Debug(string(debug.Stack()))
+2✔
+558	
+                }
+559	
+        }()
+560	
+561	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameIsFeatureEnabled)
+8✔
+562	
+        defer span.End()
+8✔
+563	
+8✔
+564	
+        decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, "", userContext)
+8✔
+565	
+        if err != nil {
+10✔
+566	
+                o.logger.Error("received an error while computing feature decision", err)
+2✔
+567	
+                return result, err
+2✔
+568	
+        }
+2✔
+569	
+570	
+        if featureDecision.Variation == nil {
+7✔
+571	
+                result = false
+1✔
+572	
+        } else {
+6✔
+573	
+                result = featureDecision.Variation.FeatureEnabled
+5✔
+574	
+        }
+5✔
+575	
+576	
+        if result {
+10✔
+577	
+                o.logger.Debug(fmt.Sprintf(`Feature %q is enabled for user %q.`, featureKey, userContext.ID))
+4✔
+578	
+        } else {
+6✔
+579	
+                o.logger.Debug(fmt.Sprintf(`Feature %q is not enabled for user %q.`, featureKey, userContext.ID))
+2✔
+580	
+        }
+2✔
+581	
+582	
+        if o.notificationCenter != nil {
+7✔
+583	
+                decisionNotification := decision.FeatureNotification(featureKey, &featureDecision, &userContext)
+1✔
+584	
+1✔
+585	
+                if e := o.notificationCenter.Send(notification.Decision, *decisionNotification); e != nil {
+1✔
+586	
+                        o.logger.Warning("Problem with sending notification")
+×
+587	
+                }
+×
+588	
+        }
+589	
+590	
+        if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
+6✔
+591	
+                featureDecision.Variation, userContext, featureKey, featureDecision.Experiment.Key, featureDecision.Source, result, featureDecision.CmabUUID); ok && featureDecision.Source != "" {
+9✔
+592	
+                o.EventProcessor.ProcessEvent(ue)
+3✔
+593	
+        }
+3✔
+594	
+595	
+        return result, err
+4✔
+596	
+}
+597	
+598	
+// GetEnabledFeatures returns an array containing the keys of all features in the project that are enabled for the given
+599	
+// user. For features tests, impression events will be queued up to be sent to the Optimizely log endpoint for results processing.
+600	
+func (o *OptimizelyClient) GetEnabledFeatures(userContext entities.UserContext) (enabledFeatures []string, err error) {
+3✔
+601	
+3✔
+602	
+        defer func() {
+6✔
+603	
+                if r := recover(); r != nil {
+4✔
+604	
+                        switch t := r.(type) {
+1✔
+605	
+                        case error:
+×
+606	
+                                err = t
+×
+607	
+                        case string:
+1✔
+608	
+                                err = errors.New(t)
+1✔
+609	
+                        default:
+×
+610	
+                                err = errors.New("unexpected error")
+×
+611	
+                        }
+612	
+                        errorMessage := "GetEnabledFeatures call, optimizely SDK is panicking with the error:"
+1✔
+613	
+                        o.logger.Error(errorMessage, err)
+1✔
+614	
+                        o.logger.Debug(string(debug.Stack()))
+1✔
+615	
+                }
+616	
+        }()
+617	
+618	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameGetEnabledFeatures)
+3✔
+619	
+        defer span.End()
+3✔
+620	
+3✔
+621	
+        projectConfig, err := o.getProjectConfig()
+3✔
+622	
+        if err != nil {
+4✔
+623	
+                o.logger.Error("Error retrieving ProjectConfig", err)
+1✔
+624	
+                return enabledFeatures, err
+1✔
+625	
+        }
+1✔
+626	
+627	
+        featureList := projectConfig.GetFeatureList()
+1✔
+628	
+        for _, feature := range featureList {
+3✔
+629	
+                if isEnabled, _ := o.IsFeatureEnabled(feature.Key, userContext); isEnabled {
+3✔
+630	
+                        enabledFeatures = append(enabledFeatures, feature.Key)
+1✔
+631	
+                }
+1✔
+632	
+        }
+633	
+        return enabledFeatures, err
+1✔
+634	
+}
+635	
+636	
+// GetFeatureVariableBoolean returns the feature variable value of type bool associated with the given feature and variable keys.
+637	
+func (o *OptimizelyClient) GetFeatureVariableBoolean(featureKey, variableKey string, userContext entities.UserContext) (convertedValue bool, err error) {
+12✔
+638	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameGetFeatureVariableBoolean)
+12✔
+639	
+        defer span.End()
+12✔
+640	
+12✔
+641	
+        stringValue, variableType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+12✔
+642	
+        defer func() {
+24✔
+643	
+                if o.notificationCenter != nil {
+17✔
+644	
+                        variableMap := map[string]interface{}{
+5✔
+645	
+                                "variableKey":   variableKey,
+5✔
+646	
+                                "variableType":  variableType,
+5✔
+647	
+                                "variableValue": convertedValue,
+5✔
+648	
+                        }
+5✔
+649	
+                        if err != nil {
+8✔
+650	
+                                variableMap["variableValue"] = stringValue
+3✔
+651	
+                        }
+3✔
+652	
+                        decisionNotification := decision.FeatureNotificationWithVariables(featureKey, featureDecision, &userContext, variableMap)
+5✔
+653	
+                        decisionNotification.Type = notification.FeatureVariable
+5✔
+654	
+5✔
+655	
+                        if e := o.notificationCenter.Send(notification.Decision, *decisionNotification); e != nil {
+5✔
+656	
+                                o.logger.Warning("Problem with sending notification")
+×
+657	
+                        }
+×
+658	
+                }
+659	
+        }()
+660	
+661	
+        if err != nil {
+14✔
+662	
+                return convertedValue, err
+2✔
+663	
+        }
+2✔
+664	
+        convertedValue, err = strconv.ParseBool(stringValue)
+10✔
+665	
+        if err != nil || variableType != entities.Boolean {
+16✔
+666	
+                return false, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
+6✔
+667	
+        }
+6✔
+668	
+        return convertedValue, err
+4✔
+669	
+}
+670	
+671	
+// GetFeatureVariableDouble returns the feature variable value of type double associated with the given feature and variable keys.
+672	
+func (o *OptimizelyClient) GetFeatureVariableDouble(featureKey, variableKey string, userContext entities.UserContext) (convertedValue float64, err error) {
+12✔
+673	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameGetFeatureVariableDouble)
+12✔
+674	
+        defer span.End()
+12✔
+675	
+12✔
+676	
+        stringValue, variableType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+12✔
+677	
+        defer func() {
+24✔
+678	
+                if o.notificationCenter != nil {
+17✔
+679	
+                        variableMap := map[string]interface{}{
+5✔
+680	
+                                "variableKey":   variableKey,
+5✔
+681	
+                                "variableType":  variableType,
+5✔
+682	
+                                "variableValue": convertedValue,
+5✔
+683	
+                        }
+5✔
+684	
+                        if err != nil {
+8✔
+685	
+                                variableMap["variableValue"] = stringValue
+3✔
+686	
+                        }
+3✔
+687	
+                        decisionNotification := decision.FeatureNotificationWithVariables(featureKey, featureDecision, &userContext, variableMap)
+5✔
+688	
+                        decisionNotification.Type = notification.FeatureVariable
+5✔
+689	
+5✔
+690	
+                        if e := o.notificationCenter.Send(notification.Decision, *decisionNotification); e != nil {
+5✔
+691	
+                                o.logger.Warning("Problem with sending notification")
+×
+692	
+                        }
+×
+693	
+                }
+694	
+        }()
+695	
+        if err != nil {
+14✔
+696	
+                return convertedValue, err
+2✔
+697	
+        }
+2✔
+698	
+        convertedValue, err = strconv.ParseFloat(stringValue, 64)
+10✔
+699	
+        if err != nil || variableType != entities.Double {
+16✔
+700	
+                return 0, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
+6✔
+701	
+        }
+6✔
+702	
+703	
+        return convertedValue, err
+4✔
+704	
+}
+705	
+706	
+// GetFeatureVariableInteger returns the feature variable value of type int associated with the given feature and variable keys.
+707	
+func (o *OptimizelyClient) GetFeatureVariableInteger(featureKey, variableKey string, userContext entities.UserContext) (convertedValue int, err error) {
+12✔
+708	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameGetFeatureVariableInteger)
+12✔
+709	
+        defer span.End()
+12✔
+710	
+12✔
+711	
+        stringValue, variableType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+12✔
+712	
+        defer func() {
+24✔
+713	
+                if o.notificationCenter != nil {
+17✔
+714	
+                        variableMap := map[string]interface{}{
+5✔
+715	
+                                "variableKey":   variableKey,
+5✔
+716	
+                                "variableType":  variableType,
+5✔
+717	
+                                "variableValue": convertedValue,
+5✔
+718	
+                        }
+5✔
+719	
+                        if err != nil {
+8✔
+720	
+                                variableMap["variableValue"] = stringValue
+3✔
+721	
+                        }
+3✔
+722	
+                        decisionNotification := decision.FeatureNotificationWithVariables(featureKey, featureDecision, &userContext, variableMap)
+5✔
+723	
+                        decisionNotification.Type = notification.FeatureVariable
+5✔
+724	
+5✔
+725	
+                        if e := o.notificationCenter.Send(notification.Decision, *decisionNotification); e != nil {
+5✔
+726	
+                                o.logger.Warning("Problem with sending notification")
+×
+727	
+                        }
+×
+728	
+                }
+729	
+        }()
+730	
+        if err != nil {
+14✔
+731	
+                return convertedValue, err
+2✔
+732	
+        }
+2✔
+733	
+        convertedValue, err = strconv.Atoi(stringValue)
+10✔
+734	
+        if err != nil || variableType != entities.Integer {
+16✔
+735	
+                return 0, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
+6✔
+736	
+        }
+6✔
+737	
+738	
+        return convertedValue, err
+4✔
+739	
+}
+740	
+741	
+// GetFeatureVariableString returns the feature variable value of type string associated with the given feature and variable keys.
+742	
+func (o *OptimizelyClient) GetFeatureVariableString(featureKey, variableKey string, userContext entities.UserContext) (stringValue string, err error) {
+9✔
+743	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameGetFeatureVariableString)
+9✔
+744	
+        defer span.End()
+9✔
+745	
+9✔
+746	
+        stringValue, variableType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+9✔
+747	
+9✔
+748	
+        defer func() {
+18✔
+749	
+                if o.notificationCenter != nil {
+13✔
+750	
+                        variableMap := map[string]interface{}{
+4✔
+751	
+                                "variableKey":   variableKey,
+4✔
+752	
+                                "variableType":  variableType,
+4✔
+753	
+                                "variableValue": stringValue,
+4✔
+754	
+                        }
+4✔
+755	
+4✔
+756	
+                        decisionNotification := decision.FeatureNotificationWithVariables(featureKey, featureDecision, &userContext, variableMap)
+4✔
+757	
+                        decisionNotification.Type = notification.FeatureVariable
+4✔
+758	
+4✔
+759	
+                        if e := o.notificationCenter.Send(notification.Decision, *decisionNotification); e != nil {
+4✔
+760	
+                                o.logger.Warning("Problem with sending notification")
+×
+761	
+                        }
+×
+762	
+                }
+763	
+        }()
+764	
+        if err != nil {
+10✔
+765	
+                return "", err
+1✔
+766	
+        }
+1✔
+767	
+        if variableType != entities.String {
+12✔
+768	
+                return "", fmt.Errorf("variable value for key %s is wrong type", variableKey)
+4✔
+769	
+        }
+4✔
+770	
+771	
+        return stringValue, err
+4✔
+772	
+}
+773	
+774	
+// GetFeatureVariableJSON returns the feature variable value of type json associated with the given feature and variable keys.
+775	
+func (o *OptimizelyClient) GetFeatureVariableJSON(featureKey, variableKey string, userContext entities.UserContext) (optlyJSON *optimizelyjson.OptimizelyJSON, err error) {
+12✔
+776	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameGetFeatureVariableJSON)
+12✔
+777	
+        defer span.End()
+12✔
+778	
+12✔
+779	
+        stringVal, variableType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+12✔
+780	
+        defer func() {
+24✔
+781	
+                if o.notificationCenter != nil {
+17✔
+782	
+                        var variableValue interface{}
+5✔
+783	
+                        if optlyJSON != nil {
+7✔
+784	
+                                variableValue = optlyJSON.ToMap()
+2✔
+785	
+                        } else {
+5✔
+786	
+                                variableValue = stringVal
+3✔
+787	
+                        }
+3✔
+788	
+                        variableMap := map[string]interface{}{
+5✔
+789	
+                                "variableKey":   variableKey,
+5✔
+790	
+                                "variableType":  variableType,
+5✔
+791	
+                                "variableValue": variableValue,
+5✔
+792	
+                        }
+5✔
+793	
+                        decisionNotification := decision.FeatureNotificationWithVariables(featureKey, featureDecision, &userContext, variableMap)
+5✔
+794	
+                        decisionNotification.Type = notification.FeatureVariable
+5✔
+795	
+5✔
+796	
+                        if e := o.notificationCenter.Send(notification.Decision, *decisionNotification); e != nil {
+5✔
+797	
+                                o.logger.Warning("Problem with sending notification")
+×
+798	
+                        }
+×
+799	
+                }
+800	
+        }()
+801	
+        if err != nil {
+14✔
+802	
+                return optlyJSON, err
+2✔
+803	
+        }
+2✔
+804	
+805	
+        optlyJSON, err = optimizelyjson.NewOptimizelyJSONfromString(stringVal)
+10✔
+806	
+        if err != nil || variableType != entities.JSON {
+16✔
+807	
+                optlyJSON, err = nil, fmt.Errorf("variable value for key %s is invalid or wrong type", variableKey)
+6✔
+808	
+        }
+6✔
+809	
+810	
+        return optlyJSON, err
+10✔
+811	
+}
+812	
+813	
+// getFeatureVariable is a helper function, returns feature variable as a string along with it's associated type and feature decision
+814	
+func (o *OptimizelyClient) getFeatureVariable(featureKey, variableKey string, userContext entities.UserContext) (string, entities.VariableType, *decision.FeatureDecision, error) {
+57✔
+815	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameGetFeatureVariablePrivate)
+57✔
+816	
+        defer span.End()
+57✔
+817	
+57✔
+818	
+        featureDecisionContext, featureDecision, err := o.getFeatureDecision(featureKey, variableKey, userContext)
+57✔
+819	
+        if err != nil {
+66✔
+820	
+                return "", "", &featureDecision, err
+9✔
+821	
+        }
+9✔
+822	
+823	
+        variable := featureDecisionContext.Variable
+48✔
+824	
+48✔
+825	
+        if featureDecision.Variation != nil {
+96✔
+826	
+                if v, ok := featureDecision.Variation.Variables[variable.ID]; ok && featureDecision.Variation.FeatureEnabled {
+86✔
+827	
+                        return v.Value, variable.Type, &featureDecision, nil
+38✔
+828	
+                }
+38✔
+829	
+        }
+830	
+831	
+        return variable.DefaultValue, variable.Type, &featureDecision, nil
+10✔
+832	
+}
+833	
+834	
+// GetFeatureVariable returns feature variable as a string along with it's associated type.
+835	
+func (o *OptimizelyClient) GetFeatureVariable(featureKey, variableKey string, userContext entities.UserContext) (string, entities.VariableType, error) {
+×
+836	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameGetFeatureVariablePublic)
+×
+837	
+        defer span.End()
+×
+838	
+×
+839	
+        stringValue, variableType, featureDecision, err := o.getFeatureVariable(featureKey, variableKey, userContext)
+×
+840	
+×
+841	
+        func() {
+×
+842	
+                var convertedValue interface{}
+×
+843	
+                var e error
+×
+844	
+×
+845	
+                convertedValue = stringValue
+×
+846	
+                switch variableType {
+×
+847	
+                case entities.Integer:
+×
+848	
+                        convertedValue, e = strconv.Atoi(stringValue)
+×
+849	
+                case entities.Double:
+×
+850	
+                        convertedValue, e = strconv.ParseFloat(stringValue, 64)
+×
+851	
+                case entities.Boolean:
+×
+852	
+                        convertedValue, e = strconv.ParseBool(stringValue)
+×
+853	
+                case entities.JSON:
+×
+854	
+                        convertedValue = map[string]string{}
+×
+855	
+                        e = json.Unmarshal([]byte(stringValue), &convertedValue)
+×
+856	
+                }
+857	
+                if e != nil {
+×
+858	
+                        o.logger.Warning("Problem with converting string value to proper type for notification builder")
+×
+859	
+                }
+×
+860	
+861	
+                variableMap := map[string]interface{}{
+×
+862	
+                        "variableKey":   variableKey,
+×
+863	
+                        "variableType":  variableType,
+×
+864	
+                        "variableValue": convertedValue,
+×
+865	
+                }
+×
+866	
+                decisionNotification := decision.FeatureNotificationWithVariables(featureKey, featureDecision, &userContext, variableMap)
+×
+867	
+                decisionNotification.Type = notification.FeatureVariable
+×
+868	
+×
+869	
+                if e = o.notificationCenter.Send(notification.Decision, *decisionNotification); e != nil {
+×
+870	
+                        o.logger.Warning("Problem with sending notification")
+×
+871	
+                }
+×
+872	
+        }()
+873	
+874	
+        return stringValue, variableType, err
+×
+875	
+}
+876	
+877	
+// GetAllFeatureVariablesWithDecision returns all the variables for a given feature along with the enabled state.
+878	
+func (o *OptimizelyClient) GetAllFeatureVariablesWithDecision(featureKey string, userContext entities.UserContext) (enabled bool, variableMap map[string]interface{}, err error) {
+21✔
+879	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameGetAllFeatureVariablesWithDecision)
+21✔
+880	
+        defer span.End()
+21✔
+881	
+21✔
+882	
+        variableMap = make(map[string]interface{})
+21✔
+883	
+        decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, "", userContext)
+21✔
+884	
+        if err != nil {
+21✔
+885	
+                o.logger.Error("Optimizely SDK tracking error", err)
+×
+886	
+                return enabled, variableMap, err
+×
+887	
+        }
+×
+888	
+889	
+        if featureDecision.Variation != nil {
+40✔
+890	
+                enabled = featureDecision.Variation.FeatureEnabled
+19✔
+891	
+        }
+19✔
+892	
+893	
+        feature := decisionContext.Feature
+21✔
+894	
+        if feature == nil {
+23✔
+895	
+                o.logger.Warning(fmt.Sprintf(`feature %q does not exist`, featureKey))
+2✔
+896	
+                return enabled, variableMap, nil
+2✔
+897	
+        }
+2✔
+898	
+899	
+        errs := new(multierror.Error)
+19✔
+900	
+19✔
+901	
+        for _, v := range feature.VariableMap {
+96✔
+902	
+                val := v.DefaultValue
+77✔
+903	
+77✔
+904	
+                if enabled {
+154✔
+905	
+                        if variable, ok := featureDecision.Variation.Variables[v.ID]; ok {
+94✔
+906	
+                                val = variable.Value
+17✔
+907	
+                        }
+17✔
+908	
+                }
+909	
+910	
+                typedValue, typedError := o.getTypedValue(val, v.Type)
+77✔
+911	
+                errs = multierror.Append(errs, typedError)
+77✔
+912	
+                variableMap[v.Key] = typedValue
+77✔
+913	
+        }
+914	
+915	
+        if o.notificationCenter != nil {
+35✔
+916	
+                decisionNotification := decision.FeatureNotificationWithVariables(featureKey, &featureDecision, &userContext,
+16✔
+917	
+                        map[string]interface{}{"variableValues": variableMap})
+16✔
+918	
+                decisionNotification.Type = notification.AllFeatureVariables
+16✔
+919	
+16✔
+920	
+                if err = o.notificationCenter.Send(notification.Decision, *decisionNotification); err != nil {
+16✔
+921	
+                        o.logger.Warning("Problem with sending notification")
+×
+922	
+                }
+×
+923	
+        }
+924	
+        return enabled, variableMap, errs.ErrorOrNil()
+19✔
+925	
+}
+926	
+927	
+// GetDetailedFeatureDecisionUnsafe triggers an impression event and returns all the variables
+928	
+// for a given feature along with the experiment key, variation key and the enabled state.
+929	
+// Usage of this method is unsafe and not recommended since it can be removed in any of the next releases.
+930	
+func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, userContext entities.UserContext, disableTracking bool) (decisionInfo decision.UnsafeFeatureDecisionInfo, err error) {
+5✔
+931	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameGetDetailedFeatureDecisionUnsafe)
+5✔
+932	
+        defer span.End()
+5✔
+933	
+5✔
+934	
+        decisionInfo = decision.UnsafeFeatureDecisionInfo{}
+5✔
+935	
+        decisionInfo.VariableMap = make(map[string]interface{})
+5✔
+936	
+        decisionContext, featureDecision, err := o.getFeatureDecision(featureKey, "", userContext)
+5✔
+937	
+        if err != nil {
+6✔
+938	
+                o.logger.Error("Optimizely SDK tracking error", err)
+1✔
+939	
+                return decisionInfo, err
+1✔
+940	
+        }
+1✔
+941	
+942	
+        if featureDecision.Variation != nil {
+7✔
+943	
+                decisionInfo.Enabled = featureDecision.Variation.FeatureEnabled
+3✔
+944	
+3✔
+945	
+                // This information is only necessary for feature tests.
+3✔
+946	
+                // For rollouts experiments and variations are an implementation detail only.
+3✔
+947	
+                if featureDecision.Source == decision.FeatureTest {
+4✔
+948	
+                        decisionInfo.VariationKey = featureDecision.Variation.Key
+1✔
+949	
+                        decisionInfo.ExperimentKey = featureDecision.Experiment.Key
+1✔
+950	
+                }
+1✔
+951	
+952	
+                // Triggers impression events when applicable
+953	
+                if !disableTracking {
+4✔
+954	
+                        // send impression event for feature tests
+1✔
+955	
+                        if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
+1✔
+956	
+                                featureDecision.Variation, userContext, featureKey, featureDecision.Experiment.Key, featureDecision.Source, decisionInfo.Enabled, featureDecision.CmabUUID); ok {
+2✔
+957	
+                                o.EventProcessor.ProcessEvent(ue)
+1✔
+958	
+                        }
+1✔
+959	
+                }
+960	
+        }
+961	
+962	
+        feature := decisionContext.Feature
+4✔
+963	
+        if feature == nil {
+5✔
+964	
+                o.logger.Warning(fmt.Sprintf(`feature %q does not exist`, featureKey))
+1✔
+965	
+                return decisionInfo, nil
+1✔
+966	
+        }
+1✔
+967	
+968	
+        errs := new(multierror.Error)
+3✔
+969	
+3✔
+970	
+        for _, v := range feature.VariableMap {
+14✔
+971	
+                val := v.DefaultValue
+11✔
+972	
+11✔
+973	
+                if decisionInfo.Enabled {
+22✔
+974	
+                        if variable, ok := featureDecision.Variation.Variables[v.ID]; ok {
+22✔
+975	
+                                val = variable.Value
+11✔
+976	
+                        } else {
+11✔
+977	
+                                o.logger.Warning(fmt.Sprintf(`variable with id %q does not exist`, v.ID))
+×
+978	
+                        }
+×
+979	
+                }
+980	
+981	
+                typedValue, typedError := o.getTypedValue(val, v.Type)
+11✔
+982	
+                errs = multierror.Append(errs, typedError)
+11✔
+983	
+                decisionInfo.VariableMap[v.Key] = typedValue
+11✔
+984	
+        }
+985	
+986	
+        if o.notificationCenter != nil {
+4✔
+987	
+                decisionNotification := decision.FeatureNotificationWithVariables(featureKey, &featureDecision, &userContext,
+1✔
+988	
+                        map[string]interface{}{"variableValues": decisionInfo.VariableMap})
+1✔
+989	
+                decisionNotification.Type = notification.AllFeatureVariables
+1✔
+990	
+1✔
+991	
+                if err = o.notificationCenter.Send(notification.Decision, *decisionNotification); err != nil {
+1✔
+992	
+                        o.logger.Warning(fmt.Sprintf("Problem with sending notification: %v", err))
+×
+993	
+                }
+×
+994	
+        }
+995	
+        return decisionInfo, errs.ErrorOrNil()
+3✔
+996	
+}
+997	
+998	
+// GetAllFeatureVariables returns all the variables as OptimizelyJSON object for a given feature.
+999	
+func (o *OptimizelyClient) GetAllFeatureVariables(featureKey string, userContext entities.UserContext) (optlyJSON *optimizelyjson.OptimizelyJSON, err error) {
+17✔
+1000	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameGetAllFeatureVariables)
+17✔
+1001	
+        defer span.End()
+17✔
+1002	
+17✔
+1003	
+        _, variableMap, err := o.GetAllFeatureVariablesWithDecision(featureKey, userContext)
+17✔
+1004	
+        if err != nil {
+17✔
+1005	
+                return optlyJSON, err
+×
+1006	
+        }
+×
+1007	
+        optlyJSON = optimizelyjson.NewOptimizelyJSONfromMap(variableMap)
+17✔
+1008	
+        return optlyJSON, nil
+17✔
+1009	
+}
+1010	
+1011	
+// GetVariation returns the key of the variation the user is bucketed into. Does not generate impression events.
+1012	
+func (o *OptimizelyClient) GetVariation(experimentKey string, userContext entities.UserContext) (result string, err error) {
+3✔
+1013	
+3✔
+1014	
+        defer func() {
+6✔
+1015	
+                if r := recover(); r != nil {
+4✔
+1016	
+                        switch t := r.(type) {
+1✔
+1017	
+                        case error:
+×
+1018	
+                                err = t
+×
+1019	
+                        case string:
+1✔
+1020	
+                                err = errors.New(t)
+1✔
+1021	
+                        default:
+×
+1022	
+                                err = errors.New("unexpected error")
+×
+1023	
+                        }
+1024	
+                        errorMessage := "GetVariation call, optimizely SDK is panicking with the error:"
+1✔
+1025	
+                        o.logger.Error(errorMessage, err)
+1✔
+1026	
+                        o.logger.Debug(string(debug.Stack()))
+1✔
+1027	
+                }
+1028	
+        }()
+1029	
+1030	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameGetVariation)
+3✔
+1031	
+        defer span.End()
+3✔
+1032	
+3✔
+1033	
+        _, experimentDecision, err := o.getExperimentDecision(experimentKey, userContext)
+3✔
+1034	
+        if err != nil {
+3✔
+1035	
+                o.logger.Error("received an error while computing experiment decision", err)
+×
+1036	
+        }
+×
+1037	
+1038	
+        if experimentDecision.Variation != nil {
+4✔
+1039	
+                result = experimentDecision.Variation.Key
+2✔
+1040	
+        }
+2✔
+1041	
+1042	
+        return result, err
+2✔
+1043	
+}
+1044	
+1045	
+// Track generates a conversion event with the given event key if it exists and queues it up to be sent to the Optimizely
+1046	
+// log endpoint for results processing.
+1047	
+func (o *OptimizelyClient) Track(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}) (err error) {
+19✔
+1048	
+19✔
+1049	
+        defer func() {
+38✔
+1050	
+                if r := recover(); r != nil {
+20✔
+1051	
+                        switch t := r.(type) {
+1✔
+1052	
+                        case error:
+×
+1053	
+                                err = t
+×
+1054	
+                        case string:
+1✔
+1055	
+                                err = errors.New(t)
+1✔
+1056	
+                        default:
+×
+1057	
+                                err = errors.New("unexpected error")
+×
+1058	
+                        }
+1059	
+                        errorMessage := "Track call, optimizely SDK is panicking with the error:"
+1✔
+1060	
+                        o.logger.Error(errorMessage, err)
+1✔
+1061	
+                        o.logger.Debug(string(debug.Stack()))
+1✔
+1062	
+                }
+1063	
+        }()
+1064	
+1065	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameTrack)
+19✔
+1066	
+        defer span.End()
+19✔
+1067	
+19✔
+1068	
+        projectConfig, e := o.getProjectConfig()
+19✔
+1069	
+        if e != nil {
+19✔
+1070	
+                o.logger.Error("Optimizely SDK tracking error", e)
+×
+1071	
+                return e
+×
+1072	
+        }
+×
+1073	
+1074	
+        configEvent, e := projectConfig.GetEventByKey(eventKey)
+18✔
+1075	
+18✔
+1076	
+        if e != nil {
+20✔
+1077	
+                errorMessage := fmt.Sprintf(`Unable to get event for key %q: %s`, eventKey, e)
+2✔
+1078	
+                o.logger.Warning(errorMessage)
+2✔
+1079	
+                return nil
+2✔
+1080	
+        }
+2✔
+1081	
+1082	
+        userEvent := event.CreateConversionUserEvent(projectConfig, configEvent, userContext, eventTags)
+16✔
+1083	
+        if o.EventProcessor.ProcessEvent(userEvent) && o.notificationCenter != nil {
+29✔
+1084	
+                trackNotification := notification.TrackNotification{EventKey: eventKey, UserContext: userContext, EventTags: eventTags, ConversionEvent: *userEvent.Conversion}
+13✔
+1085	
+                if err = o.notificationCenter.Send(notification.Track, trackNotification); err != nil {
+14✔
+1086	
+                        o.logger.Warning("Problem with sending notification")
+1✔
+1087	
+                }
+1✔
+1088	
+        }
+1089	
+1090	
+        return nil
+16✔
+1091	
+}
+1092	
+1093	
+func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, userContext entities.UserContext) (decisionContext decision.FeatureDecisionContext, featureDecision decision.FeatureDecision, err error) {
+96✔
+1094	
+96✔
+1095	
+        defer func() {
+192✔
+1096	
+                if r := recover(); r != nil {
+109✔
+1097	
+                        switch t := r.(type) {
+13✔
+1098	
+                        case error:
+5✔
+1099	
+                                err = t
+5✔
+1100	
+                        case string:
+8✔
+1101	
+                                err = errors.New(t)
+8✔
+1102	
+                        default:
+×
+1103	
+                                err = errors.New("unexpected error")
+×
+1104	
+                        }
+1105	
+                        errorMessage := "getFeatureDecision call, optimizely SDK is panicking with the error:"
+13✔
+1106	
+                        o.logger.Error(errorMessage, err)
+13✔
+1107	
+                        o.logger.Debug(string(debug.Stack()))
+13✔
+1108	
+                }
+1109	
+        }()
+1110	
+1111	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameGetFeatureDecision)
+96✔
+1112	
+        defer span.End()
+96✔
+1113	
+96✔
+1114	
+        userID := userContext.ID
+96✔
+1115	
+        o.logger.Debug(fmt.Sprintf(`Evaluating feature %q for user %q.`, featureKey, userID))
+96✔
+1116	
+96✔
+1117	
+        projectConfig, e := o.getProjectConfig()
+96✔
+1118	
+        if e != nil {
+98✔
+1119	
+                o.logger.Error("Error calling getFeatureDecision", e)
+2✔
+1120	
+                return decisionContext, featureDecision, e
+2✔
+1121	
+        }
+2✔
+1122	
+1123	
+        decisionContext.ProjectConfig = projectConfig
+83✔
+1124	
+        feature, e := projectConfig.GetFeatureByKey(featureKey)
+83✔
+1125	
+        if e != nil {
+87✔
+1126	
+                o.logger.Warning(fmt.Sprintf(`Could not get feature for key %q: %s`, featureKey, e))
+4✔
+1127	
+                return decisionContext, featureDecision, nil
+4✔
+1128	
+        }
+4✔
+1129	
+1130	
+        decisionContext.Feature = &feature
+78✔
+1131	
+        variable := entities.Variable{}
+78✔
+1132	
+        if variableKey != "" {
+129✔
+1133	
+                variable, err = projectConfig.GetVariableByKey(feature.Key, variableKey)
+51✔
+1134	
+                if err != nil {
+51✔
+1135	
+                        o.logger.Warning(fmt.Sprintf(`Could not get variable for key %q: %s`, variableKey, err))
+×
+1136	
+                        return decisionContext, featureDecision, nil
+×
+1137	
+                }
+×
+1138	
+        }
+1139	
+1140	
+        decisionContext.Variable = variable
+78✔
+1141	
+        options := &decide.Options{}
+78✔
+1142	
+        featureDecision, _, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext, options)
+78✔
+1143	
+        if err != nil {
+78✔
+1144	
+                o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature %q: %s`, featureKey, err))
+×
+NEW1145	
+                return decisionContext, featureDecision, err
+×
+1146	
+        }
+×
+1147	
+1148	
+        return decisionContext, featureDecision, nil
+77✔
+1149	
+}
+1150	
+1151	
+func (o *OptimizelyClient) getExperimentDecision(experimentKey string, userContext entities.UserContext) (decisionContext decision.ExperimentDecisionContext, experimentDecision decision.ExperimentDecision, err error) {
+7✔
+1152	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameGetExperimentDecision)
+7✔
+1153	
+        defer span.End()
+7✔
+1154	
+7✔
+1155	
+        userID := userContext.ID
+7✔
+1156	
+        o.logger.Debug(fmt.Sprintf(`Evaluating experiment %q for user %q.`, experimentKey, userID))
+7✔
+1157	
+7✔
+1158	
+        projectConfig, e := o.getProjectConfig()
+7✔
+1159	
+        if e != nil {
+8✔
+1160	
+                return decisionContext, experimentDecision, e
+1✔
+1161	
+        }
+1✔
+1162	
+1163	
+        experiment, e := projectConfig.GetExperimentByKey(experimentKey)
+4✔
+1164	
+        if e != nil {
+5✔
+1165	
+                o.logger.Warning(fmt.Sprintf(`Could not get experiment for key %q: %s`, experimentKey, e))
+1✔
+1166	
+                return decisionContext, experimentDecision, nil
+1✔
+1167	
+        }
+1✔
+1168	
+1169	
+        decisionContext = decision.ExperimentDecisionContext{
+3✔
+1170	
+                Experiment:    &experiment,
+3✔
+1171	
+                ProjectConfig: projectConfig,
+3✔
+1172	
+                UserProfile:   nil,
+3✔
+1173	
+        }
+3✔
+1174	
+3✔
+1175	
+        options := &decide.Options{}
+3✔
+1176	
+        experimentDecision, _, err = o.DecisionService.GetExperimentDecision(decisionContext, userContext, options)
+3✔
+1177	
+        if err != nil {
+4✔
+1178	
+                o.logger.Warning(fmt.Sprintf(`Received error while making a decision for experiment %q: %s`, experimentKey, err))
+1✔
+1179	
+                return decisionContext, experimentDecision, nil
+1✔
+1180	
+        }
+1✔
+1181	
+1182	
+        if experimentDecision.Variation != nil {
+4✔
+1183	
+                result := experimentDecision.Variation.Key
+2✔
+1184	
+                o.logger.Debug(fmt.Sprintf(`User %q is bucketed into variation %q of experiment %q.`, userContext.ID, result, experimentKey))
+2✔
+1185	
+        } else {
+2✔
+1186	
+                o.logger.Debug(fmt.Sprintf(`User %q is not bucketed into any variation for experiment %q: %s.`, userContext.ID, experimentKey, experimentDecision.Reason))
+×
+1187	
+        }
+×
+1188	
+1189	
+        return decisionContext, experimentDecision, err
+2✔
+1190	
+}
+1191	
+1192	
+// OnTrack registers a handler for Track notifications
+1193	
+func (o *OptimizelyClient) OnTrack(callback func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent)) (int, error) {
+28✔
+1194	
+        if o.notificationCenter == nil {
+31✔
+1195	
+                return 0, fmt.Errorf("no notification center found")
+3✔
+1196	
+        }
+3✔
+1197	
+1198	
+        handler := func(payload interface{}) {
+45✔
+1199	
+                success := false
+20✔
+1200	
+                if trackNotification, ok := payload.(notification.TrackNotification); ok {
+40✔
+1201	
+                        if conversionEvent, ok := trackNotification.ConversionEvent.(event.ConversionEvent); ok {
+40✔
+1202	
+                                success = true
+20✔
+1203	
+                                callback(trackNotification.EventKey, trackNotification.UserContext, trackNotification.EventTags, conversionEvent)
+20✔
+1204	
+                        }
+20✔
+1205	
+                }
+1206	
+                if !success {
+20✔
+1207	
+                        o.logger.Warning(fmt.Sprintf("Unable to convert notification payload %v into TrackNotification", payload))
+×
+1208	
+                }
+×
+1209	
+        }
+1210	
+        id, err := o.notificationCenter.AddHandler(notification.Track, handler)
+25✔
+1211	
+        if err != nil {
+26✔
+1212	
+                o.logger.Warning("Problem with adding notification handler")
+1✔
+1213	
+                return 0, err
+1✔
+1214	
+        }
+1✔
+1215	
+        return id, nil
+24✔
+1216	
+}
+1217	
+1218	
+// RemoveOnTrack removes handler for Track notification with given id
+1219	
+func (o *OptimizelyClient) RemoveOnTrack(id int) error {
+12✔
+1220	
+        if o.notificationCenter == nil {
+13✔
+1221	
+                return fmt.Errorf("no notification center found")
+1✔
+1222	
+        }
+1✔
+1223	
+        if err := o.notificationCenter.RemoveHandler(id, notification.Track); err != nil {
+12✔
+1224	
+                o.logger.Warning("Problem with removing notification handler")
+1✔
+1225	
+                return err
+1✔
+1226	
+        }
+1✔
+1227	
+        return nil
+10✔
+1228	
+}
+1229	
+1230	
+func (o *OptimizelyClient) getTypedValue(value string, variableType entities.VariableType) (convertedValue interface{}, err error) {
+190✔
+1231	
+        convertedValue = value
+190✔
+1232	
+        switch variableType {
+190✔
+1233	
+        case entities.Boolean:
+27✔
+1234	
+                convertedValue, err = strconv.ParseBool(value)
+27✔
+1235	
+        case entities.Double:
+27✔
+1236	
+                convertedValue, err = strconv.ParseFloat(value, 64)
+27✔
+1237	
+        case entities.Integer:
+57✔
+1238	
+                convertedValue, err = strconv.Atoi(value)
+57✔
+1239	
+        case entities.JSON:
+27✔
+1240	
+                var optlyJSON *optimizelyjson.OptimizelyJSON
+27✔
+1241	
+                optlyJSON, err = optimizelyjson.NewOptimizelyJSONfromString(value)
+27✔
+1242	
+                convertedValue = optlyJSON.ToMap()
+27✔
+1243	
+        case entities.String:
+28✔
+1244	
+        default:
+24✔
+1245	
+                o.logger.Warning(fmt.Sprintf(`type %q is unknown, returning string`, variableType))
+24✔
+1246	
+        }
+1247	
+        return convertedValue, err
+190✔
+1248	
+}
+1249	
+1250	
+func (o *OptimizelyClient) getProjectConfig() (projectConfig config.ProjectConfig, err error) {
+238✔
+1251	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameGetProjectConfig)
+238✔
+1252	
+        defer span.End()
+238✔
+1253	
+238✔
+1254	
+        if isNil(o.ConfigManager) {
+239✔
+1255	
+                return nil, errors.New("project config manager is not initialized")
+1✔
+1256	
+        }
+1✔
+1257	
+        projectConfig, err = o.ConfigManager.GetConfig()
+237✔
+1258	
+        if err != nil {
+246✔
+1259	
+                return nil, err
+9✔
+1260	
+        }
+9✔
+1261	
+1262	
+        return projectConfig, nil
+213✔
+1263	
+}
+1264	
+1265	
+func (o *OptimizelyClient) getAllOptions(options *decide.Options) decide.Options {
+96✔
+1266	
+        return decide.Options{
+96✔
+1267	
+                DisableDecisionEvent:     o.defaultDecideOptions.DisableDecisionEvent || options.DisableDecisionEvent,
+96✔
+1268	
+                EnabledFlagsOnly:         o.defaultDecideOptions.EnabledFlagsOnly || options.EnabledFlagsOnly,
+96✔
+1269	
+                ExcludeVariables:         o.defaultDecideOptions.ExcludeVariables || options.ExcludeVariables,
+96✔
+1270	
+                IgnoreUserProfileService: o.defaultDecideOptions.IgnoreUserProfileService || options.IgnoreUserProfileService,
+96✔
+1271	
+                IncludeReasons:           o.defaultDecideOptions.IncludeReasons || options.IncludeReasons,
+96✔
+1272	
+                IgnoreCMABCache:          o.defaultDecideOptions.IgnoreCMABCache || options.IgnoreCMABCache,
+96✔
+1273	
+                ResetCMABCache:           o.defaultDecideOptions.ResetCMABCache || options.ResetCMABCache,
+96✔
+1274	
+                InvalidateUserCMABCache:  o.defaultDecideOptions.InvalidateUserCMABCache || options.InvalidateUserCMABCache,
+96✔
+1275	
+        }
+96✔
+1276	
+}
+96✔
+1277	
+1278	
+// GetOptimizelyConfig returns OptimizelyConfig object
+1279	
+func (o *OptimizelyClient) GetOptimizelyConfig() (optimizelyConfig *config.OptimizelyConfig) {
+1✔
+1280	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameGetOptimizelyConfig)
+1✔
+1281	
+        defer span.End()
+1✔
+1282	
+        return o.ConfigManager.GetOptimizelyConfig()
+1✔
+1283	
+}
+1✔
+1284	
+1285	
+// GetNotificationCenter returns Optimizely Notification Center interface
+1286	
+func (o *OptimizelyClient) GetNotificationCenter() notification.Center {
+1✔
+1287	
+        return o.notificationCenter
+1✔
+1288	
+}
+1✔
+1289	
+1290	
+// Close closes the Optimizely instance and stops any ongoing tasks from its children components.
+1291	
+func (o *OptimizelyClient) Close() {
+1✔
+1292	
+        o.execGroup.TerminateAndWait()
+1✔
+1293	
+}
+1✔
+1294	
+1295	
+func (o *OptimizelyClient) getDecisionVariableMap(feature entities.Feature, variation *entities.Variation, featureEnabled bool) (map[string]interface{}, decide.DecisionReasons) {
+42✔
+1296	
+        _, span := o.tracer.StartSpan(o.ctx, DefaultTracerName, SpanNameGetDecisionVariableMap)
+42✔
+1297	
+        defer span.End()
+42✔
+1298	
+42✔
+1299	
+        reasons := decide.NewDecisionReasons(nil)
+42✔
+1300	
+        valuesMap := map[string]interface{}{}
+42✔
+1301	
+42✔
+1302	
+        for _, v := range feature.VariableMap {
+144✔
+1303	
+                val := v.DefaultValue
+102✔
+1304	
+102✔
+1305	
+                if featureEnabled {
+180✔
+1306	
+                        if variable, ok := variation.Variables[v.ID]; ok {
+78✔
+1307	
+                                val = variable.Value
+×
+1308	
+                        }
+×
+1309	
+                }
+1310	
+1311	
+                typedValue, typedError := o.getTypedValue(val, v.Type)
+102✔
+1312	
+                if typedError != nil {
+102✔
+1313	
+                        reasons.AddError(decide.GetDecideMessage(decide.VariableValueInvalid, v.Key))
+×
+1314	
+                }
+×
+1315	
+                valuesMap[v.Key] = typedValue
+102✔
+1316	
+        }
+1317	
+1318	
+        return valuesMap, reasons
+42✔
+1319	
+}
+1320	
+1321	
+func isNil(v interface{}) bool {
+238✔
+1322	
+        return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
+238✔
+1323	
+}
+238✔
+1324	
+UNCOV1325	
+func (o *OptimizelyClient) handleDecisionServiceError(err error, key string, userContext OptimizelyUserContext) OptimizelyDecision {
+×
+UNCOV1326	
+        o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature %q: %s`, key, err))
+×
+UNCOV1327	
+×
+UNCOV1328	
+        // Return the error decision with the correct format for decision fields
+×
+UNCOV1329	
+        return OptimizelyDecision{
+×
+UNCOV1330	
+                FlagKey:      key,
+×
+UNCOV1331	
+                UserContext:  userContext,
+×
+UNCOV1332	
+                VariationKey: "",
+×
+UNCOV1333	
+                RuleKey:      "",
+×
+UNCOV1334	
+                Enabled:      false,
+×
+UNCOV1335	
+                Variables:    optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{}),
+×
+UNCOV1336	
+                Reasons:      []string{err.Error()},
+×
+UNCOV1337	
+        }
+×
+UNCOV1338	
+}
+×
+STATUS · Troubleshooting · Open an Issue · Sales · Support · CAREERS · ENTERPRISE · START FREE · SCHEDULE DEMO
+ANNOUNCEMENTS · TWITTER · TOS & SLA · Supported CI Services · What's a CI service? · Automated Testing
+© 2025 Coveralls, Inc
+
