@@ -12,6 +12,57 @@ import (
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
 
+// SIMPLE EXAMPLE: Uncomment this to test simple production CDN approach
+func main() {
+	customTemplateExample()
+}
+
+func customTemplateExample() {
+	sdkKey := "JgzFaGzGXx6F1ocTbMTmn" // matjaz editor develrc flag!! Able to run the experiment for cmab field to be included in datafile
+
+	// Enable debug logging to see CMAB activity
+	logging.SetLogLevel(logging.LogLevelDebug)
+
+	fmt.Printf("Testing CMAB with master branch (camelCase JSON tags)\n")
+	fmt.Printf("Attempting to fetch datafile from develrc environment\n")
+
+	// Create config manager with develrc URL template - match Python approach
+	configManager := config.NewPollingProjectConfigManager(sdkKey,
+		config.WithDatafileURLTemplate("https://dev.cdn.optimizely.com/datafiles/%s.json"))
+
+	// Use the proper factory option to set config manager
+	factory := &client.OptimizelyFactory{
+		SDKKey: sdkKey,
+	}
+
+	client, err := factory.Client(
+		client.WithConfigManager(configManager),
+	)
+	if err != nil {
+		fmt.Println("Error initializing Optimizely client:", err)
+		return
+	}
+	defer client.Close()
+
+	// Wait for datafile to load
+	fmt.Println("Waiting for datafile to load...")
+	time.Sleep(2 * time.Second)
+
+	// Match Python example: user123 with empty attributes initially
+	userContext := client.CreateUserContext("user123", map[string]interface{}{})
+
+	fmt.Println("Making decision for flag 'flag-matjaz-editor'...")
+	decision := userContext.Decide("flag-matjaz-editor", nil)
+
+	fmt.Printf("=== DECISION RESULT ===\n")
+	fmt.Printf("Enabled: %v\n", decision.Enabled)
+	fmt.Printf("Variation: %s\n", decision.VariationKey)
+	fmt.Printf("Rule: %s\n", decision.RuleKey)
+	fmt.Printf("Reasons: %v\n", decision.Reasons)
+
+	fmt.Printf("\nNote: Check logs above for CMAB/prediction endpoint calls\n")
+}
+
 // import (
 // 	"fmt"
 // 	"time"
@@ -105,90 +156,3 @@ import (
 
 // 	optimizelyClient.Close()
 // }
-
-// SIMPLE EXAMPLE: Uncomment this to test simple production CDN approach
-func main() {
-	// simpleExample()
-	customTemplateExample()
-	// datafileExample()
-}
-
-func customTemplateExample() {
-	sdkKey := "JgzFaGzGXx6F1ocTbMTmn" // matjaz editor develrc flag!! Able to run the experiment for cmab field to be included in datafile
-
-	// Enable debug logging to see CMAB activity
-	logging.SetLogLevel(logging.LogLevelDebug)
-
-	fmt.Printf("Testing CMAB with master branch (camelCase JSON tags)\n")
-	fmt.Printf("Attempting to fetch datafile from develrc environment\n")
-
-	// Create config manager with develrc URL template - match Python approach
-	configManager := config.NewPollingProjectConfigManager(sdkKey,
-		config.WithDatafileURLTemplate("https://dev.cdn.optimizely.com/datafiles/%s.json"))
-
-	// Use the proper factory option to set config manager
-	factory := &client.OptimizelyFactory{
-		SDKKey: sdkKey,
-	}
-
-	client, err := factory.Client(
-		client.WithConfigManager(configManager),
-	)
-	if err != nil {
-		fmt.Println("Error initializing Optimizely client:", err)
-		return
-	}
-	defer client.Close()
-
-	// Wait for datafile to load
-	fmt.Println("Waiting for datafile to load...")
-	time.Sleep(2 * time.Second)
-
-	// Match Python example: user123 with empty attributes initially
-	userContext := client.CreateUserContext("user123", map[string]interface{}{})
-
-	fmt.Println("Making decision for flag 'flag-matjaz-editor'...")
-	decision := userContext.Decide("flag-matjaz-editor", nil)
-
-	fmt.Printf("=== DECISION RESULT ===\n")
-	fmt.Printf("Enabled: %v\n", decision.Enabled)
-	fmt.Printf("Variation: %s\n", decision.VariationKey)
-	fmt.Printf("Rule: %s\n", decision.RuleKey)
-	fmt.Printf("Reasons: %v\n", decision.Reasons)
-
-	fmt.Printf("\nNote: Check logs above for CMAB/prediction endpoint calls\n")
-}
-
-
-func datafileExample() {
-	sdkKey := "JgzFaGzGXx6F1ocTbMTmn" // SDK key from the embedded datafile
-
-	fmt.Println("Using embedded datafile directly (no URL fetch)")
-
-	// Create factory with the embedded datafile
-	factory := &client.OptimizelyFactory{
-		SDKKey: sdkKey,
-		// Datafile: []byte(datafile), // Use the embedded datafile directly
-	}
-
-	client, err := factory.Client()
-	if err != nil {
-		fmt.Println("Error initializing Optimizely client:", err)
-		return
-	}
-	defer client.Close()
-
-	// Create user context with cmab_test_attribute (available in datafile)
-	userContext := client.CreateUserContext("user789", map[string]interface{}{
-		"cmab_test_attribute": "test_value",
-	})
-
-	// Test with feature flag f5 that exists in the datafile
-	decision := userContext.Decide("f5", nil)
-
-	fmt.Printf("Datafile Example - Enabled: %v, Variation: %s, Rule: %s, Reasons: %v\n",
-		decision.Enabled, decision.VariationKey, decision.RuleKey, decision.Reasons)
-
-	// Check if this datafile contains any real experiments (not just rollouts)
-	fmt.Printf("Note: This datafile contains only rollout experiments (no A/B tests with CMAB)\n")
-}
