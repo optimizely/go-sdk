@@ -156,39 +156,9 @@ func customTemplateExample() {
 	fmt.Printf("Rule: %s\n", decision.RuleKey)
 	fmt.Printf("Reasons: %v\n", decision.Reasons)
 
-	// Check if this looks like a CMAB decision
-	if len(decision.Reasons) > 0 {
-		fmt.Printf("\n=== CMAB ANALYSIS ===\n")
-		for i, reason := range decision.Reasons {
-			fmt.Printf("Reason %d: %s\n", i+1, reason)
-			// Look for CMAB-specific reasons
-			if contains(reason, "cmab") || contains(reason, "prediction") || contains(reason, "bandit") {
-				fmt.Printf("  ^^^ This indicates CMAB activity!\n")
-			}
-		}
-	} else {
-		fmt.Printf("\n=== CMAB ANALYSIS ===\n")
-		fmt.Printf("No reasons provided - this suggests a simple rollout (no CMAB)\n")
-	}
-
-	fmt.Printf("\nNote: Check logs above for any CMAB/prediction endpoint calls\n")
+	fmt.Printf("\nNote: Check logs above for CMAB/prediction endpoint calls\n")
 }
 
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr ||
-		(len(s) > len(substr) &&
-			(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr ||
-				indexOf(s, substr) >= 0)))
-}
-
-func indexOf(s, substr string) int {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-	return -1
-}
 
 func datafileExample() {
 	sdkKey := "JgzFaGzGXx6F1ocTbMTmn" // SDK key from the embedded datafile
