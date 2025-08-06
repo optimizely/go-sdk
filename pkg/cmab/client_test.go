@@ -200,10 +200,7 @@ func TestDefaultCmabClient_FetchDecision_WithRetry(t *testing.T) {
 			Timeout: 5 * time.Second,
 		},
 		RetryConfig: &RetryConfig{
-			MaxRetries:        5,
-			InitialBackoff:    10 * time.Millisecond, // Short backoff for testing
-			MaxBackoff:        100 * time.Millisecond,
-			BackoffMultiplier: 2.0,
+			MaxRetries: 5,
 		},
 	})
 
@@ -227,8 +224,8 @@ func TestDefaultCmabClient_FetchDecision_WithRetry(t *testing.T) {
 	assert.Equal(t, "var123", variationID)
 	assert.Equal(t, 3, requestCount, "Expected 3 request attempts")
 
-	// Verify that backoff was applied (at least some delay between requests)
-	assert.True(t, duration >= 30*time.Millisecond, "Expected some backoff delay between requests")
+	// Verify that retry was fast (no backoff delay)
+	assert.True(t, duration < 1*time.Second, "Expected fast retry without backoff")
 }
 
 func TestDefaultCmabClient_FetchDecision_ExhaustedRetries(t *testing.T) {
@@ -248,10 +245,7 @@ func TestDefaultCmabClient_FetchDecision_ExhaustedRetries(t *testing.T) {
 			Timeout: 5 * time.Second,
 		},
 		RetryConfig: &RetryConfig{
-			MaxRetries:        2, // Allow 2 retries (3 total attempts)
-			InitialBackoff:    10 * time.Millisecond,
-			MaxBackoff:        100 * time.Millisecond,
-			BackoffMultiplier: 2.0,
+			MaxRetries: 2, // Allow 2 retries (3 total attempts)
 		},
 	})
 
@@ -280,7 +274,7 @@ func TestDefaultCmabClient_FetchDecision_ExhaustedRetries(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, "", variationID)
 	assert.Equal(t, 3, requestCount, "Expected 3 request attempts (initial + 2 retries)")
-	assert.Contains(t, err.Error(), "failed to fetch CMAB decision after 2 attempts")
+	assert.Contains(t, err.Error(), "failed to fetch CMAB decision after 3 attempts")
 	assert.Contains(t, err.Error(), "non-success status code: 500")
 }
 
@@ -402,10 +396,7 @@ func TestDefaultCmabClient_FetchDecision_NetworkErrors(t *testing.T) {
 			Timeout: 100 * time.Millisecond, // Short timeout to fail quickly
 		},
 		RetryConfig: &RetryConfig{
-			MaxRetries:        1,
-			InitialBackoff:    10 * time.Millisecond,
-			MaxBackoff:        100 * time.Millisecond,
-			BackoffMultiplier: 2.0,
+			MaxRetries: 1,
 		},
 		Logger: mockLogger,
 	})
@@ -424,21 +415,21 @@ func TestDefaultCmabClient_FetchDecision_NetworkErrors(t *testing.T) {
 
 	// Verify results
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to fetch CMAB decision after 1 attempts")
+	assert.Contains(t, err.Error(), "failed to fetch CMAB decision after 2 attempts")
 
 	// Verify that retry was attempted by checking if the warning log was produced
 	assert.True(t, retryAttempted, "Expected retry to be attempted")
 }
 
-func TestDefaultCmabClient_ExponentialBackoff(t *testing.T) {
-	// Setup test server that tracks request times
-	requestTimes := []time.Time{}
+func TestDefaultCmabClient_SimpleRetry(t *testing.T) {
+	// Setup test server that tracks request count
+	requestCount := 0
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestTimes = append(requestTimes, time.Now())
+		requestCount++
 
 		// First 3 requests fail, 4th succeeds
-		if len(requestTimes) < 4 {
+		if requestCount < 4 {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -463,10 +454,7 @@ func TestDefaultCmabClient_ExponentialBackoff(t *testing.T) {
 			Timeout: 5 * time.Second,
 		},
 		RetryConfig: &RetryConfig{
-			MaxRetries:        5,
-			InitialBackoff:    50 * time.Millisecond,
-			MaxBackoff:        1 * time.Second,
-			BackoffMultiplier: 2.0,
+			MaxRetries: 5,
 		},
 	})
 
@@ -475,7 +463,7 @@ func TestDefaultCmabClient_ExponentialBackoff(t *testing.T) {
 	CMABPredictionEndpoint = server.URL + "/%s"
 	defer func() { CMABPredictionEndpoint = originalEndpoint }()
 
-	// Test fetch decision with exponential backoff
+	// Test fetch decision with simple retry (no backoff)
 	attributes := map[string]interface{}{
 		"browser": "chrome",
 	}
@@ -485,25 +473,7 @@ func TestDefaultCmabClient_ExponentialBackoff(t *testing.T) {
 	// Verify results
 	require.NoError(t, err)
 	assert.Equal(t, "var123", variationID)
-	assert.Equal(t, 4, len(requestTimes), "Expected 4 request attempts")
-
-	// Verify exponential backoff intervals
-	// First request happens immediately, then we should see increasing intervals
-	if len(requestTimes) >= 4 {
-		interval1 := requestTimes[1].Sub(requestTimes[0])
-		interval2 := requestTimes[2].Sub(requestTimes[1])
-		interval3 := requestTimes[3].Sub(requestTimes[2])
-
-		// Each interval should be approximately double the previous one
-		// Allow some margin for test execution timing variations
-		assert.True(t, interval1 >= 50*time.Millisecond, "First backoff should be at least initialBackoff")
-		assert.True(t, interval2 >= 100*time.Millisecond, "Second backoff should be at least 2x initialBackoff")
-		assert.True(t, interval3 >= 200*time.Millisecond, "Third backoff should be at least 4x initialBackoff")
-
-		// Verify increasing pattern
-		assert.True(t, interval2 > interval1, "Backoff intervals should increase")
-		assert.True(t, interval3 > interval2, "Backoff intervals should increase")
-	}
+	assert.Equal(t, 4, requestCount, "Expected 4 request attempts")
 }
 
 func TestNewDefaultCmabClient_DefaultValues(t *testing.T) {
@@ -550,10 +520,7 @@ func TestDefaultCmabClient_LoggingBehavior(t *testing.T) {
 			Timeout: 5 * time.Second,
 		},
 		RetryConfig: &RetryConfig{
-			MaxRetries:        1,
-			InitialBackoff:    10 * time.Millisecond,
-			MaxBackoff:        100 * time.Millisecond,
-			BackoffMultiplier: 2.0,
+			MaxRetries: 1,
 		},
 		Logger: mockLogger,
 	})
@@ -571,23 +538,24 @@ func TestDefaultCmabClient_LoggingBehavior(t *testing.T) {
 	_, err := client.FetchDecision("rule456", "user123", attributes, "test-uuid")
 	assert.NoError(t, err)
 
+	// Debug: Print log messages
+	t.Logf("Log messages captured: %d", len(logMessages))
+	for i, msg := range logMessages {
+		t.Logf("  [%d] %s", i, msg)
+	}
+
 	// Verify log messages
-	assert.True(t, len(logMessages) >= 2, "Expected at least 2 log messages")
+	assert.True(t, len(logMessages) >= 1, "Expected at least 1 log message")
 
 	// Check for retry warning
 	foundRetryWarning := false
-	foundBackoffDebug := false
 	for _, msg := range logMessages {
 		if strings.Contains(msg, "WARNING") && strings.Contains(msg, "CMAB API request failed") {
 			foundRetryWarning = true
 		}
-		if strings.Contains(msg, "DEBUG") && strings.Contains(msg, "CMAB request retry") {
-			foundBackoffDebug = true
-		}
 	}
 
 	assert.True(t, foundRetryWarning, "Expected warning log about API request failure")
-	assert.True(t, foundBackoffDebug, "Expected debug log about retry backoff")
 }
 
 func TestDefaultCmabClient_NonSuccessStatusCode(t *testing.T) {

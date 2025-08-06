@@ -20,7 +20,6 @@ package client
 import (
 	"context"
 	"errors"
-	"reflect"
 	"time"
 
 	"github.com/optimizely/go-sdk/v2/pkg/cmab"
@@ -55,7 +54,7 @@ type OptimizelyFactory struct {
 	overrideStore        decision.ExperimentOverrideStore
 	userProfileService   decision.UserProfileService
 	notificationCenter   notification.Center
-	cmabConfig           cmab.Config
+	cmabConfig           *cmab.Config
 
 	// ODP
 	segmentsCacheSize    int
@@ -163,8 +162,8 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 			experimentServiceOptions = append(experimentServiceOptions, decision.WithOverrideStore(f.overrideStore))
 		}
 		// Add CMAB config option if provided
-		if !reflect.DeepEqual(f.cmabConfig, cmab.Config{}) {
-			experimentServiceOptions = append(experimentServiceOptions, decision.WithCmabConfig(f.cmabConfig))
+		if f.cmabConfig != nil {
+			experimentServiceOptions = append(experimentServiceOptions, decision.WithCmabConfig(*f.cmabConfig))
 		}
 		compositeExperimentService := decision.NewCompositeExperimentService(f.SDKKey, experimentServiceOptions...)
 		compositeService := decision.NewCompositeService(f.SDKKey, decision.WithCompositeExperimentService(compositeExperimentService))
@@ -328,7 +327,7 @@ func WithTracer(tracer tracing.Tracer) OptionFunc {
 }
 
 // WithCmabConfig sets the CMAB configuration options
-func WithCmabConfig(cmabConfig cmab.Config) OptionFunc {
+func WithCmabConfig(cmabConfig *cmab.Config) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.cmabConfig = cmabConfig
 	}

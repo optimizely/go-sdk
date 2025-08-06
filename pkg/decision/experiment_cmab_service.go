@@ -45,18 +45,43 @@ type ExperimentCmabService struct {
 
 // NewExperimentCmabService creates a new instance of ExperimentCmabService with all dependencies initialized
 func NewExperimentCmabService(sdkKey string, config cmab.Config) *ExperimentCmabService {
-	// Initialize CMAB cache with config values
-	cmabCache := cache.NewLRUCache(config.CacheSize, config.CacheTTL)
+	// Use custom cache if provided, otherwise create default LRU cache with default values for zero inputs
+	var cmabCache cache.CacheWithRemove
+	if config.Cache != nil {
+		cmabCache = config.Cache
+	} else {
+		cacheSize := config.CacheSize
+		if cacheSize == 0 {
+			cacheSize = cmab.DefaultCacheSize
+		}
+		cacheTTL := config.CacheTTL
+		if cacheTTL == 0 {
+			cacheTTL = cmab.DefaultCacheTTL
+		}
+		cmabCache = cache.NewLRUCache(cacheSize, cacheTTL)
+	}
 
-	// Create HTTP client with config timeout
+	// Create HTTP client with config timeout, use default if zero
+	httpTimeout := config.HTTPTimeout
+	if httpTimeout == 0 {
+		httpTimeout = cmab.DefaultHTTPTimeout
+	}
 	httpClient := &http.Client{
-		Timeout: config.HTTPTimeout,
+		Timeout: httpTimeout,
+	}
+
+	// Handle retry config with defaults for zero values
+	retryConfig := config.RetryConfig
+	if retryConfig != nil && retryConfig.MaxRetries == 0 {
+		retryConfig = &cmab.RetryConfig{
+			MaxRetries: cmab.DefaultMaxRetries,
+		}
 	}
 
 	// Create CMAB client options
 	cmabClientOptions := cmab.ClientOptions{
 		HTTPClient:  httpClient,
-		RetryConfig: config.RetryConfig,
+		RetryConfig: retryConfig,
 		Logger:      logging.GetLogger(sdkKey, "DefaultCmabClient"),
 	}
 

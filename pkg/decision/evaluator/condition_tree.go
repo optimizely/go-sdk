@@ -75,14 +75,15 @@ func (c MixedTreeEvaluator) Evaluate(node *entities.TreeNode, condTreeParams *en
 
 	var result bool
 	var err error
-	var decisionReasons decide.DecisionReasons
 	switch v := node.Item.(type) {
 	case entities.Condition:
 		evaluator := NewCustomAttributeConditionEvaluator(c.logger)
+		var decisionReasons decide.DecisionReasons
 		result, decisionReasons, err = evaluator.Evaluate(node.Item.(entities.Condition), condTreeParams, options)
 		reasons.Append(decisionReasons)
 	case string:
 		evaluator := NewAudienceConditionEvaluator(c.logger)
+		var decisionReasons decide.DecisionReasons
 		result, decisionReasons, err = evaluator.Evaluate(node.Item.(string), condTreeParams, options)
 		reasons.Append(decisionReasons)
 	default:

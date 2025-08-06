@@ -466,17 +466,14 @@ func TestFactoryWithCmabConfig(t *testing.T) {
 		CacheTTL:    time.Minute,
 		HTTPTimeout: 30 * time.Second,
 		RetryConfig: &cmab.RetryConfig{
-			MaxRetries:        5,
-			InitialBackoff:    200 * time.Millisecond,
-			MaxBackoff:        20 * time.Second,
-			BackoffMultiplier: 3.0,
+			MaxRetries: 5,
 		},
 	}
 
 	// Test the option function
-	WithCmabConfig(cmabConfig)(&factory)
+	WithCmabConfig(&cmabConfig)(&factory)
 
-	assert.Equal(t, cmabConfig, factory.cmabConfig)
+	assert.Equal(t, &cmabConfig, factory.cmabConfig)
 	assert.Equal(t, 100, factory.cmabConfig.CacheSize)
 	assert.Equal(t, time.Minute, factory.cmabConfig.CacheTTL)
 	assert.Equal(t, 30*time.Second, factory.cmabConfig.HTTPTimeout)
@@ -491,20 +488,17 @@ func TestFactoryCmabConfigPassedToDecisionService(t *testing.T) {
 		CacheTTL:    2 * time.Minute,
 		HTTPTimeout: 20 * time.Second,
 		RetryConfig: &cmab.RetryConfig{
-			MaxRetries:        3,
-			InitialBackoff:    100 * time.Millisecond,
-			MaxBackoff:        10 * time.Second,
-			BackoffMultiplier: 2.0,
+			MaxRetries: 3,
 		},
 	}
 
 	factory := OptimizelyFactory{
 		SDKKey:     "test_sdk_key",
-		cmabConfig: cmabConfig,
+		cmabConfig: &cmabConfig,
 	}
 
 	// Verify the config is set
-	assert.Equal(t, cmabConfig, factory.cmabConfig)
+	assert.Equal(t, &cmabConfig, factory.cmabConfig)
 	assert.Equal(t, 200, factory.cmabConfig.CacheSize)
 	assert.Equal(t, 2*time.Minute, factory.cmabConfig.CacheTTL)
 	assert.NotNil(t, factory.cmabConfig.RetryConfig)
@@ -518,14 +512,14 @@ func TestFactoryOptionFunctions(t *testing.T) {
 	WithSegmentsCacheSize(100)(factory)
 	WithSegmentsCacheTimeout(5 * time.Second)(factory)
 	WithOdpDisabled(true)(factory)
-	WithCmabConfig(cmab.Config{CacheSize: 50})(factory)
+	WithCmabConfig(&cmab.Config{CacheSize: 50})(factory)
 
 	// Verify options were set
 	assert.Equal(t, "test_token", factory.DatafileAccessToken)
 	assert.Equal(t, 100, factory.segmentsCacheSize)
 	assert.Equal(t, 5*time.Second, factory.segmentsCacheTimeout)
 	assert.True(t, factory.odpDisabled)
-	assert.Equal(t, cmab.Config{CacheSize: 50}, factory.cmabConfig)
+	assert.Equal(t, &cmab.Config{CacheSize: 50}, factory.cmabConfig)
 }
 
 func TestWithCmabConfigOption(t *testing.T) {
@@ -534,8 +528,8 @@ func TestWithCmabConfigOption(t *testing.T) {
 		CacheSize: 200,
 		CacheTTL:  2 * time.Minute,
 	}
-	WithCmabConfig(testConfig)(factory)
-	assert.Equal(t, testConfig, factory.cmabConfig)
+	WithCmabConfig(&testConfig)(factory)
+	assert.Equal(t, &testConfig, factory.cmabConfig)
 }
 
 func TestClientWithCmabConfig(t *testing.T) {
@@ -545,10 +539,7 @@ func TestClientWithCmabConfig(t *testing.T) {
 		CacheTTL:    5 * time.Minute,
 		HTTPTimeout: 30 * time.Second,
 		RetryConfig: &cmab.RetryConfig{
-			MaxRetries:        5,
-			InitialBackoff:    200 * time.Millisecond,
-			MaxBackoff:        20 * time.Second,
-			BackoffMultiplier: 3.0,
+			MaxRetries: 5,
 		},
 	}
 
@@ -556,7 +547,7 @@ func TestClientWithCmabConfig(t *testing.T) {
 		SDKKey: "test_sdk_key",
 	}
 
-	client, err := factory.Client(WithCmabConfig(cmabConfig))
+	client, err := factory.Client(WithCmabConfig(&cmabConfig))
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
 
@@ -574,7 +565,7 @@ func TestClientWithEmptyCmabConfig(t *testing.T) {
 		SDKKey: "test_sdk_key",
 	}
 
-	client, err := factory.Client(WithCmabConfig(emptyCmabConfig))
+	client, err := factory.Client(WithCmabConfig(&emptyCmabConfig))
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
 

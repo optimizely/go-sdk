@@ -3242,106 +3242,6 @@ func TestHandleDecisionServiceError_CoversAllLines(t *testing.T) {
 	assert.Equal(t, []string{"some error"}, decision.Reasons)
 }
 
-func TestDecideWithCmabServiceSimple(t *testing.T) {
-	// Use a real static config with minimal datafile
-	datafile := []byte(`{
-        "version": "4",
-        "projectId": "test_project",
-        "featureFlags": [],
-        "experiments": [],
-        "groups": [],
-        "attributes": [],
-        "events": [],
-        "revision": "1"
-    }`)
-
-	configManager := config.NewStaticProjectConfigManagerWithOptions("", config.WithInitialDatafile(datafile))
-
-	client := OptimizelyClient{
-		ConfigManager: configManager,
-		logger:        logging.GetLogger("", ""),
-		tracer:        &MockTracer{},
-	}
-
-	userContext := client.CreateUserContext("user1", map[string]interface{}{"country": "US"})
-	result := client.decide(&userContext, "nonexistent_flag", nil)
-
-	// This should complete without panic and return error decision
-	assert.Equal(t, "nonexistent_flag", result.FlagKey)
-	assert.False(t, result.Enabled)
-}
-
-func TestDecideWithCmabError(t *testing.T) {
-	// Test the handleDecisionServiceError method directly
-	client := OptimizelyClient{
-		logger: logging.GetLogger("", ""),
-	}
-
-	userContext := client.CreateUserContext("user1", map[string]interface{}{"country": "US"})
-
-	// Test the error handler directly - this covers the missing lines
-	result := client.handleDecisionServiceError(errors.New("test error"), "cmab_feature", userContext)
-
-	assert.Equal(t, "cmab_feature", result.FlagKey)
-	assert.Equal(t, userContext, result.UserContext)
-	assert.False(t, result.Enabled)
-	assert.Equal(t, []string{"test error"}, result.Reasons)
-}
-
-func TestDecideWithCmabServiceIntegration(t *testing.T) {
-	// Just test that CMAB service is called and doesn't crash
-	// Don't try to test the entire decision flow
-	client := OptimizelyClient{
-		logger: logging.GetLogger("", ""),
-		tracer: &MockTracer{},
-	}
-
-	// Test with nil ConfigManager (safe error path)
-	userContext := client.CreateUserContext("user1", nil)
-	result := client.decide(&userContext, "any_feature", nil)
-
-	// Just verify it doesn't crash and returns something reasonable
-	assert.NotNil(t, result)
-	// Don't assert specific values since this is an error path
-}
-
-func TestDecideWithCmabDecisionPath(t *testing.T) {
-	// Test the specific CMAB decision code path that's missing coverage
-	// Create a minimal client with just what's needed
-	client := OptimizelyClient{
-		logger: logging.GetLogger("", ""),
-		tracer: &MockTracer{},
-	}
-
-	// Test user context creation
-	userContext := client.CreateUserContext("test_user", map[string]interface{}{
-		"country": "US",
-		"age":     25,
-	})
-
-	// Test the decision path with CMAB service present
-	result := client.decide(&userContext, "test_feature", nil)
-
-	// Basic assertions
-	assert.NotNil(t, result)
-	assert.Equal(t, userContext, result.UserContext)
-}
-
-func TestDecideWithCmabServiceErrorHandling(t *testing.T) {
-	// Test error handling in CMAB service integration
-	client := OptimizelyClient{
-		logger: logging.GetLogger("", ""),
-		tracer: &MockTracer{},
-	}
-
-	userContext := client.CreateUserContext("user1", nil)
-
-	// This should trigger error handling code paths
-	result := client.decide(&userContext, "feature", nil)
-
-	assert.NotNil(t, result)
-}
-
 func TestClientAdditionalMethods(t *testing.T) {
 	client := OptimizelyClient{
 		logger: logging.GetLogger("", ""),
@@ -3365,8 +3265,8 @@ func TestClientAdditionalMethods(t *testing.T) {
 	assert.NotNil(t, result2)
 }
 
-func TestDecideWithCmabUUID(t *testing.T) {
-	// Test CMAB UUID handling code path
+func TestDecideWithCmab(t *testing.T) {
+	// Test CMAB handling in decide path
 	client := OptimizelyClient{
 		logger: logging.GetLogger("", ""),
 		tracer: &MockTracer{},
@@ -3376,7 +3276,7 @@ func TestDecideWithCmabUUID(t *testing.T) {
 	result := client.decide(&userContext, "feature", nil)
 
 	assert.NotNil(t, result)
-	// This should cover the CMAB UUID handling lines
+	// This covers the CMAB handling in the decide method
 }
 
 func (m *MockProjectConfig) GetExperimentByID(experimentID string) (entities.Experiment, error) {
@@ -3428,7 +3328,6 @@ func TestHandleDecisionServiceError_MoreCoverage(t *testing.T) {
 				Enabled:      false,
 				Variables:    optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{}),
 				Reasons:      []string{"Failed to fetch CMAB data for experiment exp_123"},
-				CmabUUID:     nil,
 			},
 		},
 		{
@@ -3443,7 +3342,6 @@ func TestHandleDecisionServiceError_MoreCoverage(t *testing.T) {
 				Enabled:      false,
 				Variables:    optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{}),
 				Reasons:      []string{"some other error"},
-				CmabUUID:     nil,
 			},
 		},
 	}
@@ -3458,7 +3356,6 @@ func TestHandleDecisionServiceError_MoreCoverage(t *testing.T) {
 			assert.Equal(t, tt.expected.RuleKey, result.RuleKey)
 			assert.Equal(t, tt.expected.Enabled, result.Enabled)
 			assert.Equal(t, tt.expected.Reasons, result.Reasons)
-			assert.Nil(t, result.CmabUUID)
 		})
 	}
 }

@@ -18,6 +18,9 @@
 package decision
 
 import (
+	"time"
+
+	"github.com/optimizely/go-sdk/v2/pkg/cache"
 	"github.com/optimizely/go-sdk/v2/pkg/cmab"
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
@@ -41,10 +44,61 @@ func WithOverrideStore(overrideStore ExperimentOverrideStore) CESOptionFunc {
 	}
 }
 
-// WithCmabConfig adds CMAB configuration
+// WithCmabConfig merges the provided CMAB configuration with defaults.
+// Only non-zero values from the provided config will override defaults.
 func WithCmabConfig(config cmab.Config) CESOptionFunc {
 	return func(f *CompositeExperimentService) {
-		f.cmabConfig = config
+		// Merge with existing config instead of replacing
+		if config.CacheSize > 0 {
+			f.cmabConfig.CacheSize = config.CacheSize
+		}
+		if config.CacheTTL > 0 {
+			f.cmabConfig.CacheTTL = config.CacheTTL
+		}
+		if config.HTTPTimeout > 0 {
+			f.cmabConfig.HTTPTimeout = config.HTTPTimeout
+		}
+		if config.RetryConfig != nil {
+			f.cmabConfig.RetryConfig = config.RetryConfig
+		}
+		if config.Cache != nil {
+			f.cmabConfig.Cache = config.Cache
+		}
+	}
+}
+
+// WithCmabCacheSize sets only the CMAB cache size
+func WithCmabCacheSize(size int) CESOptionFunc {
+	return func(f *CompositeExperimentService) {
+		f.cmabConfig.CacheSize = size
+	}
+}
+
+// WithCmabCacheTTL sets only the CMAB cache TTL
+func WithCmabCacheTTL(ttl time.Duration) CESOptionFunc {
+	return func(f *CompositeExperimentService) {
+		f.cmabConfig.CacheTTL = ttl
+	}
+}
+
+// WithCmabHTTPTimeout sets only the CMAB HTTP timeout
+func WithCmabHTTPTimeout(timeout time.Duration) CESOptionFunc {
+	return func(f *CompositeExperimentService) {
+		f.cmabConfig.HTTPTimeout = timeout
+	}
+}
+
+// WithCmabRetryConfig sets only the CMAB retry configuration
+func WithCmabRetryConfig(retryConfig *cmab.RetryConfig) CESOptionFunc {
+	return func(f *CompositeExperimentService) {
+		f.cmabConfig.RetryConfig = retryConfig
+	}
+}
+
+// WithCmabCache sets a custom cache implementation for CMAB
+func WithCmabCache(customCache cache.CacheWithRemove) CESOptionFunc {
+	return func(f *CompositeExperimentService) {
+		f.cmabConfig.Cache = customCache
 	}
 }
 

@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"time"
 
@@ -78,12 +77,6 @@ type Response struct {
 type RetryConfig struct {
 	// MaxRetries is the maximum number of retry attempts
 	MaxRetries int
-	// InitialBackoff is the initial backoff duration
-	InitialBackoff time.Duration
-	// MaxBackoff is the maximum backoff duration
-	MaxBackoff time.Duration
-	// BackoffMultiplier is the multiplier for exponential backoff
-	BackoffMultiplier float64
 }
 
 // DefaultCmabClient implements the CmabClient interface
@@ -169,7 +162,7 @@ func (c *DefaultCmabClient) FetchDecision(
 		return c.doFetch(context.Background(), url, bodyBytes)
 	}
 
-	// Retry sending request with exponential backoff
+	// Retry without exponential backoff for performance
 	var lastErr error
 	for i := 0; i <= c.retryConfig.MaxRetries; i++ {
 		// Make the request
@@ -179,38 +172,11 @@ func (c *DefaultCmabClient) FetchDecision(
 		}
 
 		lastErr = err
-
-		// Don't wait after the last attempt
-		if i < c.retryConfig.MaxRetries {
-			backoffDuration := c.retryConfig.InitialBackoff * time.Duration(1<<i)
-
-			// Wait for backoff duration
-			time.Sleep(backoffDuration)
-		}
-
-		// Calculate backoff duration
-		backoffDuration := c.retryConfig.InitialBackoff * time.Duration(math.Pow(c.retryConfig.BackoffMultiplier, float64(i)))
-		if backoffDuration > c.retryConfig.MaxBackoff {
-			backoffDuration = c.retryConfig.MaxBackoff
-		}
-
-		c.logger.Debug(fmt.Sprintf("CMAB request retry %d/%d, backing off for %v",
-			i+1, c.retryConfig.MaxRetries, backoffDuration))
-
-		// Wait for backoff duration with context awareness
-		select {
-		case <-context.Background().Done():
-			return "", fmt.Errorf("context canceled or timed out during backoff: %w", context.Background().Err())
-		case <-time.After(backoffDuration):
-			// Continue with retry
-		}
-
 		c.logger.Warning(fmt.Sprintf("CMAB API request failed (attempt %d/%d): %v",
-			i+1, c.retryConfig.MaxRetries, err))
+			i+1, c.retryConfig.MaxRetries+1, err))
 	}
 
-	// This should never be reached due to the return in the loop above
-	return "", fmt.Errorf("failed to fetch CMAB decision after %d attempts: %w", c.retryConfig.MaxRetries, lastErr)
+	return "", fmt.Errorf("failed to fetch CMAB decision after %d attempts: %w", c.retryConfig.MaxRetries+1, lastErr)
 }
 
 // doFetch performs a single fetch operation to the CMAB API

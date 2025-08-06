@@ -30,7 +30,6 @@ type OptimizelyDecision struct {
 	FlagKey      string                         `json:"flagKey"`
 	UserContext  OptimizelyUserContext          `json:"userContext"`
 	Reasons      []string                       `json:"reasons"`
-	CmabUUID     *string                        `json:"cmabUUID,omitempty"` // Pointer to CMAB UUID: set for CMAB decisions, nil for non-CMAB decisions
 }
 
 // NewOptimizelyDecision creates and returns a new instance of OptimizelyDecision
@@ -40,7 +39,6 @@ func NewOptimizelyDecision(
 	variables *optimizelyjson.OptimizelyJSON,
 	userContext OptimizelyUserContext,
 	reasons []string,
-	cmabUUID *string,
 ) OptimizelyDecision {
 	return OptimizelyDecision{
 		VariationKey: variationKey,
@@ -50,7 +48,6 @@ func NewOptimizelyDecision(
 		FlagKey:      flagKey,
 		UserContext:  userContext,
 		Reasons:      reasons,
-		CmabUUID:     cmabUUID, // <-- Set field for CMAB support
 	}
 }
 
@@ -61,6 +58,5 @@ func NewErrorDecision(key string, user OptimizelyUserContext, err error) Optimiz
 		UserContext: user,
 		Variables:   optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{}),
 		Reasons:     []string{err.Error()},
-		CmabUUID:    nil, // CmabUUID is optional and defaults to nil
 	}
 }

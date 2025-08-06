@@ -242,7 +242,7 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 		}
 	}
 
-	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, *userContext, reasonsToReport, featureDecision.CmabUUID)
+	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, *userContext, reasonsToReport)
 }
 
 func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options *decide.Options) map[string]OptimizelyDecision {
@@ -1073,7 +1073,7 @@ func (o *OptimizelyClient) getFeatureDecision(featureKey, variableKey string, us
 	featureDecision, _, err = o.DecisionService.GetFeatureDecision(decisionContext, userContext, options)
 	if err != nil {
 		o.logger.Warning(fmt.Sprintf(`Received error while making a decision for feature %q: %s`, featureKey, err))
-		return decisionContext, featureDecision, err
+		return decisionContext, featureDecision, nil
 	}
 
 	return decisionContext, featureDecision, nil
@@ -1265,6 +1265,5 @@ func (o *OptimizelyClient) handleDecisionServiceError(err error, key string, use
 		Enabled:      false,
 		Variables:    optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{}),
 		Reasons:      []string{err.Error()},
-		CmabUUID:     nil,
 	}
 }

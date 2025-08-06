@@ -17,13 +17,17 @@
 // Package cmab provides contextual multi-armed bandit functionality
 package cmab
 
-import "time"
+import (
+	"time"
+
+	"github.com/optimizely/go-sdk/v2/pkg/cache"
+)
 
 const (
 	// DefaultCacheSize is the default size for CMAB cache
 	DefaultCacheSize = 100
-	// DefaultCacheTTL is the default TTL for CMAB cache
-	DefaultCacheTTL = 0 * time.Second
+	// DefaultCacheTTL is the default TTL for CMAB cache (30 minutes to match agent)
+	DefaultCacheTTL = 30 * time.Minute
 
 	// DefaultHTTPTimeout is the default HTTP timeout for CMAB requests
 	DefaultHTTPTimeout = 10 * time.Second
@@ -35,6 +39,7 @@ type Config struct {
 	CacheTTL    time.Duration
 	HTTPTimeout time.Duration
 	RetryConfig *RetryConfig
+	Cache       cache.CacheWithRemove // Custom cache implementation (Redis, etc.)
 }
 
 // NewDefaultConfig creates a Config with default values
@@ -44,10 +49,7 @@ func NewDefaultConfig() Config {
 		CacheTTL:    DefaultCacheTTL,
 		HTTPTimeout: DefaultHTTPTimeout,
 		RetryConfig: &RetryConfig{
-			MaxRetries:        DefaultMaxRetries,
-			InitialBackoff:    DefaultInitialBackoff,
-			MaxBackoff:        DefaultMaxBackoff,
-			BackoffMultiplier: DefaultBackoffMultiplier,
+			MaxRetries: DefaultMaxRetries,
 		},
 	}
 }
