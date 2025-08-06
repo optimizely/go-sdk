@@ -37,7 +37,22 @@ const botFilteringKey = "$opt_bot_filtering"
 const revenueKey = "revenue"
 const valueKey = "value"
 
+func getEventEndPoint(region, eventEndPoint string) string {
+	if eventEndPoint != "" {
+		return eventEndPoint
+	}
+	switch region {
+	case "EU":
+		return EventEndPoints["EU"]
+	case "US":
+		return EventEndPoints["US"]
+	default:
+		return EventEndPoints["US"]
+	}
+}
+
 func createLogEvent(event Batch, eventEndPoint string) LogEvent {
+	eventEndPoint = getEventEndPoint(event.Region, eventEndPoint)
 	return LogEvent{EndPoint: eventEndPoint, Event: event}
 }
 
@@ -55,6 +70,7 @@ func CreateEventContext(projectConfig config.ProjectConfig) Context {
 	context.ClientVersion = Version
 	context.AnonymizeIP = projectConfig.GetAnonymizeIP()
 	context.BotFiltering = projectConfig.GetBotFiltering()
+	context.Region = projectConfig.GetRegion()
 
 	return context
 }
@@ -253,6 +269,7 @@ func createBatchEvent(userEvent UserEvent, visitor Visitor) Batch {
 	eventBatch.ClientVersion = userEvent.EventContext.ClientVersion
 	eventBatch.AnonymizeIP = userEvent.EventContext.AnonymizeIP
 	eventBatch.EnrichDecisions = true
+	eventBatch.Region = userEvent.EventContext.Region
 
 	return eventBatch
 }

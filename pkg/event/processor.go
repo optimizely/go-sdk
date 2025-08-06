@@ -71,8 +71,10 @@ const CloseEventDispatchWaitTime = 500 * time.Millisecond
 // CloseEventDispatchTimeout holds the timeout value for the waiting for the dispatching events on client close
 const CloseEventDispatchTimeout = 30 * time.Second
 
-// DefaultEventEndPoint is used as the default endpoint for sending events.
-const DefaultEventEndPoint = "https://logx.optimizely.com/v1/events"
+var EventEndPoints = map[string]string{
+	"US": "https://logx.optimizely.com/v1/events",
+	"EU": "https://eu.logx.optimizely.com/v1/events",
+}
 
 const maxFlushWorkers = 1
 
@@ -159,7 +161,7 @@ func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 	}
 
 	if p.EventEndPoint == "" {
-		p.EventEndPoint = DefaultEventEndPoint
+		p.EventEndPoint = EventEndPoints["US"]
 	}
 
 	if p.BatchSize > p.MaxQueueSize {

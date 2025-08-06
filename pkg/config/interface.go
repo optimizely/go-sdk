@@ -55,6 +55,7 @@ type ProjectConfig interface {
 	GetEnvironmentKey() string
 	GetAttributes() []entities.Attribute
 	GetFlagVariationsMap() map[string][]entities.Variation
+	GetRegion() string
 }
 
 // ProjectConfigManager maintains an instance of the ProjectConfig
