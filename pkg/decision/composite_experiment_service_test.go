@@ -309,6 +309,30 @@ func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithPart
 	s.Equal(250, compositeExperimentService3.cmabConfig.CacheSize)
 	s.Equal(cmab.DefaultCacheTTL, compositeExperimentService3.cmabConfig.CacheTTL)       // Should be default
 	s.Equal(cmab.DefaultHTTPTimeout, compositeExperimentService3.cmabConfig.HTTPTimeout) // Should be default
+
+	// Test remaining granular options for coverage
+	compositeExperimentService4 := NewCompositeExperimentService("test-sdk-key",
+		WithCmabHTTPTimeout(5*time.Second),
+		WithCmabRetryConfig(&cmab.RetryConfig{MaxRetries: 2}),
+	)
+	s.Equal(5*time.Second, compositeExperimentService4.cmabConfig.HTTPTimeout)
+	s.Equal(2, compositeExperimentService4.cmabConfig.RetryConfig.MaxRetries)
+
+	// Test custom cache injection for coverage
+	mockCache := &mockCache{}
+	compositeExperimentService5 := NewCompositeExperimentService("test-sdk-key",
+		WithCmabCache(mockCache),
+	)
+	s.Equal(mockCache, compositeExperimentService5.cmabConfig.Cache)
+
+	// Test config with custom cache to cover Cache != nil branch
+	configWithCache := cmab.Config{
+		Cache: mockCache,
+	}
+	compositeExperimentService6 := NewCompositeExperimentService("test-sdk-key",
+		WithCmabConfig(configWithCache),
+	)
+	s.NotNil(compositeExperimentService6.cmabConfig.Cache)
 }
 
 func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithAllOptions() {
@@ -371,6 +395,14 @@ func (s *CompositeExperimentTestSuite) TestCmabServiceReturnsError() {
 
 	mockCmabService.AssertExpectations(s.T())
 }
+
+// mockCache implements cache.CacheWithRemove for testing
+type mockCache struct{}
+
+func (m *mockCache) Save(key string, value interface{}) {}
+func (m *mockCache) Lookup(key string) interface{}      { return nil }
+func (m *mockCache) Reset()                             {}
+func (m *mockCache) Remove(key string)                  {}
 
 func TestCompositeExperimentTestSuite(t *testing.T) {
 	suite.Run(t, new(CompositeExperimentTestSuite))
