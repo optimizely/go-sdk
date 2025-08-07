@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/optimizely/go-sdk/v2/pkg/cache"
 	"github.com/optimizely/go-sdk/v2/pkg/cmab"
@@ -44,38 +45,81 @@ type ExperimentCmabService struct {
 }
 
 // NewExperimentCmabService creates a new instance of ExperimentCmabService with all dependencies initialized
-func NewExperimentCmabService(sdkKey string, config cmab.Config) *ExperimentCmabService {
-	// Use custom cache if provided, otherwise create default LRU cache with default values for zero inputs
-	var cmabCache cache.CacheWithRemove
-	if config.Cache != nil {
-		cmabCache = config.Cache
+func NewExperimentCmabService(sdkKey string, config *cmab.Config) *ExperimentCmabService {
+	// If config is nil, use all defaults
+	var cacheSize int
+	var cacheTTL time.Duration
+	var httpTimeout time.Duration
+	var retryConfig *cmab.RetryConfig
+	var customCache cache.CacheWithRemove
+
+	if config == nil {
+		// Use all defaults
+		cacheSize = cmab.DefaultCacheSize
+		cacheTTL = cmab.DefaultCacheTTL
+		httpTimeout = cmab.DefaultHTTPTimeout
+		retryConfig = &cmab.RetryConfig{
+			MaxRetries:        cmab.DefaultMaxRetries,
+			InitialBackoff:    cmab.DefaultInitialBackoff,
+			MaxBackoff:        cmab.DefaultMaxBackoff,
+			BackoffMultiplier: cmab.DefaultBackoffMultiplier,
+		}
 	} else {
-		cacheSize := config.CacheSize
+		// Config is not nil, use defaults for zero values
+		customCache = config.Cache
+
+		cacheSize = config.CacheSize
 		if cacheSize == 0 {
 			cacheSize = cmab.DefaultCacheSize
 		}
-		cacheTTL := config.CacheTTL
+
+		cacheTTL = config.CacheTTL
 		if cacheTTL == 0 {
 			cacheTTL = cmab.DefaultCacheTTL
 		}
+
+		httpTimeout = config.HTTPTimeout
+		if httpTimeout == 0 {
+			httpTimeout = cmab.DefaultHTTPTimeout
+		}
+
+		// Handle retry config
+		if config.RetryConfig == nil {
+			retryConfig = &cmab.RetryConfig{
+				MaxRetries:        cmab.DefaultMaxRetries,
+				InitialBackoff:    cmab.DefaultInitialBackoff,
+				MaxBackoff:        cmab.DefaultMaxBackoff,
+				BackoffMultiplier: cmab.DefaultBackoffMultiplier,
+			}
+		} else {
+			retryConfig = config.RetryConfig
+			// Apply defaults for zero values in provided RetryConfig
+			if retryConfig.MaxRetries == 0 {
+				retryConfig.MaxRetries = cmab.DefaultMaxRetries
+			}
+			if retryConfig.InitialBackoff == 0 {
+				retryConfig.InitialBackoff = cmab.DefaultInitialBackoff
+			}
+			if retryConfig.MaxBackoff == 0 {
+				retryConfig.MaxBackoff = cmab.DefaultMaxBackoff
+			}
+			if retryConfig.BackoffMultiplier == 0 {
+				retryConfig.BackoffMultiplier = cmab.DefaultBackoffMultiplier
+			}
+		}
+	}
+
+	// Use custom cache if provided, otherwise create default LRU cache
+	var cmabCache cache.CacheWithRemove
+	if customCache != nil {
+		cmabCache = customCache
+	} else {
 		cmabCache = cache.NewLRUCache(cacheSize, cacheTTL)
 	}
 
-	// Create HTTP client with config timeout, use default if zero
-	httpTimeout := config.HTTPTimeout
-	if httpTimeout == 0 {
-		httpTimeout = cmab.DefaultHTTPTimeout
-	}
+	// Create HTTP client with config timeout
 	httpClient := &http.Client{
 		Timeout: httpTimeout,
-	}
-
-	// Handle retry config with defaults for zero values
-	retryConfig := config.RetryConfig
-	if retryConfig != nil && retryConfig.MaxRetries == 0 {
-		retryConfig = &cmab.RetryConfig{
-			MaxRetries: cmab.DefaultMaxRetries,
-		}
 	}
 
 	// Create CMAB client options

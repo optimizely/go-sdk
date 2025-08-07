@@ -18,9 +18,6 @@
 package decision
 
 import (
-	"time"
-
-	"github.com/optimizely/go-sdk/v2/pkg/cache"
 	"github.com/optimizely/go-sdk/v2/pkg/cmab"
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
@@ -44,61 +41,10 @@ func WithOverrideStore(overrideStore ExperimentOverrideStore) CESOptionFunc {
 	}
 }
 
-// WithCmabConfig merges the provided CMAB configuration with defaults.
-// Only non-zero values from the provided config will override defaults.
-func WithCmabConfig(config cmab.Config) CESOptionFunc {
+// WithCmabConfig sets the CMAB configuration.
+func WithCmabConfig(config *cmab.Config) CESOptionFunc {
 	return func(f *CompositeExperimentService) {
-		// Merge with existing config instead of replacing
-		if config.CacheSize > 0 {
-			f.cmabConfig.CacheSize = config.CacheSize
-		}
-		if config.CacheTTL > 0 {
-			f.cmabConfig.CacheTTL = config.CacheTTL
-		}
-		if config.HTTPTimeout > 0 {
-			f.cmabConfig.HTTPTimeout = config.HTTPTimeout
-		}
-		if config.RetryConfig != nil {
-			f.cmabConfig.RetryConfig = config.RetryConfig
-		}
-		if config.Cache != nil {
-			f.cmabConfig.Cache = config.Cache
-		}
-	}
-}
-
-// WithCmabCacheSize sets only the CMAB cache size
-func WithCmabCacheSize(size int) CESOptionFunc {
-	return func(f *CompositeExperimentService) {
-		f.cmabConfig.CacheSize = size
-	}
-}
-
-// WithCmabCacheTTL sets only the CMAB cache TTL
-func WithCmabCacheTTL(ttl time.Duration) CESOptionFunc {
-	return func(f *CompositeExperimentService) {
-		f.cmabConfig.CacheTTL = ttl
-	}
-}
-
-// WithCmabHTTPTimeout sets only the CMAB HTTP timeout
-func WithCmabHTTPTimeout(timeout time.Duration) CESOptionFunc {
-	return func(f *CompositeExperimentService) {
-		f.cmabConfig.HTTPTimeout = timeout
-	}
-}
-
-// WithCmabRetryConfig sets only the CMAB retry configuration
-func WithCmabRetryConfig(retryConfig *cmab.RetryConfig) CESOptionFunc {
-	return func(f *CompositeExperimentService) {
-		f.cmabConfig.RetryConfig = retryConfig
-	}
-}
-
-// WithCmabCache sets a custom cache implementation for CMAB
-func WithCmabCache(customCache cache.CacheWithRemove) CESOptionFunc {
-	return func(f *CompositeExperimentService) {
-		f.cmabConfig.Cache = customCache
+		f.cmabConfig = config
 	}
 }
 
@@ -107,7 +53,7 @@ type CompositeExperimentService struct {
 	experimentServices []ExperimentService
 	overrideStore      ExperimentOverrideStore
 	userProfileService UserProfileService
-	cmabConfig         cmab.Config
+	cmabConfig         *cmab.Config
 	logger             logging.OptimizelyLogProducer
 }
 
@@ -125,8 +71,7 @@ func NewCompositeExperimentService(sdkKey string, options ...CESOptionFunc) *Com
 	// 3. CMAB (always created)
 	// 4. Bucketing (with User profile integration if supplied)
 	compositeExperimentService := &CompositeExperimentService{
-		cmabConfig: cmab.NewDefaultConfig(), // Initialize with defaults
-		logger:     logging.GetLogger(sdkKey, "CompositeExperimentService"),
+		logger: logging.GetLogger(sdkKey, "CompositeExperimentService"),
 	}
 
 	for _, opt := range options {

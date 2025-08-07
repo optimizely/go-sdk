@@ -163,7 +163,7 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		}
 		// Add CMAB config option if provided
 		if f.cmabConfig != nil {
-			experimentServiceOptions = append(experimentServiceOptions, decision.WithCmabConfig(*f.cmabConfig))
+			experimentServiceOptions = append(experimentServiceOptions, decision.WithCmabConfig(f.cmabConfig))
 		}
 		compositeExperimentService := decision.NewCompositeExperimentService(f.SDKKey, experimentServiceOptions...)
 		compositeService := decision.NewCompositeService(f.SDKKey, decision.WithCompositeExperimentService(compositeExperimentService))

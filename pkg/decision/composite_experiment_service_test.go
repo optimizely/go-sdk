@@ -258,10 +258,11 @@ func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithCmab
 	}
 
 	compositeExperimentService := NewCompositeExperimentService("test-sdk-key",
-		WithCmabConfig(cmabConfig),
+		WithCmabConfig(&cmabConfig),
 	)
 
-	// Verify CMAB config was merged (not replaced entirely)
+	// Verify CMAB config was set
+	s.NotNil(compositeExperimentService.cmabConfig)
 	s.Equal(200, compositeExperimentService.cmabConfig.CacheSize)              // From config
 	s.Equal(5*time.Minute, compositeExperimentService.cmabConfig.CacheTTL)     // From config
 	s.Equal(30*time.Second, compositeExperimentService.cmabConfig.HTTPTimeout) // From config
@@ -276,63 +277,28 @@ func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithCmab
 }
 
 func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithPartialCmabConfig() {
-	// Test that partial CMAB config merges with defaults instead of replacing everything
-	compositeExperimentService := NewCompositeExperimentService("test-sdk-key",
-		WithCmabCacheSize(500), // Only set cache size
-	)
-
-	// Verify only cache size was changed, other defaults remain
-	s.Equal(500, compositeExperimentService.cmabConfig.CacheSize)
-	s.Equal(cmab.DefaultCacheTTL, compositeExperimentService.cmabConfig.CacheTTL)       // Should be default
-	s.Equal(cmab.DefaultHTTPTimeout, compositeExperimentService.cmabConfig.HTTPTimeout) // Should be default
-	s.NotNil(compositeExperimentService.cmabConfig.RetryConfig)
-	s.Equal(cmab.DefaultMaxRetries, compositeExperimentService.cmabConfig.RetryConfig.MaxRetries) // Should be default
-
-	// Test with multiple granular options
-	compositeExperimentService2 := NewCompositeExperimentService("test-sdk-key",
-		WithCmabCacheSize(300),
-		WithCmabCacheTTL(10*time.Minute),
-	)
-
-	s.Equal(300, compositeExperimentService2.cmabConfig.CacheSize)
-	s.Equal(10*time.Minute, compositeExperimentService2.cmabConfig.CacheTTL)
-	s.Equal(cmab.DefaultHTTPTimeout, compositeExperimentService2.cmabConfig.HTTPTimeout) // Should be default
-
-	// Test merging partial config object
+	// Test that partial CMAB config is handled properly
 	partialConfig := cmab.Config{
 		CacheSize: 250, // Only set cache size in config
 	}
-	compositeExperimentService3 := NewCompositeExperimentService("test-sdk-key",
-		WithCmabConfig(partialConfig),
+	compositeExperimentService := NewCompositeExperimentService("test-sdk-key",
+		WithCmabConfig(&partialConfig),
 	)
 
-	s.Equal(250, compositeExperimentService3.cmabConfig.CacheSize)
-	s.Equal(cmab.DefaultCacheTTL, compositeExperimentService3.cmabConfig.CacheTTL)       // Should be default
-	s.Equal(cmab.DefaultHTTPTimeout, compositeExperimentService3.cmabConfig.HTTPTimeout) // Should be default
+	// Verify config was set
+	s.NotNil(compositeExperimentService.cmabConfig)
+	s.Equal(250, compositeExperimentService.cmabConfig.CacheSize)
 
-	// Test remaining granular options for coverage
-	compositeExperimentService4 := NewCompositeExperimentService("test-sdk-key",
-		WithCmabHTTPTimeout(5*time.Second),
-		WithCmabRetryConfig(&cmab.RetryConfig{MaxRetries: 2}),
-	)
-	s.Equal(5*time.Second, compositeExperimentService4.cmabConfig.HTTPTimeout)
-	s.Equal(2, compositeExperimentService4.cmabConfig.RetryConfig.MaxRetries)
-
-	// Test custom cache injection for coverage
+	// Test with custom cache
 	mockCache := &mockCache{}
-	compositeExperimentService5 := NewCompositeExperimentService("test-sdk-key",
-		WithCmabCache(mockCache),
-	)
-	s.Equal(mockCache, compositeExperimentService5.cmabConfig.Cache)
-
-	// Test config with custom cache to cover Cache != nil branch
 	configWithCache := cmab.Config{
 		Cache: mockCache,
 	}
-	compositeExperimentService6 := NewCompositeExperimentService("test-sdk-key",
-		WithCmabConfig(configWithCache),
+	compositeExperimentService2 := NewCompositeExperimentService("test-sdk-key",
+		WithCmabConfig(&configWithCache),
 	)
-	s.NotNil(compositeExperimentService6.cmabConfig.Cache)
+	s.NotNil(compositeExperimentService2.cmabConfig)
+	s.NotNil(compositeExperimentService2.cmabConfig.Cache)
 }
 
 func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithAllOptions() {
@@ -347,18 +313,16 @@ func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithAllO
 	compositeExperimentService := NewCompositeExperimentService("test-sdk-key",
 		WithUserProfileService(mockUserProfileService),
 		WithOverrideStore(mockExperimentOverrideStore),
-		WithCmabConfig(cmabConfig),
+		WithCmabConfig(&cmabConfig),
 	)
 
 	// Verify all options were applied
 	s.Equal(mockUserProfileService, compositeExperimentService.userProfileService)
 	s.Equal(mockExperimentOverrideStore, compositeExperimentService.overrideStore)
-	// Verify the partial config was merged with defaults
-	s.Equal(100, compositeExperimentService.cmabConfig.CacheSize)                                 // From config
-	s.Equal(time.Minute, compositeExperimentService.cmabConfig.CacheTTL)                          // From config
-	s.Equal(cmab.DefaultHTTPTimeout, compositeExperimentService.cmabConfig.HTTPTimeout)           // Default
-	s.NotNil(compositeExperimentService.cmabConfig.RetryConfig)                                   // Default
-	s.Equal(cmab.DefaultMaxRetries, compositeExperimentService.cmabConfig.RetryConfig.MaxRetries) // Default
+	// Verify the config was set
+	s.NotNil(compositeExperimentService.cmabConfig)
+	s.Equal(100, compositeExperimentService.cmabConfig.CacheSize)
+	s.Equal(time.Minute, compositeExperimentService.cmabConfig.CacheTTL)
 
 	// Verify service order with all services
 	s.Equal(4, len(compositeExperimentService.experimentServices))
