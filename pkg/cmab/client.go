@@ -195,11 +195,12 @@ func (c *DefaultCmabClient) FetchDecision(
 			if backoffDuration > c.retryConfig.MaxBackoff {
 				backoffDuration = c.retryConfig.MaxBackoff
 			}
+			c.logger.Debug(fmt.Sprintf("CMAB request retry with backoff: %v", backoffDuration))
 			time.Sleep(backoffDuration)
 		}
 	}
 
-	return "", fmt.Errorf("failed to fetch CMAB decision after %d attempts: %w", c.retryConfig.MaxRetries+1, lastErr)
+	return "", fmt.Errorf("failed to fetch CMAB decision after %d attempts: %w", c.retryConfig.MaxRetries, lastErr)
 }
 
 // doFetch performs a single fetch operation to the CMAB API

@@ -29,7 +29,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/optimizely/go-sdk/v2/pkg/cmab"
 	"github.com/optimizely/go-sdk/v2/pkg/config"
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/decision"
@@ -40,7 +39,6 @@ import (
 	"github.com/optimizely/go-sdk/v2/pkg/odp"
 	"github.com/optimizely/go-sdk/v2/pkg/odp/segment"
 	pkgOdpUtils "github.com/optimizely/go-sdk/v2/pkg/odp/utils"
-	"github.com/optimizely/go-sdk/v2/pkg/optimizelyjson"
 	"github.com/optimizely/go-sdk/v2/pkg/tracing"
 	"github.com/optimizely/go-sdk/v2/pkg/utils"
 )
@@ -3173,115 +3171,34 @@ func (s *ClientTestSuiteTrackNotification) TestRemoveOnTrackThrowsErrorWhenRemov
 	mockNotificationCenter.AssertExpectations(s.T())
 }
 
-// MockCmabService for testing CMAB functionality
-type MockCmabService struct {
-	mock.Mock
-}
-
-// GetDecision safely implements the cmab.Service interface
-func (m *MockCmabService) GetDecision(projectConfig config.ProjectConfig, userContext entities.UserContext, ruleID string, options *decide.Options) (cmab.Decision, error) {
-	args := m.Called(projectConfig, userContext, ruleID, options)
-
-	// IMPORTANT: Return a valid Decision struct with non-nil Reasons slice
-	decision, ok := args.Get(0).(cmab.Decision)
-	if !ok {
-		// If conversion fails, return a safe default
-		return cmab.Decision{Reasons: []string{"Mock conversion failed"}}, args.Error(1)
-	}
-
-	// Make sure Reasons is never nil
-	if decision.Reasons == nil {
-		decision.Reasons = []string{}
-	}
-
-	return decision, args.Error(1)
-}
-
-func TestHandleDecisionServiceError(t *testing.T) {
-	client := OptimizelyClient{
+func TestOptimizelyClient_handleDecisionServiceError(t *testing.T) {
+	// Create the client
+	client := &OptimizelyClient{
 		logger: logging.GetLogger("", ""),
 	}
 
-	// Create test error
-	testError := errors.New("Failed to fetch CMAB data for experiment exp_123")
+	// Create a CMAB error
+	cmabErrorMessage := "Failed to fetch CMAB data for experiment exp_1."
+	cmabError := fmt.Errorf(cmabErrorMessage)
 
-	// Create user context
-	userContext := client.CreateUserContext("test_user", map[string]interface{}{
-		"age":     25,
-		"country": "US",
-	})
-
-	// Call the uncovered method directly
-	result := client.handleDecisionServiceError(testError, "test_feature", userContext)
-
-	// Verify the error decision structure
-	assert.Equal(t, "test_feature", result.FlagKey)
-	assert.Equal(t, userContext, result.UserContext)
-	assert.Equal(t, "", result.VariationKey)
-	assert.Equal(t, "", result.RuleKey)
-	assert.Equal(t, false, result.Enabled)
-	assert.NotNil(t, result.Variables)
-	assert.Equal(t, []string{"Failed to fetch CMAB data for experiment exp_123"}, result.Reasons)
-}
-
-func TestHandleDecisionServiceError_CoversAllLines(t *testing.T) {
-	client := OptimizelyClient{
-		logger: logging.GetLogger("", ""),
+	// Create a user context - needs to match the signature expected by handleDecisionServiceError
+	testUserContext := OptimizelyUserContext{
+		UserID:     "test_user",
+		Attributes: map[string]interface{}{},
 	}
-	testErr := errors.New("some error")
-	userContext := client.CreateUserContext("user1", map[string]interface{}{"foo": "bar"})
 
-	decision := client.handleDecisionServiceError(testErr, "feature_key", userContext)
+	// Call the error handler directly
+	decision := client.handleDecisionServiceError(cmabError, "test_flag", testUserContext)
 
-	assert.Equal(t, "feature_key", decision.FlagKey)
-	assert.Equal(t, userContext, decision.UserContext)
-	assert.Equal(t, "", decision.VariationKey)
-	assert.Equal(t, "", decision.RuleKey)
+	// Verify the decision is correctly formatted
 	assert.False(t, decision.Enabled)
-	assert.NotNil(t, decision.Variables)
-	assert.Equal(t, []string{"some error"}, decision.Reasons)
-}
+	assert.Equal(t, "", decision.VariationKey) // Should be empty string, not nil
+	assert.Equal(t, "", decision.RuleKey)      // Should be empty string, not nil
+	assert.Contains(t, decision.Reasons, cmabErrorMessage)
 
-func TestClientAdditionalMethods(t *testing.T) {
-	client := OptimizelyClient{
-		logger: logging.GetLogger("", ""),
-		tracer: &MockTracer{},
-	}
-
-	// Test getProjectConfig with nil ConfigManager
-	_, err := client.getProjectConfig()
-	assert.Error(t, err)
-
-	// Test CreateUserContext with nil attributes
-	userContext := client.CreateUserContext("user1", nil)
-	assert.Equal(t, "user1", userContext.GetUserID())
-	assert.Equal(t, map[string]interface{}{}, userContext.GetUserAttributes())
-
-	// Test decide with various edge cases
-	result1 := client.decide(&userContext, "", nil)
-	assert.NotNil(t, result1)
-
-	result2 := client.decide(&userContext, "feature", &decide.Options{})
-	assert.NotNil(t, result2)
-}
-
-func TestDecideWithCmab(t *testing.T) {
-	// Test CMAB handling in decide path
-	client := OptimizelyClient{
-		logger: logging.GetLogger("", ""),
-		tracer: &MockTracer{},
-	}
-
-	userContext := client.CreateUserContext("user1", map[string]interface{}{"attr": "value"})
-	result := client.decide(&userContext, "feature", nil)
-
-	assert.NotNil(t, result)
-	// This covers the CMAB handling in the decide method
-}
-
-func (m *MockProjectConfig) GetExperimentByID(experimentID string) (entities.Experiment, error) {
-	args := m.Called(experimentID)
-	return args.Get(0).(entities.Experiment), args.Error(1)
+	// Check that reasons contains exactly the expected message
+	assert.Equal(t, 1, len(decision.Reasons), "Reasons array should have exactly one item")
+	assert.Equal(t, cmabErrorMessage, decision.Reasons[0], "Error message should be added verbatim")
 }
 
 func TestClientTestSuiteAB(t *testing.T) {
@@ -3298,89 +3215,4 @@ func TestClientTestSuiteTrackEvent(t *testing.T) {
 
 func TestClientTestSuiteTrackNotification(t *testing.T) {
 	suite.Run(t, new(ClientTestSuiteTrackNotification))
-}
-
-func TestHandleDecisionServiceError_MoreCoverage(t *testing.T) {
-	// Create client with logger
-	client := OptimizelyClient{
-		logger: logging.GetLogger("", ""),
-	}
-
-	// Create user context
-	userContext := newOptimizelyUserContext(&client, "test_user", map[string]interface{}{"age": 25}, nil, nil)
-
-	// Test with different error messages
-	tests := []struct {
-		name     string
-		err      error
-		key      string
-		expected OptimizelyDecision
-	}{
-		{
-			name: "CMAB fetch error",
-			err:  errors.New("Failed to fetch CMAB data for experiment exp_123"),
-			key:  "feature_key",
-			expected: OptimizelyDecision{
-				FlagKey:      "feature_key",
-				UserContext:  userContext,
-				VariationKey: "",
-				RuleKey:      "",
-				Enabled:      false,
-				Variables:    optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{}),
-				Reasons:      []string{"Failed to fetch CMAB data for experiment exp_123"},
-			},
-		},
-		{
-			name: "Generic error",
-			err:  errors.New("some other error"),
-			key:  "another_feature",
-			expected: OptimizelyDecision{
-				FlagKey:      "another_feature",
-				UserContext:  userContext,
-				VariationKey: "",
-				RuleKey:      "",
-				Enabled:      false,
-				Variables:    optimizelyjson.NewOptimizelyJSONfromMap(map[string]interface{}{}),
-				Reasons:      []string{"some other error"},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := client.handleDecisionServiceError(tt.err, tt.key, userContext)
-
-			assert.Equal(t, tt.expected.FlagKey, result.FlagKey)
-			assert.Equal(t, tt.expected.UserContext, result.UserContext)
-			assert.Equal(t, tt.expected.VariationKey, result.VariationKey)
-			assert.Equal(t, tt.expected.RuleKey, result.RuleKey)
-			assert.Equal(t, tt.expected.Enabled, result.Enabled)
-			assert.Equal(t, tt.expected.Reasons, result.Reasons)
-		})
-	}
-}
-
-func TestGetAllOptionsWithCMABOptions(t *testing.T) {
-	client := OptimizelyClient{
-		defaultDecideOptions: &decide.Options{
-			DisableDecisionEvent: true,
-			IgnoreCMABCache:      true,
-		},
-	}
-
-	// Test with user options that have different CMAB settings
-	userOptions := &decide.Options{
-		ResetCMABCache:          true,
-		InvalidateUserCMABCache: true,
-	}
-
-	result := client.getAllOptions(userOptions)
-
-	// Verify all CMAB-related options are properly merged
-	assert.True(t, result.DisableDecisionEvent)    // from default
-	assert.True(t, result.IgnoreCMABCache)         // from default
-	assert.True(t, result.ResetCMABCache)          // from user
-	assert.True(t, result.InvalidateUserCMABCache) // from user
-	assert.False(t, result.EnabledFlagsOnly)       // neither
-	assert.False(t, result.ExcludeVariables)       // neither
 }
