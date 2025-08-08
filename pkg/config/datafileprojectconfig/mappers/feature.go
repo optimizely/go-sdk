@@ -62,6 +62,7 @@ func MapFeatures(featureFlags []datafileEntities.FeatureFlag, rolloutMap map[str
 		feature.ExperimentIDs = featureFlag.ExperimentIDs
 		feature.FeatureExperiments = featureExperiments
 		feature.VariableMap = variableMap
+		feature.HoldoutIDs = featureFlag.HoldoutIDs
 		featureMap[featureFlag.Key] = feature
 	}
 	return featureMap

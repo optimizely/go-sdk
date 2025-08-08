@@ -69,6 +69,7 @@ type FeatureFlag struct {
 	Key           string     `json:"key"`
 	ExperimentIDs []string   `json:"experimentIds"`
 	Variables     []Variable `json:"variables"`
+	HoldoutIDs    []string   `json:"holdoutIds"`
 }
 
 // Variable represents a Variable object from the Optimizely datafile
