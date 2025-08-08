@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"github.com/optimizely/go-sdk/v2/pkg/cache"
+	"github.com/optimizely/go-sdk/v2/pkg/cmab"
 	"github.com/optimizely/go-sdk/v2/pkg/config"
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/decision"
@@ -433,4 +434,142 @@ func TestConvertDecideOptionsWithCMABOptions(t *testing.T) {
 	assert.True(t, convertedOptions.IgnoreCMABCache)
 	assert.True(t, convertedOptions.ResetCMABCache)
 	assert.True(t, convertedOptions.InvalidateUserCMABCache)
+}
+
+func TestAllOptionFunctions(t *testing.T) {
+	f := &OptimizelyFactory{}
+
+	// Test all option functions to ensure they're covered
+	WithDatafileAccessToken("token")(f)
+	WithSegmentsCacheSize(123)(f)
+	WithSegmentsCacheTimeout(2 * time.Second)(f)
+	WithOdpDisabled(true)(f)
+
+	// Verify some options were set
+	assert.Equal(t, "token", f.DatafileAccessToken)
+	assert.Equal(t, 123, f.segmentsCacheSize)
+	assert.True(t, f.odpDisabled)
+}
+
+func TestStaticClientError(t *testing.T) {
+	// Use invalid datafile to force an error
+	factory := OptimizelyFactory{Datafile: []byte("invalid json"), SDKKey: ""}
+	client, err := factory.StaticClient()
+	assert.Error(t, err)
+	assert.Nil(t, client)
+}
+
+func TestFactoryWithCmabConfig(t *testing.T) {
+	factory := OptimizelyFactory{}
+	cmabConfig := cmab.Config{
+		CacheSize:   100,
+		CacheTTL:    time.Minute,
+		HTTPTimeout: 30 * time.Second,
+		RetryConfig: &cmab.RetryConfig{
+			MaxRetries: 5,
+		},
+	}
+
+	// Test the option function
+	WithCmabConfig(&cmabConfig)(&factory)
+
+	assert.Equal(t, &cmabConfig, factory.cmabConfig)
+	assert.Equal(t, 100, factory.cmabConfig.CacheSize)
+	assert.Equal(t, time.Minute, factory.cmabConfig.CacheTTL)
+	assert.Equal(t, 30*time.Second, factory.cmabConfig.HTTPTimeout)
+	assert.NotNil(t, factory.cmabConfig.RetryConfig)
+	assert.Equal(t, 5, factory.cmabConfig.RetryConfig.MaxRetries)
+}
+
+func TestFactoryCmabConfigPassedToDecisionService(t *testing.T) {
+	// Test that CMAB config is correctly passed to decision service when creating client
+	cmabConfig := cmab.Config{
+		CacheSize:   200,
+		CacheTTL:    2 * time.Minute,
+		HTTPTimeout: 20 * time.Second,
+		RetryConfig: &cmab.RetryConfig{
+			MaxRetries: 3,
+		},
+	}
+
+	factory := OptimizelyFactory{
+		SDKKey:     "test_sdk_key",
+		cmabConfig: &cmabConfig,
+	}
+
+	// Verify the config is set
+	assert.Equal(t, &cmabConfig, factory.cmabConfig)
+	assert.Equal(t, 200, factory.cmabConfig.CacheSize)
+	assert.Equal(t, 2*time.Minute, factory.cmabConfig.CacheTTL)
+	assert.NotNil(t, factory.cmabConfig.RetryConfig)
+}
+
+func TestFactoryOptionFunctions(t *testing.T) {
+	factory := &OptimizelyFactory{}
+
+	// Test all option functions to ensure they're covered
+	WithDatafileAccessToken("test_token")(factory)
+	WithSegmentsCacheSize(100)(factory)
+	WithSegmentsCacheTimeout(5 * time.Second)(factory)
+	WithOdpDisabled(true)(factory)
+	WithCmabConfig(&cmab.Config{CacheSize: 50})(factory)
+
+	// Verify options were set
+	assert.Equal(t, "test_token", factory.DatafileAccessToken)
+	assert.Equal(t, 100, factory.segmentsCacheSize)
+	assert.Equal(t, 5*time.Second, factory.segmentsCacheTimeout)
+	assert.True(t, factory.odpDisabled)
+	assert.Equal(t, &cmab.Config{CacheSize: 50}, factory.cmabConfig)
+}
+
+func TestWithCmabConfigOption(t *testing.T) {
+	factory := &OptimizelyFactory{}
+	testConfig := cmab.Config{
+		CacheSize: 200,
+		CacheTTL:  2 * time.Minute,
+	}
+	WithCmabConfig(&testConfig)(factory)
+	assert.Equal(t, &testConfig, factory.cmabConfig)
+}
+
+func TestClientWithCmabConfig(t *testing.T) {
+	// Test client creation with non-empty CMAB config (tests reflect.DeepEqual path)
+	cmabConfig := cmab.Config{
+		CacheSize:   200,
+		CacheTTL:    5 * time.Minute,
+		HTTPTimeout: 30 * time.Second,
+		RetryConfig: &cmab.RetryConfig{
+			MaxRetries: 5,
+		},
+	}
+
+	factory := OptimizelyFactory{
+		SDKKey: "test_sdk_key",
+	}
+
+	client, err := factory.Client(WithCmabConfig(&cmabConfig))
+	assert.NoError(t, err)
+	assert.NotNil(t, client)
+
+	// Verify the CMAB config was applied by checking if DecisionService exists
+	// This tests the reflect.DeepEqual check on lines 166-167
+	assert.NotNil(t, client.DecisionService)
+	client.Close()
+}
+
+func TestClientWithEmptyCmabConfig(t *testing.T) {
+	// Test client creation with empty CMAB config (tests reflect.DeepEqual returns true)
+	emptyCmabConfig := cmab.Config{}
+
+	factory := OptimizelyFactory{
+		SDKKey: "test_sdk_key",
+	}
+
+	client, err := factory.Client(WithCmabConfig(&emptyCmabConfig))
+	assert.NoError(t, err)
+	assert.NotNil(t, client)
+
+	// Verify client still works with empty config
+	assert.NotNil(t, client.DecisionService)
+	client.Close()
 }

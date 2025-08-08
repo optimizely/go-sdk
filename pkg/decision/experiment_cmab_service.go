@@ -45,21 +45,86 @@ type ExperimentCmabService struct {
 }
 
 // NewExperimentCmabService creates a new instance of ExperimentCmabService with all dependencies initialized
-func NewExperimentCmabService(sdkKey string) *ExperimentCmabService {
-	// Initialize CMAB cache
-	cmabCache := cache.NewLRUCache(100, 0)
+func NewExperimentCmabService(sdkKey string, config *cmab.Config) *ExperimentCmabService {
+	// If config is nil, use all defaults
+	var cacheSize int
+	var cacheTTL time.Duration
+	var httpTimeout time.Duration
+	var retryConfig *cmab.RetryConfig
+	var customCache cache.CacheWithRemove
 
-	// Create retry config for CMAB client
-	retryConfig := &cmab.RetryConfig{
-		MaxRetries:        cmab.DefaultMaxRetries,
-		InitialBackoff:    cmab.DefaultInitialBackoff,
-		MaxBackoff:        cmab.DefaultMaxBackoff,
-		BackoffMultiplier: cmab.DefaultBackoffMultiplier,
+	if config == nil {
+		// Use all defaults
+		cacheSize = cmab.DefaultCacheSize
+		cacheTTL = cmab.DefaultCacheTTL
+		httpTimeout = cmab.DefaultHTTPTimeout
+		retryConfig = &cmab.RetryConfig{
+			MaxRetries:        cmab.DefaultMaxRetries,
+			InitialBackoff:    cmab.DefaultInitialBackoff,
+			MaxBackoff:        cmab.DefaultMaxBackoff,
+			BackoffMultiplier: cmab.DefaultBackoffMultiplier,
+		}
+	} else {
+		// Config is not nil, use defaults for zero values
+		customCache = config.Cache
+
+		cacheSize = config.CacheSize
+		if cacheSize == 0 {
+			cacheSize = cmab.DefaultCacheSize
+		}
+
+		cacheTTL = config.CacheTTL
+		if cacheTTL == 0 {
+			cacheTTL = cmab.DefaultCacheTTL
+		}
+
+		httpTimeout = config.HTTPTimeout
+		if httpTimeout == 0 {
+			httpTimeout = cmab.DefaultHTTPTimeout
+		}
+
+		// Handle retry config
+		if config.RetryConfig == nil {
+			retryConfig = &cmab.RetryConfig{
+				MaxRetries:        cmab.DefaultMaxRetries,
+				InitialBackoff:    cmab.DefaultInitialBackoff,
+				MaxBackoff:        cmab.DefaultMaxBackoff,
+				BackoffMultiplier: cmab.DefaultBackoffMultiplier,
+			}
+		} else {
+			retryConfig = config.RetryConfig
+			// Apply defaults for zero values in provided RetryConfig
+			if retryConfig.MaxRetries == 0 {
+				retryConfig.MaxRetries = cmab.DefaultMaxRetries
+			}
+			if retryConfig.InitialBackoff == 0 {
+				retryConfig.InitialBackoff = cmab.DefaultInitialBackoff
+			}
+			if retryConfig.MaxBackoff == 0 {
+				retryConfig.MaxBackoff = cmab.DefaultMaxBackoff
+			}
+			if retryConfig.BackoffMultiplier == 0 {
+				retryConfig.BackoffMultiplier = cmab.DefaultBackoffMultiplier
+			}
+		}
+	}
+
+	// Use custom cache if provided, otherwise create default LRU cache
+	var cmabCache cache.CacheWithRemove
+	if customCache != nil {
+		cmabCache = customCache
+	} else {
+		cmabCache = cache.NewLRUCache(cacheSize, cacheTTL)
+	}
+
+	// Create HTTP client with config timeout
+	httpClient := &http.Client{
+		Timeout: httpTimeout,
 	}
 
 	// Create CMAB client options
 	cmabClientOptions := cmab.ClientOptions{
-		HTTPClient:  &http.Client{Timeout: 10 * time.Second},
+		HTTPClient:  httpClient,
 		RetryConfig: retryConfig,
 		Logger:      logging.GetLogger(sdkKey, "DefaultCmabClient"),
 	}

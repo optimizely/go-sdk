@@ -87,7 +87,7 @@ func (s *ExperimentCmabTestSuite) SetupTest() {
 	}
 
 	// Create service with real dependencies first
-	s.experimentCmabService = NewExperimentCmabService("test_sdk_key")
+	s.experimentCmabService = NewExperimentCmabService("test_sdk_key", nil)
 
 	// inject the mocks
 	s.experimentCmabService.bucketer = s.mockExperimentBucketer
@@ -322,7 +322,7 @@ func (s *ExperimentCmabTestSuite) TestGetDecisionWithCmabServiceError() {
 	// Should return the CMAB service error with exact format - updated to match new format
 	s.Error(err)
 	s.Contains(err.Error(), "Failed to fetch CMAB data for experiment") // Updated from "failed" to "Failed"
-	s.Nil(decision.Variation) // No variation when error occurs
+	s.Nil(decision.Variation)                                           // No variation when error occurs
 
 	s.mockExperimentBucketer.AssertExpectations(s.T())
 	s.mockCmabService.AssertExpectations(s.T())

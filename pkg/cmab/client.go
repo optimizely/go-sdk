@@ -136,6 +136,9 @@ func (c *DefaultCmabClient) FetchDecision(
 	// Create the URL
 	url := fmt.Sprintf(CMABPredictionEndpoint, ruleID)
 
+	// Log the URL being called
+	c.logger.Debug(fmt.Sprintf("CMAB Prediction URL: %s", url))
+
 	// Convert attributes to CMAB format
 	cmabAttributes := make([]Attribute, 0, len(attributes))
 	for key, value := range attributes {
@@ -164,12 +167,15 @@ func (c *DefaultCmabClient) FetchDecision(
 		return "", fmt.Errorf("failed to marshal CMAB request: %w", err)
 	}
 
+	// Log the request body
+	c.logger.Debug(fmt.Sprintf("CMAB request body: %s", string(bodyBytes)))
+
 	// If no retry config, just do a single fetch
 	if c.retryConfig == nil {
 		return c.doFetch(context.Background(), url, bodyBytes)
 	}
 
-	// Retry sending request with exponential backoff
+	// Retry with exponential backoff
 	var lastErr error
 	for i := 0; i <= c.retryConfig.MaxRetries; i++ {
 		// Make the request
@@ -179,37 +185,21 @@ func (c *DefaultCmabClient) FetchDecision(
 		}
 
 		lastErr = err
+		c.logger.Warning(fmt.Sprintf("CMAB API request failed (attempt %d/%d): %v",
+			i+1, c.retryConfig.MaxRetries+1, err))
 
 		// Don't wait after the last attempt
 		if i < c.retryConfig.MaxRetries {
-			backoffDuration := c.retryConfig.InitialBackoff * time.Duration(1<<i)
-
-			// Wait for backoff duration
+			// Calculate backoff duration with exponential backoff
+			backoffDuration := c.retryConfig.InitialBackoff * time.Duration(math.Pow(c.retryConfig.BackoffMultiplier, float64(i)))
+			if backoffDuration > c.retryConfig.MaxBackoff {
+				backoffDuration = c.retryConfig.MaxBackoff
+			}
+			c.logger.Debug(fmt.Sprintf("CMAB request retry with backoff: %v", backoffDuration))
 			time.Sleep(backoffDuration)
 		}
-
-		// Calculate backoff duration
-		backoffDuration := c.retryConfig.InitialBackoff * time.Duration(math.Pow(c.retryConfig.BackoffMultiplier, float64(i)))
-		if backoffDuration > c.retryConfig.MaxBackoff {
-			backoffDuration = c.retryConfig.MaxBackoff
-		}
-
-		c.logger.Debug(fmt.Sprintf("CMAB request retry %d/%d, backing off for %v",
-			i+1, c.retryConfig.MaxRetries, backoffDuration))
-
-		// Wait for backoff duration with context awareness
-		select {
-		case <-context.Background().Done():
-			return "", fmt.Errorf("context canceled or timed out during backoff: %w", context.Background().Err())
-		case <-time.After(backoffDuration):
-			// Continue with retry
-		}
-
-		c.logger.Warning(fmt.Sprintf("CMAB API request failed (attempt %d/%d): %v",
-			i+1, c.retryConfig.MaxRetries, err))
 	}
 
-	// This should never be reached due to the return in the loop above
 	return "", fmt.Errorf("failed to fetch CMAB decision after %d attempts: %w", c.retryConfig.MaxRetries, lastErr)
 }
 
@@ -242,6 +232,9 @@ func (c *DefaultCmabClient) doFetch(ctx context.Context, url string, bodyBytes [
 		return "", fmt.Errorf("failed to read CMAB response body: %w", err)
 	}
 
+	// Log the raw response
+	c.logger.Debug(fmt.Sprintf("CMAB raw response: %s", string(respBody)))
+
 	// Parse response
 	var cmabResponse Response
 	if err := json.Unmarshal(respBody, &cmabResponse); err != nil {
@@ -253,8 +246,12 @@ func (c *DefaultCmabClient) doFetch(ctx context.Context, url string, bodyBytes [
 		return "", fmt.Errorf("invalid CMAB response: missing predictions or variation_id")
 	}
 
+	// Log the parsed variation ID
+	variationID := cmabResponse.Predictions[0].VariationID
+	c.logger.Debug(fmt.Sprintf("CMAB parsed variation ID: %s", variationID))
+
 	// Return the variation ID
-	return cmabResponse.Predictions[0].VariationID, nil
+	return variationID, nil
 }
 
 // validateResponse validates the CMAB response

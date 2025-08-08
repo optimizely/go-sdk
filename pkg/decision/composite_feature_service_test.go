@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2025, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -137,7 +137,6 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsError() {
 	// Change: Second service should NOT be called when first service returns error
 	s.mockFeatureService2.AssertNotCalled(s.T(), "GetDecision")
 }
-
 func (s *CompositeFeatureServiceTestSuite) TestGetDecisionReturnsLastDecisionWithError() {
 	// This test is now invalid - rename to reflect new behavior
 	// Test that first error stops evaluation (no "last decision" concept anymore)
