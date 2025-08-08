@@ -38,6 +38,7 @@ const botFilteringKey = "$opt_bot_filtering"
 const revenueKey = "revenue"
 const valueKey = "value"
 
+// SupportedRegions maps of supported regions for event endpoints
 var SupportedRegions = map[string]bool{"US": true, "EU": true}
 
 func getEventEndPoint(region, eventEndPoint string) string {
