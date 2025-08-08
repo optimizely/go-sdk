@@ -19,6 +19,7 @@ package event
 
 import (
 	"errors"
+	"log"
 	"strings"
 	"time"
 
@@ -37,18 +38,21 @@ const botFilteringKey = "$opt_bot_filtering"
 const revenueKey = "revenue"
 const valueKey = "value"
 
+var SupportedRegions = map[string]bool{"US": true, "EU": true}
+
 func getEventEndPoint(region, eventEndPoint string) string {
 	if eventEndPoint != "" {
 		return eventEndPoint
 	}
-	switch region {
-	case "EU":
-		return EventEndPoints["EU"]
-	case "US":
-		return EventEndPoints["US"]
-	default:
-		return EventEndPoints["US"]
+
+	region = strings.ToUpper(region)
+
+	if !SupportedRegions[region] {
+		log.Print("Unsupported region provided for event endpoint. Defaulting to US.")
+		region = "US"
 	}
+
+	return EventEndPoints[region]
 }
 
 func createLogEvent(event Batch, eventEndPoint string) LogEvent {
