@@ -26,6 +26,7 @@ type Context struct {
 	ClientName    string `json:"client_name"`
 	AnonymizeIP   bool   `json:"anonymize_ip"`
 	BotFiltering  bool   `json:"bot_filtering"`
+	Region        string `json:"region"`
 }
 
 // UserEvent represents a user event
@@ -87,6 +88,7 @@ type Batch struct {
 	ClientName      string    `json:"client_name"`
 	AnonymizeIP     bool      `json:"anonymize_ip"`
 	EnrichDecisions bool      `json:"enrich_decisions"`
+	Region          string    `json:"region"`
 }
 
 // Visitor represents a visitor of an eventbatch

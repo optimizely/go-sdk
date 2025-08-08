@@ -57,6 +57,7 @@ type DatafileProjectConfig struct {
 	sendFlagDecisions    bool
 	sdkKey               string
 	environmentKey       string
+	region               string
 
 	flagVariationsMap map[string][]entities.Variation
 }
@@ -275,6 +276,11 @@ func (c DatafileProjectConfig) GetFlagVariationsMap() map[string][]entities.Vari
 	return c.flagVariationsMap
 }
 
+// GetRegion returns the region for the datafile
+func (c DatafileProjectConfig) GetRegion() string {
+	return c.region
+}
+
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser
 func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogProducer) (*DatafileProjectConfig, error) {
 	datafile, err := Parse(jsonDatafile)
@@ -326,6 +332,11 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		attributeKeyMap[attribute.Key] = attribute
 	}
 
+	region := datafile.Region
+	if region == "" {
+		region = "US"
+	}
+
 	config := &DatafileProjectConfig{
 		hostForODP:           hostForODP,
 		publicKeyForODP:      publicKeyForODP,
@@ -353,6 +364,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		flagVariationsMap:    flagVariationsMap,
 		attributeKeyMap:      attributeKeyMap,
 		attributeIDToKeyMap:  attributeIDToKeyMap,
+		region:               region,
 	}
 
 	logger.Info("Datafile is valid.")

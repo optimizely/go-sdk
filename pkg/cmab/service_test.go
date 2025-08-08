@@ -224,6 +224,11 @@ func (m *MockProjectConfig) GetDatafile() string {
 	return args.String(0)
 }
 
+func (m *MockProjectConfig) GetRegion() string {
+	args := m.Called()
+	return args.String(0)
+}
+
 type CmabServiceTestSuite struct {
 	suite.Suite
 	mockClient     *MockCmabClient

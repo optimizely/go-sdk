@@ -122,7 +122,7 @@ func TestQueueEventDispatcher_DispatchEvent(t *testing.T) {
 	batch := createBatchEvent(conversionUserEvent, createVisitorFromUserEvent(conversionUserEvent))
 	assert.Equal(t, conversionUserEvent.Timestamp, batch.Visitors[0].Snapshots[0].Events[0].Timestamp)
 
-	logEvent := createLogEvent(batch, DefaultEventEndPoint)
+	logEvent := createLogEvent(batch, EventEndPoints["US"])
 
 	success, _ := q.DispatchEvent(logEvent)
 
@@ -181,7 +181,7 @@ func TestQueueEventDispatcher_FailDispath(t *testing.T) {
 	batch := createBatchEvent(conversionUserEvent, createVisitorFromUserEvent(conversionUserEvent))
 	assert.Equal(t, conversionUserEvent.Timestamp, batch.Visitors[0].Snapshots[0].Events[0].Timestamp)
 
-	logEvent := createLogEvent(batch, DefaultEventEndPoint)
+	logEvent := createLogEvent(batch, EventEndPoints["US"])
 
 	q.DispatchEvent(logEvent)
 
@@ -221,7 +221,7 @@ func TestQueueEventDispatcher_WaitForDispatchingEventsOnClose(t *testing.T) {
 		batch := createBatchEvent(conversionUserEvent, createVisitorFromUserEvent(conversionUserEvent))
 		assert.Equal(t, conversionUserEvent.Timestamp, batch.Visitors[0].Snapshots[0].Events[0].Timestamp)
 
-		logEvent := createLogEvent(batch, DefaultEventEndPoint)
+		logEvent := createLogEvent(batch, EventEndPoints["US"])
 
 		success, _ := q.DispatchEvent(logEvent)
 

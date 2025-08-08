@@ -82,6 +82,10 @@ func (c *MockProjectConfig) SendFlagDecisions() bool {
 	return false
 }
 
+func (c *MockProjectConfig) GetRegion() string {
+	return "US"
+}
+
 type MockProjectConfigManager struct {
 	projectConfig config.ProjectConfig
 	mock.Mock
