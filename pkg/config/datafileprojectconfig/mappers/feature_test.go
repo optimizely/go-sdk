@@ -67,6 +67,7 @@ func TestMapFeatures(t *testing.T) {
 			Rollout:            rollout,
 			FeatureExperiments: []entities.Experiment{experiment31111},
 			VariableMap:        map[string]entities.Variable{variable.Key: variable},
+			HoldoutIDs:         []string(nil),
 		},
 	}
 	expectedExperimentMap := map[string]entities.Experiment{
@@ -76,4 +77,38 @@ func TestMapFeatures(t *testing.T) {
 
 	assert.Equal(t, expectedFeatureMap, featureMap)
 	assert.Equal(t, expectedExperimentMap, experimentMap)
+}
+
+func TestMapFeaturesWithHoldoutIds(t *testing.T) {
+	const testFeatureFlagString = `{
+		"id": "22222",
+		"key": "test_feature_22222",
+		"rolloutId": "42222",
+		"experimentIds": ["32222"],
+		"variables": [{"defaultValue":"test","id":"2","key":"var","type":"string"}],
+		"holdoutIds": ["holdout_1", "holdout_2"]
+	}`
+
+	var rawFeatureFlag datafileEntities.FeatureFlag
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
+	json.Unmarshal([]byte(testFeatureFlagString), &rawFeatureFlag)
+
+	rawFeatureFlags := []datafileEntities.FeatureFlag{rawFeatureFlag}
+	rollout := entities.Rollout{ID: "42222"}
+	rolloutMap := map[string]entities.Rollout{
+		"42222": rollout,
+	}
+	experiment32222 := entities.Experiment{ID: "32222"}
+	experimentMap := map[string]entities.Experiment{
+		"32222": experiment32222,
+	}
+	featureMap := MapFeatures(rawFeatureFlags, rolloutMap, experimentMap)
+
+	// Verify that holdoutIds are properly mapped
+	feature := featureMap["test_feature_22222"]
+	expectedHoldoutIds := []string{"holdout_1", "holdout_2"}
+
+	assert.Equal(t, expectedHoldoutIds, feature.HoldoutIDs)
+	assert.Equal(t, "22222", feature.ID)
+	assert.Equal(t, "test_feature_22222", feature.Key)
 }
