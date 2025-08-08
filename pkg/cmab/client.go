@@ -31,7 +31,7 @@ import (
 )
 
 // CMABPredictionEndpoint is the endpoint for CMAB predictions
-var CMABPredictionEndpoint = "https://inte.prediction.cmab.optimizely.com/predict/%s"
+var CMABPredictionEndpoint = "https://prediction.cmab.optimizely.com/predict/%s"
 
 const (
 	// DefaultMaxRetries is the default number of retries for CMAB requests
