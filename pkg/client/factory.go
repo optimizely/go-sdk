@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020,2022-2024 Optimizely, Inc. and contributors          *
+ * Copyright 2019-2020,2022-2025 Optimizely, Inc. and contributors          *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -22,6 +22,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/optimizely/go-sdk/v2/pkg/cmab"
 	"github.com/optimizely/go-sdk/v2/pkg/config"
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/decision"
@@ -53,6 +54,7 @@ type OptimizelyFactory struct {
 	overrideStore        decision.ExperimentOverrideStore
 	userProfileService   decision.UserProfileService
 	notificationCenter   notification.Center
+	cmabConfig           *cmab.Config
 
 	// ODP
 	segmentsCacheSize    int
@@ -158,6 +160,10 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		}
 		if f.overrideStore != nil {
 			experimentServiceOptions = append(experimentServiceOptions, decision.WithOverrideStore(f.overrideStore))
+		}
+		// Add CMAB config option if provided
+		if f.cmabConfig != nil {
+			experimentServiceOptions = append(experimentServiceOptions, decision.WithCmabConfig(f.cmabConfig))
 		}
 		compositeExperimentService := decision.NewCompositeExperimentService(f.SDKKey, experimentServiceOptions...)
 		compositeService := decision.NewCompositeService(f.SDKKey, decision.WithCompositeExperimentService(compositeExperimentService))
@@ -317,6 +323,13 @@ func WithNotificationCenter(nc notification.Center) OptionFunc {
 func WithTracer(tracer tracing.Tracer) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.tracer = tracer
+	}
+}
+
+// WithCmabConfig sets the CMAB configuration options
+func WithCmabConfig(cmabConfig *cmab.Config) OptionFunc {
+	return func(f *OptimizelyFactory) {
+		f.cmabConfig = cmabConfig
 	}
 }
 

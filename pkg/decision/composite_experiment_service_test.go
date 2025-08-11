@@ -19,10 +19,12 @@ package decision
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/optimizely/go-sdk/v2/pkg/cmab"
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
@@ -243,6 +245,128 @@ func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithCust
 	s.IsType(&ExperimentCmabService{}, compositeExperimentService.experimentServices[2])
 	s.IsType(&PersistingExperimentService{}, compositeExperimentService.experimentServices[3])
 }
+
+func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithCmabConfig() {
+	// Test with custom CMAB config
+	cmabConfig := cmab.Config{
+		CacheSize:   200,
+		CacheTTL:    5 * time.Minute,
+		HTTPTimeout: 30 * time.Second,
+		RetryConfig: &cmab.RetryConfig{
+			MaxRetries: 5,
+		},
+	}
+
+	compositeExperimentService := NewCompositeExperimentService("test-sdk-key",
+		WithCmabConfig(&cmabConfig),
+	)
+
+	// Verify CMAB config was set
+	s.NotNil(compositeExperimentService.cmabConfig)
+	s.Equal(200, compositeExperimentService.cmabConfig.CacheSize)              // From config
+	s.Equal(5*time.Minute, compositeExperimentService.cmabConfig.CacheTTL)     // From config
+	s.Equal(30*time.Second, compositeExperimentService.cmabConfig.HTTPTimeout) // From config
+	s.NotNil(compositeExperimentService.cmabConfig.RetryConfig)
+	s.Equal(5, compositeExperimentService.cmabConfig.RetryConfig.MaxRetries) // From config
+
+	// Verify service order
+	s.Equal(3, len(compositeExperimentService.experimentServices))
+	s.IsType(&ExperimentWhitelistService{}, compositeExperimentService.experimentServices[0])
+	s.IsType(&ExperimentCmabService{}, compositeExperimentService.experimentServices[1])
+	s.IsType(&ExperimentBucketerService{}, compositeExperimentService.experimentServices[2])
+}
+
+func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithPartialCmabConfig() {
+	// Test that partial CMAB config is handled properly
+	partialConfig := cmab.Config{
+		CacheSize: 250, // Only set cache size in config
+	}
+	compositeExperimentService := NewCompositeExperimentService("test-sdk-key",
+		WithCmabConfig(&partialConfig),
+	)
+
+	// Verify config was set
+	s.NotNil(compositeExperimentService.cmabConfig)
+	s.Equal(250, compositeExperimentService.cmabConfig.CacheSize)
+
+	// Test with custom cache
+	mockCache := &mockCache{}
+	configWithCache := cmab.Config{
+		Cache: mockCache,
+	}
+	compositeExperimentService2 := NewCompositeExperimentService("test-sdk-key",
+		WithCmabConfig(&configWithCache),
+	)
+	s.NotNil(compositeExperimentService2.cmabConfig)
+	s.NotNil(compositeExperimentService2.cmabConfig.Cache)
+}
+
+func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithAllOptions() {
+	// Test with all options including CMAB config
+	mockUserProfileService := new(MockUserProfileService)
+	mockExperimentOverrideStore := new(MapExperimentOverridesStore)
+	cmabConfig := cmab.Config{
+		CacheSize: 100,
+		CacheTTL:  time.Minute,
+	}
+
+	compositeExperimentService := NewCompositeExperimentService("test-sdk-key",
+		WithUserProfileService(mockUserProfileService),
+		WithOverrideStore(mockExperimentOverrideStore),
+		WithCmabConfig(&cmabConfig),
+	)
+
+	// Verify all options were applied
+	s.Equal(mockUserProfileService, compositeExperimentService.userProfileService)
+	s.Equal(mockExperimentOverrideStore, compositeExperimentService.overrideStore)
+	// Verify the config was set
+	s.NotNil(compositeExperimentService.cmabConfig)
+	s.Equal(100, compositeExperimentService.cmabConfig.CacheSize)
+	s.Equal(time.Minute, compositeExperimentService.cmabConfig.CacheTTL)
+
+	// Verify service order with all services
+	s.Equal(4, len(compositeExperimentService.experimentServices))
+	s.IsType(&ExperimentOverrideService{}, compositeExperimentService.experimentServices[0])
+	s.IsType(&ExperimentWhitelistService{}, compositeExperimentService.experimentServices[1])
+	s.IsType(&ExperimentCmabService{}, compositeExperimentService.experimentServices[2])
+	s.IsType(&PersistingExperimentService{}, compositeExperimentService.experimentServices[3])
+}
+
+func (s *CompositeExperimentTestSuite) TestCmabServiceReturnsError() {
+	// Test that CMAB service error is properly propagated
+	mockCmabService := new(MockExperimentDecisionService)
+	testErr := errors.New("Failed to fetch CMAB data for experiment exp_123")
+
+	mockCmabService.On("GetDecision", mock.Anything, mock.Anything, mock.Anything).Return(
+		ExperimentDecision{},
+		decide.NewDecisionReasons(s.options),
+		testErr,
+	)
+
+	compositeService := &CompositeExperimentService{
+		experimentServices: []ExperimentService{mockCmabService},
+		logger:             logging.GetLogger("", "CompositeExperimentService"),
+	}
+
+	userContext := entities.UserContext{ID: "test_user"}
+	decision, reasons, err := compositeService.GetDecision(s.testDecisionContext, userContext, s.options)
+
+	// Error should be returned immediately without trying other services
+	s.Error(err)
+	s.Equal(testErr, err)
+	s.Nil(decision.Variation)
+	s.NotNil(reasons)
+
+	mockCmabService.AssertExpectations(s.T())
+}
+
+// mockCache implements cache.CacheWithRemove for testing
+type mockCache struct{}
+
+func (m *mockCache) Save(key string, value interface{}) {}
+func (m *mockCache) Lookup(key string) interface{}      { return nil }
+func (m *mockCache) Reset()                             {}
+func (m *mockCache) Remove(key string)                  {}
 
 func TestCompositeExperimentTestSuite(t *testing.T) {
 	suite.Run(t, new(CompositeExperimentTestSuite))
