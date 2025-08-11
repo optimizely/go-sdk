@@ -86,6 +86,10 @@ func (t TestConfig) SendFlagDecisions() bool {
 	return t.sendFlagDecisions
 }
 
+func (TestConfig) GetRegion() string {
+	return "US"
+}
+
 func RandomString(len int) string {
 	bytes := make([]byte, len)
 	rand.Seed(time.Now().UnixNano())

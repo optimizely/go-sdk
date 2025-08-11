@@ -19,6 +19,7 @@ package event
 
 import (
 	"errors"
+	"log"
 	"strings"
 	"time"
 
@@ -37,7 +38,26 @@ const botFilteringKey = "$opt_bot_filtering"
 const revenueKey = "revenue"
 const valueKey = "value"
 
+// SupportedRegions maps of supported regions for event endpoints
+var SupportedRegions = map[string]bool{"US": true, "EU": true}
+
+func getEventEndPoint(region, eventEndPoint string) string {
+	if eventEndPoint != "" {
+		return eventEndPoint
+	}
+
+	region = strings.ToUpper(region)
+
+	if !SupportedRegions[region] {
+		log.Print("Unsupported region provided for event endpoint. Defaulting to US.")
+		region = "US"
+	}
+
+	return EventEndPoints[region]
+}
+
 func createLogEvent(event Batch, eventEndPoint string) LogEvent {
+	eventEndPoint = getEventEndPoint(event.Region, eventEndPoint)
 	return LogEvent{EndPoint: eventEndPoint, Event: event}
 }
 
@@ -55,6 +75,7 @@ func CreateEventContext(projectConfig config.ProjectConfig) Context {
 	context.ClientVersion = Version
 	context.AnonymizeIP = projectConfig.GetAnonymizeIP()
 	context.BotFiltering = projectConfig.GetBotFiltering()
+	context.Region = projectConfig.GetRegion()
 
 	return context
 }
@@ -253,6 +274,7 @@ func createBatchEvent(userEvent UserEvent, visitor Visitor) Batch {
 	eventBatch.ClientVersion = userEvent.EventContext.ClientVersion
 	eventBatch.AnonymizeIP = userEvent.EventContext.AnonymizeIP
 	eventBatch.EnrichDecisions = true
+	eventBatch.Region = userEvent.EventContext.Region
 
 	return eventBatch
 }
