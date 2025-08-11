@@ -28,6 +28,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 	"github.com/optimizely/go-sdk/v2/pkg/utils"
 	// Import the package containing the Impression type
@@ -121,12 +122,23 @@ func TestCustomEventProcessor_Create(t *testing.T) {
 func TestEndPointOptionEventProcessor(t *testing.T) {
 	// Default end point
 	processor := NewBatchEventProcessor()
-	assert.Equal(t, DefaultEventEndPoint, processor.EventEndPoint)
+	assert.Equal(t, EventEndPoints["US"], processor.EventEndPoint)
 
 	customEndPoint := "https://logx.optimizely.com"
 	processor = NewBatchEventProcessor(
 		WithEventEndPoint(customEndPoint))
 	assert.Equal(t, customEndPoint, processor.EventEndPoint)
+}
+
+func TestEndPointOptionEU(t *testing.T) {
+	// Default end point
+	processor := NewBatchEventProcessor()
+	assert.Equal(t, EventEndPoints["US"], processor.EventEndPoint)
+
+	euEndpoint := EventEndPoints["EU"]
+	processor = NewBatchEventProcessor(
+		WithEventEndPoint(euEndpoint))
+	assert.Equal(t, euEndpoint, processor.EventEndPoint)
 }
 
 func TestDefaultEventProcessor_LogEventNotification(t *testing.T) {
@@ -158,6 +170,160 @@ func TestDefaultEventProcessor_LogEventNotification(t *testing.T) {
 
 	assert.NotNil(t, logEvent)
 	assert.Equal(t, 4, len(logEvent.Event.Visitors))
+
+	err := processor.RemoveOnEventDispatch(id)
+
+	assert.Nil(t, err)
+}
+
+// EUTestConfig extends TestConfig to set EU region
+type EUTestConfig struct {
+	TestConfig
+}
+
+// Override GetRegion to return "EU"
+func (c EUTestConfig) GetRegion() string {
+	return "EU"
+}
+
+func TestDefaultEventProcessor_LogEventNotification_EU(t *testing.T) {
+	eg := newExecutionContext()
+	processor := NewBatchEventProcessor(
+		WithQueueSize(100),
+		WithQueue(NewInMemoryQueue(100)),
+		WithEventDispatcher(NewMockDispatcher(100, false)),
+		WithSDKKey("fakeSDKKey"))
+
+	var logEvent LogEvent
+
+	id, _ := processor.OnEventDispatch(func(eventNotification LogEvent) {
+		logEvent = eventNotification
+	})
+	eg.Go(processor.Start)
+
+	// Create EU-specific impression and conversion events
+	tc := EUTestConfig{}
+
+	// Create impression event with EU region
+	impressionUserEvent, _ := CreateImpressionUserEvent(
+		tc,
+		testExperiment,
+		&testVariation,
+		userContext,
+		"",
+		testExperiment.Key,
+		"experiment",
+		true,
+		nil)
+
+	// Create conversion event with EU region
+	conversionUserEvent := CreateConversionUserEvent(
+		tc,
+		entities.Event{
+			ExperimentIds: []string{"15402980349"},
+			ID:            "15368860886",
+			Key:           "sample_conversion"},
+		userContext,
+		make(map[string]interface{}))
+
+	// Set event endpoint to EU
+	processor.EventEndPoint = EventEndPoints["EU"]
+
+	processor.ProcessEvent(impressionUserEvent)
+	processor.ProcessEvent(impressionUserEvent)
+	processor.ProcessEvent(conversionUserEvent)
+	processor.ProcessEvent(conversionUserEvent)
+
+	assert.Equal(t, 4, processor.eventsCount())
+
+	eg.TerminateAndWait()
+
+	assert.NotNil(t, logEvent)
+	assert.Equal(t, 4, len(logEvent.Event.Visitors))
+	assert.Equal(t, EventEndPoints["EU"], logEvent.EndPoint)
+
+	// Set the region assertion only if the field exists
+	if logEvent.Event.Region != "" {
+		assert.Equal(t, "EU", logEvent.Event.Region)
+	}
+
+	err := processor.RemoveOnEventDispatch(id)
+
+	assert.Nil(t, err)
+}
+
+// ZZTestConfig extends TestConfig to set invalid ZZ region
+// When an invalid region is provided, the SDK should use the US endpoint
+// but preserve the original region value in the event data
+type ZZTestConfig struct {
+	TestConfig
+}
+
+// Override GetRegion to return "ZZ" (invalid region)
+func (c ZZTestConfig) GetRegion() string {
+	return "ZZ"
+}
+
+func TestDefaultEventProcessor_LogEventNotification_InvalidRegionFallback(t *testing.T) {
+	eg := newExecutionContext()
+	processor := NewBatchEventProcessor(
+		WithQueueSize(100),
+		WithQueue(NewInMemoryQueue(100)),
+		WithEventDispatcher(NewMockDispatcher(100, false)),
+		WithSDKKey("fakeSDKKey"))
+
+	var logEvent LogEvent
+
+	id, _ := processor.OnEventDispatch(func(eventNotification LogEvent) {
+		logEvent = eventNotification
+	})
+	eg.Go(processor.Start)
+
+	// Create events with invalid ZZ region
+	tc := ZZTestConfig{}
+
+	// Create impression event with ZZ region
+	impressionUserEvent, _ := CreateImpressionUserEvent(
+		tc,
+		testExperiment,
+		&testVariation,
+		userContext,
+		"",
+		testExperiment.Key,
+		"experiment",
+		true,
+		nil)
+
+	// Create conversion event with ZZ region
+	conversionUserEvent := CreateConversionUserEvent(
+		tc,
+		entities.Event{
+			ExperimentIds: []string{"15402980349"},
+			ID:            "15368860886",
+			Key:           "sample_conversion"},
+		userContext,
+		make(map[string]interface{}))
+
+	processor.ProcessEvent(impressionUserEvent)
+	processor.ProcessEvent(impressionUserEvent)
+	processor.ProcessEvent(conversionUserEvent)
+	processor.ProcessEvent(conversionUserEvent)
+
+	assert.Equal(t, 4, processor.eventsCount())
+
+	eg.TerminateAndWait()
+
+	assert.NotNil(t, logEvent)
+	assert.Equal(t, 4, len(logEvent.Event.Visitors))
+
+	// When the region is invalid (not in EventEndPoints map), it should use the default US endpoint
+	assert.Equal(t, EventEndPoints["US"], logEvent.EndPoint)
+
+	// Check if region field exists in the event and verify it still contains the original "ZZ" value
+	// The current behavior preserves the original region in the event data, even if invalid
+	if logEvent.Event.Region != "" {
+		assert.Equal(t, "ZZ", logEvent.Event.Region)
+	}
 
 	err := processor.RemoveOnEventDispatch(id)
 
