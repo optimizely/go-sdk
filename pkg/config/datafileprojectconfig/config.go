@@ -318,6 +318,13 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	audienceMap, audienceSegmentList := mappers.MapAudiences(append(datafile.TypedAudiences, datafile.Audiences...))
 	flagVariationsMap := mappers.MapFlagVariations(featureMap)
 
+	// Process holdouts and populate HoldoutIDs for features
+	holdoutMaps := mappers.MapHoldouts(datafile.Holdouts, audienceMap)
+	for featureKey, feature := range featureMap {
+		feature.HoldoutIDs = mappers.GetHoldoutsForFlag(feature.ID, holdoutMaps)
+		featureMap[featureKey] = feature
+	}
+
 	attributeKeyMap := make(map[string]entities.Attribute)
 	attributeIDToKeyMap := make(map[string]string)
 

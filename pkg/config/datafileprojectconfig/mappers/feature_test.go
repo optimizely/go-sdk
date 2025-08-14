@@ -85,8 +85,7 @@ func TestMapFeaturesWithHoldoutIds(t *testing.T) {
 		"key": "test_feature_22222",
 		"rolloutId": "42222",
 		"experimentIds": ["32222"],
-		"variables": [{"defaultValue":"test","id":"2","key":"var","type":"string"}],
-		"holdoutIds": ["holdout_1", "holdout_2"]
+		"variables": [{"defaultValue":"test","id":"2","key":"var","type":"string"}]
 	}`
 
 	var rawFeatureFlag datafileEntities.FeatureFlag
@@ -104,11 +103,12 @@ func TestMapFeaturesWithHoldoutIds(t *testing.T) {
 	}
 	featureMap := MapFeatures(rawFeatureFlags, rolloutMap, experimentMap)
 
-	// Verify that holdoutIds are properly mapped
+	// Verify that the feature is created properly
+	// HoldoutIDs will be populated later when holdouts are processed from the datafile
 	feature := featureMap["test_feature_22222"]
-	expectedHoldoutIds := []string{"holdout_1", "holdout_2"}
 
-	assert.Equal(t, expectedHoldoutIds, feature.HoldoutIDs)
+	// For now, HoldoutIDs should be nil/empty since they're not in the datafile directly
+	assert.Nil(t, feature.HoldoutIDs)
 	assert.Equal(t, "22222", feature.ID)
 	assert.Equal(t, "test_feature_22222", feature.Key)
 }
