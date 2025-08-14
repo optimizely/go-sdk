@@ -25,6 +25,7 @@ type Feature struct {
 	ExperimentIDs      []string
 	Rollout            Rollout
 	VariableMap        map[string]Variable
+	HoldoutIDs         []string
 }
 
 // Rollout represents a feature rollout

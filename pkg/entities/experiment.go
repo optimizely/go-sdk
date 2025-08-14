@@ -59,3 +59,26 @@ type VariationVariable struct {
 	ID    string
 	Value string
 }
+
+// HoldoutStatus represents the status of a holdout
+type HoldoutStatus string
+
+const (
+	// HoldoutStatusDraft - the holdout status is draft
+	HoldoutStatusDraft HoldoutStatus = "Draft"
+	// HoldoutStatusRunning - the holdout status is running
+	HoldoutStatusRunning HoldoutStatus = "Running"
+	// HoldoutStatusConcluded - the holdout status is concluded
+	HoldoutStatusConcluded HoldoutStatus = "Concluded"
+	// HoldoutStatusArchived - the holdout status is archived
+	HoldoutStatusArchived HoldoutStatus = "Archived"
+)
+
+// Holdout represents a holdout that can be applied to feature flags
+type Holdout struct {
+	ID            string
+	Key           string
+	Status        HoldoutStatus
+	IncludedFlags []string // Flag IDs this holdout specifically includes
+	ExcludedFlags []string // Flag IDs this holdout specifically excludes
+}
