@@ -177,6 +177,10 @@ func (TestConfig) GetClientVersion() string {
 	return "1.0.0"
 }
 
+func (TestConfig) GetRegion() string {
+	return "US"
+}
+
 type MockODPManager struct {
 	odp.Manager
 	mock.Mock
@@ -347,6 +351,7 @@ func TestSendODPEvent(t *testing.T) {
 
 func TestTrack(t *testing.T) {
 	mockProcessor := new(MockProcessor)
+	mockProcessor.Events = make([]event.UserEvent, 0) // Initialize Events slice
 	mockDecisionService := new(MockDecisionService)
 	mockProcessor.On("ProcessEvent", mock.AnythingOfType("UserEvent")).Return(true)
 

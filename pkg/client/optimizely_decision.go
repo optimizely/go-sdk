@@ -33,7 +33,13 @@ type OptimizelyDecision struct {
 }
 
 // NewOptimizelyDecision creates and returns a new instance of OptimizelyDecision
-func NewOptimizelyDecision(variationKey, ruleKey, flagKey string, enabled bool, variables *optimizelyjson.OptimizelyJSON, userContext OptimizelyUserContext, reasons []string) OptimizelyDecision {
+func NewOptimizelyDecision(
+	variationKey, ruleKey, flagKey string,
+	enabled bool,
+	variables *optimizelyjson.OptimizelyJSON,
+	userContext OptimizelyUserContext,
+	reasons []string,
+) OptimizelyDecision {
 	return OptimizelyDecision{
 		VariationKey: variationKey,
 		Enabled:      enabled,

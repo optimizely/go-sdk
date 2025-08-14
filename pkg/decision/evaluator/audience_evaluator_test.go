@@ -195,6 +195,11 @@ func (m *MockProjectConfig) GetDatafile() string {
 	return args.String(0)
 }
 
+func (m *MockProjectConfig) GetRegion() string {
+	args := m.Called()
+	return args.String(0)
+}
+
 // MockLogger is a mock implementation of OptimizelyLogProducer
 // (This declaration has been removed to resolve the redeclaration error)
 
