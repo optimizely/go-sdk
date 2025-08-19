@@ -62,7 +62,6 @@ func MapFeatures(featureFlags []datafileEntities.FeatureFlag, rolloutMap map[str
 		feature.ExperimentIDs = featureFlag.ExperimentIDs
 		feature.FeatureExperiments = featureExperiments
 		feature.VariableMap = variableMap
-		// HoldoutIDs will be populated later when holdouts are processed from the datafile
 		featureMap[featureFlag.Key] = feature
 	}
 	return featureMap

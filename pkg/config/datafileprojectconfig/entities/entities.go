@@ -72,14 +72,8 @@ type Group struct {
 type HoldoutStatus string
 
 const (
-	// HoldoutStatusDraft - the holdout status is draft
-	HoldoutStatusDraft HoldoutStatus = "Draft"
 	// HoldoutStatusRunning - the holdout status is running
 	HoldoutStatusRunning HoldoutStatus = "Running"
-	// HoldoutStatusConcluded - the holdout status is concluded
-	HoldoutStatusConcluded HoldoutStatus = "Concluded"
-	// HoldoutStatusArchived - the holdout status is archived
-	HoldoutStatusArchived HoldoutStatus = "Archived"
 )
 
 // Holdout represents a Holdout object from the Optimizely datafile

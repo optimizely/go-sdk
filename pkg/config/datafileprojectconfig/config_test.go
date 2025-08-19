@@ -24,6 +24,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	jsoniter "github.com/json-iterator/go"
+	datafileEntities "github.com/optimizely/go-sdk/v2/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 
@@ -727,4 +729,258 @@ func TestGetAttributeByKeyWithDirectMapping(t *testing.T) {
 	actual, err := config.GetAttributeByKey(key)
 	assert.Nil(t, err)
 	assert.Equal(t, attribute, actual)
+}
+
+// Test holdout functionality based on JavaScript and Swift SDK patterns
+func TestHoldoutConfig_EmptyHoldouts(t *testing.T) {
+	datafile := &datafileEntities.Datafile{
+		Version:   "4",
+		AccountID: "12345",
+		ProjectID: "67890",
+		Revision:  "1",
+		Holdouts:  []datafileEntities.Holdout{},
+	}
+
+	jsonBytes, err := jsoniter.Marshal(datafile)
+	assert.NoError(t, err)
+
+	config, err := NewDatafileProjectConfig(jsonBytes, logging.GetLogger("", "test"))
+	assert.NoError(t, err)
+
+	assert.Empty(t, config.holdoutIDMap)
+	assert.Empty(t, config.globalHoldouts)
+	assert.Empty(t, config.includedHoldouts)
+	assert.Empty(t, config.excludedHoldouts)
+	assert.Empty(t, config.flagHoldoutsMap)
+}
+
+func TestHoldoutConfig_HoldoutMapping(t *testing.T) {
+	datafile := &datafileEntities.Datafile{
+		Version:   "4",
+		AccountID: "12345",
+		ProjectID: "67890",
+		Revision:  "1",
+		FeatureFlags: []datafileEntities.FeatureFlag{
+			{ID: "flag_1", Key: "feature_1"},
+			{ID: "flag_2", Key: "feature_2"},
+			{ID: "flag_3", Key: "feature_3"},
+		},
+		Holdouts: []datafileEntities.Holdout{
+			{
+				ExperimentCore: datafileEntities.ExperimentCore{
+					ID:  "global_holdout",
+					Key: "global_ho",
+				},
+				Status:        datafileEntities.HoldoutStatusRunning,
+				IncludedFlags: []string{},
+				ExcludedFlags: []string{},
+			},
+			{
+				ExperimentCore: datafileEntities.ExperimentCore{
+					ID:  "included_holdout",
+					Key: "included_ho",
+				},
+				Status:        datafileEntities.HoldoutStatusRunning,
+				IncludedFlags: []string{"flag_1", "flag_2"},
+				ExcludedFlags: []string{},
+			},
+			{
+				ExperimentCore: datafileEntities.ExperimentCore{
+					ID:  "excluded_holdout",
+					Key: "excluded_ho",
+				},
+				Status:        datafileEntities.HoldoutStatusRunning,
+				IncludedFlags: []string{},
+				ExcludedFlags: []string{"flag_3"},
+			},
+		},
+	}
+
+	jsonBytes, err := jsoniter.Marshal(datafile)
+	assert.NoError(t, err)
+
+	config, err := NewDatafileProjectConfig(jsonBytes, logging.GetLogger("", "test"))
+	assert.NoError(t, err)
+
+	// Test holdout ID map
+	assert.Len(t, config.holdoutIDMap, 3)
+	assert.Contains(t, config.holdoutIDMap, "global_holdout")
+	assert.Contains(t, config.holdoutIDMap, "included_holdout")
+	assert.Contains(t, config.holdoutIDMap, "excluded_holdout")
+
+	// Test global holdouts (empty IncludedFlags)
+	assert.Len(t, config.globalHoldouts, 2)
+	globalIDs := []string{config.globalHoldouts[0].ID, config.globalHoldouts[1].ID}
+	assert.Contains(t, globalIDs, "global_holdout")
+	assert.Contains(t, globalIDs, "excluded_holdout")
+
+	// Test included holdouts
+	assert.Len(t, config.includedHoldouts, 2)
+	assert.Contains(t, config.includedHoldouts, "flag_1")
+	assert.Contains(t, config.includedHoldouts, "flag_2")
+	assert.Equal(t, "included_holdout", config.includedHoldouts["flag_1"][0].ID)
+	assert.Equal(t, "included_holdout", config.includedHoldouts["flag_2"][0].ID)
+}
+
+func TestHoldoutConfig_GetHoldout(t *testing.T) {
+	datafile := &datafileEntities.Datafile{
+		Version:   "4",
+		AccountID: "12345",
+		ProjectID: "67890",
+		Revision:  "1",
+		Holdouts: []datafileEntities.Holdout{
+			{
+				ExperimentCore: datafileEntities.ExperimentCore{
+					ID:  "test_holdout",
+					Key: "test_key",
+				},
+				Status:        datafileEntities.HoldoutStatusRunning,
+				IncludedFlags: []string{"flag_1"},
+				ExcludedFlags: []string{},
+			},
+		},
+	}
+
+	jsonBytes, err := jsoniter.Marshal(datafile)
+	assert.NoError(t, err)
+
+	config, err := NewDatafileProjectConfig(jsonBytes, logging.GetLogger("", "test"))
+	assert.NoError(t, err)
+
+	// Test existing holdout
+	holdout, err := config.GetHoldout("test_holdout")
+	assert.NoError(t, err)
+	assert.Equal(t, "test_holdout", holdout.ID)
+	assert.Equal(t, "test_key", holdout.Key)
+	assert.Equal(t, entities.HoldoutStatusRunning, holdout.Status)
+	assert.Equal(t, []string{"flag_1"}, holdout.IncludedFlags)
+	assert.Empty(t, holdout.ExcludedFlags)
+
+	// Test non-existent holdout
+	_, err = config.GetHoldout("non_existent")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), `holdout with ID "non_existent" not found`)
+}
+
+func TestGetHoldoutsForFlag_Logic(t *testing.T) {
+	datafile := &datafileEntities.Datafile{
+		Version:   "4",
+		AccountID: "12345",
+		ProjectID: "67890",
+		Revision:  "1",
+		FeatureFlags: []datafileEntities.FeatureFlag{
+			{ID: "flag_1", Key: "feature_1"},
+			{ID: "flag_2", Key: "feature_2"},
+			{ID: "flag_3", Key: "feature_3"},
+		},
+		Holdouts: []datafileEntities.Holdout{
+			{
+				ExperimentCore: datafileEntities.ExperimentCore{
+					ID:  "global1",
+					Key: "global_holdout_1",
+				},
+				Status:        datafileEntities.HoldoutStatusRunning,
+				IncludedFlags: []string{},
+				ExcludedFlags: []string{},
+			},
+			{
+				ExperimentCore: datafileEntities.ExperimentCore{
+					ID:  "global_with_exclusion",
+					Key: "global_excluded",
+				},
+				Status:        datafileEntities.HoldoutStatusRunning,
+				IncludedFlags: []string{},
+				ExcludedFlags: []string{"flag_3"},
+			},
+			{
+				ExperimentCore: datafileEntities.ExperimentCore{
+					ID:  "specific_holdout",
+					Key: "flag_specific",
+				},
+				Status:        datafileEntities.HoldoutStatusRunning,
+				IncludedFlags: []string{"flag_1"},
+				ExcludedFlags: []string{},
+			},
+		},
+	}
+
+	jsonBytes, err := jsoniter.Marshal(datafile)
+	assert.NoError(t, err)
+
+	config, err := NewDatafileProjectConfig(jsonBytes, logging.GetLogger("", "test"))
+	assert.NoError(t, err)
+
+	// Test feature_1: should get global holdouts + specifically included
+	holdouts := config.GetHoldoutsForFlag("feature_1")
+	assert.Len(t, holdouts, 3)
+	holdoutIDs := make([]string, len(holdouts))
+	for i, h := range holdouts {
+		holdoutIDs[i] = h.ID
+	}
+	assert.Contains(t, holdoutIDs, "global1")
+	assert.Contains(t, holdoutIDs, "global_with_exclusion")
+	assert.Contains(t, holdoutIDs, "specific_holdout")
+
+	// Test feature_2: should get only global holdouts
+	holdouts = config.GetHoldoutsForFlag("feature_2")
+	assert.Len(t, holdouts, 2)
+	holdoutIDs = make([]string, len(holdouts))
+	for i, h := range holdouts {
+		holdoutIDs[i] = h.ID
+	}
+	assert.Contains(t, holdoutIDs, "global1")
+	assert.Contains(t, holdoutIDs, "global_with_exclusion")
+
+	// Test feature_3: should get global holdouts minus excluded
+	holdouts = config.GetHoldoutsForFlag("feature_3")
+	assert.Len(t, holdouts, 1)
+	assert.Equal(t, "global1", holdouts[0].ID)
+
+	// Test non-existent flag
+	holdouts = config.GetHoldoutsForFlag("non_existent")
+	assert.Empty(t, holdouts)
+}
+
+func TestGetHoldoutsForFlag_Caching(t *testing.T) {
+	datafile := &datafileEntities.Datafile{
+		Version:   "4",
+		AccountID: "12345",
+		ProjectID: "67890",
+		Revision:  "1",
+		FeatureFlags: []datafileEntities.FeatureFlag{
+			{ID: "flag_1", Key: "feature_1"},
+		},
+		Holdouts: []datafileEntities.Holdout{
+			{
+				ExperimentCore: datafileEntities.ExperimentCore{
+					ID:  "holdout_1",
+					Key: "test_holdout",
+				},
+				Status:        datafileEntities.HoldoutStatusRunning,
+				IncludedFlags: []string{"flag_1"},
+				ExcludedFlags: []string{},
+			},
+		},
+	}
+
+	jsonBytes, err := jsoniter.Marshal(datafile)
+	assert.NoError(t, err)
+
+	config, err := NewDatafileProjectConfig(jsonBytes, logging.GetLogger("", "test"))
+	assert.NoError(t, err)
+
+	// Initially cache should be empty
+	assert.Empty(t, config.flagHoldoutsMap)
+
+	// First call should populate cache
+	holdouts1 := config.GetHoldoutsForFlag("feature_1")
+	assert.Len(t, holdouts1, 1)
+
+	// Cache should now have entry
+	assert.Len(t, config.flagHoldoutsMap, 1)
+	assert.Contains(t, config.flagHoldoutsMap, "flag_1")
+
+	// Second call should return cached result
+	holdouts2 := config.GetHoldoutsForFlag("feature_1")
+	assert.Equal(t, holdouts1, holdouts2)
 }
