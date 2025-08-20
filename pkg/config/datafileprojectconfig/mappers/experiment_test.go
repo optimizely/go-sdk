@@ -125,10 +125,12 @@ func TestMapExperiments(t *testing.T) {
 func TestMapExperimentsWithStringAudienceCondition(t *testing.T) {
 
 	rawExperiment := datafileEntities.Experiment{
-		ID:                 "11111",
-		AudienceIds:        []string{"31111"},
-		Key:                "test_experiment_11111",
-		AudienceConditions: "31111",
+		ExperimentCore: datafileEntities.ExperimentCore{
+			ID:                 "11111",
+			AudienceIds:        []string{"31111"},
+			Key:                "test_experiment_11111",
+			AudienceConditions: "31111",
+		},
 	}
 
 	rawExperiments := []datafileEntities.Experiment{rawExperiment}
@@ -167,7 +169,9 @@ func TestMapExperimentsWithStringAudienceCondition(t *testing.T) {
 func TestMergeExperiments(t *testing.T) {
 
 	rawExperiment := datafileEntities.Experiment{
-		ID: "11111",
+		ExperimentCore: datafileEntities.ExperimentCore{
+			ID: "11111",
+		},
 	}
 	rawGroup := datafileEntities.Group{
 		Policy: "random",
@@ -184,7 +188,9 @@ func TestMergeExperiments(t *testing.T) {
 		},
 		Experiments: []datafileEntities.Experiment{
 			{
-				ID: "11112",
+				ExperimentCore: datafileEntities.ExperimentCore{
+					ID: "11112",
+				},
 			},
 		},
 	}
@@ -195,10 +201,14 @@ func TestMergeExperiments(t *testing.T) {
 
 	expectedExperiments := []datafileEntities.Experiment{
 		{
-			ID: "11111",
+			ExperimentCore: datafileEntities.ExperimentCore{
+				ID: "11111",
+			},
 		},
 		{
-			ID: "11112",
+			ExperimentCore: datafileEntities.ExperimentCore{
+				ID: "11112",
+			},
 		},
 	}
 
@@ -302,15 +312,17 @@ func TestMapCmab(t *testing.T) {
 func TestMapExperimentWithCmab(t *testing.T) {
 	// Create a raw experiment with CMAB configuration
 	rawExperiment := datafileEntities.Experiment{
-		ID:      "exp1",
-		Key:     "experiment_1",
+		ExperimentCore: datafileEntities.ExperimentCore{
+			ID:  "exp1",
+			Key: "experiment_1",
+			Variations: []datafileEntities.Variation{
+				{ID: "var1", Key: "variation_1"},
+			},
+			TrafficAllocation: []datafileEntities.TrafficAllocation{
+				{EntityID: "var1", EndOfRange: 10000},
+			},
+		},
 		LayerID: "layer1",
-		Variations: []datafileEntities.Variation{
-			{ID: "var1", Key: "variation_1"},
-		},
-		TrafficAllocation: []datafileEntities.TrafficAllocation{
-			{EntityID: "var1", EndOfRange: 10000},
-		},
 		Cmab: &datafileEntities.Cmab{
 			AttributeIds:      []string{"attr1", "attr2"},
 			TrafficAllocation: 5000, // Changed from array to int

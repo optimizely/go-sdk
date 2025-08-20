@@ -14,105 +14,104 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
- package decision
+package decision
 
- import (
-	 "fmt"
-	 "testing"
- 
-	 "github.com/optimizely/go-sdk/v2/pkg/decide"
-	 "github.com/optimizely/go-sdk/v2/pkg/decision/reasons"
-	 "github.com/optimizely/go-sdk/v2/pkg/logging"
- 
-	 "github.com/optimizely/go-sdk/v2/pkg/entities"
-	 "github.com/stretchr/testify/mock"
-	 "github.com/stretchr/testify/suite"
- )
- 
- type MockBucketer struct {
-	 mock.Mock
- }
- 
- func (m *MockBucketer) Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (*entities.Variation, reasons.Reason, error) {
-	 args := m.Called(bucketingID, experiment, group)
-	 return args.Get(0).(*entities.Variation), args.Get(1).(reasons.Reason), args.Error(2)
- }
- 
- // Add the new method to satisfy the ExperimentBucketer interface
- func (m *MockBucketer) BucketToEntityID(bucketingID string, experiment entities.Experiment, group entities.Group) (string, reasons.Reason, error) {
-	 args := m.Called(bucketingID, experiment, group)
-	 return args.String(0), args.Get(1).(reasons.Reason), args.Error(2)
- }
- 
- type MockLogger struct {
-	 mock.Mock
- }
- 
- func (m *MockLogger) Debug(message string) {
-	 m.Called(message)
- }
- 
- func (m *MockLogger) Info(message string) {
-	 m.Called(message)
- }
- 
- func (m *MockLogger) Warning(message string) {
-	 m.Called(message)
- }
- 
- func (m *MockLogger) Error(message string, err interface{}) {
-	 m.Called(message, err)
- }
- 
- type ExperimentBucketerTestSuite struct {
-	 suite.Suite
-	 mockBucketer *MockBucketer
-	 mockLogger   *MockLogger
-	 mockConfig   *mockProjectConfig
-	 options      *decide.Options
-	 reasons      decide.DecisionReasons
- }
- 
- func (s *ExperimentBucketerTestSuite) SetupTest() {
-	 s.mockBucketer = new(MockBucketer)
-	 s.mockLogger = new(MockLogger)
-	 s.mockConfig = new(mockProjectConfig)
-	 s.options = &decide.Options{}
-	 s.reasons = decide.NewDecisionReasons(s.options)
- }
- 
- func (s *ExperimentBucketerTestSuite) TestGetDecisionNoTargeting() {
-	 testUserContext := entities.UserContext{
-		 ID: "test_user_1",
-	 }
- 
-	 expectedDecision := ExperimentDecision{
-		 Variation: &testExp1111Var2222,
-		 Decision: Decision{
-			 Reason: reasons.BucketedIntoVariation,
-		 },
-	 }
- 
-	 testDecisionContext := ExperimentDecisionContext{
-		 Experiment:    &testExp1111,
-		 ProjectConfig: s.mockConfig,
-	 }
-	 s.mockBucketer.On("Bucket", testUserContext.ID, testExp1111, entities.Group{}).Return(&testExp1111Var2222, reasons.BucketedIntoVariation, nil)
-	 s.mockLogger.On("Debug", fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), "test_experiment_1111", true))
-	 experimentBucketerService := ExperimentBucketerService{
-		 bucketer: s.mockBucketer,
-		 logger:   s.mockLogger,
-	 }
-	 s.options.IncludeReasons = true
-	 decision, rsons, err := experimentBucketerService.GetDecision(testDecisionContext, testUserContext, s.options)
-	 messages := rsons.ToReport()
-	 s.Len(messages, 1)
-	 s.Equal(`Audiences for experiment test_experiment_1111 collectively evaluated to true.`, messages[0])
-	 s.Equal(expectedDecision, decision)
-	 s.NoError(err)
-	 s.mockLogger.AssertExpectations(s.T())
- }
- 
+import (
+	"fmt"
+	"testing"
+
+	"github.com/optimizely/go-sdk/v2/pkg/decide"
+	"github.com/optimizely/go-sdk/v2/pkg/decision/reasons"
+	"github.com/optimizely/go-sdk/v2/pkg/logging"
+
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
+)
+
+type MockBucketer struct {
+	mock.Mock
+}
+
+func (m *MockBucketer) Bucket(bucketingID string, experiment entities.Experiment, group entities.Group) (*entities.Variation, reasons.Reason, error) {
+	args := m.Called(bucketingID, experiment, group)
+	return args.Get(0).(*entities.Variation), args.Get(1).(reasons.Reason), args.Error(2)
+}
+
+// Add the new method to satisfy the ExperimentBucketer interface
+func (m *MockBucketer) BucketToEntityID(bucketingID string, experiment entities.Experiment, group entities.Group) (string, reasons.Reason, error) {
+	args := m.Called(bucketingID, experiment, group)
+	return args.String(0), args.Get(1).(reasons.Reason), args.Error(2)
+}
+
+type MockLogger struct {
+	mock.Mock
+}
+
+func (m *MockLogger) Debug(message string) {
+	m.Called(message)
+}
+
+func (m *MockLogger) Info(message string) {
+	m.Called(message)
+}
+
+func (m *MockLogger) Warning(message string) {
+	m.Called(message)
+}
+
+func (m *MockLogger) Error(message string, err interface{}) {
+	m.Called(message, err)
+}
+
+type ExperimentBucketerTestSuite struct {
+	suite.Suite
+	mockBucketer *MockBucketer
+	mockLogger   *MockLogger
+	mockConfig   *mockProjectConfig
+	options      *decide.Options
+	reasons      decide.DecisionReasons
+}
+
+func (s *ExperimentBucketerTestSuite) SetupTest() {
+	s.mockBucketer = new(MockBucketer)
+	s.mockLogger = new(MockLogger)
+	s.mockConfig = new(mockProjectConfig)
+	s.options = &decide.Options{}
+	s.reasons = decide.NewDecisionReasons(s.options)
+}
+
+func (s *ExperimentBucketerTestSuite) TestGetDecisionNoTargeting() {
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	expectedDecision := ExperimentDecision{
+		Variation: &testExp1111Var2222,
+		Decision: Decision{
+			Reason: reasons.BucketedIntoVariation,
+		},
+	}
+
+	testDecisionContext := ExperimentDecisionContext{
+		Experiment:    &testExp1111,
+		ProjectConfig: s.mockConfig,
+	}
+	s.mockBucketer.On("Bucket", testUserContext.ID, testExp1111, entities.Group{}).Return(&testExp1111Var2222, reasons.BucketedIntoVariation, nil)
+	s.mockLogger.On("Debug", fmt.Sprintf(logging.ExperimentAudiencesEvaluatedTo.String(), "test_experiment_1111", true))
+	experimentBucketerService := ExperimentBucketerService{
+		bucketer: s.mockBucketer,
+		logger:   s.mockLogger,
+	}
+	s.options.IncludeReasons = true
+	decision, rsons, err := experimentBucketerService.GetDecision(testDecisionContext, testUserContext, s.options)
+	messages := rsons.ToReport()
+	s.Len(messages, 1)
+	s.Equal(`Audiences for experiment test_experiment_1111 collectively evaluated to true.`, messages[0])
+	s.Equal(expectedDecision, decision)
+	s.NoError(err)
+	s.mockLogger.AssertExpectations(s.T())
+}
 
 func (s *ExperimentBucketerTestSuite) TestGetDecisionWithTargetingPasses() {
 	testUserContext := entities.UserContext{
