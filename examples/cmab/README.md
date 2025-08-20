@@ -19,11 +19,11 @@ This guide provides comprehensive test scenarios and example code for testing CM
 
 ### Basic Usage
 ```bash
-# Run all tests
-go run cmab_test_example.go
+# Run all tests (from go-sdk root)
+go run examples/cmab/main.go
 
 # Run specific test
-go run cmab_test_example.go -test=cache_hit
+go run examples/cmab/main.go -test=cache_hit
 
 # Available test cases:
 # - basic         : Basic CMAB functionality
@@ -39,11 +39,11 @@ go run cmab_test_example.go -test=cache_hit
 
 ### With Profiling (Optional)
 ```bash
-# CPU profiling
-go build -ldflags "-X main.RunCPUProfile=true" cmab_test_example.go && ./cmab_test_example
+# CPU profiling (from examples/cmab directory)
+cd examples/cmab && go build -ldflags "-X main.RunCPUProfile=true" main.go && ./main
 
-# Memory profiling
-go build -ldflags "-X main.RunMemProfile=true" cmab_test_example.go && ./cmab_test_example
+# Memory profiling (from examples/cmab directory)  
+cd examples/cmab && go build -ldflags "-X main.RunMemProfile=true" main.go && ./main
 ```
 
 ## Test Scenarios

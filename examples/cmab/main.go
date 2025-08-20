@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/optimizely/go-sdk/v2/pkg/client"
@@ -39,17 +38,29 @@ func main() {
 	logging.SetLogLevel(logging.LogLevelDebug)
 	
 	fmt.Println("=== CMAB Testing Suite for Go SDK ===")
+	fmt.Printf("Testing CMAB with develrc environment\n")
 	fmt.Printf("SDK Key: %s\n", SDK_KEY)
-	fmt.Printf("Testing with develrc environment\n\n")
+	fmt.Printf("Flag Key: %s\n\n", FLAG_KEY)
 	
-	// Initialize client
-	optimizelyClient := initializeClient()
-	if optimizelyClient == nil {
-		log.Fatal("Failed to initialize Optimizely client")
+	// Create config manager with develrc URL template
+	configManager := config.NewPollingProjectConfigManager(SDK_KEY,
+		config.WithDatafileURLTemplate("https://dev.cdn.optimizely.com/datafiles/%s.json"))
+	
+	// Use the proper factory option to set config manager
+	factory := &client.OptimizelyFactory{
+		SDKKey: SDK_KEY,
+	}
+	
+	optimizelyClient, err := factory.Client(
+		client.WithConfigManager(configManager),
+	)
+	if err != nil {
+		fmt.Println("Error initializing Optimizely client:", err)
+		return
 	}
 	defer optimizelyClient.Close()
 	
-	// Wait for datafile
+	// Wait for datafile to load
 	fmt.Println("Waiting for datafile to load...")
 	time.Sleep(2 * time.Second)
 	
@@ -75,27 +86,10 @@ func main() {
 		runAllTests(optimizelyClient)
 	default:
 		fmt.Printf("Unknown test case: %s\n", *testCase)
+		fmt.Println("\nAvailable test cases:")
+		fmt.Println("  basic, cache_hit, cache_miss, ignore_cache,")
+		fmt.Println("  reset_cache, invalidate_user, concurrent, error, all")
 	}
-}
-
-func initializeClient() *client.OptimizelyClient {
-	// Create config manager with develrc URL template
-	configManager := config.NewPollingProjectConfigManager(SDK_KEY,
-		config.WithDatafileURLTemplate("https://dev.cdn.optimizely.com/datafiles/%s.json"))
-	
-	factory := &client.OptimizelyFactory{
-		SDKKey: SDK_KEY,
-	}
-	
-	optimizelyClient, err := factory.Client(
-		client.WithConfigManager(configManager),
-	)
-	if err != nil {
-		fmt.Printf("Error initializing client: %v\n", err)
-		return nil
-	}
-	
-	return optimizelyClient
 }
 
 func runAllTests(optimizelyClient *client.OptimizelyClient) {
@@ -234,7 +228,7 @@ func testIgnoreCacheOption(optimizelyClient *client.OptimizelyClient) {
 	
 	// Second decision with IGNORE_CMAB_CACHE
 	fmt.Println("\nSecond decision with IGNORE_CMAB_CACHE:")
-	options := []decide.OptimizelyDecideOption{
+	options := []decide.OptimizelyDecideOptions{
 		decide.IgnoreCMABCache,
 	}
 	decision2 := userContext.Decide(FLAG_KEY, options)
@@ -274,7 +268,7 @@ func testResetCacheOption(optimizelyClient *client.OptimizelyClient) {
 	
 	// Reset entire cache
 	fmt.Println("\nResetting entire CMAB cache:")
-	options := []decide.OptimizelyDecideOption{
+	options := []decide.OptimizelyDecideOptions{
 		decide.ResetCMABCache,
 	}
 	decision3 := userContext1.Decide(FLAG_KEY, options)
@@ -314,7 +308,7 @@ func testInvalidateUserCacheOption(optimizelyClient *client.OptimizelyClient) {
 	
 	// Invalidate only User 1's cache
 	fmt.Println("\nInvalidating User 1's cache only:")
-	options := []decide.OptimizelyDecideOption{
+	options := []decide.OptimizelyDecideOptions{
 		decide.InvalidateUserCMABCache,
 	}
 	decision3 := userContext1.Decide(FLAG_KEY, options)
@@ -337,7 +331,7 @@ func testConcurrentRequests(optimizelyClient *client.OptimizelyClient) {
 	})
 	
 	// Channel to collect results
-	results := make(chan *decide.OptimizelyDecision, 5)
+	results := make(chan *client.OptimizelyDecision, 5)
 	
 	// Launch 5 concurrent requests
 	fmt.Println("Launching 5 concurrent decide calls...")
@@ -394,14 +388,14 @@ func testErrorHandling(optimizelyClient *client.OptimizelyClient) {
 }
 
 // Helper function to print decision details
-func printDecision(label string, decision decide.OptimizelyDecision) {
+func printDecision(label string, decision client.OptimizelyDecision) {
 	fmt.Printf("\n%s:\n", label)
 	fmt.Printf("  Enabled: %v\n", decision.Enabled)
 	fmt.Printf("  Variation: %s\n", decision.VariationKey)
 	fmt.Printf("  Rule: %s\n", decision.RuleKey)
 	
-	if len(decision.Variables) > 0 {
-		fmt.Printf("  Variables: %v\n", decision.Variables)
+	if decision.Variables != nil {
+		fmt.Printf("  Variables: %v\n", decision.Variables.ToMap())
 	}
 	
 	if len(decision.Reasons) > 0 {
