@@ -135,8 +135,7 @@ func (c *DefaultCmabClient) FetchDecision(
 
 	// Create the URL
 	// TEMPORARY: Override with test ruleID
-	testRuleID := "1304618"
-	url := fmt.Sprintf(CMABPredictionEndpoint, testRuleID)
+	url := fmt.Sprintf(CMABPredictionEndpoint, ruleID)
 	
 	// Log the prediction endpoint URL
 	c.logger.Debug(fmt.Sprintf("CMAB prediction endpoint URL: %s (original ruleID: %s)", url, ruleID))
@@ -156,7 +155,7 @@ func (c *DefaultCmabClient) FetchDecision(
 		Instances: []Instance{
 			{
 				VisitorID:    userID,
-				ExperimentID: testRuleID, // Use testRuleID to match the URL
+				ExperimentID: ruleID,
 				Attributes:   cmabAttributes,
 				CmabUUID:     cmabUUID,
 			},
