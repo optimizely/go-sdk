@@ -154,7 +154,7 @@ func testCacheHit(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Cache Hit (Same User & Attributes) ---")
 
 	userContext := optimizelyClient.CreateUserContext(USER_CACHE_TEST, map[string]interface{}{
-		"category": "cmab",
+		"category":            "cmab",
 		"cmab_test_attribute": "hello",
 	})
 
