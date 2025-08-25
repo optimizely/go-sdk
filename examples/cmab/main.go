@@ -18,39 +18,44 @@ import (
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
 
+// TODO: change attributes to: "cmab_test_attribute": "hello",
+
 const (
 	// SDK Key from russell-demo-gosdk-cmab branch
-	SDK_KEY = "JgzFaGzGXx6F1ocTbMTmn"
-	FLAG_KEY = "flag-matjaz-editor"
-	
+	// SDK_KEY  = "JgzFaGzGXx6F1ocTbMTmn"
+	// FLAG_KEY = "flag-matjaz-editor"
+	SDK_KEY  = "DCx4eoV52jhgaC9MSab3g" // rc
+	FLAG_KEY = "flag-cmab-1"
+
 	// Test user IDs
-	USER_QUALIFIED = "test_user_99"    // Will be bucketed into CMAB
+	USER_QUALIFIED    = "test_user_99" // Will be bucketed into CMAB
 	USER_NOT_BUCKETED = "test_user_1"  // Won't be bucketed (traffic allocation)
-	USER_CACHE_TEST = "cache_user_123"
+	USER_CACHE_TEST   = "cache_user_123"
 )
 
 var testCase = flag.String("test", "all", "Specific test case to run")
 
 func main() {
 	flag.Parse()
-	
+
 	// Enable debug logging to see CMAB activity
 	logging.SetLogLevel(logging.LogLevelDebug)
-	
+
 	fmt.Println("=== CMAB Testing Suite for Go SDK ===")
 	fmt.Printf("Testing CMAB with develrc environment\n")
 	fmt.Printf("SDK Key: %s\n", SDK_KEY)
 	fmt.Printf("Flag Key: %s\n\n", FLAG_KEY)
-	
+
 	// Create config manager with develrc URL template
 	configManager := config.NewPollingProjectConfigManager(SDK_KEY,
-		config.WithDatafileURLTemplate("https://dev.cdn.optimizely.com/datafiles/%s.json"))
-	
+		// config.WithDatafileURLTemplate("https://dev.cdn.optimizely.com/datafiles/%s.json"))	// develrc
+		config.WithDatafileURLTemplate("https://optimizely-staging.s3.amazonaws.com/datafiles/%s.json")) // rc
+
 	// Use the proper factory option to set config manager
 	factory := &client.OptimizelyFactory{
 		SDKKey: SDK_KEY,
 	}
-	
+
 	optimizelyClient, err := factory.Client(
 		client.WithConfigManager(configManager),
 	)
@@ -59,11 +64,11 @@ func main() {
 		return
 	}
 	defer optimizelyClient.Close()
-	
+
 	// Wait for datafile to load
 	fmt.Println("Waiting for datafile to load...")
 	time.Sleep(2 * time.Second)
-	
+
 	// Run tests based on flag
 	switch *testCase {
 	case "basic":
@@ -94,52 +99,52 @@ func main() {
 
 func runAllTests(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n=== Running All Tests ===\n")
-	
+
 	testBasicCMAB(optimizelyClient)
 	time.Sleep(1 * time.Second)
-	
+
 	testCacheHit(optimizelyClient)
 	time.Sleep(1 * time.Second)
-	
+
 	testCacheMissOnAttributeChange(optimizelyClient)
 	time.Sleep(1 * time.Second)
-	
+
 	testIgnoreCacheOption(optimizelyClient)
 	time.Sleep(1 * time.Second)
-	
+
 	testResetCacheOption(optimizelyClient)
 	time.Sleep(1 * time.Second)
-	
+
 	testInvalidateUserCacheOption(optimizelyClient)
 	time.Sleep(1 * time.Second)
-	
+
 	testConcurrentRequests(optimizelyClient)
 	time.Sleep(1 * time.Second)
-	
+
 	fmt.Println("\n=== All Tests Completed ===")
 }
 
 // Test 1: Basic CMAB functionality
 func testBasicCMAB(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Basic CMAB Functionality ---")
-	
+
 	// Test with user who qualifies for CMAB
 	userContext := optimizelyClient.CreateUserContext(USER_QUALIFIED, map[string]interface{}{
 		"category": "cmab",
 		"age":      50,
 		"country":  "BD",
 	})
-	
+
 	decision := userContext.Decide(FLAG_KEY, nil)
 	printDecision("CMAB Qualified User", decision)
-	
+
 	// Test with user who doesn't meet audience conditions
 	userContextNotQualified := optimizelyClient.CreateUserContext(USER_NOT_BUCKETED, map[string]interface{}{
 		"category": "not-cmab",
 		"age":      50,
 		"country":  "BD",
 	})
-	
+
 	decisionNotQualified := userContextNotQualified.Decide(FLAG_KEY, nil)
 	printDecision("Non-CMAB User (falls through)", decisionNotQualified)
 }
@@ -147,23 +152,22 @@ func testBasicCMAB(optimizelyClient *client.OptimizelyClient) {
 // Test 2: Cache hit - same user and attributes
 func testCacheHit(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Cache Hit (Same User & Attributes) ---")
-	
+
 	userContext := optimizelyClient.CreateUserContext(USER_CACHE_TEST, map[string]interface{}{
 		"category": "cmab",
-		"age":      30,
-		"country":  "US",
+		"cmab_test_attribute": "hello",
 	})
-	
+
 	// First decision - should call CMAB service
 	fmt.Println("First decision (CMAB call):")
 	decision1 := userContext.Decide(FLAG_KEY, nil)
 	printDecision("Decision 1", decision1)
-	
+
 	// Second decision - should use cache
 	fmt.Println("\nSecond decision (Cache hit):")
 	decision2 := userContext.Decide(FLAG_KEY, nil)
 	printDecision("Decision 2", decision2)
-	
+
 	// Verify same variation returned
 	if decision1.VariationKey == decision2.VariationKey {
 		fmt.Println("✓ Cache working: Same variation returned")
@@ -175,37 +179,37 @@ func testCacheHit(optimizelyClient *client.OptimizelyClient) {
 // Test 3: Cache miss when relevant attributes change
 func testCacheMissOnAttributeChange(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Cache Miss on Attribute Change ---")
-	
+
 	// First decision with age=25
 	userContext1 := optimizelyClient.CreateUserContext(USER_CACHE_TEST+"_attr", map[string]interface{}{
 		"category": "cmab",
 		"age":      25,
 		"country":  "US",
 	})
-	
+
 	fmt.Println("Decision with age=25:")
 	decision1 := userContext1.Decide(FLAG_KEY, nil)
 	printDecision("Decision 1", decision1)
-	
+
 	// Second decision with age=26 (relevant attribute change)
 	userContext2 := optimizelyClient.CreateUserContext(USER_CACHE_TEST+"_attr", map[string]interface{}{
 		"category": "cmab",
-		"age":      26,  // Changed
+		"age":      26, // Changed
 		"country":  "US",
 	})
-	
+
 	fmt.Println("\nDecision with age=26 (cache miss expected):")
 	decision2 := userContext2.Decide(FLAG_KEY, nil)
 	printDecision("Decision 2", decision2)
-	
+
 	// Third decision with non-relevant attribute change
 	userContext3 := optimizelyClient.CreateUserContext(USER_CACHE_TEST+"_attr", map[string]interface{}{
 		"category": "cmab",
 		"age":      26,
 		"country":  "US",
-		"language": "EN",  // Non-relevant attribute
+		"language": "EN", // Non-relevant attribute
 	})
-	
+
 	fmt.Println("\nDecision with added language attribute (cache hit expected):")
 	decision3 := userContext3.Decide(FLAG_KEY, nil)
 	printDecision("Decision 3", decision3)
@@ -214,18 +218,18 @@ func testCacheMissOnAttributeChange(optimizelyClient *client.OptimizelyClient) {
 // Test 4: IGNORE_CMAB_CACHE option
 func testIgnoreCacheOption(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: IGNORE_CMAB_CACHE Option ---")
-	
+
 	userContext := optimizelyClient.CreateUserContext(USER_CACHE_TEST+"_ignore", map[string]interface{}{
 		"category": "cmab",
 		"age":      35,
 		"country":  "UK",
 	})
-	
+
 	// First decision - populate cache
 	fmt.Println("First decision (populate cache):")
 	decision1 := userContext.Decide(FLAG_KEY, nil)
 	printDecision("Decision 1", decision1)
-	
+
 	// Second decision with IGNORE_CMAB_CACHE
 	fmt.Println("\nSecond decision with IGNORE_CMAB_CACHE:")
 	options := []decide.OptimizelyDecideOptions{
@@ -233,7 +237,7 @@ func testIgnoreCacheOption(optimizelyClient *client.OptimizelyClient) {
 	}
 	decision2 := userContext.Decide(FLAG_KEY, options)
 	printDecision("Decision 2 (ignored cache)", decision2)
-	
+
 	// Third decision - should use original cache
 	fmt.Println("\nThird decision (should use original cache):")
 	decision3 := userContext.Decide(FLAG_KEY, nil)
@@ -243,29 +247,29 @@ func testIgnoreCacheOption(optimizelyClient *client.OptimizelyClient) {
 // Test 5: RESET_CMAB_CACHE option
 func testResetCacheOption(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: RESET_CMAB_CACHE Option ---")
-	
+
 	// Setup two different users
 	userContext1 := optimizelyClient.CreateUserContext("reset_user_1", map[string]interface{}{
 		"category": "cmab",
 		"age":      40,
 		"country":  "CA",
 	})
-	
+
 	userContext2 := optimizelyClient.CreateUserContext("reset_user_2", map[string]interface{}{
 		"category": "cmab",
 		"age":      45,
 		"country":  "AU",
 	})
-	
+
 	// Populate cache for both users
 	fmt.Println("Populating cache for User 1:")
 	decision1 := userContext1.Decide(FLAG_KEY, nil)
 	printDecision("User 1 Decision", decision1)
-	
+
 	fmt.Println("\nPopulating cache for User 2:")
 	decision2 := userContext2.Decide(FLAG_KEY, nil)
 	printDecision("User 2 Decision", decision2)
-	
+
 	// Reset entire cache
 	fmt.Println("\nResetting entire CMAB cache:")
 	options := []decide.OptimizelyDecideOptions{
@@ -273,7 +277,7 @@ func testResetCacheOption(optimizelyClient *client.OptimizelyClient) {
 	}
 	decision3 := userContext1.Decide(FLAG_KEY, options)
 	printDecision("User 1 after RESET", decision3)
-	
+
 	// Check if User 2's cache was also cleared
 	fmt.Println("\nUser 2 after cache reset (should refetch):")
 	decision4 := userContext2.Decide(FLAG_KEY, nil)
@@ -283,29 +287,29 @@ func testResetCacheOption(optimizelyClient *client.OptimizelyClient) {
 // Test 6: INVALIDATE_USER_CMAB_CACHE option
 func testInvalidateUserCacheOption(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: INVALIDATE_USER_CMAB_CACHE Option ---")
-	
+
 	// Setup two different users
 	userContext1 := optimizelyClient.CreateUserContext("invalidate_user_1", map[string]interface{}{
 		"category": "cmab",
 		"age":      50,
 		"country":  "DE",
 	})
-	
+
 	userContext2 := optimizelyClient.CreateUserContext("invalidate_user_2", map[string]interface{}{
 		"category": "cmab",
 		"age":      55,
 		"country":  "FR",
 	})
-	
+
 	// Populate cache for both users
 	fmt.Println("Populating cache for User 1:")
 	decision1 := userContext1.Decide(FLAG_KEY, nil)
 	printDecision("User 1 Initial", decision1)
-	
+
 	fmt.Println("\nPopulating cache for User 2:")
 	decision2 := userContext2.Decide(FLAG_KEY, nil)
 	printDecision("User 2 Initial", decision2)
-	
+
 	// Invalidate only User 1's cache
 	fmt.Println("\nInvalidating User 1's cache only:")
 	options := []decide.OptimizelyDecideOptions{
@@ -313,7 +317,7 @@ func testInvalidateUserCacheOption(optimizelyClient *client.OptimizelyClient) {
 	}
 	decision3 := userContext1.Decide(FLAG_KEY, options)
 	printDecision("User 1 after INVALIDATE", decision3)
-	
+
 	// Check if User 2's cache is still valid
 	fmt.Println("\nUser 2 after User 1 invalidation (should use cache):")
 	decision4 := userContext2.Decide(FLAG_KEY, nil)
@@ -323,16 +327,16 @@ func testInvalidateUserCacheOption(optimizelyClient *client.OptimizelyClient) {
 // Test 7: Concurrent requests for same user
 func testConcurrentRequests(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Concurrent Requests ---")
-	
+
 	userContext := optimizelyClient.CreateUserContext("concurrent_user", map[string]interface{}{
 		"category": "cmab",
 		"age":      60,
 		"country":  "JP",
 	})
-	
+
 	// Channel to collect results
 	results := make(chan *client.OptimizelyDecision, 5)
-	
+
 	// Launch 5 concurrent requests
 	fmt.Println("Launching 5 concurrent decide calls...")
 	for i := 0; i < 5; i++ {
@@ -342,20 +346,20 @@ func testConcurrentRequests(optimizelyClient *client.OptimizelyClient) {
 			results <- &decision
 		}(i)
 	}
-	
+
 	// Collect results
 	variations := make(map[string]int)
 	for i := 0; i < 5; i++ {
 		decision := <-results
 		variations[decision.VariationKey]++
 	}
-	
+
 	// All should return the same variation (only one CMAB call)
 	fmt.Println("\nResults:")
 	for variation, count := range variations {
 		fmt.Printf("  Variation '%s': %d times\n", variation, count)
 	}
-	
+
 	if len(variations) == 1 {
 		fmt.Println("✓ Concurrent handling correct: All returned same variation")
 	} else {
@@ -367,18 +371,18 @@ func testConcurrentRequests(optimizelyClient *client.OptimizelyClient) {
 func testErrorHandling(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Error Handling ---")
 	fmt.Println("Note: This test simulates error scenarios")
-	
+
 	// Test with invalid/malformed attributes that might cause issues
 	userContext := optimizelyClient.CreateUserContext("error_test_user", map[string]interface{}{
 		"category": "cmab",
-		"age":      "not_a_number",  // Invalid type
-		"country":  "",               // Empty value
+		"age":      "not_a_number", // Invalid type
+		"country":  "",             // Empty value
 	})
-	
+
 	fmt.Println("Testing with invalid attribute types:")
 	decision := userContext.Decide(FLAG_KEY, nil)
 	printDecision("Error scenario", decision)
-	
+
 	if len(decision.Reasons) > 0 {
 		fmt.Println("Reasons for decision:")
 		for _, reason := range decision.Reasons {
@@ -393,18 +397,18 @@ func printDecision(label string, decision client.OptimizelyDecision) {
 	fmt.Printf("  Enabled: %v\n", decision.Enabled)
 	fmt.Printf("  Variation: %s\n", decision.VariationKey)
 	fmt.Printf("  Rule: %s\n", decision.RuleKey)
-	
+
 	if decision.Variables != nil {
 		fmt.Printf("  Variables: %v\n", decision.Variables.ToMap())
 	}
-	
+
 	if len(decision.Reasons) > 0 {
 		fmt.Printf("  Reasons:\n")
 		for _, reason := range decision.Reasons {
 			fmt.Printf("    - %s\n", reason)
 		}
 	}
-	
+
 	// Try to extract CMAB metadata if available (would need SDK support)
 	// This is a placeholder for when metadata is exposed
 	fmt.Printf("  [Check debug logs above for CMAB UUID and calls]\n")
