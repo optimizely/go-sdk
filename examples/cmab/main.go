@@ -87,19 +87,35 @@ func main() {
 		testConcurrentRequests(optimizelyClient)
 	case "error":
 		testErrorHandling(optimizelyClient)
+	case "fallback":
+		testFallbackWhenNotQualified(optimizelyClient)
+	case "traffic":
+		testTrafficAllocation(optimizelyClient)
+	case "forced":
+		testForcedVariationOverride(optimizelyClient)
+	case "event_tracking":
+		testEventTracking(optimizelyClient)
+	case "attribute_types":
+		testAttributeTypes(optimizelyClient)
+	case "performance":
+		testPerformanceBenchmarks(optimizelyClient)
+	case "cache_expiry":
+		testCacheExpiry(optimizelyClient)
 	case "all":
 		runAllTests(optimizelyClient)
 	default:
 		fmt.Printf("Unknown test case: %s\n", *testCase)
 		fmt.Println("\nAvailable test cases:")
-		fmt.Println("  basic, cache_hit, cache_miss, ignore_cache,")
-		fmt.Println("  reset_cache, invalidate_user, concurrent, error, all")
+		fmt.Println("  basic, cache_hit, cache_miss, ignore_cache, reset_cache,")
+		fmt.Println("  invalidate_user, concurrent, error, fallback, traffic,")
+		fmt.Println("  forced, event_tracking, attribute_types, performance, cache_expiry, all")
 	}
 }
 
 func runAllTests(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n=== Running All Tests ===\n")
 
+	// Original tests
 	testBasicCMAB(optimizelyClient)
 	time.Sleep(1 * time.Second)
 
@@ -119,6 +135,31 @@ func runAllTests(optimizelyClient *client.OptimizelyClient) {
 	time.Sleep(1 * time.Second)
 
 	testConcurrentRequests(optimizelyClient)
+	time.Sleep(1 * time.Second)
+
+	testErrorHandling(optimizelyClient)
+	time.Sleep(1 * time.Second)
+
+	// Additional SDK test cases
+	testFallbackWhenNotQualified(optimizelyClient)
+	time.Sleep(1 * time.Second)
+
+	testTrafficAllocation(optimizelyClient)
+	time.Sleep(1 * time.Second)
+
+	testForcedVariationOverride(optimizelyClient)
+	time.Sleep(1 * time.Second)
+
+	testEventTracking(optimizelyClient)
+	time.Sleep(1 * time.Second)
+
+	testAttributeTypes(optimizelyClient)
+	time.Sleep(1 * time.Second)
+
+	testCacheExpiry(optimizelyClient)
+	time.Sleep(1 * time.Second)
+
+	testPerformanceBenchmarks(optimizelyClient)
 	time.Sleep(1 * time.Second)
 
 	fmt.Println("\n=== All Tests Completed ===")
@@ -422,4 +463,199 @@ func prettyPrint(label string, data interface{}) {
 		return
 	}
 	fmt.Printf("%s:\n%s\n", label, string(bytes))
+}
+
+// Test 9: Fallback when user doesn't qualify for CMAB
+func testFallbackWhenNotQualified(optimizelyClient *client.OptimizelyClient) {
+	fmt.Println("\n--- Test: Fallback When Not Qualified for CMAB ---")
+
+	// User with attributes that don't match CMAB audience
+	userContext := optimizelyClient.CreateUserContext("fallback_user", map[string]interface{}{
+		"category": "not-cmab", // Fails audience condition
+		"age":      45,
+		"country":  "US",
+	})
+
+	decision := userContext.Decide(FLAG_KEY, nil)
+	printDecision("Non-CMAB User", decision)
+
+	if decision.RuleKey != "exp_1" {
+		fmt.Println("✓ Fallback working: Decision from non-CMAB experiment")
+	} else {
+		fmt.Println("✗ Fallback issue: Still received CMAB decision")
+	}
+
+	fmt.Println("Expected: No CMAB API call in debug logs above")
+}
+
+// Test 10: Traffic allocation check
+func testTrafficAllocation(optimizelyClient *client.OptimizelyClient) {
+	fmt.Println("\n--- Test: Traffic Allocation Check ---")
+
+	// User not in traffic allocation (test_user_1)
+	userContext1 := optimizelyClient.CreateUserContext(USER_NOT_BUCKETED, map[string]interface{}{
+		"category": "cmab",
+		"age":      35,
+		"country":  "CA",
+	})
+
+	decision1 := userContext1.Decide(FLAG_KEY, nil)
+	printDecision("User Not in Traffic", decision1)
+
+	// User in traffic allocation (test_user_99)
+	userContext2 := optimizelyClient.CreateUserContext(USER_QUALIFIED, map[string]interface{}{
+		"category": "cmab",
+		"age":      35,
+		"country":  "CA",
+	})
+
+	decision2 := userContext2.Decide(FLAG_KEY, nil)
+	printDecision("User in Traffic", decision2)
+
+	fmt.Println("Expected: Only second user triggers CMAB API call")
+}
+
+// Test 11: Forced variation override
+func testForcedVariationOverride(optimizelyClient *client.OptimizelyClient) {
+	fmt.Println("\n--- Test: Forced Variation Override ---")
+
+	// Note: This test shows the concept but forced variations 
+	// would need to be configured in the datafile or via whitelisting
+	userContext := optimizelyClient.CreateUserContext("forced_user", map[string]interface{}{
+		"category": "cmab",
+		"age":      40,
+		"country":  "UK",
+	})
+
+	decision := userContext.Decide(FLAG_KEY, nil)
+	printDecision("Potential Forced User", decision)
+
+	fmt.Println("Note: Forced variations would be configured in datafile")
+	fmt.Println("Expected: If forced variation exists, no CMAB API call")
+}
+
+// Test 12: Event tracking validation
+func testEventTracking(optimizelyClient *client.OptimizelyClient) {
+	fmt.Println("\n--- Test: Event Tracking with CMAB UUID ---")
+
+	userContext := optimizelyClient.CreateUserContext("event_user", map[string]interface{}{
+		"category": "cmab",
+		"age":      28,
+		"country":  "DE",
+	})
+
+	// Make CMAB decision
+	decision := userContext.Decide(FLAG_KEY, nil)
+	printDecision("Decision for Events", decision)
+
+	// Track a conversion event
+	userContext.TrackEvent("purchase", map[string]interface{}{
+		"revenue": 49.99,
+	})
+
+	fmt.Println("\nConversion event tracked: 'purchase'")
+	fmt.Println("Expected: Both impression and conversion events contain same CMAB UUID")
+	fmt.Println("Check event processor logs for CMAB UUID in metadata")
+}
+
+// Test 13: Attribute types and formatting
+func testAttributeTypes(optimizelyClient *client.OptimizelyClient) {
+	fmt.Println("\n--- Test: Attribute Types and Formatting ---")
+
+	userContext := optimizelyClient.CreateUserContext("attr_user", map[string]interface{}{
+		// Custom attributes
+		"age":     42,
+		"country": "FR",
+		"premium": true,
+		
+		// Standard attributes (if any)
+		"$opt_bot_filtering": false,
+	})
+
+	decision := userContext.Decide(FLAG_KEY, nil)
+	printDecision("Mixed Attribute Types", decision)
+
+	fmt.Println("Expected in API request:")
+	fmt.Println("- Custom attributes: type='custom_attribute'")  
+	fmt.Println("- Standard attributes: type='standard_attribute'")
+	fmt.Println("- Only relevant attributes sent (based on cmab.attributeIds)")
+}
+
+// Test 14: Cache expiry simulation
+func testCacheExpiry(optimizelyClient *client.OptimizelyClient) {
+	fmt.Println("\n--- Test: Cache Expiry (Simulated) ---")
+
+	userContext := optimizelyClient.CreateUserContext("expiry_user", map[string]interface{}{
+		"category": "cmab",
+		"age":      33,
+		"country":  "AU",
+	})
+
+	// First decision
+	fmt.Println("Decision at T=0:")
+	decision1 := userContext.Decide(FLAG_KEY, nil)
+	printDecision("Initial Decision", decision1)
+
+	// Simulate time passing (in real scenario this would be 30+ minutes)
+	fmt.Println("\nSimulating cache expiry...")
+	time.Sleep(2 * time.Second)
+
+	// For actual testing, you would need to wait 30+ minutes or manipulate cache TTL
+	fmt.Println("Decision after simulated expiry:")
+	decision2 := userContext.Decide(FLAG_KEY, nil)
+	printDecision("After Expiry", decision2)
+
+	fmt.Println("Note: Real cache expiry test requires 30+ minute wait")
+	fmt.Println("Expected: New CMAB API call after expiry")
+}
+
+// Test 15: Performance benchmarks
+func testPerformanceBenchmarks(optimizelyClient *client.OptimizelyClient) {
+	fmt.Println("\n--- Test: Performance Benchmarks ---")
+
+	userContext := optimizelyClient.CreateUserContext("perf_user", map[string]interface{}{
+		"category": "cmab",
+		"age":      27,
+		"country":  "JP",
+	})
+
+	// Measure first call (API call)
+	start := time.Now()
+	decision1 := userContext.Decide(FLAG_KEY, nil)
+	apiDuration := time.Since(start)
+
+	printDecision("First Call (API)", decision1)
+	fmt.Printf("API call duration: %v\n", apiDuration)
+
+	// Measure cached calls
+	var cachedDurations []time.Duration
+	for i := 0; i < 10; i++ {
+		start = time.Now()
+		userContext.Decide(FLAG_KEY, nil)
+		cachedDurations = append(cachedDurations, time.Since(start))
+	}
+
+	// Calculate average cached duration
+	var totalCached time.Duration
+	for _, d := range cachedDurations {
+		totalCached += d
+	}
+	avgCached := totalCached / time.Duration(len(cachedDurations))
+
+	fmt.Printf("Average cached call duration: %v (10 calls)\n", avgCached)
+	fmt.Printf("\nPerformance Targets:\n")
+	fmt.Printf("- Cached calls: <10ms (actual: %v)\n", avgCached)
+	fmt.Printf("- API calls: <500ms (actual: %v)\n", apiDuration)
+
+	if avgCached < 10*time.Millisecond {
+		fmt.Println("✓ Cached performance: PASS")
+	} else {
+		fmt.Println("✗ Cached performance: FAIL")
+	}
+
+	if apiDuration < 500*time.Millisecond {
+		fmt.Println("✓ API performance: PASS")  
+	} else {
+		fmt.Println("✗ API performance: FAIL")
+	}
 }
