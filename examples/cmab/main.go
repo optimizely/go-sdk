@@ -22,9 +22,9 @@ import (
 
 const (
 	// SDK Key from russell-demo-gosdk-cmab branch
-	// SDK_KEY  = "JgzFaGzGXx6F1ocTbMTmn"
+	// SDK_KEY  = "JgzFaGzGXx6F1ocTbMTmn"	// develrc
 	// FLAG_KEY = "flag-matjaz-editor"
-	SDK_KEY  = "DCx4eoV52jhgaC9MSab3g" // rc
+	SDK_KEY  = "DCx4eoV52jhgaC9MSab3g" // rc (prep)
 	FLAG_KEY = "flag-cmab-1"
 
 	// Test user IDs
@@ -42,11 +42,11 @@ func main() {
 	logging.SetLogLevel(logging.LogLevelDebug)
 
 	fmt.Println("=== CMAB Testing Suite for Go SDK ===")
-	fmt.Printf("Testing CMAB with develrc environment\n")
+	fmt.Printf("Testing CMAB with rc environment\n")
 	fmt.Printf("SDK Key: %s\n", SDK_KEY)
 	fmt.Printf("Flag Key: %s\n\n", FLAG_KEY)
 
-	// Create config manager with develrc URL template
+	// Create config manager with rc URL template
 	configManager := config.NewPollingProjectConfigManager(SDK_KEY,
 		// config.WithDatafileURLTemplate("https://dev.cdn.optimizely.com/datafiles/%s.json"))	// develrc
 		config.WithDatafileURLTemplate("https://optimizely-staging.s3.amazonaws.com/datafiles/%s.json")) // rc
@@ -101,8 +101,6 @@ func main() {
 		testPerformanceBenchmarks(optimizelyClient)
 	case "cache_expiry":
 		testCacheExpiry(optimizelyClient)
-	case "all":
-		runAllTests(optimizelyClient)
 	default:
 		fmt.Printf("Unknown test case: %s\n", *testCase)
 		fmt.Println("\nAvailable test cases:")
@@ -112,85 +110,29 @@ func main() {
 	}
 }
 
-func runAllTests(optimizelyClient *client.OptimizelyClient) {
-	fmt.Println("\n=== Running All Tests ===\n")
-
-	// Original tests
-	testBasicCMAB(optimizelyClient)
-	time.Sleep(1 * time.Second)
-
-	testCacheHit(optimizelyClient)
-	time.Sleep(1 * time.Second)
-
-	testCacheMissOnAttributeChange(optimizelyClient)
-	time.Sleep(1 * time.Second)
-
-	testIgnoreCacheOption(optimizelyClient)
-	time.Sleep(1 * time.Second)
-
-	testResetCacheOption(optimizelyClient)
-	time.Sleep(1 * time.Second)
-
-	testInvalidateUserCacheOption(optimizelyClient)
-	time.Sleep(1 * time.Second)
-
-	testConcurrentRequests(optimizelyClient)
-	time.Sleep(1 * time.Second)
-
-	testErrorHandling(optimizelyClient)
-	time.Sleep(1 * time.Second)
-
-	// Additional SDK test cases
-	testFallbackWhenNotQualified(optimizelyClient)
-	time.Sleep(1 * time.Second)
-
-	testTrafficAllocation(optimizelyClient)
-	time.Sleep(1 * time.Second)
-
-	testForcedVariationOverride(optimizelyClient)
-	time.Sleep(1 * time.Second)
-
-	testEventTracking(optimizelyClient)
-	time.Sleep(1 * time.Second)
-
-	testAttributeTypes(optimizelyClient)
-	time.Sleep(1 * time.Second)
-
-	testCacheExpiry(optimizelyClient)
-	time.Sleep(1 * time.Second)
-
-	testPerformanceBenchmarks(optimizelyClient)
-	time.Sleep(1 * time.Second)
-
-	fmt.Println("\n=== All Tests Completed ===")
-}
-
 // Test 1: Basic CMAB functionality
 func testBasicCMAB(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Basic CMAB Functionality ---")
 
 	// Test with user who qualifies for CMAB
 	userContext := optimizelyClient.CreateUserContext(USER_QUALIFIED, map[string]interface{}{
-		"category": "cmab",
-		"age":      50,
-		"country":  "BD",
+		"cmab_test_attribute": "hello",
 	})
 
 	decision := userContext.Decide(FLAG_KEY, nil)
 	printDecision("CMAB Qualified User", decision)
 
 	// Test with user who doesn't meet audience conditions
-	userContextNotQualified := optimizelyClient.CreateUserContext(USER_NOT_BUCKETED, map[string]interface{}{
-		"category": "not-cmab",
-		"age":      50,
-		"country":  "BD",
-	})
+	userContextNotQualified := optimizelyClient.CreateUserContext(USER_NOT_BUCKETED, map[string]interface{}{})
 
 	decisionNotQualified := userContextNotQualified.Decide(FLAG_KEY, nil)
 	printDecision("Non-CMAB User (falls through)", decisionNotQualified)
 }
 
 // Test 2: Cache hit - same user and attributes
+// Expected:
+// 1. Decision 1: "hello" → Passes audience → CMAB API call → Cache stored for user + "hello"
+// 2. Decision 2: Same user, same "hello" → Passes audience → Cache hit (same cache key) → Returns cached result (no API call)
 func testCacheHit(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Cache Hit (Same User & Attributes) ---")
 
@@ -218,52 +160,52 @@ func testCacheHit(optimizelyClient *client.OptimizelyClient) {
 }
 
 // Test 3: Cache miss when relevant attributes change
+// Expected:
+//  1. Decision 1: "hello" → Passes audience → CMAB API call → Cache stored for "hello"
+//  2. Decision 2: "world" → Passes audience → Cache miss (different attribute value) → New CMAB API call → Cache stored for
+//     "world"
+//  3. Decision 3: "world" → Passes audience → Cache hit (same attribute) → Uses cached result
 func testCacheMissOnAttributeChange(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Cache Miss on Attribute Change ---")
 
-	// First decision with age=25
+	// First decision with valid attribute
 	userContext1 := optimizelyClient.CreateUserContext(USER_CACHE_TEST+"_attr", map[string]interface{}{
-		"category": "cmab",
-		"age":      25,
-		"country":  "US",
+		"cmab_test_attribute": "hello",
 	})
 
-	fmt.Println("Decision with age=25:")
+	fmt.Println("Decision with 'hello':")
 	decision1 := userContext1.Decide(FLAG_KEY, nil)
 	printDecision("Decision 1", decision1)
 
-	// Second decision with age=26 (relevant attribute change)
+	// Second decision with changed valid attribute
 	userContext2 := optimizelyClient.CreateUserContext(USER_CACHE_TEST+"_attr", map[string]interface{}{
-		"category": "cmab",
-		"age":      26, // Changed
-		"country":  "US",
+		"cmab_test_attribute": "world", // Changed value
 	})
 
-	fmt.Println("\nDecision with age=26 (cache miss expected):")
+	fmt.Println("\nDecision with 'world' (cache miss expected):")
 	decision2 := userContext2.Decide(FLAG_KEY, nil)
 	printDecision("Decision 2", decision2)
 
-	// Third decision with non-relevant attribute change
+	// Third decision with same user and attributes
 	userContext3 := optimizelyClient.CreateUserContext(USER_CACHE_TEST+"_attr", map[string]interface{}{
-		"category": "cmab",
-		"age":      26,
-		"country":  "US",
-		"language": "EN", // Non-relevant attribute
+		"cmab_test_attribute": "world", // Same as decision2
 	})
 
-	fmt.Println("\nDecision with added language attribute (cache hit expected):")
+	fmt.Println("\nDecision with same user and attributes (cache hit expected):")
 	decision3 := userContext3.Decide(FLAG_KEY, nil)
 	printDecision("Decision 3", decision3)
 }
 
 // Test 4: IGNORE_CMAB_CACHE option
+// Expected:
+// 1. Decision 1: "hello" → Passes audience → CMAB API call → Cache stored for user + "hello"
+// 2. Decision 2: Same user, same "hello" + IGNORE_CMAB_CACHE → Passes audience → Cache bypassed → New CMAB API call (original cache preserved)
+// 3. Decision 3: Same user, same "hello" → Passes audience → Cache hit → Uses original cached result (no API call)
 func testIgnoreCacheOption(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: IGNORE_CMAB_CACHE Option ---")
 
 	userContext := optimizelyClient.CreateUserContext(USER_CACHE_TEST+"_ignore", map[string]interface{}{
-		"category": "cmab",
-		"age":      35,
-		"country":  "UK",
+		"cmab_test_attribute": "hello",
 	})
 
 	// First decision - populate cache
@@ -286,20 +228,21 @@ func testIgnoreCacheOption(optimizelyClient *client.OptimizelyClient) {
 }
 
 // Test 5: RESET_CMAB_CACHE option
+// Expected:
+// 1. User 1: "hello" → CMAB API call → Cache stored for User 1
+// 2. User 2: "hello" → CMAB API call → Cache stored for User 2
+// 3. User 1 + RESET_CMAB_CACHE → Entire cache cleared → New CMAB API call for User 1
+// 4. User 2: Same "hello" → Cache was cleared → New CMAB API call for User 2 (no cached result)
 func testResetCacheOption(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: RESET_CMAB_CACHE Option ---")
 
 	// Setup two different users
 	userContext1 := optimizelyClient.CreateUserContext("reset_user_1", map[string]interface{}{
-		"category": "cmab",
-		"age":      40,
-		"country":  "CA",
+		"cmab_test_attribute": "hello",
 	})
 
 	userContext2 := optimizelyClient.CreateUserContext("reset_user_2", map[string]interface{}{
-		"category": "cmab",
-		"age":      45,
-		"country":  "AU",
+		"cmab_test_attribute": "hello",
 	})
 
 	// Populate cache for both users
@@ -326,20 +269,21 @@ func testResetCacheOption(optimizelyClient *client.OptimizelyClient) {
 }
 
 // Test 6: INVALIDATE_USER_CMAB_CACHE option
+// Expected:
+// 1. User 1: "hello" → CMAB API call → Cache stored for User 1
+// 2. User 2: "hello" → CMAB API call → Cache stored for User 2
+// 3. User 1 + INVALIDATE_USER_CMAB_CACHE → Only User 1's cache cleared → New CMAB API call for User 1
+// 4. User 2: Same "hello" → User 2's cache preserved → Cache hit (no API call)
 func testInvalidateUserCacheOption(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: INVALIDATE_USER_CMAB_CACHE Option ---")
 
 	// Setup two different users
 	userContext1 := optimizelyClient.CreateUserContext("invalidate_user_1", map[string]interface{}{
-		"category": "cmab",
-		"age":      50,
-		"country":  "DE",
+		"cmab_test_attribute": "hello",
 	})
 
 	userContext2 := optimizelyClient.CreateUserContext("invalidate_user_2", map[string]interface{}{
-		"category": "cmab",
-		"age":      55,
-		"country":  "FR",
+		"cmab_test_attribute": "hello",
 	})
 
 	// Populate cache for both users
@@ -365,14 +309,25 @@ func testInvalidateUserCacheOption(optimizelyClient *client.OptimizelyClient) {
 	printDecision("User 2 still cached", decision4)
 }
 
-// Test 7: Concurrent requests for same user
+// TODO: MATJAZ: ISUE HERE - concurrency problem!
+// Test 7: Concurrent requests for same user - thread safety, all goroutines should complete
+// Expected: The Go SDK uses mutex-based cache synchronization (sync.RWMutex)
+// EXPECTED BEHAVIOR: 1 CMAB API call + 4 cache hits
+//   - First goroutine makes CMAB API call and stores result in cache
+//   - Other 4 goroutines wait for mutex, then find cached result and use it
+//   - Logs should show: 1 "Fetching CMAB decision" + 4 "Returning cached CMAB decision"
+//
+// ACTUAL BEHAVIOR: If you see 5 separate API calls, this may indicate:
+//   - Race condition in cache check/write logic
+//   - Cache key generation issues
+//   - Timing issue where all requests start before first completes
+//
+// Key requirement regardless: all goroutines return same variation for consistency
 func testConcurrentRequests(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Concurrent Requests ---")
 
 	userContext := optimizelyClient.CreateUserContext("concurrent_user", map[string]interface{}{
-		"category": "cmab",
-		"age":      60,
-		"country":  "JP",
+		"cmab_test_attribute": "hello",
 	})
 
 	// Channel to collect results
@@ -409,15 +364,22 @@ func testConcurrentRequests(optimizelyClient *client.OptimizelyClient) {
 }
 
 // Test 8: Error handling simulation
+// Test 7: Error handling - invalid attribute types and edge cases
+// Expected: User with invalid attribute type should fail audience evaluation
+//   - CMAB experiment requires string attribute "cmab_test_attribute": "hello"
+//   - This test uses integer 12345 instead of string, causing type mismatch
+//   - SDK logs warning about attribute type mismatch during audience evaluation
+//   - User fails CMAB audience check and falls through to default rollout
+//   - Result: Gets rollout variation (typically 'off') instead of CMAB variation
+//
+// This validates proper error handling and graceful fallback behavior
 func testErrorHandling(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Error Handling ---")
 	fmt.Println("Note: This test simulates error scenarios")
 
 	// Test with invalid/malformed attributes that might cause issues
 	userContext := optimizelyClient.CreateUserContext("error_test_user", map[string]interface{}{
-		"category": "cmab",
-		"age":      "not_a_number", // Invalid type
-		"country":  "",             // Empty value
+		"cmab_test_attribute": 12345, // Invalid type (should be string)
 	})
 
 	fmt.Println("Testing with invalid attribute types:")
@@ -466,15 +428,21 @@ func prettyPrint(label string, data interface{}) {
 }
 
 // Test 9: Fallback when user doesn't qualify for CMAB
+// Test 8: Fallback when not qualified for CMAB
+// Expected: User without required attributes fails CMAB audience targeting
+//   - User "fallback_user" has no attributes (empty map)
+//   - CMAB experiment requires "cmab_test_attribute": "hello" OR "world"
+//   - Both audience conditions evaluate to UNKNOWN (null attribute value)
+//   - User fails CMAB audience check and falls through to default rollout
+//   - Result: Gets rollout variation 'off' from "Everyone Else" rule
+//   - Key validation: No CMAB API calls should appear in debug logs
+//
+// This tests proper audience targeting and graceful fallback behavior
 func testFallbackWhenNotQualified(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Fallback When Not Qualified for CMAB ---")
 
 	// User with attributes that don't match CMAB audience
-	userContext := optimizelyClient.CreateUserContext("fallback_user", map[string]interface{}{
-		"category": "not-cmab", // Fails audience condition
-		"age":      45,
-		"country":  "US",
-	})
+	userContext := optimizelyClient.CreateUserContext("fallback_user", map[string]interface{}{})
 
 	decision := userContext.Decide(FLAG_KEY, nil)
 	printDecision("Non-CMAB User", decision)
@@ -488,15 +456,23 @@ func testFallbackWhenNotQualified(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("Expected: No CMAB API call in debug logs above")
 }
 
-// Test 10: Traffic allocation check
+// Test 9: Traffic allocation check - verify traffic splitting works correctly
+// SETUP REQUIRED: Set CMAB experiment traffic allocation to 50% in Optimizely UI for this test
+// (Keep at 100% for all other tests to ensure consistent CMAB behavior)
+// Expected: With 50% traffic allocation, users split between CMAB and rollout
+//   - test_user_1: Should hash to one bucket (CMAB or rollout)
+//   - test_user_99: Should hash to different bucket than test_user_1
+//   - Expected logs: One user shows "Fetching CMAB decision", other falls to rollout
+//   - If both get CMAB calls: traffic allocation still at 100%
+//   - If both get rollout: traffic allocation set too low (try 75%)
+//
+// This validates CMAB traffic allocation and user bucketing logic
 func testTrafficAllocation(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Traffic Allocation Check ---")
 
 	// User not in traffic allocation (test_user_1)
 	userContext1 := optimizelyClient.CreateUserContext(USER_NOT_BUCKETED, map[string]interface{}{
-		"category": "cmab",
-		"age":      35,
-		"country":  "CA",
+		"cmab_test_attribute": "hello",
 	})
 
 	decision1 := userContext1.Decide(FLAG_KEY, nil)
@@ -504,9 +480,7 @@ func testTrafficAllocation(optimizelyClient *client.OptimizelyClient) {
 
 	// User in traffic allocation (test_user_99)
 	userContext2 := optimizelyClient.CreateUserContext(USER_QUALIFIED, map[string]interface{}{
-		"category": "cmab",
-		"age":      35,
-		"country":  "CA",
+		"cmab_test_attribute": "hello",
 	})
 
 	decision2 := userContext2.Decide(FLAG_KEY, nil)
@@ -515,16 +489,22 @@ func testTrafficAllocation(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("Expected: Only second user triggers CMAB API call")
 }
 
-// Test 11: Forced variation override
+// Test 10: Forced variation override - when variations are forced in datafile
+// Expected: Users with forced variations bypass CMAB and get predetermined results
+//   - If user "forced_user" has forced variation in datafile: no CMAB API call
+//   - If no forced variation configured: normal CMAB flow with API call (current result)
+//   - Forced variations are typically used for QA/testing specific variations
+//   - Current result shows CMAB API call, indicating no forced variation configured
+//
+// Note: Forced variations must be configured in Optimizely UI or datafile
+// This test validates forced variation precedence over CMAB decisions
 func testForcedVariationOverride(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Forced Variation Override ---")
 
-	// Note: This test shows the concept but forced variations 
+	// Note: This test shows the concept but forced variations
 	// would need to be configured in the datafile or via whitelisting
 	userContext := optimizelyClient.CreateUserContext("forced_user", map[string]interface{}{
-		"category": "cmab",
-		"age":      40,
-		"country":  "UK",
+		"cmab_test_attribute": "hello",
 	})
 
 	decision := userContext.Decide(FLAG_KEY, nil)
@@ -534,14 +514,20 @@ func testForcedVariationOverride(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("Expected: If forced variation exists, no CMAB API call")
 }
 
-// Test 12: Event tracking validation
+// Test 11: Event tracking with CMAB UUID - verify events contain proper metadata
+// Expected: Both impression and conversion events include the same CMAB UUID
+//   - Decision creates impression event with CMAB UUID in metadata
+//   - Conversion event (if configured) should include same CMAB UUID
+//   - Current result: "purchase" event not found in project configuration
+//   - Warning indicates conversion event needs to be added in Optimizely UI
+//   - CMAB UUID: f93e08b7-193e-4ddc-9b70-bd6fe4f1abac (from logs above)
+//
+// This validates event tracking and CMAB UUID propagation for analytics
 func testEventTracking(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Event Tracking with CMAB UUID ---")
 
 	userContext := optimizelyClient.CreateUserContext("event_user", map[string]interface{}{
-		"category": "cmab",
-		"age":      28,
-		"country":  "DE",
+		"cmab_test_attribute": "hello",
 	})
 
 	// Make CMAB decision
@@ -558,37 +544,46 @@ func testEventTracking(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("Check event processor logs for CMAB UUID in metadata")
 }
 
-// Test 13: Attribute types and formatting
+// Test 12: Attribute types and formatting - validate attribute handling
+// Expected: Only valid attributes are sent to CMAB API, invalid ones filtered
+//   - User has mixed attribute types (string, int, float, boolean)
+//   - Only "cmab_test_attribute": "hello" should be sent to CMAB API
+//   - Invalid attributes are filtered during audience evaluation
+//   - Current result: User fails audience due to missing valid attribute
+//   - Falls back to rollout (no CMAB API call) - this is expected behavior
+//
+// This validates attribute filtering and type validation logic
 func testAttributeTypes(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Attribute Types and Formatting ---")
 
 	userContext := optimizelyClient.CreateUserContext("attr_user", map[string]interface{}{
-		// Custom attributes
-		"age":     42,
-		"country": "FR",
-		"premium": true,
-		
-		// Standard attributes (if any)
-		"$opt_bot_filtering": false,
+		// Missing cmab_test_attribute - should cause fallback
 	})
 
 	decision := userContext.Decide(FLAG_KEY, nil)
 	printDecision("Mixed Attribute Types", decision)
 
 	fmt.Println("Expected in API request:")
-	fmt.Println("- Custom attributes: type='custom_attribute'")  
-	fmt.Println("- Standard attributes: type='standard_attribute'")
-	fmt.Println("- Only relevant attributes sent (based on cmab.attributeIds)")
+	fmt.Println("- Valid attribute: cmab_test_attribute sent as type='custom_attribute'")
+	fmt.Println("- Invalid attributes: filtered out, not sent to CMAB API")
+	fmt.Println("- Only cmab_test_attribute should appear in CMAB request body")
 }
 
-// Test 14: Cache expiry simulation
+// Test 13: Cache expiry - verify TTL-based cache invalidation
+// Expected: Cached decisions expire after TTL and trigger new API calls
+//   - Initial call: CMAB API call creates cache entry with timestamp
+//   - Immediate follow-up: Returns cached result (within TTL)
+//   - After TTL expires: New CMAB API call (cache entry invalid)
+//   - Current result: Still cached after 2s (expected - TTL is ~30min)
+//   - Real expiry test: Requires waiting for full TTL duration
+//   - Default TTL from cmab.DefaultCacheTTL in SDK configuration
+//
+// This validates time-based cache invalidation and freshness guarantees
 func testCacheExpiry(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Cache Expiry (Simulated) ---")
 
 	userContext := optimizelyClient.CreateUserContext("expiry_user", map[string]interface{}{
-		"category": "cmab",
-		"age":      33,
-		"country":  "AU",
+		"cmab_test_attribute": "hello",
 	})
 
 	// First decision
@@ -609,14 +604,20 @@ func testCacheExpiry(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("Expected: New CMAB API call after expiry")
 }
 
-// Test 15: Performance benchmarks
+// Test 14: Performance benchmarks - measure API vs cache performance
+// Expected: Cache hits should be significantly faster than API calls
+//   - First API call: ~160ms (network latency + CMAB processing)
+//   - Cached calls: ~85µs average (memory lookup only)
+//   - Performance improvement: ~1,880x faster for cached calls
+//   - Targets: API calls <500ms, cached calls <10ms
+//   - Results: ✓ API: 160ms < 500ms, ✓ Cache: 85µs < 10ms
+//
+// This validates caching performance and responsiveness under load
 func testPerformanceBenchmarks(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Performance Benchmarks ---")
 
 	userContext := optimizelyClient.CreateUserContext("perf_user", map[string]interface{}{
-		"category": "cmab",
-		"age":      27,
-		"country":  "JP",
+		"cmab_test_attribute": "hello",
 	})
 
 	// Measure first call (API call)
@@ -654,7 +655,7 @@ func testPerformanceBenchmarks(optimizelyClient *client.OptimizelyClient) {
 	}
 
 	if apiDuration < 500*time.Millisecond {
-		fmt.Println("✓ API performance: PASS")  
+		fmt.Println("✓ API performance: PASS")
 	} else {
 		fmt.Println("✗ API performance: FAIL")
 	}

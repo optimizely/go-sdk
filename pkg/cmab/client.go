@@ -32,6 +32,7 @@ import (
 
 // CMABPredictionEndpoint is the endpoint for CMAB predictions
 // var CMABPredictionEndpoint = "https://prediction.cmab.optimizely.com/predict/%s"		// prod
+// var CMABPredictionEndpoint = "https://inte.prediction.cmab.optimizely.com/predict/%s" // develrc
 var CMABPredictionEndpoint = "https://prep.prediction.cmab.optimizely.com/predict/%s" // rc
 
 const (
