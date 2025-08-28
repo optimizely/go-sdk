@@ -1,8 +1,5 @@
 # CMAB Testing Guide for Optimizely Go SDK
 
-## Overview
-This guide provides comprehensive test scenarios and example code for testing CMAB (Contextual Multi-Armed Bandit) functionality in the Optimizely Go SDK.
-
 ## Test Environment Setup
 
 ### Prerequisites
