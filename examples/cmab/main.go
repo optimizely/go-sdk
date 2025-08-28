@@ -18,7 +18,6 @@ import (
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
 
-// TODO: change attributes to: "cmab_test_attribute": "hello",
 
 const (
 	// SDK Key from russell-demo-gosdk-cmab branch
@@ -518,8 +517,8 @@ func testForcedVariationOverride(optimizelyClient *client.OptimizelyClient) {
 // Expected: Both impression and conversion events include the same CMAB UUID
 //   - Decision creates impression event with CMAB UUID in metadata
 //   - Conversion event (if configured) should include same CMAB UUID
-//   - Current result: "purchase" event not found in project configuration
-//   - Warning indicates conversion event needs to be added in Optimizely UI
+//   - Current result: "event1" event should be configured in project
+//   - Warning indicates conversion event needs to be added in Optimizely UI if missing
 //   - CMAB UUID: f93e08b7-193e-4ddc-9b70-bd6fe4f1abac (from logs above)
 //
 // This validates event tracking and CMAB UUID propagation for analytics
@@ -535,11 +534,11 @@ func testEventTracking(optimizelyClient *client.OptimizelyClient) {
 	printDecision("Decision for Events", decision)
 
 	// Track a conversion event
-	userContext.TrackEvent("purchase", map[string]interface{}{
+	userContext.TrackEvent("event1", map[string]interface{}{
 		"revenue": 49.99,
 	})
 
-	fmt.Println("\nConversion event tracked: 'purchase'")
+	fmt.Println("\nConversion event tracked: 'event1'")
 	fmt.Println("Expected: Both impression and conversion events contain same CMAB UUID")
 	fmt.Println("Check event processor logs for CMAB UUID in metadata")
 }

@@ -7,188 +7,138 @@ This guide provides comprehensive test scenarios and example code for testing CM
 
 ### Prerequisites
 1. Go 1.18+ installed
-2. Access to Optimizely develrc environment
+2. Access to Optimizely RC (Prep) environment
 3. Go SDK with CMAB support
 
-### SDK Configuration
-- **SDK Key**: `JgzFaGzGXx6F1ocTbMTmn` (TODO: provide own SDK KEY for each?)
-- **Environment**: develrc (dev.cdn.optimizely.com)
-- **Test Flag**: `flag-matjaz-editor`  (TODO: will be own flag, testers cerate own flag in project?)
+### Project Configuration Required
+**IMPORTANT**: Testers must create their own project:
+
+1. **Create Project**: Set up a new project in Optimizely RC (Prep) environment
+2. **Create CMAB Experiment**: Add a CMAB-enabled flag experiment
+3. **Configure Attributes**: Set up exactly 2 custom attributes in OR condition:
+   - `cmab_test_attribute` with values: `"hello"` OR `"world"`
+   - This is required for cache miss tests to work properly
+4. **Update Code**: Replace the SDK key and flag key in `main.go`:
+   ```go
+   SDK_KEY  = "YOUR_RC_SDK_KEY_HERE"    // Replace with your RC SDK key
+   FLAG_KEY = "YOUR_CMAB_FLAG_KEY_HERE" // Replace with your CMAB flag key
+   ```
+
+### Environment Details
+- **Environment**: RC (Prep) - `https://optimizely-staging.s3.amazonaws.com/datafiles/%s.json`
+- **CMAB Endpoint**: `https://prep.prediction.cmab.optimizely.com/`
 
 ## Running the Tests
 
 ### Basic Usage
 ```bash
-# Run all tests (from go-sdk root)
-go run examples/cmab/main.go
-
-# Run specific test
+# Run individual tests (from go-sdk root)
+go run examples/cmab/main.go -test=basic
 go run examples/cmab/main.go -test=cache_hit
+go run examples/cmab/main.go -test=performance
 
 # Available test cases:
-# - basic         : Basic CMAB functionality
-# - cache_hit     : Cache hit scenarios
-# - cache_miss    : Cache miss on attribute changes
-# - ignore_cache  : IGNORE_CMAB_CACHE option
-# - reset_cache   : RESET_CMAB_CACHE option
-# - invalidate_user : INVALIDATE_USER_CMAB_CACHE option
-# - concurrent    : Concurrent request handling
-# - error         : Error handling scenarios
-# - all           : Run all tests
+# - basic            : Basic CMAB functionality
+# - cache_hit        : Cache hit scenarios  
+# - cache_miss       : Cache miss on attribute changes
+# - ignore_cache     : IGNORE_CMAB_CACHE option
+# - reset_cache      : RESET_CMAB_CACHE option
+# - invalidate_user  : INVALIDATE_USER_CMAB_CACHE option
+# - concurrent       : Concurrent request handling (has known race condition bug)
+# - error            : Error handling scenarios
+# - fallback         : Fallback when not qualified
+# - traffic          : Traffic allocation (requires 50% allocation setup)
+# - forced           : Forced variation override
+# - event_tracking   : Event tracking with CMAB UUID
+# - attribute_types  : Attribute validation
+# - performance      : Performance benchmarks
+# - cache_expiry     : Cache TTL behavior
 ```
 
-### With Profiling (Optional)
-```bash
-# CPU profiling (from examples/cmab directory)
-cd examples/cmab && go build -ldflags "-X main.RunCPUProfile=true" main.go && ./main
+## Test Scenarios Overview
 
-# Memory profiling (from examples/cmab directory)  
-cd examples/cmab && go build -ldflags "-X main.RunMemProfile=true" main.go && ./main
-```
+### Core Tests (1-6)
+- **Basic**: CMAB qualified vs non-qualified users
+- **Cache Hit**: Same user/attributes returns cached result
+- **Cache Miss**: Different attribute values trigger new API calls
+- **Ignore Cache**: Bypasses cache without affecting it
+- **Reset Cache**: Clears entire CMAB cache
+- **Invalidate User**: Clears cache for specific user only
 
-## Test Scenarios
+### Advanced Tests (7-14)  
+- **Concurrent**: Thread safety (⚠️ **Known Issue**: Race condition bug)
+- **Error Handling**: Invalid attribute types and graceful fallback
+- **Fallback**: Users without required attributes
+- **Traffic Allocation**: Requires 50% traffic allocation setup
+- **Forced Variations**: Override behavior (if configured)
+- **Event Tracking**: CMAB UUID in analytics events
+- **Attribute Types**: Missing attribute validation
+- **Performance**: API vs cache timing benchmarks
+- **Cache Expiry**: TTL-based invalidation
 
-### 1. Core Functionality Tests
+## Testing Guidelines
 
-#### Basic CMAB Decision
-- Tests user qualification for CMAB experiments
-- Verifies fallthrough when audience conditions aren't met
-- Validates variation assignment from CMAB service
+### ⚠️ Important Notes for Testers
+1. **Test 9 (Traffic)**: Temporarily set CMAB experiment traffic allocation to 50% in Optimizely UI for this test only. Keep at 100% for all other tests.
 
-#### Traffic Allocation
-- Tests users not bucketed into experiment traffic
-- Verifies proper fallthrough to next experiment
+2. **Test 6 (Concurrent)**: Currently has a known race condition bug where concurrent requests return different variations instead of consistent results. Document this behavior.
 
-### 2. Caching Tests
+3. **Beyond Basic Tests**: These test cases are **guidelines only**. In testing try:
+   - Try different attribute combinations
+   - Test various traffic allocation percentages  
+   - Create different audience conditions
+   - Test edge cases and error scenarios
+   - Experiment with different caching scenarios
+   - Validate behavior under different load conditions
 
-#### Cache Hit Scenarios
-- Same user with identical attributes returns cached decision
-- Non-relevant attribute changes still use cache
-- Validates CMAB UUID consistency
+### Expected Test Results
+- **CMAB API calls**: Look for `"Fetching CMAB decision"` in debug logs
+- **Cache hits**: Look for `"Returning cached CMAB decision"` in debug logs
+- **Consistent variations**: Same user should get same variation (except during concurrent test bug)
+- **Graceful fallback**: Invalid scenarios should fall back to rollout experiments
 
-#### Cache Miss Scenarios
-- Relevant attribute changes trigger new CMAB call
-- New CMAB UUID generated for different attribute combinations
-
-#### Cache Control Options
-- **IGNORE_CMAB_CACHE**: Forces fresh prediction without affecting cache
-- **RESET_CMAB_CACHE**: Clears entire CMAB cache for all users
-- **INVALIDATE_USER_CMAB_CACHE**: Clears cache for specific user only
-
-### 3. Advanced Tests
-
-#### Concurrent Requests
-- Multiple simultaneous decisions for same user
-- Validates single CMAB call and consistent results
-
-#### Error Handling
-- CMAB service errors (500, timeout)
-- Invalid response handling
-- Network failures
-
-## Expected Behaviors
-
-### Decision Response Structure
-```go
-type OptimizelyDecision struct {
-    VariationKey string              // Assigned variation
-    Enabled      bool                // Feature flag state
-    RuleKey      string              // Experiment/rule key
-    Variables    map[string]interface{} // Feature variables
-    Reasons      []string            // Decision reasons
-    // CMAB metadata in event logs
-}
-```
-
-### CMAB-Specific Indicators
-1. **Debug Logs**: Look for CMAB/prediction endpoint calls
-2. **Decision Reasons**: May include CMAB-related messages
-3. **Event Metadata**: CMAB UUID in dispatched events
-
-## Debugging Tips
+## Debugging and Validation
 
 ### Enable Debug Logging
 ```go
 logging.SetLogLevel(logging.LogLevelDebug)
 ```
 
-### Key Log Messages to Watch
-- "Fetching CMAB prediction for experiment..."
-- "CMAB cache hit for user..."
-- "CMAB cache miss, fetching new prediction..."
-- "CMAB service error..."
+### Key Debug Log Patterns
+- `"Fetching CMAB decision for rule X and user Y"` - New API call
+- `"Returning cached CMAB decision for rule X and user Y"` - Cache hit
+- `"CMAB request body: {...}"` - Actual API request payload
+- `"CMAB raw response: {...}"` - API response
+- `"User X not in audience for CMAB experiment Y"` - Audience failure
 
-### Common Issues and Solutions
+### Validation Checklist
+- [ ] CMAB-qualified users get CMAB API calls
+- [ ] Non-qualified users fall back to rollout (no CMAB calls)
+- [ ] Cache hits return same variation without API calls
+- [ ] Cache misses trigger new API calls with different attribute values
+- [ ] Cache control options work as expected
+- [ ] Performance benchmarks show cache is significantly faster than API calls
+- [ ] Error scenarios handle gracefully with appropriate fallback behavior
 
-| Issue | Possible Cause | Solution |
-|-------|---------------|----------|
-| No CMAB calls | User not qualified | Check audience conditions |
-| Always cache miss | Attribute types incorrect | Ensure consistent types |
-| No variation returned | CMAB service error | Check service availability |
-| Inconsistent results | Race condition | Use proper synchronization |
+## Integration Notes
 
-## Integration with FSC Tests
-
-The test scenarios align with the Fullstack Compatibility Suite (FSC) feature tests:
-- Audience qualification (`cmab_decision.feature:14-89`)
-- Traffic allocation (`cmab_decision.feature:91-167`)
-- Successful predictions (`cmab_decision.feature:169-258`)
-- Cache behavior (`cmab_decision.feature:260-534`)
-- Cache options (`cmab_decision.feature:536-869`)
-- Error handling (`cmab_decision.feature:871-1013`)
-
-## Extending the Tests
-
-### Adding New Test Cases
-1. Add new test function following the pattern:
+### Decision Response Structure
 ```go
-func testNewScenario(optimizelyClient *client.OptimizelyClient) {
-    fmt.Println("\n--- Test: Your Test Name ---")
-    // Test implementation
+type OptimizelyDecision struct {
+    VariationKey string                 // "on"/"off" variation
+    Enabled      bool                   // Feature enabled state
+    RuleKey      string                 // CMAB experiment key
+    Variables    map[string]interface{} // Feature variables
+    Reasons      []string               // Decision reasons
 }
 ```
 
-2. Add to switch statement in main()
-3. Include in runAllTests() if applicable
+### CMAB-Specific Metadata
+- **CMAB UUID**: Unique identifier in request/response for tracking
+- **Event Integration**: CMAB UUID included in impression/conversion events
+- **Cache Keys**: Generated from user ID + relevant attribute values
 
-### Custom Attributes
-Modify the attribute maps to test your specific use cases:
-```go
-attributes := map[string]interface{}{
-    "category": "cmab",
-    "age":      30,
-    "country":  "US",
-    // Add your custom attributes
-    "subscription_level": "premium",
-    "total_purchases": 150,
-}
-```
-
-## Notes for Engineers
-
-### Key Implementation Points
-1. **Cache Key Generation**: Based on user ID + relevant attributes
-2. **Attribute Filtering**: Only CMAB-configured attributes affect cache
-3. **UUID Tracking**: Each CMAB decision has unique UUID for tracking
-4. **Async Behavior**: CMAB calls should be non-blocking where possible
-
-### Performance Considerations
-- Cache reduces CMAB service calls significantly
-- TTL configuration balances freshness vs. performance
-- Batch multiple decisions when possible
-
-### Testing Checklist
-- [ ] Basic CMAB qualification and bucketing
-- [ ] All cache scenarios (hit, miss, control options)
-- [ ] Concurrent request handling
-- [ ] Error scenarios and fallbacks
-- [ ] Event tracking with CMAB metadata
-- [ ] Performance under load
-- [ ] TTL expiration behavior
-
-## Support
-For issues or questions:
-- Review debug logs for detailed CMAB behavior
-- Check CMAB service health and connectivity
-- Verify datafile has CMAB experiments configured
-- Ensure SDK version supports CMAB features
+## Known Issues
+1. **Concurrent Test (Test 6)**: Race condition causes inconsistent variations across concurrent requests for the same user - currently working on this
+2. **Traffic Test (Test 9)**: Requires manual configuration of traffic allocation percentage
+3. **Event Tracking**: "purchase" conversion event may need to be configured in Optimizely UI
