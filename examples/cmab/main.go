@@ -514,14 +514,14 @@ func testForcedVariationOverride(optimizelyClient *client.OptimizelyClient) {
 }
 
 // Test 11: Event tracking with CMAB UUID - verify events contain proper metadata
-// Expected: Both impression and conversion events include the same CMAB UUID
+// Expected: Impression events include CMAB UUID, conversion events do NOT include CMAB UUID
 //   - Decision creates impression event with CMAB UUID in metadata
-//   - Conversion event (if configured) should include same CMAB UUID
+//   - Conversion events should NOT contain CMAB UUID (FX requirement)
 //   - Current result: "event1" event should be configured in project
 //   - Warning indicates conversion event needs to be added in Optimizely UI if missing
-//   - CMAB UUID: f93e08b7-193e-4ddc-9b70-bd6fe4f1abac (from logs above)
+//   - CMAB UUID only appears in impression events for analytics correlation
 //
-// This validates event tracking and CMAB UUID propagation for analytics
+// This validates event tracking and proper CMAB UUID handling for different event types
 func testEventTracking(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Event Tracking with CMAB UUID ---")
 
@@ -539,8 +539,8 @@ func testEventTracking(optimizelyClient *client.OptimizelyClient) {
 	})
 
 	fmt.Println("\nConversion event tracked: 'event1'")
-	fmt.Println("Expected: Both impression and conversion events contain same CMAB UUID")
-	fmt.Println("Check event processor logs for CMAB UUID in metadata")
+	fmt.Println("Expected: Impression events contain CMAB UUID, conversion events do NOT contain CMAB UUID")
+	fmt.Println("Check event processor logs for CMAB UUID only in impression events")
 }
 
 // Test 12: Attribute types and formatting - validate attribute handling
@@ -563,7 +563,7 @@ func testAttributeTypes(optimizelyClient *client.OptimizelyClient) {
 	printDecision("Mixed Attribute Types", decision)
 
 	fmt.Println("Expected in API request:")
-	fmt.Println("- Valid attribute: cmab_test_attribute sent as type='custom_attribute'")
+	fmt.Println("- Valid attribute: cmab_test_attribute sent to CMAB API")
 	fmt.Println("- Invalid attributes: filtered out, not sent to CMAB API")
 	fmt.Println("- Only cmab_test_attribute should appear in CMAB request body")
 }
