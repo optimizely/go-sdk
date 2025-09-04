@@ -6,12 +6,13 @@
 1. Go 1.18+ installed
 2. Access to Optimizely RC (Prep) environment
 3. Go SDK with CMAB support
+4. TDD is here: https://confluence.sso.episerver.net/pages/viewpage.action?spaceKey=EXPENG&title=TDD%3A+CMAB+for+Feature+Experimentation 
 
 ### Project Configuration Required
 **IMPORTANT**: Testers must create their own project:
 
 1. **Create Project**: Set up a new project in Optimizely RC (Prep) environment
-2. **Create CMAB Experiment**: Add a CMAB-enabled flag experiment
+2. **Create CMAB Experiment**: Add a CMAB-enabled flag experiment and run it (click two buttons to run at the top: run ruleset and run rule)
 3. **Configure Attributes**: Set up exactly 2 custom attributes in OR condition:
    - `cmab_test_attribute` with values: `"hello"` OR `"world"`
    - This is required for cache miss tests to work properly
@@ -23,7 +24,13 @@
 
 ### Environment Details
 - **Environment**: RC (Prep) - `https://optimizely-staging.s3.amazonaws.com/datafiles/%s.json`
+  - Update in: `examples/cmab/main.go:51`
+
 - **CMAB Endpoint**: `https://prep.prediction.cmab.optimizely.com/`
+  - Update in: `pkg/cmab/client.go:36`
+
+### Log bugs here:
+https://episerver99-my.sharepoint.com/:x:/g/personal/matjaz_pirnovar_optimizely_com/EZAFcTvgLHVJqOQ4YoilyeEBfD9RUdHgrqIfrnJrVVVIYg?e=zbpRMl&nav=MTVfezAwMDAwMDAwLTAwMDEtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMH0 
 
 ## Running the Tests
 
@@ -63,7 +70,7 @@ go run examples/cmab/main.go -test=performance
 - **Invalidate User**: Clears cache for specific user only
 
 ### Advanced Tests (7-14)  
-- **Concurrent**: Thread safety (⚠️ **Known Issue**: Race condition bug)
+- **Concurrent**: Thread safety (**Known Issue**: Race condition bug)
 - **Error Handling**: Invalid attribute types and graceful fallback
 - **Fallback**: Users without required attributes
 - **Traffic Allocation**: Requires 50% traffic allocation setup
@@ -75,18 +82,19 @@ go run examples/cmab/main.go -test=performance
 
 ## Testing Guidelines
 
-### ⚠️ Important Notes for Testers
+### Important Notes
 1. **Test 9 (Traffic)**: Temporarily set CMAB experiment traffic allocation to 50% in Optimizely UI for this test only. Keep at 100% for all other tests.
 
-2. **Test 6 (Concurrent)**: Currently has a known race condition bug where concurrent requests return different variations instead of consistent results. Document this behavior.
+2. **Test 6 (Concurrent)**: Currently has a known race condition bug where concurrent requests return different variations instead of consistent results. 
 
-3. **Beyond Basic Tests**: These test cases are **guidelines only**. In testing try:
+3. **Beyond Basic Tests**: These test cases are **guidelines only**. Run each, then try changing something:
    - Try different attribute combinations
    - Test various traffic allocation percentages  
    - Create different audience conditions
-   - Test edge cases and error scenarios
-   - Experiment with different caching scenarios
+   - Test edge cases and error scenarios (do error logs make sense?)
+   - Experiment with different caching scenarios (first run shold get cmab variation, second should cache it, try ignoring cache, resetting it etc).
    - Validate behavior under different load conditions
+   - yuo can add extra print statements to see more in the output (see where in the code are existing print statements set as an example)
 
 ### Expected Test Results
 - **CMAB API calls**: Look for `"Fetching CMAB decision"` in debug logs
@@ -117,7 +125,7 @@ logging.SetLogLevel(logging.LogLevelDebug)
 - [ ] Performance benchmarks show cache is significantly faster than API calls
 - [ ] Error scenarios handle gracefully with appropriate fallback behavior
 
-## Integration Notes
+## Notes
 
 ### Decision Response Structure
 ```go
@@ -138,4 +146,3 @@ type OptimizelyDecision struct {
 ## Known Issues
 1. **Concurrent Test (Test 6)**: Race condition causes inconsistent variations across concurrent requests for the same user - currently working on this
 2. **Traffic Test (Test 9)**: Requires manual configuration of traffic allocation percentage
-3. **Event Tracking**: "purchase" conversion event may need to be configured in Optimizely UI
