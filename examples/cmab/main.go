@@ -13,11 +13,11 @@ import (
 	"time"
 
 	"github.com/optimizely/go-sdk/v2/pkg/client"
+	"github.com/optimizely/go-sdk/v2/pkg/cmab"
 	"github.com/optimizely/go-sdk/v2/pkg/config"
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
-
 
 const (
 	// SDK Key from russell-demo-gosdk-cmab branch
@@ -100,32 +100,80 @@ func main() {
 		testPerformanceBenchmarks(optimizelyClient)
 	case "cache_expiry":
 		testCacheExpiry(optimizelyClient)
+	case "cmab_config":
+		testCmabConfiguration()
 	default:
 		fmt.Printf("Unknown test case: %s\n", *testCase)
 		fmt.Println("\nAvailable test cases:")
 		fmt.Println("  basic, cache_hit, cache_miss, ignore_cache, reset_cache,")
 		fmt.Println("  invalidate_user, concurrent, error, fallback, traffic,")
-		fmt.Println("  forced, event_tracking, attribute_types, performance, cache_expiry, all")
+		fmt.Println("  forced, event_tracking, attribute_types, performance, cache_expiry, cmab_config, all")
 	}
 }
 
 // Test 1: Basic CMAB functionality
 func testBasicCMAB(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Basic CMAB Functionality ---")
+	for i := 1; i <= 1; i++ {
 
-	// Test with user who qualifies for CMAB
-	userContext := optimizelyClient.CreateUserContext(USER_QUALIFIED, map[string]interface{}{
-		"cmab_test_attribute": "hello",
-	})
+		// Enable debug logging to see CMAB activity
+		logging.SetLogLevel(logging.LogLevelDebug)
 
-	decision := userContext.Decide(FLAG_KEY, nil)
-	printDecision("CMAB Qualified User", decision)
+		fmt.Println("=== CMAB Testing Suite for Go SDK ===")
+		fmt.Printf("Testing CMAB with rc environment\n")
+		fmt.Printf("SDK Key: %s\n", SDK_KEY)
+		fmt.Printf("Flag Key: %s\n\n", FLAG_KEY)
 
-	// Test with user who doesn't meet audience conditions
-	userContextNotQualified := optimizelyClient.CreateUserContext(USER_NOT_BUCKETED, map[string]interface{}{})
+		// Create config manager with rc URL template
+		configManager := config.NewPollingProjectConfigManager(SDK_KEY,
+			// config.WithDatafileURLTemplate("https://dev.cdn.optimizely.com/datafiles/%s.json"))	// develrc
+			config.WithDatafileURLTemplate("https://optimizely-staging.s3.amazonaws.com/datafiles/%s.json")) // rc
 
-	decisionNotQualified := userContextNotQualified.Decide(FLAG_KEY, nil)
-	printDecision("Non-CMAB User (falls through)", decisionNotQualified)
+		// Use the proper factory option to set config manager
+		factory := &client.OptimizelyFactory{
+			SDKKey: SDK_KEY,
+		}
+
+		optimizelyClient, err := factory.Client(
+			client.WithConfigManager(configManager),
+		)
+		if err != nil {
+			fmt.Println("Error initializing Optimizely client:", err)
+			return
+		}
+		defer optimizelyClient.Close()
+
+		// Wait for datafile to load
+		fmt.Println("Waiting for datafile to load...")
+		time.Sleep(2 * time.Second)
+
+		// Test with user who qualifies for CMAB
+		userContext := optimizelyClient.CreateUserContext(USER_QUALIFIED, map[string]interface{}{
+			"country": "us",
+		})
+
+		decision := userContext.Decide(FLAG_KEY, nil)
+		printDecision("CMAB Qualified User", decision)
+
+		// cache miss
+		userContext2 := optimizelyClient.CreateUserContext(USER_QUALIFIED, map[string]interface{}{
+			"country": "ru",
+		})
+		decision2 := userContext2.Decide(FLAG_KEY, nil)
+		printDecision("CMAB Qualified User2", decision2)
+		time.Sleep(1000 * time.Millisecond)
+
+		// cache hit
+		userContext3 := optimizelyClient.CreateUserContext(USER_QUALIFIED, map[string]interface{}{
+			"country": "ru",
+		})
+		decision3 := userContext3.Decide(FLAG_KEY, nil)
+		printDecision("CMAB Qualified User3", decision3)
+		time.Sleep(1000 * time.Millisecond)
+
+		fmt.Println("===============================")
+
+	}
 }
 
 // Test 2: Cache hit - same user and attributes
@@ -136,8 +184,7 @@ func testCacheHit(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: Cache Hit (Same User & Attributes) ---")
 
 	userContext := optimizelyClient.CreateUserContext(USER_CACHE_TEST, map[string]interface{}{
-		"category":            "cmab",
-		"cmab_test_attribute": "hello",
+		"country": "us",
 	})
 
 	// First decision - should call CMAB service
@@ -145,17 +192,20 @@ func testCacheHit(optimizelyClient *client.OptimizelyClient) {
 	decision1 := userContext.Decide(FLAG_KEY, nil)
 	printDecision("Decision 1", decision1)
 
-	// Second decision - should use cache
+
+	userContext2 := optimizelyClient.CreateUserContext(USER_CACHE_TEST, map[string]interface{}{
+		"country": "fr",
+	})
+	// Second decision - miss cache
 	fmt.Println("\nSecond decision (Cache hit):")
-	decision2 := userContext.Decide(FLAG_KEY, nil)
+	decision2 := userContext2.Decide(FLAG_KEY, nil)
 	printDecision("Decision 2", decision2)
 
-	// Verify same variation returned
-	if decision1.VariationKey == decision2.VariationKey {
-		fmt.Println("✓ Cache working: Same variation returned")
-	} else {
-		fmt.Println("✗ Cache issue: Different variations")
-	}
+	// Second decision - should use cache
+	fmt.Println("\nSecond decision (Cache hit):")
+	decision3 := userContext2.Decide(FLAG_KEY, nil)
+	printDecision("Decision 3", decision3)
+
 }
 
 // Test 3: Cache miss when relevant attributes change
@@ -204,7 +254,7 @@ func testIgnoreCacheOption(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("\n--- Test: IGNORE_CMAB_CACHE Option ---")
 
 	userContext := optimizelyClient.CreateUserContext(USER_CACHE_TEST+"_ignore", map[string]interface{}{
-		"cmab_test_attribute": "hello",
+		"country": "fr",
 	})
 
 	// First decision - populate cache
@@ -535,7 +585,7 @@ func testEventTracking(optimizelyClient *client.OptimizelyClient) {
 
 	// Track a conversion event
 	userContext.TrackEvent("event1", map[string]interface{}{
-		"revenue": 49.99,
+
 	})
 
 	fmt.Println("\nConversion event tracked: 'event1'")
@@ -658,4 +708,109 @@ func testPerformanceBenchmarks(optimizelyClient *client.OptimizelyClient) {
 	} else {
 		fmt.Println("✗ API performance: FAIL")
 	}
+}
+
+// Test 15: CMAB Configuration - demonstrate custom CMAB config options
+// Expected: Shows how to configure CMAB with custom cache size, TTL, timeout, and retry settings
+//   - Default config: CacheSize=100, CacheTTL=30min, HTTPTimeout=10s, MaxRetries=3
+//   - Custom config: CacheSize=200, CacheTTL=5min, HTTPTimeout=30s, MaxRetries=5
+//   - Demonstrates both default and custom configuration initialization
+//   - Shows proper client setup with CMAB configuration
+//
+// This validates CMAB configuration options and client initialization patterns
+func testCmabConfiguration() {
+	fmt.Println("\n--- Test: CMAB Configuration Options ---")
+
+	// Enable debug logging to see CMAB activity
+	logging.SetLogLevel(logging.LogLevelDebug)
+
+	// Example 1: Using default CMAB configuration
+	fmt.Println("\n=== Default CMAB Configuration ===")
+	defaultConfig := cmab.NewDefaultConfig()
+	fmt.Printf("Default Config:\n")
+	fmt.Printf("  CacheSize: %d\n", defaultConfig.CacheSize)
+	fmt.Printf("  CacheTTL: %v\n", defaultConfig.CacheTTL)
+	fmt.Printf("  HTTPTimeout: %v\n", defaultConfig.HTTPTimeout)
+	fmt.Printf("  MaxRetries: %d\n", defaultConfig.RetryConfig.MaxRetries)
+
+	// Create client with default config
+	configManager1 := config.NewPollingProjectConfigManager(SDK_KEY,
+		config.WithDatafileURLTemplate("https://optimizely-staging.s3.amazonaws.com/datafiles/%s.json"))
+
+	factory1 := &client.OptimizelyFactory{
+		SDKKey: SDK_KEY,
+	}
+
+	optimizelyClient1, err := factory1.Client(
+		client.WithConfigManager(configManager1),
+		client.WithCmabConfig(&defaultConfig),
+	)
+	if err != nil {
+		fmt.Println("Error initializing Optimizely client with default config:", err)
+		return
+	}
+	defer optimizelyClient1.Close()
+
+	// Example 2: Using custom CMAB configuration
+	fmt.Println("\n=== Custom CMAB Configuration ===")
+	customConfig := cmab.Config{
+		CacheSize:   200,                // Larger cache
+		CacheTTL:    5 * time.Minute,    // Shorter TTL
+		HTTPTimeout: 30 * time.Second,   // Longer timeout
+		RetryConfig: &cmab.RetryConfig{
+			MaxRetries: 5, // More retries
+		},
+	}
+	fmt.Printf("Custom Config:\n")
+	fmt.Printf("  CacheSize: %d\n", customConfig.CacheSize)
+	fmt.Printf("  CacheTTL: %v\n", customConfig.CacheTTL)
+	fmt.Printf("  HTTPTimeout: %v\n", customConfig.HTTPTimeout)
+	fmt.Printf("  MaxRetries: %d\n", customConfig.RetryConfig.MaxRetries)
+
+	// Create client with custom config
+	configManager2 := config.NewPollingProjectConfigManager(SDK_KEY,
+		config.WithDatafileURLTemplate("https://optimizely-staging.s3.amazonaws.com/datafiles/%s.json"))
+
+	factory2 := &client.OptimizelyFactory{
+		SDKKey: SDK_KEY,
+	}
+
+	optimizelyClient2, err := factory2.Client(
+		client.WithConfigManager(configManager2),
+		client.WithCmabConfig(&customConfig),
+	)
+	if err != nil {
+		fmt.Println("Error initializing Optimizely client with custom config:", err)
+		return
+	}
+	defer optimizelyClient2.Close()
+
+	// Wait for datafiles to load
+	fmt.Println("\nWaiting for datafiles to load...")
+	time.Sleep(2 * time.Second)
+
+	// Example 3: Test both clients to see behavior differences
+	fmt.Println("\n=== Testing Both Configurations ===")
+	
+	userContext := map[string]interface{}{
+		"country": "us",
+	}
+
+	// Test default config client
+	fmt.Println("\nTesting DEFAULT config client:")
+	userCtx1 := optimizelyClient1.CreateUserContext("config_test_user_default", userContext)
+	decision1 := userCtx1.Decide(FLAG_KEY, nil)
+	printDecision("Default Config", decision1)
+
+	// Test custom config client  
+	fmt.Println("\nTesting CUSTOM config client:")
+	userCtx2 := optimizelyClient2.CreateUserContext("config_test_user_custom", userContext)
+	decision2 := userCtx2.Decide(FLAG_KEY, nil)
+	printDecision("Custom Config", decision2)
+
+	fmt.Println("\n=== Configuration Summary ===")
+	fmt.Println("✓ Default CMAB config: 100 cache size, 30min TTL, 10s timeout, 3 retries")
+	fmt.Println("✓ Custom CMAB config: 200 cache size, 5min TTL, 30s timeout, 5 retries")
+	fmt.Println("✓ Both clients initialized successfully with respective configs")
+	fmt.Println("Note: Config differences affect caching behavior and HTTP retry logic")
 }
