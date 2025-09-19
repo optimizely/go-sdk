@@ -22,11 +22,13 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"sync"
 	"testing"
 
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"github.com/twmb/murmur3"
@@ -842,4 +844,86 @@ func (s *CmabServiceTestSuite) TestGetDecisionApiError() {
 	s.mockConfig.AssertExpectations(s.T())
 	s.mockCache.AssertExpectations(s.T())
 	s.mockClient.AssertExpectations(s.T())
+}
+
+func TestConcurrentCmabRequests(t *testing.T) {
+	service := &DefaultCmabService{}
+
+	// Test concurrent access to the same lock index
+	userID := "test_user"
+	ruleID := "test_rule"
+	
+	// Verify that the same combination always gets the same lock index
+	lockIndex := service.getLockIndex(userID, ruleID)
+	
+	numGoroutines := 10
+	var wg sync.WaitGroup
+	results := make([]int, numGoroutines)
+
+	wg.Add(numGoroutines)
+	for i := 0; i < numGoroutines; i++ {
+		go func(index int) {
+			defer wg.Done()
+			// All goroutines should get the same lock index for the same user/rule
+			results[index] = service.getLockIndex(userID, ruleID)
+		}(i)
+	}
+
+	// Wait for all goroutines to complete
+	wg.Wait()
+
+	// Verify all goroutines got the same lock index
+	for i := 0; i < numGoroutines; i++ {
+		assert.Equal(t, lockIndex, results[i], "All goroutines should get the same lock index for the same user/rule combination")
+	}
+}
+
+// TestLockStripingDistribution verifies that different user/rule combinations
+// use different locks to allow for better concurrency
+func TestLockStripingDistribution(t *testing.T) {
+	service := &DefaultCmabService{}
+
+	// Test different combinations to ensure they get different lock indices
+	testCases := []struct {
+		userID string
+		ruleID string
+	}{
+		{"user1", "rule1"},
+		{"user2", "rule1"},
+		{"user1", "rule2"},
+		{"user3", "rule3"},
+		{"user4", "rule4"},
+	}
+
+	lockIndices := make(map[int]bool)
+	for _, tc := range testCases {
+		index := service.getLockIndex(tc.userID, tc.ruleID)
+		
+		// Verify index is within expected range
+		assert.GreaterOrEqual(t, index, 0, "Lock index should be non-negative")
+		assert.Less(t, index, NumLockStripes, "Lock index should be less than NumLockStripes")
+		
+		lockIndices[index] = true
+	}
+
+	// We should have multiple different lock indices (though not necessarily all unique due to hash collisions)
+	assert.Greater(t, len(lockIndices), 1, "Different user/rule combinations should generally use different locks")
+}
+
+// TestSameUserRuleCombinationUsesConsistentLock verifies that the same user/rule combination
+// always uses the same lock index
+func TestSameUserRuleCombinationUsesConsistentLock(t *testing.T) {
+	service := &DefaultCmabService{}
+
+	userID := "test_user"
+	ruleID := "test_rule"
+
+	// Get lock index multiple times
+	index1 := service.getLockIndex(userID, ruleID)
+	index2 := service.getLockIndex(userID, ruleID)
+	index3 := service.getLockIndex(userID, ruleID)
+
+	// All should be the same
+	assert.Equal(t, index1, index2, "Same user/rule should always use same lock")
+	assert.Equal(t, index2, index3, "Same user/rule should always use same lock")
 }

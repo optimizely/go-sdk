@@ -60,5 +60,5 @@ const (
 	// OverrideVariationAssignmentFound - A valid override variation was found for the given user and experiment
 	OverrideVariationAssignmentFound Reason = "Override variation assignment found"
 	// CmabVariationAssigned is the reason when a variation is assigned by the CMAB service
-	CmabVariationAssigned Reason = "cmab_variation_assigned"
+	CmabVariationAssigned Reason = "cmab variation assigned"
 )
