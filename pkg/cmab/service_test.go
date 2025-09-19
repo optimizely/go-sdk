@@ -852,10 +852,10 @@ func TestConcurrentCmabRequests(t *testing.T) {
 	// Test concurrent access to the same lock index
 	userID := "test_user"
 	ruleID := "test_rule"
-	
+
 	// Verify that the same combination always gets the same lock index
 	lockIndex := service.getLockIndex(userID, ruleID)
-	
+
 	numGoroutines := 10
 	var wg sync.WaitGroup
 	results := make([]int, numGoroutines)
@@ -898,11 +898,11 @@ func TestLockStripingDistribution(t *testing.T) {
 	lockIndices := make(map[int]bool)
 	for _, tc := range testCases {
 		index := service.getLockIndex(tc.userID, tc.ruleID)
-		
+
 		// Verify index is within expected range
 		assert.GreaterOrEqual(t, index, 0, "Lock index should be non-negative")
 		assert.Less(t, index, NumLockStripes, "Lock index should be less than NumLockStripes")
-		
+
 		lockIndices[index] = true
 	}
 
