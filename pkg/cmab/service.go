@@ -50,7 +50,7 @@ type DefaultCmabService struct {
 func (s *DefaultCmabService) getLockIndex(userID, ruleID string) int {
 	// Create a hash of userID + ruleID for consistent lock selection
 	hasher := murmur3.New32()
-	hasher.Write([]byte(userID + ruleID))
+	_, _ = hasher.Write([]byte(userID + ruleID)) // murmur3 Write never returns an error
 	return int(hasher.Sum32() % NumLockStripes)
 }
 
