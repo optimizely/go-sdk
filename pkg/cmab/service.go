@@ -18,7 +18,6 @@
 package cmab
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -50,13 +49,9 @@ type DefaultCmabService struct {
 // getLockIndex calculates the lock index for a given user and rule combination
 func (s *DefaultCmabService) getLockIndex(userID, ruleID string) int {
 	// Create a hash of userID + ruleID for consistent lock selection
-	hash := sha256.Sum256([]byte(userID + ruleID))
-	// Use the first 8 bytes as a uint64 for modulo calculation
-	var hashValue uint64
-	for i := 0; i < 8; i++ {
-		hashValue = (hashValue << 8) | uint64(hash[i])
-	}
-	return int(hashValue % NumLockStripes)
+	hasher := murmur3.New32()
+	hasher.Write([]byte(userID + ruleID))
+	return int(hasher.Sum32() % NumLockStripes)
 }
 
 // ServiceOptions defines options for creating a CMAB service

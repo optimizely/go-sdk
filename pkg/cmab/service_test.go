@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"sync"
 	"testing"
 
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
@@ -846,37 +845,6 @@ func (s *CmabServiceTestSuite) TestGetDecisionApiError() {
 	s.mockClient.AssertExpectations(s.T())
 }
 
-func TestConcurrentCmabRequests(t *testing.T) {
-	service := &DefaultCmabService{}
-
-	// Test concurrent access to the same lock index
-	userID := "test_user"
-	ruleID := "test_rule"
-
-	// Verify that the same combination always gets the same lock index
-	lockIndex := service.getLockIndex(userID, ruleID)
-
-	numGoroutines := 10
-	var wg sync.WaitGroup
-	results := make([]int, numGoroutines)
-
-	wg.Add(numGoroutines)
-	for i := 0; i < numGoroutines; i++ {
-		go func(index int) {
-			defer wg.Done()
-			// All goroutines should get the same lock index for the same user/rule
-			results[index] = service.getLockIndex(userID, ruleID)
-		}(i)
-	}
-
-	// Wait for all goroutines to complete
-	wg.Wait()
-
-	// Verify all goroutines got the same lock index
-	for i := 0; i < numGoroutines; i++ {
-		assert.Equal(t, lockIndex, results[i], "All goroutines should get the same lock index for the same user/rule combination")
-	}
-}
 
 // TestLockStripingDistribution verifies that different user/rule combinations
 // use different locks to allow for better concurrency

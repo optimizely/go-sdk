@@ -124,18 +124,6 @@ func (s *CompositeExperimentService) GetDecision(decisionContext ExperimentDecis
 			return decision, reasons, nil
 		}
 
-		// For CMAB service, if it processed a CMAB experiment but didn't return a variation,
-		// it means the experiment was definitively handled (failed audience or traffic allocation)
-		// Don't continue to bucketer service to avoid redundant audience evaluation
-		if _, ok := experimentService.(*ExperimentCmabService); ok {
-			// Check if this was a CMAB experiment that was processed
-			if decisionContext.Experiment != nil && decisionContext.Experiment.Cmab != nil {
-				// CMAB service processed the experiment but didn't return a variation
-				// This is a definitive result - don't continue to other services
-				return decision, reasons, nil
-			}
-		}
-
 		// No error and no decision - continue to next service
 	}
 
