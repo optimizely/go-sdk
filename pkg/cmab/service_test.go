@@ -845,7 +845,6 @@ func (s *CmabServiceTestSuite) TestGetDecisionApiError() {
 	s.mockClient.AssertExpectations(s.T())
 }
 
-
 // TestLockStripingDistribution verifies that different user/rule combinations
 // use different locks to allow for better concurrency
 func TestLockStripingDistribution(t *testing.T) {

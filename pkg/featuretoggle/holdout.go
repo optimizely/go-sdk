@@ -14,8 +14,8 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package feature_toggle provides feature toggles for experimental features
-package feature_toggle
+// Package featuretoggle provides feature toggles for experimental features
+package featuretoggle
 
 // HoldoutEnabled returns whether holdout functionality is enabled
 // Currently hardcoded to false to disable holdouts for this release

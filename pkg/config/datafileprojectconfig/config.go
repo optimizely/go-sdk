@@ -23,8 +23,8 @@ import (
 
 	datafileEntities "github.com/optimizely/go-sdk/v2/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/config/datafileprojectconfig/mappers"
-	"github.com/optimizely/go-sdk/v2/pkg/feature_toggle"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/featuretoggle"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
 
@@ -275,7 +275,7 @@ func (c DatafileProjectConfig) GetGroupByID(groupID string) (entities.Group, err
 // GetHoldoutsForFlag returns the holdouts that apply to a specific flag
 func (c *DatafileProjectConfig) GetHoldoutsForFlag(flagKey string) []entities.Holdout {
 	// Return empty if holdouts are disabled
-	if !feature_toggle.HoldoutEnabled() {
+	if !featuretoggle.HoldoutEnabled() {
 		return []entities.Holdout{}
 	}
 	// Get flag ID from key
@@ -321,7 +321,7 @@ func (c *DatafileProjectConfig) GetHoldoutsForFlag(flagKey string) []entities.Ho
 // GetHoldout returns a holdout by its ID
 func (c DatafileProjectConfig) GetHoldout(holdoutID string) (entities.Holdout, error) {
 	// Return error if holdouts are disabled
-	if !feature_toggle.HoldoutEnabled() {
+	if !featuretoggle.HoldoutEnabled() {
 		return entities.Holdout{}, fmt.Errorf(`holdout with ID "%s" not found`, holdoutID)
 	}
 	if holdout, ok := c.holdoutIDMap[holdoutID]; ok {
@@ -396,41 +396,41 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	flagHoldoutsMap := make(map[string][]entities.Holdout)
 
 	// Only process holdouts if the feature is enabled
-	if feature_toggle.HoldoutEnabled() {
+	if featuretoggle.HoldoutEnabled() {
 		for _, datafileHoldout := range datafile.Holdouts {
-		// Only process running holdouts
-		if datafileHoldout.Status != datafileEntities.HoldoutStatusRunning {
-			continue
-		}
-
-		// Create runtime holdout entity
-		holdout := entities.Holdout{
-			ID:            datafileHoldout.ID,
-			Key:           datafileHoldout.Key,
-			Status:        entities.HoldoutStatus(datafileHoldout.Status),
-			IncludedFlags: datafileHoldout.IncludedFlags,
-			ExcludedFlags: datafileHoldout.ExcludedFlags,
-		}
-
-		// Add to ID map
-		holdoutIDMap[holdout.ID] = holdout
-
-		// Categorize holdouts based on flag targeting
-		if len(datafileHoldout.IncludedFlags) == 0 {
-			// This is a global holdout (applies to all flags unless excluded)
-			globalHoldouts = append(globalHoldouts, holdout)
-
-			// Add to excluded flags map
-			for _, flagID := range datafileHoldout.ExcludedFlags {
-				excludedHoldouts[flagID] = append(excludedHoldouts[flagID], holdout)
+			// Only process running holdouts
+			if datafileHoldout.Status != datafileEntities.HoldoutStatusRunning {
+				continue
 			}
-		} else {
-			// This holdout specifically includes certain flags
-			for _, flagID := range datafileHoldout.IncludedFlags {
-				includedHoldouts[flagID] = append(includedHoldouts[flagID], holdout)
+
+			// Create runtime holdout entity
+			holdout := entities.Holdout{
+				ID:            datafileHoldout.ID,
+				Key:           datafileHoldout.Key,
+				Status:        entities.HoldoutStatus(datafileHoldout.Status),
+				IncludedFlags: datafileHoldout.IncludedFlags,
+				ExcludedFlags: datafileHoldout.ExcludedFlags,
+			}
+
+			// Add to ID map
+			holdoutIDMap[holdout.ID] = holdout
+
+			// Categorize holdouts based on flag targeting
+			if len(datafileHoldout.IncludedFlags) == 0 {
+				// This is a global holdout (applies to all flags unless excluded)
+				globalHoldouts = append(globalHoldouts, holdout)
+
+				// Add to excluded flags map
+				for _, flagID := range datafileHoldout.ExcludedFlags {
+					excludedHoldouts[flagID] = append(excludedHoldouts[flagID], holdout)
+				}
+			} else {
+				// This holdout specifically includes certain flags
+				for _, flagID := range datafileHoldout.IncludedFlags {
+					includedHoldouts[flagID] = append(includedHoldouts[flagID], holdout)
+				}
 			}
 		}
-	}
 	}
 
 	attributeKeyMap := make(map[string]entities.Attribute)
