@@ -23,6 +23,7 @@ import (
 
 	datafileEntities "github.com/optimizely/go-sdk/v2/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/config/datafileprojectconfig/mappers"
+	"github.com/optimizely/go-sdk/v2/pkg/feature_toggle"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
@@ -273,6 +274,10 @@ func (c DatafileProjectConfig) GetGroupByID(groupID string) (entities.Group, err
 
 // GetHoldoutsForFlag returns the holdouts that apply to a specific flag
 func (c *DatafileProjectConfig) GetHoldoutsForFlag(flagKey string) []entities.Holdout {
+	// Return empty if holdouts are disabled
+	if !feature_toggle.HoldoutEnabled() {
+		return []entities.Holdout{}
+	}
 	// Get flag ID from key
 	feature, exists := c.featureMap[flagKey]
 	if !exists {
@@ -315,6 +320,10 @@ func (c *DatafileProjectConfig) GetHoldoutsForFlag(flagKey string) []entities.Ho
 
 // GetHoldout returns a holdout by its ID
 func (c DatafileProjectConfig) GetHoldout(holdoutID string) (entities.Holdout, error) {
+	// Return error if holdouts are disabled
+	if !feature_toggle.HoldoutEnabled() {
+		return entities.Holdout{}, fmt.Errorf(`holdout with ID "%s" not found`, holdoutID)
+	}
 	if holdout, ok := c.holdoutIDMap[holdoutID]; ok {
 		return holdout, nil
 	}
@@ -386,7 +395,9 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	excludedHoldouts := make(map[string][]entities.Holdout)
 	flagHoldoutsMap := make(map[string][]entities.Holdout)
 
-	for _, datafileHoldout := range datafile.Holdouts {
+	// Only process holdouts if the feature is enabled
+	if feature_toggle.HoldoutEnabled() {
+		for _, datafileHoldout := range datafile.Holdouts {
 		// Only process running holdouts
 		if datafileHoldout.Status != datafileEntities.HoldoutStatusRunning {
 			continue
@@ -419,6 +430,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 				includedHoldouts[flagID] = append(includedHoldouts[flagID], holdout)
 			}
 		}
+	}
 	}
 
 	attributeKeyMap := make(map[string]entities.Attribute)
