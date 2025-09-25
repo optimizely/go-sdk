@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/optimizely/go-sdk/v2/pkg/cache"
@@ -31,11 +32,26 @@ import (
 	"github.com/twmb/murmur3"
 )
 
+const (
+	// NumLockStripes defines the number of mutexes for lock striping to reduce contention
+	NumLockStripes = 1000
+)
+
 // DefaultCmabService implements the CmabService interface
 type DefaultCmabService struct {
 	cmabCache  cache.CacheWithRemove
 	cmabClient Client
 	logger     logging.OptimizelyLogProducer
+	// Lock striping to prevent race conditions in concurrent CMAB requests
+	locks [NumLockStripes]sync.Mutex
+}
+
+// getLockIndex calculates the lock index for a given user and rule combination
+func (s *DefaultCmabService) getLockIndex(userID, ruleID string) int {
+	// Create a hash of userID + ruleID for consistent lock selection
+	hasher := murmur3.New32()
+	_, _ = hasher.Write([]byte(userID + ruleID)) // murmur3 Write never returns an error
+	return int(hasher.Sum32() % NumLockStripes)
 }
 
 // ServiceOptions defines options for creating a CMAB service
@@ -66,6 +82,11 @@ func (s *DefaultCmabService) GetDecision(
 	ruleID string,
 	options *decide.Options,
 ) (Decision, error) {
+	// Use lock striping to prevent race conditions in concurrent requests
+	lockIndex := s.getLockIndex(userContext.ID, ruleID)
+	s.locks[lockIndex].Lock()
+	defer s.locks[lockIndex].Unlock()
+
 	// Initialize reasons slice for decision
 	reasons := []string{}
 

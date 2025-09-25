@@ -51,6 +51,11 @@ func (s ExperimentBucketerService) GetDecision(decisionContext ExperimentDecisio
 	experiment := decisionContext.Experiment
 	reasons := decide.NewDecisionReasons(options)
 
+	// Skip CMAB experiments - they should be handled by CMAB service only
+	if experiment.Cmab != nil {
+		return experimentDecision, reasons, nil
+	}
+
 	// Audience evaluation using common function
 	inAudience, audienceReasons := evaluator.CheckIfUserInAudience(experiment, userContext, decisionContext.ProjectConfig, s.audienceTreeEvaluator, options, s.logger)
 	reasons.Append(audienceReasons)
