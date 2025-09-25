@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"github.com/optimizely/go-sdk/v2/pkg/cache"
-	"github.com/optimizely/go-sdk/v2/pkg/cmab"
 	"github.com/optimizely/go-sdk/v2/pkg/config"
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
 	"github.com/optimizely/go-sdk/v2/pkg/decision"
@@ -461,13 +460,10 @@ func TestStaticClientError(t *testing.T) {
 
 func TestFactoryWithCmabConfig(t *testing.T) {
 	factory := OptimizelyFactory{}
-	cmabConfig := cmab.Config{
+	cmabConfig := CmabConfig{
 		CacheSize:   100,
 		CacheTTL:    time.Minute,
 		HTTPTimeout: 30 * time.Second,
-		RetryConfig: &cmab.RetryConfig{
-			MaxRetries: 5,
-		},
 	}
 
 	// Test the option function
@@ -477,19 +473,14 @@ func TestFactoryWithCmabConfig(t *testing.T) {
 	assert.Equal(t, 100, factory.cmabConfig.CacheSize)
 	assert.Equal(t, time.Minute, factory.cmabConfig.CacheTTL)
 	assert.Equal(t, 30*time.Second, factory.cmabConfig.HTTPTimeout)
-	assert.NotNil(t, factory.cmabConfig.RetryConfig)
-	assert.Equal(t, 5, factory.cmabConfig.RetryConfig.MaxRetries)
 }
 
 func TestFactoryCmabConfigPassedToDecisionService(t *testing.T) {
 	// Test that CMAB config is correctly passed to decision service when creating client
-	cmabConfig := cmab.Config{
+	cmabConfig := CmabConfig{
 		CacheSize:   200,
 		CacheTTL:    2 * time.Minute,
 		HTTPTimeout: 20 * time.Second,
-		RetryConfig: &cmab.RetryConfig{
-			MaxRetries: 3,
-		},
 	}
 
 	factory := OptimizelyFactory{
@@ -501,7 +492,6 @@ func TestFactoryCmabConfigPassedToDecisionService(t *testing.T) {
 	assert.Equal(t, &cmabConfig, factory.cmabConfig)
 	assert.Equal(t, 200, factory.cmabConfig.CacheSize)
 	assert.Equal(t, 2*time.Minute, factory.cmabConfig.CacheTTL)
-	assert.NotNil(t, factory.cmabConfig.RetryConfig)
 }
 
 func TestFactoryOptionFunctions(t *testing.T) {
@@ -512,19 +502,19 @@ func TestFactoryOptionFunctions(t *testing.T) {
 	WithSegmentsCacheSize(100)(factory)
 	WithSegmentsCacheTimeout(5 * time.Second)(factory)
 	WithOdpDisabled(true)(factory)
-	WithCmabConfig(&cmab.Config{CacheSize: 50})(factory)
+	WithCmabConfig(&CmabConfig{CacheSize: 50})(factory)
 
 	// Verify options were set
 	assert.Equal(t, "test_token", factory.DatafileAccessToken)
 	assert.Equal(t, 100, factory.segmentsCacheSize)
 	assert.Equal(t, 5*time.Second, factory.segmentsCacheTimeout)
 	assert.True(t, factory.odpDisabled)
-	assert.Equal(t, &cmab.Config{CacheSize: 50}, factory.cmabConfig)
+	assert.Equal(t, &CmabConfig{CacheSize: 50}, factory.cmabConfig)
 }
 
 func TestWithCmabConfigOption(t *testing.T) {
 	factory := &OptimizelyFactory{}
-	testConfig := cmab.Config{
+	testConfig := CmabConfig{
 		CacheSize: 200,
 		CacheTTL:  2 * time.Minute,
 	}
@@ -534,13 +524,10 @@ func TestWithCmabConfigOption(t *testing.T) {
 
 func TestClientWithCmabConfig(t *testing.T) {
 	// Test client creation with non-empty CMAB config (tests reflect.DeepEqual path)
-	cmabConfig := cmab.Config{
+	cmabConfig := CmabConfig{
 		CacheSize:   200,
 		CacheTTL:    5 * time.Minute,
 		HTTPTimeout: 30 * time.Second,
-		RetryConfig: &cmab.RetryConfig{
-			MaxRetries: 5,
-		},
 	}
 
 	factory := OptimizelyFactory{
@@ -559,7 +546,7 @@ func TestClientWithCmabConfig(t *testing.T) {
 
 func TestClientWithEmptyCmabConfig(t *testing.T) {
 	// Test client creation with empty CMAB config (tests reflect.DeepEqual returns true)
-	emptyCmabConfig := cmab.Config{}
+	emptyCmabConfig := CmabConfig{}
 
 	factory := OptimizelyFactory{
 		SDKKey: "test_sdk_key",

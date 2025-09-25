@@ -50,7 +50,6 @@ func NewExperimentCmabService(sdkKey string, config *cmab.Config) *ExperimentCma
 	var cacheSize int
 	var cacheTTL time.Duration
 	var httpTimeout time.Duration
-	var retryConfig *cmab.RetryConfig
 	var customCache cache.CacheWithRemove
 
 	if config == nil {
@@ -58,12 +57,6 @@ func NewExperimentCmabService(sdkKey string, config *cmab.Config) *ExperimentCma
 		cacheSize = cmab.DefaultCacheSize
 		cacheTTL = cmab.DefaultCacheTTL
 		httpTimeout = cmab.DefaultHTTPTimeout
-		retryConfig = &cmab.RetryConfig{
-			MaxRetries:        cmab.DefaultMaxRetries,
-			InitialBackoff:    cmab.DefaultInitialBackoff,
-			MaxBackoff:        cmab.DefaultMaxBackoff,
-			BackoffMultiplier: cmab.DefaultBackoffMultiplier,
-		}
 	} else {
 		// Config is not nil, use defaults for zero values
 		customCache = config.Cache
@@ -82,31 +75,14 @@ func NewExperimentCmabService(sdkKey string, config *cmab.Config) *ExperimentCma
 		if httpTimeout == 0 {
 			httpTimeout = cmab.DefaultHTTPTimeout
 		}
+	}
 
-		// Handle retry config
-		if config.RetryConfig == nil {
-			retryConfig = &cmab.RetryConfig{
-				MaxRetries:        cmab.DefaultMaxRetries,
-				InitialBackoff:    cmab.DefaultInitialBackoff,
-				MaxBackoff:        cmab.DefaultMaxBackoff,
-				BackoffMultiplier: cmab.DefaultBackoffMultiplier,
-			}
-		} else {
-			retryConfig = config.RetryConfig
-			// Apply defaults for zero values in provided RetryConfig
-			if retryConfig.MaxRetries == 0 {
-				retryConfig.MaxRetries = cmab.DefaultMaxRetries
-			}
-			if retryConfig.InitialBackoff == 0 {
-				retryConfig.InitialBackoff = cmab.DefaultInitialBackoff
-			}
-			if retryConfig.MaxBackoff == 0 {
-				retryConfig.MaxBackoff = cmab.DefaultMaxBackoff
-			}
-			if retryConfig.BackoffMultiplier == 0 {
-				retryConfig.BackoffMultiplier = cmab.DefaultBackoffMultiplier
-			}
-		}
+	// Always use hardcoded retry config (not exposed in public API)
+	retryConfig := &cmab.RetryConfig{
+		MaxRetries:        cmab.DefaultMaxRetries,
+		InitialBackoff:    cmab.DefaultInitialBackoff,
+		MaxBackoff:        cmab.DefaultMaxBackoff,
+		BackoffMultiplier: cmab.DefaultBackoffMultiplier,
 	}
 
 	// Use custom cache if provided, otherwise create default LRU cache

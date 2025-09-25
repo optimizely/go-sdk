@@ -38,7 +38,6 @@ type Config struct {
 	CacheSize   int
 	CacheTTL    time.Duration
 	HTTPTimeout time.Duration
-	RetryConfig *RetryConfig
 	Cache       cache.CacheWithRemove // Custom cache implementation (Redis, etc.)
 }
 
@@ -48,8 +47,5 @@ func NewDefaultConfig() Config {
 		CacheSize:   DefaultCacheSize,
 		CacheTTL:    DefaultCacheTTL,
 		HTTPTimeout: DefaultHTTPTimeout,
-		RetryConfig: &RetryConfig{
-			MaxRetries: DefaultMaxRetries,
-		},
 	}
 }

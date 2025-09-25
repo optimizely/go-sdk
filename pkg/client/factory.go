@@ -22,6 +22,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/optimizely/go-sdk/v2/pkg/cache"
 	"github.com/optimizely/go-sdk/v2/pkg/cmab"
 	"github.com/optimizely/go-sdk/v2/pkg/config"
 	"github.com/optimizely/go-sdk/v2/pkg/decide"
@@ -36,6 +37,28 @@ import (
 	"github.com/optimizely/go-sdk/v2/pkg/tracing"
 	"github.com/optimizely/go-sdk/v2/pkg/utils"
 )
+
+// CmabConfig holds CMAB configuration options exposed at the client level.
+// This provides a stable public API while allowing internal cmab.Config to change.
+type CmabConfig struct {
+	CacheSize   int
+	CacheTTL    time.Duration
+	HTTPTimeout time.Duration
+	Cache       cache.CacheWithRemove // Custom cache implementation (Redis, etc.)
+}
+
+// toCmabConfig converts client-level CmabConfig to internal cmab.Config
+func (c *CmabConfig) toCmabConfig() *cmab.Config {
+	if c == nil {
+		return nil
+	}
+	return &cmab.Config{
+		CacheSize:   c.CacheSize,
+		CacheTTL:    c.CacheTTL,
+		HTTPTimeout: c.HTTPTimeout,
+		Cache:       c.Cache,
+	}
+}
 
 // OptimizelyFactory is used to customize and construct an instance of the OptimizelyClient.
 type OptimizelyFactory struct {
@@ -54,7 +77,7 @@ type OptimizelyFactory struct {
 	overrideStore        decision.ExperimentOverrideStore
 	userProfileService   decision.UserProfileService
 	notificationCenter   notification.Center
-	cmabConfig           *cmab.Config
+	cmabConfig           *CmabConfig
 
 	// ODP
 	segmentsCacheSize    int
@@ -163,7 +186,7 @@ func (f *OptimizelyFactory) Client(clientOptions ...OptionFunc) (*OptimizelyClie
 		}
 		// Add CMAB config option if provided
 		if f.cmabConfig != nil {
-			experimentServiceOptions = append(experimentServiceOptions, decision.WithCmabConfig(f.cmabConfig))
+			experimentServiceOptions = append(experimentServiceOptions, decision.WithCmabConfig(f.cmabConfig.toCmabConfig()))
 		}
 		compositeExperimentService := decision.NewCompositeExperimentService(f.SDKKey, experimentServiceOptions...)
 		compositeService := decision.NewCompositeService(f.SDKKey, decision.WithCompositeExperimentService(compositeExperimentService))
@@ -327,7 +350,7 @@ func WithTracer(tracer tracing.Tracer) OptionFunc {
 }
 
 // WithCmabConfig sets the CMAB configuration options
-func WithCmabConfig(cmabConfig *cmab.Config) OptionFunc {
+func WithCmabConfig(cmabConfig *CmabConfig) OptionFunc {
 	return func(f *OptimizelyFactory) {
 		f.cmabConfig = cmabConfig
 	}

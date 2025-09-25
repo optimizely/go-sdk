@@ -252,9 +252,6 @@ func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithCmab
 		CacheSize:   200,
 		CacheTTL:    5 * time.Minute,
 		HTTPTimeout: 30 * time.Second,
-		RetryConfig: &cmab.RetryConfig{
-			MaxRetries: 5,
-		},
 	}
 
 	compositeExperimentService := NewCompositeExperimentService("test-sdk-key",
@@ -266,8 +263,6 @@ func (s *CompositeExperimentTestSuite) TestNewCompositeExperimentServiceWithCmab
 	s.Equal(200, compositeExperimentService.cmabConfig.CacheSize)              // From config
 	s.Equal(5*time.Minute, compositeExperimentService.cmabConfig.CacheTTL)     // From config
 	s.Equal(30*time.Second, compositeExperimentService.cmabConfig.HTTPTimeout) // From config
-	s.NotNil(compositeExperimentService.cmabConfig.RetryConfig)
-	s.Equal(5, compositeExperimentService.cmabConfig.RetryConfig.MaxRetries) // From config
 
 	// Verify service order
 	s.Equal(3, len(compositeExperimentService.experimentServices))
