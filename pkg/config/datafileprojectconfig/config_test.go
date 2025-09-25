@@ -27,6 +27,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	datafileEntities "github.com/optimizely/go-sdk/v2/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
+	"github.com/optimizely/go-sdk/v2/pkg/featuretoggle"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 
 	"github.com/stretchr/testify/assert"
@@ -733,6 +734,10 @@ func TestGetAttributeByKeyWithDirectMapping(t *testing.T) {
 
 // Test holdout functionality based on JavaScript and Swift SDK patterns
 func TestHoldoutConfig_EmptyHoldouts(t *testing.T) {
+	// Enable holdouts for this test
+	enabled := true
+	featuretoggle.HoldoutEnabledForTesting = &enabled
+	defer func() { featuretoggle.HoldoutEnabledForTesting = nil }()
 	datafile := &datafileEntities.Datafile{
 		Version:   "4",
 		AccountID: "12345",
@@ -755,6 +760,10 @@ func TestHoldoutConfig_EmptyHoldouts(t *testing.T) {
 }
 
 func TestHoldoutConfig_HoldoutMapping(t *testing.T) {
+	// Enable holdouts for this test
+	enabled := true
+	featuretoggle.HoldoutEnabledForTesting = &enabled
+	defer func() { featuretoggle.HoldoutEnabledForTesting = nil }()
 	datafile := &datafileEntities.Datafile{
 		Version:   "4",
 		AccountID: "12345",
@@ -823,6 +832,10 @@ func TestHoldoutConfig_HoldoutMapping(t *testing.T) {
 }
 
 func TestHoldoutConfig_GetHoldout(t *testing.T) {
+	// Enable holdouts for this test
+	enabled := true
+	featuretoggle.HoldoutEnabledForTesting = &enabled
+	defer func() { featuretoggle.HoldoutEnabledForTesting = nil }()
 	datafile := &datafileEntities.Datafile{
 		Version:   "4",
 		AccountID: "12345",
@@ -863,6 +876,10 @@ func TestHoldoutConfig_GetHoldout(t *testing.T) {
 }
 
 func TestGetHoldoutsForFlag_Logic(t *testing.T) {
+	// Enable holdouts for this test
+	enabled := true
+	featuretoggle.HoldoutEnabledForTesting = &enabled
+	defer func() { featuretoggle.HoldoutEnabledForTesting = nil }()
 	datafile := &datafileEntities.Datafile{
 		Version:   "4",
 		AccountID: "12345",
@@ -942,6 +959,10 @@ func TestGetHoldoutsForFlag_Logic(t *testing.T) {
 }
 
 func TestGetHoldoutsForFlag_Caching(t *testing.T) {
+	// Enable holdouts for this test
+	enabled := true
+	featuretoggle.HoldoutEnabledForTesting = &enabled
+	defer func() { featuretoggle.HoldoutEnabledForTesting = nil }()
 	datafile := &datafileEntities.Datafile{
 		Version:   "4",
 		AccountID: "12345",

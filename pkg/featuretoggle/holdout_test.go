@@ -14,20 +14,35 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package featuretoggle provides feature toggles for experimental features
 package featuretoggle
 
-// HoldoutEnabledForTesting allows tests to override the holdout toggle
-// This is used by tests that need to verify holdout functionality
-var HoldoutEnabledForTesting *bool
+import "testing"
 
-// HoldoutEnabled returns whether holdout functionality is enabled
-// In tests, this can be overridden by setting HoldoutEnabledForTesting
-func HoldoutEnabled() bool {
-	// Allow tests to override the toggle
-	if HoldoutEnabledForTesting != nil {
-		return *HoldoutEnabledForTesting
+func TestHoldoutEnabled_DefaultDisabled(t *testing.T) {
+	// Reset any test overrides
+	HoldoutEnabledForTesting = nil
+	
+	// Should be disabled by default
+	if HoldoutEnabled() {
+		t.Error("Expected holdouts to be disabled by default")
 	}
-	// Default: disabled in production
-	return false
+}
+
+func TestHoldoutEnabled_CanBeOverriddenForTesting(t *testing.T) {
+	// Test enabling
+	enabled := true
+	HoldoutEnabledForTesting = &enabled
+	defer func() { HoldoutEnabledForTesting = nil }()
+	
+	if !HoldoutEnabled() {
+		t.Error("Expected holdouts to be enabled when override is set to true")
+	}
+	
+	// Test disabling
+	disabled := false
+	HoldoutEnabledForTesting = &disabled
+	
+	if HoldoutEnabled() {
+		t.Error("Expected holdouts to be disabled when override is set to false")
+	}
 }
