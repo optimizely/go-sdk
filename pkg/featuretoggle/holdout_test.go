@@ -21,7 +21,7 @@ import "testing"
 func TestHoldoutEnabled_DefaultDisabled(t *testing.T) {
 	// Reset any test overrides
 	HoldoutEnabledForTesting = nil
-	
+
 	// Should be disabled by default
 	if HoldoutEnabled() {
 		t.Error("Expected holdouts to be disabled by default")
@@ -33,15 +33,15 @@ func TestHoldoutEnabled_CanBeOverriddenForTesting(t *testing.T) {
 	enabled := true
 	HoldoutEnabledForTesting = &enabled
 	defer func() { HoldoutEnabledForTesting = nil }()
-	
+
 	if !HoldoutEnabled() {
 		t.Error("Expected holdouts to be enabled when override is set to true")
 	}
-	
+
 	// Test disabling
 	disabled := false
 	HoldoutEnabledForTesting = &disabled
-	
+
 	if HoldoutEnabled() {
 		t.Error("Expected holdouts to be disabled when override is set to false")
 	}
