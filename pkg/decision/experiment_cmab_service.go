@@ -83,12 +83,29 @@ func NewExperimentCmabService(sdkKey string, config *cmab.Config) *ExperimentCma
 			httpTimeout = cmab.DefaultHTTPTimeout
 		}
 
-		// Handle retry config - since RetryConfig is no longer in public API, always use defaults
-		retryConfig = &cmab.RetryConfig{
-			MaxRetries:        cmab.DefaultMaxRetries,
-			InitialBackoff:    cmab.DefaultInitialBackoff,
-			MaxBackoff:        cmab.DefaultMaxBackoff,
-			BackoffMultiplier: cmab.DefaultBackoffMultiplier,
+		// Handle retry config
+		if config.RetryConfig == nil {
+			retryConfig = &cmab.RetryConfig{
+				MaxRetries:        cmab.DefaultMaxRetries,
+				InitialBackoff:    cmab.DefaultInitialBackoff,
+				MaxBackoff:        cmab.DefaultMaxBackoff,
+				BackoffMultiplier: cmab.DefaultBackoffMultiplier,
+			}
+		} else {
+			retryConfig = config.RetryConfig
+			// Apply defaults for zero values in provided RetryConfig
+			if retryConfig.MaxRetries == 0 {
+				retryConfig.MaxRetries = cmab.DefaultMaxRetries
+			}
+			if retryConfig.InitialBackoff == 0 {
+				retryConfig.InitialBackoff = cmab.DefaultInitialBackoff
+			}
+			if retryConfig.MaxBackoff == 0 {
+				retryConfig.MaxBackoff = cmab.DefaultMaxBackoff
+			}
+			if retryConfig.BackoffMultiplier == 0 {
+				retryConfig.BackoffMultiplier = cmab.DefaultBackoffMultiplier
+			}
 		}
 	}
 
