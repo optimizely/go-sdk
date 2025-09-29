@@ -25,6 +25,14 @@ import (
 	"github.com/optimizely/go-sdk/v2/pkg/cache"
 )
 
+// Cache is used for caching ODP segments
+// Maintained for backward compatibility - use pkg/cache.Cache for new code
+type Cache interface {
+	Save(key string, value interface{})
+	Lookup(key string) interface{}
+	Reset()
+}
+
 // LRUCache wraps the cache.LRUCache to maintain backward compatibility
 type LRUCache struct {
 	*cache.LRUCache
