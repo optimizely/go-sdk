@@ -40,24 +40,18 @@ type Cmab struct {
 	TrafficAllocation int      `json:"trafficAllocation"`
 }
 
-// ExperimentCore contains the shared properties between Experiment and Holdout
-// This represents the common bucketing and targeting logic
-type ExperimentCore struct {
+// Experiment represents an Experiment object from the Optimizely datafile
+type Experiment struct {
 	ID                 string              `json:"id"`
 	Key                string              `json:"key"`
+	LayerID            string              `json:"layerId"`
+	Status             string              `json:"status"`
 	Variations         []Variation         `json:"variations"`
 	TrafficAllocation  []TrafficAllocation `json:"trafficAllocation"`
 	AudienceIds        []string            `json:"audienceIds"`
+	ForcedVariations   map[string]string   `json:"forcedVariations"`
 	AudienceConditions interface{}         `json:"audienceConditions"`
-}
-
-// Experiment represents an Experiment object from the Optimizely datafile
-type Experiment struct {
-	ExperimentCore
-	LayerID          string            `json:"layerId"`
-	Status           string            `json:"status"`
-	ForcedVariations map[string]string `json:"forcedVariations"`
-	Cmab             *Cmab             `json:"cmab,omitempty"` // is optional
+	Cmab               *Cmab               `json:"cmab,omitempty"` // is optional
 }
 
 // Group represents an Group object from the Optimizely datafile
@@ -66,23 +60,6 @@ type Group struct {
 	Policy            string              `json:"policy"`
 	TrafficAllocation []TrafficAllocation `json:"trafficAllocation"`
 	Experiments       []Experiment        `json:"experiments"`
-}
-
-// HoldoutStatus represents the status of a holdout
-type HoldoutStatus string
-
-const (
-	// HoldoutStatusRunning - the holdout status is running
-	HoldoutStatusRunning HoldoutStatus = "Running"
-)
-
-// Holdout represents a Holdout object from the Optimizely datafile
-// Holdouts share core properties with Experiments through ExperimentCore embedding
-type Holdout struct {
-	ExperimentCore
-	Status        HoldoutStatus `json:"status"`
-	IncludedFlags []string      `json:"includedFlags"`
-	ExcludedFlags []string      `json:"excludedFlags"`
 }
 
 // FeatureFlag represents a FeatureFlag object from the Optimizely datafile
@@ -155,7 +132,6 @@ type Datafile struct {
 	Integrations      []Integration `json:"integrations"`
 	TypedAudiences    []Audience    `json:"typedAudiences"`
 	Variables         []string      `json:"variables"`
-	Holdouts          []Holdout     `json:"holdouts"`
 	AccountID         string        `json:"accountId"`
 	ProjectID         string        `json:"projectId"`
 	Revision          string        `json:"revision"`
