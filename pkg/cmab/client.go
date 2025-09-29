@@ -35,7 +35,7 @@ var CMABPredictionEndpoint = "https://prediction.cmab.optimizely.com/predict/%s"
 
 const (
 	// DefaultMaxRetries is the default number of retries for CMAB requests
-	DefaultMaxRetries = 3
+	DefaultMaxRetries = 1
 	// DefaultInitialBackoff is the default initial backoff duration
 	DefaultInitialBackoff = 100 * time.Millisecond
 	// DefaultMaxBackoff is the default maximum backoff duration
