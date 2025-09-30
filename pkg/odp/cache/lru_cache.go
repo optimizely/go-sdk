@@ -14,20 +14,28 @@
  * limitations under the License.                                           *
  ***************************************************************************/
 
-// Package odp provides compatibility with the previously located cache package.
+// Package cache provides compatibility with the cache package that was moved.
 // This file exists to maintain backward compatibility with code that imports
-// cache from the odp package. New code should import from pkg/cache directly.
-package odp
+// cache from the odp/cache package. New code should import from pkg/cache directly.
+package cache
 
 import (
 	"time"
 
-	"github.com/optimizely/go-sdk/v2/pkg/cache"
+	pkgCache "github.com/optimizely/go-sdk/v2/pkg/cache"
 )
+
+// Cache is used for caching ODP segments
+// Maintained for backward compatibility - use github.com/optimizely/go-sdk/v2/pkg/cache.Cache for new code
+type Cache interface {
+	Save(key string, value interface{})
+	Lookup(key string) interface{}
+	Reset()
+}
 
 // LRUCache wraps the cache.LRUCache to maintain backward compatibility
 type LRUCache struct {
-	*cache.LRUCache
+	*pkgCache.LRUCache
 }
 
 // NewLRUCache returns a new instance of Least Recently Used in-memory cache
@@ -35,6 +43,6 @@ type LRUCache struct {
 // This function exists for backward compatibility with code that imports from pkg/odp
 func NewLRUCache(size int, timeout time.Duration) *LRUCache {
 	return &LRUCache{
-		LRUCache: cache.NewLRUCache(size, timeout),
+		LRUCache: pkgCache.NewLRUCache(size, timeout),
 	}
 }
