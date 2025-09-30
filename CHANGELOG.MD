@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - September 30, 2025
+ 
+  ### New Features
+  - **CMAB (Contextual Multi-Armed Bandit) Support**: Added support for CMAB experiments with new configuration options and cache control ([#399](https://github.com/optimizely/go-sdk/pull/399), [#401](https://github.com/optimizely/go-sdk/pull/401), [#402](https://github.com/optimizely/go-sdk/pull/402), [#403](https://github.com/optimizely/go-sdk/pull/403), [#408](https://github.com/optimizely/go-sdk/pull/408), [#409](https://github.com/optimizely/go-sdk/pull/409), [#411](https://github.com/optimizely/go-sdk/pull/411), [#412](https://github.com/optimizely/go-sdk/pull/412), [#416](https://github.com/optimizely/go-sdk/pull/416))
+  - **Multi-Region Support for Data Hosting**: Added SDK support for multi-region data hosting ([#414](https://github.com/optimizely/go-sdk/pull/414))
+ 
+  ### API Changes
+  - **Client Factory**: `WithCmabConfig(*CmabConfig) OptionFunc` - New option for CMAB configuration ([#412](https://github.com/optimizely/go-sdk/pull/412), [#419](https://github.com/optimizely/go-sdk/pull/419))
+  - **New Decide Options**: `IgnoreCMABCache`, `ResetCMABCache`, `InvalidateUserCMABCache` for CMAB cache control ([#401](https://github.com/optimizely/go-sdk/pull/401))
+  - **Enhanced Decision Notifications**: Added `experimentId` and `variationId` fields to decision notification payload ([#406](https://github.com/optimizely/go-sdk/pull/406))
+
 ## [2.1.0] - November 8, 2024
 
 ### Enhancements
