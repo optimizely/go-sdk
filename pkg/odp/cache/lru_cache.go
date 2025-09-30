@@ -25,7 +25,7 @@ import (
 	pkgCache "github.com/optimizely/go-sdk/v2/pkg/cache"
 )
 
-// Cache is used for caching ODP segments  
+// Cache is used for caching ODP segments
 // Maintained for backward compatibility - use github.com/optimizely/go-sdk/v2/pkg/cache.Cache for new code
 type Cache interface {
 	Save(key string, value interface{})
