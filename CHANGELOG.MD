@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - September 30, 2025
+
+### New Features
+- **CMAB (Contextual Multi-Armed Bandit) Support**: Added comprehensive support for CMAB experiments, enabling dynamic optimization based on user context and real-time learning
+- **Multi-Region Data Hosting Support**: Added SDK support for multi-region data hosting to improve performance and comply with data residency requirements
+
+#### CMAB-Related Changes
+- **Client Factory**: `WithCmabConfig(*cmab.Config) OptionFunc` - New option for setting CMAB configuration
+- **Event Metadata**: `CmabUUID` field added to DecisionMetadata for CMAB tracking
+- **New Decide Options** for CMAB cache control:
+  - `IgnoreCMABCache` - Ignore CMAB cache and make fresh requests
+  - `ResetCMABCache` - Reset the entire CMAB cache
+  - `InvalidateUserCMABCache` - Invalidate CMAB cache entries for specific user
+
+#### Enhanced Decision Notifications
+- **Enhanced Decision Notifications**: Decision notification listener payload now includes:
+  - `experimentId` field for experiment identification
+  - `variationId` field for variation identification
+
 ## [2.1.0] - November 8, 2024
 
 ### Enhancements
