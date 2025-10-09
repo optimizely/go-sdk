@@ -321,8 +321,12 @@ func (p *BatchEventProcessor) flushEvents() {
 			}
 		}
 		if batchEventCount > 0 {
+			eventEndPoint := ""
+			if p.EventEndPoint != EventEndPoints["US"] && p.EventEndPoint != EventEndPoints["EU"] {
+				eventEndPoint = p.EventEndPoint
+			}
 			// TODO: figure out what to do with the error
-			logEvent := createLogEvent(batchEvent, p.EventEndPoint)
+			logEvent := createLogEvent(batchEvent, eventEndPoint)
 			notificationCenter := registry.GetNotificationCenter(p.sdkKey)
 
 			err := notificationCenter.Send(notification.LogEvent, logEvent)
