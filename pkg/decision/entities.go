@@ -55,6 +55,8 @@ const (
 	Rollout Source = "rollout"
 	// FeatureTest - the decision came from a feature test
 	FeatureTest Source = "feature-test"
+	// Holdout - the decision came from a holdout
+	Holdout Source = "holdout"
 )
 
 // Decision contains base information about a decision

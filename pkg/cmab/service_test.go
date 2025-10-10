@@ -230,6 +230,11 @@ func (m *MockProjectConfig) GetRegion() string {
 	return args.String(0)
 }
 
+func (m *MockProjectConfig) GetHoldoutsForFlag(featureKey string) []entities.Holdout {
+	args := m.Called(featureKey)
+	return args.Get(0).([]entities.Holdout)
+}
+
 type CmabServiceTestSuite struct {
 	suite.Suite
 	mockClient     *MockCmabClient

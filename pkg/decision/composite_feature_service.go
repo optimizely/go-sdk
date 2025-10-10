@@ -34,6 +34,7 @@ func NewCompositeFeatureService(sdkKey string, compositeExperimentService Experi
 	return &CompositeFeatureService{
 		logger: logging.GetLogger(sdkKey, "CompositeFeatureService"),
 		featureServices: []FeatureService{
+			NewHoldoutService(sdkKey),
 			NewFeatureExperimentService(logging.GetLogger(sdkKey, "FeatureExperimentService"), compositeExperimentService),
 			NewRolloutService(sdkKey),
 		},
