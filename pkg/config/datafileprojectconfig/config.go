@@ -281,6 +281,13 @@ func (c DatafileProjectConfig) GetRegion() string {
 	return c.region
 }
 
+// GetHoldoutsForFlag returns all holdouts applicable to the given feature flag
+// TODO: Implementation will be added in holdout parsing PR
+func (c DatafileProjectConfig) GetHoldoutsForFlag(featureKey string) []entities.Holdout {
+	// Stub implementation - will be replaced with actual holdout logic
+	return []entities.Holdout{}
+}
+
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser
 func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogProducer) (*DatafileProjectConfig, error) {
 	datafile, err := Parse(jsonDatafile)
