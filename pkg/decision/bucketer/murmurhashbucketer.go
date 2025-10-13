@@ -27,7 +27,7 @@ import (
 	"github.com/twmb/murmur3"
 )
 
-var maxHashValue = float32(math.Pow(2, 32))
+var maxHashValue = float64(math.Pow(2, 32))
 
 // DefaultHashSeed is the hash seed to use for murmurhash
 const DefaultHashSeed = 1
@@ -60,7 +60,7 @@ func (b MurmurhashBucketer) Generate(bucketingKey string) int {
 		b.logger.Error(fmt.Sprintf("Unable to generate a hash for the bucketing key=%s", bucketingKey), err)
 	}
 	hashCode := hasher.Sum32()
-	ratio := float32(hashCode) / maxHashValue
+	ratio := float64(hashCode) / maxHashValue
 	return int(ratio * maxTrafficValue)
 }
 
