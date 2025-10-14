@@ -27,7 +27,7 @@ import (
 	"github.com/twmb/murmur3"
 )
 
-var maxHashValue = float64(math.Pow(2, 32))
+var maxHashValue = math.Pow(2, 32)
 
 // DefaultHashSeed is the hash seed to use for murmurhash
 const DefaultHashSeed = 1
