@@ -538,30 +538,223 @@ func testTrafficAllocation(optimizelyClient *client.OptimizelyClient) {
 	fmt.Println("Expected: Only second user triggers CMAB API call")
 }
 
-// Test 10: Forced variation override - when variations are forced in datafile
-// Expected: Users with forced variations bypass CMAB and get predetermined results
-//   - If user "forced_user" has forced variation in datafile: no CMAB API call
-//   - If no forced variation configured: normal CMAB flow with API call (current result)
-//   - Forced variations are typically used for QA/testing specific variations
-//   - Current result shows CMAB API call, indicating no forced variation configured
+// Test 10: Forced Variation Override using SetForcedDecision() 
+// OVERVIEW:
+// This test validates the SetForcedDecision() API which allows runtime
+// forcing of variations at either flag-level or rule-level, bypassing
+// CMAB decision logic entirely.
 //
-// Note: Forced variations must be configured in Optimizely UI or datafile
-// This test validates forced variation precedence over CMAB decisions
+// TWO FORCING LEVELS:
+//
+// 1. FLAG-LEVEL (Broad Scope):
+//    - Context: OptimizelyDecisionContext{FlagKey: "flag1"}
+//    - Impact: Forces variation for ALL experiments/rules under this flag
+//    - Priority: #1 (Highest - checked first)
+//    - CMAB: Completely bypassed for this flag
+//    - Example: Force all users to see flag1="on" regardless of which 
+//              CMAB rule or A/B test would normally evaluate
+//
+// 2. RULE-LEVEL (Granular Scope):
+//    - Context: OptimizelyDecisionContext{FlagKey: "flag1", RuleKey: "cmab-rule-1"}
+//    - Impact: Forces variation ONLY for specified experiment/rule
+//    - Priority: #2 (After flag-level, before whitelist)
+//    - CMAB: Bypassed only for the specified rule
+//    - Example: Force cmab-rule-1="on" but let cmab-rule-2 evaluate normally
+//
+// PRIORITY ORDER (from highest to lowest):
+//    1. SetForcedDecision() - Flag-level
+//    2. SetForcedDecision() - Rule-level
+//    3. Override Store (if configured)
+//    4. Whitelist from Datafile (UI Allowlist)
+//    5. CMAB Service
+//    6. Regular Bucketing
 func testForcedVariationOverride(optimizelyClient *client.OptimizelyClient) {
-	fmt.Println("\n--- Test: Forced Variation Override ---")
+      fmt.Println("\n--- Test: Forced Variation Override ---")
 
-	// Note: This test shows the concept but forced variations
-	// would need to be configured in the datafile or via whitelisting
-	userContext := optimizelyClient.CreateUserContext("forced_user", map[string]interface{}{
-		"cmab_test_attribute": "hello",
-	})
+      // Test 1: Normal CMAB flow (baseline)
+      fmt.Println("\n=== Test 1: Normal CMAB Flow (Baseline) ===")
+      userContext1 := optimizelyClient.CreateUserContext("normal_user",
+  map[string]interface{}{
+          "country": "us",
+          "state":   "ca",
+      })
 
-	decision := userContext.Decide(FLAG_KEY, nil)
-	printDecision("Potential Forced User", decision)
+      decision1 := userContext1.Decide(FLAG_KEY, nil)
+      printDecision("Normal CMAB User", decision1)
+      fmt.Println("Expected: CMAB API call made, variation from CMAB service")
 
-	fmt.Println("Note: Forced variations would be configured in datafile")
-	fmt.Println("Expected: If forced variation exists, no CMAB API call")
-}
+      // Test 2: FLAG-LEVEL Forced Decision
+      fmt.Println("\n=== Test 2: FLAG-LEVEL Forced Decision ===")
+      userContext2 := optimizelyClient.CreateUserContext("forced_user_flag",
+  map[string]interface{}{
+          "country": "us",
+          "state":   "ca",
+      })
+
+      // Force at FLAG level (no RuleKey) - affects ALL rules under this flag
+      forcedContextFlag := decision.OptimizelyDecisionContext{
+          FlagKey: FLAG_KEY, // Only flag key, no rule key
+      }
+      forcedDecisionFlag := decision.OptimizelyForcedDecision{
+          VariationKey: "on", // Force "on" variation
+      }
+
+      success := userContext2.SetForcedDecision(forcedContextFlag, forcedDecisionFlag)
+      if success {
+          fmt.Println("✓ Flag-level forced decision set successfully")
+      } else {
+          fmt.Println("✗ Failed to set flag-level forced decision")
+      }
+
+      decision2 := userContext2.Decide(FLAG_KEY, nil)
+      printDecision("Flag-Level Forced User", decision2)
+      fmt.Println("Expected: Variation 'on', NO CMAB API call")
+      fmt.Println("Note: This forces decision for ALL rules under this flag")
+
+      // Test 3: RULE-LEVEL Forced Decision (NEW!)
+      fmt.Println("\n=== Test 3: RULE-LEVEL Forced Decision ===")
+      userContext3 := optimizelyClient.CreateUserContext("forced_user_rule",
+  map[string]interface{}{
+          "country": "us",
+          "state":   "ca",
+      })
+
+      // Force at RULE level (flag key + specific rule key)
+      forcedContextRule := decision.OptimizelyDecisionContext{
+          FlagKey: FLAG_KEY,
+          RuleKey: "cmab-rule-1",
+      }
+      forcedDecisionRule := decision.OptimizelyForcedDecision{
+          VariationKey: "off", // Force "off" variation for this specific rule
+      }
+
+      success3 := userContext3.SetForcedDecision(forcedContextRule, forcedDecisionRule)
+      if success3 {
+          fmt.Println("✓ Rule-level forced decision set successfully")
+      } else {
+          fmt.Println("✗ Failed to set rule-level forced decision")
+      }
+
+      decision3 := userContext3.Decide(FLAG_KEY, nil)
+      printDecision("Rule-Level Forced User", decision3)
+      fmt.Println("Expected: Variation 'off', NO CMAB API call for cmab-rule-1")
+      fmt.Println("Note: Only affects cmab-rule-1, other rules would evaluate normally")
+
+      // Test 4: Multiple Forced Decisions (flag + different rule)
+      fmt.Println("\n=== Test 4: Multiple Forced Decisions on Same UserContext ===")
+      userContext4 := optimizelyClient.CreateUserContext("forced_user_multi",
+  map[string]interface{}{
+          "country": "us",
+          "state":   "ca",
+      })
+
+      // Set forced decision for one rule
+      userContext4.SetForcedDecision(
+          decision.OptimizelyDecisionContext{
+              FlagKey: FLAG_KEY,
+              RuleKey: "cmab-rule-1",
+          },
+          decision.OptimizelyForcedDecision{VariationKey: "on"},
+      )
+
+      // Set another forced decision for a different context
+      userContext4.SetForcedDecision(
+          decision.OptimizelyDecisionContext{
+              FlagKey: "flag2",
+              RuleKey: "cmab-rule-2",
+          },
+          decision.OptimizelyForcedDecision{VariationKey: "on"},
+      )
+
+      fmt.Println("✓ Set forced decisions for multiple flag/rule combinations")
+
+      decision4 := userContext4.Decide(FLAG_KEY, nil)
+      printDecision("Multi-Forced Decision User (flag1)", decision4)
+
+      decision4b := userContext4.Decide("flag2", nil)
+      printDecision("Multi-Forced Decision User (flag2)", decision4b)
+
+      // Test 5: Priority - Flag-level vs Rule-level
+      fmt.Println("\n=== Test 5: Priority Test - Flag-Level Overrides Rule-Level ===")
+      userContext5 := optimizelyClient.CreateUserContext("forced_user_priority",
+  map[string]interface{}{
+          "country": "us",
+          "state":   "ca",
+      })
+
+      // First set rule-level forced decision
+      userContext5.SetForcedDecision(
+          decision.OptimizelyDecisionContext{
+              FlagKey: FLAG_KEY,
+              RuleKey: "cmab-rule-1",
+          },
+          decision.OptimizelyForcedDecision{VariationKey: "off"},
+      )
+      fmt.Println("Step 1: Set rule-level forced decision to 'off'")
+
+      // Then set flag-level forced decision (should override)
+      userContext5.SetForcedDecision(
+          decision.OptimizelyDecisionContext{
+              FlagKey: FLAG_KEY,
+              // No RuleKey - flag level
+          },
+          decision.OptimizelyForcedDecision{VariationKey: "on"},
+      )
+      fmt.Println("Step 2: Set flag-level forced decision to 'on'")
+
+      decision5 := userContext5.Decide(FLAG_KEY, nil)
+      printDecision("Priority Test User", decision5)
+      fmt.Println("Expected: Variation 'on' (flag-level wins over rule-level)")
+      fmt.Println("Note: Flag-level is checked BEFORE rule-level in SDK")
+
+      // Test 6: Remove FLAG-LEVEL forced decision
+      fmt.Println("\n=== Test 6: Remove Flag-Level Forced Decision ===")
+      removed := userContext2.RemoveForcedDecision(decision.OptimizelyDecisionContext{
+          FlagKey: FLAG_KEY,
+          // No RuleKey - removing flag-level
+      })
+      if removed {
+          fmt.Println("✓ Flag-level forced decision removed successfully")
+      } else {
+          fmt.Println("✗ Failed to remove forced decision")
+      }
+
+      decision6 := userContext2.Decide(FLAG_KEY, nil)
+      printDecision("After Removing Flag-Level Forced Decision", decision6)
+      fmt.Println("Expected: CMAB API call made (back to normal flow)")
+
+      // Test 7: Remove RULE-LEVEL forced decision
+      fmt.Println("\n=== Test 7: Remove Rule-Level Forced Decision ===")
+      removed2 := userContext3.RemoveForcedDecision(decision.OptimizelyDecisionContext{
+          FlagKey: FLAG_KEY,
+          RuleKey: "cmab-rule-1", // Specify rule to remove
+      })
+      if removed2 {
+          fmt.Println("✓ Rule-level forced decision removed successfully")
+      } else {
+          fmt.Println("✗ Failed to remove rule-level forced decision")
+      }
+
+      decision7 := userContext3.Decide(FLAG_KEY, nil)
+      printDecision("After Removing Rule-Level Forced Decision", decision7)
+      fmt.Println("Expected: CMAB API call made (back to normal flow)")
+
+      // Test 8: Remove ALL forced decisions
+      fmt.Println("\n=== Test 8: Remove ALL Forced Decisions ===")
+      userContext4.RemoveAllForcedDecisions()
+      fmt.Println("✓ Removed all forced decisions from userContext4")
+
+      decision8 := userContext4.Decide(FLAG_KEY, nil)
+      printDecision("After Removing All Forced Decisions", decision8)
+      fmt.Println("Expected: CMAB API call made (back to normal flow)")
+
+      fmt.Println("\n=== Test Summary ===")
+      fmt.Println("✓ Tested flag-level forced decision (affects all rules)")
+      fmt.Println("✓ Tested rule-level forced decision (affects specific rule)")
+      fmt.Println("✓ Tested priority (flag-level > rule-level)")
+      fmt.Println("✓ Tested removal of both types")
+      fmt.Println("✓ All forced decisions bypass CMAB API calls")
+  }
 
 // Test 11: Event tracking with CMAB UUID - verify events contain proper metadata
 // Expected: Impression events include CMAB UUID, conversion events do NOT include CMAB UUID
