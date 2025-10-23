@@ -161,10 +161,6 @@ func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 		p.BatchSize = DefaultBatchSize
 	}
 
-	if p.EventEndPoint == "" {
-		p.EventEndPoint = EventEndPoints["US"]
-	}
-
 	if p.BatchSize > p.MaxQueueSize {
 		p.logger.Warning(
 			fmt.Sprintf("Batch size %d is larger than queue size %d.  Setting to defaults",
@@ -321,12 +317,8 @@ func (p *BatchEventProcessor) flushEvents() {
 			}
 		}
 		if batchEventCount > 0 {
-			eventEndPoint := ""
-			if p.EventEndPoint != EventEndPoints["US"] && p.EventEndPoint != EventEndPoints["EU"] {
-				eventEndPoint = p.EventEndPoint
-			}
 			// TODO: figure out what to do with the error
-			logEvent := createLogEvent(batchEvent, eventEndPoint)
+			logEvent := createLogEvent(batchEvent, p.EventEndPoint)
 			notificationCenter := registry.GetNotificationCenter(p.sdkKey)
 
 			err := notificationCenter.Send(notification.LogEvent, logEvent)
