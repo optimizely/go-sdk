@@ -35,7 +35,7 @@ func TestNewDefaultConfig(t *testing.T) {
 }
 
 func TestDefaultConstants(t *testing.T) {
-	assert.Equal(t, 100, DefaultCacheSize)
+	assert.Equal(t, 1000, DefaultCacheSize)
 	assert.Equal(t, 30*time.Minute, DefaultCacheTTL)
 	assert.Equal(t, 10*time.Second, DefaultHTTPTimeout)
 }
