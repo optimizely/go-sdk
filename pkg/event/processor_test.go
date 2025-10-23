@@ -122,7 +122,7 @@ func TestCustomEventProcessor_Create(t *testing.T) {
 func TestEndPointOptionEventProcessor(t *testing.T) {
 	// Default end point
 	processor := NewBatchEventProcessor()
-	assert.Equal(t, EventEndPoints["US"], processor.EventEndPoint)
+	assert.Equal(t, "", processor.EventEndPoint)
 
 	customEndPoint := "https://logx.optimizely.com"
 	processor = NewBatchEventProcessor(
@@ -133,7 +133,7 @@ func TestEndPointOptionEventProcessor(t *testing.T) {
 func TestEndPointOptionEU(t *testing.T) {
 	// Default end point
 	processor := NewBatchEventProcessor()
-	assert.Equal(t, EventEndPoints["US"], processor.EventEndPoint)
+	assert.Equal(t, "", processor.EventEndPoint)
 
 	euEndpoint := EventEndPoints["EU"]
 	processor = NewBatchEventProcessor(
