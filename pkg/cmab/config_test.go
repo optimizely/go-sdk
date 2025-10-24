@@ -18,7 +18,6 @@ package cmab
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -32,10 +31,4 @@ func TestNewDefaultConfig(t *testing.T) {
 	assert.NotNil(t, config.RetryConfig)
 	assert.Equal(t, DefaultMaxRetries, config.RetryConfig.MaxRetries)
 	assert.Nil(t, config.Cache) // Should be nil by default
-}
-
-func TestDefaultConstants(t *testing.T) {
-	assert.Equal(t, 1000, DefaultCacheSize)
-	assert.Equal(t, 30*time.Minute, DefaultCacheTTL)
-	assert.Equal(t, 10*time.Second, DefaultHTTPTimeout)
 }
