@@ -26,6 +26,7 @@ import (
 const (
 	// DefaultCacheSize is the default size for CMAB cache (aligned with ODP segments cache)
 	DefaultCacheSize = 10000
+
 	// DefaultCacheTTL is the default TTL for CMAB cache (30 minutes to match agent)
 	DefaultCacheTTL = 30 * time.Minute
 
