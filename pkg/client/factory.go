@@ -41,10 +41,11 @@ import (
 // CmabConfig holds CMAB configuration options exposed at the client level.
 // This provides a stable public API while allowing internal cmab.Config to change.
 type CmabConfig struct {
-	CacheSize   int
-	CacheTTL    time.Duration
-	HTTPTimeout time.Duration
-	Cache       cache.CacheWithRemove // Custom cache implementation (Redis, etc.)
+	CacheSize          int
+	CacheTTL           time.Duration
+	HTTPTimeout        time.Duration
+	Cache              cache.CacheWithRemove // Custom cache implementation (Redis, etc.)
+	PredictionEndpoint string                // Custom prediction endpoint template
 }
 
 // toCmabConfig converts client-level CmabConfig to internal cmab.Config
@@ -53,10 +54,11 @@ func (c *CmabConfig) toCmabConfig() *cmab.Config {
 		return nil
 	}
 	return &cmab.Config{
-		CacheSize:   c.CacheSize,
-		CacheTTL:    c.CacheTTL,
-		HTTPTimeout: c.HTTPTimeout,
-		Cache:       c.Cache,
+		CacheSize:          c.CacheSize,
+		CacheTTL:           c.CacheTTL,
+		HTTPTimeout:        c.HTTPTimeout,
+		Cache:              c.Cache,
+		PredictionEndpoint: c.PredictionEndpoint,
 	}
 }
 

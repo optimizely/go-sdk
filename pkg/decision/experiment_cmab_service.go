@@ -52,12 +52,14 @@ func NewExperimentCmabService(sdkKey string, config *cmab.Config) *ExperimentCma
 	var httpTimeout time.Duration
 	var retryConfig *cmab.RetryConfig
 	var customCache cache.CacheWithRemove
+	var predictionEndpoint string
 
 	if config == nil {
 		// Use all defaults
 		cacheSize = cmab.DefaultCacheSize
 		cacheTTL = cmab.DefaultCacheTTL
 		httpTimeout = cmab.DefaultHTTPTimeout
+		predictionEndpoint = cmab.DefaultPredictionEndpoint
 		retryConfig = &cmab.RetryConfig{
 			MaxRetries:        cmab.DefaultMaxRetries,
 			InitialBackoff:    cmab.DefaultInitialBackoff,
@@ -81,6 +83,11 @@ func NewExperimentCmabService(sdkKey string, config *cmab.Config) *ExperimentCma
 		httpTimeout = config.HTTPTimeout
 		if httpTimeout == 0 {
 			httpTimeout = cmab.DefaultHTTPTimeout
+		}
+
+		predictionEndpoint = config.PredictionEndpoint
+		if predictionEndpoint == "" {
+			predictionEndpoint = cmab.DefaultPredictionEndpoint
 		}
 
 		// Handle retry config
@@ -124,9 +131,10 @@ func NewExperimentCmabService(sdkKey string, config *cmab.Config) *ExperimentCma
 
 	// Create CMAB client options
 	cmabClientOptions := cmab.ClientOptions{
-		HTTPClient:  httpClient,
-		RetryConfig: retryConfig,
-		Logger:      logging.GetLogger(sdkKey, "DefaultCmabClient"),
+		HTTPClient:         httpClient,
+		RetryConfig:        retryConfig,
+		Logger:             logging.GetLogger(sdkKey, "DefaultCmabClient"),
+		PredictionEndpoint: predictionEndpoint,
 	}
 
 	// Create CMAB client with adapter to match interface
