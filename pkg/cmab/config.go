@@ -32,15 +32,19 @@ const (
 
 	// DefaultHTTPTimeout is the default HTTP timeout for CMAB requests
 	DefaultHTTPTimeout = 10 * time.Second
+
+	// DefaultPredictionEndpointTemplate is the default endpoint template for CMAB predictions
+	DefaultPredictionEndpointTemplate = "https://prediction.cmab.optimizely.com/predict/%s"
 )
 
 // Config holds CMAB configuration options
 type Config struct {
-	CacheSize   int
-	CacheTTL    time.Duration
-	HTTPTimeout time.Duration
-	RetryConfig *RetryConfig
-	Cache       cache.CacheWithRemove // Custom cache implementation (Redis, etc.)
+	CacheSize          int
+	CacheTTL           time.Duration
+	HTTPTimeout        time.Duration
+	RetryConfig        *RetryConfig
+	Cache              cache.CacheWithRemove // Custom cache implementation (Redis, etc.)
+	PredictionEndpoint string                // Custom prediction endpoint template
 }
 
 // NewDefaultConfig creates a Config with default values

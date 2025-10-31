@@ -30,10 +30,9 @@ import (
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
 
-// CMABPredictionEndpoint is the endpoint for CMAB predictions
-var CMABPredictionEndpoint = "https://prediction.cmab.optimizely.com/predict/%s"
-
 const (
+	// DefaultPredictionEndpoint is the default endpoint template for CMAB predictions
+	DefaultPredictionEndpoint = "https://prediction.cmab.optimizely.com/predict/%s"
 	// DefaultMaxRetries is the default number of retries for CMAB requests
 	DefaultMaxRetries = 1
 	// DefaultInitialBackoff is the default initial backoff duration
@@ -88,16 +87,18 @@ type RetryConfig struct {
 
 // DefaultCmabClient implements the CmabClient interface
 type DefaultCmabClient struct {
-	httpClient  *http.Client
-	retryConfig *RetryConfig
-	logger      logging.OptimizelyLogProducer
+	httpClient         *http.Client
+	retryConfig        *RetryConfig
+	logger             logging.OptimizelyLogProducer
+	predictionEndpoint string
 }
 
 // ClientOptions defines options for creating a CMAB client
 type ClientOptions struct {
-	HTTPClient  *http.Client
-	RetryConfig *RetryConfig
-	Logger      logging.OptimizelyLogProducer
+	HTTPClient         *http.Client
+	RetryConfig        *RetryConfig
+	Logger             logging.OptimizelyLogProducer
+	PredictionEndpoint string
 }
 
 // NewDefaultCmabClient creates a new instance of DefaultCmabClient
@@ -118,10 +119,17 @@ func NewDefaultCmabClient(options ClientOptions) *DefaultCmabClient {
 		logger = logging.GetLogger("", "DefaultCmabClient")
 	}
 
+	// Use custom endpoint or default
+	predictionEndpoint := options.PredictionEndpoint
+	if predictionEndpoint == "" {
+		predictionEndpoint = DefaultPredictionEndpoint
+	}
+
 	return &DefaultCmabClient{
-		httpClient:  httpClient,
-		retryConfig: retryConfig,
-		logger:      logger,
+		httpClient:         httpClient,
+		retryConfig:        retryConfig,
+		logger:             logger,
+		predictionEndpoint: predictionEndpoint,
 	}
 }
 
@@ -134,7 +142,7 @@ func (c *DefaultCmabClient) FetchDecision(
 ) (string, error) {
 
 	// Create the URL
-	url := fmt.Sprintf(CMABPredictionEndpoint, ruleID)
+	url := fmt.Sprintf(c.predictionEndpoint, ruleID)
 
 	// Log the URL being called
 	c.logger.Debug(fmt.Sprintf("CMAB Prediction URL: %s", url))
