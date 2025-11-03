@@ -50,9 +50,10 @@ type Config struct {
 // NewDefaultConfig creates a Config with default values
 func NewDefaultConfig() Config {
 	return Config{
-		CacheSize:   DefaultCacheSize,
-		CacheTTL:    DefaultCacheTTL,
-		HTTPTimeout: DefaultHTTPTimeout,
+		CacheSize:          DefaultCacheSize,
+		CacheTTL:           DefaultCacheTTL,
+		HTTPTimeout:        DefaultHTTPTimeout,
+		PredictionEndpoint: DefaultPredictionEndpointTemplate,
 		RetryConfig: &RetryConfig{
 			MaxRetries: DefaultMaxRetries,
 		},
