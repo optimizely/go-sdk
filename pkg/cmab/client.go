@@ -31,8 +31,8 @@ import (
 )
 
 const (
-	// DefaultPredictionEndpoint is the default endpoint template for CMAB predictions
-	DefaultPredictionEndpoint = "https://prediction.cmab.optimizely.com/predict/%s"
+	// DefaultPredictionEndpointTemplate is the default endpoint template for CMAB predictions
+	DefaultPredictionEndpointTemplate = "https://prediction.cmab.optimizely.com/predict/%s"
 	// DefaultMaxRetries is the default number of retries for CMAB requests
 	DefaultMaxRetries = 1
 	// DefaultInitialBackoff is the default initial backoff duration
@@ -95,10 +95,10 @@ type DefaultCmabClient struct {
 
 // ClientOptions defines options for creating a CMAB client
 type ClientOptions struct {
-	HTTPClient         *http.Client
-	RetryConfig        *RetryConfig
-	Logger             logging.OptimizelyLogProducer
-	PredictionEndpoint string
+	HTTPClient                 *http.Client
+	RetryConfig                *RetryConfig
+	Logger                     logging.OptimizelyLogProducer
+	PredictionEndpointTemplate string
 }
 
 // NewDefaultCmabClient creates a new instance of DefaultCmabClient
@@ -120,9 +120,9 @@ func NewDefaultCmabClient(options ClientOptions) *DefaultCmabClient {
 	}
 
 	// Use custom endpoint or default
-	predictionEndpoint := options.PredictionEndpoint
+	predictionEndpoint := options.PredictionEndpointTemplate
 	if predictionEndpoint == "" {
-		predictionEndpoint = DefaultPredictionEndpoint
+		predictionEndpoint = DefaultPredictionEndpointTemplate
 	}
 
 	return &DefaultCmabClient{

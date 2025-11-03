@@ -124,7 +124,7 @@ func TestDefaultCmabClient_FetchDecision(t *testing.T) {
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
-		PredictionEndpoint: server.URL + "/%s",
+		PredictionEndpointTemplate: server.URL + "/%s",
 	})
 
 	// Test with various attribute types
@@ -201,7 +201,7 @@ func TestDefaultCmabClient_FetchDecision_WithRetry(t *testing.T) {
 			MaxBackoff:        100 * time.Millisecond,
 			BackoffMultiplier: 2.0,
 		},
-		PredictionEndpoint: server.URL + "/%s",
+		PredictionEndpointTemplate: server.URL + "/%s",
 	})
 
 	// Test fetch decision with retry
@@ -245,7 +245,7 @@ func TestDefaultCmabClient_FetchDecision_ExhaustedRetries(t *testing.T) {
 			MaxBackoff:        100 * time.Millisecond,
 			BackoffMultiplier: 2.0,
 		},
-		PredictionEndpoint: server.URL + "/%s",
+		PredictionEndpointTemplate: server.URL + "/%s",
 	})
 
 	// Test fetch decision with exhausted retries
@@ -289,7 +289,7 @@ func TestDefaultCmabClient_FetchDecision_NoRetryConfig(t *testing.T) {
 			Timeout: 5 * time.Second,
 		},
 		RetryConfig:        nil, // Explicitly set to nil to override default
-		PredictionEndpoint: server.URL + "/%s",
+		PredictionEndpointTemplate: server.URL + "/%s",
 	})
 
 	// Test fetch decision without retry config
@@ -348,7 +348,7 @@ func TestDefaultCmabClient_FetchDecision_InvalidResponse(t *testing.T) {
 				HTTPClient: &http.Client{
 					Timeout: 5 * time.Second,
 				},
-				PredictionEndpoint: server.URL + "/%s",
+				PredictionEndpointTemplate: server.URL + "/%s",
 			})
 
 			// Test fetch decision with invalid response
@@ -388,7 +388,7 @@ func TestDefaultCmabClient_FetchDecision_NetworkErrors(t *testing.T) {
 			BackoffMultiplier: 2.0,
 		},
 		Logger:             mockLogger,
-		PredictionEndpoint: "http://non-existent-server.example.com/%s",
+		PredictionEndpointTemplate: "http://non-existent-server.example.com/%s",
 	})
 
 	// Test fetch decision with network error
@@ -444,7 +444,7 @@ func TestDefaultCmabClient_ExponentialBackoff(t *testing.T) {
 			MaxBackoff:        1 * time.Second,
 			BackoffMultiplier: 2.0,
 		},
-		PredictionEndpoint: server.URL + "/%s",
+		PredictionEndpointTemplate: server.URL + "/%s",
 	})
 
 	// Test fetch decision with exponential backoff
@@ -528,7 +528,7 @@ func TestDefaultCmabClient_LoggingBehavior(t *testing.T) {
 			BackoffMultiplier: 2.0,
 		},
 		Logger:             mockLogger,
-		PredictionEndpoint: server.URL + "/%s",
+		PredictionEndpointTemplate: server.URL + "/%s",
 	})
 
 	// Test fetch decision
@@ -586,7 +586,7 @@ func TestDefaultCmabClient_NonSuccessStatusCode(t *testing.T) {
 				HTTPClient: &http.Client{
 					Timeout: 5 * time.Second,
 				},
-				PredictionEndpoint: server.URL + "/%s",
+				PredictionEndpointTemplate: server.URL + "/%s",
 				// No retry config to simplify the test
 			})
 
@@ -626,7 +626,7 @@ func TestDefaultCmabClient_CustomPredictionEndpoint(t *testing.T) {
 	// Create client with custom prediction endpoint
 	customEndpoint := server.URL + "/custom/predict/%s"
 	client := NewDefaultCmabClient(ClientOptions{
-		PredictionEndpoint: customEndpoint,
+		PredictionEndpointTemplate: customEndpoint,
 	})
 
 	// Test fetch decision
@@ -642,20 +642,20 @@ func TestDefaultCmabClient_CustomPredictionEndpoint(t *testing.T) {
 	assert.True(t, customEndpointCalled, "Custom endpoint should have been called")
 }
 
-func TestDefaultCmabClient_DefaultPredictionEndpoint(t *testing.T) {
+func TestDefaultCmabClient_DefaultPredictionEndpointTemplate(t *testing.T) {
 	// Create client without specifying prediction endpoint
 	client := NewDefaultCmabClient(ClientOptions{})
 
 	// Verify it uses the default endpoint
-	assert.Equal(t, DefaultPredictionEndpoint, client.predictionEndpoint)
+	assert.Equal(t, DefaultPredictionEndpointTemplate, client.predictionEndpoint)
 }
 
 func TestDefaultCmabClient_EmptyPredictionEndpointUsesDefault(t *testing.T) {
 	// Create client with empty prediction endpoint
 	client := NewDefaultCmabClient(ClientOptions{
-		PredictionEndpoint: "",
+		PredictionEndpointTemplate: "",
 	})
 
 	// Verify it uses the default endpoint when empty string is provided
-	assert.Equal(t, DefaultPredictionEndpoint, client.predictionEndpoint)
+	assert.Equal(t, DefaultPredictionEndpointTemplate, client.predictionEndpoint)
 }

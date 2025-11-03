@@ -563,29 +563,29 @@ func TestClientWithEmptyCmabConfig(t *testing.T) {
 
 func TestCmabConfigWithCustomPredictionEndpoint(t *testing.T) {
 	// Test that custom prediction endpoint is correctly set in CmabConfig
-	customEndpoint := "https://custom.endpoint.com/predict/%s"
+	customEndpoint := "https://custom.example.com/predict/%s"
 	cmabConfig := CmabConfig{
-		CacheSize:          100,
-		CacheTTL:           time.Minute,
-		HTTPTimeout:        30 * time.Second,
-		PredictionEndpoint: customEndpoint,
+		CacheSize:                  100,
+		CacheTTL:                   time.Minute,
+		HTTPTimeout:                30 * time.Second,
+		PredictionEndpointTemplate: customEndpoint,
 	}
 
 	factory := OptimizelyFactory{}
 	WithCmabConfig(&cmabConfig)(&factory)
 
 	assert.Equal(t, &cmabConfig, factory.cmabConfig)
-	assert.Equal(t, customEndpoint, factory.cmabConfig.PredictionEndpoint)
+	assert.Equal(t, customEndpoint, factory.cmabConfig.PredictionEndpointTemplate)
 }
 
 func TestCmabConfigToCmabConfig(t *testing.T) {
-	// Test the toCmabConfig conversion includes PredictionEndpoint
+	// Test the toCmabConfig conversion includes PredictionEndpointTemplate
 	customEndpoint := "https://proxy.example.com/cmab/%s"
 	clientConfig := CmabConfig{
-		CacheSize:          200,
-		CacheTTL:           5 * time.Minute,
-		HTTPTimeout:        15 * time.Second,
-		PredictionEndpoint: customEndpoint,
+		CacheSize:                  200,
+		CacheTTL:                   5 * time.Minute,
+		HTTPTimeout:                15 * time.Second,
+		PredictionEndpointTemplate: customEndpoint,
 	}
 
 	internalConfig := clientConfig.toCmabConfig()
@@ -594,7 +594,7 @@ func TestCmabConfigToCmabConfig(t *testing.T) {
 	assert.Equal(t, 200, internalConfig.CacheSize)
 	assert.Equal(t, 5*time.Minute, internalConfig.CacheTTL)
 	assert.Equal(t, 15*time.Second, internalConfig.HTTPTimeout)
-	assert.Equal(t, customEndpoint, internalConfig.PredictionEndpoint)
+	assert.Equal(t, customEndpoint, internalConfig.PredictionEndpointTemplate)
 }
 
 func TestCmabConfigToCmabConfigNil(t *testing.T) {
