@@ -288,7 +288,7 @@ func TestDefaultCmabClient_FetchDecision_NoRetryConfig(t *testing.T) {
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
-		RetryConfig:        nil, // Explicitly set to nil to override default
+		RetryConfig:                nil, // Explicitly set to nil to override default
 		PredictionEndpointTemplate: server.URL + "/%s",
 	})
 
@@ -387,7 +387,7 @@ func TestDefaultCmabClient_FetchDecision_NetworkErrors(t *testing.T) {
 			MaxBackoff:        100 * time.Millisecond,
 			BackoffMultiplier: 2.0,
 		},
-		Logger:             mockLogger,
+		Logger:                     mockLogger,
 		PredictionEndpointTemplate: "http://non-existent-server.example.com/%s",
 	})
 
@@ -527,7 +527,7 @@ func TestDefaultCmabClient_LoggingBehavior(t *testing.T) {
 			MaxBackoff:        100 * time.Millisecond,
 			BackoffMultiplier: 2.0,
 		},
-		Logger:             mockLogger,
+		Logger:                     mockLogger,
 		PredictionEndpointTemplate: server.URL + "/%s",
 	})
 
