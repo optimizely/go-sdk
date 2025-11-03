@@ -28,6 +28,7 @@ func TestNewDefaultConfig(t *testing.T) {
 	assert.Equal(t, DefaultCacheSize, config.CacheSize)
 	assert.Equal(t, DefaultCacheTTL, config.CacheTTL)
 	assert.Equal(t, DefaultHTTPTimeout, config.HTTPTimeout)
+	assert.Equal(t, DefaultPredictionEndpointTemplate, config.PredictionEndpointTemplate)
 	assert.NotNil(t, config.RetryConfig)
 	assert.Equal(t, DefaultMaxRetries, config.RetryConfig.MaxRetries)
 	assert.Nil(t, config.Cache) // Should be nil by default

@@ -560,3 +560,46 @@ func TestClientWithEmptyCmabConfig(t *testing.T) {
 	assert.NotNil(t, client.DecisionService)
 	client.Close()
 }
+
+func TestCmabConfigWithCustomPredictionEndpoint(t *testing.T) {
+	// Test that custom prediction endpoint is correctly set in CmabConfig
+	customEndpoint := "https://custom.example.com/predict/%s"
+	cmabConfig := CmabConfig{
+		CacheSize:                  100,
+		CacheTTL:                   time.Minute,
+		HTTPTimeout:                30 * time.Second,
+		PredictionEndpointTemplate: customEndpoint,
+	}
+
+	factory := OptimizelyFactory{}
+	WithCmabConfig(&cmabConfig)(&factory)
+
+	assert.Equal(t, &cmabConfig, factory.cmabConfig)
+	assert.Equal(t, customEndpoint, factory.cmabConfig.PredictionEndpointTemplate)
+}
+
+func TestCmabConfigToCmabConfig(t *testing.T) {
+	// Test the toCmabConfig conversion includes PredictionEndpointTemplate
+	customEndpoint := "https://proxy.example.com/cmab/%s"
+	clientConfig := CmabConfig{
+		CacheSize:                  200,
+		CacheTTL:                   5 * time.Minute,
+		HTTPTimeout:                15 * time.Second,
+		PredictionEndpointTemplate: customEndpoint,
+	}
+
+	internalConfig := clientConfig.toCmabConfig()
+
+	assert.NotNil(t, internalConfig)
+	assert.Equal(t, 200, internalConfig.CacheSize)
+	assert.Equal(t, 5*time.Minute, internalConfig.CacheTTL)
+	assert.Equal(t, 15*time.Second, internalConfig.HTTPTimeout)
+	assert.Equal(t, customEndpoint, internalConfig.PredictionEndpointTemplate)
+}
+
+func TestCmabConfigToCmabConfigNil(t *testing.T) {
+	// Test that nil CmabConfig returns nil
+	var clientConfig *CmabConfig
+	internalConfig := clientConfig.toCmabConfig()
+	assert.Nil(t, internalConfig)
+}
