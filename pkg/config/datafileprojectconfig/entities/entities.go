@@ -113,6 +113,19 @@ type Rollout struct {
 	Experiments []Experiment `json:"experiments"`
 }
 
+// Holdout represents a holdout from the Optimizely datafile
+type Holdout struct {
+	ID                 string              `json:"id"`
+	Key                string              `json:"key"`
+	Status             string              `json:"status"`
+	AudienceIds        []string            `json:"audienceIds"`
+	AudienceConditions interface{}         `json:"audienceConditions"`
+	Variations         []Variation         `json:"variations"`
+	TrafficAllocation  []TrafficAllocation `json:"trafficAllocation"`
+	IncludedFlags      []string            `json:"includedFlags,omitempty"`
+	ExcludedFlags      []string            `json:"excludedFlags,omitempty"`
+}
+
 // Integration represents a integration from the Optimizely datafile
 type Integration struct {
 	Key       *string `json:"key"`
@@ -129,6 +142,7 @@ type Datafile struct {
 	FeatureFlags      []FeatureFlag `json:"featureFlags"`
 	Events            []Event       `json:"events"`
 	Rollouts          []Rollout     `json:"rollouts"`
+	Holdouts          []Holdout     `json:"holdouts,omitempty"`
 	Integrations      []Integration `json:"integrations"`
 	TypedAudiences    []Audience    `json:"typedAudiences"`
 	Variables         []string      `json:"variables"`

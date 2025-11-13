@@ -60,6 +60,9 @@ type DatafileProjectConfig struct {
 	region               string
 
 	flagVariationsMap map[string][]entities.Variation
+	holdouts          []entities.Holdout
+	holdoutIDMap      map[string]entities.Holdout
+	flagHoldoutsMap   map[string][]entities.Holdout
 }
 
 // GetDatafile returns a string representation of the environment's datafile
@@ -282,9 +285,10 @@ func (c DatafileProjectConfig) GetRegion() string {
 }
 
 // GetHoldoutsForFlag returns all holdouts applicable to the given feature flag
-// TODO: Implementation will be added in holdout parsing PR
 func (c DatafileProjectConfig) GetHoldoutsForFlag(featureKey string) []entities.Holdout {
-	// Stub implementation - will be replaced with actual holdout logic
+	if holdouts, exists := c.flagHoldoutsMap[featureKey]; exists {
+		return holdouts
+	}
 	return []entities.Holdout{}
 }
 
@@ -330,6 +334,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentIDMap)
 	audienceMap, audienceSegmentList := mappers.MapAudiences(append(datafile.TypedAudiences, datafile.Audiences...))
 	flagVariationsMap := mappers.MapFlagVariations(featureMap)
+	holdouts, holdoutIDMap, flagHoldoutsMap := mappers.MapHoldouts(datafile.Holdouts, featureMap)
 
 	attributeKeyMap := make(map[string]entities.Attribute)
 	attributeIDToKeyMap := make(map[string]string)
@@ -372,6 +377,9 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		attributeKeyMap:      attributeKeyMap,
 		attributeIDToKeyMap:  attributeIDToKeyMap,
 		region:               region,
+		holdouts:             holdouts,
+		holdoutIDMap:         holdoutIDMap,
+		flagHoldoutsMap:      flagHoldoutsMap,
 	}
 
 	logger.Info("Datafile is valid.")

@@ -40,7 +40,7 @@ func NewHoldoutService(sdkKey string) *HoldoutService {
 	logger := logging.GetLogger(sdkKey, "HoldoutService")
 	return &HoldoutService{
 		audienceTreeEvaluator: evaluator.NewMixedTreeEvaluator(logger),
-		bucketer:              *bucketer.NewMurmurhashExperimentBucketer(logger, bucketer.DefaultHashSeed),
+		bucketer:              bucketer.NewMurmurhashExperimentBucketer(logger, bucketer.DefaultHashSeed),
 		logger:                logger,
 	}
 }
