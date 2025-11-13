@@ -52,7 +52,8 @@ func (h HoldoutService) GetDecision(decisionContext FeatureDecisionContext, user
 
 	holdouts := decisionContext.ProjectConfig.GetHoldoutsForFlag(feature.Key)
 
-	for _, holdout := range holdouts {
+	for i := range holdouts {
+		holdout := &holdouts[i]
 		h.logger.Debug(fmt.Sprintf("Evaluating holdout %s for feature %s", holdout.Key, feature.Key))
 
 		// Check if holdout is running
@@ -63,7 +64,7 @@ func (h HoldoutService) GetDecision(decisionContext FeatureDecisionContext, user
 		}
 
 		// Check audience conditions
-		inAudience := h.checkIfUserInHoldoutAudience(&holdout, userContext, decisionContext.ProjectConfig, options)
+		inAudience := h.checkIfUserInHoldoutAudience(holdout, userContext, decisionContext.ProjectConfig, options)
 		reasons.Append(inAudience.reasons)
 
 		if !inAudience.result {
