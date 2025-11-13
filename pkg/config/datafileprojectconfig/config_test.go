@@ -728,3 +728,64 @@ func TestGetAttributeByKeyWithDirectMapping(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, attribute, actual)
 }
+
+func TestGetHoldoutsForFlagWithHoldouts(t *testing.T) {
+	flagKey := "test_flag"
+	holdout1 := entities.Holdout{
+		ID:     "holdout_1",
+		Key:    "test_holdout_1",
+		Status: entities.HoldoutStatusRunning,
+	}
+	holdout2 := entities.Holdout{
+		ID:     "holdout_2",
+		Key:    "test_holdout_2",
+		Status: entities.HoldoutStatusRunning,
+	}
+
+	flagHoldoutsMap := make(map[string][]entities.Holdout)
+	flagHoldoutsMap[flagKey] = []entities.Holdout{holdout1, holdout2}
+
+	config := &DatafileProjectConfig{
+		flagHoldoutsMap: flagHoldoutsMap,
+	}
+
+	actual := config.GetHoldoutsForFlag(flagKey)
+	assert.Len(t, actual, 2)
+	assert.Equal(t, holdout1, actual[0])
+	assert.Equal(t, holdout2, actual[1])
+}
+
+func TestGetHoldoutsForFlagWithNoHoldouts(t *testing.T) {
+	flagKey := "test_flag"
+	flagHoldoutsMap := make(map[string][]entities.Holdout)
+
+	config := &DatafileProjectConfig{
+		flagHoldoutsMap: flagHoldoutsMap,
+	}
+
+	actual := config.GetHoldoutsForFlag(flagKey)
+	assert.Len(t, actual, 0)
+	assert.Equal(t, []entities.Holdout{}, actual)
+}
+
+func TestGetHoldoutsForFlagWithDifferentFlag(t *testing.T) {
+	flagKey := "test_flag"
+	otherFlagKey := "other_flag"
+	holdout := entities.Holdout{
+		ID:     "holdout_1",
+		Key:    "test_holdout_1",
+		Status: entities.HoldoutStatusRunning,
+	}
+
+	flagHoldoutsMap := make(map[string][]entities.Holdout)
+	flagHoldoutsMap[otherFlagKey] = []entities.Holdout{holdout}
+
+	config := &DatafileProjectConfig{
+		flagHoldoutsMap: flagHoldoutsMap,
+	}
+
+	// Request different flag - should return empty
+	actual := config.GetHoldoutsForFlag(flagKey)
+	assert.Len(t, actual, 0)
+	assert.Equal(t, []entities.Holdout{}, actual)
+}

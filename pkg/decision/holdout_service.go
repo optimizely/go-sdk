@@ -102,7 +102,7 @@ func (h HoldoutService) GetDecision(decisionContext FeatureDecisionContext, user
 		variation, _, _ := h.bucketer.Bucket(bucketingID, experimentForBucketing, entities.Group{})
 
 		if variation != nil {
-			reason := reasons.AddInfo("User %s is in variation %s of holdout %s.", userContext.ID, variation.Key, holdout.Key)
+			reason = reasons.AddInfo("User %s is in variation %s of holdout %s.", userContext.ID, variation.Key, holdout.Key)
 			h.logger.Info(reason)
 
 			featureDecision := FeatureDecision{
