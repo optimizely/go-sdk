@@ -24,8 +24,9 @@ import (
 )
 
 const (
-	// DefaultCacheSize is the default size for CMAB cache
-	DefaultCacheSize = 100
+	// DefaultCacheSize is the default size for CMAB cache (aligned with ODP segments cache)
+	DefaultCacheSize = 10000
+
 	// DefaultCacheTTL is the default TTL for CMAB cache (30 minutes to match agent)
 	DefaultCacheTTL = 30 * time.Minute
 
@@ -35,19 +36,21 @@ const (
 
 // Config holds CMAB configuration options
 type Config struct {
-	CacheSize   int
-	CacheTTL    time.Duration
-	HTTPTimeout time.Duration
-	RetryConfig *RetryConfig
-	Cache       cache.CacheWithRemove // Custom cache implementation (Redis, etc.)
+	CacheSize                  int
+	CacheTTL                   time.Duration
+	HTTPTimeout                time.Duration
+	RetryConfig                *RetryConfig
+	Cache                      cache.CacheWithRemove // Custom cache implementation (Redis, etc.)
+	PredictionEndpointTemplate string                // Custom prediction endpoint template
 }
 
 // NewDefaultConfig creates a Config with default values
 func NewDefaultConfig() Config {
 	return Config{
-		CacheSize:   DefaultCacheSize,
-		CacheTTL:    DefaultCacheTTL,
-		HTTPTimeout: DefaultHTTPTimeout,
+		CacheSize:                  DefaultCacheSize,
+		CacheTTL:                   DefaultCacheTTL,
+		HTTPTimeout:                DefaultHTTPTimeout,
+		PredictionEndpointTemplate: DefaultPredictionEndpointTemplate,
 		RetryConfig: &RetryConfig{
 			MaxRetries: DefaultMaxRetries,
 		},

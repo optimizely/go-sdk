@@ -124,12 +124,8 @@ func TestDefaultCmabClient_FetchDecision(t *testing.T) {
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
+		PredictionEndpointTemplate: server.URL + "/%s",
 	})
-
-	// Override the endpoint for testing
-	originalEndpoint := CMABPredictionEndpoint
-	CMABPredictionEndpoint = server.URL + "/%s"
-	defer func() { CMABPredictionEndpoint = originalEndpoint }()
 
 	// Test with various attribute types
 	attributes := map[string]interface{}{
@@ -205,12 +201,8 @@ func TestDefaultCmabClient_FetchDecision_WithRetry(t *testing.T) {
 			MaxBackoff:        100 * time.Millisecond,
 			BackoffMultiplier: 2.0,
 		},
+		PredictionEndpointTemplate: server.URL + "/%s",
 	})
-
-	// Override the endpoint for testing
-	originalEndpoint := CMABPredictionEndpoint
-	CMABPredictionEndpoint = server.URL + "/%s"
-	defer func() { CMABPredictionEndpoint = originalEndpoint }()
 
 	// Test fetch decision with retry
 	attributes := map[string]interface{}{
@@ -253,12 +245,8 @@ func TestDefaultCmabClient_FetchDecision_ExhaustedRetries(t *testing.T) {
 			MaxBackoff:        100 * time.Millisecond,
 			BackoffMultiplier: 2.0,
 		},
+		PredictionEndpointTemplate: server.URL + "/%s",
 	})
-
-	// Override the endpoint for testing
-	originalEndpoint := CMABPredictionEndpoint
-	CMABPredictionEndpoint = server.URL + "/%s"
-	defer func() { CMABPredictionEndpoint = originalEndpoint }()
 
 	// Test fetch decision with exhausted retries
 	attributes := map[string]interface{}{
@@ -300,13 +288,9 @@ func TestDefaultCmabClient_FetchDecision_NoRetryConfig(t *testing.T) {
 		HTTPClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
-		RetryConfig: nil, // Explicitly set to nil to override default
+		RetryConfig:                nil, // Explicitly set to nil to override default
+		PredictionEndpointTemplate: server.URL + "/%s",
 	})
-
-	// Override the endpoint for testing
-	originalEndpoint := CMABPredictionEndpoint
-	CMABPredictionEndpoint = server.URL + "/%s"
-	defer func() { CMABPredictionEndpoint = originalEndpoint }()
 
 	// Test fetch decision without retry config
 	attributes := map[string]interface{}{
@@ -364,12 +348,8 @@ func TestDefaultCmabClient_FetchDecision_InvalidResponse(t *testing.T) {
 				HTTPClient: &http.Client{
 					Timeout: 5 * time.Second,
 				},
+				PredictionEndpointTemplate: server.URL + "/%s",
 			})
-
-			// Override the endpoint for testing
-			originalEndpoint := CMABPredictionEndpoint
-			CMABPredictionEndpoint = server.URL + "/%s"
-			defer func() { CMABPredictionEndpoint = originalEndpoint }()
 
 			// Test fetch decision with invalid response
 			attributes := map[string]interface{}{
@@ -407,13 +387,9 @@ func TestDefaultCmabClient_FetchDecision_NetworkErrors(t *testing.T) {
 			MaxBackoff:        100 * time.Millisecond,
 			BackoffMultiplier: 2.0,
 		},
-		Logger: mockLogger,
+		Logger:                     mockLogger,
+		PredictionEndpointTemplate: "http://non-existent-server.example.com/%s",
 	})
-
-	// Set endpoint to a non-existent server
-	originalEndpoint := CMABPredictionEndpoint
-	CMABPredictionEndpoint = "http://non-existent-server.example.com/%s"
-	defer func() { CMABPredictionEndpoint = originalEndpoint }()
 
 	// Test fetch decision with network error
 	attributes := map[string]interface{}{
@@ -468,12 +444,8 @@ func TestDefaultCmabClient_ExponentialBackoff(t *testing.T) {
 			MaxBackoff:        1 * time.Second,
 			BackoffMultiplier: 2.0,
 		},
+		PredictionEndpointTemplate: server.URL + "/%s",
 	})
-
-	// Override the endpoint for testing
-	originalEndpoint := CMABPredictionEndpoint
-	CMABPredictionEndpoint = server.URL + "/%s"
-	defer func() { CMABPredictionEndpoint = originalEndpoint }()
 
 	// Test fetch decision with exponential backoff
 	attributes := map[string]interface{}{
@@ -555,13 +527,9 @@ func TestDefaultCmabClient_LoggingBehavior(t *testing.T) {
 			MaxBackoff:        100 * time.Millisecond,
 			BackoffMultiplier: 2.0,
 		},
-		Logger: mockLogger,
+		Logger:                     mockLogger,
+		PredictionEndpointTemplate: server.URL + "/%s",
 	})
-
-	// Override the endpoint for testing
-	originalEndpoint := CMABPredictionEndpoint
-	CMABPredictionEndpoint = server.URL + "/%s"
-	defer func() { CMABPredictionEndpoint = originalEndpoint }()
 
 	// Test fetch decision
 	attributes := map[string]interface{}{
@@ -618,13 +586,9 @@ func TestDefaultCmabClient_NonSuccessStatusCode(t *testing.T) {
 				HTTPClient: &http.Client{
 					Timeout: 5 * time.Second,
 				},
+				PredictionEndpointTemplate: server.URL + "/%s",
 				// No retry config to simplify the test
 			})
-
-			// Override the endpoint for testing
-			originalEndpoint := CMABPredictionEndpoint
-			CMABPredictionEndpoint = server.URL + "/%s"
-			defer func() { CMABPredictionEndpoint = originalEndpoint }()
 
 			// Test fetch decision
 			attributes := map[string]interface{}{
@@ -640,4 +604,58 @@ func TestDefaultCmabClient_NonSuccessStatusCode(t *testing.T) {
 			assert.Contains(t, err.Error(), fmt.Sprintf("%d", tc.statusCode))
 		})
 	}
+}
+func TestDefaultCmabClient_CustomPredictionEndpoint(t *testing.T) {
+	// Setup test server
+	customEndpointCalled := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		customEndpointCalled = true
+		// Verify the URL path contains the rule ID
+		assert.Contains(t, r.URL.Path, "rule456")
+
+		// Return a valid response
+		response := Response{
+			Predictions: []Prediction{
+				{VariationID: "variation789"},
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	// Create client with custom prediction endpoint
+	customEndpoint := server.URL + "/custom/predict/%s"
+	client := NewDefaultCmabClient(ClientOptions{
+		PredictionEndpointTemplate: customEndpoint,
+	})
+
+	// Test fetch decision
+	attributes := map[string]interface{}{
+		"age": 25,
+	}
+
+	variationID, err := client.FetchDecision("rule456", "user123", attributes, "test-uuid")
+
+	// Verify results
+	assert.NoError(t, err)
+	assert.Equal(t, "variation789", variationID)
+	assert.True(t, customEndpointCalled, "Custom endpoint should have been called")
+}
+
+func TestDefaultCmabClient_DefaultPredictionEndpointTemplate(t *testing.T) {
+	// Create client without specifying prediction endpoint
+	client := NewDefaultCmabClient(ClientOptions{})
+
+	// Verify it uses the default endpoint
+	assert.Equal(t, DefaultPredictionEndpointTemplate, client.predictionEndpoint)
+}
+
+func TestDefaultCmabClient_EmptyPredictionEndpointUsesDefault(t *testing.T) {
+	// Create client with empty prediction endpoint
+	client := NewDefaultCmabClient(ClientOptions{
+		PredictionEndpointTemplate: "",
+	})
+
+	// Verify it uses the default endpoint when empty string is provided
+	assert.Equal(t, DefaultPredictionEndpointTemplate, client.predictionEndpoint)
 }

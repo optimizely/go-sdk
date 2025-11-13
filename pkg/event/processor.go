@@ -161,10 +161,6 @@ func NewBatchEventProcessor(options ...BPOptionConfig) *BatchEventProcessor {
 		p.BatchSize = DefaultBatchSize
 	}
 
-	if p.EventEndPoint == "" {
-		p.EventEndPoint = EventEndPoints["US"]
-	}
-
 	if p.BatchSize > p.MaxQueueSize {
 		p.logger.Warning(
 			fmt.Sprintf("Batch size %d is larger than queue size %d.  Setting to defaults",
