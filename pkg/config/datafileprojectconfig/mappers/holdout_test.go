@@ -189,6 +189,84 @@ func TestMapHoldoutsMixed(t *testing.T) {
 	assert.Equal(t, "specific_holdout", flagHoldoutsMap["feature_2"][0].Key)
 }
 
+func TestMapHoldoutsPrecedence(t *testing.T) {
+	// Test that global holdouts take precedence over specific holdouts
+	// When both apply to the same flag, global should come first in the slice
+	rawHoldouts := []datafileEntities.Holdout{
+		{
+			ID:     "holdout_global",
+			Key:    "global_holdout",
+			Status: "Running",
+			// No includedFlags = global, applies to all
+			Variations: []datafileEntities.Variation{
+				{ID: "var_global", Key: "variation_global"},
+			},
+			TrafficAllocation: []datafileEntities.TrafficAllocation{
+				{EntityID: "var_global", EndOfRange: 5000},
+			},
+		},
+		{
+			ID:            "holdout_specific",
+			Key:           "specific_holdout",
+			Status:        "Running",
+			IncludedFlags: []string{"feature_1"}, // Specific to feature_1
+			Variations: []datafileEntities.Variation{
+				{ID: "var_specific", Key: "variation_specific"},
+			},
+			TrafficAllocation: []datafileEntities.TrafficAllocation{
+				{EntityID: "var_specific", EndOfRange: 10000},
+			},
+		},
+	}
+
+	featureMap := map[string]entities.Feature{
+		"feature_1": {ID: "feature_1", Key: "feature_1"},
+	}
+
+	_, _, flagHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
+
+	// feature_1 should have BOTH holdouts, with global FIRST (precedence)
+	assert.Contains(t, flagHoldoutsMap, "feature_1")
+	assert.Len(t, flagHoldoutsMap["feature_1"], 2)
+
+	// Global holdout should be first (takes precedence)
+	assert.Equal(t, "global_holdout", flagHoldoutsMap["feature_1"][0].Key, "Global holdout should take precedence (be first)")
+	// Specific holdout should be second
+	assert.Equal(t, "specific_holdout", flagHoldoutsMap["feature_1"][1].Key, "Specific holdout should be second")
+}
+
+func TestMapHoldoutsExcludedFlagsNotInMap(t *testing.T) {
+	// Test that excluded flags do not get global holdouts
+	rawHoldouts := []datafileEntities.Holdout{
+		{
+			ID:            "holdout_global",
+			Key:           "global_holdout",
+			Status:        "Running",
+			ExcludedFlags: []string{"feature_excluded"},
+			Variations: []datafileEntities.Variation{
+				{ID: "var_1", Key: "variation_1"},
+			},
+			TrafficAllocation: []datafileEntities.TrafficAllocation{
+				{EntityID: "var_1", EndOfRange: 10000},
+			},
+		},
+	}
+
+	featureMap := map[string]entities.Feature{
+		"feature_included": {ID: "feature_included", Key: "feature_included"},
+		"feature_excluded": {ID: "feature_excluded", Key: "feature_excluded"},
+	}
+
+	_, _, flagHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
+
+	// feature_included should have the global holdout
+	assert.Contains(t, flagHoldoutsMap, "feature_included")
+	assert.Len(t, flagHoldoutsMap["feature_included"], 1)
+
+	// feature_excluded should NOT be in the map (no holdouts apply)
+	assert.NotContains(t, flagHoldoutsMap, "feature_excluded")
+}
+
 func TestMapHoldoutsWithAudienceConditions(t *testing.T) {
 	rawHoldouts := []datafileEntities.Holdout{
 		{

@@ -65,24 +65,20 @@ func MapHoldouts(holdouts []datafileEntities.Holdout, featureMap map[string]enti
 	}
 
 	// Build flagHoldoutsMap by combining global and specific holdouts
+	// Global holdouts take precedence (evaluated first), then specific holdouts
 	for _, feature := range featureMap {
 		flagKey := feature.Key
 		flagID := feature.ID
 		applicableHoldouts := []entities.Holdout{}
 
-		// Add specifically included holdouts
+		// Add global holdouts first (if not excluded) - they take precedence
+		if _, exists := excludedHoldouts[flagID]; !exists {
+			applicableHoldouts = append(applicableHoldouts, globalHoldouts...)
+		}
+
+		// Add specifically included holdouts second
 		if included, exists := includedHoldouts[flagID]; exists {
 			applicableHoldouts = append(applicableHoldouts, included...)
-		}
-
-		// Add global holdouts (if not excluded)
-		isExcluded := false
-		if _, exists := excludedHoldouts[flagID]; exists {
-			isExcluded = true
-		}
-
-		if !isExcluded {
-			applicableHoldouts = append(applicableHoldouts, globalHoldouts...)
 		}
 
 		if len(applicableHoldouts) > 0 {
