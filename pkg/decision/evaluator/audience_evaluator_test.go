@@ -200,6 +200,11 @@ func (m *MockProjectConfig) GetRegion() string {
 	return args.String(0)
 }
 
+func (m *MockProjectConfig) GetHoldoutsForFlag(featureKey string) []entities.Holdout {
+	args := m.Called(featureKey)
+	return args.Get(0).([]entities.Holdout)
+}
+
 // MockLogger is a mock implementation of OptimizelyLogProducer
 // (This declaration has been removed to resolve the redeclaration error)
 
