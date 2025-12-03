@@ -127,7 +127,26 @@ func CreateImpressionUserEvent(
 	cmabUUID *string,
 ) (UserEvent, bool) {
 
-	if (ruleType == decisionPkg.Rollout || variation == nil) && !projectConfig.SendFlagDecisions() {
+	// Determine if we should send impression event based on decision source
+	shouldSendImpression := false
+	switch ruleType {
+	case decisionPkg.FeatureTest:
+		shouldSendImpression = true
+	case decisionPkg.Holdout:
+		shouldSendImpression = true // Always send for holdouts (matches Swift/JS reference implementations)
+	case decisionPkg.Rollout:
+		shouldSendImpression = projectConfig.SendFlagDecisions()
+	default:
+		// For backward compatibility, send events for unknown rule types (e.g., "experiment")
+		shouldSendImpression = true
+	}
+
+	// Don't send if user wasn't bucketed and SendFlagDecisions is disabled
+	if variation == nil && !projectConfig.SendFlagDecisions() {
+		shouldSendImpression = false
+	}
+
+	if !shouldSendImpression {
 		return UserEvent{}, false
 	}
 

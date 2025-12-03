@@ -200,6 +200,7 @@ func TestCreateImpressionUserEvent(t *testing.T) {
 		expected bool
 	}{
 		{decision.FeatureTest, true},
+		{decision.Holdout, true}, // Holdouts should always send impression events
 		{"experiment", true},
 		{"anything-else", true},
 		{decision.Rollout, false},
@@ -259,6 +260,7 @@ func TestCreateImpressionUserEventWithCmabUUID(t *testing.T) {
 		expected bool
 	}{
 		{decision.FeatureTest, true, true},
+		{decision.Holdout, true, true}, // Holdouts should send impression events
 		{"experiment", true, true},
 		{"anything-else", true, true},
 		{decision.Rollout, true, false}, // Should return false for Rollout
@@ -332,4 +334,112 @@ func TestCreateImpressionUserEventWithCmabUUID(t *testing.T) {
 	assert.True(t, ok)
 	metaData := userEvent.Impression.Metadata
 	assert.Equal(t, testUUID, *metaData.CmabUUID)
+}
+
+func TestCreateImpressionUserEventForHoldout(t *testing.T) {
+	tc := TestConfig{}
+
+	testHoldout := entities.Experiment{
+		Key:     "test_holdout",
+		LayerID: "",
+		ID:      "holdout_123",
+	}
+
+	testHoldoutVariation := entities.Variation{
+		Key: "holdout_variation",
+		ID:  "holdout_var_123",
+	}
+
+	// Test 1: Holdout with variation should ALWAYS send impression event
+	t.Run("holdout with variation sends impression event", func(t *testing.T) {
+		userEvent, ok := CreateImpressionUserEvent(
+			tc,
+			testHoldout,
+			&testHoldoutVariation,
+			userContext,
+			"test_flag",
+			testHoldout.Key,
+			decision.Holdout,
+			false, // enabled is false for holdouts typically
+			nil,
+		)
+
+		assert.True(t, ok, "Impression event should be created for holdout with variation")
+		assert.NotNil(t, userEvent.Impression)
+		assert.Equal(t, "test_flag", userEvent.Impression.Metadata.FlagKey)
+		assert.Equal(t, testHoldout.Key, userEvent.Impression.Metadata.RuleKey)
+		assert.Equal(t, decision.Holdout, userEvent.Impression.Metadata.RuleType)
+		assert.Equal(t, false, userEvent.Impression.Metadata.Enabled)
+	})
+
+	// Test 2: Holdout with nil variation and SendFlagDecisions=false should NOT send
+	t.Run("holdout with nil variation and SendFlagDecisions=false does not send", func(t *testing.T) {
+		tc.sendFlagDecisions = false
+		userEvent, ok := CreateImpressionUserEvent(
+			tc,
+			testHoldout,
+			nil, // No variation
+			userContext,
+			"test_flag",
+			testHoldout.Key,
+			decision.Holdout,
+			false,
+			nil,
+		)
+
+		assert.False(t, ok, "Impression event should NOT be created for holdout without variation when SendFlagDecisions=false")
+		assert.Nil(t, userEvent.Impression)
+	})
+
+	// Test 3: Holdout with nil variation but SendFlagDecisions=true should send
+	t.Run("holdout with nil variation and SendFlagDecisions=true sends event", func(t *testing.T) {
+		tc.sendFlagDecisions = true
+		userEvent, ok := CreateImpressionUserEvent(
+			tc,
+			testHoldout,
+			nil, // No variation
+			userContext,
+			"test_flag",
+			testHoldout.Key,
+			decision.Holdout,
+			false,
+			nil,
+		)
+
+		assert.True(t, ok, "Impression event should be created for holdout even without variation when SendFlagDecisions=true")
+		assert.NotNil(t, userEvent.Impression)
+		assert.Equal(t, decision.Holdout, userEvent.Impression.Metadata.RuleType)
+	})
+
+	// Test 4: Verify holdout impression event structure matches reference SDKs
+	t.Run("holdout impression event structure", func(t *testing.T) {
+		tc.sendFlagDecisions = false
+		userEvent, ok := CreateImpressionUserEvent(
+			tc,
+			testHoldout,
+			&testHoldoutVariation,
+			userContext,
+			"flag_key",
+			"holdout_key",
+			decision.Holdout,
+			false,
+			nil,
+		)
+
+		assert.True(t, ok)
+		impression := userEvent.Impression
+
+		// Verify core fields
+		assert.Equal(t, "flag_key", impression.Metadata.FlagKey)
+		assert.Equal(t, "holdout_key", impression.Metadata.RuleKey)
+		assert.Equal(t, decision.Holdout, impression.Metadata.RuleType)
+		assert.Equal(t, "holdout_variation", impression.Metadata.VariationKey)
+		assert.Equal(t, false, impression.Metadata.Enabled)
+		assert.Nil(t, impression.Metadata.CmabUUID) // Holdouts don't use CMAB
+
+		// Verify IDs are set correctly
+		assert.Equal(t, testHoldoutVariation.ID, impression.VariationID)
+		assert.Equal(t, testHoldout.ID, impression.ExperimentID)
+		assert.Equal(t, "", impression.CampaignID) // Empty for holdouts (no layer)
+	})
 }
