@@ -873,9 +873,9 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 	if featureDecision.Variation != nil {
 		decisionInfo.Enabled = featureDecision.Variation.FeatureEnabled
 
-		// This information is only necessary for feature tests.
-		// For rollouts experiments and variations are an implementation detail only.
-		if featureDecision.Source == decision.FeatureTest {
+		// Include experiment and variation info for feature tests and holdouts.
+		// For rollouts, experiments and variations are an implementation detail only.
+		if featureDecision.Source == decision.FeatureTest || featureDecision.Source == decision.Holdout {
 			decisionInfo.VariationKey = featureDecision.Variation.Key
 			decisionInfo.ExperimentKey = featureDecision.Experiment.Key
 		}
