@@ -2131,6 +2131,56 @@ func TestGetDetailedFeatureDecisionUnsafeWithFeatureTestAndTrackingEnabled(t *te
 	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
 }
 
+func TestGetDetailedFeatureDecisionUnsafeWithHoldoutAndTrackingEnabled(t *testing.T) {
+	mockConfig := new(MockProjectConfig)
+	mockConfigManager := new(MockProjectConfigManager)
+	mockDecisionService := new(MockDecisionService)
+	mockEventProcessor := new(MockEventProcessor)
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+
+	// Test holdout decision path
+	testVariation := makeTestVariation("control", true)
+	testExperiment := makeTestExperimentWithVariations("holdout_1", []entities.Variation{testVariation})
+	testFeature := makeTestFeatureWithExperiment("feature_1", testExperiment)
+	mockConfig.On("GetFeatureByKey", testFeature.Key).Return(testFeature, nil)
+	mockConfigManager.On("GetConfig").Return(mockConfig, nil)
+	mockEventProcessor.On("ProcessEvent", mock.AnythingOfType("event.UserEvent"))
+
+	// Set up the mock decision service with holdout source
+	testDecisionContext := decision.FeatureDecisionContext{
+		Feature:       &testFeature,
+		ProjectConfig: mockConfig,
+	}
+
+	expectedFeatureDecision := decision.FeatureDecision{
+		Experiment: testExperiment,
+		Variation:  &testVariation,
+		Source:     decision.Holdout,
+	}
+
+	mockDecisionService.On("GetFeatureDecision", testDecisionContext, testUserContext, &decide.Options{}).Return(expectedFeatureDecision, decide.NewDecisionReasons(nil), nil)
+
+	client := OptimizelyClient{
+		ConfigManager:   mockConfigManager,
+		DecisionService: mockDecisionService,
+		EventProcessor:  mockEventProcessor,
+		logger:          logging.GetLogger("", ""),
+		tracer:          &MockTracer{},
+	}
+
+	decision, err := client.GetDetailedFeatureDecisionUnsafe(testFeature.Key, testUserContext, false)
+	assert.NoError(t, err)
+	assert.True(t, decision.Enabled)
+	assert.Equal(t, decision.ExperimentKey, "holdout_1")
+	assert.Equal(t, decision.VariationKey, "control")
+
+	mockConfig.AssertExpectations(t)
+	mockConfigManager.AssertExpectations(t)
+	mockDecisionService.AssertExpectations(t)
+	mockEventProcessor.AssertExpectations(t)
+	assert.True(t, client.tracer.(*MockTracer).StartSpanCalled)
+}
+
 func TestGetAllFeatureVariables(t *testing.T) {
 	testFeatureKey := "test_feature_key"
 	testUserContext := entities.UserContext{ID: "test_user_1"}
