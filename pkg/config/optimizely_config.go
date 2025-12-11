@@ -42,6 +42,7 @@ type OptimizelyConfig struct {
 	Attributes  []OptimizelyAttribute        `json:"attributes"`
 	Audiences   []OptimizelyAudience         `json:"audiences"`
 	Events      []OptimizelyEvent            `json:"events"`
+	Holdouts    []OptimizelyHoldout          `json:"holdouts"`
 	datafile    string
 }
 
@@ -76,6 +77,14 @@ type OptimizelyEvent struct {
 	ID            string   `json:"id"`
 	Key           string   `json:"key"`
 	ExperimentIds []string `json:"experimentIds"`
+}
+
+// OptimizelyHoldout has holdout info
+type OptimizelyHoldout struct {
+	ID            string                         `json:"id"`
+	Key           string                         `json:"key"`
+	Audiences     string                         `json:"audiences"`
+	VariationsMap map[string]OptimizelyVariation `json:"variationsMap"`
 }
 
 // OptimizelyFeature has feature info
@@ -365,6 +374,35 @@ func getFeaturesMap(audiencesByID map[string]entities.Audience, mappedExperiment
 	return featuresMap
 }
 
+func getHoldoutAudiences(holdout entities.Holdout, audiencesByID map[string]entities.Audience) string {
+	return getSerializedAudiences(holdout.AudienceConditions, audiencesByID)
+}
+
+func getHoldouts(audiencesByID map[string]entities.Audience, holdouts []entities.Holdout) []OptimizelyHoldout {
+	optimizelyHoldouts := []OptimizelyHoldout{}
+
+	for _, holdout := range holdouts {
+		// Create variations map for this holdout
+		variationsMap := map[string]OptimizelyVariation{}
+		for _, variation := range holdout.Variations {
+			variationsMap[variation.Key] = OptimizelyVariation{
+				ID:             variation.ID,
+				Key:            variation.Key,
+				FeatureEnabled: variation.FeatureEnabled,
+				VariablesMap:   map[string]OptimizelyVariable{}, // Holdouts don't have feature variables
+			}
+		}
+
+		optimizelyHoldouts = append(optimizelyHoldouts, OptimizelyHoldout{
+			ID:            holdout.ID,
+			Key:           holdout.Key,
+			Audiences:     getHoldoutAudiences(holdout, audiencesByID),
+			VariationsMap: variationsMap,
+		})
+	}
+	return optimizelyHoldouts
+}
+
 // NewOptimizelyConfig constructs OptimizelyConfig object
 func NewOptimizelyConfig(projConfig ProjectConfig) *OptimizelyConfig {
 
@@ -404,6 +442,8 @@ func NewOptimizelyConfig(projConfig ProjectConfig) *OptimizelyConfig {
 
 	variableByIDMap := getVariableByIDMap(featuresList)
 	optimizelyConfig.FeaturesMap = getFeaturesMap(projConfig.GetAudienceMap(), mappedExperiments, featuresList, rolloutIDMap, variableByIDMap)
+
+	optimizelyConfig.Holdouts = getHoldouts(projConfig.GetAudienceMap(), projConfig.GetHoldoutList())
 
 	optimizelyConfig.datafile = projConfig.GetDatafile()
 

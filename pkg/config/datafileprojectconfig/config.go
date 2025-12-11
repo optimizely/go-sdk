@@ -292,6 +292,11 @@ func (c DatafileProjectConfig) GetHoldoutsForFlag(featureKey string) []entities.
 	return []entities.Holdout{}
 }
 
+// GetHoldoutList returns all holdouts in the project
+func (c DatafileProjectConfig) GetHoldoutList() []entities.Holdout {
+	return c.holdouts
+}
+
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser
 func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogProducer) (*DatafileProjectConfig, error) {
 	datafile, err := Parse(jsonDatafile)

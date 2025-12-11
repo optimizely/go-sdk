@@ -57,6 +57,7 @@ type ProjectConfig interface {
 	GetFlagVariationsMap() map[string][]entities.Variation
 	GetRegion() string
 	GetHoldoutsForFlag(featureKey string) []entities.Holdout
+	GetHoldoutList() []entities.Holdout
 }
 
 // ProjectConfigManager maintains an instance of the ProjectConfig
