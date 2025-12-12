@@ -86,6 +86,14 @@ func (c *MockProjectConfig) GetRegion() string {
 	return "US"
 }
 
+func (c *MockProjectConfig) GetHoldoutList() []entities.Holdout {
+	return []entities.Holdout{}
+}
+
+func (c *MockProjectConfig) GetHoldoutsForFlag(featureKey string) []entities.Holdout {
+	return []entities.Holdout{}
+}
+
 type MockProjectConfigManager struct {
 	projectConfig config.ProjectConfig
 	mock.Mock

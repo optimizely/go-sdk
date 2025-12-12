@@ -235,6 +235,11 @@ func (m *MockProjectConfig) GetHoldoutsForFlag(featureKey string) []entities.Hol
 	return args.Get(0).([]entities.Holdout)
 }
 
+func (m *MockProjectConfig) GetHoldoutList() []entities.Holdout {
+	args := m.Called()
+	return args.Get(0).([]entities.Holdout)
+}
+
 type CmabServiceTestSuite struct {
 	suite.Suite
 	mockClient     *MockCmabClient
