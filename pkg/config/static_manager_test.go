@@ -59,7 +59,7 @@ func TestStaticGetOptimizelyConfig(t *testing.T) {
 	assert.NotNil(t, configManager.optimizelyConfig)
 
 	assert.Equal(t, &OptimizelyConfig{ExperimentsMap: map[string]OptimizelyExperiment{},
-		FeaturesMap: map[string]OptimizelyFeature{}, Attributes: []OptimizelyAttribute{}, Audiences: []OptimizelyAudience{}, Events: []OptimizelyEvent{}, Holdouts: []OptimizelyHoldout{}, datafile: "{\"accountId\":\"42\",\"projectId\":\"123\",\"version\":\"4\"}"}, optimizelyConfig)
+		FeaturesMap: map[string]OptimizelyFeature{}, Attributes: []OptimizelyAttribute{}, Audiences: []OptimizelyAudience{}, Events: []OptimizelyEvent{}, datafile: "{\"accountId\":\"42\",\"projectId\":\"123\",\"version\":\"4\"}"}, optimizelyConfig)
 }
 func TestNewStaticProjectConfigManagerFromURL(t *testing.T) {
 
