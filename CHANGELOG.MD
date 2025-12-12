@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - December 12, 2025
+
+### New Features
+- **Holdout Support**: Added holdouts support with datafile parsing and full decision logic for excluding users from experiments ([#422](https://github.com/optimizely/go-sdk/pull/422))
+- **Holdout Impression Events**: Added impression event handling for holdouts with proper `rule_type: "holdout"` metadata ([#428](https://github.com/optimizely/go-sdk/pull/428))
+- **Prediction Endpoint Configuration**: Exposed prediction endpoint configuration for advanced use cases ([#427](https://github.com/optimizely/go-sdk/pull/427))
+
+### Bug Fixes
+- **Holdout Decision Metadata**: Fixed `GetDetailedFeatureDecisionUnsafe` to include holdout experiment and variation info in decision results ([#429](https://github.com/optimizely/go-sdk/pull/429))
+
 ## [2.2.1] - October 24, 2025
 
 ### Bug Fixes
