@@ -43,7 +43,9 @@ const (
 	// ContentTypeJSON is the Content-Type value for a JSON response.
 	ContentTypeJSON = "application/json"
 
-	defaultTTL = 5 * time.Second
+	defaultTTL           = 5 * time.Second
+	initialRetryInterval = 200 * time.Millisecond
+	maxRetryInterval     = 1 * time.Second
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -199,8 +201,12 @@ func (r HTTPRequester) Do(url, method string, body io.Reader, headers []Header) 
 		}
 		r.logger.Debug(fmt.Sprintf("failed %s with %v", url, err))
 
-		if i != r.retries {
-			delay := time.Duration(500) * time.Millisecond
+		if i < r.retries-1 {
+			// Exponential backoff: 200ms, 400ms, 800ms, ... capped at 1s
+			delay := initialRetryInterval * time.Duration(1<<i)
+			if delay > maxRetryInterval {
+				delay = maxRetryInterval
+			}
 			time.Sleep(delay)
 		}
 	}

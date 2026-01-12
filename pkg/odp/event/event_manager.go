@@ -38,6 +38,8 @@ type EMOptionFunc func(em *BatchEventManager)
 
 const maxFlushWorkers = 1
 const maxRetries = 3
+const initialRetryInterval = 200 * time.Millisecond
+const maxRetryInterval = 1 * time.Second
 
 // Manager represents the event manager.
 type Manager interface {
@@ -286,7 +288,7 @@ func (bm *BatchEventManager) FlushEvents(apiKey, apiHost string) {
 		// Only send event if batch is available
 		if batchEventCount > 0 {
 			retryCount := 0
-			// Retry till maxRetries reached
+			// Retry till maxRetries reached with exponential backoff
 			for retryCount < maxRetries {
 				failedToSend = true
 				shouldRetry, err := bm.apiManager.SendOdpEvents(apiKey, apiHost, batchEvent)
@@ -304,6 +306,14 @@ func (bm *BatchEventManager) FlushEvents(apiKey, apiHost string) {
 					break
 				}
 				retryCount++
+				// Exponential backoff before next retry: 200ms, 400ms, 800ms, ... capped at 1s
+				if retryCount < maxRetries {
+					delay := initialRetryInterval * time.Duration(1<<(retryCount-1))
+					if delay > maxRetryInterval {
+						delay = maxRetryInterval
+					}
+					time.Sleep(delay)
+				}
 			}
 		}
 	}
