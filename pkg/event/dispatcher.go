@@ -33,7 +33,8 @@ import (
 const maxWorkers = int64(1)
 const maxRetries = 3
 const defaultQueueSize = 1000
-const sleepTime = 1 * time.Second
+const initialRetryInterval = 200 * time.Millisecond
+const maxRetryInterval = 1 * time.Second
 
 // Dispatcher dispatches events
 type Dispatcher interface {
@@ -119,6 +120,13 @@ func (ed *QueueEventDispatcher) waitForDispatchingEventsOnClose(timeout time.Dur
 	}
 }
 
+// getRetryInterval calculates exponential backoff interval.
+// Uses bit-shift (1<<retryCount) to compute 2^retryCount for doubling: 200ms, 400ms, 800ms, ... capped at 1s.
+func getRetryInterval(retryCount int) time.Duration {
+	interval := initialRetryInterval * time.Duration(1<<retryCount)
+	return min(interval, maxRetryInterval)
+}
+
 // flush the events
 func (ed *QueueEventDispatcher) flushEvents() {
 	// Limit flushing to a single worker
@@ -161,21 +169,23 @@ func (ed *QueueEventDispatcher) flushEvents() {
 				ed.sucessFlushCounter.Add(1)
 			} else {
 				ed.logger.Warning("dispatch event failed")
-				// we failed.  Sleep some seconds and try again.
-				// increase retryCount.  We exit if we have retried x times.
+				// we failed. Use exponential backoff and try again.
+				// increase retryCount. We exit if we have retried x times.
 				// we will retry again next event that is added.
 				retryCount++
 				ed.retryFlushCounter.Add(1)
-				time.Sleep(sleepTime)
+				ed.logger.Debug(fmt.Sprintf("retrying event dispatch (attempt %d of %d) after %v", retryCount, maxRetries, getRetryInterval(retryCount-1)))
+				time.Sleep(getRetryInterval(retryCount - 1))
 			}
 		} else {
 			ed.logger.Error("Error dispatching ", err)
-			// we failed.  Sleep some seconds and try again.
-			time.Sleep(sleepTime)
-			// increase retryCount.  We exit if we have retried x times.
+			// we failed. Use exponential backoff and try again.
+			// increase retryCount. We exit if we have retried x times.
 			// we will retry again next event that is added.
 			retryCount++
 			ed.retryFlushCounter.Add(1)
+			ed.logger.Debug(fmt.Sprintf("retrying event dispatch (attempt %d of %d) after %v", retryCount, maxRetries, getRetryInterval(retryCount-1)))
+			time.Sleep(getRetryInterval(retryCount - 1))
 		}
 	}
 	ed.queueSizeGauge.Set(float64(queueSize))

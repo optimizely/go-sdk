@@ -279,7 +279,9 @@ func TestGetRetry(t *testing.T) {
 	assert.Equal(t, 5, called, "called 5 retries")
 	elapsed := time.Since(st)
 
-	assert.True(t, elapsed >= 400*5*time.Millisecond && elapsed <= 510*5*time.Second, "took %s", elapsed)
+	// With exponential backoff: 200ms + 400ms + 800ms + 1000ms = 2400ms for 4 delays (5 attempts)
+	// Allow some tolerance for test execution overhead
+	assert.True(t, elapsed >= 2*time.Second && elapsed <= 4*time.Second, "took %s", elapsed)
 
 	httpreq = NewHTTPRequester(logging.GetLogger("", ""), Retries(3))
 	called = 0
@@ -298,6 +300,45 @@ func TestGetRetry(t *testing.T) {
 	_, _, _, err = httpreq.Get(ts.URL + "/test")
 	assert.Equal(t, errors.New("400 Bad Request"), err)
 	assert.Equal(t, 1, called, "called 1 retries")
+}
+
+func TestGetRetryExponentialBackoff(t *testing.T) {
+	callTimes := []time.Time{}
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callTimes = append(callTimes, time.Now())
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	defer ts.Close()
+
+	// Use 4 retries so we get 3 delay intervals to measure
+	httpreq := NewHTTPRequester(logging.GetLogger("", ""), Retries(4))
+
+	_, _, _, _ = httpreq.Get(ts.URL + "/test")
+	assert.Equal(t, 4, len(callTimes), "should have made 4 attempts")
+
+	// Verify exponential backoff pattern in intervals
+	// Expected delays: ~200ms, ~400ms, ~800ms (with tolerance)
+	if len(callTimes) >= 4 {
+		interval1 := callTimes[1].Sub(callTimes[0])
+		interval2 := callTimes[2].Sub(callTimes[1])
+		interval3 := callTimes[3].Sub(callTimes[2])
+
+		// First interval should be ~200ms (allow 150-350ms for tolerance)
+		assert.True(t, interval1 >= 150*time.Millisecond && interval1 <= 350*time.Millisecond,
+			"first interval should be ~200ms, got %v", interval1)
+
+		// Second interval should be ~400ms (allow 300-600ms for tolerance)
+		assert.True(t, interval2 >= 300*time.Millisecond && interval2 <= 600*time.Millisecond,
+			"second interval should be ~400ms, got %v", interval2)
+
+		// Third interval should be ~800ms (allow 600-1100ms for tolerance)
+		assert.True(t, interval3 >= 600*time.Millisecond && interval3 <= 1100*time.Millisecond,
+			"third interval should be ~800ms, got %v", interval3)
+
+		// Verify exponential growth: each interval should be roughly double the previous
+		assert.True(t, interval2 > interval1, "second interval should be greater than first")
+		assert.True(t, interval3 > interval2, "third interval should be greater than second")
+	}
 }
 
 func TestString(t *testing.T) {

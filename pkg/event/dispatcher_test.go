@@ -234,3 +234,60 @@ func TestQueueEventDispatcher_WaitForDispatchingEventsOnClose(t *testing.T) {
 	// check the queue
 	assert.Equal(t, 0, q.eventQueue.Size())
 }
+
+func TestGetRetryInterval(t *testing.T) {
+	tests := []struct {
+		name       string
+		retryCount int
+		expected   time.Duration
+	}{
+		{"first retry", 0, 200 * time.Millisecond},
+		{"second retry", 1, 400 * time.Millisecond},
+		{"third retry", 2, 800 * time.Millisecond},
+		{"fourth retry capped at max", 3, 1 * time.Second},
+		{"fifth retry capped at max", 4, 1 * time.Second},
+		{"high retry count capped at max", 10, 1 * time.Second},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := getRetryInterval(tt.retryCount)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestGetRetryInterval_ExponentialGrowth(t *testing.T) {
+	// Verify exponential growth pattern: each interval should be double the previous
+	prev := getRetryInterval(0)
+	for i := 1; i <= 2; i++ {
+		curr := getRetryInterval(i)
+		assert.Equal(t, prev*2, curr, "retry %d should be double retry %d", i, i-1)
+		prev = curr
+	}
+}
+
+func TestQueueEventDispatcher_ExponentialBackoff(t *testing.T) {
+	metricsRegistry := NewMetricsRegistry()
+	q := NewQueueEventDispatcher("", metricsRegistry)
+	q.Dispatcher = &MockDispatcher{ShouldFail: true, Events: NewInMemoryQueue(100)}
+
+	eventTags := map[string]interface{}{"revenue": 55.0, "value": 25.1}
+	config := TestConfig{}
+
+	conversionUserEvent := CreateConversionUserEvent(config, entities.Event{ExperimentIds: []string{"15402980349"}, ID: "15368860886", Key: "sample_conversion"}, userContext, eventTags)
+	batch := createBatchEvent(conversionUserEvent, createVisitorFromUserEvent(conversionUserEvent))
+	logEvent := createLogEvent(batch, EventEndPoints["US"])
+
+	startTime := time.Now()
+	_, _ = q.DispatchEvent(logEvent)
+
+	// Wait for 3 retries to complete (200ms + 400ms = 600ms minimum for 2 delays between 3 attempts)
+	retryCounter := metricsRegistry.GetCounter(metrics.DispatcherRetryFlush).(*MetricsCounter)
+	assert.Eventually(t, func() bool { return retryCounter.Get() >= 3 }, 5*time.Second, 100*time.Millisecond)
+
+	elapsed := time.Since(startTime)
+	// With exponential backoff: 200ms + 400ms = 600ms minimum for delays between 3 attempts
+	// Allow some tolerance for test execution overhead
+	assert.True(t, elapsed >= 500*time.Millisecond, "Expected at least 500ms elapsed for exponential backoff, got %v", elapsed)
+}
