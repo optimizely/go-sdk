@@ -120,9 +120,10 @@ func (ed *QueueEventDispatcher) waitForDispatchingEventsOnClose(timeout time.Dur
 	}
 }
 
-// getRetryInterval calculates exponential backoff interval starting at 200ms, doubling each retry, capped at 1s
+// getRetryInterval calculates exponential backoff interval.
+// Uses bit-shift (1<<retryCount) to compute 2^retryCount for doubling: 200ms, 400ms, 800ms, ... capped at 1s.
 func getRetryInterval(retryCount int) time.Duration {
-	interval := initialRetryInterval * time.Duration(1<<retryCount) // 200ms, 400ms, 800ms, ...
+	interval := initialRetryInterval * time.Duration(1<<retryCount)
 	return min(interval, maxRetryInterval)
 }
 

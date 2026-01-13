@@ -41,6 +41,13 @@ const maxRetries = 3
 const initialRetryInterval = 200 * time.Millisecond
 const maxRetryInterval = 1 * time.Second
 
+// getRetryInterval calculates exponential backoff interval.
+// Uses bit-shift (1<<retryCount) to compute 2^retryCount for doubling: 200ms, 400ms, 800ms, ... capped at 1s.
+func getRetryInterval(retryCount int) time.Duration {
+	interval := initialRetryInterval * time.Duration(1<<retryCount)
+	return min(interval, maxRetryInterval)
+}
+
 // Manager represents the event manager.
 type Manager interface {
 	// odpConfig is required here since it can be updated anytime and ticker needs to be aware of latest changes
@@ -306,13 +313,9 @@ func (bm *BatchEventManager) FlushEvents(apiKey, apiHost string) {
 					break
 				}
 				retryCount++
-				// Exponential backoff before next retry: 200ms, 400ms, 800ms, ... capped at 1s
+				// Exponential backoff before next retry
 				if retryCount < maxRetries {
-					delay := initialRetryInterval * time.Duration(1<<(retryCount-1))
-					if delay > maxRetryInterval {
-						delay = maxRetryInterval
-					}
-					time.Sleep(delay)
+					time.Sleep(getRetryInterval(retryCount - 1))
 				}
 			}
 		}

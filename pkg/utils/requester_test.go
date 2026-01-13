@@ -281,7 +281,7 @@ func TestGetRetry(t *testing.T) {
 
 	// With exponential backoff: 200ms + 400ms + 800ms + 1000ms = 2400ms for 4 delays (5 attempts)
 	// Allow some tolerance for test execution overhead
-	assert.True(t, elapsed >= 2*time.Second && elapsed <= 10*time.Second, "took %s", elapsed)
+	assert.True(t, elapsed >= 2*time.Second && elapsed <= 4*time.Second, "took %s", elapsed)
 
 	httpreq = NewHTTPRequester(logging.GetLogger("", ""), Retries(3))
 	called = 0

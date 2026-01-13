@@ -607,3 +607,39 @@ func (m *MockEventAPIManager) SendOdpEvents(apiKey, apiHost string, events []Eve
 func newExecutionContext() *pkgUtils.ExecGroup {
 	return pkgUtils.NewExecGroup(context.Background(), logging.GetLogger("", "NewExecGroup"))
 }
+
+func TestGetRetryInterval(t *testing.T) {
+	tests := []struct {
+		name       string
+		retryCount int
+		expected   time.Duration
+	}{
+		{"first retry", 0, 200 * time.Millisecond},
+		{"second retry", 1, 400 * time.Millisecond},
+		{"third retry", 2, 800 * time.Millisecond},
+		{"fourth retry capped at max", 3, 1 * time.Second},
+		{"fifth retry capped at max", 4, 1 * time.Second},
+		{"high retry count capped at max", 10, 1 * time.Second},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := getRetryInterval(tt.retryCount)
+			if result != tt.expected {
+				t.Errorf("getRetryInterval(%d) = %v, want %v", tt.retryCount, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestGetRetryInterval_ExponentialGrowth(t *testing.T) {
+	// Verify exponential growth pattern: each interval should be double the previous
+	prev := getRetryInterval(0)
+	for i := 1; i <= 2; i++ {
+		curr := getRetryInterval(i)
+		if curr != prev*2 {
+			t.Errorf("retry %d should be double retry %d: got %v, want %v", i, i-1, curr, prev*2)
+		}
+		prev = curr
+	}
+}
