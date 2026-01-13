@@ -207,6 +207,7 @@ func (r HTTPRequester) Do(url, method string, body io.Reader, headers []Header) 
 			if delay > maxRetryInterval {
 				delay = maxRetryInterval
 			}
+			r.logger.Debug(fmt.Sprintf("retrying request (attempt %d of %d) after %v", i+2, r.retries, delay))
 			time.Sleep(delay)
 		}
 	}
