@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2026, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -135,6 +135,45 @@ func (s *PersistingExperimentServiceTestSuite) TestSavedVariationNoLongerValid()
 	s.NoError(err)
 	s.mockExperimentService.AssertExpectations(s.T())
 	s.mockUserProfileService.AssertExpectations(s.T())
+}
+
+func (s *PersistingExperimentServiceTestSuite) TestCmabExperimentSkipsUserProfileService() {
+	// Create a CMAB experiment (has Cmab field set)
+	cmabExperiment := entities.Experiment{
+		ID:  "cmab_exp_1",
+		Key: "cmab_experiment",
+		Variations: map[string]entities.Variation{
+			"var1": {ID: "var1", Key: "variation_1"},
+		},
+		Cmab: &entities.Cmab{
+			AttributeIds:      []string{"attr1"},
+			TrafficAllocation: 5000,
+		},
+	}
+
+	cmabDecisionContext := ExperimentDecisionContext{
+		Experiment:    &cmabExperiment,
+		ProjectConfig: s.mockProjectConfig,
+	}
+
+	cmabVariation := cmabExperiment.Variations["var1"]
+	cmabDecision := ExperimentDecision{
+		Variation: &cmabVariation,
+	}
+
+	// Setup mock to return decision from bucketer service
+	s.mockExperimentService.On("GetDecision", cmabDecisionContext, testUserContext, s.options).Return(cmabDecision, s.reasons, nil)
+
+	persistingExperimentService := NewPersistingExperimentService(s.mockUserProfileService, s.mockExperimentService, logging.GetLogger("", "NewPersistingExperimentService"))
+	decision, _, err := persistingExperimentService.GetDecision(cmabDecisionContext, testUserContext, s.options)
+
+	s.Equal(cmabDecision, decision)
+	s.NoError(err)
+	// Verify bucketer service was called
+	s.mockExperimentService.AssertCalled(s.T(), "GetDecision", cmabDecisionContext, testUserContext, s.options)
+	// Verify UPS was NOT called - CMAB should skip user profile service entirely
+	s.mockUserProfileService.AssertNotCalled(s.T(), "Lookup", mock.Anything)
+	s.mockUserProfileService.AssertNotCalled(s.T(), "Save", mock.Anything)
 }
 
 func TestPersistingExperimentServiceTestSuite(t *testing.T) {

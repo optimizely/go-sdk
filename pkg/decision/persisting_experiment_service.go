@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2026, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -48,7 +48,8 @@ func NewPersistingExperimentService(userProfileService UserProfileService, exper
 // GetDecision returns the decision with the variation the user is bucketed into
 func (p PersistingExperimentService) GetDecision(decisionContext ExperimentDecisionContext, userContext entities.UserContext, options *decide.Options) (experimentDecision ExperimentDecision, reasons decide.DecisionReasons, err error) {
 	reasons = decide.NewDecisionReasons(options)
-	if p.userProfileService == nil || options.IgnoreUserProfileService {
+	// Skip UPS for CMAB experiments - CMAB decisions are dynamic and not stored for sticky bucketing
+	if p.userProfileService == nil || options.IgnoreUserProfileService || isCmabExperiment(decisionContext.Experiment) {
 		return p.experimentBucketedService.GetDecision(decisionContext, userContext, options)
 	}
 
@@ -122,4 +123,9 @@ func (p PersistingExperimentService) saveDecision(userProfile UserProfile, decis
 		p.userProfileService.Save(userProfile)
 		p.logger.Debug(fmt.Sprintf(`Decision saved for user %q.`, userProfile.ID))
 	}
+}
+
+// isCmabExperiment checks if the experiment is a CMAB experiment
+func isCmabExperiment(experiment *entities.Experiment) bool {
+	return experiment != nil && experiment.Cmab != nil
 }
