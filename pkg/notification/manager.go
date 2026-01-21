@@ -63,7 +63,11 @@ func (am *AtomicManager) Remove(id int) {
 	am.lock.Lock()
 	defer am.lock.Unlock()
 
-	handlerID := uint32(id)
+	if id < 0 {
+		am.logger.Debug(fmt.Sprintf("Invalid handler id: %d", id))
+		return
+	}
+	handlerID := uint32(id) // #nosec G115 - id is validated non-negative above
 	if _, ok := am.handlers[handlerID]; ok {
 		delete(am.handlers, handlerID)
 		return
