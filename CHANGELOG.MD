@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+[2.3.1] - January 22, 2026
+
+## What's Changed
+* [FSSDK-12037] Exclude CMAB experiment from UPS by @Mat001 in https://github.com/optimizely/go-sdk/pull/433
+* [FSSDK-12152] Update retry logic with exponential backoff for sending events by @Mat001 in https://github.com/optimizely/go-sdk/pull/432
+* [FSSDK-11733] Upgrade linteringo-sdk by @Mat001 in https://github.com/optimizely/go-sdk/pull/434
+
+
+**Full Changelog**: https://github.com/optimizely/go-sdk/compare/v2.3.0...v2.3.1
+
 ## [2.3.0] - December 12, 2025
 
 ### New Features
