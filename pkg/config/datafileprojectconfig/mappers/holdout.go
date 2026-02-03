@@ -28,10 +28,12 @@ func MapHoldouts(holdouts []datafileEntities.Holdout, featureMap map[string]enti
 	holdoutList []entities.Holdout,
 	holdoutIDMap map[string]entities.Holdout,
 	flagHoldoutsMap map[string][]entities.Holdout,
+	experimentHoldoutsMap map[string][]entities.Holdout,
 ) {
 	holdoutList = []entities.Holdout{}
 	holdoutIDMap = make(map[string]entities.Holdout)
 	flagHoldoutsMap = make(map[string][]entities.Holdout)
+	experimentHoldoutsMap = make(map[string][]entities.Holdout)
 
 	globalHoldouts := []entities.Holdout{}
 	includedHoldouts := make(map[string][]entities.Holdout)
@@ -62,6 +64,11 @@ func MapHoldouts(holdouts []datafileEntities.Holdout, featureMap map[string]enti
 				includedHoldouts[flagID] = append(includedHoldouts[flagID], mappedHoldout)
 			}
 		}
+
+		// Build experiment-to-holdout mapping
+		for _, experimentID := range holdout.Experiments {
+			experimentHoldoutsMap[experimentID] = append(experimentHoldoutsMap[experimentID], mappedHoldout)
+		}
 	}
 
 	// Build flagHoldoutsMap by combining global and specific holdouts
@@ -86,7 +93,7 @@ func MapHoldouts(holdouts []datafileEntities.Holdout, featureMap map[string]enti
 		}
 	}
 
-	return holdoutList, holdoutIDMap, flagHoldoutsMap
+	return holdoutList, holdoutIDMap, flagHoldoutsMap, experimentHoldoutsMap
 }
 
 func mapHoldout(datafileHoldout datafileEntities.Holdout) entities.Holdout {
@@ -139,5 +146,6 @@ func mapHoldout(datafileHoldout datafileEntities.Holdout) entities.Holdout {
 		Variations:            variations,
 		TrafficAllocation:     trafficAllocation,
 		AudienceConditionTree: audienceConditionTree,
+		Experiments:           datafileHoldout.Experiments,
 	}
 }

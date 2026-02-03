@@ -59,10 +59,11 @@ type DatafileProjectConfig struct {
 	environmentKey       string
 	region               string
 
-	flagVariationsMap map[string][]entities.Variation
-	holdouts          []entities.Holdout
-	holdoutIDMap      map[string]entities.Holdout
-	flagHoldoutsMap   map[string][]entities.Holdout
+	flagVariationsMap         map[string][]entities.Variation
+	holdouts                  []entities.Holdout
+	holdoutIDMap              map[string]entities.Holdout
+	flagHoldoutsMap           map[string][]entities.Holdout
+	experimentHoldoutsMap     map[string][]entities.Holdout
 }
 
 // GetDatafile returns a string representation of the environment's datafile
@@ -292,6 +293,19 @@ func (c DatafileProjectConfig) GetHoldoutsForFlag(featureKey string) []entities.
 	return []entities.Holdout{}
 }
 
+// GetHoldoutsForExperiment returns the holdouts that apply to a specific experiment
+func (c DatafileProjectConfig) GetHoldoutsForExperiment(experimentID string) []entities.Holdout {
+	if holdouts, exists := c.experimentHoldoutsMap[experimentID]; exists {
+		return holdouts
+	}
+	return []entities.Holdout{}
+}
+
+// GetHoldoutList returns all holdouts
+func (c DatafileProjectConfig) GetHoldoutList() []entities.Holdout {
+	return c.holdouts
+}
+
 // NewDatafileProjectConfig initializes a new datafile from a json byte array using the default JSON datafile parser
 func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogProducer) (*DatafileProjectConfig, error) {
 	datafile, err := Parse(jsonDatafile)
@@ -334,7 +348,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentIDMap)
 	audienceMap, audienceSegmentList := mappers.MapAudiences(append(datafile.TypedAudiences, datafile.Audiences...))
 	flagVariationsMap := mappers.MapFlagVariations(featureMap)
-	holdouts, holdoutIDMap, flagHoldoutsMap := mappers.MapHoldouts(datafile.Holdouts, featureMap)
+	holdouts, holdoutIDMap, flagHoldoutsMap, experimentHoldoutsMap := mappers.MapHoldouts(datafile.Holdouts, featureMap)
 
 	attributeKeyMap := make(map[string]entities.Attribute)
 	attributeIDToKeyMap := make(map[string]string)
@@ -372,14 +386,15 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		integrations:         integrations,
 		segments:             audienceSegmentList,
 		rolloutMap:           rolloutMap,
-		sendFlagDecisions:    datafile.SendFlagDecisions,
-		flagVariationsMap:    flagVariationsMap,
-		attributeKeyMap:      attributeKeyMap,
-		attributeIDToKeyMap:  attributeIDToKeyMap,
-		region:               region,
-		holdouts:             holdouts,
-		holdoutIDMap:         holdoutIDMap,
-		flagHoldoutsMap:      flagHoldoutsMap,
+		sendFlagDecisions:        datafile.SendFlagDecisions,
+		flagVariationsMap:        flagVariationsMap,
+		attributeKeyMap:          attributeKeyMap,
+		attributeIDToKeyMap:      attributeIDToKeyMap,
+		region:                   region,
+		holdouts:                 holdouts,
+		holdoutIDMap:             holdoutIDMap,
+		flagHoldoutsMap:          flagHoldoutsMap,
+		experimentHoldoutsMap:    experimentHoldoutsMap,
 	}
 
 	logger.Info("Datafile is valid.")
