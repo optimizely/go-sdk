@@ -59,11 +59,11 @@ type DatafileProjectConfig struct {
 	environmentKey       string
 	region               string
 
-	flagVariationsMap         map[string][]entities.Variation
-	holdouts                  []entities.Holdout
-	holdoutIDMap              map[string]entities.Holdout
-	flagHoldoutsMap           map[string][]entities.Holdout
-	experimentHoldoutsMap     map[string][]entities.Holdout
+	flagVariationsMap     map[string][]entities.Variation
+	holdouts              []entities.Holdout
+	holdoutIDMap          map[string]entities.Holdout
+	flagHoldoutsMap       map[string][]entities.Holdout
+	experimentHoldoutsMap map[string][]entities.Holdout
 }
 
 // GetDatafile returns a string representation of the environment's datafile
@@ -364,37 +364,37 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	}
 
 	config := &DatafileProjectConfig{
-		hostForODP:           hostForODP,
-		publicKeyForODP:      publicKeyForODP,
-		datafile:             string(jsonDatafile),
-		accountID:            datafile.AccountID,
-		anonymizeIP:          datafile.AnonymizeIP,
-		attributeKeyToIDMap:  attributeKeyToIDMap,
-		audienceMap:          audienceMap,
-		attributeMap:         attributeMap,
-		botFiltering:         datafile.BotFiltering,
-		sdkKey:               datafile.SDKKey,
-		environmentKey:       datafile.EnvironmentKey,
-		experimentKeyToIDMap: experimentKeyMap,
-		experimentMap:        experimentIDMap,
-		groupMap:             groupMap,
-		eventMap:             eventMap,
-		featureMap:           featureMap,
-		projectID:            datafile.ProjectID,
-		revision:             datafile.Revision,
-		rollouts:             rollouts,
-		integrations:         integrations,
-		segments:             audienceSegmentList,
-		rolloutMap:           rolloutMap,
-		sendFlagDecisions:        datafile.SendFlagDecisions,
-		flagVariationsMap:        flagVariationsMap,
-		attributeKeyMap:          attributeKeyMap,
-		attributeIDToKeyMap:      attributeIDToKeyMap,
-		region:                   region,
-		holdouts:                 holdouts,
-		holdoutIDMap:             holdoutIDMap,
-		flagHoldoutsMap:          flagHoldoutsMap,
-		experimentHoldoutsMap:    experimentHoldoutsMap,
+		hostForODP:            hostForODP,
+		publicKeyForODP:       publicKeyForODP,
+		datafile:              string(jsonDatafile),
+		accountID:             datafile.AccountID,
+		anonymizeIP:           datafile.AnonymizeIP,
+		attributeKeyToIDMap:   attributeKeyToIDMap,
+		audienceMap:           audienceMap,
+		attributeMap:          attributeMap,
+		botFiltering:          datafile.BotFiltering,
+		sdkKey:                datafile.SDKKey,
+		environmentKey:        datafile.EnvironmentKey,
+		experimentKeyToIDMap:  experimentKeyMap,
+		experimentMap:         experimentIDMap,
+		groupMap:              groupMap,
+		eventMap:              eventMap,
+		featureMap:            featureMap,
+		projectID:             datafile.ProjectID,
+		revision:              datafile.Revision,
+		rollouts:              rollouts,
+		integrations:          integrations,
+		segments:              audienceSegmentList,
+		rolloutMap:            rolloutMap,
+		sendFlagDecisions:     datafile.SendFlagDecisions,
+		flagVariationsMap:     flagVariationsMap,
+		attributeKeyMap:       attributeKeyMap,
+		attributeIDToKeyMap:   attributeIDToKeyMap,
+		region:                region,
+		holdouts:              holdouts,
+		holdoutIDMap:          holdoutIDMap,
+		flagHoldoutsMap:       flagHoldoutsMap,
+		experimentHoldoutsMap: experimentHoldoutsMap,
 	}
 
 	logger.Info("Datafile is valid.")
