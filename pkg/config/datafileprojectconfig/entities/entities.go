@@ -124,6 +124,7 @@ type Holdout struct {
 	TrafficAllocation  []TrafficAllocation `json:"trafficAllocation"`
 	IncludedFlags      []string            `json:"includedFlags,omitempty"`
 	ExcludedFlags      []string            `json:"excludedFlags,omitempty"`
+	Experiments        []string            `json:"experiments,omitempty"`
 }
 
 // Integration represents a integration from the Optimizely datafile

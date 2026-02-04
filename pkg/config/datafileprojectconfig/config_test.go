@@ -18,12 +18,14 @@
 package datafileprojectconfig
 
 import (
+	stdjson "encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
+	datafileEntities "github.com/optimizely/go-sdk/v2/pkg/config/datafileprojectconfig/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 
@@ -583,7 +585,7 @@ func TestCmabExperiments(t *testing.T) {
 
 	// Parse the datafile to modify it
 	var datafileJSON map[string]interface{}
-	err = json.Unmarshal(datafile, &datafileJSON)
+	err = stdjson.Unmarshal(datafile, &datafileJSON)
 	assert.NoError(t, err)
 
 	// Add CMAB to the first experiment with traffic allocation as an integer
@@ -595,7 +597,7 @@ func TestCmabExperiments(t *testing.T) {
 	}
 
 	// Convert back to JSON
-	modifiedDatafile, err := json.Marshal(datafileJSON)
+	modifiedDatafile, err := stdjson.Marshal(datafileJSON)
 	assert.NoError(t, err)
 
 	// Create project config from modified datafile
@@ -632,7 +634,7 @@ func TestCmabExperimentsNil(t *testing.T) {
 
 	// Parse the datafile to get experiment keys
 	var datafileJSON map[string]interface{}
-	err = json.Unmarshal(datafile, &datafileJSON)
+	err = stdjson.Unmarshal(datafile, &datafileJSON)
 	assert.NoError(t, err)
 
 	experiments := datafileJSON["experiments"].([]interface{})
@@ -788,4 +790,264 @@ func TestGetHoldoutsForFlagWithDifferentFlag(t *testing.T) {
 	actual := config.GetHoldoutsForFlag(flagKey)
 	assert.Len(t, actual, 0)
 	assert.Equal(t, []entities.Holdout{}, actual)
+}
+
+// Test experiments field in Holdout and experiment-to-holdout mapping
+func TestHoldout_ExperimentsField(t *testing.T) {
+	jsonDatafile := `{
+		"version": "4",
+		"accountId": "12345",
+		"projectId": "67890",
+		"revision": "1",
+		"holdouts": [
+			{
+				"id": "holdout_with_experiments",
+				"key": "local_holdout",
+				"status": "Running",
+				"variations": [],
+				"trafficAllocation": [],
+				"audienceIds": [],
+				"experiments": ["exp_1", "exp_2"]
+			},
+			{
+				"id": "holdout_without_experiments",
+				"key": "global_holdout",
+				"status": "Running",
+				"variations": [],
+				"trafficAllocation": [],
+				"audienceIds": []
+			}
+		]
+	}`
+
+	config, err := NewDatafileProjectConfig([]byte(jsonDatafile), logging.GetLogger("", "test"))
+	assert.NoError(t, err)
+
+	// Get holdouts from config
+	holdouts := config.GetHoldoutList()
+	assert.Len(t, holdouts, 2)
+
+	// Find holdout with experiments
+	var localHoldout, globalHoldout entities.Holdout
+	for _, h := range holdouts {
+		if h.ID == "holdout_with_experiments" {
+			localHoldout = h
+		} else if h.ID == "holdout_without_experiments" {
+			globalHoldout = h
+		}
+	}
+
+	// Test local holdout
+	assert.Equal(t, "holdout_with_experiments", localHoldout.ID)
+	assert.Len(t, localHoldout.Experiments, 2)
+	assert.Contains(t, localHoldout.Experiments, "exp_1")
+	assert.Contains(t, localHoldout.Experiments, "exp_2")
+	assert.True(t, localHoldout.IsLocal())
+
+	// Test global holdout
+	assert.Equal(t, "holdout_without_experiments", globalHoldout.ID)
+	assert.Empty(t, globalHoldout.Experiments)
+	assert.False(t, globalHoldout.IsLocal())
+}
+
+func TestHoldout_IsLocal(t *testing.T) {
+	// Test IsLocal returns true when experiments is not empty
+	holdout1 := entities.Holdout{
+		ID:          "local_holdout",
+		Experiments: []string{"exp_1", "exp_2"},
+	}
+	assert.True(t, holdout1.IsLocal())
+
+	// Test IsLocal returns false when experiments is empty
+	holdout2 := entities.Holdout{
+		ID:          "global_holdout",
+		Experiments: []string{},
+	}
+	assert.False(t, holdout2.IsLocal())
+
+	// Test IsLocal returns false when experiments is nil
+	holdout3 := entities.Holdout{
+		ID:          "nil_experiments",
+		Experiments: nil,
+	}
+	assert.False(t, holdout3.IsLocal())
+}
+
+func TestGetHoldoutsForExperiment(t *testing.T) {
+	jsonDatafile := `{
+		"version": "4",
+		"accountId": "12345",
+		"projectId": "67890",
+		"revision": "1",
+		"holdouts": [
+			{
+				"id": "holdout_1",
+				"key": "local_holdout_1",
+				"status": "Running",
+				"variations": [],
+				"trafficAllocation": [],
+				"audienceIds": [],
+				"experiments": ["exp_1"]
+			},
+			{
+				"id": "holdout_2",
+				"key": "local_holdout_2",
+				"status": "Running",
+				"variations": [],
+				"trafficAllocation": [],
+				"audienceIds": [],
+				"experiments": ["exp_1", "exp_2"]
+			},
+			{
+				"id": "holdout_3",
+				"key": "global_holdout",
+				"status": "Running",
+				"variations": [],
+				"trafficAllocation": [],
+				"audienceIds": []
+			}
+		]
+	}`
+
+	config, err := NewDatafileProjectConfig([]byte(jsonDatafile), logging.GetLogger("", "test"))
+	assert.NoError(t, err)
+
+	// Test exp_1 should have holdout_1 and holdout_2
+	holdouts := config.GetHoldoutsForExperiment("exp_1")
+	assert.Len(t, holdouts, 2)
+	holdoutIDs := make([]string, len(holdouts))
+	for i, h := range holdouts {
+		holdoutIDs[i] = h.ID
+	}
+	assert.Contains(t, holdoutIDs, "holdout_1")
+	assert.Contains(t, holdoutIDs, "holdout_2")
+
+	// Test exp_2 should have only holdout_2
+	holdouts = config.GetHoldoutsForExperiment("exp_2")
+	assert.Len(t, holdouts, 1)
+	assert.Equal(t, "holdout_2", holdouts[0].ID)
+
+	// Test non-existent experiment should return empty array
+	holdouts = config.GetHoldoutsForExperiment("non_existent")
+	assert.Empty(t, holdouts)
+}
+
+func TestExperimentHoldoutsMapping_MultipleExperiments(t *testing.T) {
+	jsonDatafile := `{
+		"version": "4",
+		"accountId": "12345",
+		"projectId": "67890",
+		"revision": "1",
+		"holdouts": [
+			{
+				"id": "holdout_multi",
+				"key": "multi_exp_holdout",
+				"status": "Running",
+				"variations": [],
+				"trafficAllocation": [],
+				"audienceIds": [],
+				"experiments": ["exp_a", "exp_b", "exp_c"]
+			}
+		]
+	}`
+
+	config, err := NewDatafileProjectConfig([]byte(jsonDatafile), logging.GetLogger("", "test"))
+	assert.NoError(t, err)
+
+	// All three experiments should map to the same holdout
+	for _, expID := range []string{"exp_a", "exp_b", "exp_c"} {
+		holdouts := config.GetHoldoutsForExperiment(expID)
+		assert.Len(t, holdouts, 1)
+		assert.Equal(t, "holdout_multi", holdouts[0].ID)
+	}
+}
+
+func TestExperimentHoldoutsMapping_EmptyExperiments(t *testing.T) {
+	jsonDatafile := `{
+		"version": "4",
+		"accountId": "12345",
+		"projectId": "67890",
+		"revision": "1",
+		"holdouts": [
+			{
+				"id": "global_holdout",
+				"key": "global",
+				"status": "Running",
+				"variations": [],
+				"trafficAllocation": [],
+				"audienceIds": []
+			}
+		]
+	}`
+
+	config, err := NewDatafileProjectConfig([]byte(jsonDatafile), logging.GetLogger("", "test"))
+	assert.NoError(t, err)
+
+	// Global holdout should not appear in experiment mapping
+	holdouts := config.GetHoldoutsForExperiment("any_experiment")
+	assert.Empty(t, holdouts)
+
+	// Verify the holdout still exists in the list
+	allHoldouts := config.GetHoldoutList()
+	assert.Len(t, allHoldouts, 1)
+	assert.Equal(t, "global_holdout", allHoldouts[0].ID)
+}
+
+func TestHoldout_BackwardCompatibility(t *testing.T) {
+	// Test that holdouts without experiments field still work (backward compatibility)
+	jsonDatafile := `{
+		"version": "4",
+		"accountId": "12345",
+		"projectId": "67890",
+		"revision": "1",
+		"holdouts": [
+			{
+				"id": "old_holdout",
+				"key": "legacy_holdout",
+				"status": "Running",
+				"variations": [],
+				"trafficAllocation": [],
+				"audienceIds": []
+			}
+		]
+	}`
+
+	config, err := NewDatafileProjectConfig([]byte(jsonDatafile), logging.GetLogger("", "test"))
+	assert.NoError(t, err)
+
+	holdouts := config.GetHoldoutList()
+	assert.Len(t, holdouts, 1)
+	assert.Equal(t, "old_holdout", holdouts[0].ID)
+	assert.Empty(t, holdouts[0].Experiments)
+	assert.False(t, holdouts[0].IsLocal())
+}
+
+func TestHoldout_JSONSerialization(t *testing.T) {
+	// Test that experiments field is properly serialized when present
+	holdoutWithExperiments := datafileEntities.Holdout{
+		ID:          "test_holdout",
+		Key:         "test_key",
+		Status:      string(entities.HoldoutStatusRunning),
+		Experiments: []string{"exp_1"},
+	}
+
+	jsonBytes, err := stdjson.Marshal(holdoutWithExperiments)
+	assert.NoError(t, err)
+	jsonStr := string(jsonBytes)
+	assert.Contains(t, jsonStr, `"experiments"`)
+	assert.Contains(t, jsonStr, `"exp_1"`)
+
+	// Test that empty experiments array is omitted due to omitempty tag
+	holdoutWithoutExperiments := datafileEntities.Holdout{
+		ID:          "test_holdout_2",
+		Key:         "test_key_2",
+		Status:      string(entities.HoldoutStatusRunning),
+		Experiments: []string{},
+	}
+
+	jsonBytes, err = stdjson.Marshal(holdoutWithoutExperiments)
+	assert.NoError(t, err)
+	jsonStr = string(jsonBytes)
+	// Empty array should be omitted due to omitempty tag
+	assert.NotContains(t, jsonStr, `"experiments"`)
 }

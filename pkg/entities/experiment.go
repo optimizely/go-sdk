@@ -78,4 +78,10 @@ type Holdout struct {
 	Variations            map[string]Variation // keyed by variation ID
 	TrafficAllocation     []Range
 	AudienceConditionTree *TreeNode
+	Experiments           []string // Experiment IDs this holdout targets
+}
+
+// IsLocal returns true if the holdout targets specific experiments
+func (h Holdout) IsLocal() bool {
+	return len(h.Experiments) > 0
 }

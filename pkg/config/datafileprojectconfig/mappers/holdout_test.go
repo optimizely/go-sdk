@@ -28,7 +28,7 @@ func TestMapHoldoutsEmpty(t *testing.T) {
 	rawHoldouts := []datafileEntities.Holdout{}
 	featureMap := map[string]entities.Feature{}
 
-	holdoutList, holdoutIDMap, flagHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
+	holdoutList, holdoutIDMap, flagHoldoutsMap, _ := MapHoldouts(rawHoldouts, featureMap)
 
 	assert.Empty(t, holdoutList)
 	assert.Empty(t, holdoutIDMap)
@@ -58,7 +58,7 @@ func TestMapHoldoutsGlobalHoldout(t *testing.T) {
 		"feature_3": {ID: "feature_3", Key: "feature_3"},
 	}
 
-	holdoutList, holdoutIDMap, flagHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
+	holdoutList, holdoutIDMap, flagHoldoutsMap, _ := MapHoldouts(rawHoldouts, featureMap)
 
 	// Verify holdout list and ID map
 	assert.Len(t, holdoutList, 1)
@@ -98,7 +98,7 @@ func TestMapHoldoutsSpecificHoldout(t *testing.T) {
 		"feature_3": {ID: "feature_3", Key: "feature_3"},
 	}
 
-	holdoutList, holdoutIDMap, flagHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
+	holdoutList, holdoutIDMap, flagHoldoutsMap, _ := MapHoldouts(rawHoldouts, featureMap)
 
 	// Verify holdout list and ID map
 	assert.Len(t, holdoutList, 1)
@@ -130,7 +130,7 @@ func TestMapHoldoutsNotRunning(t *testing.T) {
 		"feature_1": {ID: "feature_1", Key: "feature_1"},
 	}
 
-	holdoutList, holdoutIDMap, flagHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
+	holdoutList, holdoutIDMap, flagHoldoutsMap, _ := MapHoldouts(rawHoldouts, featureMap)
 
 	// Non-running holdouts should be filtered out
 	assert.Empty(t, holdoutList)
@@ -172,7 +172,7 @@ func TestMapHoldoutsMixed(t *testing.T) {
 		"feature_2": {ID: "feature_2", Key: "feature_2"},
 	}
 
-	holdoutList, holdoutIDMap, flagHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
+	holdoutList, holdoutIDMap, flagHoldoutsMap, _ := MapHoldouts(rawHoldouts, featureMap)
 
 	// Verify both holdouts are in the list
 	assert.Len(t, holdoutList, 2)
@@ -223,7 +223,7 @@ func TestMapHoldoutsPrecedence(t *testing.T) {
 		"feature_1": {ID: "feature_1", Key: "feature_1"},
 	}
 
-	_, _, flagHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
+	_, _, flagHoldoutsMap, _ := MapHoldouts(rawHoldouts, featureMap)
 
 	// feature_1 should have BOTH holdouts, with global FIRST (precedence)
 	assert.Contains(t, flagHoldoutsMap, "feature_1")
@@ -257,7 +257,7 @@ func TestMapHoldoutsExcludedFlagsNotInMap(t *testing.T) {
 		"feature_excluded": {ID: "feature_excluded", Key: "feature_excluded"},
 	}
 
-	_, _, flagHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
+	_, _, flagHoldoutsMap, _ := MapHoldouts(rawHoldouts, featureMap)
 
 	// feature_included should have the global holdout
 	assert.Contains(t, flagHoldoutsMap, "feature_included")
@@ -288,7 +288,7 @@ func TestMapHoldoutsWithAudienceConditions(t *testing.T) {
 		"feature_1": {ID: "feature_1", Key: "feature_1"},
 	}
 
-	holdoutList, _, _ := MapHoldouts(rawHoldouts, featureMap)
+	holdoutList, _, _, _ := MapHoldouts(rawHoldouts, featureMap)
 
 	// Verify audience conditions are mapped
 	assert.Len(t, holdoutList, 1)
@@ -328,7 +328,7 @@ func TestMapHoldoutsVariationsMapping(t *testing.T) {
 		"feature_1": {ID: "feature_1", Key: "feature_1"},
 	}
 
-	holdoutList, _, _ := MapHoldouts(rawHoldouts, featureMap)
+	holdoutList, _, _, _ := MapHoldouts(rawHoldouts, featureMap)
 
 	// Verify variations are mapped correctly
 	assert.Len(t, holdoutList, 1)
@@ -342,4 +342,75 @@ func TestMapHoldoutsVariationsMapping(t *testing.T) {
 	assert.Equal(t, 5000, holdoutList[0].TrafficAllocation[0].EndOfRange)
 	assert.Equal(t, "var_2", holdoutList[0].TrafficAllocation[1].EntityID)
 	assert.Equal(t, 10000, holdoutList[0].TrafficAllocation[1].EndOfRange)
+}
+
+func TestMapHoldoutsWithExperiments(t *testing.T) {
+	rawHoldouts := []datafileEntities.Holdout{
+		{
+			ID:          "holdout_1",
+			Key:         "local_holdout_1",
+			Status:      string(entities.HoldoutStatusRunning),
+			Experiments: []string{"exp_1"},
+		},
+		{
+			ID:          "holdout_2",
+			Key:         "local_holdout_2",
+			Status:      string(entities.HoldoutStatusRunning),
+			Experiments: []string{"exp_1", "exp_2"},
+		},
+		{
+			ID:          "holdout_3",
+			Key:         "global_holdout",
+			Status:      string(entities.HoldoutStatusRunning),
+			Experiments: []string{},
+		},
+	}
+	featureMap := map[string]entities.Feature{}
+
+	holdoutList, _, _, experimentHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
+
+	// Verify all holdouts are in the list
+	assert.Len(t, holdoutList, 3)
+
+	// Verify experiments field is mapped correctly
+	assert.Len(t, holdoutList[0].Experiments, 1)
+	assert.Contains(t, holdoutList[0].Experiments, "exp_1")
+	assert.Len(t, holdoutList[1].Experiments, 2)
+	assert.Contains(t, holdoutList[1].Experiments, "exp_1")
+	assert.Contains(t, holdoutList[1].Experiments, "exp_2")
+	assert.Empty(t, holdoutList[2].Experiments)
+
+	// Verify experiment holdouts map
+	assert.Len(t, experimentHoldoutsMap, 2)
+	assert.Len(t, experimentHoldoutsMap["exp_1"], 2)
+	assert.Len(t, experimentHoldoutsMap["exp_2"], 1)
+
+	// Check exp_1 has holdout_1 and holdout_2
+	exp1HoldoutIDs := []string{experimentHoldoutsMap["exp_1"][0].ID, experimentHoldoutsMap["exp_1"][1].ID}
+	assert.Contains(t, exp1HoldoutIDs, "holdout_1")
+	assert.Contains(t, exp1HoldoutIDs, "holdout_2")
+
+	// Check exp_2 has only holdout_2
+	assert.Equal(t, "holdout_2", experimentHoldoutsMap["exp_2"][0].ID)
+}
+
+func TestMapHoldoutsMultipleExperiments(t *testing.T) {
+	rawHoldouts := []datafileEntities.Holdout{
+		{
+			ID:          "holdout_multi",
+			Key:         "multi_exp_holdout",
+			Status:      string(entities.HoldoutStatusRunning),
+			Experiments: []string{"exp_a", "exp_b", "exp_c"},
+		},
+	}
+	featureMap := map[string]entities.Feature{}
+
+	_, _, _, experimentHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
+
+	// All three experiments should map to the same holdout
+	assert.Len(t, experimentHoldoutsMap, 3)
+	for _, expID := range []string{"exp_a", "exp_b", "exp_c"} {
+		assert.Len(t, experimentHoldoutsMap[expID], 1)
+		assert.Equal(t, "holdout_multi", experimentHoldoutsMap[expID][0].ID)
+	}
 }
