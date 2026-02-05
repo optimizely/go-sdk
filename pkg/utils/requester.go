@@ -216,12 +216,26 @@ func (r HTTPRequester) Do(url, method string, body io.Reader, headers []Header) 
 }
 
 func (r HTTPRequester) addHeaders(req *http.Request, headers []Header) *http.Request {
+	// Create a map to track which headers have been set
+	// This ensures that headers from the 'headers' parameter (passed at call time)
+	// override headers from r.headers (set during requester initialization)
+	headerMap := make(map[string]string)
+
+	// First, add all internal headers to the map
 	for _, h := range r.headers {
-		req.Header.Add(h.Name, h.Value)
+		headerMap[h.Name] = h.Value
 	}
+
+	// Then, override with any headers passed at call time
 	for _, h := range headers {
-		req.Header.Add(h.Name, h.Value)
+		headerMap[h.Name] = h.Value
 	}
+
+	// Finally, set all headers on the request
+	for name, value := range headerMap {
+		req.Header.Set(name, value)
+	}
+
 	return req
 }
 
