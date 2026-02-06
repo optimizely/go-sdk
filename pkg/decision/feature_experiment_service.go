@@ -25,6 +25,14 @@ import (
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 )
 
+// supportedExperimentTypes defines the experiment types that the SDK can handle
+var supportedExperimentTypes = map[string]bool{
+	"a/b":              true,
+	"mab":              true,
+	"cmab":             true,
+	"feature_rollouts": true,
+}
+
 // FeatureExperimentService helps evaluate feature test associated with the feature
 type FeatureExperimentService struct {
 	compositeExperimentService ExperimentService
@@ -45,6 +53,18 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 	reasons := decide.NewDecisionReasons(options)
 	// @TODO this can be improved by getting group ID first and determining experiment and then bucketing in experiment
 	for _, featureExperiment := range feature.FeatureExperiments {
+
+		// Check if experiment type is supported
+		if featureExperiment.Type != "" && !supportedExperimentTypes[featureExperiment.Type] {
+			message := fmt.Sprintf(
+				"Experiment %q has unsupported type %q. Skipping to next experiment.",
+				featureExperiment.Key,
+				featureExperiment.Type,
+			)
+			f.logger.Debug(message)
+			reasons.AddInfo(message)
+			continue
+		}
 
 		// Checking for forced decision
 		if decisionContext.ForcedDecisionService != nil {

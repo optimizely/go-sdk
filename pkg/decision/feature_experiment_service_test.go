@@ -295,6 +295,224 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithCmabError() {
 	s.mockExperimentService.AssertExpectations(s.T())
 }
 
+func (s *FeatureExperimentServiceTestSuite) TestGetDecisionSkipsUnsupportedExperimentType() {
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	// Create experiment with unsupported type
+	unsupportedExp := testExp1113
+	unsupportedExp.Type = "unsupported_type"
+
+	// Create feature with the unsupported experiment
+	featureWithUnsupportedExp := testFeat3335
+	featureWithUnsupportedExp.FeatureExperiments = []entities.Experiment{unsupportedExp}
+
+	testFeatureDecisionContext := FeatureDecisionContext{
+		Feature:       &featureWithUnsupportedExp,
+		ProjectConfig: s.mockConfig,
+	}
+
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	decision, _, err := featureExperimentService.GetDecision(testFeatureDecisionContext, testUserContext, s.options)
+
+	// Should return empty decision since experiment was skipped
+	s.Equal(FeatureDecision{}, decision)
+	s.NoError(err)
+}
+
+func (s *FeatureExperimentServiceTestSuite) TestGetDecisionEvaluatesExperimentWithSupportedTypeAB() {
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	// Create experiment with supported type "a/b"
+	abExp := testExp1113
+	abExp.Type = "a/b"
+
+	expectedVariation := abExp.Variations["2223"]
+	returnExperimentDecision := ExperimentDecision{
+		Variation: &expectedVariation,
+	}
+	testExperimentDecisionContext := ExperimentDecisionContext{
+		Experiment:    &abExp,
+		ProjectConfig: s.mockConfig,
+	}
+	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext, testUserContext, s.options).Return(returnExperimentDecision, s.reasons, nil)
+
+	// Create feature with the a/b experiment
+	featureWithABExp := testFeat3335
+	featureWithABExp.FeatureExperiments = []entities.Experiment{abExp}
+
+	testFeatureDecisionContext := FeatureDecisionContext{
+		Feature:       &featureWithABExp,
+		ProjectConfig: s.mockConfig,
+	}
+
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	expectedFeatureDecision := FeatureDecision{
+		Experiment: *testExperimentDecisionContext.Experiment,
+		Variation:  &expectedVariation,
+		Source:     FeatureTest,
+	}
+
+	decision, _, err := featureExperimentService.GetDecision(testFeatureDecisionContext, testUserContext, s.options)
+	s.Equal(expectedFeatureDecision, decision)
+	s.NoError(err)
+	s.mockExperimentService.AssertExpectations(s.T())
+}
+
+func (s *FeatureExperimentServiceTestSuite) TestGetDecisionEvaluatesExperimentWithSupportedTypeMAB() {
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	// Create experiment with supported type "mab"
+	mabExp := testExp1113
+	mabExp.Type = "mab"
+
+	expectedVariation := mabExp.Variations["2223"]
+	returnExperimentDecision := ExperimentDecision{
+		Variation: &expectedVariation,
+	}
+	testExperimentDecisionContext := ExperimentDecisionContext{
+		Experiment:    &mabExp,
+		ProjectConfig: s.mockConfig,
+	}
+	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext, testUserContext, s.options).Return(returnExperimentDecision, s.reasons, nil)
+
+	// Create feature with the mab experiment
+	featureWithMABExp := testFeat3335
+	featureWithMABExp.FeatureExperiments = []entities.Experiment{mabExp}
+
+	testFeatureDecisionContext := FeatureDecisionContext{
+		Feature:       &featureWithMABExp,
+		ProjectConfig: s.mockConfig,
+	}
+
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	expectedFeatureDecision := FeatureDecision{
+		Experiment: *testExperimentDecisionContext.Experiment,
+		Variation:  &expectedVariation,
+		Source:     FeatureTest,
+	}
+
+	decision, _, err := featureExperimentService.GetDecision(testFeatureDecisionContext, testUserContext, s.options)
+	s.Equal(expectedFeatureDecision, decision)
+	s.NoError(err)
+	s.mockExperimentService.AssertExpectations(s.T())
+}
+
+func (s *FeatureExperimentServiceTestSuite) TestGetDecisionEvaluatesExperimentWithEmptyType() {
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	// Create experiment with empty type (backward compatible)
+	emptyTypeExp := testExp1113
+	emptyTypeExp.Type = ""
+
+	expectedVariation := emptyTypeExp.Variations["2223"]
+	returnExperimentDecision := ExperimentDecision{
+		Variation: &expectedVariation,
+	}
+	testExperimentDecisionContext := ExperimentDecisionContext{
+		Experiment:    &emptyTypeExp,
+		ProjectConfig: s.mockConfig,
+	}
+	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext, testUserContext, s.options).Return(returnExperimentDecision, s.reasons, nil)
+
+	// Create feature with the empty type experiment
+	featureWithEmptyTypeExp := testFeat3335
+	featureWithEmptyTypeExp.FeatureExperiments = []entities.Experiment{emptyTypeExp}
+
+	testFeatureDecisionContext := FeatureDecisionContext{
+		Feature:       &featureWithEmptyTypeExp,
+		ProjectConfig: s.mockConfig,
+	}
+
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	expectedFeatureDecision := FeatureDecision{
+		Experiment: *testExperimentDecisionContext.Experiment,
+		Variation:  &expectedVariation,
+		Source:     FeatureTest,
+	}
+
+	decision, _, err := featureExperimentService.GetDecision(testFeatureDecisionContext, testUserContext, s.options)
+	s.Equal(expectedFeatureDecision, decision)
+	s.NoError(err)
+	s.mockExperimentService.AssertExpectations(s.T())
+}
+
+func (s *FeatureExperimentServiceTestSuite) TestGetDecisionSkipsUnsupportedAndEvaluatesSupported() {
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	// Create unsupported experiment
+	unsupportedExp := testExp1113
+	unsupportedExp.Type = "unsupported_type"
+	unsupportedExp.Key = "unsupported_exp"
+
+	// Create supported experiment
+	supportedExp := testExp1113
+	supportedExp.Type = "a/b"
+	supportedExp.Key = "supported_exp"
+
+	expectedVariation := supportedExp.Variations["2223"]
+	returnExperimentDecision := ExperimentDecision{
+		Variation: &expectedVariation,
+	}
+	testExperimentDecisionContext := ExperimentDecisionContext{
+		Experiment:    &supportedExp,
+		ProjectConfig: s.mockConfig,
+	}
+	s.mockExperimentService.On("GetDecision", testExperimentDecisionContext, testUserContext, s.options).Return(returnExperimentDecision, s.reasons, nil)
+
+	// Create feature with both experiments
+	featureWithBothExp := testFeat3335
+	featureWithBothExp.FeatureExperiments = []entities.Experiment{unsupportedExp, supportedExp}
+
+	testFeatureDecisionContext := FeatureDecisionContext{
+		Feature:       &featureWithBothExp,
+		ProjectConfig: s.mockConfig,
+	}
+
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	expectedFeatureDecision := FeatureDecision{
+		Experiment: *testExperimentDecisionContext.Experiment,
+		Variation:  &expectedVariation,
+		Source:     FeatureTest,
+	}
+
+	decision, _, err := featureExperimentService.GetDecision(testFeatureDecisionContext, testUserContext, s.options)
+
+	// Should skip unsupported and evaluate supported
+	s.Equal(expectedFeatureDecision, decision)
+	s.NoError(err)
+	s.mockExperimentService.AssertExpectations(s.T())
+}
+
 func TestFeatureExperimentServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(FeatureExperimentServiceTestSuite))
 }

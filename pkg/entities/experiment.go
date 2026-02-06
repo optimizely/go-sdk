@@ -45,6 +45,7 @@ type Experiment struct {
 	AudienceConditionTree *TreeNode
 	Whitelist             map[string]string
 	IsFeatureExperiment   bool
+	Type                  string
 	Cmab                  *Cmab
 }
 
