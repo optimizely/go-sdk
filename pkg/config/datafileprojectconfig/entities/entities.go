@@ -46,6 +46,7 @@ type Experiment struct {
 	Key                string              `json:"key"`
 	LayerID            string              `json:"layerId"`
 	Status             string              `json:"status"`
+	Type               string              `json:"type,omitempty"` // experiment type (e.g., "a/b", "mab", "cmab", "feature_rollouts")
 	Variations         []Variation         `json:"variations"`
 	TrafficAllocation  []TrafficAllocation `json:"trafficAllocation"`
 	AudienceIds        []string            `json:"audienceIds"`
