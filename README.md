@@ -2,6 +2,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/optimizely/go-sdk)](https://goreportcard.com/report/github.com/optimizely/go-sdk)
 [![Coverage Status](https://coveralls.io/repos/github/optimizely/go-sdk/badge.svg?branch=master)](https://coveralls.io/github/optimizely/go-sdk?branch=master)
+[![Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 
 
 This repository houses the Go SDK for use with Optimizely Feature Experimentation and Optimizely Full Stack (legacy).
@@ -70,6 +71,9 @@ go get github.com/optimizely/go-sdk/v2/pkg
 ```
 will install it as a package to pkg directory, rather than src directory. It could be useful for future development and vendoring.
 
+### Feature Management Access
+
+To access the Feature Management configuration in the Optimizely dashboard, please contact your Optimizely customer success manager.
 
 ## Use the Go SDK
 
@@ -92,11 +96,13 @@ optlyClient, err = optimizelyFactory.Client()
 ```
 ### Make Decisions
 ```
-import ( 
-  optly "github.com/optimizely/go-sdk/v2" 
-) 
+import (
+  "fmt"
+  optly "github.com/optimizely/go-sdk/v2"
+  "github.com/optimizely/go-sdk/v2/pkg/decide"
+)
 
-// instantiate a client 
+// instantiate a client
 client, err := optly.Client("SDK_KEY") 
 
 // User attributes are optional and used for targeting and results segmentation 
