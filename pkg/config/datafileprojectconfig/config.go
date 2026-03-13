@@ -332,6 +332,10 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	}
 	eventMap := mappers.MapEvents(datafile.Events)
 	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentIDMap)
+
+	// Inject "everyone else" variation into feature_rollout experiments
+	injectFeatureRolloutVariations(featureMap, rolloutMap, experimentIDMap)
+
 	audienceMap, audienceSegmentList := mappers.MapAudiences(append(datafile.TypedAudiences, datafile.Audiences...))
 	flagVariationsMap := mappers.MapFlagVariations(featureMap)
 	holdouts, holdoutIDMap, flagHoldoutsMap := mappers.MapHoldouts(datafile.Holdouts, featureMap)
@@ -384,4 +388,58 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 
 	logger.Info("Datafile is valid.")
 	return config, nil
+}
+
+// injectFeatureRolloutVariations injects the "everyone else" variation from a flag's rollout
+// into any experiment with type "feature_rollout". This enables Feature Rollout experiments
+// to fall back to the everyone else variation when users are outside the rollout percentage.
+func injectFeatureRolloutVariations(featureMap map[string]entities.Feature, rolloutMap map[string]entities.Rollout, experimentMap map[string]entities.Experiment) {
+	for _, feature := range featureMap {
+		everyoneElseVariation := getEveryoneElseVariation(feature, rolloutMap)
+		if everyoneElseVariation == nil {
+			continue
+		}
+
+		for _, experimentID := range feature.ExperimentIDs {
+			experiment, ok := experimentMap[experimentID]
+			if !ok {
+				continue
+			}
+			if experiment.Type != "feature_rollout" {
+				continue
+			}
+
+			// Inject the everyone else variation
+			experiment.Variations[everyoneElseVariation.ID] = *everyoneElseVariation
+			experiment.VariationKeyToIDMap[everyoneElseVariation.Key] = everyoneElseVariation.ID
+			experiment.TrafficAllocation = append(experiment.TrafficAllocation, entities.Range{
+				EntityID:   everyoneElseVariation.ID,
+				EndOfRange: 10000,
+			})
+
+			// Update the experiment in the map
+			experimentMap[experimentID] = experiment
+		}
+	}
+}
+
+// getEveryoneElseVariation retrieves the first variation from the last experiment
+// in the flag's rollout (the "everyone else" rule).
+func getEveryoneElseVariation(feature entities.Feature, rolloutMap map[string]entities.Rollout) *entities.Variation {
+	rollout := feature.Rollout
+	if rollout.ID == "" {
+		return nil
+	}
+	if len(rollout.Experiments) == 0 {
+		return nil
+	}
+	everyoneElseRule := rollout.Experiments[len(rollout.Experiments)-1]
+	if len(everyoneElseRule.Variations) == 0 {
+		return nil
+	}
+	// Get the first variation from the everyone else rule
+	for _, variation := range everyoneElseRule.Variations {
+		return &variation
+	}
+	return nil
 }

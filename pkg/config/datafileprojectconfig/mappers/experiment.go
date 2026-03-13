@@ -91,6 +91,7 @@ func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experimen
 		AudienceConditionTree: audienceConditionTree,
 		Whitelist:             rawExperiment.ForcedVariations,
 		IsFeatureExperiment:   false,
+		Type:                  rawExperiment.Type,
 		Cmab:                  mapCmab(rawExperiment.Cmab),
 	}
 

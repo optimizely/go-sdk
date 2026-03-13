@@ -51,6 +51,7 @@ type Experiment struct {
 	AudienceIds        []string            `json:"audienceIds"`
 	ForcedVariations   map[string]string   `json:"forcedVariations"`
 	AudienceConditions interface{}         `json:"audienceConditions"`
+	Type               string              `json:"type,omitempty"`
 	Cmab               *Cmab               `json:"cmab,omitempty"` // is optional
 }
 
