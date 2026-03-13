@@ -19,6 +19,7 @@ package datafileprojectconfig
 import (
 	"testing"
 
+	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 
 	"github.com/stretchr/testify/assert"
@@ -259,7 +260,7 @@ func TestFeatureRolloutExperimentGetsEveryoneElseVariationInjected(t *testing.T)
 	config := loadFeatureRolloutConfig(t)
 	experiment, err := config.GetExperimentByKey("feature_rollout_experiment")
 	assert.NoError(t, err)
-	assert.Equal(t, "feature_rollout", experiment.Type)
+	assert.Equal(t, entities.ExperimentTypeFR, experiment.Type)
 
 	// Should have 2 variations: original + everyone else
 	assert.Equal(t, 2, len(experiment.Variations), "Should have 2 variations after injection")
@@ -293,7 +294,7 @@ func TestABTestExperimentNotModified(t *testing.T) {
 	config := loadFeatureRolloutConfig(t)
 	experiment, err := config.GetExperimentByKey("ab_test_experiment")
 	assert.NoError(t, err)
-	assert.Equal(t, "a/b", experiment.Type)
+	assert.Equal(t, entities.ExperimentTypeAB, experiment.Type)
 
 	// Should still have exactly 2 original variations
 	assert.Equal(t, 2, len(experiment.Variations), "A/B test should keep original 2 variations")
@@ -305,7 +306,7 @@ func TestFeatureRolloutWithEmptyRolloutIdDoesNotCrash(t *testing.T) {
 	config := loadFeatureRolloutConfig(t)
 	experiment, err := config.GetExperimentByKey("rollout_no_rollout_id_experiment")
 	assert.NoError(t, err)
-	assert.Equal(t, "feature_rollout", experiment.Type)
+	assert.Equal(t, entities.ExperimentTypeFR, experiment.Type)
 
 	// Should keep only original variation since rollout cannot be resolved
 	assert.Equal(t, 1, len(experiment.Variations), "Should keep only original variation")
@@ -317,11 +318,11 @@ func TestTypeFieldCorrectlyParsed(t *testing.T) {
 
 	rolloutExp, err := config.GetExperimentByKey("feature_rollout_experiment")
 	assert.NoError(t, err)
-	assert.Equal(t, "feature_rollout", rolloutExp.Type)
+	assert.Equal(t, entities.ExperimentTypeFR, rolloutExp.Type)
 
 	abExp, err := config.GetExperimentByKey("ab_test_experiment")
 	assert.NoError(t, err)
-	assert.Equal(t, "a/b", abExp.Type)
+	assert.Equal(t, entities.ExperimentTypeAB, abExp.Type)
 
 	noTypeExp, err := config.GetExperimentByKey("no_type_experiment")
 	assert.NoError(t, err)

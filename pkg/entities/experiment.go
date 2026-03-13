@@ -45,7 +45,7 @@ type Experiment struct {
 	AudienceConditionTree *TreeNode
 	Whitelist             map[string]string
 	IsFeatureExperiment   bool
-	Type                  string
+	Type                  ExperimentType
 	Cmab                  *Cmab
 }
 
@@ -60,6 +60,17 @@ type VariationVariable struct {
 	ID    string
 	Value string
 }
+
+// ExperimentType represents the type of an experiment
+type ExperimentType string
+
+const (
+	ExperimentTypeAB   ExperimentType = "a/b"
+	ExperimentTypeMAB  ExperimentType = "multi_armed_bandit"
+	ExperimentTypeCMAB ExperimentType = "contextual_multi_armed_bandit"
+	ExperimentTypeTD   ExperimentType = "targeted_delivery"
+	ExperimentTypeFR   ExperimentType = "feature_rollout"
+)
 
 // HoldoutStatus represents the status of a holdout
 type HoldoutStatus string

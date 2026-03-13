@@ -405,7 +405,7 @@ func injectFeatureRolloutVariations(featureMap map[string]entities.Feature, roll
 			if !ok {
 				continue
 			}
-			if experiment.Type != "feature_rollout" {
+			if experiment.Type != entities.ExperimentTypeFR {
 				continue
 			}
 
