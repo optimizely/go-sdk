@@ -334,7 +334,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	featureMap := mappers.MapFeatures(datafile.FeatureFlags, rolloutMap, experimentIDMap)
 
 	// Inject "everyone else" variation into feature_rollout experiments
-	injectFeatureRolloutVariations(featureMap, rolloutMap, experimentIDMap)
+	injectFeatureRolloutVariations(featureMap, experimentIDMap)
 
 	audienceMap, audienceSegmentList := mappers.MapAudiences(append(datafile.TypedAudiences, datafile.Audiences...))
 	flagVariationsMap := mappers.MapFlagVariations(featureMap)
@@ -393,9 +393,9 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 // injectFeatureRolloutVariations injects the "everyone else" variation from a flag's rollout
 // into any experiment with type "feature_rollout". This enables Feature Rollout experiments
 // to fall back to the everyone else variation when users are outside the rollout percentage.
-func injectFeatureRolloutVariations(featureMap map[string]entities.Feature, rolloutMap map[string]entities.Rollout, experimentMap map[string]entities.Experiment) {
+func injectFeatureRolloutVariations(featureMap map[string]entities.Feature, experimentMap map[string]entities.Experiment) {
 	for _, feature := range featureMap {
-		everyoneElseVariation := getEveryoneElseVariation(feature, rolloutMap)
+		everyoneElseVariation := getEveryoneElseVariation(feature)
 		if everyoneElseVariation == nil {
 			continue
 		}
@@ -425,7 +425,7 @@ func injectFeatureRolloutVariations(featureMap map[string]entities.Feature, roll
 
 // getEveryoneElseVariation retrieves the first variation from the last experiment
 // in the flag's rollout (the "everyone else" rule).
-func getEveryoneElseVariation(feature entities.Feature, rolloutMap map[string]entities.Rollout) *entities.Variation {
+func getEveryoneElseVariation(feature entities.Feature) *entities.Variation {
 	rollout := feature.Rollout
 	if rollout.ID == "" {
 		return nil
