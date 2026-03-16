@@ -65,11 +65,11 @@ type VariationVariable struct {
 type ExperimentType string
 
 const (
-	ExperimentTypeAB   ExperimentType = "a/b"
-	ExperimentTypeMAB  ExperimentType = "multi_armed_bandit"
-	ExperimentTypeCMAB ExperimentType = "contextual_multi_armed_bandit"
-	ExperimentTypeTD   ExperimentType = "targeted_delivery"
-	ExperimentTypeFR   ExperimentType = "feature_rollout"
+	ExperimentTypeAB   ExperimentType = "ab"
+	ExperimentTypeMAB  ExperimentType = "mab"
+	ExperimentTypeCMAB ExperimentType = "cmab"
+	ExperimentTypeTD   ExperimentType = "td"
+	ExperimentTypeFR   ExperimentType = "fr"
 )
 
 // HoldoutStatus represents the status of a holdout

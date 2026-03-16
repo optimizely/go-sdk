@@ -50,7 +50,7 @@ const featureRolloutDatafile = `{
       "layerId": "layer_1",
       "audienceIds": [],
       "forcedVariations": {},
-      "type": "feature_rollout",
+      "type": "fr",
       "variations": [
         {
           "id": "var_rollout_1",
@@ -72,7 +72,7 @@ const featureRolloutDatafile = `{
       "layerId": "layer_2",
       "audienceIds": [],
       "forcedVariations": {},
-      "type": "a/b",
+      "type": "ab",
       "variations": [
         {
           "id": "var_ab_1",
@@ -124,7 +124,7 @@ const featureRolloutDatafile = `{
       "layerId": "layer_4",
       "audienceIds": [],
       "forcedVariations": {},
-      "type": "feature_rollout",
+      "type": "fr",
       "variations": [
         {
           "id": "var_no_rollout_1",
