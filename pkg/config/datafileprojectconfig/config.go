@@ -394,12 +394,13 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 // into any experiment with type "feature_rollout". This enables Feature Rollout experiments
 // to fall back to the everyone else variation when users are outside the rollout percentage.
 func injectFeatureRolloutVariations(featureMap map[string]entities.Feature, experimentMap map[string]entities.Experiment) {
-	for _, feature := range featureMap {
+	for featureKey, feature := range featureMap {
 		everyoneElseVariation := getEveryoneElseVariation(feature)
 		if everyoneElseVariation == nil {
 			continue
 		}
 
+		featureModified := false
 		for _, experimentID := range feature.ExperimentIDs {
 			experiment, ok := experimentMap[experimentID]
 			if !ok {
@@ -419,6 +420,20 @@ func injectFeatureRolloutVariations(featureMap map[string]entities.Feature, expe
 
 			// Update the experiment in the map
 			experimentMap[experimentID] = experiment
+
+			// Also update the experiment in the feature's FeatureExperiments slice
+			for j := range feature.FeatureExperiments {
+				if feature.FeatureExperiments[j].ID == experimentID {
+					feature.FeatureExperiments[j] = experiment
+					featureModified = true
+					break
+				}
+			}
+		}
+
+		// Update the feature in the map if it was modified
+		if featureModified {
+			featureMap[featureKey] = feature
 		}
 	}
 }
