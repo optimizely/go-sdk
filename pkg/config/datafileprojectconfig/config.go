@@ -325,21 +325,6 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 	groupMap, experimentGroupMap := mappers.MapGroups(datafile.Groups)
 	experimentIDMap, experimentKeyMap := mappers.MapExperiments(allExperiments, experimentGroupMap)
 
-	validExperimentTypes := map[entities.ExperimentType]bool{
-		entities.ExperimentTypeAB:   true,
-		entities.ExperimentTypeMAB:  true,
-		entities.ExperimentTypeCMAB: true,
-		entities.ExperimentTypeTD:   true,
-		entities.ExperimentTypeFR:   true,
-	}
-	for _, experiment := range experimentIDMap {
-		if experiment.Type != "" && !validExperimentTypes[experiment.Type] {
-			err = fmt.Errorf(`experiment "%s" has invalid type "%s"`, experiment.Key, experiment.Type)
-			logger.Error(err.Error(), err)
-			return nil, err
-		}
-	}
-
 	rollouts, rolloutMap := mappers.MapRollouts(datafile.Rollouts)
 	integrations := []entities.Integration{}
 	for _, integration := range datafile.Integrations {

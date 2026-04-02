@@ -328,3 +328,67 @@ func TestTypeFieldCorrectlyParsed(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, noTypeExp.Type)
 }
+
+// Test 7: Unknown experiment type accepted - config parsing succeeds with unknown type value
+func TestUnknownExperimentTypeAccepted(t *testing.T) {
+	datafile := `{
+  "accountId": "12345",
+  "anonymizeIP": false,
+  "sendFlagDecisions": true,
+  "botFiltering": false,
+  "projectId": "67890",
+  "revision": "1",
+  "sdkKey": "UnknownTypeTest",
+  "environmentKey": "production",
+  "version": "4",
+  "audiences": [],
+  "typedAudiences": [],
+  "attributes": [],
+  "events": [],
+  "groups": [],
+  "integrations": [],
+  "experiments": [
+    {
+      "id": "exp_unknown",
+      "key": "unknown_type_experiment",
+      "status": "Running",
+      "layerId": "layer_1",
+      "audienceIds": [],
+      "forcedVariations": {},
+      "type": "new_unknown_type",
+      "variations": [
+        {
+          "id": "var_1",
+          "key": "variation_1",
+          "featureEnabled": true
+        }
+      ],
+      "trafficAllocation": [
+        {
+          "entityId": "var_1",
+          "endOfRange": 10000
+        }
+      ]
+    }
+  ],
+  "featureFlags": [
+    {
+      "id": "flag_1",
+      "key": "test_flag",
+      "rolloutId": "",
+      "experimentIds": ["exp_unknown"],
+      "variables": []
+    }
+  ],
+  "rollouts": []
+}`
+
+	logger := logging.GetLogger("test", "TestUnknownExperimentTypeAccepted")
+	config, err := NewDatafileProjectConfig([]byte(datafile), logger)
+	require.NoError(t, err, "Config parsing should succeed with unknown experiment type")
+	require.NotNil(t, config)
+
+	experiment, err := config.GetExperimentByKey("unknown_type_experiment")
+	assert.NoError(t, err)
+	assert.Equal(t, entities.ExperimentType("new_unknown_type"), experiment.Type)
+}
