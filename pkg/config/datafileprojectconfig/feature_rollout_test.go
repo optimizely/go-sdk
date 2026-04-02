@@ -392,3 +392,110 @@ func TestUnknownExperimentTypeAccepted(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, entities.ExperimentType("new_unknown_type"), experiment.Type)
 }
+
+// Test 8: Injection updates both experimentIDMap and feature.FeatureExperiments
+func TestFeatureRolloutInjectionUpdatesFeatureExperiments(t *testing.T) {
+	datafile := `{
+  "accountId": "12345",
+  "anonymizeIP": false,
+  "projectId": "67890",
+  "revision": "1",
+  "version": "4",
+  "audiences": [],
+  "attributes": [],
+  "events": [{"id": "1", "key": "test_event", "experimentIds": []}],
+  "groups": [],
+  "experiments": [
+    {
+      "id": "3002",
+      "key": "fr_zero_exp",
+      "status": "Running",
+      "layerId": "layer_3002",
+      "audienceIds": [],
+      "forcedVariations": {},
+      "type": "fr",
+      "variations": [
+        {
+          "id": "5002",
+          "key": "rollout_var",
+          "featureEnabled": true,
+          "variables": []
+        }
+      ],
+      "trafficAllocation": [
+        {
+          "entityId": "5002",
+          "endOfRange": 0
+        }
+      ]
+    }
+  ],
+  "featureFlags": [
+    {
+      "id": "1002",
+      "key": "flag_fr_zero",
+      "rolloutId": "rollout_1002",
+      "experimentIds": ["3002"],
+      "variables": []
+    }
+  ],
+  "rollouts": [
+    {
+      "id": "rollout_1002",
+      "experiments": [
+        {
+          "id": "ee_rule_1002",
+          "key": "ee_rule_1002",
+          "status": "Running",
+          "layerId": "rollout_1002",
+          "audienceIds": [],
+          "variations": [
+            {
+              "id": "5102",
+              "key": "everyone_else_var",
+              "featureEnabled": true,
+              "variables": []
+            }
+          ],
+          "trafficAllocation": [
+            {
+              "entityId": "5102",
+              "endOfRange": 10000
+            }
+          ],
+          "forcedVariations": {}
+        }
+      ]
+    }
+  ]
+}`
+
+	logger := logging.GetLogger("test", "TestFeatureRolloutInjectionUpdatesFeatureExperiments")
+	config, err := NewDatafileProjectConfig([]byte(datafile), logger)
+	require.NoError(t, err)
+
+	// Get experiment from experimentIDMap
+	experimentByID, err := config.GetExperimentByID("3002")
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(experimentByID.Variations), "experimentIDMap should have injected variation")
+	assert.Equal(t, 2, len(experimentByID.TrafficAllocation), "experimentIDMap should have injected traffic allocation")
+
+	// Get experiment from feature.FeatureExperiments
+	feature, err := config.GetFeatureByKey("flag_fr_zero")
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(feature.FeatureExperiments), "Feature should have 1 experiment")
+
+	featureExperiment := feature.FeatureExperiments[0]
+	assert.Equal(t, "3002", featureExperiment.ID)
+	assert.Equal(t, 2, len(featureExperiment.Variations), "Feature experiment should have injected variation")
+	assert.Equal(t, 2, len(featureExperiment.TrafficAllocation), "Feature experiment should have injected traffic allocation")
+
+	// Verify the injected traffic allocation is correct
+	lastAllocation := featureExperiment.TrafficAllocation[len(featureExperiment.TrafficAllocation)-1]
+	assert.Equal(t, "5102", lastAllocation.EntityID, "Last allocation should be everyone else variation")
+	assert.Equal(t, 10000, lastAllocation.EndOfRange, "Last allocation should have endOfRange 10000")
+
+	// Verify both maps have the same traffic allocations
+	assert.Equal(t, len(experimentByID.TrafficAllocation), len(featureExperiment.TrafficAllocation),
+		"Traffic allocations should match between experimentIDMap and FeatureExperiments")
+}
