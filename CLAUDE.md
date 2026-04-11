@@ -93,3 +93,10 @@ The linter config (`.golangci.yml`) deliberately disables a few `revive` rules (
 - Every source file must carry the Optimizely Apache 2.0 copyright header (see `CONTRIBUTING.md` for the exact block). Update the year line when editing an existing file.
 - PRs require accompanying unit tests; `make lint` and `make test` must both pass.
 - The project follows trunk-based development on `master`; `master` is not always the most stable — releases are cut via Git tags.
+
+## Active Technologies
+- Go 1.21+ (minimum), tested on Go 1.24 (CI) + `github.com/open-feature/go-sdk` v1.17.x (Apache 2.0) (005-openfeature-provider)
+- Go 1.21+ (minimum), tested on Go 1.24 (CI) + `github.com/open-feature/go-sdk` v1.14.1 (Apache 2.0), `github.com/optimizely/go-sdk/v2` (this repo) (006-openfeature-spec-gaps)
+
+## Recent Changes
+- 005-openfeature-provider: Added Go 1.21+ (minimum), tested on Go 1.24 (CI) + `github.com/open-feature/go-sdk` v1.17.x (Apache 2.0)
