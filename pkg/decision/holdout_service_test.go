@@ -302,7 +302,7 @@ func (s *HoldoutServiceTestSuite) TestCheckIfUserInHoldoutAudienceNilHoldout() {
 	}
 	s.mockLogger.On("Debug", mock.Anything).Return()
 
-	result := testHoldoutService.checkIfUserInHoldoutAudience(nil, s.testUserContext, s.mockConfig, s.options)
+	result := testHoldoutService.CheckIfUserInHoldoutAudience(nil, s.testUserContext, s.mockConfig, s.options)
 
 	s.False(result.result)
 }
@@ -315,7 +315,7 @@ func (s *HoldoutServiceTestSuite) TestCheckIfUserInHoldoutAudienceNoConditionTre
 	}
 	s.mockLogger.On("Debug", mock.Anything).Return()
 
-	result := testHoldoutService.checkIfUserInHoldoutAudience(&holdout, s.testUserContext, s.mockConfig, s.options)
+	result := testHoldoutService.CheckIfUserInHoldoutAudience(&holdout, s.testUserContext, s.mockConfig, s.options)
 
 	s.True(result.result)
 }
@@ -329,7 +329,7 @@ func (s *HoldoutServiceTestSuite) TestCheckIfUserInHoldoutAudienceWithConditionT
 	s.mockAudienceTreeEvaluator.On("Evaluate", holdout.AudienceConditionTree, mock.Anything, s.options).Return(true, true, s.decisionReasons)
 	s.mockLogger.On("Debug", mock.Anything).Return()
 
-	result := testHoldoutService.checkIfUserInHoldoutAudience(&holdout, s.testUserContext, s.mockConfig, s.options)
+	result := testHoldoutService.CheckIfUserInHoldoutAudience(&holdout, s.testUserContext, s.mockConfig, s.options)
 
 	s.True(result.result)
 	s.mockAudienceTreeEvaluator.AssertExpectations(s.T())

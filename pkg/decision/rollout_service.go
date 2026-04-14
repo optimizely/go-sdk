@@ -107,6 +107,18 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 			return *forcedDecision, reasons, nil
 		}
 
+		// Check local holdouts targeting this specific delivery rule
+		localHoldouts := decisionContext.ProjectConfig.GetHoldoutsForRule(experiment.ID)
+		for i := range localHoldouts {
+			holdout := &localHoldouts[i]
+			holdoutDecision, holdoutReasons := r.evaluateHoldout(holdout, userContext, decisionContext, options)
+			reasons.Append(holdoutReasons)
+			if holdoutDecision.Variation != nil {
+				// User is in local holdout - return immediately, skip delivery rule evaluation
+				return holdoutDecision, reasons, nil
+			}
+		}
+
 		experimentDecisionContext := getExperimentDecisionContext(experiment)
 		// Move to next evaluation if condition tree is available and evaluation fails
 
@@ -135,6 +147,18 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	// Checking for forced decision
 	if forcedDecision := checkForForcedDecision(experiment); forcedDecision != nil {
 		return *forcedDecision, reasons, nil
+	}
+
+	// Check local holdouts targeting the "Everyone Else" delivery rule
+	localHoldouts := decisionContext.ProjectConfig.GetHoldoutsForRule(experiment.ID)
+	for i := range localHoldouts {
+		holdout := &localHoldouts[i]
+		holdoutDecision, holdoutReasons := r.evaluateHoldout(holdout, userContext, decisionContext, options)
+		reasons.Append(holdoutReasons)
+		if holdoutDecision.Variation != nil {
+			// User is in local holdout - return immediately
+			return holdoutDecision, reasons, nil
+		}
 	}
 
 	experimentDecisionContext := getExperimentDecisionContext(experiment)
@@ -186,4 +210,75 @@ func (r RolloutService) getForcedDecision(decisionContext FeatureDecisionContext
 		}
 	}
 	return nil, reasons
+}
+
+// evaluateHoldout evaluates a single local holdout for a user and returns a decision
+func (r RolloutService) evaluateHoldout(holdout *entities.Holdout, userContext entities.UserContext, decisionContext FeatureDecisionContext, options *decide.Options) (FeatureDecision, decide.DecisionReasons) {
+	reasons := decide.NewDecisionReasons(options)
+
+	// Create holdout service for evaluation
+	holdoutService := NewHoldoutService("")
+
+	r.logger.Debug(fmt.Sprintf("Evaluating local holdout %s for delivery rule", holdout.Key))
+
+	// Check if holdout is running
+	if holdout.Status != entities.HoldoutStatusRunning {
+		reason := reasons.AddInfo("Local holdout %s is not running.", holdout.Key)
+		r.logger.Info(reason)
+		return FeatureDecision{}, reasons
+	}
+
+	// Check audience conditions
+	inAudience := holdoutService.CheckIfUserInHoldoutAudience(holdout, userContext, decisionContext.ProjectConfig, options)
+	reasons.Append(inAudience.reasons)
+
+	if !inAudience.result {
+		reason := reasons.AddInfo("User %s does not meet conditions for local holdout %s.", userContext.ID, holdout.Key)
+		r.logger.Info(reason)
+		return FeatureDecision{}, reasons
+	}
+
+	reason := reasons.AddInfo("User %s meets conditions for local holdout %s.", userContext.ID, holdout.Key)
+	r.logger.Info(reason)
+
+	// Get bucketing ID
+	bucketingID, err := userContext.GetBucketingID()
+	if err != nil {
+		errorMessage := reasons.AddInfo("Error computing bucketing ID for local holdout %q: %q", holdout.Key, err.Error())
+		r.logger.Debug(errorMessage)
+	}
+
+	if bucketingID != userContext.ID {
+		r.logger.Debug(fmt.Sprintf("Using bucketing ID: %q for user %q", bucketingID, userContext.ID))
+	}
+
+	// Convert holdout to experiment structure for bucketing
+	experimentForBucketing := entities.Experiment{
+		ID:                    holdout.ID,
+		Key:                   holdout.Key,
+		Variations:            holdout.Variations,
+		TrafficAllocation:     holdout.TrafficAllocation,
+		AudienceIds:           holdout.AudienceIds,
+		AudienceConditions:    holdout.AudienceConditions,
+		AudienceConditionTree: holdout.AudienceConditionTree,
+	}
+
+	// Bucket user into holdout variation
+	variation, _, _ := holdoutService.bucketer.Bucket(bucketingID, experimentForBucketing, entities.Group{})
+
+	if variation != nil {
+		reason = reasons.AddInfo("User %s is in variation %s of local holdout %s.", userContext.ID, variation.Key, holdout.Key)
+		r.logger.Info(reason)
+
+		featureDecision := FeatureDecision{
+			Experiment: experimentForBucketing,
+			Variation:  variation,
+			Source:     Holdout,
+		}
+		return featureDecision, reasons
+	}
+
+	reason = reasons.AddInfo("User %s is in no local holdout variation.", userContext.ID)
+	r.logger.Info(reason)
+	return FeatureDecision{}, reasons
 }

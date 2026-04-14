@@ -90,4 +90,10 @@ type Holdout struct {
 	Variations            map[string]Variation // keyed by variation ID
 	TrafficAllocation     []Range
 	AudienceConditionTree *TreeNode
+	IncludedRules         []string // nil = global (all rules), non-nil = local (specific rules)
+}
+
+// IsGlobal returns true if the holdout is global (applies to all rules)
+func (h Holdout) IsGlobal() bool {
+	return h.IncludedRules == nil
 }

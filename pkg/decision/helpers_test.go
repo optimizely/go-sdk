@@ -64,6 +64,18 @@ func (c *mockProjectConfig) GetHoldoutsForFlag(featureKey string) []entities.Hol
 	return args.Get(0).([]entities.Holdout)
 }
 
+func (c *mockProjectConfig) GetHoldoutsForRule(ruleID string) []entities.Holdout {
+	// Don't call the mock - just return empty slice
+	// Tests can override this method if they need specific behavior
+	return []entities.Holdout{}
+}
+
+func (c *mockProjectConfig) GetGlobalHoldouts() []entities.Holdout {
+	// Don't call the mock - just return empty slice
+	// Tests can override this method if they need specific behavior
+	return []entities.Holdout{}
+}
+
 type MockExperimentDecisionService struct {
 	mock.Mock
 }

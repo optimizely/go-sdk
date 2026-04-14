@@ -205,6 +205,16 @@ func (m *MockProjectConfig) GetHoldoutsForFlag(featureKey string) []entities.Hol
 	return args.Get(0).([]entities.Holdout)
 }
 
+func (m *MockProjectConfig) GetHoldoutsForRule(ruleID string) []entities.Holdout {
+	args := m.Called(ruleID)
+	return args.Get(0).([]entities.Holdout)
+}
+
+func (m *MockProjectConfig) GetGlobalHoldouts() []entities.Holdout {
+	args := m.Called()
+	return args.Get(0).([]entities.Holdout)
+}
+
 // MockLogger is a mock implementation of OptimizelyLogProducer
 // (This declaration has been removed to resolve the redeclaration error)
 

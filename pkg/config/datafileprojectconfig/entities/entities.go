@@ -123,8 +123,7 @@ type Holdout struct {
 	AudienceConditions interface{}         `json:"audienceConditions"`
 	Variations         []Variation         `json:"variations"`
 	TrafficAllocation  []TrafficAllocation `json:"trafficAllocation"`
-	IncludedFlags      []string            `json:"includedFlags,omitempty"`
-	ExcludedFlags      []string            `json:"excludedFlags,omitempty"`
+	IncludedRules      []string            `json:"includedRules,omitempty"`
 }
 
 // Integration represents a integration from the Optimizely datafile

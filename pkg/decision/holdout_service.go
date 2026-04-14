@@ -64,7 +64,7 @@ func (h HoldoutService) GetDecision(decisionContext FeatureDecisionContext, user
 		}
 
 		// Check audience conditions
-		inAudience := h.checkIfUserInHoldoutAudience(holdout, userContext, decisionContext.ProjectConfig, options)
+		inAudience := h.CheckIfUserInHoldoutAudience(holdout, userContext, decisionContext.ProjectConfig, options)
 		reasons.Append(inAudience.reasons)
 
 		if !inAudience.result {
@@ -120,8 +120,8 @@ func (h HoldoutService) GetDecision(decisionContext FeatureDecisionContext, user
 	return FeatureDecision{}, reasons, nil
 }
 
-// checkIfUserInHoldoutAudience evaluates if user meets holdout audience conditions
-func (h HoldoutService) checkIfUserInHoldoutAudience(holdout *entities.Holdout, userContext entities.UserContext, projectConfig config.ProjectConfig, options *decide.Options) decisionResult {
+// CheckIfUserInHoldoutAudience evaluates if user meets holdout audience conditions
+func (h HoldoutService) CheckIfUserInHoldoutAudience(holdout *entities.Holdout, userContext entities.UserContext, projectConfig config.ProjectConfig, options *decide.Options) decisionResult {
 	decisionReasons := decide.NewDecisionReasons(options)
 
 	if holdout == nil {
