@@ -446,6 +446,155 @@ func TestEvaluateHoldoutRunningNoAudience(t *testing.T) {
 	assert.NotNil(t, reasons)
 }
 
+func TestEvaluateHoldoutAudienceFails(t *testing.T) {
+	rolloutService := NewRolloutService("")
+	mockConfig := new(mockProjectConfig)
+	userContext := entities.UserContext{ID: "test_user"}
+	options := &decide.Options{}
+
+	holdoutVar := entities.Variation{ID: "var_1", Key: "control"}
+	audienceCondTree := &entities.TreeNode{
+		Operator: "or",
+		Nodes: []*entities.TreeNode{
+			{Item: "audience_123"},
+		},
+	}
+	holdoutWithAudience := &entities.Holdout{
+		ID:                    "holdout_2",
+		Key:                   "audience_holdout",
+		Status:                entities.HoldoutStatusRunning,
+		Variations:            map[string]entities.Variation{"var_1": holdoutVar},
+		TrafficAllocation:     []entities.Range{{EntityID: "var_1", EndOfRange: 10000}},
+		AudienceConditionTree: audienceCondTree,
+	}
+
+	mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
+
+	decisionContext := FeatureDecisionContext{
+		ProjectConfig: mockConfig,
+		Feature:       &testFeatRollout3334,
+	}
+
+	decision, reasons := rolloutService.evaluateHoldout(holdoutWithAudience, userContext, decisionContext, options)
+
+	// Should return empty decision when audience doesn't match
+	assert.Nil(t, decision.Variation)
+	assert.NotNil(t, reasons)
+}
+
+func TestEvaluateHoldoutNotBucketed(t *testing.T) {
+	rolloutService := NewRolloutService("")
+	mockConfig := new(mockProjectConfig)
+	userContext := entities.UserContext{ID: "test_user_not_bucketed"}
+	options := &decide.Options{}
+
+	holdoutVar := entities.Variation{ID: "var_1", Key: "control"}
+	runningHoldout := &entities.Holdout{
+		ID:     "holdout_3",
+		Key:    "zero_traffic_holdout",
+		Status: entities.HoldoutStatusRunning,
+		Variations: map[string]entities.Variation{
+			"var_1": holdoutVar,
+		},
+		TrafficAllocation: []entities.Range{
+			{EntityID: "var_1", EndOfRange: 0}, // 0% traffic - no one gets bucketed
+		},
+		AudienceConditionTree: nil,
+	}
+
+	mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
+
+	decisionContext := FeatureDecisionContext{
+		ProjectConfig: mockConfig,
+		Feature:       &testFeatRollout3334,
+	}
+
+	decision, reasons := rolloutService.evaluateHoldout(runningHoldout, userContext, decisionContext, options)
+
+	// Should return empty decision when user not bucketed (0% traffic)
+	assert.Nil(t, decision.Variation)
+	assert.NotNil(t, reasons)
+}
+
+func TestEvaluateHoldoutWithCustomBucketingID(t *testing.T) {
+	rolloutService := NewRolloutService("")
+	mockConfig := new(mockProjectConfig)
+	// User context with custom bucketing ID attribute
+	userContext := entities.UserContext{
+		ID: "test_user",
+		Attributes: map[string]interface{}{
+			"$opt_bucketing_id": "custom_bucket_123",
+		},
+	}
+	options := &decide.Options{}
+
+	holdoutVar := entities.Variation{ID: "var_1", Key: "control"}
+	runningHoldout := &entities.Holdout{
+		ID:     "holdout_4",
+		Key:    "bucketing_id_holdout",
+		Status: entities.HoldoutStatusRunning,
+		Variations: map[string]entities.Variation{
+			"var_1": holdoutVar,
+		},
+		TrafficAllocation: []entities.Range{
+			{EntityID: "var_1", EndOfRange: 10000},
+		},
+		AudienceConditionTree: nil,
+	}
+
+	mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
+
+	decisionContext := FeatureDecisionContext{
+		ProjectConfig: mockConfig,
+		Feature:       &testFeatRollout3334,
+	}
+
+	_, reasons := rolloutService.evaluateHoldout(runningHoldout, userContext, decisionContext, options)
+
+	// Should use custom bucketing ID and not error
+	assert.NotNil(t, reasons)
+}
+
+func TestEveryoneElseRuleAudienceFails(t *testing.T) {
+	rolloutService := NewRolloutService("")
+	mockConfig := new(mockProjectConfig)
+	userContext := entities.UserContext{ID: "test_user"}
+	options := &decide.Options{}
+	reasons := decide.NewDecisionReasons(options)
+
+	mockConfig.On("GetHoldoutsForRule", testExp1118.ID).Return([]entities.Holdout{})
+	mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
+
+	featureDecision := FeatureDecision{Source: Rollout}
+	decisionContext := FeatureDecisionContext{
+		ProjectConfig: mockConfig,
+		Feature:       &testFeatRollout3334,
+	}
+
+	checkForForcedDecision := func(exp *entities.Experiment) *FeatureDecision { return nil }
+	evaluateConditionTree := func(exp *entities.Experiment, loggingKey string) bool { return false } // Audience fails
+	getExperimentDecisionContext := func(exp *entities.Experiment) ExperimentDecisionContext {
+		return ExperimentDecisionContext{Experiment: exp, ProjectConfig: mockConfig}
+	}
+
+	decision, _, _ := rolloutService.evaluateEveryoneElseRule(
+		&testExp1118,
+		&featureDecision,
+		&testFeatRollout3334,
+		userContext,
+		decisionContext,
+		options,
+		reasons,
+		checkForForcedDecision,
+		evaluateConditionTree,
+		getExperimentDecisionContext,
+	)
+
+	// Should return original featureDecision when audience fails
+	assert.Nil(t, decision.Variation)
+	assert.Equal(t, Rollout, decision.Source)
+}
+
 func TestRolloutServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(RolloutServiceTestSuite))
 }
