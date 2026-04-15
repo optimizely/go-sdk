@@ -146,8 +146,33 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	}
 
 	// Evaluate "Everyone Else" rule (last rule)
-	experiment := &rollout.Experiments[numberOfExperiments-1]
+	return r.evaluateEveryoneElseRule(
+		&rollout.Experiments[numberOfExperiments-1],
+		&featureDecision,
+		feature,
+		userContext,
+		decisionContext,
+		options,
+		reasons,
+		checkForForcedDecision,
+		evaluateConditionTree,
+		getExperimentDecisionContext,
+	)
+}
 
+// evaluateEveryoneElseRule evaluates the "Everyone Else" fallback rule
+func (r RolloutService) evaluateEveryoneElseRule(
+	experiment *entities.Experiment,
+	featureDecision *FeatureDecision,
+	feature *entities.Feature,
+	userContext entities.UserContext,
+	decisionContext FeatureDecisionContext,
+	options *decide.Options,
+	reasons decide.DecisionReasons,
+	checkForForcedDecision func(*entities.Experiment) *FeatureDecision,
+	evaluateConditionTree func(*entities.Experiment, string) bool,
+	getExperimentDecisionContext func(*entities.Experiment) ExperimentDecisionContext,
+) (FeatureDecision, decide.DecisionReasons, error) {
 	// Check for forced decision
 	if forcedDecision := checkForForcedDecision(experiment); forcedDecision != nil {
 		return *forcedDecision, reasons, nil
@@ -177,11 +202,11 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 			logMessage := reasons.AddInfo(logging.UserInEveryoneElse.String(), userContext.ID)
 			r.logger.Debug(logMessage)
 		}
-		featureDecision = r.getFeatureDecision(&featureDecision, userContext, *feature, experiment, &decision)
-		return featureDecision, reasons, nil
+		*featureDecision = r.getFeatureDecision(featureDecision, userContext, *feature, experiment, &decision)
+		return *featureDecision, reasons, nil
 	}
 
-	return featureDecision, reasons, nil
+	return *featureDecision, reasons, nil
 }
 
 // creating this sub method to avoid cyco-complexity warning
@@ -286,4 +311,3 @@ func (r RolloutService) evaluateHoldout(holdout *entities.Holdout, userContext e
 	r.logger.Info(reason)
 	return FeatureDecision{}, reasons
 }
-
