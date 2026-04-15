@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2026, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -98,86 +98,31 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		return nil
 	}
 
+	// Evaluate targeted delivery rules (all except last "Everyone Else" rule)
 	for index := 0; index < numberOfExperiments-1; index++ {
 		loggingKey := strconv.Itoa(index + 1)
 		experiment := &rollout.Experiments[index]
 
-		// Checking for forced decision
-		if forcedDecision := checkForForcedDecision(experiment); forcedDecision != nil {
-			return *forcedDecision, reasons, nil
-		}
-
-		// Check local holdouts targeting this specific delivery rule
-		localHoldouts := decisionContext.ProjectConfig.GetHoldoutsForRule(experiment.ID)
-		for i := range localHoldouts {
-			holdout := &localHoldouts[i]
-			holdoutDecision, holdoutReasons := r.evaluateHoldout(holdout, userContext, decisionContext, options)
-			reasons.Append(holdoutReasons)
-			if holdoutDecision.Variation != nil {
-				// User is in local holdout - return immediately, skip delivery rule evaluation
-				return holdoutDecision, reasons, nil
-			}
-		}
-
-		experimentDecisionContext := getExperimentDecisionContext(experiment)
-		// Move to next evaluation if condition tree is available and evaluation fails
-
-		evaluationResult := experiment.AudienceConditionTree == nil || evaluateConditionTree(experiment, loggingKey)
-		r.logger.Debug(fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), loggingKey, evaluationResult))
-		if !evaluationResult {
-			logMessage := reasons.AddInfo(logging.UserNotInRollout.String(), userContext.ID, loggingKey)
-			r.logger.Debug(logMessage)
-			// Evaluate this user for the next rule
-			continue
-		}
-
-		decision, decisionReasons, _ := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext, options)
+		decision, decisionReasons, shouldReturn := r.evaluateRolloutRule(
+			experiment, loggingKey, &featureDecision, feature,
+			userContext, decisionContext, options,
+			checkForForcedDecision, evaluateConditionTree, getExperimentDecisionContext,
+		)
 		reasons.Append(decisionReasons)
-		if decision.Variation == nil {
-			// Evaluate fall back rule / last rule now
-			break
-		}
-		finalFeatureDecision := r.getFeatureDecision(&featureDecision, userContext, *feature, experiment, &decision)
-		return finalFeatureDecision, reasons, nil
-	}
 
-	// fall back rule / last rule
-	experiment := &rollout.Experiments[numberOfExperiments-1]
-
-	// Checking for forced decision
-	if forcedDecision := checkForForcedDecision(experiment); forcedDecision != nil {
-		return *forcedDecision, reasons, nil
-	}
-
-	// Check local holdouts targeting the "Everyone Else" delivery rule
-	localHoldouts := decisionContext.ProjectConfig.GetHoldoutsForRule(experiment.ID)
-	for i := range localHoldouts {
-		holdout := &localHoldouts[i]
-		holdoutDecision, holdoutReasons := r.evaluateHoldout(holdout, userContext, decisionContext, options)
-		reasons.Append(holdoutReasons)
-		if holdoutDecision.Variation != nil {
-			// User is in local holdout - return immediately
-			return holdoutDecision, reasons, nil
+		if shouldReturn {
+			return decision, reasons, nil
 		}
 	}
 
-	experimentDecisionContext := getExperimentDecisionContext(experiment)
-	// Move to bucketing if conditionTree is unavailable or evaluation passes
-	evaluationResult := experiment.AudienceConditionTree == nil || evaluateConditionTree(experiment, "Everyone Else")
-	r.logger.Debug(fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "Everyone Else", evaluationResult))
-
-	if evaluationResult {
-		decision, decisionReasons, err := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext, options)
-		reasons.Append(decisionReasons)
-		if err == nil {
-			logMessage := reasons.AddInfo(logging.UserInEveryoneElse.String(), userContext.ID)
-			r.logger.Debug(logMessage)
-		}
-		finalFeatureDecision := r.getFeatureDecision(&featureDecision, userContext, *feature, experiment, &decision)
-		return finalFeatureDecision, reasons, nil
-	}
-
-	return featureDecision, reasons, nil
+	// Evaluate "Everyone Else" rule (last rule)
+	decision, decisionReasons, _ := r.evaluateEveryoneElseRule(
+		&rollout.Experiments[numberOfExperiments-1], &featureDecision, feature,
+		userContext, decisionContext, options,
+		checkForForcedDecision, evaluateConditionTree, getExperimentDecisionContext,
+	)
+	reasons.Append(decisionReasons)
+	return decision, reasons, nil
 }
 
 // creating this sub method to avoid cyco-complexity warning
@@ -281,4 +226,111 @@ func (r RolloutService) evaluateHoldout(holdout *entities.Holdout, userContext e
 	reason = reasons.AddInfo("User %s is in no local holdout variation.", userContext.ID)
 	r.logger.Info(reason)
 	return FeatureDecision{}, reasons
+}
+
+// evaluateRolloutRule evaluates a single rollout rule (forced decision, local holdouts, audience, bucketing)
+func (r RolloutService) evaluateRolloutRule(
+	experiment *entities.Experiment,
+	loggingKey string,
+	featureDecision *FeatureDecision,
+	feature *entities.Feature,
+	userContext entities.UserContext,
+	decisionContext FeatureDecisionContext,
+	options *decide.Options,
+	checkForForcedDecision func(*entities.Experiment) *FeatureDecision,
+	evaluateConditionTree func(*entities.Experiment, string) bool,
+	getExperimentDecisionContext func(*entities.Experiment) ExperimentDecisionContext,
+) (FeatureDecision, decide.DecisionReasons, bool) {
+	reasons := decide.NewDecisionReasons(options)
+
+	// Check for forced decision
+	if forcedDecision := checkForForcedDecision(experiment); forcedDecision != nil {
+		return *forcedDecision, reasons, true
+	}
+
+	// Check local holdouts targeting this delivery rule
+	localHoldouts := decisionContext.ProjectConfig.GetHoldoutsForRule(experiment.ID)
+	for i := range localHoldouts {
+		holdout := &localHoldouts[i]
+		holdoutDecision, holdoutReasons := r.evaluateHoldout(holdout, userContext, decisionContext, options)
+		reasons.Append(holdoutReasons)
+		if holdoutDecision.Variation != nil {
+			// User is in local holdout - return immediately
+			return holdoutDecision, reasons, true
+		}
+	}
+
+	// Evaluate audience conditions
+	evaluationResult := experiment.AudienceConditionTree == nil || evaluateConditionTree(experiment, loggingKey)
+	r.logger.Debug(fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), loggingKey, evaluationResult))
+	if !evaluationResult {
+		logMessage := reasons.AddInfo(logging.UserNotInRollout.String(), userContext.ID, loggingKey)
+		r.logger.Debug(logMessage)
+		// Continue to next rule
+		return FeatureDecision{}, reasons, false
+	}
+
+	// Bucket user into variation
+	experimentDecisionContext := getExperimentDecisionContext(experiment)
+	decision, decisionReasons, _ := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext, options)
+	reasons.Append(decisionReasons)
+
+	if decision.Variation == nil {
+		// No variation, move to fall back rule
+		return FeatureDecision{}, reasons, false
+	}
+
+	// User bucketed successfully
+	finalFeatureDecision := r.getFeatureDecision(featureDecision, userContext, *feature, experiment, &decision)
+	return finalFeatureDecision, reasons, true
+}
+
+// evaluateEveryoneElseRule evaluates the "Everyone Else" rule (last rule in rollout)
+func (r RolloutService) evaluateEveryoneElseRule(
+	experiment *entities.Experiment,
+	featureDecision *FeatureDecision,
+	feature *entities.Feature,
+	userContext entities.UserContext,
+	decisionContext FeatureDecisionContext,
+	options *decide.Options,
+	checkForForcedDecision func(*entities.Experiment) *FeatureDecision,
+	evaluateConditionTree func(*entities.Experiment, string) bool,
+	getExperimentDecisionContext func(*entities.Experiment) ExperimentDecisionContext,
+) (FeatureDecision, decide.DecisionReasons, error) {
+	reasons := decide.NewDecisionReasons(options)
+
+	// Check for forced decision
+	if forcedDecision := checkForForcedDecision(experiment); forcedDecision != nil {
+		return *forcedDecision, reasons, nil
+	}
+
+	// Check local holdouts targeting the "Everyone Else" rule
+	localHoldouts := decisionContext.ProjectConfig.GetHoldoutsForRule(experiment.ID)
+	for i := range localHoldouts {
+		holdout := &localHoldouts[i]
+		holdoutDecision, holdoutReasons := r.evaluateHoldout(holdout, userContext, decisionContext, options)
+		reasons.Append(holdoutReasons)
+		if holdoutDecision.Variation != nil {
+			// User is in local holdout - return immediately
+			return holdoutDecision, reasons, nil
+		}
+	}
+
+	// Evaluate audience conditions
+	evaluationResult := experiment.AudienceConditionTree == nil || evaluateConditionTree(experiment, "Everyone Else")
+	r.logger.Debug(fmt.Sprintf(logging.RolloutAudiencesEvaluatedTo.String(), "Everyone Else", evaluationResult))
+
+	if evaluationResult {
+		experimentDecisionContext := getExperimentDecisionContext(experiment)
+		decision, decisionReasons, err := r.experimentBucketerService.GetDecision(experimentDecisionContext, userContext, options)
+		reasons.Append(decisionReasons)
+		if err == nil {
+			logMessage := reasons.AddInfo(logging.UserInEveryoneElse.String(), userContext.ID)
+			r.logger.Debug(logMessage)
+		}
+		finalFeatureDecision := r.getFeatureDecision(featureDecision, userContext, *feature, experiment, &decision)
+		return finalFeatureDecision, reasons, nil
+	}
+
+	return *featureDecision, reasons, nil
 }
