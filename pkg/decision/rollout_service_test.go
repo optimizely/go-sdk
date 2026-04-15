@@ -387,6 +387,65 @@ func TestNewRolloutService(t *testing.T) {
 	assert.IsType(t, &ExperimentBucketerService{logger: logging.GetLogger("sdkKey", "ExperimentBucketerService")}, rolloutService.experimentBucketerService)
 }
 
+func TestEvaluateHoldoutNotRunning(t *testing.T) {
+	rolloutService := NewRolloutService("")
+	mockConfig := new(mockProjectConfig)
+	userContext := entities.UserContext{ID: "test_user"}
+	options := &decide.Options{}
+
+	draftHoldout := &entities.Holdout{
+		ID:     "holdout_1",
+		Key:    "draft_holdout",
+		Status: "Draft", // Not running
+	}
+
+	decisionContext := FeatureDecisionContext{
+		ProjectConfig: mockConfig,
+	}
+
+	decision, reasons := rolloutService.evaluateHoldout(draftHoldout, userContext, decisionContext, options)
+
+	// Should return empty decision for non-running holdout
+	assert.Nil(t, decision.Variation)
+	assert.NotNil(t, reasons)
+}
+
+func TestEvaluateHoldoutRunningNoAudience(t *testing.T) {
+	rolloutService := NewRolloutService("")
+	mockConfig := new(mockProjectConfig)
+	userContext := entities.UserContext{ID: "test_user"}
+	options := &decide.Options{}
+
+	holdoutVar := entities.Variation{ID: "var_1", Key: "control"}
+	runningHoldout := &entities.Holdout{
+		ID:     "holdout_1",
+		Key:    "running_holdout",
+		Status: entities.HoldoutStatusRunning,
+		Variations: map[string]entities.Variation{
+			"var_1": holdoutVar,
+		},
+		TrafficAllocation: []entities.Range{
+			{EntityID: "var_1", EndOfRange: 10000}, // 100% traffic
+		},
+		AudienceConditionTree: nil, // No audience conditions
+	}
+
+	mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
+
+	decisionContext := FeatureDecisionContext{
+		ProjectConfig: mockConfig,
+		Feature:       &testFeatRollout3334,
+	}
+
+	decision, reasons := rolloutService.evaluateHoldout(runningHoldout, userContext, decisionContext, options)
+
+	// Should return holdout variation for 100% traffic
+	assert.NotNil(t, decision.Variation)
+	assert.Equal(t, "control", decision.Variation.Key)
+	assert.Equal(t, Holdout, decision.Source)
+	assert.NotNil(t, reasons)
+}
+
 func TestRolloutServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(RolloutServiceTestSuite))
 }
