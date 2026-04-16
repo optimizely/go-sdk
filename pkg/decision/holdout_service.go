@@ -148,6 +148,75 @@ func (h HoldoutService) CheckIfUserInHoldoutAudience(holdout *entities.Holdout, 
 	return decisionResult{result: true, reasons: decisionReasons}
 }
 
+// EvaluateLocalHoldout evaluates a single local holdout for a user and returns a decision
+// This is shared logic used by both RolloutService and FeatureExperimentService
+func (h HoldoutService) EvaluateLocalHoldout(holdout *entities.Holdout, userContext entities.UserContext, projectConfig config.ProjectConfig, options *decide.Options, contextDescription string) (FeatureDecision, decide.DecisionReasons) {
+	reasons := decide.NewDecisionReasons(options)
+
+	h.logger.Debug(fmt.Sprintf("Evaluating local holdout %s for %s", holdout.Key, contextDescription))
+
+	// Check if holdout is running
+	if holdout.Status != entities.HoldoutStatusRunning {
+		reason := reasons.AddInfo("Local holdout %s is not running.", holdout.Key)
+		h.logger.Info(reason)
+		return FeatureDecision{}, reasons
+	}
+
+	// Check audience conditions
+	inAudience := h.CheckIfUserInHoldoutAudience(holdout, userContext, projectConfig, options)
+	reasons.Append(inAudience.reasons)
+
+	if !inAudience.result {
+		reason := reasons.AddInfo("User %s does not meet conditions for local holdout %s.", userContext.ID, holdout.Key)
+		h.logger.Info(reason)
+		return FeatureDecision{}, reasons
+	}
+
+	reason := reasons.AddInfo("User %s meets conditions for local holdout %s.", userContext.ID, holdout.Key)
+	h.logger.Info(reason)
+
+	// Get bucketing ID
+	bucketingID, err := userContext.GetBucketingID()
+	if err != nil {
+		errorMessage := reasons.AddInfo("Error computing bucketing ID for local holdout %q: %q", holdout.Key, err.Error())
+		h.logger.Debug(errorMessage)
+	}
+
+	if bucketingID != userContext.ID {
+		h.logger.Debug(fmt.Sprintf("Using bucketing ID: %q for user %q", bucketingID, userContext.ID))
+	}
+
+	// Convert holdout to experiment structure for bucketing
+	experimentForBucketing := entities.Experiment{
+		ID:                    holdout.ID,
+		Key:                   holdout.Key,
+		Variations:            holdout.Variations,
+		TrafficAllocation:     holdout.TrafficAllocation,
+		AudienceIds:           holdout.AudienceIds,
+		AudienceConditions:    holdout.AudienceConditions,
+		AudienceConditionTree: holdout.AudienceConditionTree,
+	}
+
+	// Bucket user into holdout variation
+	variation, _, _ := h.bucketer.Bucket(bucketingID, experimentForBucketing, entities.Group{})
+
+	if variation != nil {
+		reason = reasons.AddInfo("User %s is in variation %s of local holdout %s.", userContext.ID, variation.Key, holdout.Key)
+		h.logger.Info(reason)
+
+		featureDecision := FeatureDecision{
+			Experiment: experimentForBucketing,
+			Variation:  variation,
+			Source:     Holdout,
+		}
+		return featureDecision, reasons
+	}
+
+	reason = reasons.AddInfo("User %s is in no local holdout variation.", userContext.ID)
+	h.logger.Info(reason)
+	return FeatureDecision{}, reasons
+}
+
 // decisionResult is a helper struct to return both result and reasons
 type decisionResult struct {
 	result  bool
