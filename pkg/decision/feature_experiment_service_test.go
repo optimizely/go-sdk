@@ -389,6 +389,63 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithLocalHoldoutNotBu
 	s.mockExperimentService.AssertExpectations(s.T())
 }
 
+func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithMultipleLocalHoldouts() {
+	// Create a scenario with multiple holdouts where first doesn't bucket but second does
+	customMock := &mockProjectConfigWithHoldouts{
+		mockProjectConfig: s.mockConfig,
+		holdoutsForRule: map[string][]entities.Holdout{
+			testExp1113.ID: {
+				// First holdout - 0% traffic, won't bucket user
+				{
+					ID:     "holdout_first",
+					Key:    "test_holdout_first",
+					Status: entities.HoldoutStatusRunning,
+					Variations: map[string]entities.Variation{
+						"var_first": {ID: "var_first", Key: "first_variation"},
+					},
+					TrafficAllocation: []entities.Range{
+						{EntityID: "var_first", EndOfRange: 0}, // 0% traffic
+					},
+					IncludedRules: []string{testExp1113.ID},
+				},
+				// Second holdout - 100% traffic, will bucket user
+				{
+					ID:     "holdout_second",
+					Key:    "test_holdout_second",
+					Status: entities.HoldoutStatusRunning,
+					Variations: map[string]entities.Variation{
+						"var_second": {ID: "var_second", Key: "second_variation"},
+					},
+					TrafficAllocation: []entities.Range{
+						{EntityID: "var_second", EndOfRange: 10000}, // 100% traffic
+					},
+					IncludedRules: []string{testExp1113.ID},
+				},
+			},
+		},
+		audienceMap: map[string]entities.Audience{},
+	}
+
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	customDecisionContext := FeatureDecisionContext{
+		Feature:       &testFeat3335,
+		ProjectConfig: customMock,
+	}
+
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	decision, _, err := featureExperimentService.GetDecision(customDecisionContext, testUserContext, s.options)
+
+	s.NoError(err)
+	// Should bucket into second holdout after first one returns nil
+	s.Equal(Holdout, decision.Source, "Decision source should be Holdout")
+	s.NotNil(decision.Variation, "Should have a variation from second holdout")
+	s.Equal("second_variation", decision.Variation.Key, "Should be from second holdout")
+}
+
 // Custom mock that overrides GetHoldoutsForRule and GetAudienceMap
 type mockProjectConfigWithHoldouts struct {
 	*mockProjectConfig
