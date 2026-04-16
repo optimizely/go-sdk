@@ -595,6 +595,43 @@ func TestEveryoneElseRuleAudienceFails(t *testing.T) {
 	assert.Equal(t, Rollout, decision.Source)
 }
 
+func (s *RolloutServiceTestSuite) TestGetDecisionWithLocalHoldout() {
+	// Test local holdout in targeted delivery rule returns holdout decision
+	customMock := &mockProjectConfigWithHoldouts{
+		mockProjectConfig: s.mockConfig,
+		holdoutsForRule: map[string][]entities.Holdout{
+			testExp1112.ID: {
+				{
+					ID:     "local_holdout_1",
+					Key:    "test_local_holdout",
+					Status: entities.HoldoutStatusRunning,
+					Variations: map[string]entities.Variation{
+						"holdout_var": {ID: "holdout_var", Key: "holdout_variation"},
+					},
+					TrafficAllocation: []entities.Range{
+						{EntityID: "holdout_var", EndOfRange: 10000}, // 100% traffic
+					},
+					IncludedRules: []string{testExp1112.ID},
+				},
+			},
+		},
+		audienceMap: map[string]entities.Audience{},
+	}
+
+	decisionContext := FeatureDecisionContext{
+		ProjectConfig: customMock,
+		Feature:       &testFeatRollout3334,
+	}
+
+	rolloutService := NewRolloutService("")
+	decision, _, err := rolloutService.GetDecision(decisionContext, s.testUserContext, s.options)
+
+	s.NoError(err)
+	s.Equal(Holdout, decision.Source, "Decision source should be Holdout")
+	s.NotNil(decision.Variation, "Should have variation from local holdout")
+	s.Equal("holdout_variation", decision.Variation.Key)
+}
+
 func TestRolloutServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(RolloutServiceTestSuite))
 }
