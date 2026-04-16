@@ -24,6 +24,7 @@ import (
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -334,6 +335,58 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithLocalHoldout() {
 	s.NoError(err)
 	s.Equal(Holdout, decision.Source, "Decision source should be Holdout")
 	s.NotNil(decision.Variation, "Should have a variation from holdout")
+}
+
+func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithLocalHoldoutNotBucketed() {
+	// Create a holdout with 0 traffic so user won't be bucketed
+	customMock := &mockProjectConfigWithHoldouts{
+		mockProjectConfig: s.mockConfig,
+		holdoutsForRule: map[string][]entities.Holdout{
+			testExp1113.ID: {
+				{
+					ID:     "holdout_zero_traffic",
+					Key:    "test_holdout_no_bucket",
+					Status: entities.HoldoutStatusRunning,
+					Variations: map[string]entities.Variation{
+						"var_holdout": {ID: "var_holdout", Key: "holdout_variation"},
+					},
+					TrafficAllocation: []entities.Range{
+						{EntityID: "var_holdout", EndOfRange: 0}, // 0% traffic
+					},
+					IncludedRules: []string{testExp1113.ID},
+				},
+			},
+		},
+		audienceMap: map[string]entities.Audience{},
+	}
+
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	customDecisionContext := FeatureDecisionContext{
+		Feature:       &testFeat3335,
+		ProjectConfig: customMock,
+	}
+
+	// Mock experiment service to return a variation (simulating normal bucketing after holdout check)
+	expectedVariation := &testExp1113Var2223
+	expectedDecision := ExperimentDecision{
+		Variation: expectedVariation,
+		Decision:  Decision{Reason: "bucketed"},
+	}
+	s.mockExperimentService.On("GetDecision", mock.Anything, testUserContext, s.options).
+		Return(expectedDecision, decide.NewDecisionReasons(s.options), nil).Once()
+
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	decision, _, err := featureExperimentService.GetDecision(customDecisionContext, testUserContext, s.options)
+
+	s.NoError(err)
+	// Should fall through to normal experiment bucketing since holdout didn't bucket user
+	s.Equal(FeatureTest, decision.Source, "Decision source should be FeatureTest (not Holdout)")
+	s.Equal(expectedVariation, decision.Variation, "Should have variation from experiment bucketing")
+	s.mockExperimentService.AssertExpectations(s.T())
 }
 
 // Custom mock that overrides GetHoldoutsForRule and GetAudienceMap
