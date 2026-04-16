@@ -789,3 +789,95 @@ func TestGetHoldoutsForFlagWithDifferentFlag(t *testing.T) {
 	assert.Len(t, actual, 0)
 	assert.Equal(t, []entities.Holdout{}, actual)
 }
+
+func TestGetHoldoutsForRuleWithHoldouts(t *testing.T) {
+	ruleID := "rule_123"
+	holdout1 := entities.Holdout{
+		ID:            "holdout_1",
+		Key:           "test_holdout_1",
+		Status:        entities.HoldoutStatusRunning,
+		IncludedRules: []string{ruleID},
+	}
+	holdout2 := entities.Holdout{
+		ID:            "holdout_2",
+		Key:           "test_holdout_2",
+		Status:        entities.HoldoutStatusRunning,
+		IncludedRules: []string{ruleID},
+	}
+
+	ruleHoldoutsMap := make(map[string][]entities.Holdout)
+	ruleHoldoutsMap[ruleID] = []entities.Holdout{holdout1, holdout2}
+
+	config := &DatafileProjectConfig{
+		ruleHoldoutsMap: ruleHoldoutsMap,
+	}
+
+	actual := config.GetHoldoutsForRule(ruleID)
+	assert.Len(t, actual, 2)
+	assert.Equal(t, holdout1, actual[0])
+	assert.Equal(t, holdout2, actual[1])
+}
+
+func TestGetHoldoutsForRuleWithNoHoldouts(t *testing.T) {
+	ruleID := "rule_123"
+	config := &DatafileProjectConfig{
+		ruleHoldoutsMap: make(map[string][]entities.Holdout),
+	}
+
+	actual := config.GetHoldoutsForRule(ruleID)
+	assert.Len(t, actual, 0)
+	assert.Equal(t, []entities.Holdout{}, actual)
+}
+
+func TestGetGlobalHoldouts(t *testing.T) {
+	globalHoldout1 := entities.Holdout{
+		ID:            "global_holdout_1",
+		Key:           "test_global_holdout_1",
+		Status:        entities.HoldoutStatusRunning,
+		IncludedRules: nil, // nil = global
+	}
+	globalHoldout2 := entities.Holdout{
+		ID:            "global_holdout_2",
+		Key:           "test_global_holdout_2",
+		Status:        entities.HoldoutStatusRunning,
+		IncludedRules: nil, // nil = global
+	}
+	localHoldout := entities.Holdout{
+		ID:            "local_holdout",
+		Key:           "test_local_holdout",
+		Status:        entities.HoldoutStatusRunning,
+		IncludedRules: []string{"rule_123"}, // non-nil = local
+	}
+
+	config := &DatafileProjectConfig{
+		holdouts: []entities.Holdout{globalHoldout1, localHoldout, globalHoldout2},
+	}
+
+	actual := config.GetGlobalHoldouts()
+	assert.Len(t, actual, 2)
+	assert.Equal(t, globalHoldout1, actual[0])
+	assert.Equal(t, globalHoldout2, actual[1])
+}
+
+func TestGetGlobalHoldoutsWithNoGlobal(t *testing.T) {
+	localHoldout1 := entities.Holdout{
+		ID:            "local_holdout_1",
+		Key:           "test_local_holdout_1",
+		Status:        entities.HoldoutStatusRunning,
+		IncludedRules: []string{"rule_123"},
+	}
+	localHoldout2 := entities.Holdout{
+		ID:            "local_holdout_2",
+		Key:           "test_local_holdout_2",
+		Status:        entities.HoldoutStatusRunning,
+		IncludedRules: []string{"rule_456"},
+	}
+
+	config := &DatafileProjectConfig{
+		holdouts: []entities.Holdout{localHoldout1, localHoldout2},
+	}
+
+	actual := config.GetGlobalHoldouts()
+	assert.Len(t, actual, 0)
+	assert.Equal(t, []entities.Holdout{}, actual)
+}

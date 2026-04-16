@@ -335,6 +335,77 @@ func (s *HoldoutServiceTestSuite) TestCheckIfUserInHoldoutAudienceWithConditionT
 	s.mockAudienceTreeEvaluator.AssertExpectations(s.T())
 }
 
+func (s *HoldoutServiceTestSuite) TestEvaluateLocalHoldout() {
+	// Test EvaluateLocalHoldout method with a holdout that buckets user (no audience)
+	holdout := &entities.Holdout{
+		ID:     "local_holdout_1",
+		Key:    "test_local_holdout",
+		Status: entities.HoldoutStatusRunning,
+		Variations: map[string]entities.Variation{
+			"holdout_var": {ID: "holdout_var", Key: "holdout_variation"},
+		},
+		TrafficAllocation: []entities.Range{
+			{EntityID: "holdout_var", EndOfRange: 10000}, // 100% traffic
+		},
+		AudienceConditionTree: nil, // No audience conditions
+	}
+
+	s.mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
+	s.mockLogger.On("Debug", mock.Anything).Return()
+	s.mockLogger.On("Info", mock.Anything).Return()
+
+	testHoldoutService := &HoldoutService{
+		audienceTreeEvaluator: s.mockAudienceTreeEvaluator,
+		bucketer:              s.mockBucketer,
+		logger:                s.mockLogger,
+	}
+
+	// Mock bucketer to return variation
+	expectedVariation := &entities.Variation{ID: "holdout_var", Key: "holdout_variation"}
+	s.mockBucketer.On("Bucket", s.testUserContext.ID, mock.AnythingOfType("entities.Experiment"), entities.Group{}).
+		Return(expectedVariation, reasons.Reason(""), nil)
+
+	decision, _ := testHoldoutService.EvaluateLocalHoldout(
+		holdout,
+		s.testUserContext,
+		s.mockConfig,
+		s.options,
+		"test context",
+	)
+
+	s.Equal(Holdout, decision.Source)
+	s.NotNil(decision.Variation)
+	s.Equal("holdout_variation", decision.Variation.Key)
+	s.mockBucketer.AssertExpectations(s.T())
+}
+
+func (s *HoldoutServiceTestSuite) TestEvaluateLocalHoldoutNotRunning() {
+	// Test EvaluateLocalHoldout with non-running holdout
+	holdout := &entities.Holdout{
+		ID:     "paused_holdout",
+		Key:    "test_paused_holdout",
+		Status: "Paused", // Not running (any status other than "Running")
+	}
+
+	s.mockLogger.On("Debug", mock.Anything).Return()
+	s.mockLogger.On("Info", mock.Anything).Return()
+
+	testHoldoutService := &HoldoutService{
+		logger: s.mockLogger,
+	}
+
+	decision, resultReasons := testHoldoutService.EvaluateLocalHoldout(
+		holdout,
+		s.testUserContext,
+		s.mockConfig,
+		s.options,
+		"test context",
+	)
+
+	s.Equal(FeatureDecision{}, decision)
+	s.NotNil(resultReasons)
+}
+
 func TestHoldoutServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(HoldoutServiceTestSuite))
 }
