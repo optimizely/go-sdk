@@ -295,6 +295,65 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithCmabError() {
 	s.mockExperimentService.AssertExpectations(s.T())
 }
 
+func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithLocalHoldout() {
+	// Create a custom mock that returns holdouts for the specific rule
+	customMock := &mockProjectConfigWithHoldouts{
+		mockProjectConfig: s.mockConfig,
+		holdoutsForRule: map[string][]entities.Holdout{
+			testExp1113.ID: {
+				{
+					ID:     "holdout_1",
+					Key:    "test_holdout",
+					Status: entities.HoldoutStatusRunning,
+					Variations: map[string]entities.Variation{
+						"var_holdout": {ID: "var_holdout", Key: "holdout_variation"},
+					},
+					TrafficAllocation: []entities.Range{
+						{EntityID: "var_holdout", EndOfRange: 10000},
+					},
+					IncludedRules: []string{testExp1113.ID},
+				},
+			},
+		},
+		audienceMap: map[string]entities.Audience{},
+	}
+
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	customDecisionContext := FeatureDecisionContext{
+		Feature:       &testFeat3335,
+		ProjectConfig: customMock,
+	}
+
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	decision, _, err := featureExperimentService.GetDecision(customDecisionContext, testUserContext, s.options)
+
+	s.NoError(err)
+	s.Equal(Holdout, decision.Source, "Decision source should be Holdout")
+	s.NotNil(decision.Variation, "Should have a variation from holdout")
+}
+
+// Custom mock that overrides GetHoldoutsForRule and GetAudienceMap
+type mockProjectConfigWithHoldouts struct {
+	*mockProjectConfig
+	holdoutsForRule map[string][]entities.Holdout
+	audienceMap     map[string]entities.Audience
+}
+
+func (m *mockProjectConfigWithHoldouts) GetHoldoutsForRule(ruleID string) []entities.Holdout {
+	if holdouts, ok := m.holdoutsForRule[ruleID]; ok {
+		return holdouts
+	}
+	return []entities.Holdout{}
+}
+
+func (m *mockProjectConfigWithHoldouts) GetAudienceMap() map[string]entities.Audience {
+	return m.audienceMap
+}
+
 func TestFeatureExperimentServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(FeatureExperimentServiceTestSuite))
 }
