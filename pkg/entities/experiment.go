@@ -31,6 +31,16 @@ type Cmab struct {
 	TrafficAllocation int      `json:"trafficAllocation"`
 }
 
+// SupportedExperimentTypes defines the set of experiment types recognized by the SDK.
+// Experiments with a type not in this list will be skipped during flag decisions.
+// If an experiment has no type (empty string), it is still evaluated.
+var SupportedExperimentTypes = map[string]bool{
+	"a/b":              true,
+	"mab":              true,
+	"cmab":             true,
+	"feature_rollouts": true,
+}
+
 // Experiment represents an experiment
 type Experiment struct {
 	AudienceIds           []string
@@ -38,6 +48,7 @@ type Experiment struct {
 	ID                    string
 	LayerID               string
 	Key                   string
+	Type                  string // experiment type (e.g., "a/b", "mab", "cmab", "feature_rollouts")
 	Variations            map[string]Variation // keyed by variation ID
 	VariationKeyToIDMap   map[string]string
 	TrafficAllocation     []Range
