@@ -35,14 +35,13 @@ func TestMapHoldoutsEmpty(t *testing.T) {
 	assert.Empty(t, flagHoldoutsMap)
 }
 
-func TestMapHoldoutsGlobalHoldout(t *testing.T) {
-	// Global holdout: no includedFlags, applies to all flags except excluded
+func TestMapHoldoutsAppliestoAllFlags(t *testing.T) {
+	// Running holdouts apply to all flags
 	rawHoldouts := []datafileEntities.Holdout{
 		{
-			ID:            "holdout_1",
-			Key:           "global_holdout",
-			Status:        "Running",
-			ExcludedFlags: []string{"feature_2"},
+			ID:     "holdout_1",
+			Key:    "running_holdout",
+			Status: "Running",
 			Variations: []datafileEntities.Variation{
 				{ID: "var_1", Key: "variation_1"},
 			},
@@ -64,54 +63,18 @@ func TestMapHoldoutsGlobalHoldout(t *testing.T) {
 	assert.Len(t, holdoutList, 1)
 	assert.Len(t, holdoutIDMap, 1)
 	assert.Equal(t, "holdout_1", holdoutList[0].ID)
-	assert.Equal(t, "global_holdout", holdoutList[0].Key)
+	assert.Equal(t, "running_holdout", holdoutList[0].Key)
 
-	// Global holdout should apply to feature_1 and feature_3, but NOT feature_2 (excluded)
+	// Running holdout should apply to all flags
 	assert.Contains(t, flagHoldoutsMap, "feature_1")
-	assert.NotContains(t, flagHoldoutsMap, "feature_2")
+	assert.Contains(t, flagHoldoutsMap, "feature_2")
 	assert.Contains(t, flagHoldoutsMap, "feature_3")
 
 	assert.Len(t, flagHoldoutsMap["feature_1"], 1)
+	assert.Len(t, flagHoldoutsMap["feature_2"], 1)
 	assert.Len(t, flagHoldoutsMap["feature_3"], 1)
 }
 
-func TestMapHoldoutsSpecificHoldout(t *testing.T) {
-	// Specific holdout: has includedFlags, only applies to those flags
-	rawHoldouts := []datafileEntities.Holdout{
-		{
-			ID:            "holdout_1",
-			Key:           "specific_holdout",
-			Status:        "Running",
-			IncludedFlags: []string{"feature_1", "feature_2"},
-			Variations: []datafileEntities.Variation{
-				{ID: "var_1", Key: "variation_1"},
-			},
-			TrafficAllocation: []datafileEntities.TrafficAllocation{
-				{EntityID: "var_1", EndOfRange: 10000},
-			},
-		},
-	}
-
-	featureMap := map[string]entities.Feature{
-		"feature_1": {ID: "feature_1", Key: "feature_1"},
-		"feature_2": {ID: "feature_2", Key: "feature_2"},
-		"feature_3": {ID: "feature_3", Key: "feature_3"},
-	}
-
-	holdoutList, holdoutIDMap, flagHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
-
-	// Verify holdout list and ID map
-	assert.Len(t, holdoutList, 1)
-	assert.Len(t, holdoutIDMap, 1)
-
-	// Specific holdout should only apply to feature_1 and feature_2
-	assert.Contains(t, flagHoldoutsMap, "feature_1")
-	assert.Contains(t, flagHoldoutsMap, "feature_2")
-	assert.NotContains(t, flagHoldoutsMap, "feature_3")
-
-	assert.Len(t, flagHoldoutsMap["feature_1"], 1)
-	assert.Len(t, flagHoldoutsMap["feature_2"], 1)
-}
 
 func TestMapHoldoutsNotRunning(t *testing.T) {
 	// Holdout with non-Running status should be filtered out
@@ -138,31 +101,29 @@ func TestMapHoldoutsNotRunning(t *testing.T) {
 	assert.Empty(t, flagHoldoutsMap)
 }
 
-func TestMapHoldoutsMixed(t *testing.T) {
-	// Mix of global and specific holdouts
+func TestMapHoldoutsMultipleHoldouts(t *testing.T) {
+	// Multiple running holdouts all apply to all flags
 	rawHoldouts := []datafileEntities.Holdout{
 		{
-			ID:            "holdout_global",
-			Key:           "global_holdout",
-			Status:        "Running",
-			ExcludedFlags: []string{"feature_2"},
+			ID:     "holdout_1",
+			Key:    "holdout_1",
+			Status: "Running",
 			Variations: []datafileEntities.Variation{
-				{ID: "var_global", Key: "variation_global"},
+				{ID: "var_1", Key: "variation_1"},
 			},
 			TrafficAllocation: []datafileEntities.TrafficAllocation{
-				{EntityID: "var_global", EndOfRange: 5000},
+				{EntityID: "var_1", EndOfRange: 5000},
 			},
 		},
 		{
-			ID:            "holdout_specific",
-			Key:           "specific_holdout",
-			Status:        "Running",
-			IncludedFlags: []string{"feature_2"},
+			ID:     "holdout_2",
+			Key:    "holdout_2",
+			Status: "Running",
 			Variations: []datafileEntities.Variation{
-				{ID: "var_specific", Key: "variation_specific"},
+				{ID: "var_2", Key: "variation_2"},
 			},
 			TrafficAllocation: []datafileEntities.TrafficAllocation{
-				{EntityID: "var_specific", EndOfRange: 10000},
+				{EntityID: "var_2", EndOfRange: 10000},
 			},
 		},
 	}
@@ -178,94 +139,19 @@ func TestMapHoldoutsMixed(t *testing.T) {
 	assert.Len(t, holdoutList, 2)
 	assert.Len(t, holdoutIDMap, 2)
 
-	// feature_1: should get global holdout only (not excluded, not specifically included)
-	assert.Contains(t, flagHoldoutsMap, "feature_1")
-	assert.Len(t, flagHoldoutsMap["feature_1"], 1)
-	assert.Equal(t, "global_holdout", flagHoldoutsMap["feature_1"][0].Key)
-
-	// feature_2: should get specific holdout only (excluded from global)
-	assert.Contains(t, flagHoldoutsMap, "feature_2")
-	assert.Len(t, flagHoldoutsMap["feature_2"], 1)
-	assert.Equal(t, "specific_holdout", flagHoldoutsMap["feature_2"][0].Key)
-}
-
-func TestMapHoldoutsPrecedence(t *testing.T) {
-	// Test that global holdouts take precedence over specific holdouts
-	// When both apply to the same flag, global should come first in the slice
-	rawHoldouts := []datafileEntities.Holdout{
-		{
-			ID:     "holdout_global",
-			Key:    "global_holdout",
-			Status: "Running",
-			// No includedFlags = global, applies to all
-			Variations: []datafileEntities.Variation{
-				{ID: "var_global", Key: "variation_global"},
-			},
-			TrafficAllocation: []datafileEntities.TrafficAllocation{
-				{EntityID: "var_global", EndOfRange: 5000},
-			},
-		},
-		{
-			ID:            "holdout_specific",
-			Key:           "specific_holdout",
-			Status:        "Running",
-			IncludedFlags: []string{"feature_1"}, // Specific to feature_1
-			Variations: []datafileEntities.Variation{
-				{ID: "var_specific", Key: "variation_specific"},
-			},
-			TrafficAllocation: []datafileEntities.TrafficAllocation{
-				{EntityID: "var_specific", EndOfRange: 10000},
-			},
-		},
-	}
-
-	featureMap := map[string]entities.Feature{
-		"feature_1": {ID: "feature_1", Key: "feature_1"},
-	}
-
-	_, _, flagHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
-
-	// feature_1 should have BOTH holdouts, with global FIRST (precedence)
+	// Both features should get both holdouts
 	assert.Contains(t, flagHoldoutsMap, "feature_1")
 	assert.Len(t, flagHoldoutsMap["feature_1"], 2)
+	assert.Equal(t, "holdout_1", flagHoldoutsMap["feature_1"][0].Key)
+	assert.Equal(t, "holdout_2", flagHoldoutsMap["feature_1"][1].Key)
 
-	// Global holdout should be first (takes precedence)
-	assert.Equal(t, "global_holdout", flagHoldoutsMap["feature_1"][0].Key, "Global holdout should take precedence (be first)")
-	// Specific holdout should be second
-	assert.Equal(t, "specific_holdout", flagHoldoutsMap["feature_1"][1].Key, "Specific holdout should be second")
+	assert.Contains(t, flagHoldoutsMap, "feature_2")
+	assert.Len(t, flagHoldoutsMap["feature_2"], 2)
+	assert.Equal(t, "holdout_1", flagHoldoutsMap["feature_2"][0].Key)
+	assert.Equal(t, "holdout_2", flagHoldoutsMap["feature_2"][1].Key)
 }
 
-func TestMapHoldoutsExcludedFlagsNotInMap(t *testing.T) {
-	// Test that excluded flags do not get global holdouts
-	rawHoldouts := []datafileEntities.Holdout{
-		{
-			ID:            "holdout_global",
-			Key:           "global_holdout",
-			Status:        "Running",
-			ExcludedFlags: []string{"feature_excluded"},
-			Variations: []datafileEntities.Variation{
-				{ID: "var_1", Key: "variation_1"},
-			},
-			TrafficAllocation: []datafileEntities.TrafficAllocation{
-				{EntityID: "var_1", EndOfRange: 10000},
-			},
-		},
-	}
 
-	featureMap := map[string]entities.Feature{
-		"feature_included": {ID: "feature_included", Key: "feature_included"},
-		"feature_excluded": {ID: "feature_excluded", Key: "feature_excluded"},
-	}
-
-	_, _, flagHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
-
-	// feature_included should have the global holdout
-	assert.Contains(t, flagHoldoutsMap, "feature_included")
-	assert.Len(t, flagHoldoutsMap["feature_included"], 1)
-
-	// feature_excluded should NOT be in the map (no holdouts apply)
-	assert.NotContains(t, flagHoldoutsMap, "feature_excluded")
-}
 
 func TestMapHoldoutsWithAudienceConditions(t *testing.T) {
 	rawHoldouts := []datafileEntities.Holdout{
