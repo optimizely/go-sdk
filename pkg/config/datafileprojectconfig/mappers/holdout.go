@@ -23,7 +23,7 @@ import (
 )
 
 // MapHoldouts maps the raw datafile holdout entities to SDK Holdout entities
-// and organizes them by flag relationships
+// All running holdouts apply to all flags
 func MapHoldouts(holdouts []datafileEntities.Holdout, featureMap map[string]entities.Feature) (
 	holdoutList []entities.Holdout,
 	holdoutIDMap map[string]entities.Holdout,
@@ -33,9 +33,7 @@ func MapHoldouts(holdouts []datafileEntities.Holdout, featureMap map[string]enti
 	holdoutIDMap = make(map[string]entities.Holdout)
 	flagHoldoutsMap = make(map[string][]entities.Holdout)
 
-	globalHoldouts := []entities.Holdout{}
-	includedHoldouts := make(map[string][]entities.Holdout)
-	excludedHoldouts := make(map[string][]entities.Holdout)
+	runningHoldouts := []entities.Holdout{}
 
 	for _, holdout := range holdouts {
 		// Only process running holdouts
@@ -46,43 +44,13 @@ func MapHoldouts(holdouts []datafileEntities.Holdout, featureMap map[string]enti
 		mappedHoldout := mapHoldout(holdout)
 		holdoutList = append(holdoutList, mappedHoldout)
 		holdoutIDMap[holdout.ID] = mappedHoldout
-
-		// Classify holdout by flag relationships
-		if len(holdout.IncludedFlags) == 0 {
-			// Global holdout - applies to all flags except excluded
-			globalHoldouts = append(globalHoldouts, mappedHoldout)
-
-			// Track exclusions
-			for _, flagID := range holdout.ExcludedFlags {
-				excludedHoldouts[flagID] = append(excludedHoldouts[flagID], mappedHoldout)
-			}
-		} else {
-			// Specific holdout - applies only to included flags
-			for _, flagID := range holdout.IncludedFlags {
-				includedHoldouts[flagID] = append(includedHoldouts[flagID], mappedHoldout)
-			}
-		}
+		runningHoldouts = append(runningHoldouts, mappedHoldout)
 	}
 
-	// Build flagHoldoutsMap by combining global and specific holdouts
-	// Global holdouts take precedence (evaluated first), then specific holdouts
+	// All running holdouts apply to all flags
 	for _, feature := range featureMap {
-		flagKey := feature.Key
-		flagID := feature.ID
-		applicableHoldouts := []entities.Holdout{}
-
-		// Add global holdouts first (if not excluded) - they take precedence
-		if _, exists := excludedHoldouts[flagID]; !exists {
-			applicableHoldouts = append(applicableHoldouts, globalHoldouts...)
-		}
-
-		// Add specifically included holdouts second
-		if included, exists := includedHoldouts[flagID]; exists {
-			applicableHoldouts = append(applicableHoldouts, included...)
-		}
-
-		if len(applicableHoldouts) > 0 {
-			flagHoldoutsMap[flagKey] = applicableHoldouts
+		if len(runningHoldouts) > 0 {
+			flagHoldoutsMap[feature.Key] = runningHoldouts
 		}
 	}
 
