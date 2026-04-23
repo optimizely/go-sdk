@@ -43,17 +43,12 @@ jobs:
           
   unit_test_coverage:
     runs-on: ubuntu-latest
-    env: 
-      COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-go@v3
       with:
         go-version: '1.21.0'
-    - run: |
-        go test -race -covermode atomic -coverprofile=covprofile ./...
-        go install github.com/mattn/goveralls@latest
-        goveralls -coverprofile=covprofile -service=github
+    - run: go test -race -covermode atomic -coverprofile=covprofile ./...
 
   benchmark_test:
     runs-on: ubuntu-latest
