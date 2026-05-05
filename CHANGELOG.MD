@@ -4,7 +4,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-[2.3.1] - January 22, 2026
+## [2.4.0]
+May 4, 2026
+
+### New Features
+
+**Feature Rollout**: Added support for Feature Rollouts, a new experiment type
+combining Targeted Delivery simplicity with A/B test measurement capabilities.
+Feature Rollouts enable progressive rollouts with full impact analytics, metric tracking,
+and confidence intervals.
+See [Feature Rollout docs](https://support.optimizely.com/hc/en-us/articles/45552846481037-Run-Feature-Rollouts-in-Feature-Experimentation) for more information.
+
+- Remove Coveralls from CI checks ([#447](https://github.com/optimizely/go-sdk/pull/447))
+- Remove legacy flag-level holdout fields ([#446](https://github.com/optimizely/go-sdk/pull/446))
+- Remove experiment type validation from config parsing ([#443](https://github.com/optimizely/go-sdk/pull/443))
+- Add Feature Rollout support ([#442](https://github.com/optimizely/go-sdk/pull/442))
+- Security: Replace curl | bash with official Veracode GitHub Action ([#441](https://github.com/optimizely/go-sdk/pull/441))
+- Fix README: Add license badge, missing imports, and Feature Management section ([#440](https://github.com/optimizely/go-sdk/pull/440))
+
+## [2.3.1] - January 22, 2026
 
 ## What's Changed
 * [FSSDK-12037] Exclude CMAB experiment from UPS by @Mat001 in https://github.com/optimizely/go-sdk/pull/433
