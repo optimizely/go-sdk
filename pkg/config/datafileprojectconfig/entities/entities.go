@@ -123,6 +123,10 @@ type Holdout struct {
 	AudienceConditions interface{}         `json:"audienceConditions"`
 	Variations         []Variation         `json:"variations"`
 	TrafficAllocation  []TrafficAllocation `json:"trafficAllocation"`
+	// IncludedRules is an optional list of rule IDs this holdout targets.
+	// nil means global holdout (applies to all rules); a non-nil slice (even
+	// empty) means local holdout (applies only to listed rules).
+	IncludedRules []string `json:"includedRules,omitempty"`
 }
 
 // Integration represents a integration from the Optimizely datafile

@@ -28,6 +28,7 @@ import (
 // FeatureExperimentService helps evaluate feature test associated with the feature
 type FeatureExperimentService struct {
 	compositeExperimentService ExperimentService
+	holdoutService             *HoldoutService
 	logger                     logging.OptimizelyLogProducer
 }
 
@@ -36,7 +37,15 @@ func NewFeatureExperimentService(logger logging.OptimizelyLogProducer, composite
 	return &FeatureExperimentService{
 		logger:                     logger,
 		compositeExperimentService: compositeExperimentService,
+		holdoutService:             nil, // set via WithHoldoutService when available
 	}
+}
+
+// WithHoldoutService sets the HoldoutService on the FeatureExperimentService for
+// local holdout evaluation. Returns the same receiver for chaining.
+func (f *FeatureExperimentService) WithHoldoutService(hs *HoldoutService) *FeatureExperimentService {
+	f.holdoutService = hs
+	return f
 }
 
 // GetDecision returns a decision for the given feature test and user context
@@ -45,6 +54,21 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 	reasons := decide.NewDecisionReasons(options)
 	// @TODO this can be improved by getting group ID first and determining experiment and then bucketing in experiment
 	for _, featureExperiment := range feature.FeatureExperiments {
+
+		// Check local holdouts targeting this experiment rule BEFORE forced decisions.
+		if f.holdoutService != nil {
+			localDecision, localReasons := f.holdoutService.EvaluateLocalHoldouts(
+				featureExperiment.ID,
+				feature.Key,
+				decisionContext,
+				userContext,
+				options,
+			)
+			reasons.Append(localReasons)
+			if localDecision != nil {
+				return *localDecision, reasons, nil
+			}
+		}
 
 		// Checking for forced decision
 		if decisionContext.ForcedDecisionService != nil {

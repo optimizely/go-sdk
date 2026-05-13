@@ -64,6 +64,16 @@ func (c *mockProjectConfig) GetHoldoutsForFlag(featureKey string) []entities.Hol
 	return args.Get(0).([]entities.Holdout)
 }
 
+func (c *mockProjectConfig) GetGlobalHoldouts() []entities.Holdout {
+	args := c.Called()
+	return args.Get(0).([]entities.Holdout)
+}
+
+func (c *mockProjectConfig) GetHoldoutsForRule(ruleID string) []entities.Holdout {
+	args := c.Called(ruleID)
+	return args.Get(0).([]entities.Holdout)
+}
+
 type MockExperimentDecisionService struct {
 	mock.Mock
 }

@@ -32,6 +32,7 @@ import (
 type RolloutService struct {
 	audienceTreeEvaluator     evaluator.TreeEvaluator
 	experimentBucketerService ExperimentService
+	holdoutService            *HoldoutService
 	logger                    logging.OptimizelyLogProducer
 }
 
@@ -42,7 +43,14 @@ func NewRolloutService(sdkKey string) *RolloutService {
 		logger:                    logger,
 		audienceTreeEvaluator:     evaluator.NewMixedTreeEvaluator(logger),
 		experimentBucketerService: NewExperimentBucketerService(logging.GetLogger(sdkKey, "ExperimentBucketerService")),
+		holdoutService:            nil, // set via WithHoldoutService
 	}
+}
+
+// WithHoldoutService sets the HoldoutService for local holdout evaluation per rollout rule.
+func (r *RolloutService) WithHoldoutService(hs *HoldoutService) *RolloutService {
+	r.holdoutService = hs
+	return r
 }
 
 // GetDecision returns a decision for the given feature and user context
@@ -102,6 +110,21 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		loggingKey := strconv.Itoa(index + 1)
 		experiment := &rollout.Experiments[index]
 
+		// Check local holdouts targeting this delivery rule before forced decisions.
+		if r.holdoutService != nil {
+			localDecision, localReasons := r.holdoutService.EvaluateLocalHoldouts(
+				experiment.ID,
+				feature.Key,
+				decisionContext,
+				userContext,
+				options,
+			)
+			reasons.Append(localReasons)
+			if localDecision != nil {
+				return *localDecision, reasons, nil
+			}
+		}
+
 		// Checking for forced decision
 		if forcedDecision := checkForForcedDecision(experiment); forcedDecision != nil {
 			return *forcedDecision, reasons, nil
@@ -131,6 +154,21 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 
 	// fall back rule / last rule
 	experiment := &rollout.Experiments[numberOfExperiments-1]
+
+	// Check local holdouts targeting the last (everyone-else) rule as well.
+	if r.holdoutService != nil {
+		localDecision, localReasons := r.holdoutService.EvaluateLocalHoldouts(
+			experiment.ID,
+			feature.Key,
+			decisionContext,
+			userContext,
+			options,
+		)
+		reasons.Append(localReasons)
+		if localDecision != nil {
+			return *localDecision, reasons, nil
+		}
+	}
 
 	// Checking for forced decision
 	if forcedDecision := checkForForcedDecision(experiment); forcedDecision != nil {

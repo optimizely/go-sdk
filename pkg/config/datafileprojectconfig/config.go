@@ -63,6 +63,7 @@ type DatafileProjectConfig struct {
 	holdouts          []entities.Holdout
 	holdoutIDMap      map[string]entities.Holdout
 	flagHoldoutsMap   map[string][]entities.Holdout
+	ruleHoldoutsMap   map[string][]entities.Holdout
 }
 
 // GetDatafile returns a string representation of the environment's datafile
@@ -284,9 +285,29 @@ func (c DatafileProjectConfig) GetRegion() string {
 	return c.region
 }
 
-// GetHoldoutsForFlag returns all holdouts applicable to the given feature flag
+// GetHoldoutsForFlag returns all holdouts applicable to the given feature flag.
+// This returns global holdouts (includedRules == nil) for flag-level evaluation.
 func (c DatafileProjectConfig) GetHoldoutsForFlag(featureKey string) []entities.Holdout {
 	if holdouts, exists := c.flagHoldoutsMap[featureKey]; exists {
+		return holdouts
+	}
+	return []entities.Holdout{}
+}
+
+// GetGlobalHoldouts returns all global holdouts (those with includedRules == nil).
+func (c DatafileProjectConfig) GetGlobalHoldouts() []entities.Holdout {
+	global := []entities.Holdout{}
+	for _, h := range c.holdouts {
+		if h.IsGlobal() {
+			global = append(global, h)
+		}
+	}
+	return global
+}
+
+// GetHoldoutsForRule returns all local holdouts targeting the given rule ID.
+func (c DatafileProjectConfig) GetHoldoutsForRule(ruleID string) []entities.Holdout {
+	if holdouts, exists := c.ruleHoldoutsMap[ruleID]; exists {
 		return holdouts
 	}
 	return []entities.Holdout{}
@@ -338,7 +359,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 
 	audienceMap, audienceSegmentList := mappers.MapAudiences(append(datafile.TypedAudiences, datafile.Audiences...))
 	flagVariationsMap := mappers.MapFlagVariations(featureMap)
-	holdouts, holdoutIDMap, flagHoldoutsMap := mappers.MapHoldouts(datafile.Holdouts, featureMap)
+	holdouts, holdoutIDMap, flagHoldoutsMap, ruleHoldoutsMap := mappers.MapHoldouts(datafile.Holdouts, featureMap)
 
 	attributeKeyMap := make(map[string]entities.Attribute)
 	attributeIDToKeyMap := make(map[string]string)
@@ -384,6 +405,7 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		holdouts:             holdouts,
 		holdoutIDMap:         holdoutIDMap,
 		flagHoldoutsMap:      flagHoldoutsMap,
+		ruleHoldoutsMap:      ruleHoldoutsMap,
 	}
 
 	logger.Info("Datafile is valid.")

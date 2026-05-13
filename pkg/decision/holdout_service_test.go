@@ -335,6 +335,109 @@ func (s *HoldoutServiceTestSuite) TestCheckIfUserInHoldoutAudienceWithConditionT
 	s.mockAudienceTreeEvaluator.AssertExpectations(s.T())
 }
 
+// TestEvaluateLocalHoldoutsNoHoldouts checks that EvaluateLocalHoldouts returns nil when
+// there are no local holdouts for the rule.
+func (s *HoldoutServiceTestSuite) TestEvaluateLocalHoldoutsNoHoldouts() {
+	s.mockConfig.On("GetHoldoutsForRule", "rule_123").Return([]entities.Holdout{})
+
+	testHoldoutService := HoldoutService{
+		audienceTreeEvaluator: s.mockAudienceTreeEvaluator,
+		bucketer:              s.mockBucketer,
+		logger:                s.mockLogger,
+	}
+
+	localDecision, _ := testHoldoutService.EvaluateLocalHoldouts(
+		"rule_123",
+		"test_feature_with_holdout",
+		s.testFeatureDecisionContext,
+		s.testUserContext,
+		s.options,
+	)
+
+	s.Nil(localDecision)
+}
+
+// TestEvaluateLocalHoldoutsUserBucketed checks that a user bucketed into a local holdout
+// gets a non-nil decision with source Holdout.
+func (s *HoldoutServiceTestSuite) TestEvaluateLocalHoldoutsUserBucketed() {
+	localHoldout := entities.Holdout{
+		ID:                    "local_holdout_1",
+		Key:                   "local_holdout",
+		Status:                entities.HoldoutStatusRunning,
+		AudienceConditionTree: nil,
+		IncludedRules:         []string{"rule_123"},
+		Variations: map[string]entities.Variation{
+			"holdout_var_1": testHoldoutVar1,
+		},
+		TrafficAllocation: []entities.Range{
+			{EntityID: "holdout_var_1", EndOfRange: 10000},
+		},
+	}
+
+	s.mockConfig.On("GetHoldoutsForRule", "rule_123").Return([]entities.Holdout{localHoldout})
+	s.mockBucketer.On("Bucket", "test_user_holdout", mock.AnythingOfType("entities.Experiment"), entities.Group{}).Return(&testHoldoutVar1, reasons.Reason(""), nil)
+	s.mockLogger.On("Debug", mock.Anything).Return()
+	s.mockLogger.On("Info", mock.Anything).Return()
+
+	testHoldoutService := HoldoutService{
+		audienceTreeEvaluator: s.mockAudienceTreeEvaluator,
+		bucketer:              s.mockBucketer,
+		logger:                s.mockLogger,
+	}
+
+	localDecision, _ := testHoldoutService.EvaluateLocalHoldouts(
+		"rule_123",
+		"test_feature_with_holdout",
+		s.testFeatureDecisionContext,
+		s.testUserContext,
+		s.options,
+	)
+
+	s.NotNil(localDecision)
+	s.Equal(Holdout, localDecision.Source)
+	s.Equal(testHoldoutVar1.ID, localDecision.Variation.ID)
+	s.mockBucketer.AssertExpectations(s.T())
+}
+
+// TestEvaluateLocalHoldoutsUserNotBucketed checks that when a user misses the local
+// holdout traffic allocation, EvaluateLocalHoldouts returns nil.
+func (s *HoldoutServiceTestSuite) TestEvaluateLocalHoldoutsUserNotBucketed() {
+	localHoldout := entities.Holdout{
+		ID:                    "local_holdout_1",
+		Key:                   "local_holdout",
+		Status:                entities.HoldoutStatusRunning,
+		AudienceConditionTree: nil,
+		IncludedRules:         []string{"rule_123"},
+		Variations: map[string]entities.Variation{
+			"holdout_var_1": testHoldoutVar1,
+		},
+		TrafficAllocation: []entities.Range{
+			{EntityID: "holdout_var_1", EndOfRange: 0}, // 0% traffic
+		},
+	}
+
+	s.mockConfig.On("GetHoldoutsForRule", "rule_123").Return([]entities.Holdout{localHoldout})
+	s.mockBucketer.On("Bucket", "test_user_holdout", mock.AnythingOfType("entities.Experiment"), entities.Group{}).Return(nil, reasons.Reason(""), nil)
+	s.mockLogger.On("Debug", mock.Anything).Return()
+	s.mockLogger.On("Info", mock.Anything).Return()
+
+	testHoldoutService := HoldoutService{
+		audienceTreeEvaluator: s.mockAudienceTreeEvaluator,
+		bucketer:              s.mockBucketer,
+		logger:                s.mockLogger,
+	}
+
+	localDecision, _ := testHoldoutService.EvaluateLocalHoldouts(
+		"rule_123",
+		"test_feature_with_holdout",
+		s.testFeatureDecisionContext,
+		s.testUserContext,
+		s.options,
+	)
+
+	s.Nil(localDecision)
+}
+
 func TestHoldoutServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(HoldoutServiceTestSuite))
 }
