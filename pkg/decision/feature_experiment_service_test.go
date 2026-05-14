@@ -174,8 +174,10 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionMutex() {
 
 func (s *FeatureExperimentServiceTestSuite) TestNewFeatureExperimentService() {
 	compositeExperimentService := &CompositeExperimentService{logger: logging.GetLogger("sdkKey", "CompositeExperimentService")}
-	featureExperimentService := NewFeatureExperimentService(logging.GetLogger("", ""), compositeExperimentService)
+	holdoutService := NewHoldoutService("sdkKey")
+	featureExperimentService := NewFeatureExperimentService(logging.GetLogger("", ""), compositeExperimentService, holdoutService)
 	s.IsType(compositeExperimentService, featureExperimentService.compositeExperimentService)
+	s.NotNil(featureExperimentService.holdoutService)
 }
 
 func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithCmabUUID() {

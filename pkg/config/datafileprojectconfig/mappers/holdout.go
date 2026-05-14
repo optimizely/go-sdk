@@ -22,18 +22,21 @@ import (
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 )
 
-// MapHoldouts maps the raw datafile holdout entities to SDK Holdout entities
-// All running holdouts apply to all flags
+// MapHoldouts maps the raw datafile holdout entities to SDK Holdout entities.
+// Global holdouts (IncludedRules == nil) apply to all flags via flagHoldoutsMap.
+// Local holdouts (IncludedRules != nil) are indexed by rule ID in ruleHoldoutsMap.
 func MapHoldouts(holdouts []datafileEntities.Holdout, featureMap map[string]entities.Feature) (
 	holdoutList []entities.Holdout,
 	holdoutIDMap map[string]entities.Holdout,
 	flagHoldoutsMap map[string][]entities.Holdout,
+	ruleHoldoutsMap map[string][]entities.Holdout,
 ) {
 	holdoutList = []entities.Holdout{}
 	holdoutIDMap = make(map[string]entities.Holdout)
 	flagHoldoutsMap = make(map[string][]entities.Holdout)
+	ruleHoldoutsMap = make(map[string][]entities.Holdout)
 
-	runningHoldouts := []entities.Holdout{}
+	globalHoldouts := []entities.Holdout{}
 
 	for _, holdout := range holdouts {
 		// Only process running holdouts
@@ -44,17 +47,26 @@ func MapHoldouts(holdouts []datafileEntities.Holdout, featureMap map[string]enti
 		mappedHoldout := mapHoldout(holdout)
 		holdoutList = append(holdoutList, mappedHoldout)
 		holdoutIDMap[holdout.ID] = mappedHoldout
-		runningHoldouts = append(runningHoldouts, mappedHoldout)
-	}
 
-	// All running holdouts apply to all flags
-	for _, feature := range featureMap {
-		if len(runningHoldouts) > 0 {
-			flagHoldoutsMap[feature.Key] = runningHoldouts
+		if mappedHoldout.IsGlobal() {
+			// Global holdout: applies to all rules across all flags
+			globalHoldouts = append(globalHoldouts, mappedHoldout)
+		} else {
+			// Local holdout: applies only to the specified rule IDs
+			for _, ruleID := range *mappedHoldout.IncludedRules {
+				ruleHoldoutsMap[ruleID] = append(ruleHoldoutsMap[ruleID], mappedHoldout)
+			}
 		}
 	}
 
-	return holdoutList, holdoutIDMap, flagHoldoutsMap
+	// Global holdouts apply to all flags (flag-level evaluation)
+	for _, feature := range featureMap {
+		if len(globalHoldouts) > 0 {
+			flagHoldoutsMap[feature.Key] = globalHoldouts
+		}
+	}
+
+	return holdoutList, holdoutIDMap, flagHoldoutsMap, ruleHoldoutsMap
 }
 
 func mapHoldout(datafileHoldout datafileEntities.Holdout) entities.Holdout {
@@ -107,5 +119,6 @@ func mapHoldout(datafileHoldout datafileEntities.Holdout) entities.Holdout {
 		Variations:            variations,
 		TrafficAllocation:     trafficAllocation,
 		AudienceConditionTree: audienceConditionTree,
+		IncludedRules:         datafileHoldout.IncludedRules,
 	}
 }

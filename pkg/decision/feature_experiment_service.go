@@ -28,14 +28,16 @@ import (
 // FeatureExperimentService helps evaluate feature test associated with the feature
 type FeatureExperimentService struct {
 	compositeExperimentService ExperimentService
+	holdoutService             *HoldoutService
 	logger                     logging.OptimizelyLogProducer
 }
 
 // NewFeatureExperimentService returns a new instance of the FeatureExperimentService
-func NewFeatureExperimentService(logger logging.OptimizelyLogProducer, compositeExperimentService ExperimentService) *FeatureExperimentService {
+func NewFeatureExperimentService(logger logging.OptimizelyLogProducer, compositeExperimentService ExperimentService, holdoutService *HoldoutService) *FeatureExperimentService {
 	return &FeatureExperimentService{
 		logger:                     logger,
 		compositeExperimentService: compositeExperimentService,
+		holdoutService:             holdoutService,
 	}
 }
 
@@ -57,6 +59,17 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 					Source:     FeatureTest,
 				}
 				return featureDecision, reasons, nil
+			}
+		}
+
+		// [FSSDK-12369] Check local holdouts targeting this experiment rule.
+		// Local holdouts are evaluated after forced decisions but before audience/traffic checks.
+		if f.holdoutService != nil {
+			holdoutDecision, holdoutReasons, _ := f.holdoutService.GetDecisionForRule(featureExperiment.ID, decisionContext.ProjectConfig, userContext, options)
+			reasons.Append(holdoutReasons)
+			if holdoutDecision.Variation != nil {
+				// User is in a local holdout — return holdout decision, skip rule evaluation
+				return holdoutDecision, reasons, nil
 			}
 		}
 

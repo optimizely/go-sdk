@@ -31,11 +31,12 @@ type CompositeFeatureService struct {
 
 // NewCompositeFeatureService returns a new instance of the CompositeFeatureService
 func NewCompositeFeatureService(sdkKey string, compositeExperimentService ExperimentService) *CompositeFeatureService {
+	holdoutService := NewHoldoutService(sdkKey)
 	return &CompositeFeatureService{
 		logger: logging.GetLogger(sdkKey, "CompositeFeatureService"),
 		featureServices: []FeatureService{
-			NewHoldoutService(sdkKey),
-			NewFeatureExperimentService(logging.GetLogger(sdkKey, "FeatureExperimentService"), compositeExperimentService),
+			holdoutService,
+			NewFeatureExperimentService(logging.GetLogger(sdkKey, "FeatureExperimentService"), compositeExperimentService, holdoutService),
 			NewRolloutService(sdkKey),
 		},
 	}

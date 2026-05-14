@@ -63,6 +63,10 @@ type DatafileProjectConfig struct {
 	holdouts          []entities.Holdout
 	holdoutIDMap      map[string]entities.Holdout
 	flagHoldoutsMap   map[string][]entities.Holdout
+	// ruleHoldoutsMap maps rule IDs to local holdouts targeting those rules
+	ruleHoldoutsMap map[string][]entities.Holdout
+	// globalHoldouts holds only global holdouts (IncludedRules == nil)
+	globalHoldouts []entities.Holdout
 }
 
 // GetDatafile returns a string representation of the environment's datafile
@@ -284,9 +288,26 @@ func (c DatafileProjectConfig) GetRegion() string {
 	return c.region
 }
 
-// GetHoldoutsForFlag returns all holdouts applicable to the given feature flag
+// GetHoldoutsForFlag returns all global holdouts applicable to the given feature flag.
+// Only global holdouts (those with IncludedRules == nil) are returned here.
+// Local holdouts are retrieved per rule via GetHoldoutsForRule.
 func (c DatafileProjectConfig) GetHoldoutsForFlag(featureKey string) []entities.Holdout {
 	if holdouts, exists := c.flagHoldoutsMap[featureKey]; exists {
+		return holdouts
+	}
+	return []entities.Holdout{}
+}
+
+// GetGlobalHoldouts returns all global holdouts (those with IncludedRules == nil).
+// These are evaluated at flag level, before any per-rule evaluation.
+func (c DatafileProjectConfig) GetGlobalHoldouts() []entities.Holdout {
+	return c.globalHoldouts
+}
+
+// GetHoldoutsForRule returns all local holdouts that target the given rule ID.
+// These are evaluated per-rule, after forced decisions, before audience/traffic checks.
+func (c DatafileProjectConfig) GetHoldoutsForRule(ruleID string) []entities.Holdout {
+	if holdouts, exists := c.ruleHoldoutsMap[ruleID]; exists {
 		return holdouts
 	}
 	return []entities.Holdout{}
@@ -338,7 +359,15 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 
 	audienceMap, audienceSegmentList := mappers.MapAudiences(append(datafile.TypedAudiences, datafile.Audiences...))
 	flagVariationsMap := mappers.MapFlagVariations(featureMap)
-	holdouts, holdoutIDMap, flagHoldoutsMap := mappers.MapHoldouts(datafile.Holdouts, featureMap)
+	holdouts, holdoutIDMap, flagHoldoutsMap, ruleHoldoutsMap := mappers.MapHoldouts(datafile.Holdouts, featureMap)
+
+	// Collect global holdouts (IncludedRules == nil) for direct access
+	globalHoldouts := []entities.Holdout{}
+	for i := range holdouts {
+		if holdouts[i].IsGlobal() {
+			globalHoldouts = append(globalHoldouts, holdouts[i])
+		}
+	}
 
 	attributeKeyMap := make(map[string]entities.Attribute)
 	attributeIDToKeyMap := make(map[string]string)
@@ -384,6 +413,8 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 		holdouts:             holdouts,
 		holdoutIDMap:         holdoutIDMap,
 		flagHoldoutsMap:      flagHoldoutsMap,
+		ruleHoldoutsMap:      ruleHoldoutsMap,
+		globalHoldouts:       globalHoldouts,
 	}
 
 	logger.Info("Datafile is valid.")
