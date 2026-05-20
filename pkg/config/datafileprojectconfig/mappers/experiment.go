@@ -85,6 +85,7 @@ func mapExperiment(rawExperiment datafileEntities.Experiment) entities.Experimen
 		ID:                    rawExperiment.ID,
 		LayerID:               rawExperiment.LayerID,
 		Key:                   rawExperiment.Key,
+		Type:                  rawExperiment.Type,
 		Variations:            make(map[string]entities.Variation),
 		VariationKeyToIDMap:   make(map[string]string),
 		TrafficAllocation:     make([]entities.Range, len(rawExperiment.TrafficAllocation)),

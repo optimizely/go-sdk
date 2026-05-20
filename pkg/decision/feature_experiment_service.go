@@ -46,6 +46,19 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 	// @TODO this can be improved by getting group ID first and determining experiment and then bucketing in experiment
 	for _, featureExperiment := range feature.FeatureExperiments {
 
+		// Skip experiments with unsupported types.
+		// If the experiment type is empty (not set in datafile), we still evaluate it.
+		// If the experiment type is set but not in the supported list, we skip it.
+		if featureExperiment.Type != "" && !entities.SupportedExperimentTypes[featureExperiment.Type] {
+			f.logger.Debug(fmt.Sprintf(
+				`Skipping experiment %q with unsupported type %q for feature %q.`,
+				featureExperiment.Key,
+				featureExperiment.Type,
+				feature.Key,
+			))
+			continue
+		}
+
 		// Checking for forced decision
 		if decisionContext.ForcedDecisionService != nil {
 			forcedDecision, _reasons, err := decisionContext.ForcedDecisionService.FindValidatedForcedDecision(decisionContext.ProjectConfig, OptimizelyDecisionContext{FlagKey: feature.Key, RuleKey: featureExperiment.Key}, options)

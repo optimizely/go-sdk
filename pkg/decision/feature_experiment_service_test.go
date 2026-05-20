@@ -295,6 +295,204 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithCmabError() {
 	s.mockExperimentService.AssertExpectations(s.T())
 }
 
+func (s *FeatureExperimentServiceTestSuite) TestGetDecisionSkipsUnsupportedExperimentType() {
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	// Create an experiment with an unsupported type
+	unsupportedExp := entities.Experiment{
+		ID:   "unsupported_exp",
+		Key:  "unsupported_exp_key",
+		Type: "unsupported_type",
+		Variations: map[string]entities.Variation{
+			"2223": testExp1113Var2223,
+		},
+		VariationKeyToIDMap: map[string]string{
+			"2223": "2223",
+		},
+		TrafficAllocation: []entities.Range{
+			{EntityID: "2223", EndOfRange: 10000},
+		},
+	}
+
+	// Create a supported experiment that should be evaluated
+	supportedExp := entities.Experiment{
+		ID:   "supported_exp",
+		Key:  "supported_exp_key",
+		Type: "a/b",
+		Variations: map[string]entities.Variation{
+			"2224": testExp1113Var2224,
+		},
+		VariationKeyToIDMap: map[string]string{
+			"2224": "2224",
+		},
+		TrafficAllocation: []entities.Range{
+			{EntityID: "2224", EndOfRange: 10000},
+		},
+	}
+
+	// Feature with unsupported experiment first, then supported one
+	testFeature := entities.Feature{
+		ID:                 "feat_type_test",
+		Key:                "feat_type_test_key",
+		FeatureExperiments: []entities.Experiment{unsupportedExp, supportedExp},
+	}
+
+	featureDecisionContext := FeatureDecisionContext{
+		Feature:               &testFeature,
+		ProjectConfig:         s.mockConfig,
+		Variable:              testVariable,
+		ForcedDecisionService: NewForcedDecisionService("test_user"),
+	}
+
+	// Only the supported experiment should be called
+	expectedVariation := supportedExp.Variations["2224"]
+	returnDecision := ExperimentDecision{
+		Variation: &expectedVariation,
+	}
+	supportedExpContext := ExperimentDecisionContext{
+		Experiment:    &supportedExp,
+		ProjectConfig: s.mockConfig,
+	}
+	s.mockExperimentService.On("GetDecision", supportedExpContext, testUserContext, s.options).Return(returnDecision, s.reasons, nil)
+
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	decision, _, err := featureExperimentService.GetDecision(featureDecisionContext, testUserContext, s.options)
+	s.NoError(err)
+	s.NotNil(decision.Variation)
+	s.Equal(supportedExp, decision.Experiment)
+	s.Equal(FeatureTest, decision.Source)
+
+	// Verify the unsupported experiment was NOT called
+	unsupportedExpContext := ExperimentDecisionContext{
+		Experiment:    &unsupportedExp,
+		ProjectConfig: s.mockConfig,
+	}
+	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision", unsupportedExpContext, testUserContext, s.options)
+}
+
+func (s *FeatureExperimentServiceTestSuite) TestGetDecisionEvaluatesExperimentWithEmptyType() {
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	// Experiment with empty type (not set in datafile) should still be evaluated
+	noTypeExp := entities.Experiment{
+		ID:  "no_type_exp",
+		Key: "no_type_exp_key",
+		// Type is empty string (zero value)
+		Variations: map[string]entities.Variation{
+			"2223": testExp1113Var2223,
+		},
+		VariationKeyToIDMap: map[string]string{
+			"2223": "2223",
+		},
+		TrafficAllocation: []entities.Range{
+			{EntityID: "2223", EndOfRange: 10000},
+		},
+	}
+
+	testFeature := entities.Feature{
+		ID:                 "feat_empty_type",
+		Key:                "feat_empty_type_key",
+		FeatureExperiments: []entities.Experiment{noTypeExp},
+	}
+
+	featureDecisionContext := FeatureDecisionContext{
+		Feature:               &testFeature,
+		ProjectConfig:         s.mockConfig,
+		Variable:              testVariable,
+		ForcedDecisionService: NewForcedDecisionService("test_user"),
+	}
+
+	expectedVariation := noTypeExp.Variations["2223"]
+	returnDecision := ExperimentDecision{
+		Variation: &expectedVariation,
+	}
+	expContext := ExperimentDecisionContext{
+		Experiment:    &noTypeExp,
+		ProjectConfig: s.mockConfig,
+	}
+	s.mockExperimentService.On("GetDecision", expContext, testUserContext, s.options).Return(returnDecision, s.reasons, nil)
+
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	decision, _, err := featureExperimentService.GetDecision(featureDecisionContext, testUserContext, s.options)
+	s.NoError(err)
+	s.NotNil(decision.Variation)
+	s.Equal(noTypeExp, decision.Experiment)
+	s.mockExperimentService.AssertExpectations(s.T())
+}
+
+func (s *FeatureExperimentServiceTestSuite) TestGetDecisionAllSupportedExperimentTypes() {
+	// Verify that each supported type is evaluated
+	for expType := range entities.SupportedExperimentTypes {
+		s.Run("type_"+expType, func() {
+			mockExpService := new(MockExperimentDecisionService)
+			testUserContext := entities.UserContext{
+				ID: "test_user_1",
+			}
+
+			exp := entities.Experiment{
+				ID:   "exp_" + expType,
+				Key:  "exp_" + expType + "_key",
+				Type: expType,
+				Variations: map[string]entities.Variation{
+					"v1": {ID: "v1", Key: "v1"},
+				},
+				VariationKeyToIDMap: map[string]string{
+					"v1": "v1",
+				},
+				TrafficAllocation: []entities.Range{
+					{EntityID: "v1", EndOfRange: 10000},
+				},
+			}
+
+			testFeature := entities.Feature{
+				ID:                 "feat_" + expType,
+				Key:                "feat_" + expType + "_key",
+				FeatureExperiments: []entities.Experiment{exp},
+			}
+
+			featureDecisionContext := FeatureDecisionContext{
+				Feature:               &testFeature,
+				ProjectConfig:         s.mockConfig,
+				Variable:              testVariable,
+				ForcedDecisionService: NewForcedDecisionService("test_user"),
+			}
+
+			expectedVariation := exp.Variations["v1"]
+			returnDecision := ExperimentDecision{
+				Variation: &expectedVariation,
+			}
+			expContext := ExperimentDecisionContext{
+				Experiment:    &exp,
+				ProjectConfig: s.mockConfig,
+			}
+			reasons := decide.NewDecisionReasons(s.options)
+			mockExpService.On("GetDecision", expContext, testUserContext, s.options).Return(returnDecision, reasons, nil)
+
+			featureExperimentService := &FeatureExperimentService{
+				compositeExperimentService: mockExpService,
+				logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+			}
+
+			decision, _, err := featureExperimentService.GetDecision(featureDecisionContext, testUserContext, s.options)
+			s.NoError(err)
+			s.NotNil(decision.Variation, "experiment with type %q should be evaluated", expType)
+			mockExpService.AssertExpectations(s.T())
+		})
+	}
+}
+
 func TestFeatureExperimentServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(FeatureExperimentServiceTestSuite))
 }
