@@ -789,3 +789,42 @@ func TestGetHoldoutsForFlagWithDifferentFlag(t *testing.T) {
 	assert.Len(t, actual, 0)
 	assert.Equal(t, []entities.Holdout{}, actual)
 }
+
+func TestGetHoldoutsForRuleWithHoldouts(t *testing.T) {
+	ruleID := "test_rule_id"
+	holdout1 := entities.Holdout{
+		ID:     "holdout_1",
+		Key:    "test_holdout_1",
+		Status: entities.HoldoutStatusRunning,
+	}
+	holdout2 := entities.Holdout{
+		ID:     "holdout_2",
+		Key:    "test_holdout_2",
+		Status: entities.HoldoutStatusRunning,
+	}
+
+	ruleHoldoutsMap := make(map[string][]entities.Holdout)
+	ruleHoldoutsMap[ruleID] = []entities.Holdout{holdout1, holdout2}
+
+	config := &DatafileProjectConfig{
+		ruleHoldoutsMap: ruleHoldoutsMap,
+	}
+
+	actual := config.GetHoldoutsForRule(ruleID)
+	assert.Len(t, actual, 2)
+	assert.Equal(t, holdout1, actual[0])
+	assert.Equal(t, holdout2, actual[1])
+}
+
+func TestGetHoldoutsForRuleWithNoHoldouts(t *testing.T) {
+	ruleID := "test_rule_id"
+	ruleHoldoutsMap := make(map[string][]entities.Holdout)
+
+	config := &DatafileProjectConfig{
+		ruleHoldoutsMap: ruleHoldoutsMap,
+	}
+
+	actual := config.GetHoldoutsForRule(ruleID)
+	assert.Len(t, actual, 0)
+	assert.Equal(t, []entities.Holdout{}, actual)
+}
