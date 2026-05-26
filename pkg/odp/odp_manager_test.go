@@ -41,8 +41,8 @@ func (m *MockEventManager) Start(ctx context.Context, odpConfig config.Config) {
 	m.Called(ctx, odpConfig)
 }
 
-func (m *MockEventManager) IdentifyUser(apiKey, apiHost, userID string) {
-	m.Called(apiKey, apiHost, userID)
+func (m *MockEventManager) IdentifyUser(apiKey, apiHost string, identifiers map[string]string) {
+	m.Called(apiKey, apiHost, identifiers)
 }
 
 func (m *MockEventManager) ProcessEvent(apiKey, apiHost string, odpEvent event.Event) error {
@@ -192,7 +192,8 @@ func (o *ODPManagerTestSuite) TestFetchQualifiedSegments() {
 func (o *ODPManagerTestSuite) TestIdentifyUser() {
 	o.config.On("GetAPIKey").Return("")
 	o.config.On("GetAPIHost").Return("")
-	o.eventManager.On("IdentifyUser", "", "", o.userID)
+	expectedIdentifiers := map[string]string{utils.OdpFSUserIDKey: o.userID}
+	o.eventManager.On("IdentifyUser", "", "", expectedIdentifiers)
 	o.odpManager.IdentifyUser(o.userID)
 	o.segmentManager.AssertExpectations(o.T())
 }

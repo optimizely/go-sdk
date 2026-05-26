@@ -178,18 +178,19 @@ func (e *EventManagerTestSuite) TestEventsDispatchedWhenFlushIntervalReached() {
 }
 
 func (e *EventManagerTestSuite) TestIdentifyUserWhenODPNotIntegrated() {
-	e.eventManager.IdentifyUser("", "1", "123")
+	identifiers := map[string]string{utils.OdpFSUserIDKey: "123", "vuid": "vuid-123"}
+	e.eventManager.IdentifyUser("", "1", identifiers)
 	e.Nil(e.eventManager.ticker)
 	e.Equal(0, e.eventAPIManager.timesSendEventsCalled)
 }
 
-func (e *EventManagerTestSuite) TestIdentifyUserWhenODPIntegrated() {
-	userID := "123"
-	expectedEvent := Event{Identifiers: map[string]string{utils.OdpFSUserIDKey: userID}, Type: utils.OdpEventType, Action: utils.OdpActionIdentified}
+func (e *EventManagerTestSuite) TestIdentifyUserWhenODPIntegratedWithTwoIdentifiers() {
+	identifiers := map[string]string{utils.OdpFSUserIDKey: "123", "vuid": "vuid-456"}
+	expectedEvent := Event{Identifiers: identifiers, Type: utils.OdpEventType, Action: utils.OdpActionIdentified}
 	e.eventManager.addCommonData(&expectedEvent)
 	e.eventAPIManager.wg.Add(1)
 	e.eventManager.batchSize = 1
-	e.eventManager.IdentifyUser("1", "2", userID)
+	e.eventManager.IdentifyUser("1", "2", identifiers)
 	e.eventAPIManager.wg.Wait()
 	e.Equal(1, e.eventAPIManager.timesSendEventsCalled)
 
@@ -198,6 +199,20 @@ func (e *EventManagerTestSuite) TestIdentifyUserWhenODPIntegrated() {
 	// Making idempotence_id similar for both for comparison purposes
 	actualEvent.Data["idempotence_id"] = expectedEvent.Data["idempotence_id"]
 	e.Equal(expectedEvent, actualEvent)
+}
+
+func (e *EventManagerTestSuite) TestIdentifyUserSkippedWithSingleIdentifier() {
+	identifiers := map[string]string{utils.OdpFSUserIDKey: "123"}
+	e.eventManager.IdentifyUser("1", "2", identifiers)
+	e.Equal(0, e.eventAPIManager.timesSendEventsCalled)
+	e.Equal(0, e.eventManager.eventQueue.Size())
+}
+
+func (e *EventManagerTestSuite) TestIdentifyUserSkippedWithEmptyValues() {
+	identifiers := map[string]string{utils.OdpFSUserIDKey: "123", "vuid": ""}
+	e.eventManager.IdentifyUser("1", "2", identifiers)
+	e.Equal(0, e.eventAPIManager.timesSendEventsCalled)
+	e.Equal(0, e.eventManager.eventQueue.Size())
 }
 
 func (e *EventManagerTestSuite) TestProcessEventWithInvalidODPConfig() {
@@ -442,7 +457,8 @@ func (e *EventManagerTestSuite) TestEventManagerAsyncBehaviour() {
 	eventAPIManager.shouldNotInformWaitgroup = true
 	eg := newExecutionContext()
 	callAllMethods := func(id string) {
-		eventManager.IdentifyUser("-1", "-1", id)
+		identifiers := map[string]string{utils.OdpFSUserIDKey: id, "vuid": "vuid-" + id}
+		eventManager.IdentifyUser("-1", "-1", identifiers)
 		eventManager.ProcessEvent("-1", "-1", Event{Action: "123"})
 	}
 	for i := 0; i < iterations; i++ {
