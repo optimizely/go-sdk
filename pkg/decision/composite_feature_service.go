@@ -25,6 +25,7 @@ import (
 
 // CompositeFeatureService is the default out-of-the-box feature decision service
 type CompositeFeatureService struct {
+	holdoutService  *HoldoutService
 	featureServices []FeatureService
 	logger          logging.OptimizelyLogProducer
 }
@@ -33,9 +34,9 @@ type CompositeFeatureService struct {
 func NewCompositeFeatureService(sdkKey string, compositeExperimentService ExperimentService) *CompositeFeatureService {
 	holdoutService := NewHoldoutService(sdkKey)
 	return &CompositeFeatureService{
-		logger: logging.GetLogger(sdkKey, "CompositeFeatureService"),
+		holdoutService: holdoutService,
+		logger:         logging.GetLogger(sdkKey, "CompositeFeatureService"),
 		featureServices: []FeatureService{
-			holdoutService,
 			NewFeatureExperimentService(logging.GetLogger(sdkKey, "FeatureExperimentService"), compositeExperimentService, holdoutService),
 			NewRolloutService(sdkKey),
 		},
@@ -44,8 +45,18 @@ func NewCompositeFeatureService(sdkKey string, compositeExperimentService Experi
 
 // GetDecision returns a decision for the given feature and user context
 func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options) (FeatureDecision, decide.DecisionReasons, error) {
-	var featureDecision = FeatureDecision{}
 	reasons := decide.NewDecisionReasons(options)
+
+	// Evaluate global holdouts first, before any rule-level services
+	if f.holdoutService != nil {
+		holdoutDecision, holdoutReasons, _ := f.holdoutService.GetGlobalDecision(decisionContext, userContext, options)
+		reasons.Append(holdoutReasons)
+		if holdoutDecision.Variation != nil {
+			return holdoutDecision, reasons, nil
+		}
+	}
+
+	var featureDecision FeatureDecision
 	var err error
 	for _, featureDecisionService := range f.featureServices {
 		var decisionReasons decide.DecisionReasons

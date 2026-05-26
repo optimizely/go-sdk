@@ -23,20 +23,18 @@ import (
 )
 
 // MapHoldouts maps the raw datafile holdout entities to SDK Holdout entities.
-// Global holdouts (IncludedRules == nil) apply to all flags via flagHoldoutsMap.
+// Global holdouts (IncludedRules == nil) are returned in globalHoldouts for flag-level evaluation.
 // Local holdouts (IncludedRules != nil) are indexed by rule ID in ruleHoldoutsMap.
-func MapHoldouts(holdouts []datafileEntities.Holdout, featureMap map[string]entities.Feature) (
+func MapHoldouts(holdouts []datafileEntities.Holdout) (
 	holdoutList []entities.Holdout,
 	holdoutIDMap map[string]entities.Holdout,
-	flagHoldoutsMap map[string][]entities.Holdout,
+	globalHoldouts []entities.Holdout,
 	ruleHoldoutsMap map[string][]entities.Holdout,
 ) {
 	holdoutList = []entities.Holdout{}
 	holdoutIDMap = make(map[string]entities.Holdout)
-	flagHoldoutsMap = make(map[string][]entities.Holdout)
+	globalHoldouts = []entities.Holdout{}
 	ruleHoldoutsMap = make(map[string][]entities.Holdout)
-
-	globalHoldouts := []entities.Holdout{}
 
 	for _, holdout := range holdouts {
 		// Only process running holdouts
@@ -49,7 +47,6 @@ func MapHoldouts(holdouts []datafileEntities.Holdout, featureMap map[string]enti
 		holdoutIDMap[holdout.ID] = mappedHoldout
 
 		if mappedHoldout.IsGlobal() {
-			// Global holdout: applies to all rules across all flags
 			globalHoldouts = append(globalHoldouts, mappedHoldout)
 		} else {
 			// Local holdout: applies only to the specified rule IDs
@@ -59,14 +56,7 @@ func MapHoldouts(holdouts []datafileEntities.Holdout, featureMap map[string]enti
 		}
 	}
 
-	// Global holdouts apply to all flags (flag-level evaluation)
-	for _, feature := range featureMap {
-		if len(globalHoldouts) > 0 {
-			flagHoldoutsMap[feature.Key] = globalHoldouts
-		}
-	}
-
-	return holdoutList, holdoutIDMap, flagHoldoutsMap, ruleHoldoutsMap
+	return holdoutList, holdoutIDMap, globalHoldouts, ruleHoldoutsMap
 }
 
 func mapHoldout(datafileHoldout datafileEntities.Holdout) entities.Holdout {

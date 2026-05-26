@@ -26,17 +26,16 @@ import (
 
 func TestMapHoldoutsEmpty(t *testing.T) {
 	rawHoldouts := []datafileEntities.Holdout{}
-	featureMap := map[string]entities.Feature{}
 
-	holdoutList, holdoutIDMap, flagHoldoutsMap, _ := MapHoldouts(rawHoldouts, featureMap)
+	holdoutList, holdoutIDMap, globalHoldouts, _ := MapHoldouts(rawHoldouts)
 
 	assert.Empty(t, holdoutList)
 	assert.Empty(t, holdoutIDMap)
-	assert.Empty(t, flagHoldoutsMap)
+	assert.Empty(t, globalHoldouts)
 }
 
 func TestMapHoldoutsAppliestoAllFlags(t *testing.T) {
-	// Running holdouts apply to all flags
+	// Running holdouts with nil IncludedRules are global and returned in globalHoldouts
 	rawHoldouts := []datafileEntities.Holdout{
 		{
 			ID:     "holdout_1",
@@ -51,30 +50,17 @@ func TestMapHoldoutsAppliestoAllFlags(t *testing.T) {
 		},
 	}
 
-	featureMap := map[string]entities.Feature{
-		"feature_1": {ID: "feature_1", Key: "feature_1"},
-		"feature_2": {ID: "feature_2", Key: "feature_2"},
-		"feature_3": {ID: "feature_3", Key: "feature_3"},
-	}
+	holdoutList, holdoutIDMap, globalHoldouts, _ := MapHoldouts(rawHoldouts)
 
-	holdoutList, holdoutIDMap, flagHoldoutsMap, _ := MapHoldouts(rawHoldouts, featureMap)
-
-	// Verify holdout list and ID map
 	assert.Len(t, holdoutList, 1)
 	assert.Len(t, holdoutIDMap, 1)
 	assert.Equal(t, "holdout_1", holdoutList[0].ID)
 	assert.Equal(t, "running_holdout", holdoutList[0].Key)
 
-	// Running holdout should apply to all flags
-	assert.Contains(t, flagHoldoutsMap, "feature_1")
-	assert.Contains(t, flagHoldoutsMap, "feature_2")
-	assert.Contains(t, flagHoldoutsMap, "feature_3")
-
-	assert.Len(t, flagHoldoutsMap["feature_1"], 1)
-	assert.Len(t, flagHoldoutsMap["feature_2"], 1)
-	assert.Len(t, flagHoldoutsMap["feature_3"], 1)
+	// Global holdout should appear in globalHoldouts
+	assert.Len(t, globalHoldouts, 1)
+	assert.Equal(t, "running_holdout", globalHoldouts[0].Key)
 }
-
 
 func TestMapHoldoutsNotRunning(t *testing.T) {
 	// Holdout with non-Running status should be filtered out
@@ -89,20 +75,15 @@ func TestMapHoldoutsNotRunning(t *testing.T) {
 		},
 	}
 
-	featureMap := map[string]entities.Feature{
-		"feature_1": {ID: "feature_1", Key: "feature_1"},
-	}
+	holdoutList, holdoutIDMap, globalHoldouts, _ := MapHoldouts(rawHoldouts)
 
-	holdoutList, holdoutIDMap, flagHoldoutsMap, _ := MapHoldouts(rawHoldouts, featureMap)
-
-	// Non-running holdouts should be filtered out
 	assert.Empty(t, holdoutList)
 	assert.Empty(t, holdoutIDMap)
-	assert.Empty(t, flagHoldoutsMap)
+	assert.Empty(t, globalHoldouts)
 }
 
 func TestMapHoldoutsMultipleHoldouts(t *testing.T) {
-	// Multiple running holdouts all apply to all flags
+	// Multiple running global holdouts all appear in globalHoldouts
 	rawHoldouts := []datafileEntities.Holdout{
 		{
 			ID:     "holdout_1",
@@ -128,30 +109,16 @@ func TestMapHoldoutsMultipleHoldouts(t *testing.T) {
 		},
 	}
 
-	featureMap := map[string]entities.Feature{
-		"feature_1": {ID: "feature_1", Key: "feature_1"},
-		"feature_2": {ID: "feature_2", Key: "feature_2"},
-	}
+	holdoutList, holdoutIDMap, globalHoldouts, _ := MapHoldouts(rawHoldouts)
 
-	holdoutList, holdoutIDMap, flagHoldoutsMap, _ := MapHoldouts(rawHoldouts, featureMap)
-
-	// Verify both holdouts are in the list
 	assert.Len(t, holdoutList, 2)
 	assert.Len(t, holdoutIDMap, 2)
 
-	// Both features should get both holdouts
-	assert.Contains(t, flagHoldoutsMap, "feature_1")
-	assert.Len(t, flagHoldoutsMap["feature_1"], 2)
-	assert.Equal(t, "holdout_1", flagHoldoutsMap["feature_1"][0].Key)
-	assert.Equal(t, "holdout_2", flagHoldoutsMap["feature_1"][1].Key)
-
-	assert.Contains(t, flagHoldoutsMap, "feature_2")
-	assert.Len(t, flagHoldoutsMap["feature_2"], 2)
-	assert.Equal(t, "holdout_1", flagHoldoutsMap["feature_2"][0].Key)
-	assert.Equal(t, "holdout_2", flagHoldoutsMap["feature_2"][1].Key)
+	// Both global holdouts appear in globalHoldouts
+	assert.Len(t, globalHoldouts, 2)
+	assert.Equal(t, "holdout_1", globalHoldouts[0].Key)
+	assert.Equal(t, "holdout_2", globalHoldouts[1].Key)
 }
-
-
 
 func TestMapHoldoutsWithAudienceConditions(t *testing.T) {
 	rawHoldouts := []datafileEntities.Holdout{
@@ -170,11 +137,7 @@ func TestMapHoldoutsWithAudienceConditions(t *testing.T) {
 		},
 	}
 
-	featureMap := map[string]entities.Feature{
-		"feature_1": {ID: "feature_1", Key: "feature_1"},
-	}
-
-	holdoutList, _, _, _ := MapHoldouts(rawHoldouts, featureMap)
+	holdoutList, _, _, _ := MapHoldouts(rawHoldouts)
 
 	// Verify audience conditions are mapped
 	assert.Len(t, holdoutList, 1)
@@ -210,11 +173,7 @@ func TestMapHoldoutsVariationsMapping(t *testing.T) {
 		},
 	}
 
-	featureMap := map[string]entities.Feature{
-		"feature_1": {ID: "feature_1", Key: "feature_1"},
-	}
-
-	holdoutList, _, _, _ := MapHoldouts(rawHoldouts, featureMap)
+	holdoutList, _, _, _ := MapHoldouts(rawHoldouts)
 
 	// Verify variations are mapped correctly
 	assert.Len(t, holdoutList, 1)
@@ -248,19 +207,16 @@ func TestMapHoldoutsIsGlobalNilIncludedRules(t *testing.T) {
 			},
 		},
 	}
-	featureMap := map[string]entities.Feature{
-		"feature_1": {ID: "feature_1", Key: "feature_1"},
-	}
 
-	holdoutList, _, flagHoldoutsMap, ruleHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
+	holdoutList, _, globalHoldouts, ruleHoldoutsMap := MapHoldouts(rawHoldouts)
 
 	assert.Len(t, holdoutList, 1)
 	// nil IncludedRules should be classified as global
 	assert.True(t, holdoutList[0].IsGlobal())
 	assert.Nil(t, holdoutList[0].IncludedRules)
-	// Global holdout should appear in flagHoldoutsMap for every feature
-	assert.Contains(t, flagHoldoutsMap, "feature_1")
-	assert.Len(t, flagHoldoutsMap["feature_1"], 1)
+	// Global holdout should appear in globalHoldouts
+	assert.Len(t, globalHoldouts, 1)
+	assert.Equal(t, "global_holdout", globalHoldouts[0].Key)
 	// ruleHoldoutsMap should be empty for a global holdout
 	assert.Empty(t, ruleHoldoutsMap)
 }
@@ -282,18 +238,15 @@ func TestMapHoldoutsLocalHoldoutWithIncludedRules(t *testing.T) {
 			},
 		},
 	}
-	featureMap := map[string]entities.Feature{
-		"feature_1": {ID: "feature_1", Key: "feature_1"},
-	}
 
-	holdoutList, _, flagHoldoutsMap, ruleHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
+	holdoutList, _, globalHoldouts, ruleHoldoutsMap := MapHoldouts(rawHoldouts)
 
 	assert.Len(t, holdoutList, 1)
 	// Non-nil IncludedRules should be classified as local (not global)
 	assert.False(t, holdoutList[0].IsGlobal())
 	assert.NotNil(t, holdoutList[0].IncludedRules)
-	// Local holdout must NOT appear in flagHoldoutsMap
-	assert.Empty(t, flagHoldoutsMap)
+	// Local holdout must NOT appear in globalHoldouts
+	assert.Empty(t, globalHoldouts)
 	// Local holdout should appear in ruleHoldoutsMap for each rule it targets
 	assert.Contains(t, ruleHoldoutsMap, "rule_id_1")
 	assert.Contains(t, ruleHoldoutsMap, "rule_id_2")
@@ -320,17 +273,14 @@ func TestMapHoldoutsEmptyIncludedRulesIsLocalNotGlobal(t *testing.T) {
 			},
 		},
 	}
-	featureMap := map[string]entities.Feature{
-		"feature_1": {ID: "feature_1", Key: "feature_1"},
-	}
 
-	holdoutList, _, flagHoldoutsMap, ruleHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
+	holdoutList, _, globalHoldouts, ruleHoldoutsMap := MapHoldouts(rawHoldouts)
 
 	assert.Len(t, holdoutList, 1)
 	// Empty non-nil IncludedRules should be local (not global)
 	assert.False(t, holdoutList[0].IsGlobal())
-	// Empty local holdout must NOT appear in flagHoldoutsMap
-	assert.Empty(t, flagHoldoutsMap)
+	// Empty local holdout must NOT appear in globalHoldouts
+	assert.Empty(t, globalHoldouts)
 	// ruleHoldoutsMap should also be empty (no rules to target)
 	assert.Empty(t, ruleHoldoutsMap)
 }
@@ -364,18 +314,14 @@ func TestMapHoldoutsMixedGlobalAndLocal(t *testing.T) {
 			},
 		},
 	}
-	featureMap := map[string]entities.Feature{
-		"feature_1": {ID: "feature_1", Key: "feature_1"},
-	}
 
-	holdoutList, _, flagHoldoutsMap, ruleHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
+	holdoutList, _, globalHoldouts, ruleHoldoutsMap := MapHoldouts(rawHoldouts)
 
 	assert.Len(t, holdoutList, 2)
 
-	// Global holdout in flagHoldoutsMap (only the global one)
-	assert.Contains(t, flagHoldoutsMap, "feature_1")
-	assert.Len(t, flagHoldoutsMap["feature_1"], 1)
-	assert.Equal(t, "global_holdout", flagHoldoutsMap["feature_1"][0].Key)
+	// Only global holdout in globalHoldouts
+	assert.Len(t, globalHoldouts, 1)
+	assert.Equal(t, "global_holdout", globalHoldouts[0].Key)
 
 	// Local holdout in ruleHoldoutsMap
 	assert.Contains(t, ruleHoldoutsMap, "rule_1")
@@ -400,9 +346,8 @@ func TestMapHoldoutsLocalHoldoutCrossRuleTargeting(t *testing.T) {
 			},
 		},
 	}
-	featureMap := map[string]entities.Feature{}
 
-	_, _, _, ruleHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
+	_, _, _, ruleHoldoutsMap := MapHoldouts(rawHoldouts)
 
 	// Each rule should have the holdout mapped
 	assert.Contains(t, ruleHoldoutsMap, "rule_a")
@@ -444,16 +389,13 @@ func TestMapHoldoutsBackwardCompatibilityOldDatafile(t *testing.T) {
 			},
 		},
 	}
-	featureMap := map[string]entities.Feature{
-		"my_feature": {ID: "my_feature", Key: "my_feature"},
-	}
 
-	holdoutList, _, flagHoldoutsMap, ruleHoldoutsMap := MapHoldouts(rawHoldouts, featureMap)
+	holdoutList, _, globalHoldouts, ruleHoldoutsMap := MapHoldouts(rawHoldouts)
 
 	assert.Len(t, holdoutList, 1)
 	// Old datafile holdout with no IncludedRules should default to global
 	assert.True(t, holdoutList[0].IsGlobal())
-	assert.Contains(t, flagHoldoutsMap, "my_feature")
-	assert.Len(t, flagHoldoutsMap["my_feature"], 1)
+	assert.Len(t, globalHoldouts, 1)
+	assert.Equal(t, "old_global_holdout", globalHoldouts[0].Key)
 	assert.Empty(t, ruleHoldoutsMap)
 }

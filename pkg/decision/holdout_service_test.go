@@ -121,7 +121,7 @@ func (s *HoldoutServiceTestSuite) SetupTest() {
 
 func (s *HoldoutServiceTestSuite) TestGetDecisionWithNoHoldouts() {
 	// Setup: No holdouts for the feature
-	s.mockConfig.On("GetHoldoutsForFlag", "test_feature_with_holdout").Return([]entities.Holdout{})
+	s.mockConfig.On("GetGlobalHoldouts").Return([]entities.Holdout{})
 
 	testHoldoutService := HoldoutService{
 		audienceTreeEvaluator: s.mockAudienceTreeEvaluator,
@@ -129,7 +129,7 @@ func (s *HoldoutServiceTestSuite) TestGetDecisionWithNoHoldouts() {
 		logger:                s.mockLogger,
 	}
 
-	decision, _, err := testHoldoutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
+	decision, _, err := testHoldoutService.GetGlobalDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
 
 	s.NoError(err)
 	s.Equal(FeatureDecision{}, decision)
@@ -137,7 +137,7 @@ func (s *HoldoutServiceTestSuite) TestGetDecisionWithNoHoldouts() {
 
 func (s *HoldoutServiceTestSuite) TestGetDecisionWithHoldoutNotRunning() {
 	// Setup: Holdout exists but is not running
-	s.mockConfig.On("GetHoldoutsForFlag", "test_feature_with_holdout").Return([]entities.Holdout{testHoldout3NotRunning})
+	s.mockConfig.On("GetGlobalHoldouts").Return([]entities.Holdout{testHoldout3NotRunning})
 	s.mockLogger.On("Debug", mock.Anything).Return()
 	s.mockLogger.On("Info", mock.MatchedBy(func(msg string) bool {
 		return true // Accept any info log message
@@ -149,7 +149,7 @@ func (s *HoldoutServiceTestSuite) TestGetDecisionWithHoldoutNotRunning() {
 		logger:                s.mockLogger,
 	}
 
-	decision, _, err := testHoldoutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
+	decision, _, err := testHoldoutService.GetGlobalDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
 
 	s.NoError(err)
 	s.Equal(FeatureDecision{}, decision)
@@ -157,7 +157,7 @@ func (s *HoldoutServiceTestSuite) TestGetDecisionWithHoldoutNotRunning() {
 
 func (s *HoldoutServiceTestSuite) TestGetDecisionUserNotInAudience() {
 	// Setup: User doesn't meet audience conditions
-	s.mockConfig.On("GetHoldoutsForFlag", "test_feature_with_holdout").Return([]entities.Holdout{testHoldout1})
+	s.mockConfig.On("GetGlobalHoldouts").Return([]entities.Holdout{testHoldout1})
 	s.mockAudienceTreeEvaluator.On("Evaluate", testHoldout1.AudienceConditionTree, mock.Anything, s.options).Return(false, true, s.decisionReasons)
 	s.mockLogger.On("Debug", mock.Anything).Return()
 	s.mockLogger.On("Info", mock.Anything).Return()
@@ -168,7 +168,7 @@ func (s *HoldoutServiceTestSuite) TestGetDecisionUserNotInAudience() {
 		logger:                s.mockLogger,
 	}
 
-	decision, _, err := testHoldoutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
+	decision, _, err := testHoldoutService.GetGlobalDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
 
 	s.NoError(err)
 	s.Equal(FeatureDecision{}, decision)
@@ -177,7 +177,7 @@ func (s *HoldoutServiceTestSuite) TestGetDecisionUserNotInAudience() {
 
 func (s *HoldoutServiceTestSuite) TestGetDecisionUserInAudienceButNotBucketed() {
 	// Setup: User meets audience conditions but doesn't get bucketed into a variation
-	s.mockConfig.On("GetHoldoutsForFlag", "test_feature_with_holdout").Return([]entities.Holdout{testHoldout1})
+	s.mockConfig.On("GetGlobalHoldouts").Return([]entities.Holdout{testHoldout1})
 	s.mockAudienceTreeEvaluator.On("Evaluate", testHoldout1.AudienceConditionTree, mock.Anything, s.options).Return(true, true, s.decisionReasons)
 	s.mockBucketer.On("Bucket", "test_user_holdout", mock.AnythingOfType("entities.Experiment"), entities.Group{}).Return(nil, reasons.Reason(""), nil)
 	s.mockLogger.On("Debug", mock.Anything).Return()
@@ -189,7 +189,7 @@ func (s *HoldoutServiceTestSuite) TestGetDecisionUserInAudienceButNotBucketed() 
 		logger:                s.mockLogger,
 	}
 
-	decision, _, err := testHoldoutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
+	decision, _, err := testHoldoutService.GetGlobalDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
 
 	s.NoError(err)
 	s.Equal(FeatureDecision{}, decision)
@@ -199,7 +199,7 @@ func (s *HoldoutServiceTestSuite) TestGetDecisionUserInAudienceButNotBucketed() 
 
 func (s *HoldoutServiceTestSuite) TestGetDecisionHappyPath() {
 	// Setup: User meets audience conditions and gets bucketed into a variation
-	s.mockConfig.On("GetHoldoutsForFlag", "test_feature_with_holdout").Return([]entities.Holdout{testHoldout1})
+	s.mockConfig.On("GetGlobalHoldouts").Return([]entities.Holdout{testHoldout1})
 	s.mockAudienceTreeEvaluator.On("Evaluate", testHoldout1.AudienceConditionTree, mock.Anything, s.options).Return(true, true, s.decisionReasons)
 	s.mockBucketer.On("Bucket", "test_user_holdout", mock.AnythingOfType("entities.Experiment"), entities.Group{}).Return(&testHoldoutVar1, reasons.Reason(""), nil)
 	s.mockLogger.On("Debug", mock.Anything).Return()
@@ -211,7 +211,7 @@ func (s *HoldoutServiceTestSuite) TestGetDecisionHappyPath() {
 		logger:                s.mockLogger,
 	}
 
-	decision, _, err := testHoldoutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
+	decision, _, err := testHoldoutService.GetGlobalDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
 
 	s.NoError(err)
 	s.NotNil(decision.Variation)
@@ -223,7 +223,7 @@ func (s *HoldoutServiceTestSuite) TestGetDecisionHappyPath() {
 
 func (s *HoldoutServiceTestSuite) TestGetDecisionNoAudienceTargeting() {
 	// Setup: Holdout with no audience targeting (applies to everyone)
-	s.mockConfig.On("GetHoldoutsForFlag", "test_feature_with_holdout").Return([]entities.Holdout{testHoldout2NoAudience})
+	s.mockConfig.On("GetGlobalHoldouts").Return([]entities.Holdout{testHoldout2NoAudience})
 	s.mockBucketer.On("Bucket", "test_user_holdout", mock.AnythingOfType("entities.Experiment"), entities.Group{}).Return(&testHoldoutVar1, reasons.Reason(""), nil)
 	s.mockLogger.On("Debug", mock.Anything).Return()
 	s.mockLogger.On("Info", mock.Anything).Return()
@@ -234,7 +234,7 @@ func (s *HoldoutServiceTestSuite) TestGetDecisionNoAudienceTargeting() {
 		logger:                s.mockLogger,
 	}
 
-	decision, _, err := testHoldoutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
+	decision, _, err := testHoldoutService.GetGlobalDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
 
 	s.NoError(err)
 	s.NotNil(decision.Variation)
@@ -246,7 +246,7 @@ func (s *HoldoutServiceTestSuite) TestGetDecisionNoAudienceTargeting() {
 func (s *HoldoutServiceTestSuite) TestGetDecisionMultipleHoldoutsFirstMatches() {
 	// Setup: Multiple holdouts, first one matches
 	holdouts := []entities.Holdout{testHoldout1, testHoldout2NoAudience}
-	s.mockConfig.On("GetHoldoutsForFlag", "test_feature_with_holdout").Return(holdouts)
+	s.mockConfig.On("GetGlobalHoldouts").Return(holdouts)
 	s.mockAudienceTreeEvaluator.On("Evaluate", testHoldout1.AudienceConditionTree, mock.Anything, s.options).Return(true, true, s.decisionReasons)
 	s.mockBucketer.On("Bucket", "test_user_holdout", mock.AnythingOfType("entities.Experiment"), entities.Group{}).Return(&testHoldoutVar1, reasons.Reason(""), nil)
 	s.mockLogger.On("Debug", mock.Anything).Return()
@@ -258,7 +258,7 @@ func (s *HoldoutServiceTestSuite) TestGetDecisionMultipleHoldoutsFirstMatches() 
 		logger:                s.mockLogger,
 	}
 
-	decision, _, err := testHoldoutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
+	decision, _, err := testHoldoutService.GetGlobalDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
 
 	s.NoError(err)
 	s.NotNil(decision.Variation)
@@ -271,7 +271,7 @@ func (s *HoldoutServiceTestSuite) TestGetDecisionMultipleHoldoutsFirstMatches() 
 func (s *HoldoutServiceTestSuite) TestGetDecisionMultipleHoldoutsSecondMatches() {
 	// Setup: Multiple holdouts, first doesn't match, second does
 	holdouts := []entities.Holdout{testHoldout1, testHoldout2NoAudience}
-	s.mockConfig.On("GetHoldoutsForFlag", "test_feature_with_holdout").Return(holdouts)
+	s.mockConfig.On("GetGlobalHoldouts").Return(holdouts)
 	// First holdout: user not in audience
 	s.mockAudienceTreeEvaluator.On("Evaluate", testHoldout1.AudienceConditionTree, mock.Anything, s.options).Return(false, true, s.decisionReasons)
 	// Second holdout: no audience, user gets bucketed
@@ -285,7 +285,7 @@ func (s *HoldoutServiceTestSuite) TestGetDecisionMultipleHoldoutsSecondMatches()
 		logger:                s.mockLogger,
 	}
 
-	decision, _, err := testHoldoutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
+	decision, _, err := testHoldoutService.GetGlobalDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
 
 	s.NoError(err)
 	s.NotNil(decision.Variation)
@@ -380,7 +380,7 @@ func TestHoldoutServiceIntegration(t *testing.T) {
 
 	// Create mock config
 	mockConfig := new(mockProjectConfig)
-	mockConfig.On("GetHoldoutsForFlag", "test_feature").Return([]entities.Holdout{holdout})
+	mockConfig.On("GetGlobalHoldouts").Return([]entities.Holdout{holdout})
 	mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
 
 	feature := entities.Feature{
@@ -400,7 +400,7 @@ func TestHoldoutServiceIntegration(t *testing.T) {
 	options := &decide.Options{}
 
 	// Execute decision
-	decision, _, err := service.GetDecision(decisionContext, userContext, options)
+	decision, _, err := service.GetGlobalDecision(decisionContext, userContext, options)
 
 	// Verify
 	assert.NoError(t, err)
@@ -409,7 +409,7 @@ func TestHoldoutServiceIntegration(t *testing.T) {
 	assert.Equal(t, Holdout, decision.Source)
 }
 
-// Level 2 — GetDecisionForRule (local holdout decision service) tests (FSSDK-12369)
+// Level 2 — GetLocalDecisionForRule (local holdout decision service) tests (FSSDK-12369)
 
 // TestGetDecisionForRuleNoLocalHoldouts verifies that when there are no local holdouts for a rule,
 // the function returns an empty decision (the rule is evaluated normally).
@@ -430,7 +430,7 @@ func TestGetDecisionForRuleNoLocalHoldouts(t *testing.T) {
 	userCtx := entities.UserContext{ID: "test_user"}
 	options := &decide.Options{}
 
-	decision, _, err := service.GetDecisionForRule("rule_id_1", mockConfig, userCtx, options)
+	decision, _, err := service.GetLocalDecisionForRule("rule_id_1", mockConfig, userCtx, options)
 
 	assert.NoError(t, err)
 	assert.Nil(t, decision.Variation, "No local holdouts means no holdout decision")
@@ -472,7 +472,7 @@ func TestGetDecisionForRuleUserBucketedIntoLocalHoldout(t *testing.T) {
 	userCtx := entities.UserContext{ID: "test_user"}
 	options := &decide.Options{}
 
-	decision, _, err := service.GetDecisionForRule("rule_x", mockConfig, userCtx, options)
+	decision, _, err := service.GetLocalDecisionForRule("rule_x", mockConfig, userCtx, options)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, decision.Variation, "User bucketed into local holdout should return holdout variation")
@@ -517,7 +517,7 @@ func TestGetDecisionForRuleUserMissesLocalHoldout(t *testing.T) {
 	userCtx := entities.UserContext{ID: "test_user_miss"}
 	options := &decide.Options{}
 
-	decision, _, err := service.GetDecisionForRule("rule_y", mockConfig, userCtx, options)
+	decision, _, err := service.GetLocalDecisionForRule("rule_y", mockConfig, userCtx, options)
 
 	assert.NoError(t, err)
 	assert.Nil(t, decision.Variation, "User not bucketed into local holdout should fall through to regular evaluation")
@@ -564,12 +564,12 @@ func TestGetDecisionForRuleRuleSpecificity(t *testing.T) {
 	options := &decide.Options{}
 
 	// rule_x: user should be in holdout
-	decisionX, _, errX := service.GetDecisionForRule("rule_x", mockConfig, userCtx, options)
+	decisionX, _, errX := service.GetLocalDecisionForRule("rule_x", mockConfig, userCtx, options)
 	assert.NoError(t, errX)
 	assert.NotNil(t, decisionX.Variation, "Local holdout for rule_x must apply to rule_x")
 
 	// rule_y: user should NOT be in any holdout (holdout doesn't target rule_y)
-	decisionY, _, errY := service.GetDecisionForRule("rule_y", mockConfig, userCtx, options)
+	decisionY, _, errY := service.GetLocalDecisionForRule("rule_y", mockConfig, userCtx, options)
 	assert.NoError(t, errY)
 	assert.Nil(t, decisionY.Variation, "Local holdout for rule_x must NOT apply to rule_y")
 }
@@ -608,7 +608,7 @@ func TestGetDecisionForRuleLocalHoldoutSkippedIfNotRunning(t *testing.T) {
 	userCtx := entities.UserContext{ID: "test_user"}
 	options := &decide.Options{}
 
-	decision, _, err := service.GetDecisionForRule("rule_z", mockConfig, userCtx, options)
+	decision, _, err := service.GetLocalDecisionForRule("rule_z", mockConfig, userCtx, options)
 
 	assert.NoError(t, err)
 	assert.Nil(t, decision.Variation, "Non-running local holdout should be skipped")

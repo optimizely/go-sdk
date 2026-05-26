@@ -45,12 +45,13 @@ func NewHoldoutService(sdkKey string) *HoldoutService {
 	}
 }
 
-// GetDecision returns a decision for holdouts associated with the feature
-func (h HoldoutService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options) (FeatureDecision, decide.DecisionReasons, error) {
+// GetGlobalDecision returns a decision for global holdouts associated with the feature.
+// Global holdouts (IncludedRules == nil) apply at flag level before any rule evaluation.
+func (h HoldoutService) GetGlobalDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options) (FeatureDecision, decide.DecisionReasons, error) {
 	feature := decisionContext.Feature
 	reasons := decide.NewDecisionReasons(options)
 
-	holdouts := decisionContext.ProjectConfig.GetHoldoutsForFlag(feature.Key)
+	holdouts := decisionContext.ProjectConfig.GetGlobalHoldouts()
 
 	for i := range holdouts {
 		holdout := &holdouts[i]
@@ -120,10 +121,10 @@ func (h HoldoutService) GetDecision(decisionContext FeatureDecisionContext, user
 	return FeatureDecision{}, reasons, nil
 }
 
-// GetDecisionForRule evaluates local holdouts targeting the given rule ID.
+// GetLocalDecisionForRule evaluates local holdouts targeting the given rule ID.
 // It returns a non-empty FeatureDecision if the user is bucketed into a local holdout for this rule.
 // Local holdouts are evaluated per-rule, after forced decisions, before audience/traffic checks.
-func (h HoldoutService) GetDecisionForRule(ruleID string, projectConfig config.ProjectConfig, userContext entities.UserContext, options *decide.Options) (FeatureDecision, decide.DecisionReasons, error) {
+func (h HoldoutService) GetLocalDecisionForRule(ruleID string, projectConfig config.ProjectConfig, userContext entities.UserContext, options *decide.Options) (FeatureDecision, decide.DecisionReasons, error) {
 	reasons := decide.NewDecisionReasons(options)
 
 	holdouts := projectConfig.GetHoldoutsForRule(ruleID)
