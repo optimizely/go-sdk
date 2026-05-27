@@ -176,6 +176,8 @@ func (bm *BatchEventManager) IdentifyUser(apiKey, apiHost string, identifiers ma
 		}
 	}
 
+	// Identify requires 2+ identifiers to link (e.g., vuid + fs_user_id).
+	// A single identifier has no cross-reference value and generates unnecessary traffic.
 	if len(validIdentifiers) < 2 {
 		bm.logger.Debug("ODP identify event is not dispatched (fewer than 2 valid identifiers).")
 		return
