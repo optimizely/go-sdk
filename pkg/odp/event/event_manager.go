@@ -177,7 +177,7 @@ func (bm *BatchEventManager) IdentifyUser(apiKey, apiHost string, identifiers ma
 	}
 
 	if len(validIdentifiers) < 2 {
-		bm.logger.Debug("ODP identify event is not dispatched (only one identifier provided).")
+		bm.logger.Debug("ODP identify event is not dispatched (fewer than 2 valid identifiers).")
 		return
 	}
 
