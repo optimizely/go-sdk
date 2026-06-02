@@ -59,8 +59,13 @@ func (c *mockProjectConfig) GetFlagVariationsMap() map[string][]entities.Variati
 	return args.Get(0).(map[string][]entities.Variation)
 }
 
-func (c *mockProjectConfig) GetHoldoutsForFlag(featureKey string) []entities.Holdout {
-	args := c.Called(featureKey)
+func (c *mockProjectConfig) GetGlobalHoldouts() []entities.Holdout {
+	args := c.Called()
+	return args.Get(0).([]entities.Holdout)
+}
+
+func (c *mockProjectConfig) GetHoldoutsForRule(ruleID string) []entities.Holdout {
+	args := c.Called(ruleID)
 	return args.Get(0).([]entities.Holdout)
 }
 

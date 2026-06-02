@@ -174,8 +174,10 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionMutex() {
 
 func (s *FeatureExperimentServiceTestSuite) TestNewFeatureExperimentService() {
 	compositeExperimentService := &CompositeExperimentService{logger: logging.GetLogger("sdkKey", "CompositeExperimentService")}
-	featureExperimentService := NewFeatureExperimentService(logging.GetLogger("", ""), compositeExperimentService)
+	holdoutService := NewHoldoutService("sdkKey")
+	featureExperimentService := NewFeatureExperimentService(logging.GetLogger("", ""), compositeExperimentService, holdoutService)
 	s.IsType(compositeExperimentService, featureExperimentService.compositeExperimentService)
+	s.NotNil(featureExperimentService.holdoutService)
 }
 
 func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithCmabUUID() {
@@ -293,6 +295,44 @@ func (s *FeatureExperimentServiceTestSuite) TestGetDecisionWithCmabError() {
 	s.NotNil(actualReasons, "Decision reasons should not be nil")
 
 	s.mockExperimentService.AssertExpectations(s.T())
+}
+
+// TestForcedDecisionBeats100PercentLocalHoldout verifies the mandatory ordering:
+// forced decisions must take priority over local holdouts even when the holdout
+// has 100% traffic. This is the critical FD → HO ordering enforcement test.
+func (s *FeatureExperimentServiceTestSuite) TestForcedDecisionBeats100PercentLocalHoldout() {
+	testUserContext := entities.UserContext{
+		ID: "test_user_1",
+	}
+
+	expectedVariation := testExp1113.Variations["2223"]
+	flagVariationsMap := map[string][]entities.Variation{
+		s.testFeatureDecisionContext.Feature.Key: {expectedVariation},
+	}
+	s.mockConfig.On("GetFlagVariationsMap").Return(flagVariationsMap)
+	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(
+		OptimizelyDecisionContext{FlagKey: s.testFeatureDecisionContext.Feature.Key, RuleKey: testExp1113Key},
+		OptimizelyForcedDecision{VariationKey: expectedVariation.Key},
+	)
+
+	// holdoutService has 100% traffic — would always bucket if reached
+	// GetHoldoutsForRule must NOT be called since FD wins first
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		holdoutService:             NewHoldoutService("test_sdk_key"),
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	decision, _, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options)
+
+	s.NoError(err)
+	s.NotNil(decision.Variation)
+	s.Equal(expectedVariation.Key, decision.Variation.Key)
+	s.Equal(FeatureTest, decision.Source)
+	// compositeExperimentService must not be called — FD returned before reaching it
+	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision")
+	// GetHoldoutsForRule must not be called — FD wins before local HO check
+	s.mockConfig.AssertNotCalled(s.T(), "GetHoldoutsForRule")
 }
 
 func TestFeatureExperimentServiceTestSuite(t *testing.T) {

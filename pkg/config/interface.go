@@ -56,7 +56,12 @@ type ProjectConfig interface {
 	GetAttributes() []entities.Attribute
 	GetFlagVariationsMap() map[string][]entities.Variation
 	GetRegion() string
-	GetHoldoutsForFlag(featureKey string) []entities.Holdout
+	// GetGlobalHoldouts returns all global holdouts (those with IncludedRules == nil).
+	// These are evaluated at flag level before any per-rule evaluation.
+	GetGlobalHoldouts() []entities.Holdout
+	// GetHoldoutsForRule returns all local holdouts targeting the given rule ID.
+	// These are evaluated per-rule, after forced decisions, before audience/traffic checks.
+	GetHoldoutsForRule(ruleID string) []entities.Holdout
 }
 
 // ProjectConfigManager maintains an instance of the ProjectConfig

@@ -729,8 +729,8 @@ func TestGetAttributeByKeyWithDirectMapping(t *testing.T) {
 	assert.Equal(t, attribute, actual)
 }
 
-func TestGetHoldoutsForFlagWithHoldouts(t *testing.T) {
-	flagKey := "test_flag"
+func TestGetHoldoutsForRuleWithHoldouts(t *testing.T) {
+	ruleID := "test_rule_id"
 	holdout1 := entities.Holdout{
 		ID:     "holdout_1",
 		Key:    "test_holdout_1",
@@ -742,50 +742,28 @@ func TestGetHoldoutsForFlagWithHoldouts(t *testing.T) {
 		Status: entities.HoldoutStatusRunning,
 	}
 
-	flagHoldoutsMap := make(map[string][]entities.Holdout)
-	flagHoldoutsMap[flagKey] = []entities.Holdout{holdout1, holdout2}
+	ruleHoldoutsMap := make(map[string][]entities.Holdout)
+	ruleHoldoutsMap[ruleID] = []entities.Holdout{holdout1, holdout2}
 
 	config := &DatafileProjectConfig{
-		flagHoldoutsMap: flagHoldoutsMap,
+		ruleHoldoutsMap: ruleHoldoutsMap,
 	}
 
-	actual := config.GetHoldoutsForFlag(flagKey)
+	actual := config.GetHoldoutsForRule(ruleID)
 	assert.Len(t, actual, 2)
 	assert.Equal(t, holdout1, actual[0])
 	assert.Equal(t, holdout2, actual[1])
 }
 
-func TestGetHoldoutsForFlagWithNoHoldouts(t *testing.T) {
-	flagKey := "test_flag"
-	flagHoldoutsMap := make(map[string][]entities.Holdout)
+func TestGetHoldoutsForRuleWithNoHoldouts(t *testing.T) {
+	ruleID := "test_rule_id"
+	ruleHoldoutsMap := make(map[string][]entities.Holdout)
 
 	config := &DatafileProjectConfig{
-		flagHoldoutsMap: flagHoldoutsMap,
+		ruleHoldoutsMap: ruleHoldoutsMap,
 	}
 
-	actual := config.GetHoldoutsForFlag(flagKey)
-	assert.Len(t, actual, 0)
-	assert.Equal(t, []entities.Holdout{}, actual)
-}
-
-func TestGetHoldoutsForFlagWithDifferentFlag(t *testing.T) {
-	flagKey := "test_flag"
-	otherFlagKey := "other_flag"
-	holdout := entities.Holdout{
-		ID:     "holdout_1",
-		Key:    "test_holdout_1",
-		Status: entities.HoldoutStatusRunning,
-	}
-
-	flagHoldoutsMap := make(map[string][]entities.Holdout)
-	flagHoldoutsMap[otherFlagKey] = []entities.Holdout{holdout}
-
-	config := &DatafileProjectConfig{
-		flagHoldoutsMap: flagHoldoutsMap,
-	}
-
-	// Request different flag - should return empty
-	actual := config.GetHoldoutsForFlag(flagKey)
+	actual := config.GetHoldoutsForRule(ruleID)
 	assert.Len(t, actual, 0)
 	assert.Equal(t, []entities.Holdout{}, actual)
 }

@@ -32,6 +32,7 @@ import (
 type RolloutService struct {
 	audienceTreeEvaluator     evaluator.TreeEvaluator
 	experimentBucketerService ExperimentService
+	holdoutService            *HoldoutService
 	logger                    logging.OptimizelyLogProducer
 }
 
@@ -42,6 +43,7 @@ func NewRolloutService(sdkKey string) *RolloutService {
 		logger:                    logger,
 		audienceTreeEvaluator:     evaluator.NewMixedTreeEvaluator(logger),
 		experimentBucketerService: NewExperimentBucketerService(logging.GetLogger(sdkKey, "ExperimentBucketerService")),
+		holdoutService:            NewHoldoutService(sdkKey),
 	}
 }
 
@@ -107,6 +109,13 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 			return *forcedDecision, reasons, nil
 		}
 
+		// [FSSDK-12369] Check local holdouts targeting this rollout rule.
+		// Local holdouts are evaluated after forced decisions but before audience/traffic checks.
+		if holdoutDecision, holdoutReasons := r.getLocalHoldoutDecision(experiment, decisionContext, userContext, options); holdoutDecision != nil {
+			reasons.Append(holdoutReasons)
+			return *holdoutDecision, reasons, nil
+		}
+
 		experimentDecisionContext := getExperimentDecisionContext(experiment)
 		// Move to next evaluation if condition tree is available and evaluation fails
 
@@ -135,6 +144,12 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 	// Checking for forced decision
 	if forcedDecision := checkForForcedDecision(experiment); forcedDecision != nil {
 		return *forcedDecision, reasons, nil
+	}
+
+	// [FSSDK-12369] Check local holdouts for the fallback/everyone else rule
+	if holdoutDecision, holdoutReasons := r.getLocalHoldoutDecision(experiment, decisionContext, userContext, options); holdoutDecision != nil {
+		reasons.Append(holdoutReasons)
+		return *holdoutDecision, reasons, nil
 	}
 
 	experimentDecisionContext := getExperimentDecisionContext(experiment)
@@ -174,6 +189,19 @@ func (r RolloutService) getFeatureDecision(featureDecision *FeatureDecision, use
 	}
 	r.logger.Debug(fmt.Sprintf(`Decision made for user %q for feature rollout with key %q: %s.`, userContext.ID, feature.Key, featureDecision.Reason))
 	return *featureDecision
+}
+
+func (r RolloutService) getLocalHoldoutDecision(exp *entities.Experiment, decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options) (*FeatureDecision, decide.DecisionReasons) {
+	reasons := decide.NewDecisionReasons(options)
+	if r.holdoutService == nil {
+		return nil, reasons
+	}
+	holdoutDecision, holdoutReasons, _ := r.holdoutService.GetLocalDecisionForRule(exp.ID, decisionContext.ProjectConfig, userContext, options)
+	reasons.Append(holdoutReasons)
+	if holdoutDecision.Variation != nil {
+		return &holdoutDecision, reasons
+	}
+	return nil, reasons
 }
 
 func (r RolloutService) getForcedDecision(decisionContext FeatureDecisionContext, experiment entities.Experiment, options *decide.Options) (variation *entities.Variation, reasons decide.DecisionReasons) {
