@@ -1,0 +1,425 @@
+{
+    "accountId": "4424670202",
+    "anonymizeIP": true,
+    "attributes": [
+        {
+            "id": "4438070142",
+            "key": "customattr"
+        },
+        {
+            "id": "4438070143",
+            "key": "country"
+        }
+    ],
+    "audiences": [
+        {
+            "conditions": "[\"and\", {\"name\": \"customattr\", \"type\": \"custom_attribute\", \"value\": \"yes\"}]",
+            "id": "4447260158",
+            "name": "custom_attr_audience"
+        },
+        {
+            "conditions": "[\"and\", {\"name\": \"country\", \"type\": \"custom_attribute\", \"value\": \"US\"}]",
+            "id": "4447260159",
+            "name": "us_audience"
+        },
+        {
+            "conditions": "[\"or\", {\"match\": \"exact\", \"name\": \"$opt_dummy_attribute\", \"type\": \"custom_attribute\", \"value\": \"$opt_dummy_value\"}]",
+            "id": "$opt_dummy_audience",
+            "name": "Optimizely-Generated Audience for Backwards Compatibility"
+        }
+    ],
+    "botFiltering": false,
+    "events": [
+        {
+            "experimentIds": ["5001", "5002", "5003"],
+            "id": "9001",
+            "key": "conversion_event"
+        }
+    ],
+    "experiments": [
+        {
+            "audienceIds": [],
+            "forcedVariations": {},
+            "id": "5001",
+            "key": "flag_a_exp_1",
+            "layerId": "layer_5001",
+            "status": "Running",
+            "trafficAllocation": [
+                {
+                    "endOfRange": 5000,
+                    "entityId": "var_5001_1"
+                },
+                {
+                    "endOfRange": 10000,
+                    "entityId": "var_5001_2"
+                }
+            ],
+            "variations": [
+                {
+                    "featureEnabled": true,
+                    "id": "var_5001_1",
+                    "key": "variation_a",
+                    "variables": [
+                        {
+                            "id": "var_str_a",
+                            "value": "value_a"
+                        }
+                    ]
+                },
+                {
+                    "featureEnabled": true,
+                    "id": "var_5001_2",
+                    "key": "variation_b",
+                    "variables": [
+                        {
+                            "id": "var_str_a",
+                            "value": "value_b"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "audienceIds": [],
+            "forcedVariations": {},
+            "id": "5002",
+            "key": "flag_a_exp_2",
+            "layerId": "layer_5002",
+            "status": "Running",
+            "trafficAllocation": [
+                {
+                    "endOfRange": 10000,
+                    "entityId": "var_5002_1"
+                }
+            ],
+            "variations": [
+                {
+                    "featureEnabled": true,
+                    "id": "var_5002_1",
+                    "key": "variation_c",
+                    "variables": [
+                        {
+                            "id": "var_str_a",
+                            "value": "value_c"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "audienceIds": [],
+            "forcedVariations": {},
+            "id": "5003",
+            "key": "flag_a_exp_3",
+            "layerId": "layer_5003",
+            "status": "Running",
+            "trafficAllocation": [
+                {
+                    "endOfRange": 10000,
+                    "entityId": "var_5003_1"
+                }
+            ],
+            "variations": [
+                {
+                    "featureEnabled": true,
+                    "id": "var_5003_1",
+                    "key": "variation_d",
+                    "variables": [
+                        {
+                            "id": "var_str_a",
+                            "value": "value_d"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "audienceIds": [],
+            "forcedVariations": {},
+            "id": "5004",
+            "key": "flag_b_exp_1",
+            "layerId": "layer_5004",
+            "status": "Running",
+            "trafficAllocation": [
+                {
+                    "endOfRange": 10000,
+                    "entityId": "var_5004_1"
+                }
+            ],
+            "variations": [
+                {
+                    "featureEnabled": true,
+                    "id": "var_5004_1",
+                    "key": "variation_e",
+                    "variables": [
+                        {
+                            "id": "var_int_b",
+                            "value": "100"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "audienceIds": [],
+            "forcedVariations": {},
+            "id": "5005",
+            "key": "flag_b_exp_2",
+            "layerId": "layer_5005",
+            "status": "Running",
+            "trafficAllocation": [
+                {
+                    "endOfRange": 10000,
+                    "entityId": "var_5005_1"
+                }
+            ],
+            "variations": [
+                {
+                    "featureEnabled": true,
+                    "id": "var_5005_1",
+                    "key": "variation_f",
+                    "variables": [
+                        {
+                            "id": "var_int_b",
+                            "value": "200"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "audienceIds": [],
+            "forcedVariations": {},
+            "id": "5006",
+            "key": "flag_c_exp_1",
+            "layerId": "layer_5006",
+            "status": "Running",
+            "trafficAllocation": [
+                {
+                    "endOfRange": 10000,
+                    "entityId": "var_5006_1"
+                }
+            ],
+            "variations": [
+                {
+                    "featureEnabled": true,
+                    "id": "var_5006_1",
+                    "key": "variation_g",
+                    "variables": [
+                        {
+                            "id": "var_bool_c",
+                            "value": "true"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "featureFlags": [
+        {
+            "experimentIds": ["5001", "5002", "5003"],
+            "id": "flag_a_id",
+            "key": "flag_a",
+            "rolloutId": "",
+            "variables": [
+                {
+                    "defaultValue": "default",
+                    "id": "var_str_a",
+                    "key": "str_var",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "experimentIds": ["5004", "5005"],
+            "id": "flag_b_id",
+            "key": "flag_b",
+            "rolloutId": "",
+            "variables": [
+                {
+                    "defaultValue": "0",
+                    "id": "var_int_b",
+                    "key": "int_var",
+                    "type": "integer"
+                }
+            ]
+        },
+        {
+            "experimentIds": ["5006"],
+            "id": "flag_c_id",
+            "key": "flag_c",
+            "rolloutId": "",
+            "variables": [
+                {
+                    "defaultValue": "false",
+                    "id": "var_bool_c",
+                    "key": "bool_var",
+                    "type": "boolean"
+                }
+            ]
+        }
+    ],
+    "groups": [],
+    "holdouts": [
+        {
+            "audienceIds": [],
+            "audienceConditions": [],
+            "id": "ho_local_single_rule_id",
+            "key": "ho_local_single_rule",
+            "status": "Running",
+            "_comment": "Local holdout targeting single rule (5001) with 30% traffic",
+            "trafficAllocation": [
+                {
+                    "endOfRange": 3000,
+                    "entityId": "$opt_dummy_variation_id"
+                }
+            ],
+            "variations": [
+                {
+                    "featureEnabled": false,
+                    "id": "$opt_dummy_variation_id",
+                    "key": "ho_off_key"
+                }
+            ],
+            "includedRules": ["5001"]
+        },
+        {
+            "audienceIds": [],
+            "audienceConditions": [],
+            "id": "ho_local_multi_rules_same_flag_id",
+            "key": "ho_local_multi_rules_same_flag",
+            "status": "Running",
+            "_comment": "Local holdout targeting multiple rules (5001, 5002) on same flag with 25% traffic",
+            "trafficAllocation": [
+                {
+                    "endOfRange": 2500,
+                    "entityId": "$opt_dummy_variation_id"
+                }
+            ],
+            "variations": [
+                {
+                    "featureEnabled": false,
+                    "id": "$opt_dummy_variation_id",
+                    "key": "ho_off_key"
+                }
+            ],
+            "includedRules": ["5001", "5002"]
+        },
+        {
+            "audienceIds": [],
+            "audienceConditions": [],
+            "id": "ho_local_cross_flag_id",
+            "key": "ho_local_cross_flag",
+            "status": "Running",
+            "_comment": "Local holdout targeting rules across different flags (5001 from flag_a, 5004 from flag_b) with 20% traffic",
+            "trafficAllocation": [
+                {
+                    "endOfRange": 2000,
+                    "entityId": "$opt_dummy_variation_id"
+                }
+            ],
+            "variations": [
+                {
+                    "featureEnabled": false,
+                    "id": "$opt_dummy_variation_id",
+                    "key": "ho_off_key"
+                }
+            ],
+            "includedRules": ["5001", "5004"]
+        },
+        {
+            "audienceIds": ["4447260158"],
+            "audienceConditions": ["and", "4447260158"],
+            "id": "ho_local_with_audience_id",
+            "key": "ho_local_with_audience",
+            "status": "Running",
+            "_comment": "Local holdout with audience condition (customattr=yes) targeting rule 5002 with 40% traffic",
+            "trafficAllocation": [
+                {
+                    "endOfRange": 4000,
+                    "entityId": "$opt_dummy_variation_id"
+                }
+            ],
+            "variations": [
+                {
+                    "featureEnabled": false,
+                    "id": "$opt_dummy_variation_id",
+                    "key": "ho_off_key"
+                }
+            ],
+            "includedRules": ["5002"]
+        },
+        {
+            "audienceIds": [],
+            "audienceConditions": [],
+            "id": "ho_global_all_rules_id",
+            "key": "ho_global_all_rules",
+            "status": "Running",
+            "_comment": "Global holdout (includedRules is null) with 15% traffic - applies to ALL rules in project",
+            "trafficAllocation": [
+                {
+                    "endOfRange": 1500,
+                    "entityId": "$opt_dummy_variation_id"
+                }
+            ],
+            "variations": [
+                {
+                    "featureEnabled": false,
+                    "id": "$opt_dummy_variation_id",
+                    "key": "ho_off_key"
+                }
+            ],
+            "includedRules": null
+        },
+        {
+            "audienceIds": [],
+            "audienceConditions": [],
+            "id": "ho_local_high_traffic_id",
+            "key": "ho_local_high_traffic",
+            "status": "Running",
+            "_comment": "Local holdout with high traffic (50%) targeting rule 5003",
+            "trafficAllocation": [
+                {
+                    "endOfRange": 5000,
+                    "entityId": "$opt_dummy_variation_id"
+                }
+            ],
+            "variations": [
+                {
+                    "featureEnabled": false,
+                    "id": "$opt_dummy_variation_id",
+                    "key": "ho_off_key"
+                }
+            ],
+            "includedRules": ["5003"]
+        },
+        {
+            "audienceIds": [],
+            "audienceConditions": [],
+            "id": "ho_local_zero_traffic_id",
+            "key": "ho_local_zero_traffic",
+            "status": "Running",
+            "_comment": "Local holdout with 0% traffic - should never be hit",
+            "trafficAllocation": [
+                {
+                    "endOfRange": 0,
+                    "entityId": "$opt_dummy_variation_id"
+                }
+            ],
+            "variations": [
+                {
+                    "featureEnabled": false,
+                    "id": "$opt_dummy_variation_id",
+                    "key": "ho_off_key"
+                }
+            ],
+            "includedRules": ["5005"]
+        }
+    ],
+    "projectId": "4424670202",
+    "revision": "1",
+    "rollouts": [],
+    "typedAudiences": [],
+    "variables": [],
+    "version": "4"
+}
