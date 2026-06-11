@@ -2,82 +2,115 @@
 
 ## Overview
 
-This bug bash validates that the Go SDK correctly evaluates **local holdouts** --
-holdouts that target specific experiment/delivery rules rather than applying
-globally to all rules across all flags.
+This bug bash validates that SDKs correctly evaluate **local holdouts** under
+real-world conditions: UI mutations, feature interactions, and edge cases that
+automated tests don't cover.
+
+**This is NOT a test suite.** It's an exploration tool for breaking SDKs.
 
 **Key concepts:**
-- **Global holdout** (`includedRules: null` in datafile): Applies to ALL rules across ALL flags. Evaluated first at the flag level.
-- **Local holdout** (`includedRules: ["rule_id_1", ...]`): Applies only to the specified rules. Evaluated per-rule, after forced decisions, before audience/traffic checks.
+- **Global holdout** (`includedRules: null`): Applies to ALL rules across ALL flags
+- **Local holdout** (`includedRules: ["rule_id"]`): Applies only to specified rules
+- **Empty includedRules** (`includedRules: []`): Local holdout targeting nothing (NOT global)
 
-**Evaluation priority (highest to lowest):**
+**Evaluation priority:**
 1. Global holdouts (flag-level, before any rule evaluation)
 2. Forced decisions (`SetForcedDecision`) -- per-rule, overrides everything below
 3. Local holdouts -- per-rule, after forced decisions
 4. Normal experiment/rollout bucketing
 
-**When a user is held out:**
-- `decision.RuleKey` = the holdout key (e.g. `"ho_local_single_rule"`)
-- `decision.VariationKey` = `"ho_off_key"`
-- `decision.Enabled` = `false`
-- Event metadata: `rule_type: "holdout"`, `campaign_id: ""`
-
 ## Prerequisites
 
 1. Go 1.21+ installed
 2. Access to Optimizely RC (Prep) environment
-3. Go SDK with local holdouts support (PR #451, already merged to master)
+3. Go SDK with local holdouts support (PR #451)
 4. TDD: https://confluence.sso.episerver.net/display/EXPENG/TDD%3A+Local+Holdouts
 
-## Running Tests
+## Quick Start
 
-There are two modes: **live** (with RC project) and **static** (with bundled datafile).
+### Static sanity check (no setup, 2 minutes)
 
-### Static datafile mode (quick validation, no project setup needed)
-
-Uses the bundled `local_holdouts.json` datafile with pre-calculated bucketing IDs:
+Uses bundled datafile with deterministic bucketing. Run this first to verify
+the SDK basics work:
 
 ```bash
-# From go-sdk root
-go run examples/local_holdouts/main.go -mode=static -test=basic
 go run examples/local_holdouts/main.go -mode=static -test=all
 ```
 
-### Live mode (full bug bash with UI interaction)
-
-Uses your RC (Prep) project via SDK key:
+### Live exploration (requires RC project)
 
 ```bash
-# Update SDK_KEY in main.go first (or pass via flag)
-go run examples/local_holdouts/main.go -sdk_key=YOUR_KEY -test=basic
-go run examples/local_holdouts/main.go -sdk_key=YOUR_KEY -test=distribution
+# Interactive REPL - ad-hoc exploration
+go run examples/local_holdouts/main.go -sdk_key=YOUR_KEY -explore
+
+# Guided scenario
+go run examples/local_holdouts/main.go -sdk_key=YOUR_KEY -scenario=ui_delete_holdout
+
+# Distribution check
+go run examples/local_holdouts/main.go -sdk_key=YOUR_KEY -scenario=distribution -n=500
+
+# List everything
+go run examples/local_holdouts/main.go -test=help
 ```
 
-### Available test cases
+## Available Scenarios
+
+### UI Mutation Scenarios
+
+These are the most important tests. Make changes in the Optimizely UI while
+the SDK is running and verify it handles them correctly.
+
+| Scenario | What to try | What could break |
+|----------|------------|-----------------|
+| `ui_delete_holdout` | Delete a running holdout | SDK crashes, stale holdout still applied |
+| `ui_change_traffic` | Change holdout traffic (50%->0%, 10%->100%) | Wrong bucketing distribution |
+| `ui_switch_local_global` | Switch between local and global | Holdout scope doesn't change |
+| `ui_change_audience` | Add/remove audience condition | Audience filter not respected |
+| `ui_delete_targeted_rule` | Delete the rule a holdout targets | Dangling reference panic |
+| `ui_pause_holdout` | Pause a running holdout | Holdout still applied after pause |
+| `ui_add_holdout_to_running` | Add holdout to existing experiment | New holdout not picked up |
+
+### Feature Interaction Scenarios
+
+Test how holdouts interact with other SDK features.
+
+| Scenario | What it tests |
+|----------|--------------|
+| `forced_vs_holdout` | SetForcedDecision (flag level) overrides holdout |
+| `forced_rule_level` | SetForcedDecision (rule level) vs holdout |
+| `holdout_disable_event` | DisableDecisionEvent option with holdout |
+| `holdout_track` | Track conversion event after holdout decision |
+| `holdout_decide_all` | DecideAll returns holdouts for correct flags |
+| `holdout_decide_for_keys` | DecideForKeys vs DecideAll consistency |
+| `holdout_listener` | Decision notification listener metadata |
+| `holdout_enabled_flags_only` | EnabledFlagsOnly excludes held-out flags |
+
+### Stress / Edge Cases
+
+| Scenario | What it tests |
+|----------|--------------|
+| `rapid_repolling` | Continuous polling during rapid UI changes |
+| `distribution` | Statistical distribution across many users |
+
+### Interactive REPL (`-explore`)
+
+Free-form exploration mode with commands:
 
 ```
-static mode tests (deterministic, pre-calculated bucketing):
-  basic              Local holdout targeting single rule
-  multi_rule         Local holdout targeting multiple rules on same flag
-  cross_flag         Local holdout targeting rules across different flags
-  global             Global holdout applies to all rules
-  precedence         Global holdout beats local holdout
-  audience           Local holdout with audience conditions
-  not_targeted       Local holdout only affects targeted rules
-  zero_traffic       Zero-traffic holdout never applied
-
-live mode tests (requires RC project):
-  live_basic         Basic local holdout with live project
-  live_global        Global holdout with live project
-  live_forced        SetForcedDecision overrides holdout
-  live_decide_all    DecideAll with holdouts
-  live_distribution  Statistical distribution over 1000 users
-  live_ui_refresh    Interactive: change UI, verify SDK picks up changes
-
-  all                Run all tests for current mode
+decide <flag>              Decide on a flag (with reasons)
+decide_all                 Decide all flags
+decide_keys <f1> <f2>      Decide for specific flags
+dist <flag> [n]            Distribution for n users
+user <id>                  Switch user
+attr <key> <val>           Set user attribute
+force <flag> <var>         Set forced decision (flag level)
+force <flag> <rule> <var>  Set forced decision (rule level)
+unforce <flag>             Remove forced decision
+config                     Show flags/rules from project config
+snapshot [n]               Snapshot decisions for n users
 ```
 
-## Project Setup (Live Mode Only)
+## Project Setup (Live Mode)
 
 ### Step 1: Create Project
 
@@ -91,123 +124,53 @@ Go to **Audiences** -> **Create New Audience**:
 
 ### Step 3: Create Flags and Rules
 
-Create the following flags. For each, add the A/B test rule shown below,
-set the variation to "On", set traffic to 100%, audience to Everyone,
-and activate (Run rule + Run ruleset).
+Create at least 2 flags with A/B test rules. Set traffic to 100%, audience
+to Everyone, activate rules.
 
-| Flag Key    | Rule Key (A/B Test) | Variations |
-|-------------|---------------------|------------|
-| `flag_a`    | `rule_a`            | on, off    |
-| `flag_b`    | `rule_b`            | on, off    |
+| Flag Key | Rule Key (A/B Test) | Variations |
+|----------|---------------------|------------|
+| `flag_a` | `rule_a` | on, off |
+| `flag_b` | `rule_b` | on, off |
 
 ### Step 4: Create Holdouts
 
-Create holdouts with the following configuration:
+Start with a simple local holdout, then create more as you explore:
 
-| Holdout Name           | Type   | Targeted Rules | Traffic | Audience            |
-|------------------------|--------|----------------|---------|---------------------|
-| `local_holdout`        | Local  | `rule_a` only  | 50%     | Everyone            |
-| `global_holdout`       | Global | All rules      | 10%     | Everyone            |
-| `audience_holdout`     | Local  | `rule_b` only  | 50%     | Custom Attr Audience|
+| Holdout Name | Type | Targeted Rules | Traffic | Audience |
+|--------------|------|----------------|---------|----------|
+| `local_holdout` | Local | `rule_a` only | 50% | Everyone |
+| `global_holdout` | Global | All rules | 10% | Everyone |
 
 Activate all holdouts.
 
-### Step 5: Update Code
+### Step 5: Run
 
-1. Copy your SDK Key from **Settings** -> **Environments** -> **Development**
-2. Pass it via `-sdk_key=YOUR_KEY` or update the `SDK_KEY` constant in `main.go`
-
-## Holdout Datafile Structure Reference
-
-When a holdout is created in the UI, it appears in the datafile JSON under `"holdouts"`:
-
-```json
-{
-  "holdouts": [
-    {
-      "id": "ho_local_single_rule_id",
-      "key": "ho_local_single_rule",
-      "status": "Running",
-      "audienceIds": [],
-      "audienceConditions": [],
-      "trafficAllocation": [
-        { "endOfRange": 3000, "entityId": "$opt_dummy_variation_id" }
-      ],
-      "variations": [
-        { "featureEnabled": false, "id": "$opt_dummy_variation_id", "key": "ho_off_key" }
-      ],
-      "includedRules": ["5001"]
-    },
-    {
-      "id": "ho_global_all_rules_id",
-      "key": "ho_global_all_rules",
-      "status": "Running",
-      "trafficAllocation": [
-        { "endOfRange": 1500, "entityId": "$opt_dummy_variation_id" }
-      ],
-      "variations": [
-        { "featureEnabled": false, "id": "$opt_dummy_variation_id", "key": "ho_off_key" }
-      ],
-      "includedRules": null
-    }
-  ]
-}
+```bash
+go run examples/local_holdouts/main.go -sdk_key=YOUR_KEY -explore
 ```
 
-Key differences:
-- `includedRules: null` = **global** holdout (all rules)
-- `includedRules: ["rule_id"]` = **local** holdout (specific rules only)
-- Holdout variations always have `featureEnabled: false` and key `"ho_off_key"`
+## Transcoding to Other SDKs
 
-## Debugging
+This Go implementation is the **reference**. To transcode:
 
-### Enable debug logging
-Debug logging is enabled by default in the test code. Look for these log patterns:
+1. Port the static tests first (sanity check with bundled datafile)
+2. Port the interactive REPL (most valuable for exploration)
+3. Port UI mutation scenarios (guided walkthroughs)
+4. Adapt API calls to your SDK's equivalents:
+   - `Decide` / `DecideAll` / `DecideForKeys`
+   - `SetForcedDecision` / `RemoveForcedDecision`
+   - `CreateUserContext` with attributes
+   - Decision listener registration
+   - `GetOptimizelyConfig` for flag/rule discovery
 
-- Holdout evaluation: `"User bucketed into holdout"` / `"User not in holdout"`
-- Audience evaluation: `"User meets audience conditions for holdout"`
-- Bucketing: `"Assigned bucket"` with holdout ID
+## Holdout Decision Markers
 
-### Verify via decision reasons
-Use `-test=basic` which runs with `INCLUDE_REASONS` option. The `reasons` field in the
-decision output shows the full evaluation path.
-
-### Check dispatched events
-Holdout impression events should have:
-- `rule_type: "holdout"`
-- `campaign_id: ""` (empty)
-- `rule_key: <holdout_key>`
-
-Normal experiment events have:
-- `rule_type: "feature-test"`
-- `campaign_id: <layer_id>`
-
-## Validation Checklist
-
-- [ ] Local holdout applies only to targeted rules
-- [ ] Local holdout does NOT affect non-targeted rules on same flag
-- [ ] Local holdout does NOT affect rules on other flags (unless explicitly targeted)
-- [ ] Cross-flag local holdout works across different flags
-- [ ] Global holdout applies to ALL rules on ALL flags
-- [ ] Global holdout is evaluated BEFORE local holdouts
-- [ ] Audience conditions on holdouts are respected
-- [ ] Zero-traffic holdout is never applied
-- [ ] Forced decisions override holdout decisions
-- [ ] DecideAll and DecideForKeys return correct holdout results
-- [ ] Impression events contain holdout metadata (rule_type=holdout)
-- [ ] Decision listener provides holdout info (experiment_id=holdout_id)
-- [ ] UI changes to holdout settings reflect in SDK after datafile refresh
+When a user is held out:
+- `decision.RuleKey` = the holdout key (e.g. `"ho_local_single_rule"`)
+- `decision.VariationKey` = `"ho_off_key"`
+- `decision.Enabled` = `false`
+- Event metadata: `rule_type: "holdout"`, `campaign_id: ""`
 
 ## Log Bugs Here
-<!-- Update with your team's bug tracking link -->
+
 https://optimizely-ext.atlassian.net/browse/FSSDK
-
-## Notes
-
-1. **Backward compatibility**: Old datafiles without `includedRules` field treat all holdouts as global (same as `includedRules: null`).
-
-2. **Empty includedRules**: `includedRules: []` (empty array) is a local holdout that targets NO rules -- effectively disabled. This is NOT the same as `null` (global).
-
-3. **Multiple holdouts on same rule**: When multiple local holdouts target the same rule, they are evaluated in datafile order. First match wins.
-
-4. **Holdout variation**: Holdout variations always have `featureEnabled: false`. The variation key is `"ho_off_key"`. Variables return their default values.
