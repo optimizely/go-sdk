@@ -22,7 +22,7 @@ automated tests don't cover.
 ## Prerequisites
 
 1. Go 1.21+ installed
-2. Access to Optimizely RC (Prep) environment
+2. Access to an Optimizely test environment (likely prod)
 3. Go SDK with local holdouts support (PR #451)
 4. TDD: https://confluence.sso.episerver.net/display/EXPENG/TDD%3A+Local+Holdouts
 
@@ -37,7 +37,7 @@ the SDK basics work:
 go run examples/local_holdouts/main.go -mode=static -test=all
 ```
 
-### Live exploration (requires RC project)
+### Live exploration (actual project)
 
 ```bash
 # Interactive REPL - ad-hoc exploration
@@ -91,10 +91,27 @@ Test how holdouts interact with other SDK features.
 |----------|--------------|
 | `rapid_repolling` | Continuous polling during rapid UI changes |
 | `distribution` | Statistical distribution across many users |
+| `large_datafile` | Large datafile (100+ flags/rules) with local holdouts |
+| `many_holdouts` | 10+ local holdouts targeting the same rule |
 
 ### Interactive REPL (`-explore`)
 
-Free-form exploration mode with commands:
+The REPL is already built into `main.go`. When you run:
+
+```bash
+go run examples/local_holdouts/main.go -sdk_key=YOUR_KEY -explore
+```
+
+It creates the SDK client with polling configured (30s interval), then drops
+you into the REPL loop. The client stays alive in the background polling for
+datafile changes while you type commands.
+
+You don't need to write any SDK setup code for the REPL -- it's all in this
+`main.go` file already. Just transpile the whole thing into your SDK's
+language (Python, Java, etc.), and you get both the guided scenarios AND the
+REPL for free.
+
+Available commands:
 
 ```
 decide <flag>              Decide on a flag (with reasons)
@@ -164,6 +181,10 @@ This Go implementation is the **reference**. To transcode:
    - `GetOptimizelyConfig` for flag/rule discovery
 
 ## Holdout Decision Markers
+
+Use these fields to tell whether a decision is a holdout or a normal
+experiment result. When debugging or writing assertions, check for these
+values to confirm the SDK is correctly identifying holdout decisions.
 
 When a user is held out:
 - `decision.RuleKey` = the holdout key (e.g. `"ho_local_single_rule"`)

@@ -199,6 +199,10 @@ func runScenario(c *client.OptimizelyClient, name string) {
 		scenarioRapidRepolling(c)
 	case "distribution":
 		scenarioDistribution(c)
+	case "large_datafile":
+		scenarioLargeDatafile(c)
+	case "many_holdouts":
+		scenarioManyHoldouts(c)
 
 	default:
 		fmt.Printf("\nUnknown scenario: %s\n", name)
@@ -931,6 +935,126 @@ func scenarioDistribution(c *client.OptimizelyClient) {
 	}
 }
 
+func scenarioLargeDatafile(c *client.OptimizelyClient) {
+	printScenarioHeader("Large Datafile with Local Holdouts",
+		"Tests: How does the SDK handle holdout evaluation when the project has a large",
+		"datafile with many flags and rules?",
+		"",
+		"Setup: Use a project with 100+ flags (ask Jae Kim for a large datafile/SDK key).",
+		"Add local holdouts targeting rules spread across different flags.",
+		"",
+		"What to watch for:",
+		"  - Slow decision times (does evaluation degrade with many flags/rules?)",
+		"  - Memory usage spikes during datafile parsing",
+		"  - Correct holdout targeting (does the SDK still match the right rules",
+		"    when there are hundreds of rule IDs to search through?)",
+		"  - Datafile polling performance (does a large datafile cause timeouts?)",
+	)
+
+	flagKeys := discoverFlags(c)
+	fmt.Printf("\n  Project has %d flags.\n", len(flagKeys))
+
+	logging.SetLogLevel(logging.LogLevelWarning)
+	defer logging.SetLogLevel(logging.LogLevelDebug)
+
+	start := time.Now()
+	total := 0
+	holdouts := 0
+
+	for i := 1; i <= 10; i++ {
+		uid := fmt.Sprintf("large_df_%d", i)
+		uc := c.CreateUserContext(uid, nil)
+		decisions := uc.DecideAll(nil)
+		for _, d := range decisions {
+			total++
+			if isHoldout(d) {
+				holdouts++
+			}
+		}
+	}
+
+	elapsed := time.Since(start)
+	fmt.Printf("\n  DecideAll x 10 users across %d flags:\n", len(flagKeys))
+	fmt.Printf("    Total decisions:  %d\n", total)
+	fmt.Printf("    Holdout decisions: %d\n", holdouts)
+	fmt.Printf("    Time elapsed:     %v\n", elapsed)
+	fmt.Printf("    Avg per user:     %v\n", elapsed/10)
+
+	if elapsed > 5*time.Second {
+		fmt.Println("    WARNING: Decisions took over 5 seconds. Possible performance issue.")
+	} else {
+		fmt.Println("    OK: Performance looks reasonable.")
+	}
+}
+
+func scenarioManyHoldouts(c *client.OptimizelyClient) {
+	printScenarioHeader("Many Local Holdouts on the Same Rule",
+		"Tests: What happens when 10+ local holdouts all target the same rule?",
+		"",
+		"Setup: In the UI, create 10 or more local holdouts that ALL target the",
+		"same experiment rule. Use different traffic percentages (5%, 10%, 15%, etc.).",
+		"",
+		"Expected behavior: Holdouts are evaluated in datafile order. The first",
+		"holdout that matches (user falls in traffic allocation) wins. Later holdouts",
+		"are skipped for that user.",
+		"",
+		"What to watch for:",
+		"  - Does the SDK evaluate them in the correct order?",
+		"  - Does the cumulative holdout rate match expectations?",
+		"    (e.g., 10 holdouts at 10% each should hold out ~65% of users,",
+		"     not 100%, because each is independent)",
+		"  - Are the holdout keys in decisions correct (first match, not last)?",
+		"  - Any crashes or unexpected behavior with many holdouts?",
+	)
+
+	flagKeys := discoverFlags(c)
+	if len(flagKeys) == 0 {
+		return
+	}
+	fk := flagKeys[0]
+	if *flagKey != "" {
+		fk = *flagKey
+	}
+
+	logging.SetLogLevel(logging.LogLevelWarning)
+	defer logging.SetLogLevel(logging.LogLevelDebug)
+
+	n := *numUsers
+	if n < 100 {
+		n = 100
+	}
+
+	counts := map[string]int{}
+	for i := 1; i <= n; i++ {
+		uid := fmt.Sprintf("many_ho_%d", i)
+		uc := c.CreateUserContext(uid, nil)
+		d := uc.Decide(fk, nil)
+
+		key := d.RuleKey + "/" + d.VariationKey
+		if isHoldout(d) {
+			key = "HOLDOUT:" + d.RuleKey
+		}
+		counts[key]++
+	}
+
+	fmt.Printf("\n  Flag: %s (%d users)\n", fk, n)
+
+	totalHeldOut := 0
+	for key, count := range counts {
+		pct := float64(count) / float64(n) * 100
+		bar := strings.Repeat("#", int(pct/2))
+		fmt.Printf("    %-40s %4d (%5.1f%%) %s\n", key, count, pct, bar)
+		if strings.HasPrefix(key, "HOLDOUT:") {
+			totalHeldOut += count
+		}
+	}
+
+	holdoutPct := float64(totalHeldOut) / float64(n) * 100
+	fmt.Printf("\n    Total held out: %d/%d (%.1f%%)\n", totalHeldOut, n, holdoutPct)
+	fmt.Println("    Check: Do the individual holdout keys match what you created in the UI?")
+	fmt.Println("    Check: Is the total holdout rate reasonable for your traffic settings?")
+}
+
 // ============================================================
 // INTERACTIVE EXPLORATION REPL
 // ============================================================
@@ -1464,6 +1588,8 @@ Live scenarios (-sdk_key=KEY -scenario=<name>):
   Stress / Edge Cases:
     rapid_repolling         Continuous polling during rapid UI changes
     distribution            Distribution check across many users
+    large_datafile          Large datafile (100+ flags) with local holdouts
+    many_holdouts           10+ local holdouts targeting the same rule
 
   Interactive:
     -explore                REPL for ad-hoc exploration (decide, force, dist, etc.)
