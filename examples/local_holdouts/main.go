@@ -33,7 +33,7 @@ import (
 )
 
 // ============================================================
-// CONFIGURATION - Update these to match your RC project
+// CONFIGURATION - Update these to match your project
 // ============================================================
 const SDK_KEY = "YOUR_SDK_KEY_HERE"
 
@@ -68,7 +68,7 @@ func main() {
 
 	// Live mode
 	if *sdkKey == SDK_KEY || *sdkKey == "" {
-		fmt.Println("\nERROR: Provide your RC SDK key via -sdk_key=YOUR_KEY")
+		fmt.Println("\nERROR: Provide your SDK key via -sdk_key=YOUR_KEY")
 		fmt.Println("See README.md for project setup instructions.")
 		return
 	}
@@ -1292,6 +1292,7 @@ func createStaticClient(datafile []byte) *client.OptimizelyClient {
 
 func createLiveClient(key string) *client.OptimizelyClient {
 	configManager := config.NewPollingProjectConfigManager(key,
+		// Remove or change this line if not using the staging CDN
 		config.WithDatafileURLTemplate("https://optimizely-staging.s3.amazonaws.com/datafiles/%s.json"),
 		config.WithPollingInterval(30*time.Second),
 	)

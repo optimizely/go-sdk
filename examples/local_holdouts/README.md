@@ -74,25 +74,25 @@ the SDK is running and verify it handles them correctly.
 
 Test how holdouts interact with other SDK features.
 
-| Scenario | What it tests |
-|----------|--------------|
-| `forced_vs_holdout` | SetForcedDecision (flag level) overrides holdout |
-| `forced_rule_level` | SetForcedDecision (rule level) vs holdout |
-| `holdout_disable_event` | DisableDecisionEvent option with holdout |
-| `holdout_track` | Track conversion event after holdout decision |
-| `holdout_decide_all` | DecideAll returns holdouts for correct flags |
-| `holdout_decide_for_keys` | DecideForKeys vs DecideAll consistency |
-| `holdout_listener` | Decision notification listener metadata |
-| `holdout_enabled_flags_only` | EnabledFlagsOnly excludes held-out flags |
+| Scenario | What it tests | Expected |
+|----------|--------------|----------|
+| `forced_vs_holdout` | SetForcedDecision (flag level) overrides holdout | Forced variation wins, holdout is bypassed. After removing forced decision, holdout returns. |
+| `forced_rule_level` | SetForcedDecision (rule level) vs holdout | Rule-level forced decision overrides holdout for that rule only. Other rules still evaluate holdouts normally. |
+| `holdout_disable_event` | DisableDecisionEvent option with holdout | Decision result is the same with or without the option. No impression event dispatched when disabled. |
+| `holdout_track` | Track conversion event after holdout decision | Track call succeeds (no error). Conversion event is sent even for held-out users. |
+| `holdout_decide_all` | DecideAll returns holdouts for correct flags | Global holdout: all flags show holdout. Local holdout: only targeted flags show holdout, others are normal. |
+| `holdout_decide_for_keys` | DecideForKeys vs DecideAll consistency | For the same user, decisions for requested flags are identical whether from DecideForKeys or DecideAll. |
+| `holdout_listener` | Decision notification listener metadata | Listener fires for holdout decisions. Decision info contains holdout ID and rule_type="holdout". |
+| `holdout_enabled_flags_only` | EnabledFlagsOnly excludes held-out flags | Held-out flags (enabled=false) are excluded from results. Non-held-out flags are still returned. |
 
 ### Stress / Edge Cases
 
-| Scenario | What it tests |
-|----------|--------------|
-| `rapid_repolling` | Continuous polling during rapid UI changes |
-| `distribution` | Statistical distribution across many users |
-| `large_datafile` | Large datafile (100+ flags/rules) with local holdouts |
-| `many_holdouts` | 10+ local holdouts targeting the same rule |
+| Scenario | What it tests | Expected |
+|----------|--------------|----------|
+| `rapid_repolling` | Continuous polling during rapid UI changes | SDK picks up each datafile change. No stale decisions after polling interval. No crashes during rapid updates. |
+| `distribution` | Statistical distribution across many users | Holdout rate matches configured traffic %. Distribution is roughly uniform within tolerance. |
+| `large_datafile` | Large datafile (100+ flags) with local holdouts (ask Jae Kim) | SDK handles large datafiles without performance degradation. Holdout targeting is still correct across many flags/rules. |
+| `many_holdouts` | 10+ local holdouts targeting the same rule | First matching holdout wins (datafile order). Cumulative holdout rate is reasonable. Correct holdout key in decisions. |
 
 ### Interactive REPL (`-explore`)
 
@@ -131,7 +131,7 @@ snapshot [n]               Snapshot decisions for n users
 
 ### Step 1: Create Project
 
-Create a new project in the RC (Prep) environment.
+Create a new project in your Optimizely environment.
 
 ### Step 2: Create Custom Audience
 
