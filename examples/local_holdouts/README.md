@@ -194,4 +194,4 @@ When a user is held out:
 
 ## Log Bugs Here
 
-https://optimizely-ext.atlassian.net/browse/FSSDK
+https://episerver99-my.sharepoint.com/:x:/g/personal/matjaz_pirnovar_optimizely_com/IQCkcX_sg-ZeS7uNrKPc6wf8AVKqgPsQJrSjciNNJy035KM?e=doxfH4&nav=MTVfezAwMDAwMDAwLTAwMDEtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMH0
