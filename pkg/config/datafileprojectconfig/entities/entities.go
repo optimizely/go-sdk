@@ -114,7 +114,10 @@ type Rollout struct {
 	Experiments []Experiment `json:"experiments"`
 }
 
-// Holdout represents a holdout from the Optimizely datafile
+// Holdout represents a holdout from the Optimizely datafile.
+// Scope (global vs local) is set by the datafile section the entry came from
+// (`holdouts` vs `localHoldouts`); `IncludedRules` is stripped on `holdouts` entries
+// and required on `localHoldouts` entries.
 type Holdout struct {
 	ID                 string              `json:"id"`
 	Key                string              `json:"key"`
@@ -123,9 +126,8 @@ type Holdout struct {
 	AudienceConditions interface{}         `json:"audienceConditions"`
 	Variations         []Variation         `json:"variations"`
 	TrafficAllocation  []TrafficAllocation `json:"trafficAllocation"`
-	// IncludedRules is optional. nil = global holdout (applies to all rules across all flags).
-	// Non-nil array = local holdout (applies only to the specified rule IDs).
-	// An empty non-nil array means a local holdout that targets no rules.
+	// IncludedRules carries per-rule targeting for local holdouts. Required on
+	// `localHoldouts` entries; ignored/stripped on `holdouts` entries at parse time.
 	IncludedRules *[]string `json:"includedRules,omitempty"`
 }
 
@@ -146,6 +148,7 @@ type Datafile struct {
 	Events            []Event       `json:"events"`
 	Rollouts          []Rollout     `json:"rollouts"`
 	Holdouts          []Holdout     `json:"holdouts,omitempty"`
+	LocalHoldouts     []Holdout     `json:"localHoldouts,omitempty"`
 	Integrations      []Integration `json:"integrations"`
 	TypedAudiences    []Audience    `json:"typedAudiences"`
 	Variables         []string      `json:"variables"`

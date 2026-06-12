@@ -767,3 +767,131 @@ func TestGetHoldoutsForRuleWithNoHoldouts(t *testing.T) {
 	assert.Len(t, actual, 0)
 	assert.Equal(t, []entities.Holdout{}, actual)
 }
+
+// ---------------------------------------------------------------------------
+// FSSDK-12760 — `localHoldouts` JSON section end-to-end parsing
+// ---------------------------------------------------------------------------
+
+// TestNewDatafileProjectConfigPartitionsHoldoutsByDatafileSection exercises the
+// full datafile → entity pipeline to confirm the `holdouts` and `localHoldouts`
+// top-level keys are partitioned strictly by section membership.
+func TestNewDatafileProjectConfigPartitionsHoldoutsByDatafileSection(t *testing.T) {
+	datafile := []byte(`{
+		"version": "4",
+		"accountId": "123",
+		"projectId": "456",
+		"revision": "1",
+		"holdouts": [
+			{
+				"id": "g1",
+				"key": "global_holdout",
+				"status": "Running",
+				"audienceIds": [],
+				"variations": [{"id": "vg1", "key": "v"}],
+				"trafficAllocation": [{"entityId": "vg1", "endOfRange": 10000}]
+			}
+		],
+		"localHoldouts": [
+			{
+				"id": "l1",
+				"key": "local_holdout_rule_x",
+				"status": "Running",
+				"audienceIds": [],
+				"includedRules": ["rule_x"],
+				"variations": [{"id": "vl1", "key": "v"}],
+				"trafficAllocation": [{"entityId": "vl1", "endOfRange": 5000}]
+			}
+		]
+	}`)
+
+	config, err := NewDatafileProjectConfig(datafile, logging.GetLogger("", "DatafileProjectConfig"))
+	assert.NoError(t, err)
+	assert.NotNil(t, config)
+
+	// Global section → global holdouts; never registers against any rule.
+	globals := config.GetGlobalHoldouts()
+	assert.Len(t, globals, 1)
+	assert.Equal(t, "g1", globals[0].ID)
+	assert.True(t, globals[0].IsGlobal())
+
+	// Local section → per-rule map; never appears in global list.
+	ruleX := config.GetHoldoutsForRule("rule_x")
+	assert.Len(t, ruleX, 1)
+	assert.Equal(t, "l1", ruleX[0].ID)
+	assert.False(t, ruleX[0].IsGlobal())
+
+	// Global id must not have leaked into the per-rule map.
+	for _, h := range ruleX {
+		assert.NotEqual(t, "g1", h.ID)
+	}
+}
+
+// TestNewDatafileProjectConfigBackwardCompatNoLocalHoldoutsSection verifies that
+// older datafiles emitted before FSSDK-12760 (no `localHoldouts` key) are parsed
+// exactly like before — every entry in `holdouts` is global, no errors.
+func TestNewDatafileProjectConfigBackwardCompatNoLocalHoldoutsSection(t *testing.T) {
+	datafile := []byte(`{
+		"version": "4",
+		"accountId": "123",
+		"projectId": "456",
+		"revision": "1",
+		"holdouts": [
+			{
+				"id": "old1",
+				"key": "old_global_holdout",
+				"status": "Running",
+				"audienceIds": [],
+				"variations": [{"id": "v1", "key": "v"}],
+				"trafficAllocation": [{"entityId": "v1", "endOfRange": 10000}]
+			}
+		]
+	}`)
+
+	config, err := NewDatafileProjectConfig(datafile, logging.GetLogger("", "DatafileProjectConfig"))
+	assert.NoError(t, err)
+	assert.NotNil(t, config)
+
+	globals := config.GetGlobalHoldouts()
+	assert.Len(t, globals, 1)
+	assert.Equal(t, "old1", globals[0].ID)
+	assert.True(t, globals[0].IsGlobal())
+
+	// No localHoldouts section means no per-rule entries.
+	assert.Empty(t, config.GetHoldoutsForRule("any_rule"))
+}
+
+// TestNewDatafileProjectConfigGlobalSectionStripsIncludedRules verifies that any
+// `includedRules` field accidentally present on an entry in the `holdouts` (global)
+// section is stripped during parsing — section membership is the sole signal for scope.
+func TestNewDatafileProjectConfigGlobalSectionStripsIncludedRules(t *testing.T) {
+	datafile := []byte(`{
+		"version": "4",
+		"accountId": "123",
+		"projectId": "456",
+		"revision": "1",
+		"holdouts": [
+			{
+				"id": "g_with_rules",
+				"key": "global_with_stray_rules",
+				"status": "Running",
+				"audienceIds": [],
+				"includedRules": ["rule_should_be_ignored"],
+				"variations": [{"id": "v1", "key": "v"}],
+				"trafficAllocation": [{"entityId": "v1", "endOfRange": 10000}]
+			}
+		]
+	}`)
+
+	config, err := NewDatafileProjectConfig(datafile, logging.GetLogger("", "DatafileProjectConfig"))
+	assert.NoError(t, err)
+	assert.NotNil(t, config)
+
+	// Still classified as global; IncludedRules was stripped on the entity.
+	globals := config.GetGlobalHoldouts()
+	assert.Len(t, globals, 1)
+	assert.True(t, globals[0].IsGlobal())
+	assert.Nil(t, globals[0].IncludedRules)
+
+	// The stray rule id must NOT show up in any per-rule lookup.
+	assert.Empty(t, config.GetHoldoutsForRule("rule_should_be_ignored"))
+}
