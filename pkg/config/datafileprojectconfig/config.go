@@ -62,9 +62,9 @@ type DatafileProjectConfig struct {
 	flagVariationsMap map[string][]entities.Variation
 	holdouts          []entities.Holdout
 	holdoutIDMap      map[string]entities.Holdout
-	// ruleHoldoutsMap maps rule IDs to local holdouts targeting those rules
+	// ruleHoldoutsMap maps rule IDs to local holdouts (from the `localHoldouts` datafile section) targeting those rules.
 	ruleHoldoutsMap map[string][]entities.Holdout
-	// globalHoldouts holds only global holdouts (IncludedRules == nil)
+	// globalHoldouts holds running entries from the `holdouts` datafile section.
 	globalHoldouts []entities.Holdout
 }
 
@@ -287,14 +287,14 @@ func (c DatafileProjectConfig) GetRegion() string {
 	return c.region
 }
 
-// GetGlobalHoldouts returns all global holdouts (those with IncludedRules == nil).
-// These are evaluated at flag level, before any per-rule evaluation.
+// GetGlobalHoldouts returns all running global holdouts from the `holdouts` datafile section.
+// Evaluated at flag level before any per-rule evaluation; section membership is the sole signal for scope.
 func (c DatafileProjectConfig) GetGlobalHoldouts() []entities.Holdout {
 	return c.globalHoldouts
 }
 
-// GetHoldoutsForRule returns all local holdouts that target the given rule ID.
-// These are evaluated per-rule, after forced decisions, before audience/traffic checks.
+// GetHoldoutsForRule returns running local holdouts (from the `localHoldouts` datafile section)
+// that target the given rule ID. Evaluated per-rule, after forced decisions, before audience/traffic checks.
 func (c DatafileProjectConfig) GetHoldoutsForRule(ruleID string) []entities.Holdout {
 	if holdouts, exists := c.ruleHoldoutsMap[ruleID]; exists {
 		return holdouts
@@ -348,7 +348,11 @@ func NewDatafileProjectConfig(jsonDatafile []byte, logger logging.OptimizelyLogP
 
 	audienceMap, audienceSegmentList := mappers.MapAudiences(append(datafile.TypedAudiences, datafile.Audiences...))
 	flagVariationsMap := mappers.MapFlagVariations(featureMap)
-	holdouts, holdoutIDMap, globalHoldouts, ruleHoldoutsMap := mappers.MapHoldouts(datafile.Holdouts)
+	// Two top-level holdout sections drive scope (FSSDK-12760):
+	//   `holdouts`      → global holdouts (every entry; `includedRules` stripped)
+	//   `localHoldouts` → local holdouts (must carry `includedRules`; otherwise logged and skipped)
+	// Older datafiles without `localHoldouts` continue to work unchanged.
+	holdouts, holdoutIDMap, globalHoldouts, ruleHoldoutsMap := mappers.MapHoldouts(datafile.Holdouts, datafile.LocalHoldouts, logger)
 
 	attributeKeyMap := make(map[string]entities.Attribute)
 	attributeIDToKeyMap := make(map[string]string)
