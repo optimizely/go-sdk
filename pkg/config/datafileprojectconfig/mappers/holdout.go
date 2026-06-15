@@ -61,6 +61,14 @@ func MapHoldouts(
 
 		mappedHoldout := mapHoldout(sanitized)
 		holdoutList = append(holdoutList, mappedHoldout)
+		if _, exists := holdoutIDMap[mappedHoldout.ID]; exists && logger != nil {
+			logger.Warning(
+				fmt.Sprintf(
+					"Duplicate holdout ID %q encountered across datafile sections; later entry overwrites earlier one.",
+					mappedHoldout.ID,
+				),
+			)
+		}
 		holdoutIDMap[mappedHoldout.ID] = mappedHoldout
 		globalHoldouts = append(globalHoldouts, mappedHoldout)
 	}
@@ -74,12 +82,11 @@ func MapHoldouts(
 
 		if holdout.IncludedRules == nil {
 			if logger != nil {
-				logger.Error(
+				logger.Warning(
 					fmt.Sprintf(
 						"Local holdout %q is missing required \"includedRules\" field and will be excluded from evaluation.",
 						holdoutLabel(holdout),
 					),
-					nil,
 				)
 			}
 			continue
@@ -87,6 +94,14 @@ func MapHoldouts(
 
 		mappedHoldout := mapHoldout(holdout)
 		holdoutList = append(holdoutList, mappedHoldout)
+		if _, exists := holdoutIDMap[mappedHoldout.ID]; exists && logger != nil {
+			logger.Warning(
+				fmt.Sprintf(
+					"Duplicate holdout ID %q encountered across datafile sections; later entry overwrites earlier one.",
+					mappedHoldout.ID,
+				),
+			)
+		}
 		holdoutIDMap[mappedHoldout.ID] = mappedHoldout
 
 		// Register the local holdout for each rule it targets. An empty IncludedRules

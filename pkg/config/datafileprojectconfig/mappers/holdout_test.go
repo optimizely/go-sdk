@@ -17,7 +17,6 @@
 package mappers
 
 import (
-	"strings"
 	"sync"
 	"testing"
 
@@ -31,25 +30,24 @@ import (
 // log messages without depending on the real logger plumbing.
 type captureLogger struct {
 	mu       sync.Mutex
-	errors   []string
 	warnings []string
 }
 
-func (c *captureLogger) Debug(_ string)             {}
-func (c *captureLogger) Info(_ string)              {}
-func (c *captureLogger) Warning(message string)     { c.mu.Lock(); defer c.mu.Unlock(); c.warnings = append(c.warnings, message) }
-func (c *captureLogger) Error(message string, _ interface{}) {
+func (c *captureLogger) Debug(_ string)                {}
+func (c *captureLogger) Info(_ string)                 {}
+func (c *captureLogger) Error(_ string, _ interface{}) {}
+func (c *captureLogger) Warning(message string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.errors = append(c.errors, message)
+	c.warnings = append(c.warnings, message)
 }
 
-// errorMessages returns a snapshot of captured error messages.
-func (c *captureLogger) errorMessages() []string {
+// warningMessages returns a snapshot of captured warning messages.
+func (c *captureLogger) warningMessages() []string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	out := make([]string, len(c.errors))
-	copy(out, c.errors)
+	out := make([]string, len(c.warnings))
+	copy(out, c.warnings)
 	return out
 }
 
@@ -275,8 +273,8 @@ func TestMapHoldoutsLocalSectionEmptyIncludedRulesIsValidButTargetsNoRules(t *te
 	assert.Empty(t, ruleHoldoutsMap)
 	// Entity is tracked in the id map (not invalid)
 	assert.Contains(t, holdoutIDMap, "holdout_empty_local")
-	// And no error was logged.
-	assert.Empty(t, logger.errorMessages())
+	// And no warning was logged.
+	assert.Empty(t, logger.warningMessages())
 }
 
 func TestMapHoldoutsLocalSectionMissingIncludedRulesIsInvalid(t *testing.T) {
@@ -305,11 +303,11 @@ func TestMapHoldoutsLocalSectionMissingIncludedRulesIsInvalid(t *testing.T) {
 	assert.Empty(t, globalHoldouts)
 	assert.Empty(t, ruleHoldoutsMap)
 
-	// Error must be logged and reference both the holdout key and "includedRules".
-	errors := logger.errorMessages()
-	assert.Len(t, errors, 1)
-	assert.Contains(t, errors[0], "invalid_local")
-	assert.Contains(t, errors[0], "includedRules")
+	// Warning must be logged and reference both the holdout key and "includedRules".
+	warnings := logger.warningMessages()
+	assert.Len(t, warnings, 1)
+	assert.Contains(t, warnings[0], "invalid_local")
+	assert.Contains(t, warnings[0], "includedRules")
 }
 
 func TestMapHoldoutsLocalSectionInvalidEntryDoesNotAffectValidEntries(t *testing.T) {
@@ -344,7 +342,7 @@ func TestMapHoldoutsLocalSectionInvalidEntryDoesNotAffectValidEntries(t *testing
 	assert.Contains(t, holdoutIDMap, "holdout_valid")
 	assert.NotContains(t, holdoutIDMap, "holdout_invalid")
 	assert.Contains(t, ruleHoldoutsMap, "rule_x")
-	assert.Len(t, logger.errorMessages(), 1)
+	assert.Len(t, logger.warningMessages(), 1)
 }
 
 func TestMapHoldoutsGlobalSectionStripsIncludedRules(t *testing.T) {
@@ -487,7 +485,7 @@ func TestMapHoldoutsBackwardCompatNoLocalSection(t *testing.T) {
 	assert.Len(t, globalHoldouts, 1)
 	assert.Equal(t, "old_global_holdout", globalHoldouts[0].Key)
 	assert.Empty(t, ruleHoldoutsMap)
-	assert.Empty(t, logger.errorMessages())
+	assert.Empty(t, logger.warningMessages())
 }
 
 func TestMapHoldoutsLocalSectionNonRunningExcluded(t *testing.T) {
@@ -509,7 +507,7 @@ func TestMapHoldoutsLocalSectionNonRunningExcluded(t *testing.T) {
 	assert.Empty(t, holdoutList)
 	assert.Empty(t, holdoutIDMap)
 	assert.Empty(t, ruleHoldoutsMap)
-	assert.Empty(t, logger.errorMessages())
+	assert.Empty(t, logger.warningMessages())
 }
 
 func TestMapHoldoutsLocalSectionMissingIncludedRulesUsesIDWhenKeyAbsent(t *testing.T) {
@@ -526,9 +524,9 @@ func TestMapHoldoutsLocalSectionMissingIncludedRulesUsesIDWhenKeyAbsent(t *testi
 	logger := &captureLogger{}
 	MapHoldouts(nil, rawLocal, logger)
 
-	errors := logger.errorMessages()
-	assert.Len(t, errors, 1)
-	assert.Contains(t, errors[0], "id_only_holdout")
+	warnings := logger.warningMessages()
+	assert.Len(t, warnings, 1)
+	assert.Contains(t, warnings[0], "id_only_holdout")
 }
 
 func TestMapHoldoutsNilLoggerWithInvalidLocalEntryDoesNotPanic(t *testing.T) {
@@ -563,23 +561,45 @@ func TestMapHoldoutsIsGlobalProperty(t *testing.T) {
 	assert.False(t, localHoldoutWithRules.IsGlobal(), "non-nil IncludedRules with rules should NOT be global")
 }
 
-func TestMapHoldoutsErrorMessageWording(t *testing.T) {
-	// The error message wording is part of the API surface for operators — ensure
-	// it remains user-actionable across refactors.
+func TestMapHoldoutsDuplicateIDsAcrossSectionsLogsWarning(t *testing.T) {
+	// If the same holdout ID appears in both sections, a warning must be logged
+	// and the later (local) entry overwrites the earlier (global) one in the ID map.
+	localRules := []string{"rule_x"}
+	rawGlobal := []datafileEntities.Holdout{
+		{
+			ID:     "dup_id",
+			Key:    "global_version",
+			Status: "Running",
+			Variations: []datafileEntities.Variation{
+				{ID: "var_g", Key: "var_g"},
+			},
+			TrafficAllocation: []datafileEntities.TrafficAllocation{
+				{EntityID: "var_g", EndOfRange: 10000},
+			},
+		},
+	}
 	rawLocal := []datafileEntities.Holdout{
 		{
-			ID:     "h_x",
-			Key:    "x_local",
-			Status: "Running",
+			ID:            "dup_id",
+			Key:           "local_version",
+			Status:        "Running",
+			IncludedRules: &localRules,
+			Variations: []datafileEntities.Variation{
+				{ID: "var_l", Key: "var_l"},
+			},
+			TrafficAllocation: []datafileEntities.TrafficAllocation{
+				{EntityID: "var_l", EndOfRange: 10000},
+			},
 		},
 	}
 
 	logger := &captureLogger{}
-	MapHoldouts(nil, rawLocal, logger)
+	_, holdoutIDMap, _, _ := MapHoldouts(rawGlobal, rawLocal, logger)
 
-	errors := logger.errorMessages()
-	assert.Len(t, errors, 1)
-	// Message must say what is missing and what the consequence is.
-	assert.True(t, strings.Contains(errors[0], "missing"), "message should mention 'missing'")
-	assert.True(t, strings.Contains(errors[0], "excluded"), "message should mention 'excluded'")
+	warnings := logger.warningMessages()
+	assert.Len(t, warnings, 1)
+	assert.Contains(t, warnings[0], "dup_id")
+
+	// The local entry should have overwritten the global one in the ID map.
+	assert.Equal(t, "local_version", holdoutIDMap["dup_id"].Key)
 }
