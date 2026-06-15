@@ -53,8 +53,7 @@ OPTIMIZELY PROJECT SETUP:
   7. Update the SDK_KEY constant below.
 
 RUNNING:
-  go run main.go                      # runs the basic exploration code
-  go run main.go -mode=static         # runs static sanity checks with bundled datafile
+  go run main.go
 
 ============================================================
 */
@@ -63,11 +62,8 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
-	"runtime"
 	"time"
 
 	"github.com/optimizely/go-sdk/v2/pkg/client"
@@ -95,21 +91,9 @@ const (
 	ATTR_MATCH = "yes"
 )
 
-var (
-	mode = flag.String("mode", "live", "Mode: 'static' (bundled datafile) or 'live' (actual project)")
-)
-
 func main() {
-	flag.Parse()
-
-	if *mode == "static" {
-		logging.SetLogLevel(logging.LogLevelWarning)
-		runStaticSanityCheck()
-		return
-	}
-
 	// ============================================================
-	// LIVE MODE -- Modify the code below to explore holdouts
+	// Modify the code below to explore holdouts
 	// ============================================================
 	//
 	// This is your sandbox. The SDK client is created with polling enabled
@@ -611,207 +595,3 @@ func createLiveClient(key string) *client.OptimizelyClient {
 	return c
 }
 
-func createStaticClient(datafile []byte) *client.OptimizelyClient {
-	configManager := config.NewStaticProjectConfigManagerWithOptions("",
-		config.WithInitialDatafile(datafile),
-	)
-	factory := &client.OptimizelyFactory{}
-	c, err := factory.Client(
-		client.WithConfigManager(configManager),
-	)
-	if err != nil {
-		fmt.Printf("Error creating static client: %v\n", err)
-		os.Exit(1)
-	}
-	return c
-}
-
-func loadDatafile() []byte {
-	_, filename, _, _ := runtime.Caller(0)
-	dir := filepath.Dir(filename)
-	path := filepath.Join(dir, "local_holdouts.json")
-	data, err := os.ReadFile(path)
-	if err != nil {
-		fmt.Printf("Error reading datafile: %v\n", err)
-		os.Exit(1)
-	}
-	return data
-}
-
-// ============================================================
-// STATIC SANITY CHECK
-// ============================================================
-// Quick automated check using the bundled datafile.
-// Run first to verify the SDK basics work before live exploration.
-//
-// Datafile: local_holdouts.json (from fullstack-sdk-compatibility-suite)
-// Flags: flag_a (3 rules), flag_b (2 rules), flag_c (1 rule)
-// Holdouts: 7 holdouts of various types (local, global, audience, zero-traffic)
-
-func runStaticSanityCheck() {
-	fmt.Println("============================================================")
-	fmt.Println("  Static Sanity Check (bundled datafile)")
-	fmt.Println("============================================================\n")
-
-	datafile := loadDatafile()
-	c := createStaticClient(datafile)
-	defer c.Close()
-
-	passed := 0
-	failed := 0
-
-	// Test 1: Basic local holdout applies
-	fmt.Println("--- Test 1: Basic local holdout ---")
-	fmt.Println("ho_local_single_rule (30%, targets rule 5001 on flag_a)")
-	holdoutCount := 0
-	for i := 1; i <= 30; i++ {
-		uid := fmt.Sprintf("static_user_%d", i)
-		uc := c.CreateUserContext(uid, nil)
-		d := uc.Decide("flag_a", nil)
-		if isHoldout(d) {
-			holdoutCount++
-		}
-	}
-	if holdoutCount > 0 && holdoutCount < 30 {
-		fmt.Printf("  PASS: %d/30 held out (expected mix at 30%%)\n", holdoutCount)
-		passed++
-	} else {
-		fmt.Printf("  FAIL: %d/30 held out (expected mix)\n", holdoutCount)
-		failed++
-	}
-
-	// Test 2: Global holdout affects all flags
-	fmt.Println("\n--- Test 2: Global holdout affects all flags ---")
-	fmt.Println("ho_global_all_rules (15%, includedRules=null)")
-	flags := []string{"flag_a", "flag_b", "flag_c"}
-	globalHits := map[string]int{}
-	for i := 1; i <= 50; i++ {
-		uid := fmt.Sprintf("global_user_%d", i)
-		uc := c.CreateUserContext(uid, nil)
-		for _, f := range flags {
-			d := uc.Decide(f, nil)
-			if d.RuleKey == "ho_global_all_rules" {
-				globalHits[f]++
-			}
-		}
-	}
-	allHit := true
-	for _, f := range flags {
-		if globalHits[f] == 0 {
-			allHit = false
-		}
-		fmt.Printf("  %s: %d/50 global holdout hits\n", f, globalHits[f])
-	}
-	if allHit {
-		fmt.Println("  PASS: Global holdout applied to all flags")
-		passed++
-	} else {
-		fmt.Println("  FAIL: Global holdout missing on some flags")
-		failed++
-	}
-
-	// Test 3: Local holdout does NOT affect non-targeted rules
-	fmt.Println("\n--- Test 3: Local holdout scoping ---")
-	fmt.Println("ho_local_single_rule targets 5001 (flag_a) -- should NOT affect flag_b")
-	wrongHits := 0
-	for i := 1; i <= 30; i++ {
-		uid := fmt.Sprintf("nontarget_%d", i)
-		uc := c.CreateUserContext(uid, nil)
-		d := uc.Decide("flag_b", nil)
-		if d.RuleKey == "ho_local_single_rule" {
-			wrongHits++
-		}
-	}
-	if wrongHits == 0 {
-		fmt.Println("  PASS: flag_b unaffected by local holdout")
-		passed++
-	} else {
-		fmt.Printf("  FAIL: %d flag_b decisions hit ho_local_single_rule\n", wrongHits)
-		failed++
-	}
-
-	// Test 4: Zero-traffic holdout never applied
-	fmt.Println("\n--- Test 4: Zero-traffic holdout ---")
-	fmt.Println("ho_local_zero_traffic (0%, targets 5005) should NEVER apply")
-	zeroHits := 0
-	for i := 1; i <= 50; i++ {
-		uid := fmt.Sprintf("zero_%d", i)
-		uc := c.CreateUserContext(uid, nil)
-		d := uc.Decide("flag_b", nil)
-		if d.RuleKey == "ho_local_zero_traffic" {
-			zeroHits++
-		}
-	}
-	if zeroHits == 0 {
-		fmt.Println("  PASS: Zero-traffic holdout never applied")
-		passed++
-	} else {
-		fmt.Printf("  FAIL: %d hits from zero-traffic holdout\n", zeroHits)
-		failed++
-	}
-
-	// Test 5: Global holdout beats local holdout
-	fmt.Println("\n--- Test 5: Global beats local (precedence) ---")
-	fmt.Println("Rule 5001 targeted by global (15%) AND local (30%)")
-	globalCount := 0
-	for i := 1; i <= 100; i++ {
-		uid := fmt.Sprintf("prec_user_%d", i)
-		uc := c.CreateUserContext(uid, nil)
-		d := uc.Decide("flag_a", nil)
-		if d.RuleKey == "ho_global_all_rules" {
-			globalCount++
-		}
-	}
-	if globalCount > 0 {
-		fmt.Printf("  PASS: %d/100 hit global holdout (evaluated first)\n", globalCount)
-		passed++
-	} else {
-		fmt.Println("  FAIL: No global holdout hits")
-		failed++
-	}
-
-	// Test 6: Cross-flag local holdout
-	fmt.Println("\n--- Test 6: Cross-flag holdout ---")
-	fmt.Println("ho_local_cross_flag (20%, targets 5001 on flag_a + 5004 on flag_b)")
-	crossHits := 0
-	for i := 1; i <= 50; i++ {
-		uid := fmt.Sprintf("cross_user_%d", i)
-		uc := c.CreateUserContext(uid, nil)
-		dA := uc.Decide("flag_a", nil)
-		dB := uc.Decide("flag_b", nil)
-		if dA.RuleKey == "ho_local_cross_flag" && dB.RuleKey == "ho_local_cross_flag" {
-			crossHits++
-		}
-	}
-	if crossHits > 0 {
-		fmt.Printf("  PASS: %d/50 users held out on BOTH flags\n", crossHits)
-		passed++
-	} else {
-		fmt.Println("  FAIL: No cross-flag holdout hits (may be expected at 20%% with competing holdouts)")
-		failed++
-	}
-
-	// Test 7: Audience holdout respects conditions
-	fmt.Println("\n--- Test 7: Audience holdout ---")
-	fmt.Println("ho_local_with_audience (40%, targets 5002, audience=customattr:yes)")
-	noAttrHits := 0
-	for i := 1; i <= 30; i++ {
-		uid := fmt.Sprintf("aud_no_%d", i)
-		uc := c.CreateUserContext(uid, nil)
-		d := uc.Decide("flag_a", nil)
-		if d.RuleKey == "ho_local_with_audience" {
-			noAttrHits++
-		}
-	}
-	if noAttrHits == 0 {
-		fmt.Println("  PASS: Users without attribute NOT held out by audience holdout")
-		passed++
-	} else {
-		fmt.Printf("  FAIL: %d users hit audience holdout without having the attribute\n", noAttrHits)
-		failed++
-	}
-
-	fmt.Printf("\n============================================================\n")
-	fmt.Printf("  Results: %d passed, %d failed\n", passed, failed)
-	fmt.Printf("============================================================\n")
-}

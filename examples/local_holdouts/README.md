@@ -37,16 +37,7 @@ experiment result when debugging.
 
 ## Quick start
 
-### 1. Static sanity check (no setup needed)
-
-Runs 7 automated checks using the bundled datafile to verify the SDK basics
-work. Do this first.
-
-```bash
-go run examples/local_holdouts/main.go -mode=static
-```
-
-### 2. Set up your project
+### 1. Set up your project
 
 Create or reuse a project in your Optimizely environment:
 
@@ -70,14 +61,14 @@ Create or reuse a project in your Optimizely environment:
 
 4. Activate all rules and holdouts.
 
-### 3. Update and run
+### 2. Update and run
 
 1. Set `SDK_KEY` in `main.go` to your SDK key
 2. Run: `go run examples/local_holdouts/main.go`
 3. The code will print the current project state (flags, rules, holdouts
    with their traffic %) and run a basic decide call
 
-### 4. Explore
+### 3. Explore
 
 Open `main.go` and start uncommenting code blocks. Each block is a
 self-contained example you can modify:
