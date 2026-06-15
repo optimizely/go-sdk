@@ -1,25 +1,73 @@
-// Local Holdouts Bug Bash - Go SDK
-//
-// Two modes:
-//   Static:  Quick sanity check with bundled datafile (deterministic, no setup needed)
-//   Live:    Interactive exploration tool for breaking SDKs via UI mutations & edge cases
-//
-// Static:   go run examples/local_holdouts/main.go -mode=static -test=all
-// Live:     go run examples/local_holdouts/main.go -sdk_key=YOUR_KEY -scenario=ui_delete_holdout
-// Explore:  go run examples/local_holdouts/main.go -sdk_key=YOUR_KEY -explore
-// List:     go run examples/local_holdouts/main.go -test=help
+/*
+============================================================
+Local Holdouts Bug Bash -- Go SDK
+============================================================
+
+OVERVIEW:
+Local holdouts target specific experiment/delivery rules rather than applying
+globally to all rules across all flags. This bug bash validates that the SDK
+correctly evaluates local holdouts, handles UI changes (datafile updates),
+and doesn't break under edge cases.
+
+HOW LOCAL HOLDOUTS WORK:
+
+  Evaluation priority (highest to lowest):
+    1. Global holdouts  -- flag-level, before any rule evaluation
+    2. Forced decisions  -- per-rule, SetForcedDecision overrides everything below
+    3. Local holdouts    -- per-rule, after forced decisions
+    4. Normal experiment/rollout bucketing
+
+  Holdout types (determined by includedRules field in datafile):
+    - Global:  includedRules = null     --> applies to ALL rules on ALL flags
+    - Local:   includedRules = ["5001"] --> applies only to rule 5001
+    - Empty:   includedRules = []       --> local holdout targeting nothing (effectively disabled, NOT global)
+
+  When a user is held out:
+    - decision.VariationKey = "ho_off_key"
+    - decision.Enabled      = false
+    - decision.RuleKey      = the holdout key (e.g. "my_local_holdout")
+    - Impression event:  rule_type = "holdout", campaign_id = ""
+
+OPTIMIZELY PROJECT SETUP:
+
+  1. Create or reuse a project in your Optimizely environment.
+  2. Create a custom audience:
+     - Name: "Custom Attr Audience"
+     - Condition: custom attribute "customattr" equals "yes"
+  3. Create flags with A/B test rules:
+
+     Flag Key   | Rule Key (A/B Test) | Variations | Traffic | Audience
+     -----------|---------------------|------------|---------|----------
+     flag_a     | rule_a              | on, off    | 100%    | Everyone
+     flag_b     | rule_b              | on, off    | 100%    | Everyone
+
+  4. Create holdouts:
+
+     Holdout Name     | Type   | Targeted Rules   | Traffic | Audience
+     -----------------|--------|------------------|---------|-------------------
+     local_holdout    | Local  | rule_a only      | 50%     | Everyone
+     global_holdout   | Global | All rules        | 10%     | Everyone
+
+  5. Activate all rules and holdouts.
+  6. Copy your SDK Key from Settings -> Environments.
+  7. Update the SDK_KEY constant below.
+
+RUNNING:
+  go run main.go                      # runs the basic exploration code
+  go run main.go -mode=static         # runs static sanity checks with bundled datafile
+
+============================================================
+*/
 
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/optimizely/go-sdk/v2/pkg/client"
@@ -33,1294 +81,409 @@ import (
 )
 
 // ============================================================
-// CONFIGURATION - Update these to match your project
+// CONFIGURATION -- Update these for your environment
 // ============================================================
-const SDK_KEY = "YOUR_SDK_KEY_HERE"
+const (
+	SDK_KEY = "YOUR_SDK_KEY_HERE"
+
+	// Flags and rules -- must match your project setup
+	FLAG_A = "flag_a"
+	FLAG_B = "flag_b"
+
+	// Audience attribute
+	ATTR_KEY   = "customattr"
+	ATTR_MATCH = "yes"
+)
 
 var (
-	testCase = flag.String("test", "", "Static test case to run (use -test=help for list)")
-	mode     = flag.String("mode", "live", "Mode: 'static' or 'live'")
-	sdkKey   = flag.String("sdk_key", SDK_KEY, "SDK key for live mode")
-	scenario = flag.String("scenario", "", "Live scenario to run (see -test=help)")
-	explore  = flag.Bool("explore", false, "Interactive exploration REPL")
-	userID   = flag.String("user", "user_1", "Default user ID for exploration")
-	flagKey  = flag.String("flag", "", "Flag key for exploration")
-	numUsers = flag.Int("n", 20, "Number of users for distribution checks")
+	mode = flag.String("mode", "live", "Mode: 'static' (bundled datafile) or 'live' (actual project)")
 )
 
 func main() {
 	flag.Parse()
 
-	fmt.Println(strings.Repeat("=", 60))
-	fmt.Println("  Local Holdouts Bug Bash - Go SDK")
-	fmt.Println(strings.Repeat("=", 60))
-
-	if *testCase == "help" {
-		printHelp()
-		return
-	}
-
-	if *mode == "static" || *testCase != "" {
+	if *mode == "static" {
 		logging.SetLogLevel(logging.LogLevelWarning)
-		runStaticTests()
+		runStaticSanityCheck()
 		return
 	}
 
-	// Live mode
-	if *sdkKey == SDK_KEY || *sdkKey == "" {
-		fmt.Println("\nERROR: Provide your SDK key via -sdk_key=YOUR_KEY")
-		fmt.Println("See README.md for project setup instructions.")
+	// ============================================================
+	// LIVE MODE -- Modify the code below to explore holdouts
+	// ============================================================
+	//
+	// This is your sandbox. The SDK client is created with polling enabled
+	// (refreshes datafile every 30 seconds). Make changes in the Optimizely
+	// UI, wait ~30s, then re-run to see the updated behavior.
+	//
+	// Uncomment sections below to try different things. Modify freely.
+
+	if SDK_KEY == "YOUR_SDK_KEY_HERE" {
+		fmt.Println("ERROR: Set your SDK key in the SDK_KEY constant at the top of main.go")
 		return
 	}
 
 	logging.SetLogLevel(logging.LogLevelDebug)
-	optimizelyClient := createLiveClient(*sdkKey)
+	optimizelyClient := createLiveClient(SDK_KEY)
 	defer optimizelyClient.Close()
 
-	if *explore {
-		runExploreREPL(optimizelyClient)
-		return
-	}
+	// Show current project state (flags, rules, holdouts)
+	inspectProject(optimizelyClient)
 
-	if *scenario != "" {
-		runScenario(optimizelyClient, *scenario)
-		return
-	}
+	// ----------------------------------------------------------
+	// BASIC: Decide on a flag and see what happens
+	// ----------------------------------------------------------
+	fmt.Println("\n--- Basic decide ---")
+	user := optimizelyClient.CreateUserContext("user_123", nil)
+	d := user.Decide(FLAG_A, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+	printDecision("user_123 on "+FLAG_A, d)
 
-	// Default: show what's available
-	fmt.Println("\nNo scenario specified. Use one of:")
-	fmt.Println("  -explore              Interactive REPL")
-	fmt.Println("  -scenario=<name>      Guided scenario")
-	fmt.Println("  -test=help            List all options")
-	fmt.Println()
-	inspectLiveConfig(optimizelyClient)
-}
-
-// ============================================================
-// STATIC MODE - Quick sanity check with bundled datafile
-// ============================================================
-
-func runStaticTests() {
-	fmt.Println("\nMode: STATIC (bundled datafile)")
-
-	datafile := loadDatafile()
-	c := createStaticClient(datafile)
-	defer c.Close()
-
-	test := *testCase
-	if test == "" {
-		test = "all"
-	}
-
-	switch test {
-	case "basic":
-		testStaticBasicLocalHoldout(c)
-	case "multi_rule":
-		testStaticMultiRuleHoldout(c)
-	case "cross_flag":
-		testStaticCrossFlagHoldout(c)
-	case "global":
-		testStaticGlobalHoldout(c)
-	case "precedence":
-		testStaticGlobalBeatsLocal(c)
-	case "audience":
-		testStaticAudienceHoldout(c)
-	case "not_targeted":
-		testStaticNotTargeted(c)
-	case "zero_traffic":
-		testStaticZeroTraffic(c)
-	case "all":
-		tests := []struct {
-			name string
-			fn   func(*client.OptimizelyClient)
-		}{
-			{"basic", testStaticBasicLocalHoldout},
-			{"multi_rule", testStaticMultiRuleHoldout},
-			{"cross_flag", testStaticCrossFlagHoldout},
-			{"global", testStaticGlobalHoldout},
-			{"precedence", testStaticGlobalBeatsLocal},
-			{"audience", testStaticAudienceHoldout},
-			{"not_targeted", testStaticNotTargeted},
-			{"zero_traffic", testStaticZeroTraffic},
-		}
-		for _, t := range tests {
-			t.fn(c)
-		}
-		fmt.Println("\n" + strings.Repeat("=", 60))
-		fmt.Println("  All static tests completed.")
-		fmt.Println(strings.Repeat("=", 60))
-	default:
-		fmt.Printf("\nUnknown test: %s (use -test=help)\n", test)
-	}
-}
-
-// ============================================================
-// LIVE SCENARIOS - Guided walkthroughs for breaking SDKs
-// ============================================================
-
-func runScenario(c *client.OptimizelyClient, name string) {
-	switch name {
-	// --- UI Mutation Scenarios ---
-	case "ui_delete_holdout":
-		scenarioDeleteHoldout(c)
-	case "ui_change_traffic":
-		scenarioChangeTraffic(c)
-	case "ui_switch_local_global":
-		scenarioSwitchLocalGlobal(c)
-	case "ui_change_audience":
-		scenarioChangeAudience(c)
-	case "ui_delete_targeted_rule":
-		scenarioDeleteTargetedRule(c)
-	case "ui_pause_holdout":
-		scenarioPauseHoldout(c)
-	case "ui_add_holdout_to_running":
-		scenarioAddHoldoutToRunning(c)
-
-	// --- Feature Interaction Scenarios ---
-	case "forced_vs_holdout":
-		scenarioForcedVsHoldout(c)
-	case "forced_rule_level":
-		scenarioForcedRuleLevel(c)
-	case "holdout_disable_event":
-		scenarioHoldoutDisableEvent(c)
-	case "holdout_track":
-		scenarioHoldoutTrack(c)
-	case "holdout_decide_all":
-		scenarioHoldoutDecideAll(c)
-	case "holdout_decide_for_keys":
-		scenarioHoldoutDecideForKeys(c)
-	case "holdout_listener":
-		scenarioHoldoutListener(c)
-	case "holdout_enabled_flags_only":
-		scenarioEnabledFlagsOnly(c)
-
-	// --- Stress / Edge Cases ---
-	case "rapid_repolling":
-		scenarioRapidRepolling(c)
-	case "distribution":
-		scenarioDistribution(c)
-	case "large_datafile":
-		scenarioLargeDatafile(c)
-	case "many_holdouts":
-		scenarioManyHoldouts(c)
-
-	default:
-		fmt.Printf("\nUnknown scenario: %s\n", name)
-		printHelp()
-	}
-}
-
-// ============================================================
-// UI MUTATION SCENARIOS
-// ============================================================
-
-func scenarioDeleteHoldout(c *client.OptimizelyClient) {
-	printScenarioHeader("Delete a Holdout While SDK is Running",
-		"Tests: Does the SDK gracefully handle a holdout disappearing from the datafile?",
-		"Steps:",
-		"  1. We take a snapshot of decisions for several users",
-		"  2. You delete a local holdout in the UI",
-		"  3. We re-check: held-out users should now get normal experiment decisions",
-		"  4. Edge case: what if a global holdout is deleted mid-session?",
-	)
-
-	flagKeys := discoverFlags(c)
-	if len(flagKeys) == 0 {
-		fmt.Println("  No flags found. Set up your project first.")
-		return
-	}
-
-	fmt.Println("\n  BEFORE: Current decisions")
-	snapBefore := takeSnapshot(c, flagKeys, *numUsers)
-	printSnapshot(snapBefore)
-
-	waitForUIChange("Delete a holdout in the UI (local or global), then save and wait for datafile refresh")
-
-	fmt.Println("\n  AFTER: Decisions after holdout deletion")
-	snapAfter := takeSnapshot(c, flagKeys, *numUsers)
-	printSnapshot(snapAfter)
-
-	diffSnapshots(snapBefore, snapAfter)
-}
-
-func scenarioChangeTraffic(c *client.OptimizelyClient) {
-	printScenarioHeader("Change Holdout Traffic Percentage",
-		"Tests: Does the SDK correctly re-bucket when holdout traffic changes?",
-		"Interesting mutations to try:",
-		"  - 50% -> 0% (holdout effectively disabled, all users should get normal decisions)",
-		"  - 50% -> 100% (all users should be held out)",
-		"  - 10% -> 90% (dramatic shift, verify distribution changes)",
-		"  - Any% -> same% (no change expected, sanity check)",
-	)
-
-	flagKeys := discoverFlags(c)
-
-	fmt.Println("\n  BEFORE: Distribution")
-	snapBefore := takeSnapshot(c, flagKeys, *numUsers)
-	printDistribution(snapBefore)
-
-	waitForUIChange("Change a holdout's traffic % in the UI")
-
-	fmt.Println("\n  AFTER: Distribution")
-	snapAfter := takeSnapshot(c, flagKeys, *numUsers)
-	printDistribution(snapAfter)
-
-	diffSnapshots(snapBefore, snapAfter)
-}
-
-func scenarioSwitchLocalGlobal(c *client.OptimizelyClient) {
-	printScenarioHeader("Switch Holdout Between Local and Global",
-		"Tests: Does the SDK handle holdout type change correctly?",
-		"This is a big structural change in the datafile (includedRules: [...] <-> null)",
-		"",
-		"Try these:",
-		"  - Local -> Global: holdout should now affect ALL flags, not just targeted rules",
-		"  - Global -> Local: holdout should STOP affecting non-targeted flags",
-		"  - Watch for: users previously held out on flag_b now getting normal decisions",
-	)
-
-	flagKeys := discoverFlags(c)
-
-	fmt.Println("\n  BEFORE: Decisions across all flags")
-	snapBefore := takeSnapshot(c, flagKeys, *numUsers)
-	printSnapshotByFlag(snapBefore, flagKeys)
-
-	waitForUIChange("Switch a holdout between Local and Global in the UI (change which rules it targets)")
-
-	fmt.Println("\n  AFTER: Decisions across all flags")
-	snapAfter := takeSnapshot(c, flagKeys, *numUsers)
-	printSnapshotByFlag(snapAfter, flagKeys)
-
-	diffSnapshots(snapBefore, snapAfter)
-}
-
-func scenarioChangeAudience(c *client.OptimizelyClient) {
-	printScenarioHeader("Add/Remove Audience on a Holdout",
-		"Tests: Does audience targeting on holdouts work after datafile refresh?",
-		"",
-		"Try these:",
-		"  - Remove audience from holdout: should now affect ALL users regardless of attributes",
-		"  - Add audience to holdout: should only affect users matching the audience condition",
-		"  - Change audience condition value: users with old value should no longer be held out",
-	)
-
-	flagKeys := discoverFlags(c)
-
-	// Test with and without attributes
-	fmt.Println("\n  BEFORE: Users WITH customattr=yes")
-	snapWithAttr := takeSnapshotWithAttrs(c, flagKeys, *numUsers,
-		map[string]interface{}{"customattr": "yes"})
-	printDistribution(snapWithAttr)
-
-	fmt.Println("\n  BEFORE: Users WITHOUT attributes")
-	snapNoAttr := takeSnapshot(c, flagKeys, *numUsers)
-	printDistribution(snapNoAttr)
-
-	waitForUIChange("Add or remove an audience condition on a holdout")
-
-	fmt.Println("\n  AFTER: Users WITH customattr=yes")
-	snapWithAttrAfter := takeSnapshotWithAttrs(c, flagKeys, *numUsers,
-		map[string]interface{}{"customattr": "yes"})
-	printDistribution(snapWithAttrAfter)
-
-	fmt.Println("\n  AFTER: Users WITHOUT attributes")
-	snapNoAttrAfter := takeSnapshot(c, flagKeys, *numUsers)
-	printDistribution(snapNoAttrAfter)
-}
-
-func scenarioDeleteTargetedRule(c *client.OptimizelyClient) {
-	printScenarioHeader("Delete A Rule That a Holdout Targets",
-		"Tests: What happens when the experiment/rule referenced by includedRules is deleted?",
-		"This is a dangling reference scenario - the holdout points to a rule that no longer exists.",
-		"",
-		"Expected: SDK should handle gracefully (no crash, no panic). The holdout should",
-		"have no effect since its targeted rule doesn't exist anymore.",
-		"",
-		"Watch for: panics, nil pointer dereferences, or the holdout accidentally",
-		"affecting OTHER rules on the same flag.",
-	)
-
-	flagKeys := discoverFlags(c)
-
-	fmt.Println("\n  BEFORE: Current state")
-	inspectLiveConfig(c)
-	snapBefore := takeSnapshot(c, flagKeys, *numUsers)
-	printSnapshot(snapBefore)
-
-	waitForUIChange("Delete an experiment rule that a local holdout targets (keep the holdout)")
-
-	fmt.Println("\n  AFTER: State after rule deletion")
-	inspectLiveConfig(c)
-	snapAfter := takeSnapshot(c, flagKeys, *numUsers)
-	printSnapshot(snapAfter)
-
-	diffSnapshots(snapBefore, snapAfter)
-}
-
-func scenarioPauseHoldout(c *client.OptimizelyClient) {
-	printScenarioHeader("Pause a Running Holdout",
-		"Tests: Does pausing a holdout immediately stop it from being applied?",
-		"",
-		"Try: Pause a holdout that has high traffic (50%+) so the effect is obvious.",
-		"All users previously held out should now get normal experiment decisions.",
-	)
-
-	flagKeys := discoverFlags(c)
-
-	fmt.Println("\n  BEFORE (holdout running):")
-	snapBefore := takeSnapshot(c, flagKeys, *numUsers)
-	printDistribution(snapBefore)
-
-	waitForUIChange("Pause a holdout in the UI")
-
-	fmt.Println("\n  AFTER (holdout paused):")
-	snapAfter := takeSnapshot(c, flagKeys, *numUsers)
-	printDistribution(snapAfter)
-
-	diffSnapshots(snapBefore, snapAfter)
-}
-
-func scenarioAddHoldoutToRunning(c *client.OptimizelyClient) {
-	printScenarioHeader("Add a New Holdout to a Running Experiment",
-		"Tests: Can you add a holdout to an experiment that already has traffic?",
-		"",
-		"Steps:",
-		"  1. Verify experiment is running normally (no holdouts)",
-		"  2. Create a new local holdout targeting that experiment",
-		"  3. Activate the holdout",
-		"  4. Verify some users are now held out who weren't before",
-	)
-
-	flagKeys := discoverFlags(c)
-
-	fmt.Println("\n  BEFORE (no holdout on experiment):")
-	snapBefore := takeSnapshot(c, flagKeys, *numUsers)
-	printDistribution(snapBefore)
-
-	waitForUIChange("Create and activate a NEW local holdout targeting a running experiment")
-
-	fmt.Println("\n  AFTER (holdout added):")
-	snapAfter := takeSnapshot(c, flagKeys, *numUsers)
-	printDistribution(snapAfter)
-
-	diffSnapshots(snapBefore, snapAfter)
-}
-
-// ============================================================
-// FEATURE INTERACTION SCENARIOS
-// ============================================================
-
-func scenarioForcedVsHoldout(c *client.OptimizelyClient) {
-	printScenarioHeader("Forced Decision vs Holdout (Flag Level)",
-		"Tests: SetForcedDecision at FLAG level should override any holdout.",
-		"We'll test multiple users, set a forced decision, and verify holdout is bypassed.",
-	)
-
-	flagKeys := discoverFlags(c)
-	if len(flagKeys) == 0 {
-		return
-	}
-	fk := flagKeys[0]
-	if *flagKey != "" {
-		fk = *flagKey
-	}
-
-	fmt.Printf("\n  Testing on flag: %s\n", fk)
-
-	// Find a user who gets held out
-	fmt.Println("\n  Step 1: Finding users who are held out...")
-	var heldOutUser string
-	for i := 1; i <= 100; i++ {
-		uid := fmt.Sprintf("forced_test_%d", i)
-		uc := c.CreateUserContext(uid, nil)
-		d := uc.Decide(fk, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+	// ----------------------------------------------------------
+	// TRY DIFFERENT USERS: Some will be held out, some won't
+	// ----------------------------------------------------------
+	fmt.Println("\n--- Try multiple users ---")
+	for i := 1; i <= 20; i++ {
+		uid := fmt.Sprintf("user_%d", i)
+		uc := optimizelyClient.CreateUserContext(uid, nil)
+		d := uc.Decide(FLAG_A, nil)
+		tag := "normal"
 		if isHoldout(d) {
-			heldOutUser = uid
-			fmt.Printf("    Found held-out user: %s (rule_key=%s)\n", uid, d.RuleKey)
-			printReasons(d)
-			break
+			tag = "HOLDOUT:" + d.RuleKey
 		}
+		fmt.Printf("  %-15s %-30s var=%-10s enabled=%v\n", uid, tag, d.VariationKey, d.Enabled)
 	}
 
-	if heldOutUser == "" {
-		fmt.Println("    No held-out user found in 100 attempts.")
-		fmt.Println("    Make sure a holdout is running with reasonable traffic.")
-		return
-	}
+	// ----------------------------------------------------------
+	// DECIDE WITH ATTRIBUTES: Test audience-targeted holdouts
+	// ----------------------------------------------------------
+	// fmt.Println("\n--- With audience attributes ---")
+	// userWithAttr := optimizelyClient.CreateUserContext("user_123", map[string]interface{}{
+	// 	ATTR_KEY: ATTR_MATCH,
+	// })
+	// d2 := userWithAttr.Decide(FLAG_A, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
+	// printDecision("user_123 with customattr=yes", d2)
+	//
+	// // Same user WITHOUT the attribute -- should NOT hit audience holdout
+	// userNoAttr := optimizelyClient.CreateUserContext("user_123", nil)
+	// d3 := userNoAttr.Decide(FLAG_A, nil)
+	// printDecision("user_123 without attribute", d3)
 
-	// Get first variation key from OptimizelyConfig to use as forced variation
-	forceVar := "on" // default guess
-	optConfig := c.GetOptimizelyConfig()
-	if optConfig != nil {
-		if feat, ok := optConfig.FeaturesMap[fk]; ok {
-			for _, rule := range feat.ExperimentRules {
-				for vk := range rule.VariationsMap {
-					forceVar = vk
-					break
-				}
-				break
-			}
-		}
-	}
+	// ----------------------------------------------------------
+	// FORCED DECISIONS: Override holdout at flag level
+	// ----------------------------------------------------------
+	// fmt.Println("\n--- Forced decision (flag level) ---")
+	// uc := optimizelyClient.CreateUserContext("user_123", nil)
+	//
+	// // Normal decision first
+	// before := uc.Decide(FLAG_A, nil)
+	// printDecision("Before forced decision", before)
+	//
+	// // Force variation to "on" -- should bypass holdout
+	// ctx := decision.OptimizelyDecisionContext{FlagKey: FLAG_A}
+	// fd := decision.OptimizelyForcedDecision{VariationKey: "on"}
+	// uc.SetForcedDecision(ctx, fd)
+	//
+	// forced := uc.Decide(FLAG_A, nil)
+	// printDecision("With forced decision", forced)
+	//
+	// // Remove forced decision -- holdout should return
+	// uc.RemoveForcedDecision(ctx)
+	// after := uc.Decide(FLAG_A, nil)
+	// printDecision("After removing forced decision", after)
 
-	// Set forced decision and verify override
-	fmt.Printf("\n  Step 2: Setting forced decision (variation=%s) on held-out user...\n", forceVar)
-	uc := c.CreateUserContext(heldOutUser, nil)
+	// ----------------------------------------------------------
+	// FORCED DECISIONS: Override at rule level (more specific)
+	// ----------------------------------------------------------
+	// fmt.Println("\n--- Forced decision (rule level) ---")
+	// uc := optimizelyClient.CreateUserContext("user_123", nil)
+	// ruleCtx := decision.OptimizelyDecisionContext{FlagKey: FLAG_A, RuleKey: "rule_a"}
+	// ruleFD := decision.OptimizelyForcedDecision{VariationKey: "on"}
+	// uc.SetForcedDecision(ruleCtx, ruleFD)
+	// d := uc.Decide(FLAG_A, nil)
+	// printDecision("Rule-level forced decision", d)
+	// uc.RemoveAllForcedDecisions()
 
-	ctx := decision.OptimizelyDecisionContext{FlagKey: fk}
-	fd := decision.OptimizelyForcedDecision{VariationKey: forceVar}
-	ok := uc.SetForcedDecision(ctx, fd)
-	fmt.Printf("    SetForcedDecision result: %v\n", ok)
+	// ----------------------------------------------------------
+	// DECIDE ALL: See holdouts across all flags at once
+	// ----------------------------------------------------------
+	// fmt.Println("\n--- DecideAll ---")
+	// uc := optimizelyClient.CreateUserContext("user_123", nil)
+	// all := uc.DecideAll(nil)
+	// for fk, d := range all {
+	// 	tag := ""
+	// 	if isHoldout(d) {
+	// 		tag = " [HOLDOUT]"
+	// 	}
+	// 	fmt.Printf("  %-15s rule=%-20s var=%-10s enabled=%v%s\n",
+	// 		fk, d.RuleKey, d.VariationKey, d.Enabled, tag)
+	// }
 
-	d := uc.Decide(fk, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
-	printDecision("With forced decision", d)
-	printReasons(d)
+	// ----------------------------------------------------------
+	// DECIDE FOR KEYS: Check subset of flags
+	// ----------------------------------------------------------
+	// fmt.Println("\n--- DecideForKeys ---")
+	// uc := optimizelyClient.CreateUserContext("user_123", nil)
+	// subset := uc.DecideForKeys([]string{FLAG_A, FLAG_B}, nil)
+	// for fk, d := range subset {
+	// 	fmt.Printf("  %s: rule=%s var=%s enabled=%v\n", fk, d.RuleKey, d.VariationKey, d.Enabled)
+	// }
 
-	if d.VariationKey == forceVar {
-		fmt.Println("    PASS: Forced decision overrides holdout")
-	} else {
-		fmt.Printf("    FAIL: Expected variation=%s, got %s\n", forceVar, d.VariationKey)
-	}
+	// ----------------------------------------------------------
+	// ENABLED FLAGS ONLY: Held-out flags should be excluded
+	// ----------------------------------------------------------
+	// fmt.Println("\n--- EnabledFlagsOnly (holdout = enabled=false, should be excluded) ---")
+	// uc := optimizelyClient.CreateUserContext("user_123", nil)
+	// allDecisions := uc.DecideAll(nil)
+	// enabledOnly := uc.DecideAll([]decide.OptimizelyDecideOptions{decide.EnabledFlagsOnly})
+	// fmt.Printf("  All flags: %d | EnabledFlagsOnly: %d\n", len(allDecisions), len(enabledOnly))
+	// for fk, d := range allDecisions {
+	// 	_, inEnabled := enabledOnly[fk]
+	// 	fmt.Printf("  %-15s enabled=%v  in_enabled_only=%v\n", fk, d.Enabled, inEnabled)
+	// }
 
-	// Remove and verify holdout returns
-	fmt.Println("\n  Step 3: Removing forced decision...")
-	uc.RemoveForcedDecision(ctx)
-	d2 := uc.Decide(fk, []decide.OptimizelyDecideOptions{decide.IncludeReasons})
-	printDecision("After removing forced decision", d2)
+	// ----------------------------------------------------------
+	// DISABLE DECISION EVENT: Holdout decision without impression
+	// ----------------------------------------------------------
+	// fmt.Println("\n--- DisableDecisionEvent ---")
+	// uc := optimizelyClient.CreateUserContext("user_123", nil)
+	// d1 := uc.Decide(FLAG_A, nil) // fires impression
+	// d2 := uc.Decide(FLAG_A, []decide.OptimizelyDecideOptions{decide.DisableDecisionEvent}) // no impression
+	// fmt.Printf("  With event:    rule=%s var=%s\n", d1.RuleKey, d1.VariationKey)
+	// fmt.Printf("  Without event: rule=%s var=%s (should be same decision, no impression sent)\n", d2.RuleKey, d2.VariationKey)
 
-	if isHoldout(d2) {
-		fmt.Println("    PASS: User is held out again after removing forced decision")
-	} else {
-		fmt.Println("    INFO: User got a normal decision (may have been re-bucketed)")
-	}
-}
+	// ----------------------------------------------------------
+	// TRACK EVENT: Send conversion for a held-out user
+	// ----------------------------------------------------------
+	// fmt.Println("\n--- Track after holdout ---")
+	// uc := optimizelyClient.CreateUserContext("user_123", nil)
+	// d := uc.Decide(FLAG_A, nil)
+	// printDecision("Decision before track", d)
+	// err := uc.TrackEvent("my_event", map[string]interface{}{"revenue": 100})
+	// fmt.Printf("  TrackEvent result: %v\n", err)
 
-func scenarioForcedRuleLevel(c *client.OptimizelyClient) {
-	printScenarioHeader("Forced Decision at RULE Level vs Holdout",
-		"Tests: SetForcedDecision targeting a specific rule_key should override",
-		"the holdout for that rule only.",
-		"",
-		"Edge case: What if you force a decision on a rule that the holdout targets?",
-		"What about forcing on a rule the holdout does NOT target?",
-	)
+	// ----------------------------------------------------------
+	// DECISION LISTENER: See holdout metadata in notifications
+	// ----------------------------------------------------------
+	// fmt.Println("\n--- Decision listener ---")
+	// nc := optimizelyClient.GetNotificationCenter()
+	// nc.AddHandler(notification.Decision, func(payload interface{}) {
+	// 	if dn, ok := payload.(notification.DecisionNotification); ok {
+	// 		info, _ := json.Marshal(dn.DecisionInfo)
+	// 		fmt.Printf("  LISTENER: user=%s type=%s info=%s\n", dn.UserContext.ID, dn.Type, string(info))
+	// 	}
+	// })
+	// uc := optimizelyClient.CreateUserContext("user_123", nil)
+	// uc.Decide(FLAG_A, nil)
 
-	flagKeys := discoverFlags(c)
-	if len(flagKeys) == 0 {
-		return
-	}
-	fk := flagKeys[0]
-	if *flagKey != "" {
-		fk = *flagKey
-	}
+	// ----------------------------------------------------------
+	// TRACK LISTENER: Verify conversion events for held-out users
+	// ----------------------------------------------------------
+	// fmt.Println("\n--- Track listener ---")
+	// optimizelyClient.OnTrack(func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
+	// 	fmt.Printf("  TRACK: event=%s user=%s\n", eventKey, userContext.ID)
+	// })
+	// uc := optimizelyClient.CreateUserContext("user_123", nil)
+	// uc.Decide(FLAG_A, nil)
+	// uc.TrackEvent("my_event", nil)
 
-	// Get rule keys from config
-	optConfig := c.GetOptimizelyConfig()
-	if optConfig == nil {
-		fmt.Println("  Could not get OptimizelyConfig")
-		return
-	}
+	// ----------------------------------------------------------
+	// DISTRIBUTION CHECK: Verify holdout traffic percentage
+	// ----------------------------------------------------------
+	// fmt.Println("\n--- Distribution (1000 users) ---")
+	// logging.SetLogLevel(logging.LogLevelWarning)
+	// counts := map[string]int{}
+	// for i := 1; i <= 1000; i++ {
+	// 	uid := fmt.Sprintf("dist_%d", i)
+	// 	uc := optimizelyClient.CreateUserContext(uid, nil)
+	// 	d := uc.Decide(FLAG_A, nil)
+	// 	key := d.RuleKey + "/" + d.VariationKey
+	// 	if isHoldout(d) {
+	// 		key = "HOLDOUT:" + d.RuleKey
+	// 	}
+	// 	counts[key]++
+	// }
+	// for key, count := range counts {
+	// 	fmt.Printf("  %-35s %4d (%.1f%%)\n", key, count, float64(count)/10)
+	// }
+	// logging.SetLogLevel(logging.LogLevelDebug)
 
-	feat, ok := optConfig.FeaturesMap[fk]
-	if !ok {
-		fmt.Printf("  Flag %s not found in config\n", fk)
-		return
-	}
+	// ----------------------------------------------------------
+	// WAIT FOR DATAFILE REFRESH: Keep SDK alive to test UI changes
+	// ----------------------------------------------------------
+	// Use this when testing UI mutations. Make a change in the UI,
+	// then wait for the SDK to pick it up via polling.
+	//
+	// fmt.Println("\n--- Waiting for datafile refresh (Ctrl+C to stop) ---")
+	// fmt.Println("Make a change in the UI, then watch for decision changes.")
+	// uid := "watch_user_42"
+	// lastRule := ""
+	// for {
+	// 	uc := optimizelyClient.CreateUserContext(uid, nil)
+	// 	d := uc.Decide(FLAG_A, nil)
+	// 	if d.RuleKey != lastRule {
+	// 		fmt.Printf("  [%s] CHANGED: rule=%s var=%s enabled=%v\n",
+	// 			time.Now().Format("15:04:05"), d.RuleKey, d.VariationKey, d.Enabled)
+	// 		lastRule = d.RuleKey
+	// 	}
+	// 	time.Sleep(10 * time.Second)
+	// }
 
-	fmt.Printf("\n  Flag: %s\n", fk)
-	fmt.Println("  Rules:")
-	for _, rule := range feat.ExperimentRules {
-		vars := make([]string, 0)
-		for vk := range rule.VariationsMap {
-			vars = append(vars, vk)
-		}
-		fmt.Printf("    %s (id=%s, variations=%v)\n", rule.Key, rule.ID, vars)
-	}
-
-	if len(feat.ExperimentRules) == 0 {
-		fmt.Println("  No experiment rules found.")
-		return
-	}
-
-	targetRule := feat.ExperimentRules[0]
-	var forceVar string
-	for vk := range targetRule.VariationsMap {
-		forceVar = vk
-		break
-	}
-
-	fmt.Printf("\n  Testing: Force variation=%s on rule=%s\n", forceVar, targetRule.Key)
-
-	for i := 1; i <= 5; i++ {
-		uid := fmt.Sprintf("rule_force_%d", i)
-		uc := c.CreateUserContext(uid, nil)
-
-		// Normal decision
-		d1 := uc.Decide(fk, nil)
-
-		// Set rule-level forced decision
-		ctx := decision.OptimizelyDecisionContext{FlagKey: fk, RuleKey: targetRule.Key}
-		fd := decision.OptimizelyForcedDecision{VariationKey: forceVar}
-		uc.SetForcedDecision(ctx, fd)
-		d2 := uc.Decide(fk, nil)
-
-		fmt.Printf("    %s: normal=[rule=%s var=%s] forced=[rule=%s var=%s]\n",
-			uid, d1.RuleKey, d1.VariationKey, d2.RuleKey, d2.VariationKey)
-
-		uc.RemoveAllForcedDecisions()
-	}
-}
-
-func scenarioHoldoutDisableEvent(c *client.OptimizelyClient) {
-	printScenarioHeader("DisableDecisionEvent with Holdout",
-		"Tests: When DisableDecisionEvent option is set, holdout impression events",
-		"should NOT be dispatched. Verify no events are sent.",
-		"",
-		"Check: Compare decision results with and without the option.",
-		"The decision itself should be the same; only event dispatching differs.",
-	)
-
-	flagKeys := discoverFlags(c)
-	if len(flagKeys) == 0 {
-		return
-	}
-	fk := flagKeys[0]
-	if *flagKey != "" {
-		fk = *flagKey
-	}
-
-	for i := 1; i <= 10; i++ {
-		uid := fmt.Sprintf("event_test_%d", i)
-		uc := c.CreateUserContext(uid, nil)
-
-		// With events (default)
-		d1 := uc.Decide(fk, nil)
-		// Without events
-		d2 := uc.Decide(fk, []decide.OptimizelyDecideOptions{decide.DisableDecisionEvent})
-
-		match := "SAME"
-		if d1.RuleKey != d2.RuleKey || d1.VariationKey != d2.VariationKey {
-			match = "DIFFERENT!"
-		}
-		ho := ""
-		if isHoldout(d1) {
-			ho = " [HOLDOUT]"
-		}
-		fmt.Printf("    %s: rule=%s var=%s (%s)%s\n", uid, d1.RuleKey, d1.VariationKey, match, ho)
-	}
-
-	fmt.Println("\n  Verify in your event dispatcher/logs that DisableDecisionEvent")
-	fmt.Println("  suppresses the impression event for holdout decisions.")
-}
-
-func scenarioHoldoutTrack(c *client.OptimizelyClient) {
-	printScenarioHeader("Track Event After Holdout Decision",
-		"Tests: Can you track a conversion event for a user who is held out?",
-		"The track call should succeed (no error), but the event should include",
-		"the holdout context.",
-		"",
-		"Watch: Does the event payload contain the right metadata?",
-	)
-
-	flagKeys := discoverFlags(c)
-	if len(flagKeys) == 0 {
-		return
-	}
-	fk := flagKeys[0]
-	if *flagKey != "" {
-		fk = *flagKey
-	}
-
-	// Register track listener
-	trackCh := make(chan string, 10)
-	_, _ = c.OnTrack(func(eventKey string, userContext entities.UserContext, eventTags map[string]interface{}, conversionEvent event.ConversionEvent) {
-		trackCh <- fmt.Sprintf("Track fired: event=%s user=%s", eventKey, userContext.ID)
-	})
-
-	for i := 1; i <= 10; i++ {
-		uid := fmt.Sprintf("track_test_%d", i)
-		uc := c.CreateUserContext(uid, nil)
-
-		d := uc.Decide(fk, nil)
-		ho := ""
-		if isHoldout(d) {
-			ho = " [HOLDOUT]"
-		}
-
-		err := uc.TrackEvent("test_event", nil)
-		errStr := "ok"
-		if err != nil {
-			errStr = err.Error()
-		}
-		fmt.Printf("    %s: decide=[%s/%s]%s  track=%s\n",
-			uid, d.RuleKey, d.VariationKey, ho, errStr)
-	}
-
-	// Drain track channel
-	fmt.Println("\n  Track listener events:")
-	done := time.After(1 * time.Second)
-	count := 0
-	for {
-		select {
-		case msg := <-trackCh:
-			fmt.Printf("    %s\n", msg)
-			count++
-		case <-done:
-			if count == 0 {
-				fmt.Println("    (no track events received in 1s)")
-			}
-			goto trackDone
-		}
-	}
-trackDone:
-	fmt.Println()
-}
-
-func scenarioHoldoutDecideAll(c *client.OptimizelyClient) {
-	printScenarioHeader("DecideAll with Holdouts",
-		"Tests: DecideAll should return holdout decisions for ALL affected flags.",
-		"If user hits a global holdout, ALL flags should show holdout.",
-		"If user hits a local holdout, only targeted flags/rules should show holdout.",
-	)
-
-	for i := 1; i <= *numUsers; i++ {
-		uid := fmt.Sprintf("decide_all_%d", i)
-		uc := c.CreateUserContext(uid, nil)
-		decisions := uc.DecideAll(nil)
-
-		holdouts := []string{}
-		normals := []string{}
-		for fk, d := range decisions {
-			if isHoldout(d) {
-				holdouts = append(holdouts, fmt.Sprintf("%s(%s)", fk, d.RuleKey))
-			} else {
-				normals = append(normals, fmt.Sprintf("%s(%s)", fk, d.VariationKey))
-			}
-		}
-
-		hoStr := strings.Join(holdouts, ", ")
-		if hoStr == "" {
-			hoStr = "none"
-		}
-		fmt.Printf("    %s: holdouts=[%s]  normal=[%s]\n", uid, hoStr, strings.Join(normals, ", "))
-	}
-}
-
-func scenarioHoldoutDecideForKeys(c *client.OptimizelyClient) {
-	printScenarioHeader("DecideForKeys with Holdouts",
-		"Tests: DecideForKeys returns holdout decisions only for requested flags.",
-		"Compare: request a subset of flags vs all flags. Results for requested",
-		"flags should be identical between DecideForKeys and DecideAll.",
-	)
-
-	flagKeys := discoverFlags(c)
-	if len(flagKeys) < 2 {
-		fmt.Println("  Need at least 2 flags for this test.")
-		return
-	}
-
-	subset := flagKeys[:2]
-	fmt.Printf("  Requesting subset: %v\n\n", subset)
-
-	for i := 1; i <= *numUsers; i++ {
-		uid := fmt.Sprintf("decide_keys_%d", i)
-		uc := c.CreateUserContext(uid, nil)
-
-		subsetDecisions := uc.DecideForKeys(subset, nil)
-		allDecisions := uc.DecideAll(nil)
-
-		match := true
-		for _, fk := range subset {
-			sd := subsetDecisions[fk]
-			ad := allDecisions[fk]
-			if sd.RuleKey != ad.RuleKey || sd.VariationKey != ad.VariationKey {
-				match = false
-				fmt.Printf("    %s: MISMATCH on %s! forKeys=[%s/%s] all=[%s/%s]\n",
-					uid, fk, sd.RuleKey, sd.VariationKey, ad.RuleKey, ad.VariationKey)
-			}
-		}
-		if match {
-			parts := []string{}
-			for _, fk := range subset {
-				d := subsetDecisions[fk]
-				ho := ""
-				if isHoldout(d) {
-					ho = "*HO*"
-				}
-				parts = append(parts, fmt.Sprintf("%s=%s%s", fk, d.VariationKey, ho))
-			}
-			fmt.Printf("    %s: consistent [%s]\n", uid, strings.Join(parts, " "))
-		}
-	}
-}
-
-func scenarioHoldoutListener(c *client.OptimizelyClient) {
-	printScenarioHeader("Decision Listener with Holdout Decisions",
-		"Tests: The decision notification listener should fire for holdout decisions",
-		"and include holdout-specific metadata.",
-		"",
-		"Watch for: experiment_id=holdout_id, rule_type=holdout in the decision info.",
-	)
-
-	// Register decision listener
-	nc := c.GetNotificationCenter()
-	listenerCh := make(chan string, 100)
-
-	_, _ = nc.AddHandler(notification.Decision, func(payload interface{}) {
-		if decisionNotif, ok := payload.(notification.DecisionNotification); ok {
-			info, _ := json.Marshal(decisionNotif.DecisionInfo)
-			listenerCh <- fmt.Sprintf("user=%s type=%s info=%s",
-				decisionNotif.UserContext.ID, decisionNotif.Type, string(info))
-		}
-	})
-
-	flagKeys := discoverFlags(c)
-	if len(flagKeys) == 0 {
-		return
-	}
-	fk := flagKeys[0]
-	if *flagKey != "" {
-		fk = *flagKey
-	}
-
-	fmt.Printf("\n  Making decisions on flag: %s\n\n", fk)
-
-	for i := 1; i <= 5; i++ {
-		uid := fmt.Sprintf("listener_%d", i)
-		uc := c.CreateUserContext(uid, nil)
-		d := uc.Decide(fk, nil)
-
-		ho := ""
-		if isHoldout(d) {
-			ho = " [HOLDOUT]"
-		}
-		fmt.Printf("    %s: rule=%s var=%s%s\n", uid, d.RuleKey, d.VariationKey, ho)
-	}
-
-	// Drain listener
-	fmt.Println("\n  Listener notifications:")
-	done := time.After(1 * time.Second)
-	for {
-		select {
-		case msg := <-listenerCh:
-			fmt.Printf("    %s\n", msg)
-		case <-done:
-			return
-		}
-	}
-}
-
-func scenarioEnabledFlagsOnly(c *client.OptimizelyClient) {
-	printScenarioHeader("EnabledFlagsOnly with Holdouts",
-		"Tests: DecideAll with EnabledFlagsOnly option should EXCLUDE held-out flags",
-		"since holdout decisions have enabled=false.",
-		"",
-		"If a user is held out on flag_a but not flag_b, DecideAll with EnabledFlagsOnly",
-		"should return flag_b but NOT flag_a.",
-	)
-
-	for i := 1; i <= *numUsers; i++ {
-		uid := fmt.Sprintf("enabled_only_%d", i)
-		uc := c.CreateUserContext(uid, nil)
-
-		allDecisions := uc.DecideAll(nil)
-		enabledOnly := uc.DecideAll([]decide.OptimizelyDecideOptions{decide.EnabledFlagsOnly})
-
-		allKeys := make([]string, 0)
-		for k := range allDecisions {
-			allKeys = append(allKeys, k)
-		}
-		enabledKeys := make([]string, 0)
-		for k := range enabledOnly {
-			enabledKeys = append(enabledKeys, k)
-		}
-
-		dropped := []string{}
-		for k, d := range allDecisions {
-			if _, ok := enabledOnly[k]; !ok {
-				dropped = append(dropped, fmt.Sprintf("%s(rule=%s)", k, d.RuleKey))
-			}
-		}
-
-		if len(dropped) > 0 {
-			fmt.Printf("    %s: all=%d enabled_only=%d  DROPPED: %s\n",
-				uid, len(allDecisions), len(enabledOnly), strings.Join(dropped, ", "))
-		} else {
-			fmt.Printf("    %s: all=%d enabled_only=%d  (no flags dropped)\n",
-				uid, len(allDecisions), len(enabledOnly))
-		}
-	}
+	// Silence unused import warnings -- remove these as you uncomment code above
+	_ = decision.OptimizelyDecisionContext{}
+	_ = notification.Decision
+	_ = entities.UserContext{}
+	_ = event.ConversionEvent{}
+	_ = json.Marshal
+	_ = time.Second
 }
 
 // ============================================================
-// STRESS / EDGE CASES
+// SCENARIO IDEAS -- Things to try during the bug bash
+// ============================================================
+//
+// These are NOT automated tests. They are ideas for manual exploration.
+// Use the code blocks above as building blocks, combine them, modify them.
+//
+// ---- UI MUTATION SCENARIOS ----
+// (Make changes in the Optimizely UI while the SDK is running)
+//
+// 1. DELETE A RUNNING HOLDOUT
+//    - Run the distribution check, note which users are held out
+//    - Delete the holdout in the UI, wait for datafile refresh
+//    - Re-run: previously held-out users should now get normal decisions
+//    - What if you delete a GLOBAL holdout? Do all flags recover?
+//
+// 2. CHANGE HOLDOUT TRAFFIC
+//    - Start with 50%, run distribution check
+//    - Change to 0% in UI --> everyone should get normal decisions
+//    - Change to 100% --> everyone should be held out
+//    - Change to 1% --> only ~1% held out
+//    - Does the SDK re-bucket correctly each time?
+//
+// 3. SWITCH LOCAL <-> GLOBAL
+//    - Start with a local holdout targeting rule_a only
+//    - Verify flag_b is NOT affected
+//    - Switch it to global in the UI
+//    - After refresh: flag_b should NOW be affected too
+//    - Switch back to local: flag_b should stop being affected
+//
+// 4. ADD/REMOVE AUDIENCE ON HOLDOUT
+//    - Holdout with audience: only users with customattr=yes get held out
+//    - Remove the audience: ALL users should now get held out
+//    - Add it back: only matching users get held out again
+//    - Try changing the attribute value in the audience condition
+//
+// 5. DELETE THE RULE A HOLDOUT TARGETS
+//    - Local holdout targets rule_a
+//    - Delete rule_a from the flag in the UI
+//    - Does the SDK crash? Panic? Or gracefully ignore the holdout?
+//
+// 6. PAUSE A HOLDOUT
+//    - Running holdout with 50% traffic
+//    - Pause it in the UI
+//    - After refresh: NO users should be held out
+//    - Re-activate: users should be held out again
+//
+// 7. ADD A HOLDOUT TO A RUNNING EXPERIMENT
+//    - Experiment running with no holdouts, users getting normal decisions
+//    - Create a new local holdout targeting that experiment
+//    - After refresh: some users should now be held out
+//
+// ---- FEATURE INTERACTION EDGE CASES ----
+//
+// 8. FORCED DECISION BEATS HOLDOUT
+//    - Find a user who IS held out (run distribution check)
+//    - SetForcedDecision for that user --> should get forced variation, NOT holdout
+//    - RemoveForcedDecision --> holdout should return
+//    - Try both flag-level and rule-level forced decisions
+//
+// 9. DECIDE ALL WITH GLOBAL HOLDOUT
+//    - User hits global holdout
+//    - DecideAll should show holdout on EVERY flag
+//    - DecideForKeys for a subset should match DecideAll for those keys
+//
+// 10. ENABLED FLAGS ONLY + HOLDOUT
+//     - Holdout sets enabled=false
+//     - DecideAll with EnabledFlagsOnly should EXCLUDE held-out flags
+//     - Verify the excluded flags are exactly the held-out ones
+//
+// 11. DECISION LISTENER METADATA
+//     - Register a decision listener
+//     - Make a decide call that hits a holdout
+//     - Check: does the listener fire? What's in DecisionInfo?
+//     - Expected: experiment_id = holdout_id, rule_type = "holdout"
+//
+// 12. TRACK AFTER HOLDOUT
+//     - User is held out, then TrackEvent is called
+//     - Does the conversion event fire? (it should)
+//     - Check the event payload for correct metadata
+//
+// 13. DISABLE DECISION EVENT + HOLDOUT
+//     - Decide with DisableDecisionEvent option
+//     - Decision result should be the same (holdout still applies)
+//     - But no impression event should be dispatched
+//
+// ---- STRESS & BOUNDARY SCENARIOS ----
+//
+// 14. MANY HOLDOUTS ON SAME RULE
+//     - Create 10+ local holdouts all targeting the same rule
+//     - Each with different traffic (5%, 10%, 15%, ...)
+//     - Are they evaluated in datafile order? First match wins?
+//     - Run distribution check -- does total holdout rate make sense?
+//
+// 15. LARGE PROJECT WITH HOLDOUTS
+//     - Use a project with 100+ flags (ask Jae Kim for a large datafile)
+//     - Add local holdouts targeting a few rules
+//     - Does decision performance degrade? Any timeouts?
+//
+// 16. HOLDOUT WITH 0% TRAFFIC
+//     - Create holdout with traffic set to 0%
+//     - Should NEVER hold out any user
+//     - Verify across 1000+ users
+//
+// 17. EMPTY INCLUDED RULES (includedRules: [])
+//     - This is a local holdout that targets NOTHING
+//     - Should NOT be treated as global
+//     - Should have NO effect on any flag
+//
+// 18. RAPID DATAFILE CHANGES
+//     - Use the "wait for datafile refresh" code block
+//     - Make 5 changes in rapid succession in the UI
+//     - Does the SDK eventually settle on the correct state?
+//     - Any race conditions or stale decisions?
+//
+// 19. CONCURRENT DECIDE CALLS
+//     - Spin up multiple goroutines calling Decide simultaneously
+//     - Any panics, data races, or inconsistent results?
+//
+// 20. HOLDOUT + SAME USER DIFFERENT ATTRIBUTES
+//     - Same user ID, first decide with no attributes
+//     - Then decide WITH attributes that match a holdout audience
+//     - Does the holdout correctly activate only with matching attributes?
+//
+// 21. VERY LONG USER IDS / SPECIAL CHARACTERS
+//     - User ID with 1000+ characters
+//     - User ID with unicode, emojis, spaces, null bytes
+//     - Does bucketing still work? Any panics?
+//
+// 22. MULTIPLE FLAGS, ONE GLOBAL HOLDOUT
+//     - 5+ flags, one global holdout at 10%
+//     - For a given user, if they're held out on flag_a, are they also
+//       held out on flag_b, flag_c, etc? (they should be -- same bucketing)
+//
+// 23. HOLDOUT ON A FLAG WITH NO RULES
+//     - Create a flag with no experiment rules
+//     - Create a holdout (global or local targeting a non-existent rule)
+//     - What does Decide return? Should be default off without crash
+//
 // ============================================================
 
-func scenarioRapidRepolling(c *client.OptimizelyClient) {
-	printScenarioHeader("Rapid Datafile Changes",
-		"Tests: Make multiple quick changes in the UI and verify the SDK handles",
-		"rapid datafile updates without getting confused.",
-		"",
-		"Steps: Change holdout traffic, wait 30s, change again, wait 30s, change again.",
-		"We'll poll decisions continuously and show when they change.",
-	)
-
-	flagKeys := discoverFlags(c)
-	if len(flagKeys) == 0 {
-		return
-	}
-	fk := flagKeys[0]
-	if *flagKey != "" {
-		fk = *flagKey
-	}
-
-	uid := *userID
-	fmt.Printf("\n  Polling decisions for user=%s flag=%s every 10 seconds.\n", uid, fk)
-	fmt.Println("  Make changes in the UI. Press Ctrl+C to stop.\n")
-
-	lastRule := ""
-	lastVar := ""
-	for round := 1; ; round++ {
-		uc := c.CreateUserContext(uid, nil)
-		d := uc.Decide(fk, nil)
-
-		changed := ""
-		if d.RuleKey != lastRule || d.VariationKey != lastVar {
-			if lastRule != "" {
-				changed = " <-- CHANGED!"
-			}
-			lastRule = d.RuleKey
-			lastVar = d.VariationKey
-		}
-
-		fmt.Printf("    [%s] round=%d rule=%s var=%s enabled=%v%s\n",
-			time.Now().Format("15:04:05"), round, d.RuleKey, d.VariationKey, d.Enabled, changed)
-
-		time.Sleep(10 * time.Second)
-	}
-}
-
-func scenarioDistribution(c *client.OptimizelyClient) {
-	printScenarioHeader("Distribution Check",
-		"Shows decision distribution across many users to verify holdout traffic %.",
-		fmt.Sprintf("Testing %d users.", *numUsers),
-	)
-
-	logging.SetLogLevel(logging.LogLevelWarning)
-	defer logging.SetLogLevel(logging.LogLevelDebug)
-
-	flagKeys := discoverFlags(c)
-
-	for _, fk := range flagKeys {
-		counts := make(map[string]int)
-		total := *numUsers
-
-		for i := 1; i <= total; i++ {
-			uid := fmt.Sprintf("dist_%d", i)
-			uc := c.CreateUserContext(uid, nil)
-			d := uc.Decide(fk, nil)
-
-			key := d.RuleKey + "/" + d.VariationKey
-			if isHoldout(d) {
-				key = "HOLDOUT:" + d.RuleKey
-			}
-			counts[key]++
-		}
-
-		fmt.Printf("\n  Flag: %s (%d users)\n", fk, total)
-		for key, count := range counts {
-			pct := float64(count) / float64(total) * 100
-			bar := strings.Repeat("#", int(pct/2))
-			fmt.Printf("    %-40s %4d (%5.1f%%) %s\n", key, count, pct, bar)
-		}
-	}
-}
-
-func scenarioLargeDatafile(c *client.OptimizelyClient) {
-	printScenarioHeader("Large Datafile with Local Holdouts",
-		"Tests: How does the SDK handle holdout evaluation when the project has a large",
-		"datafile with many flags and rules?",
-		"",
-		"Setup: Use a project with 100+ flags (ask Jae Kim for a large datafile/SDK key).",
-		"Add local holdouts targeting rules spread across different flags.",
-		"",
-		"What to watch for:",
-		"  - Slow decision times (does evaluation degrade with many flags/rules?)",
-		"  - Memory usage spikes during datafile parsing",
-		"  - Correct holdout targeting (does the SDK still match the right rules",
-		"    when there are hundreds of rule IDs to search through?)",
-		"  - Datafile polling performance (does a large datafile cause timeouts?)",
-	)
-
-	flagKeys := discoverFlags(c)
-	fmt.Printf("\n  Project has %d flags.\n", len(flagKeys))
-
-	logging.SetLogLevel(logging.LogLevelWarning)
-	defer logging.SetLogLevel(logging.LogLevelDebug)
-
-	start := time.Now()
-	total := 0
-	holdouts := 0
-
-	for i := 1; i <= 10; i++ {
-		uid := fmt.Sprintf("large_df_%d", i)
-		uc := c.CreateUserContext(uid, nil)
-		decisions := uc.DecideAll(nil)
-		for _, d := range decisions {
-			total++
-			if isHoldout(d) {
-				holdouts++
-			}
-		}
-	}
-
-	elapsed := time.Since(start)
-	fmt.Printf("\n  DecideAll x 10 users across %d flags:\n", len(flagKeys))
-	fmt.Printf("    Total decisions:  %d\n", total)
-	fmt.Printf("    Holdout decisions: %d\n", holdouts)
-	fmt.Printf("    Time elapsed:     %v\n", elapsed)
-	fmt.Printf("    Avg per user:     %v\n", elapsed/10)
-
-	if elapsed > 5*time.Second {
-		fmt.Println("    WARNING: Decisions took over 5 seconds. Possible performance issue.")
-	} else {
-		fmt.Println("    OK: Performance looks reasonable.")
-	}
-}
-
-func scenarioManyHoldouts(c *client.OptimizelyClient) {
-	printScenarioHeader("Many Local Holdouts on the Same Rule",
-		"Tests: What happens when 10+ local holdouts all target the same rule?",
-		"",
-		"Setup: In the UI, create 10 or more local holdouts that ALL target the",
-		"same experiment rule. Use different traffic percentages (5%, 10%, 15%, etc.).",
-		"",
-		"Expected behavior: Holdouts are evaluated in datafile order. The first",
-		"holdout that matches (user falls in traffic allocation) wins. Later holdouts",
-		"are skipped for that user.",
-		"",
-		"What to watch for:",
-		"  - Does the SDK evaluate them in the correct order?",
-		"  - Does the cumulative holdout rate match expectations?",
-		"    (e.g., 10 holdouts at 10% each should hold out ~65% of users,",
-		"     not 100%, because each is independent)",
-		"  - Are the holdout keys in decisions correct (first match, not last)?",
-		"  - Any crashes or unexpected behavior with many holdouts?",
-	)
-
-	flagKeys := discoverFlags(c)
-	if len(flagKeys) == 0 {
-		return
-	}
-	fk := flagKeys[0]
-	if *flagKey != "" {
-		fk = *flagKey
-	}
-
-	logging.SetLogLevel(logging.LogLevelWarning)
-	defer logging.SetLogLevel(logging.LogLevelDebug)
-
-	n := *numUsers
-	if n < 100 {
-		n = 100
-	}
-
-	counts := map[string]int{}
-	for i := 1; i <= n; i++ {
-		uid := fmt.Sprintf("many_ho_%d", i)
-		uc := c.CreateUserContext(uid, nil)
-		d := uc.Decide(fk, nil)
-
-		key := d.RuleKey + "/" + d.VariationKey
-		if isHoldout(d) {
-			key = "HOLDOUT:" + d.RuleKey
-		}
-		counts[key]++
-	}
-
-	fmt.Printf("\n  Flag: %s (%d users)\n", fk, n)
-
-	totalHeldOut := 0
-	for key, count := range counts {
-		pct := float64(count) / float64(n) * 100
-		bar := strings.Repeat("#", int(pct/2))
-		fmt.Printf("    %-40s %4d (%5.1f%%) %s\n", key, count, pct, bar)
-		if strings.HasPrefix(key, "HOLDOUT:") {
-			totalHeldOut += count
-		}
-	}
-
-	holdoutPct := float64(totalHeldOut) / float64(n) * 100
-	fmt.Printf("\n    Total held out: %d/%d (%.1f%%)\n", totalHeldOut, n, holdoutPct)
-	fmt.Println("    Check: Do the individual holdout keys match what you created in the UI?")
-	fmt.Println("    Check: Is the total holdout rate reasonable for your traffic settings?")
-}
-
 // ============================================================
-// INTERACTIVE EXPLORATION REPL
+// HELPERS -- Used by the code above, no need to modify
 // ============================================================
 
-func runExploreREPL(c *client.OptimizelyClient) {
-	fmt.Println("\n  Interactive Exploration Mode")
-	fmt.Println("  Type commands to explore holdout behavior. Type 'help' for commands.\n")
-
-	scanner := bufio.NewScanner(os.Stdin)
-	currentUser := *userID
-	currentAttrs := map[string]interface{}{}
-
-	for {
-		fmt.Printf("  [%s] > ", currentUser)
-		if !scanner.Scan() {
-			break
-		}
-
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
-		}
-
-		parts := strings.Fields(line)
-		cmd := parts[0]
-
-		switch cmd {
-		case "help", "h":
-			fmt.Println("  Commands:")
-			fmt.Println("    decide <flag>              Decide on a flag")
-			fmt.Println("    decide_all                 Decide all flags")
-			fmt.Println("    decide_keys <f1> <f2> ...  Decide for specific flags")
-			fmt.Println("    dist <flag> [n]            Distribution for n users (default 100)")
-			fmt.Println("    user <id>                  Switch user")
-			fmt.Println("    attr <key> <val>           Set user attribute")
-			fmt.Println("    attrs                      Show current attributes")
-			fmt.Println("    clearattrs                 Clear all attributes")
-			fmt.Println("    force <flag> <var>          Set forced decision (flag level)")
-			fmt.Println("    force <flag> <rule> <var>   Set forced decision (rule level)")
-			fmt.Println("    unforce <flag>             Remove forced decision")
-			fmt.Println("    unforceall                 Remove all forced decisions")
-			fmt.Println("    config                     Show flags/rules/holdouts")
-			fmt.Println("    snapshot [n]               Take snapshot of n users")
-			fmt.Println("    quit, q                    Exit")
-
-		case "decide", "d":
-			if len(parts) < 2 {
-				fmt.Println("    Usage: decide <flag_key>")
-				continue
-			}
-			uc := c.CreateUserContext(currentUser, currentAttrs)
-			d := uc.Decide(parts[1], []decide.OptimizelyDecideOptions{decide.IncludeReasons})
-			printDecision("Result", d)
-			printReasons(d)
-
-		case "decide_all", "da":
-			uc := c.CreateUserContext(currentUser, currentAttrs)
-			decisions := uc.DecideAll(nil)
-			for fk, d := range decisions {
-				ho := ""
-				if isHoldout(d) {
-					ho = " [HOLDOUT]"
-				}
-				fmt.Printf("    %-20s rule=%-25s var=%-12s enabled=%v%s\n",
-					fk, d.RuleKey, d.VariationKey, d.Enabled, ho)
-			}
-
-		case "decide_keys", "dk":
-			if len(parts) < 2 {
-				fmt.Println("    Usage: decide_keys <flag1> <flag2> ...")
-				continue
-			}
-			uc := c.CreateUserContext(currentUser, currentAttrs)
-			decisions := uc.DecideForKeys(parts[1:], nil)
-			for fk, d := range decisions {
-				ho := ""
-				if isHoldout(d) {
-					ho = " [HOLDOUT]"
-				}
-				fmt.Printf("    %-20s rule=%-25s var=%-12s enabled=%v%s\n",
-					fk, d.RuleKey, d.VariationKey, d.Enabled, ho)
-			}
-
-		case "dist":
-			if len(parts) < 2 {
-				fmt.Println("    Usage: dist <flag_key> [num_users]")
-				continue
-			}
-			n := 100
-			if len(parts) >= 3 {
-				fmt.Sscanf(parts[2], "%d", &n)
-			}
-			logging.SetLogLevel(logging.LogLevelWarning)
-			counts := map[string]int{}
-			for i := 1; i <= n; i++ {
-				uid := fmt.Sprintf("dist_%d", i)
-				uc := c.CreateUserContext(uid, currentAttrs)
-				d := uc.Decide(parts[1], nil)
-				key := d.RuleKey + "/" + d.VariationKey
-				if isHoldout(d) {
-					key = "HOLDOUT:" + d.RuleKey
-				}
-				counts[key]++
-			}
-			logging.SetLogLevel(logging.LogLevelDebug)
-			for key, count := range counts {
-				pct := float64(count) / float64(n) * 100
-				bar := strings.Repeat("#", int(pct/2))
-				fmt.Printf("    %-40s %4d (%5.1f%%) %s\n", key, count, pct, bar)
-			}
-
-		case "user", "u":
-			if len(parts) < 2 {
-				fmt.Printf("    Current user: %s\n", currentUser)
-				continue
-			}
-			currentUser = parts[1]
-			fmt.Printf("    Switched to user: %s\n", currentUser)
-
-		case "attr":
-			if len(parts) < 3 {
-				fmt.Println("    Usage: attr <key> <value>")
-				continue
-			}
-			currentAttrs[parts[1]] = parts[2]
-			fmt.Printf("    Set %s=%s\n", parts[1], parts[2])
-
-		case "attrs":
-			if len(currentAttrs) == 0 {
-				fmt.Println("    (no attributes)")
-			} else {
-				for k, v := range currentAttrs {
-					fmt.Printf("    %s = %v\n", k, v)
-				}
-			}
-
-		case "clearattrs":
-			currentAttrs = map[string]interface{}{}
-			fmt.Println("    Cleared all attributes")
-
-		case "force":
-			if len(parts) < 3 {
-				fmt.Println("    Usage: force <flag> <variation>  OR  force <flag> <rule> <variation>")
-				continue
-			}
-			uc := c.CreateUserContext(currentUser, currentAttrs)
-			if len(parts) == 3 {
-				// Flag-level
-				ctx := decision.OptimizelyDecisionContext{FlagKey: parts[1]}
-				fd := decision.OptimizelyForcedDecision{VariationKey: parts[2]}
-				ok := uc.SetForcedDecision(ctx, fd)
-				fmt.Printf("    SetForcedDecision(flag=%s, var=%s): %v\n", parts[1], parts[2], ok)
-				d := uc.Decide(parts[1], nil)
-				printDecision("With forced decision", d)
-			} else {
-				// Rule-level
-				ctx := decision.OptimizelyDecisionContext{FlagKey: parts[1], RuleKey: parts[2]}
-				fd := decision.OptimizelyForcedDecision{VariationKey: parts[3]}
-				ok := uc.SetForcedDecision(ctx, fd)
-				fmt.Printf("    SetForcedDecision(flag=%s, rule=%s, var=%s): %v\n", parts[1], parts[2], parts[3], ok)
-				d := uc.Decide(parts[1], nil)
-				printDecision("With forced decision", d)
-			}
-
-		case "unforce":
-			if len(parts) < 2 {
-				fmt.Println("    Usage: unforce <flag>")
-				continue
-			}
-			uc := c.CreateUserContext(currentUser, currentAttrs)
-			ctx := decision.OptimizelyDecisionContext{FlagKey: parts[1]}
-			ok := uc.RemoveForcedDecision(ctx)
-			fmt.Printf("    RemoveForcedDecision(flag=%s): %v\n", parts[1], ok)
-
-		case "unforceall":
-			uc := c.CreateUserContext(currentUser, currentAttrs)
-			ok := uc.RemoveAllForcedDecisions()
-			fmt.Printf("    RemoveAllForcedDecisions: %v\n", ok)
-
-		case "config":
-			inspectLiveConfig(c)
-
-		case "snapshot", "snap":
-			n := *numUsers
-			if len(parts) >= 2 {
-				fmt.Sscanf(parts[1], "%d", &n)
-			}
-			flagKeys := discoverFlags(c)
-			snap := takeSnapshot(c, flagKeys, n)
-			printSnapshot(snap)
-			printDistribution(snap)
-
-		case "quit", "q", "exit":
-			return
-
-		default:
-			fmt.Printf("    Unknown command: %s (type 'help')\n", cmd)
-		}
-	}
-}
-
-// ============================================================
-// CLIENT CREATION
-// ============================================================
-
-func loadDatafile() []byte {
-	_, filename, _, _ := runtime.Caller(0)
-	dir := filepath.Dir(filename)
-	path := filepath.Join(dir, "local_holdouts.json")
-	data, err := os.ReadFile(path)
-	if err != nil {
-		fmt.Printf("Error reading datafile: %v\n", err)
-		fmt.Println("Make sure local_holdouts.json is in the same directory as main.go")
-		os.Exit(1)
-	}
-	fmt.Printf("Loaded datafile: %s (%d bytes)\n", path, len(data))
-	return data
-}
-
-func createStaticClient(datafile []byte) *client.OptimizelyClient {
-	configManager := config.NewStaticProjectConfigManagerWithOptions("",
-		config.WithInitialDatafile(datafile),
-	)
-	factory := &client.OptimizelyFactory{}
-	c, err := factory.Client(
-		client.WithConfigManager(configManager),
-	)
-	if err != nil {
-		fmt.Printf("Error creating static client: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Println("Static client ready.\n")
-	return c
-}
-
-func createLiveClient(key string) *client.OptimizelyClient {
-	configManager := config.NewPollingProjectConfigManager(key,
-		// Remove or change this line if not using the staging CDN
-		config.WithDatafileURLTemplate("https://optimizely-staging.s3.amazonaws.com/datafiles/%s.json"),
-		config.WithPollingInterval(30*time.Second),
-	)
-	factory := &client.OptimizelyFactory{SDKKey: key}
-	c, err := factory.Client(
-		client.WithConfigManager(configManager),
-	)
-	if err != nil {
-		fmt.Printf("Error creating live client: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Println("Waiting for datafile to load...")
-	time.Sleep(3 * time.Second)
-	fmt.Println("Live client ready.\n")
-	return c
-}
-
-// ============================================================
-// HELPERS
-// ============================================================
-
-type decisionRecord struct {
-	UserID    string
-	FlagKey   string
-	RuleKey   string
-	VarKey    string
-	Enabled   bool
-	IsHoldout bool
+func isHoldout(d client.OptimizelyDecision) bool {
+	return d.VariationKey == "ho_off_key" && !d.Enabled
 }
 
 func printDecision(label string, d client.OptimizelyDecision) {
@@ -1336,9 +499,6 @@ func printDecision(label string, d client.OptimizelyDecision) {
 			fmt.Printf("    variables:     %s\n", string(jsonBytes))
 		}
 	}
-}
-
-func printReasons(d client.OptimizelyDecision) {
 	if len(d.Reasons) > 0 {
 		fmt.Println("    reasons:")
 		for _, r := range d.Reasons {
@@ -1347,61 +507,18 @@ func printReasons(d client.OptimizelyDecision) {
 	}
 }
 
-func isHoldout(d client.OptimizelyDecision) bool {
-	return d.VariationKey == "ho_off_key" && !d.Enabled
-}
+func inspectProject(c *client.OptimizelyClient) {
+	fmt.Println("\n============================================================")
+	fmt.Println("  Current Project State")
+	fmt.Println("============================================================")
 
-func printTestResult(name string, passed bool) {
-	status := "PASS"
-	if !passed {
-		status = "FAIL"
-	}
-	fmt.Printf("\n  [%s] %s\n", status, name)
-	fmt.Println(strings.Repeat("-", 60))
-}
-
-func assertDecision(label string, d client.OptimizelyDecision, wantRuleKey, wantVariation string, wantEnabled bool) bool {
-	printDecision(label, d)
-	pass := true
-	if d.RuleKey != wantRuleKey {
-		fmt.Printf("    FAIL: expected rule_key=%q, got %q\n", wantRuleKey, d.RuleKey)
-		pass = false
-	}
-	if d.VariationKey != wantVariation {
-		fmt.Printf("    FAIL: expected variation_key=%q, got %q\n", wantVariation, d.VariationKey)
-		pass = false
-	}
-	if d.Enabled != wantEnabled {
-		fmt.Printf("    FAIL: expected enabled=%v, got %v\n", wantEnabled, d.Enabled)
-		pass = false
-	}
-	if pass {
-		fmt.Println("    PASS")
-	}
-	return pass
-}
-
-func discoverFlags(c *client.OptimizelyClient) []string {
-	optConfig := c.GetOptimizelyConfig()
-	if optConfig == nil {
-		fmt.Println("  WARNING: Could not get OptimizelyConfig")
-		return nil
-	}
-	flags := make([]string, 0, len(optConfig.FeaturesMap))
-	for k := range optConfig.FeaturesMap {
-		flags = append(flags, k)
-	}
-	return flags
-}
-
-func inspectLiveConfig(c *client.OptimizelyClient) {
 	optConfig := c.GetOptimizelyConfig()
 	if optConfig == nil {
 		fmt.Println("  Could not get OptimizelyConfig")
 		return
 	}
 
-	fmt.Printf("\n  Project Config (revision=%s)\n", optConfig.Revision)
+	fmt.Printf("\n  Revision: %s\n", optConfig.Revision)
 	fmt.Printf("  Flags (%d):\n", len(optConfig.FeaturesMap))
 	for fk, feat := range optConfig.FeaturesMap {
 		fmt.Printf("    %s:\n", fk)
@@ -1416,315 +533,161 @@ func inspectLiveConfig(c *client.OptimizelyClient) {
 			fmt.Printf("      delivery:   %s (id=%s)\n", rule.Key, rule.ID)
 		}
 	}
-}
 
-func takeSnapshot(c *client.OptimizelyClient, flagKeys []string, n int) []decisionRecord {
-	return takeSnapshotWithAttrs(c, flagKeys, n, nil)
-}
-
-func takeSnapshotWithAttrs(c *client.OptimizelyClient, flagKeys []string, n int, attrs map[string]interface{}) []decisionRecord {
-	logging.SetLogLevel(logging.LogLevelWarning)
-	defer logging.SetLogLevel(logging.LogLevelDebug)
-
-	records := make([]decisionRecord, 0, n*len(flagKeys))
-	for i := 1; i <= n; i++ {
-		uid := fmt.Sprintf("snap_user_%d", i)
-		uc := c.CreateUserContext(uid, attrs)
-		for _, fk := range flagKeys {
-			d := uc.Decide(fk, nil)
-			records = append(records, decisionRecord{
-				UserID:    uid,
-				FlagKey:   fk,
-				RuleKey:   d.RuleKey,
-				VarKey:    d.VariationKey,
-				Enabled:   d.Enabled,
-				IsHoldout: isHoldout(d),
-			})
-		}
-	}
-	return records
-}
-
-func printSnapshot(records []decisionRecord) {
-	for _, r := range records {
-		ho := ""
-		if r.IsHoldout {
-			ho = " [HOLDOUT]"
-		}
-		fmt.Printf("    %-20s %-15s rule=%-25s var=%-12s%s\n",
-			r.UserID, r.FlagKey, r.RuleKey, r.VarKey, ho)
-	}
-}
-
-func printDistribution(records []decisionRecord) {
-	// Group by flag
-	byFlag := map[string]map[string]int{}
-	flagTotals := map[string]int{}
-	for _, r := range records {
-		if byFlag[r.FlagKey] == nil {
-			byFlag[r.FlagKey] = map[string]int{}
-		}
-		key := r.RuleKey + "/" + r.VarKey
-		if r.IsHoldout {
-			key = "HOLDOUT:" + r.RuleKey
-		}
-		byFlag[r.FlagKey][key]++
-		flagTotals[r.FlagKey]++
+	// Show holdouts from project config
+	projectConfig, err := c.ConfigManager.GetConfig()
+	if err != nil {
+		return
 	}
 
-	for fk, counts := range byFlag {
-		total := flagTotals[fk]
-		fmt.Printf("\n    %s (%d decisions):\n", fk, total)
-		for key, count := range counts {
-			pct := float64(count) / float64(total) * 100
-			bar := strings.Repeat("#", int(pct/2))
-			fmt.Printf("      %-40s %4d (%5.1f%%) %s\n", key, count, pct, bar)
+	fmt.Println("\n  Holdouts:")
+	globalHoldouts := projectConfig.GetGlobalHoldouts()
+	for _, ho := range globalHoldouts {
+		trafficPct := 0.0
+		if len(ho.TrafficAllocation) > 0 {
+			trafficPct = float64(ho.TrafficAllocation[0].EndOfRange) / 100.0
 		}
-	}
-}
-
-func printSnapshotByFlag(records []decisionRecord, flagKeys []string) {
-	byFlag := map[string][]decisionRecord{}
-	for _, r := range records {
-		byFlag[r.FlagKey] = append(byFlag[r.FlagKey], r)
-	}
-	for _, fk := range flagKeys {
-		fmt.Printf("\n    Flag: %s\n", fk)
-		for _, r := range byFlag[fk] {
-			ho := ""
-			if r.IsHoldout {
-				ho = " [HOLDOUT]"
-			}
-			fmt.Printf("      %-20s rule=%-25s var=%-12s%s\n", r.UserID, r.RuleKey, r.VarKey, ho)
+		audience := "Everyone"
+		if len(ho.AudienceIds) > 0 {
+			audience = fmt.Sprintf("%v", ho.AudienceIds)
 		}
-	}
-}
-
-func diffSnapshots(before, after []decisionRecord) {
-	// Build lookup: userID+flagKey -> record
-	beforeMap := map[string]decisionRecord{}
-	for _, r := range before {
-		beforeMap[r.UserID+"|"+r.FlagKey] = r
+		fmt.Printf("    [GLOBAL] %-25s traffic=%.0f%%  audience=%s\n", ho.Key, trafficPct, audience)
 	}
 
-	changes := 0
-	holdoutGained := 0
-	holdoutLost := 0
-
-	for _, a := range after {
-		key := a.UserID + "|" + a.FlagKey
-		b, ok := beforeMap[key]
-		if !ok {
-			continue
-		}
-		if b.RuleKey != a.RuleKey || b.VarKey != a.VarKey {
-			changes++
-			if !b.IsHoldout && a.IsHoldout {
-				holdoutGained++
-			}
-			if b.IsHoldout && !a.IsHoldout {
-				holdoutLost++
+	// Find local holdouts by checking rules
+	seen := map[string]bool{}
+	for _, feat := range optConfig.FeaturesMap {
+		for _, rule := range feat.ExperimentRules {
+			for _, ho := range projectConfig.GetHoldoutsForRule(rule.ID) {
+				if seen[ho.ID] {
+					continue
+				}
+				seen[ho.ID] = true
+				trafficPct := 0.0
+				if len(ho.TrafficAllocation) > 0 {
+					trafficPct = float64(ho.TrafficAllocation[0].EndOfRange) / 100.0
+				}
+				audience := "Everyone"
+				if len(ho.AudienceIds) > 0 {
+					audience = fmt.Sprintf("%v", ho.AudienceIds)
+				}
+				rules := "none"
+				if ho.IncludedRules != nil {
+					rules = fmt.Sprintf("%v", *ho.IncludedRules)
+				}
+				fmt.Printf("    [LOCAL]  %-25s traffic=%.0f%%  audience=%s  rules=%s\n",
+					ho.Key, trafficPct, audience, rules)
 			}
 		}
 	}
 
-	fmt.Println("\n  --- Diff Summary ---")
-	fmt.Printf("    Total decision changes: %d\n", changes)
-	fmt.Printf("    Gained holdout:         %d (was normal, now held out)\n", holdoutGained)
-	fmt.Printf("    Lost holdout:           %d (was held out, now normal)\n", holdoutLost)
-	if changes == 0 {
-		fmt.Println("    No changes detected. Wait for datafile refresh or verify the UI change was saved.")
+	if len(globalHoldouts) == 0 && len(seen) == 0 {
+		fmt.Println("    (no holdouts found)")
 	}
-}
-
-func waitForUIChange(instruction string) {
-	fmt.Printf("\n  ACTION REQUIRED: %s\n", instruction)
-	fmt.Println("  After saving, wait ~30-60 seconds for the datafile to refresh.")
-	fmt.Print("  Press Enter when ready... ")
-	reader := bufio.NewReader(os.Stdin)
-	reader.ReadString('\n')
-}
-
-func printScenarioHeader(title string, lines ...string) {
-	fmt.Printf("\n--- Scenario: %s ---\n", title)
-	for _, line := range lines {
-		fmt.Println(line)
-	}
-}
-
-func printHelp() {
-	fmt.Println(`
-Static tests (-mode=static -test=<name>):
-  basic          Local holdout targeting single rule
-  multi_rule     Local holdout targeting multiple rules on same flag
-  cross_flag     Local holdout targeting rules across different flags
-  global         Global holdout applies to all rules
-  precedence     Global holdout beats local holdout
-  audience       Local holdout with audience conditions
-  not_targeted   Local holdout only affects targeted rules
-  zero_traffic   Zero-traffic holdout never applied
-  all            Run all static tests
-
-Live scenarios (-sdk_key=KEY -scenario=<name>):
-
-  UI Mutations (try to break SDKs with datafile changes):
-    ui_delete_holdout       Delete a running holdout, verify SDK handles it
-    ui_change_traffic       Change holdout traffic %, verify re-bucketing
-    ui_switch_local_global  Switch holdout between local/global type
-    ui_change_audience      Add/remove audience on a holdout
-    ui_delete_targeted_rule Delete the rule a local holdout targets (dangling ref)
-    ui_pause_holdout        Pause a running holdout
-    ui_add_holdout_to_running  Add new holdout to experiment with existing traffic
-
-  Feature Interactions (holdout + other SDK features):
-    forced_vs_holdout       SetForcedDecision (flag level) overrides holdout
-    forced_rule_level       SetForcedDecision (rule level) vs holdout
-    holdout_disable_event   DisableDecisionEvent option with holdout
-    holdout_track           Track event after holdout decision
-    holdout_decide_all      DecideAll with holdouts
-    holdout_decide_for_keys DecideForKeys vs DecideAll consistency
-    holdout_listener        Decision notification listener with holdout info
-    holdout_enabled_flags_only  EnabledFlagsOnly should exclude held-out flags
-
-  Stress / Edge Cases:
-    rapid_repolling         Continuous polling during rapid UI changes
-    distribution            Distribution check across many users
-    large_datafile          Large datafile (100+ flags) with local holdouts
-    many_holdouts           10+ local holdouts targeting the same rule
-
-  Interactive:
-    -explore                REPL for ad-hoc exploration (decide, force, dist, etc.)
-
-Useful flags:
-  -user=<id>       Default user ID (default: user_1)
-  -flag=<key>      Target flag key (auto-discovered if not set)
-  -n=<count>       Number of users for distribution/snapshot (default: 20)`)
+	fmt.Println()
 }
 
 // ============================================================
-// STATIC TESTS - Deterministic with pre-calculated bucketing
+// CLIENT CREATION
 // ============================================================
+
+func createLiveClient(key string) *client.OptimizelyClient {
+	configManager := config.NewPollingProjectConfigManager(key,
+		// Remove or change this line if not using the staging CDN
+		config.WithDatafileURLTemplate("https://optimizely-staging.s3.amazonaws.com/datafiles/%s.json"),
+		config.WithPollingInterval(30*time.Second),
+	)
+	factory := &client.OptimizelyFactory{SDKKey: key}
+	c, err := factory.Client(
+		client.WithConfigManager(configManager),
+	)
+	if err != nil {
+		fmt.Printf("Error creating client: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println("Waiting for datafile...")
+	time.Sleep(3 * time.Second)
+	fmt.Println("Client ready.")
+	return c
+}
+
+func createStaticClient(datafile []byte) *client.OptimizelyClient {
+	configManager := config.NewStaticProjectConfigManagerWithOptions("",
+		config.WithInitialDatafile(datafile),
+	)
+	factory := &client.OptimizelyFactory{}
+	c, err := factory.Client(
+		client.WithConfigManager(configManager),
+	)
+	if err != nil {
+		fmt.Printf("Error creating static client: %v\n", err)
+		os.Exit(1)
+	}
+	return c
+}
+
+func loadDatafile() []byte {
+	_, filename, _, _ := runtime.Caller(0)
+	dir := filepath.Dir(filename)
+	path := filepath.Join(dir, "local_holdouts.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		fmt.Printf("Error reading datafile: %v\n", err)
+		os.Exit(1)
+	}
+	return data
+}
+
+// ============================================================
+// STATIC SANITY CHECK
+// ============================================================
+// Quick automated check using the bundled datafile.
+// Run first to verify the SDK basics work before live exploration.
 //
 // Datafile: local_holdouts.json (from fullstack-sdk-compatibility-suite)
-//
-// Flags:
-//   flag_a: 3 experiments (5001=flag_a_exp_1, 5002=flag_a_exp_2, 5003=flag_a_exp_3)
-//   flag_b: 2 experiments (5004=flag_b_exp_1, 5005=flag_b_exp_2)
-//   flag_c: 1 experiment  (5006=flag_c_exp_1)
-//
-// Holdouts:
-//   ho_local_single_rule       - Local, 30%, targets [5001]
-//   ho_local_multi_rules_same  - Local, 25%, targets [5001, 5002]
-//   ho_local_cross_flag        - Local, 20%, targets [5001, 5004]
-//   ho_local_with_audience     - Local, 40%, targets [5002], audience=customattr:yes
-//   ho_global_all_rules        - Global, 15%, targets all rules
-//   ho_local_high_traffic      - Local, 50%, targets [5003]
-//   ho_local_zero_traffic      - Local, 0%, targets [5005]
+// Flags: flag_a (3 rules), flag_b (2 rules), flag_c (1 rule)
+// Holdouts: 7 holdouts of various types (local, global, audience, zero-traffic)
 
-func testStaticBasicLocalHoldout(c *client.OptimizelyClient) {
-	fmt.Println("\n--- Test: Basic Local Holdout (Single Rule) ---")
-	fmt.Println("Holdout: ho_local_single_rule (30% traffic, targets rule 5001)")
-	fmt.Println("Flag: flag_a (first rule is 5001 = flag_a_exp_1)")
+func runStaticSanityCheck() {
+	fmt.Println("============================================================")
+	fmt.Println("  Static Sanity Check (bundled datafile)")
+	fmt.Println("============================================================\n")
 
+	datafile := loadDatafile()
+	c := createStaticClient(datafile)
+	defer c.Close()
+
+	passed := 0
+	failed := 0
+
+	// Test 1: Basic local holdout applies
+	fmt.Println("--- Test 1: Basic local holdout ---")
+	fmt.Println("ho_local_single_rule (30%, targets rule 5001 on flag_a)")
 	holdoutCount := 0
-	normalCount := 0
-	total := 30
-
-	for i := 1; i <= total; i++ {
-		userID := fmt.Sprintf("static_user_%d", i)
-		uc := c.CreateUserContext(userID, nil)
+	for i := 1; i <= 30; i++ {
+		uid := fmt.Sprintf("static_user_%d", i)
+		uc := c.CreateUserContext(uid, nil)
 		d := uc.Decide("flag_a", nil)
-
-		tag := "NORMAL"
 		if isHoldout(d) {
 			holdoutCount++
-			tag = "HOLDOUT"
-		} else {
-			normalCount++
-		}
-		fmt.Printf("  %-22s [%-7s] rule=%-30s var=%-14s enabled=%v\n",
-			userID, tag, d.RuleKey, d.VariationKey, d.Enabled)
-	}
-
-	fmt.Printf("\n  Summary: %d holdout, %d normal (of %d)\n", holdoutCount, normalCount, total)
-	passed := holdoutCount > 0 && normalCount > 0
-	if !passed {
-		fmt.Println("  WARNING: Expected a mix of holdout and normal decisions at 30% traffic")
-	}
-	printTestResult("Basic Local Holdout", passed)
-}
-
-func testStaticMultiRuleHoldout(c *client.OptimizelyClient) {
-	fmt.Println("\n--- Test: Multi-Rule Same Flag Holdout ---")
-	fmt.Println("Holdout: ho_local_multi_rules_same_flag (25%, targets rules 5001+5002)")
-
-	holdoutCount := 0
-	total := 30
-	for i := 1; i <= total; i++ {
-		userID := fmt.Sprintf("multi_user_%d", i)
-		uc := c.CreateUserContext(userID, nil)
-		d := uc.Decide("flag_a", nil)
-
-		if isHoldout(d) && d.RuleKey == "ho_local_multi_rules_same_flag" {
-			holdoutCount++
-		}
-		tag := "NORMAL"
-		if isHoldout(d) {
-			tag = d.RuleKey
-		}
-		fmt.Printf("  %-22s [%-40s] var=%-14s enabled=%v\n",
-			userID, tag, d.VariationKey, d.Enabled)
-	}
-
-	fmt.Printf("\n  ho_local_multi_rules_same_flag hits: %d of %d\n", holdoutCount, total)
-	printTestResult("Multi-Rule Same Flag Holdout", true)
-}
-
-func testStaticCrossFlagHoldout(c *client.OptimizelyClient) {
-	fmt.Println("\n--- Test: Cross-Flag Local Holdout ---")
-	fmt.Println("Holdout: ho_local_cross_flag (20%, targets 5001 on flag_a + 5004 on flag_b)")
-
-	passed := true
-	crossFlagHits := 0
-	total := 50
-
-	for i := 1; i <= total; i++ {
-		userID := fmt.Sprintf("cross_user_%d", i)
-		uc := c.CreateUserContext(userID, nil)
-		dA := uc.Decide("flag_a", nil)
-		dB := uc.Decide("flag_b", nil)
-
-		hitA := dA.RuleKey == "ho_local_cross_flag"
-		hitB := dB.RuleKey == "ho_local_cross_flag"
-
-		if hitA && hitB {
-			crossFlagHits++
-			fmt.Printf("  %-22s BOTH flags held out by ho_local_cross_flag\n", userID)
-		} else if hitA != hitB {
-			fmt.Printf("  %-22s flag_a=%s flag_b=%s (partial - check other holdouts)\n",
-				userID, dA.RuleKey, dB.RuleKey)
 		}
 	}
-
-	fmt.Printf("\n  Users held out on BOTH flags by cross-flag holdout: %d of %d\n", crossFlagHits, total)
-	if crossFlagHits == 0 {
-		fmt.Println("  WARNING: No cross-flag holdout hits. May be expected at 20% with competing holdouts.")
+	if holdoutCount > 0 && holdoutCount < 30 {
+		fmt.Printf("  PASS: %d/30 held out (expected mix at 30%%)\n", holdoutCount)
+		passed++
+	} else {
+		fmt.Printf("  FAIL: %d/30 held out (expected mix)\n", holdoutCount)
+		failed++
 	}
-	printTestResult("Cross-Flag Local Holdout", passed)
-}
 
-func testStaticGlobalHoldout(c *client.OptimizelyClient) {
-	fmt.Println("\n--- Test: Global Holdout ---")
-	fmt.Println("Holdout: ho_global_all_rules (15%, includedRules=null)")
-
-	globalHits := map[string]int{"flag_a": 0, "flag_b": 0, "flag_c": 0}
-	total := 50
+	// Test 2: Global holdout affects all flags
+	fmt.Println("\n--- Test 2: Global holdout affects all flags ---")
+	fmt.Println("ho_global_all_rules (15%, includedRules=null)")
 	flags := []string{"flag_a", "flag_b", "flag_c"}
-
-	for i := 1; i <= total; i++ {
-		userID := fmt.Sprintf("global_user_%d", i)
-		uc := c.CreateUserContext(userID, nil)
-
+	globalHits := map[string]int{}
+	for i := 1; i <= 50; i++ {
+		uid := fmt.Sprintf("global_user_%d", i)
+		uc := c.CreateUserContext(uid, nil)
 		for _, f := range flags {
 			d := uc.Decide(f, nil)
 			if d.RuleKey == "ho_global_all_rules" {
@@ -1732,151 +695,123 @@ func testStaticGlobalHoldout(c *client.OptimizelyClient) {
 			}
 		}
 	}
-
-	passed := true
-	fmt.Println("\n  Global holdout hits per flag:")
+	allHit := true
 	for _, f := range flags {
-		pct := float64(globalHits[f]) / float64(total) * 100
-		fmt.Printf("    %s: %d/%d (%.1f%%)\n", f, globalHits[f], total, pct)
 		if globalHits[f] == 0 {
-			passed = false
+			allHit = false
 		}
+		fmt.Printf("  %s: %d/50 global holdout hits\n", f, globalHits[f])
 	}
-
-	if passed {
-		fmt.Println("\n  Global holdout applied to all flags.")
+	if allHit {
+		fmt.Println("  PASS: Global holdout applied to all flags")
+		passed++
 	} else {
-		fmt.Println("\n  WARNING: Global holdout missing on some flags.")
-	}
-	printTestResult("Global Holdout", passed)
-}
-
-func testStaticGlobalBeatsLocal(c *client.OptimizelyClient) {
-	fmt.Println("\n--- Test: Global Beats Local (Precedence) ---")
-	fmt.Println("Rule 5001 targeted by global (15%) AND local (30%) holdouts")
-	fmt.Println("Global holdouts are evaluated FIRST -- if user hits global, local is never checked")
-
-	globalCount := 0
-	localCount := 0
-	normalCount := 0
-	total := 100
-
-	for i := 1; i <= total; i++ {
-		userID := fmt.Sprintf("prec_user_%d", i)
-		uc := c.CreateUserContext(userID, nil)
-		d := uc.Decide("flag_a", nil)
-
-		if d.RuleKey == "ho_global_all_rules" {
-			globalCount++
-		} else if isHoldout(d) {
-			localCount++
-		} else {
-			normalCount++
-		}
+		fmt.Println("  FAIL: Global holdout missing on some flags")
+		failed++
 	}
 
-	fmt.Printf("\n  Global holdout: %d  |  Local holdout(s): %d  |  Normal: %d  (of %d)\n",
-		globalCount, localCount, normalCount, total)
-	fmt.Println("  Expected: ~15% global, then some % local, rest normal")
-
-	passed := globalCount > 0
-	if !passed {
-		fmt.Println("  FAIL: No global holdout hits. Global should be evaluated first.")
-	}
-	printTestResult("Global Beats Local", passed)
-}
-
-func testStaticAudienceHoldout(c *client.OptimizelyClient) {
-	fmt.Println("\n--- Test: Audience-Targeted Holdout ---")
-	fmt.Println("Holdout: ho_local_with_audience (40%, targets 5002, audience=customattr:yes)")
-
-	fmt.Println("\n  Part A: Users WITH customattr=yes")
-	audienceHits := 0
-	total := 30
-	for i := 1; i <= total; i++ {
-		userID := fmt.Sprintf("aud_yes_%d", i)
-		uc := c.CreateUserContext(userID, map[string]interface{}{"customattr": "yes"})
-		d := uc.Decide("flag_a", nil)
-
-		if d.RuleKey == "ho_local_with_audience" {
-			audienceHits++
-		}
-		tag := "NORMAL"
-		if isHoldout(d) {
-			tag = d.RuleKey
-		}
-		fmt.Printf("  %-22s [%-30s] var=%s\n", userID, tag, d.VariationKey)
-	}
-	fmt.Printf("  Audience holdout hits (with attr): %d/%d\n", audienceHits, total)
-
-	fmt.Println("\n  Part B: Users WITHOUT customattr (should NOT hit audience holdout)")
-	noAttrHits := 0
-	for i := 1; i <= total; i++ {
-		userID := fmt.Sprintf("aud_no_%d", i)
-		uc := c.CreateUserContext(userID, nil)
-		d := uc.Decide("flag_a", nil)
-
-		if d.RuleKey == "ho_local_with_audience" {
-			noAttrHits++
-		}
-	}
-	fmt.Printf("  Audience holdout hits (without attr): %d/%d\n", noAttrHits, total)
-
-	passed := noAttrHits == 0
-	if noAttrHits > 0 {
-		fmt.Println("  FAIL: Audience holdout applied to users without the required attribute!")
-	} else {
-		fmt.Println("  PASS: Audience holdout correctly filtered by audience condition.")
-	}
-	printTestResult("Audience-Targeted Holdout", passed)
-}
-
-func testStaticNotTargeted(c *client.OptimizelyClient) {
-	fmt.Println("\n--- Test: Not Targeted Rule ---")
-	fmt.Println("ho_local_single_rule targets rule 5001 (flag_a) -- should NOT affect flag_b")
-
+	// Test 3: Local holdout does NOT affect non-targeted rules
+	fmt.Println("\n--- Test 3: Local holdout scoping ---")
+	fmt.Println("ho_local_single_rule targets 5001 (flag_a) -- should NOT affect flag_b")
 	wrongHits := 0
-	total := 30
-	for i := 1; i <= total; i++ {
-		userID := fmt.Sprintf("nontarget_%d", i)
-		uc := c.CreateUserContext(userID, nil)
+	for i := 1; i <= 30; i++ {
+		uid := fmt.Sprintf("nontarget_%d", i)
+		uc := c.CreateUserContext(uid, nil)
 		d := uc.Decide("flag_b", nil)
-
 		if d.RuleKey == "ho_local_single_rule" {
 			wrongHits++
-			fmt.Printf("  FAIL: %s got ho_local_single_rule on flag_b!\n", userID)
 		}
 	}
-
-	passed := wrongHits == 0
-	if passed {
-		fmt.Println("  All flag_b decisions correctly unaffected by ho_local_single_rule")
+	if wrongHits == 0 {
+		fmt.Println("  PASS: flag_b unaffected by local holdout")
+		passed++
+	} else {
+		fmt.Printf("  FAIL: %d flag_b decisions hit ho_local_single_rule\n", wrongHits)
+		failed++
 	}
-	printTestResult("Not Targeted Rule", passed)
-}
 
-func testStaticZeroTraffic(c *client.OptimizelyClient) {
-	fmt.Println("\n--- Test: Zero Traffic Holdout ---")
-	fmt.Println("ho_local_zero_traffic (0% traffic, targets 5005) should NEVER be applied")
-
+	// Test 4: Zero-traffic holdout never applied
+	fmt.Println("\n--- Test 4: Zero-traffic holdout ---")
+	fmt.Println("ho_local_zero_traffic (0%, targets 5005) should NEVER apply")
 	zeroHits := 0
-	total := 50
-	for i := 1; i <= total; i++ {
-		userID := fmt.Sprintf("zero_%d", i)
-		uc := c.CreateUserContext(userID, nil)
+	for i := 1; i <= 50; i++ {
+		uid := fmt.Sprintf("zero_%d", i)
+		uc := c.CreateUserContext(uid, nil)
 		d := uc.Decide("flag_b", nil)
-
 		if d.RuleKey == "ho_local_zero_traffic" {
 			zeroHits++
 		}
 	}
-
-	passed := zeroHits == 0
-	fmt.Printf("  ho_local_zero_traffic hits: %d/%d\n", zeroHits, total)
-	if passed {
-		fmt.Println("  PASS: Zero-traffic holdout correctly never applied.")
+	if zeroHits == 0 {
+		fmt.Println("  PASS: Zero-traffic holdout never applied")
+		passed++
 	} else {
-		fmt.Println("  FAIL: Zero-traffic holdout was applied!")
+		fmt.Printf("  FAIL: %d hits from zero-traffic holdout\n", zeroHits)
+		failed++
 	}
-	printTestResult("Zero Traffic Holdout", passed)
+
+	// Test 5: Global holdout beats local holdout
+	fmt.Println("\n--- Test 5: Global beats local (precedence) ---")
+	fmt.Println("Rule 5001 targeted by global (15%) AND local (30%)")
+	globalCount := 0
+	for i := 1; i <= 100; i++ {
+		uid := fmt.Sprintf("prec_user_%d", i)
+		uc := c.CreateUserContext(uid, nil)
+		d := uc.Decide("flag_a", nil)
+		if d.RuleKey == "ho_global_all_rules" {
+			globalCount++
+		}
+	}
+	if globalCount > 0 {
+		fmt.Printf("  PASS: %d/100 hit global holdout (evaluated first)\n", globalCount)
+		passed++
+	} else {
+		fmt.Println("  FAIL: No global holdout hits")
+		failed++
+	}
+
+	// Test 6: Cross-flag local holdout
+	fmt.Println("\n--- Test 6: Cross-flag holdout ---")
+	fmt.Println("ho_local_cross_flag (20%, targets 5001 on flag_a + 5004 on flag_b)")
+	crossHits := 0
+	for i := 1; i <= 50; i++ {
+		uid := fmt.Sprintf("cross_user_%d", i)
+		uc := c.CreateUserContext(uid, nil)
+		dA := uc.Decide("flag_a", nil)
+		dB := uc.Decide("flag_b", nil)
+		if dA.RuleKey == "ho_local_cross_flag" && dB.RuleKey == "ho_local_cross_flag" {
+			crossHits++
+		}
+	}
+	if crossHits > 0 {
+		fmt.Printf("  PASS: %d/50 users held out on BOTH flags\n", crossHits)
+		passed++
+	} else {
+		fmt.Println("  FAIL: No cross-flag holdout hits (may be expected at 20%% with competing holdouts)")
+		failed++
+	}
+
+	// Test 7: Audience holdout respects conditions
+	fmt.Println("\n--- Test 7: Audience holdout ---")
+	fmt.Println("ho_local_with_audience (40%, targets 5002, audience=customattr:yes)")
+	noAttrHits := 0
+	for i := 1; i <= 30; i++ {
+		uid := fmt.Sprintf("aud_no_%d", i)
+		uc := c.CreateUserContext(uid, nil)
+		d := uc.Decide("flag_a", nil)
+		if d.RuleKey == "ho_local_with_audience" {
+			noAttrHits++
+		}
+	}
+	if noAttrHits == 0 {
+		fmt.Println("  PASS: Users without attribute NOT held out by audience holdout")
+		passed++
+	} else {
+		fmt.Printf("  FAIL: %d users hit audience holdout without having the attribute\n", noAttrHits)
+		failed++
+	}
+
+	fmt.Printf("\n============================================================\n")
+	fmt.Printf("  Results: %d passed, %d failed\n", passed, failed)
+	fmt.Printf("============================================================\n")
 }
