@@ -90,15 +90,16 @@ type Holdout struct {
 	Variations            map[string]Variation // keyed by variation ID
 	TrafficAllocation     []Range
 	AudienceConditionTree *TreeNode
-	// IncludedRules is nil for global holdouts (applies to all rules across all flags).
-	// Non-nil for local holdouts (applies only to the specified rule IDs).
-	// An empty non-nil slice means a local holdout that targets no rules.
+	// IncludedRules carries per-rule targeting for local holdouts. The datafile
+	// section determines scope; `DatafileProjectConfig` strips `IncludedRules` on
+	// entries from the `holdouts` section, so nil here is equivalent to global.
 	IncludedRules *[]string
 }
 
-// IsGlobal returns true if this holdout is a global holdout (applies to all rules across all flags).
-// A holdout is global when IncludedRules is nil.
-// An empty non-nil IncludedRules slice is NOT global — it is a local holdout that targets no rules.
+// IsGlobal returns true if this holdout is global (applies to all rules across all flags).
+// Scope is set by the datafile section (`holdouts` vs `localHoldouts`); since
+// `IncludedRules` is stripped on `holdouts` entries at parse time, nil here matches
+// section membership.
 func (h *Holdout) IsGlobal() bool {
 	return h.IncludedRules == nil
 }
