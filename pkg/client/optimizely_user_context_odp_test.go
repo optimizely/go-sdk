@@ -210,26 +210,21 @@ func (o *OptimizelyUserContextODPTestSuite) TestFetchQualifiedSegmentsParameters
 	segmentManager.AssertExpectations(o.T())
 }
 
-func (o *OptimizelyUserContextODPTestSuite) TestOdpEventsEarlyEventsDispatched() {
+func (o *OptimizelyUserContextODPTestSuite) TestOdpIdentifySkippedForSingleIdentifier() {
 	eventAPIManager := &MockEventAPIManager{}
 	eventManager := event.NewBatchEventManager(event.WithAPIManager(eventAPIManager), event.WithFlushInterval(0))
 	odpManager := odp.NewOdpManager("", false, odp.WithEventManager(eventManager))
 	factory := OptimizelyFactory{Datafile: o.datafile, odpManager: odpManager}
 	optimizelyClient, _ := factory.Client()
-	eventAPIManager.wg.Add(1)
-	// identified event will be sent
+
+	// Server-side SDKs only have fs_user_id (single identifier),
+	// so CreateUserContext should NOT dispatch an identify event.
 	_ = optimizelyClient.CreateUserContext(o.userID, nil)
-	eventAPIManager.wg.Wait()
-
-	o.Equal(1, len(eventAPIManager.eventsSent))
-
-	expectedEvents := 100
-	eventAPIManager.wg.Add(expectedEvents)
-	for i := 0; i < expectedEvents; i++ {
+	for i := 0; i < 100; i++ {
 		_ = optimizelyClient.CreateUserContext(fmt.Sprintf("%d", i), nil)
 	}
-	eventAPIManager.wg.Wait()
-	o.Equal(expectedEvents+1, len(eventAPIManager.eventsSent))
+
+	o.Equal(0, len(eventAPIManager.eventsSent))
 }
 
 // Tests with live ODP server
