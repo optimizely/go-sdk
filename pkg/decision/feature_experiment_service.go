@@ -65,7 +65,7 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 		// [FSSDK-12369] Check local holdouts targeting this experiment rule.
 		// Local holdouts are evaluated after forced decisions but before audience/traffic checks.
 		if f.holdoutService != nil {
-			holdoutDecision, holdoutReasons, _ := f.holdoutService.GetLocalDecisionForRule(featureExperiment.Key, decisionContext.ProjectConfig, userContext, options)
+			holdoutDecision, holdoutReasons, _ := f.holdoutService.GetLocalDecisionForRule(featureExperiment.ID, decisionContext.ProjectConfig, userContext, options)
 			reasons.Append(holdoutReasons)
 			if holdoutDecision.Variation != nil {
 				// User is in a local holdout — return holdout decision, skip rule evaluation
