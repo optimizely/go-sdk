@@ -196,7 +196,7 @@ func (r RolloutService) getLocalHoldoutDecision(exp *entities.Experiment, decisi
 	if r.holdoutService == nil {
 		return nil, reasons
 	}
-	holdoutDecision, holdoutReasons, _ := r.holdoutService.GetLocalDecisionForRule(exp.ID, decisionContext.ProjectConfig, userContext, options)
+	holdoutDecision, holdoutReasons, _ := r.holdoutService.GetLocalDecisionForRule(exp.Key, decisionContext.ProjectConfig, userContext, options)
 	reasons.Append(holdoutReasons)
 	if holdoutDecision.Variation != nil {
 		return &holdoutDecision, reasons
