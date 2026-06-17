@@ -40,6 +40,13 @@ type Manager interface {
 	Update(apiKey, apiHost string, segmentsToCheck []string)
 }
 
+// identifyUserIdentifiers builds the identifiers map for an identify event.
+// Server-side SDKs only have fs_user_id (no VUID), so identify events
+// will be skipped by the event manager's count check (requires 2+ identifiers).
+func identifyUserIdentifiers(userID string) map[string]string {
+	return map[string]string{utils.OdpFSUserIDKey: userID}
+}
+
 // DefaultOdpManager represents default implementation of odp manager
 type DefaultOdpManager struct {
 	enabled              bool
@@ -141,7 +148,8 @@ func (om *DefaultOdpManager) IdentifyUser(userID string) {
 		om.logger.Debug(utils.IdentityOdpDisabled)
 		return
 	}
-	om.EventManager.IdentifyUser(om.OdpConfig.GetAPIKey(), om.OdpConfig.GetAPIHost(), userID)
+	identifiers := identifyUserIdentifiers(userID)
+	om.EventManager.IdentifyUser(om.OdpConfig.GetAPIKey(), om.OdpConfig.GetAPIHost(), identifiers)
 }
 
 // SendOdpEvent sends an event to the ODP server.

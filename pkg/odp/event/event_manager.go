@@ -52,7 +52,7 @@ func getRetryInterval(retryCount int) time.Duration {
 type Manager interface {
 	// odpConfig is required here since it can be updated anytime and ticker needs to be aware of latest changes
 	Start(ctx context.Context, odpConfig config.Config)
-	IdentifyUser(apiKey, apiHost, userID string)
+	IdentifyUser(apiKey, apiHost string, identifiers map[string]string)
 	ProcessEvent(apiKey, apiHost string, odpEvent Event) error
 	FlushEvents(apiKey, apiHost string)
 }
@@ -162,16 +162,31 @@ func (bm *BatchEventManager) Start(ctx context.Context, odpConfig config.Config)
 }
 
 // IdentifyUser associates a full-stack userid with an established VUID
-func (bm *BatchEventManager) IdentifyUser(apiKey, apiHost, userID string) {
+func (bm *BatchEventManager) IdentifyUser(apiKey, apiHost string, identifiers map[string]string) {
 	if !bm.IsOdpServiceIntegrated(apiKey, apiHost) {
 		bm.logger.Debug(utils.IdentityOdpNotIntegrated)
 		return
 	}
-	identifiers := map[string]string{utils.OdpFSUserIDKey: userID}
+
+	// Filter out empty identifier values
+	validIdentifiers := make(map[string]string)
+	for k, v := range identifiers {
+		if v != "" {
+			validIdentifiers[k] = v
+		}
+	}
+
+	// Identify requires 2+ identifiers to link (e.g., vuid + fs_user_id).
+	// A single identifier has no cross-reference value and generates unnecessary traffic.
+	if len(validIdentifiers) < 2 {
+		bm.logger.Debug("ODP identify event is not dispatched (fewer than 2 valid identifiers).")
+		return
+	}
+
 	odpEvent := Event{
 		Type:        utils.OdpEventType,
 		Action:      utils.OdpActionIdentified,
-		Identifiers: identifiers,
+		Identifiers: validIdentifiers,
 	}
 	_ = bm.ProcessEvent(apiKey, apiHost, odpEvent)
 }
