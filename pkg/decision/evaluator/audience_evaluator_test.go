@@ -200,8 +200,13 @@ func (m *MockProjectConfig) GetRegion() string {
 	return args.String(0)
 }
 
-func (m *MockProjectConfig) GetHoldoutsForFlag(featureKey string) []entities.Holdout {
-	args := m.Called(featureKey)
+func (m *MockProjectConfig) GetGlobalHoldouts() []entities.Holdout {
+	args := m.Called()
+	return args.Get(0).([]entities.Holdout)
+}
+
+func (m *MockProjectConfig) GetHoldoutsForRule(ruleID string) []entities.Holdout {
+	args := m.Called(ruleID)
 	return args.Get(0).([]entities.Holdout)
 }
 
