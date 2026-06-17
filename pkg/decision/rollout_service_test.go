@@ -397,7 +397,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionLocalHoldout_RegularRule_UserBu
 			{EntityID: "ho_var_1", EndOfRange: 10000}, // 100% — user always bucketed
 		},
 	}
-	s.mockConfig.On("GetHoldoutsForRule", testExp1112.ID).Return([]entities.Holdout{localHoldout})
+	s.mockConfig.On("GetHoldoutsForRule", testExp1112.Key).Return([]entities.Holdout{localHoldout})
 	s.mockLogger.On("Debug", mock.Anything).Return()
 	s.mockLogger.On("Info", mock.Anything).Return()
 
@@ -432,7 +432,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionLocalHoldout_RegularRule_UserMi
 			{EntityID: "ho_var_1", EndOfRange: 0}, // 0% — user never bucketed
 		},
 	}
-	s.mockConfig.On("GetHoldoutsForRule", testExp1112.ID).Return([]entities.Holdout{localHoldout})
+	s.mockConfig.On("GetHoldoutsForRule", testExp1112.Key).Return([]entities.Holdout{localHoldout})
 	s.mockAudienceTreeEvaluator.On("Evaluate", testExp1112.AudienceConditionTree, s.testConditionTreeParams, mock.Anything).Return(true, true, s.reasons)
 
 	expectedVariation := testExp1112Var2222
@@ -489,9 +489,9 @@ func (s *RolloutServiceTestSuite) TestGetDecisionLocalHoldout_FallbackRule_UserB
 	}
 
 	// Regular rules miss the holdout; fallback rule hits it
-	s.mockConfig.On("GetHoldoutsForRule", testExp1112.ID).Return([]entities.Holdout{holdoutMiss})
-	s.mockConfig.On("GetHoldoutsForRule", testExp1117.ID).Return([]entities.Holdout{holdoutMiss})
-	s.mockConfig.On("GetHoldoutsForRule", testExp1118.ID).Return([]entities.Holdout{holdoutHit})
+	s.mockConfig.On("GetHoldoutsForRule", testExp1112.Key).Return([]entities.Holdout{holdoutMiss})
+	s.mockConfig.On("GetHoldoutsForRule", testExp1117.Key).Return([]entities.Holdout{holdoutMiss})
+	s.mockConfig.On("GetHoldoutsForRule", testExp1118.Key).Return([]entities.Holdout{holdoutHit})
 
 	// Audience fails for both regular rules so they continue to the next rule
 	s.mockAudienceTreeEvaluator.On("Evaluate", testExp1112.AudienceConditionTree, s.testConditionTreeParams, mock.Anything).Return(false, true, s.reasons)
