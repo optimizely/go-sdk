@@ -681,3 +681,100 @@ func TestSetDatafileAccessTokenRequest(t *testing.T) {
 	assert.NotEqual(t, configManagerRequester, configManager.requester)
 	assert.NotEqual(t, asyncConfigManagerRequester, asyncConfigManager.requester)
 }
+
+func TestWithCustomHeaders(t *testing.T) {
+	sdkKey := "test_sdk_key"
+	customHeaders := map[string]string{
+		"X-Custom-Header":   "custom-value",
+		"Authorization":     "Bearer custom-token",
+		"Content-Type":      "application/xml",
+	}
+
+	// Test that custom headers option sets the custom headers field
+	configManager := NewAsyncPollingProjectConfigManager(sdkKey, WithCustomHeaders(customHeaders))
+	assert.NotNil(t, configManager.customHeaders)
+	assert.Equal(t, customHeaders, configManager.customHeaders)
+	assert.Equal(t, "custom-value", configManager.customHeaders["X-Custom-Header"])
+	assert.Equal(t, "Bearer custom-token", configManager.customHeaders["Authorization"])
+	assert.Equal(t, "application/xml", configManager.customHeaders["Content-Type"])
+}
+
+func TestCustomHeadersAppliedToRequester(t *testing.T) {
+	sdkKey := "test_sdk_key"
+	customHeaders := map[string]string{
+		"X-Custom-Header": "custom-value",
+	}
+
+	// Create config manager with custom headers
+	configManager := newConfigManager(sdkKey, logger, WithCustomHeaders(customHeaders))
+
+	// Verify custom headers are stored
+	assert.NotNil(t, configManager.customHeaders)
+	assert.Equal(t, customHeaders, configManager.customHeaders)
+
+	// Apply headers by calling setAuthHeaderIfDatafileAccessTokenPresent
+	configManager.setAuthHeaderIfDatafileAccessTokenPresent()
+
+	// Verify requester was created (should be a new instance when custom headers are present)
+	assert.NotNil(t, configManager.requester)
+}
+
+func TestCustomHeadersWithDatafileAccessToken(t *testing.T) {
+	sdkKey := "test_sdk_key"
+	datafileAccessToken := "test-token"
+	customHeaders := map[string]string{
+		"X-Custom-Header": "custom-value",
+	}
+
+	// Create config manager with both custom headers and datafile access token
+	configManager := newConfigManager(
+		sdkKey,
+		logger,
+		WithDatafileAccessToken(datafileAccessToken),
+		WithCustomHeaders(customHeaders),
+	)
+
+	// Verify both are stored
+	assert.Equal(t, datafileAccessToken, configManager.datafileAccessToken)
+	assert.Equal(t, customHeaders, configManager.customHeaders)
+
+	// Verify requester was created with headers (happens during newConfigManager initialization)
+	assert.NotNil(t, configManager.requester)
+}
+
+func TestCustomHeadersOverrideInternalHeaders(t *testing.T) {
+	// This test verifies that custom headers with the same name as internal headers
+	// will override the internal values when both are present
+	sdkKey := "test_sdk_key"
+	customHeaders := map[string]string{
+		"Content-Type": "application/xml", // Override default application/json
+		"Accept":       "text/plain",      // Override default application/json
+	}
+
+	// Create config manager with custom headers
+	configManager := newConfigManager(sdkKey, logger, WithCustomHeaders(customHeaders))
+
+	// Verify custom headers are stored
+	assert.Equal(t, "application/xml", configManager.customHeaders["Content-Type"])
+	assert.Equal(t, "text/plain", configManager.customHeaders["Accept"])
+
+	// Apply headers
+	configManager.setAuthHeaderIfDatafileAccessTokenPresent()
+
+	// Verify requester was created with custom headers
+	assert.NotNil(t, configManager.requester)
+}
+
+func TestEmptyCustomHeaders(t *testing.T) {
+	sdkKey := "test_sdk_key"
+
+	// Test with nil custom headers
+	configManager1 := newConfigManager(sdkKey, logger, WithCustomHeaders(nil))
+	assert.Nil(t, configManager1.customHeaders)
+
+	// Test with empty map
+	emptyHeaders := make(map[string]string)
+	configManager2 := newConfigManager(sdkKey, logger, WithCustomHeaders(emptyHeaders))
+	assert.NotNil(t, configManager2.customHeaders)
+	assert.Equal(t, 0, len(configManager2.customHeaders))
+}

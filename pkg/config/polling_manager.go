@@ -63,6 +63,7 @@ type PollingProjectConfigManager struct {
 	sdkKey              string
 	logger              logging.OptimizelyLogProducer
 	datafileAccessToken string
+	customHeaders       map[string]string
 
 	configLock       sync.RWMutex
 	err              error
@@ -105,6 +106,14 @@ func WithInitialDatafile(datafile []byte) OptionFunc {
 func WithDatafileAccessToken(datafileAccessToken string) OptionFunc {
 	return func(p *PollingProjectConfigManager) {
 		p.datafileAccessToken = datafileAccessToken
+	}
+}
+
+// WithCustomHeaders is an optional function, sets custom headers to be included in datafile requests.
+// Custom headers with the same name as SDK internal headers will override the internal values.
+func WithCustomHeaders(customHeaders map[string]string) OptionFunc {
+	return func(p *PollingProjectConfigManager) {
+		p.customHeaders = customHeaders
 	}
 }
 
@@ -202,9 +211,26 @@ func (cm *PollingProjectConfigManager) Start(ctx context.Context) {
 }
 
 func (cm *PollingProjectConfigManager) setAuthHeaderIfDatafileAccessTokenPresent() {
+	// Start with default headers
+	headers := []utils.Header{
+		{Name: utils.HeaderContentType, Value: utils.ContentTypeJSON},
+		{Name: utils.HeaderAccept, Value: utils.ContentTypeJSON},
+	}
+
+	// Add authorization header if datafile access token is present
 	if cm.datafileAccessToken != "" {
-		headers := []utils.Header{{Name: utils.HeaderContentType, Value: utils.ContentTypeJSON}, {Name: utils.HeaderAccept, Value: utils.ContentTypeJSON}}
 		headers = append(headers, utils.Header{Name: utils.HeaderAuthorization, Value: "Bearer " + cm.datafileAccessToken})
+	}
+
+	// Add custom headers, which will override internal headers with the same name
+	if cm.customHeaders != nil && len(cm.customHeaders) > 0 {
+		for name, value := range cm.customHeaders {
+			headers = append(headers, utils.Header{Name: name, Value: value})
+		}
+	}
+
+	// Create requester with merged headers if we have auth token or custom headers
+	if cm.datafileAccessToken != "" || (cm.customHeaders != nil && len(cm.customHeaders) > 0) {
 		cm.requester = utils.NewHTTPRequester(logging.GetLogger(cm.sdkKey, "HTTPRequester"), utils.Headers(headers...))
 	}
 }
