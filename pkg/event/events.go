@@ -116,8 +116,8 @@ type Snapshot struct {
 //
 // VariationID is a pointer so that an empty / non-numeric upstream value
 // can be serialized as JSON null per the cross-SDK decision-event
-// normalization spec (FSSDK-12813). A nil VariationID marshals to
-// "variation_id": null on the wire.
+// normalization spec. A nil VariationID marshals to "variation_id": null
+// on the wire.
 type Decision struct {
 	VariationID  *string          `json:"variation_id"`
 	CampaignID   string           `json:"campaign_id"`

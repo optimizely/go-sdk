@@ -103,16 +103,8 @@ func createImpressionEvent(
 		variationID = variation.ID
 	}
 
-	// FSSDK-12813: Normalize campaign_id, variation_id, and entity_id uniformly
-	// for every decision type (experiment, feature test, rollout, holdout).
-	// - campaign_id falls back to experiment.ID when LayerID is the empty
-	//   string (e.g. holdouts have no layer). Any non-empty value — numeric
-	//   or opaque (e.g. "layer_abc") — passes through per the relaxed spec.
-	// - entity_id mirrors the normalized campaign_id so both fields are
-	//   byte-equivalent on the wire (FR-009).
-	// - variation_id is normalized later when the Decision is built, since the
-	//   Decision struct uses *string to allow JSON null output (FR-003/FR-004).
-	//   variation_id retains the STRICT numeric-string contract.
+	// entity_id mirrors the normalized campaign_id so both fields are
+	// byte-equivalent on the wire.
 	normalizedCampaignID := NormalizeCampaignID(experiment.LayerID, experiment.ID)
 
 	event := ImpressionEvent{
@@ -186,12 +178,9 @@ func CreateImpressionUserEvent(
 
 // create an impression visitor
 func createImpressionVisitor(userEvent UserEvent) Visitor {
-	// FSSDK-12813: Apply decision-event ID normalization at the visitor /
-	// wire-payload boundary as a defense-in-depth pass. The ImpressionEvent
-	// is already normalized when constructed (see createImpressionEvent), but
-	// normalizing again here guarantees that any callers who mutate the
-	// in-memory ImpressionEvent before dispatch still produce a valid wire
-	// payload. This call is idempotent for already-normalized values.
+	// Re-normalize at the wire-payload boundary as defense-in-depth so
+	// callers that mutate the ImpressionEvent before dispatch still produce
+	// a valid payload. Idempotent for already-normalized values.
 	normalizedCampaignID := NormalizeCampaignID(userEvent.Impression.CampaignID, userEvent.Impression.ExperimentID)
 
 	decision := Decision{}

@@ -28,10 +28,9 @@ import (
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 )
 
-// FSSDK-12813: Decision-event ID normalization tests.
+// Decision-event ID normalization tests.
 //
-// These tests verify the cross-SDK contract for outgoing decision events
-// (per the relaxed spec):
+// These tests verify the cross-SDK contract for outgoing decision events:
 //   - campaign_id / entity_id: non-empty string (any character content;
 //     opaque IDs allowed). Fallback to experiment_id ONLY when empty.
 //   - variation_id: STRICT non-empty numeric string OR JSON null.
@@ -262,8 +261,8 @@ func numericVariation() entities.Variation {
 }
 
 func holdoutExperiment() entities.Experiment {
-	// FSSDK-12813: Holdouts ship with no LayerID. Normalizer must fall back
-	// to ExperimentID for both campaign_id and entity_id.
+	// Holdouts ship with no LayerID. Normalizer must fall back to
+	// ExperimentID for both campaign_id and entity_id.
 	return entities.Experiment{Key: "holdout_key", LayerID: "", ID: "9876543210"}
 }
 
@@ -280,10 +279,10 @@ func TestImpressionEvent_NormalizesCampaignAndEntityIDsForHoldout(t *testing.T) 
 
 	// FR-001/FR-002: empty LayerID is substituted with ExperimentID.
 	assert.Equal(t, exp.ID, userEvent.Impression.CampaignID,
-		"holdout campaign_id must fall back to experiment_id when LayerID is empty (FSSDK-12813)")
+		"holdout campaign_id must fall back to experiment_id when LayerID is empty")
 	// FR-009: entity_id mirrors campaign_id byte-for-byte.
 	assert.Equal(t, exp.ID, userEvent.Impression.EntityID,
-		"holdout entity_id must equal campaign_id byte-for-byte (FSSDK-12813)")
+		"holdout entity_id must equal campaign_id byte-for-byte")
 
 	// Same invariant must hold in the wire visitor / decision payload.
 	visitor := createVisitorFromUserEvent(userEvent)
@@ -313,7 +312,7 @@ func TestImpressionEvent_PassesThroughOpaqueLayerID(t *testing.T) {
 	// Opaque LayerID passes through under the relaxed spec — NOT substituted
 	// with experiment_id.
 	assert.Equal(t, "default-12345", userEvent.Impression.CampaignID,
-		"opaque LayerID must pass through (FSSDK-12813 relaxed)")
+		"opaque LayerID must pass through (relaxed contract)")
 	assert.Equal(t, "default-12345", userEvent.Impression.EntityID,
 		"entity_id must mirror campaign_id (FR-009)")
 
@@ -356,7 +355,7 @@ func TestImpressionEvent_NormalizesVariationIDToJSONNull(t *testing.T) {
 
 	visitor := createVisitorFromUserEvent(userEvent)
 	assert.Nil(t, visitor.Snapshots[0].Decisions[0].VariationID,
-		"non-numeric variation_id must be normalized to nil so it serializes as JSON null (FSSDK-12813)")
+		"non-numeric variation_id must be normalized to nil so it serializes as JSON null")
 
 	// Verify on-the-wire JSON shape.
 	b, err := json.Marshal(visitor.Snapshots[0].Decisions[0])

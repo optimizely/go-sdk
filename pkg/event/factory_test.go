@@ -339,12 +339,8 @@ func TestCreateImpressionUserEventWithCmabUUID(t *testing.T) {
 func TestCreateImpressionUserEventForHoldout(t *testing.T) {
 	tc := TestConfig{}
 
-	// FSSDK-12813: variation_id retains a strict numeric-string contract on
-	// the wire (non-numeric values serialize as JSON null). campaign_id /
-	// entity_id are relaxed to non-empty strings (opaque IDs allowed; the
-	// only fallback to experiment_id is when LayerID is the empty string).
-	// Use numeric IDs in fixtures so the happy-path assertions below exercise
-	// both the variation_id pass-through and the empty-LayerID fallback for
+	// Use numeric IDs in fixtures so the assertions below exercise the
+	// variation_id pass-through and the empty-LayerID fallback for
 	// campaign_id without entanglement.
 	testHoldout := entities.Experiment{
 		Key:     "test_holdout",
@@ -447,9 +443,8 @@ func TestCreateImpressionUserEventForHoldout(t *testing.T) {
 		// Verify IDs are set correctly
 		assert.Equal(t, testHoldoutVariation.ID, impression.VariationID)
 		assert.Equal(t, testHoldout.ID, impression.ExperimentID)
-		// FSSDK-12813: Holdouts have no LayerID, so the impression's CampaignID
-		// is normalized to ExperimentID (FR-001/FR-002). The same normalized
-		// value is also reused as the impression's EntityID (FR-009).
+		// Holdouts have no LayerID, so the impression's CampaignID is
+		// normalized to ExperimentID. EntityID mirrors CampaignID.
 		assert.Equal(t, testHoldout.ID, impression.CampaignID)
 		assert.Equal(t, testHoldout.ID, impression.EntityID)
 	})

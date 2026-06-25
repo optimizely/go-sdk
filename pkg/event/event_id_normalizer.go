@@ -17,14 +17,14 @@
 // Package event //
 package event
 
-// Decision event ID normalization (FSSDK-12813).
+// Decision event ID normalization.
 //
 // These helpers normalize the campaign_id, variation_id, and entity_id fields
 // of outgoing decision events so that every decision type (experiment, feature
 // test, rollout, holdout) produces uniform, valid wire output regardless of
 // what upstream code supplies.
 //
-// Contract (per relaxed FSSDK-12813 spec):
+// Contract:
 //   - campaign_id / entity_id: must be a non-empty string. Any character
 //     content is allowed (IDs may be opaque, e.g. "default-12345", "layer_abc").
 //     When the value is empty (""), fall back to experiment_id.
@@ -68,10 +68,10 @@ func IsNonEmptyString(value string) bool {
 }
 
 // NormalizeCampaignID returns campaignID if it is a non-empty string;
-// otherwise it returns experimentID. Per the relaxed FSSDK-12813 spec, any
-// non-empty character content is accepted for campaign_id / entity_id —
-// IDs may be opaque (e.g. "default-12345", "layer_abc"). Fallback to
-// experiment_id fires ONLY when campaignID is the empty string.
+// otherwise it returns experimentID. Any non-empty character content is
+// accepted for campaign_id / entity_id — IDs may be opaque (e.g.
+// "default-12345", "layer_abc"). Fallback to experiment_id fires ONLY when
+// campaignID is the empty string.
 //
 // This function is used for both decisions[].campaign_id and (for impression
 // events) events[].entity_id so both fields are normalized identically and
