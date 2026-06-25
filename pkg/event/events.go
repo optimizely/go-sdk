@@ -112,9 +112,14 @@ type Snapshot struct {
 	Events    []SnapshotEvent `json:"events"`
 }
 
-// Decision represents a decision of a snapshot
+// Decision represents a decision of a snapshot.
+//
+// VariationID is a pointer so that an empty / non-numeric upstream value
+// can be serialized as JSON null per the cross-SDK decision-event
+// normalization spec (FSSDK-12813). A nil VariationID marshals to
+// "variation_id": null on the wire.
 type Decision struct {
-	VariationID  string           `json:"variation_id"`
+	VariationID  *string          `json:"variation_id"`
 	CampaignID   string           `json:"campaign_id"`
 	ExperimentID string           `json:"experiment_id"`
 	Metadata     DecisionMetadata `json:"metadata"`

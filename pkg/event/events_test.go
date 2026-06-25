@@ -24,10 +24,13 @@ import (
 )
 
 func TestSnapshotHasOptionalDecisions(t *testing.T) {
+	// FSSDK-12813: Decision.VariationID is *string so that an empty / non-numeric
+	// upstream value can serialize as JSON null. Pass &v with a numeric ID.
+	v := "1"
 	snapshot := Snapshot{
 		Decisions: []Decision{
 			Decision{
-				VariationID: "1",
+				VariationID: &v,
 			},
 		},
 	}

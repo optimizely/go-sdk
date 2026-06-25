@@ -339,15 +339,20 @@ func TestCreateImpressionUserEventWithCmabUUID(t *testing.T) {
 func TestCreateImpressionUserEventForHoldout(t *testing.T) {
 	tc := TestConfig{}
 
+	// FSSDK-12813: Decision-event ID fields (campaign_id, variation_id,
+	// experiment_id, entity_id) must be numeric strings on the wire. Use
+	// numeric IDs in fixtures so the assertions below exercise the
+	// happy-path normalization (campaign_id falls back to experiment_id
+	// when LayerID is empty).
 	testHoldout := entities.Experiment{
 		Key:     "test_holdout",
 		LayerID: "",
-		ID:      "holdout_123",
+		ID:      "9876543210",
 	}
 
 	testHoldoutVariation := entities.Variation{
 		Key: "holdout_variation",
-		ID:  "holdout_var_123",
+		ID:  "1234567890",
 	}
 
 	// Test 1: Holdout with variation should ALWAYS send impression event
@@ -440,6 +445,10 @@ func TestCreateImpressionUserEventForHoldout(t *testing.T) {
 		// Verify IDs are set correctly
 		assert.Equal(t, testHoldoutVariation.ID, impression.VariationID)
 		assert.Equal(t, testHoldout.ID, impression.ExperimentID)
-		assert.Equal(t, "", impression.CampaignID) // Empty for holdouts (no layer)
+		// FSSDK-12813: Holdouts have no LayerID, so the impression's CampaignID
+		// is normalized to ExperimentID (FR-001/FR-002). The same normalized
+		// value is also reused as the impression's EntityID (FR-009).
+		assert.Equal(t, testHoldout.ID, impression.CampaignID)
+		assert.Equal(t, testHoldout.ID, impression.EntityID)
 	})
 }
