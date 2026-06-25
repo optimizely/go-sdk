@@ -105,12 +105,14 @@ func createImpressionEvent(
 
 	// FSSDK-12813: Normalize campaign_id, variation_id, and entity_id uniformly
 	// for every decision type (experiment, feature test, rollout, holdout).
-	// - campaign_id falls back to experiment.ID when LayerID is empty / non-numeric
-	//   (e.g. holdouts have no layer).
+	// - campaign_id falls back to experiment.ID when LayerID is the empty
+	//   string (e.g. holdouts have no layer). Any non-empty value — numeric
+	//   or opaque (e.g. "layer_abc") — passes through per the relaxed spec.
 	// - entity_id mirrors the normalized campaign_id so both fields are
 	//   byte-equivalent on the wire (FR-009).
 	// - variation_id is normalized later when the Decision is built, since the
 	//   Decision struct uses *string to allow JSON null output (FR-003/FR-004).
+	//   variation_id retains the STRICT numeric-string contract.
 	normalizedCampaignID := NormalizeCampaignID(experiment.LayerID, experiment.ID)
 
 	event := ImpressionEvent{

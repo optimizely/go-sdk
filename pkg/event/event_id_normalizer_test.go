@@ -30,12 +30,14 @@ import (
 
 // FSSDK-12813: Decision-event ID normalization tests.
 //
-// These tests verify the cross-SDK contract for outgoing decision events:
-//   - campaign_id is a non-empty numeric string (substitute experiment_id otherwise)
-//   - variation_id is a non-empty numeric string OR JSON null
-//   - entity_id (impression events) mirrors campaign_id byte-for-byte
-//   - rules apply uniformly to every decision type
-//   - no logging, no warning, no dropping of events on the normalization path
+// These tests verify the cross-SDK contract for outgoing decision events
+// (per the relaxed spec):
+//   - campaign_id / entity_id: non-empty string (any character content;
+//     opaque IDs allowed). Fallback to experiment_id ONLY when empty.
+//   - variation_id: STRICT non-empty numeric string OR JSON null.
+//   - entity_id (impression events) mirrors campaign_id byte-for-byte.
+//   - rules apply uniformly to every decision type.
+//   - no logging, no warning, no dropping of events on the normalization path.
 
 // --- IsNumericIDString -------------------------------------------------------
 
@@ -77,6 +79,36 @@ func TestIsNumericIDString(t *testing.T) {
 	}
 }
 
+// --- IsNonEmptyString --------------------------------------------------------
+
+func TestIsNonEmptyString(t *testing.T) {
+	// Relaxed campaign_id / entity_id predicate. Only the empty string is
+	// rejected — any other character content is accepted, including
+	// whitespace-only, opaque IDs, and non-numeric content.
+	cases := []struct {
+		name  string
+		value string
+		want  bool
+	}{
+		{"plain digits", "12345", true},
+		{"opaque layer id", "layer_abc", true},
+		{"opaque default id", "default-12345", true},
+		{"alpha placeholder", "holdout_123", true},
+		{"single character", "a", true},
+		{"whitespace only", "   ", true},
+		{"leading zero numeric", "0123456789", true},
+		{"unicode", "१२३", true},
+
+		{"empty string is invalid", "", false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, IsNonEmptyString(tc.value))
+		})
+	}
+}
+
 // --- NormalizeCampaignID -----------------------------------------------------
 
 func TestNormalizeCampaignID_ReturnsCampaignIDWhenNumeric(t *testing.T) {
@@ -85,19 +117,31 @@ func TestNormalizeCampaignID_ReturnsCampaignIDWhenNumeric(t *testing.T) {
 }
 
 func TestNormalizeCampaignID_SubstitutesExperimentIDWhenCampaignEmpty(t *testing.T) {
-	// FR-001/FR-002: empty campaign_id is replaced with experiment_id.
+	// FR-001/FR-002 (relaxed): empty campaign_id is replaced with experiment_id.
+	// Fallback fires ONLY for the empty string.
 	got := NormalizeCampaignID("", "15402980349")
 	assert.Equal(t, "15402980349", got)
 }
 
-func TestNormalizeCampaignID_SubstitutesExperimentIDWhenCampaignNonNumeric(t *testing.T) {
+func TestNormalizeCampaignID_PassesThroughOpaqueCampaignID(t *testing.T) {
+	// Relaxed spec: opaque, non-numeric campaign IDs pass through unchanged.
+	// IDs may be of the form "layer_abc", "default-12345", etc.
 	got := NormalizeCampaignID("layer_abc", "15402980349")
-	assert.Equal(t, "15402980349", got)
+	assert.Equal(t, "layer_abc", got)
 }
 
-func TestNormalizeCampaignID_SubstitutesExperimentIDForWhitespaceCampaign(t *testing.T) {
+func TestNormalizeCampaignID_PassesThroughHoldoutPlaceholder(t *testing.T) {
+	// Relaxed spec: alphanumeric placeholders like "holdout_123" are valid
+	// campaign IDs and pass through; experiment_id substitution does NOT fire.
+	got := NormalizeCampaignID("holdout_123", "15402980349")
+	assert.Equal(t, "holdout_123", got)
+}
+
+func TestNormalizeCampaignID_PassesThroughWhitespaceCampaign(t *testing.T) {
+	// Relaxed spec: whitespace-only is non-empty, so it passes through.
+	// This is intentionally permissive — we no longer try to "fix" content.
 	got := NormalizeCampaignID("   ", "15402980349")
-	assert.Equal(t, "15402980349", got)
+	assert.Equal(t, "   ", got)
 }
 
 func TestNormalizeCampaignID_AllowsLeadingZeros(t *testing.T) {
@@ -105,10 +149,10 @@ func TestNormalizeCampaignID_AllowsLeadingZeros(t *testing.T) {
 	assert.Equal(t, "0123", got)
 }
 
-func TestNormalizeCampaignID_PreservesMalformedExperimentIDFallback(t *testing.T) {
-	// If both inputs are non-numeric, return experimentID as-is so we don't
-	// silently invent data. Downstream behavior for malformed datafiles is
-	// unchanged.
+func TestNormalizeCampaignID_PreservesExperimentIDFallback(t *testing.T) {
+	// When campaign_id is empty, fall back to experiment_id verbatim — even
+	// when experiment_id itself is non-numeric. Downstream behavior for
+	// malformed datafiles is unchanged.
 	got := NormalizeCampaignID("", "exp_42")
 	assert.Equal(t, "exp_42", got)
 }
@@ -251,6 +295,33 @@ func TestImpressionEvent_NormalizesCampaignAndEntityIDsForHoldout(t *testing.T) 
 	assert.Equal(t, visitor.Snapshots[0].Decisions[0].CampaignID,
 		visitor.Snapshots[0].Events[0].EntityID,
 		"decisions[].campaign_id and events[].entity_id must be byte-equivalent")
+}
+
+// TestImpressionEvent_PassesThroughOpaqueLayerID verifies the relaxed spec:
+// a non-numeric but non-empty LayerID (e.g. "layer_abc", "default-12345")
+// passes through to campaign_id and entity_id unchanged. Fallback to
+// experiment_id fires ONLY when LayerID is the empty string.
+func TestImpressionEvent_PassesThroughOpaqueLayerID(t *testing.T) {
+	tc := testNormConfig{}
+	exp := entities.Experiment{Key: "exp_key", LayerID: "default-12345", ID: "15402980349"}
+	variation := numericVariation()
+
+	userEvent, ok := CreateImpressionUserEvent(tc, exp, &variation, newNormUserContext(),
+		"flag_key", exp.Key, decisionPkg.FeatureTest, true, nil)
+	assert.True(t, ok)
+
+	// Opaque LayerID passes through under the relaxed spec — NOT substituted
+	// with experiment_id.
+	assert.Equal(t, "default-12345", userEvent.Impression.CampaignID,
+		"opaque LayerID must pass through (FSSDK-12813 relaxed)")
+	assert.Equal(t, "default-12345", userEvent.Impression.EntityID,
+		"entity_id must mirror campaign_id (FR-009)")
+
+	visitor := createVisitorFromUserEvent(userEvent)
+	assert.Equal(t, "default-12345", visitor.Snapshots[0].Decisions[0].CampaignID)
+	assert.Equal(t, "default-12345", visitor.Snapshots[0].Events[0].EntityID)
+	assert.Equal(t, visitor.Snapshots[0].Decisions[0].CampaignID,
+		visitor.Snapshots[0].Events[0].EntityID)
 }
 
 // TestImpressionEvent_PassesThroughNumericCampaignID verifies happy path for
