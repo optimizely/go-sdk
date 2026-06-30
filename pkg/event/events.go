@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020, Optimizely, Inc. and contributors                        *
+ * Copyright 2020, 2026, Optimizely, Inc. and contributors                  *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -112,9 +112,14 @@ type Snapshot struct {
 	Events    []SnapshotEvent `json:"events"`
 }
 
-// Decision represents a decision of a snapshot
+// Decision represents a decision of a snapshot.
+//
+// VariationID is a pointer so that an empty / non-numeric upstream value
+// can be serialized as JSON null per the cross-SDK decision-event
+// normalization spec. A nil VariationID marshals to "variation_id": null
+// on the wire.
 type Decision struct {
-	VariationID  string           `json:"variation_id"`
+	VariationID  *string          `json:"variation_id"`
 	CampaignID   string           `json:"campaign_id"`
 	ExperimentID string           `json:"experiment_id"`
 	Metadata     DecisionMetadata `json:"metadata"`

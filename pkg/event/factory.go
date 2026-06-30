@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2020,2022 Optimizely, Inc. and contributors               *
+ * Copyright 2019-2020,2022,2026 Optimizely, Inc. and contributors          *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -103,10 +103,14 @@ func createImpressionEvent(
 		variationID = variation.ID
 	}
 
+	// entity_id mirrors the normalized campaign_id so both fields are
+	// byte-equivalent on the wire.
+	normalizedCampaignID := NormalizeCampaignID(experiment.LayerID, experiment.ID)
+
 	event := ImpressionEvent{
 		Attributes:   getEventAttributes(projectConfig, attributes),
-		CampaignID:   experiment.LayerID,
-		EntityID:     experiment.LayerID,
+		CampaignID:   normalizedCampaignID,
+		EntityID:     normalizedCampaignID,
 		ExperimentID: experiment.ID,
 		Key:          impressionKey,
 		Metadata:     metadata,
@@ -174,16 +178,24 @@ func CreateImpressionUserEvent(
 
 // create an impression visitor
 func createImpressionVisitor(userEvent UserEvent) Visitor {
+	// Re-normalize at the wire-payload boundary as defense-in-depth so
+	// callers that mutate the ImpressionEvent before dispatch still produce
+	// a valid payload. Idempotent for already-normalized values.
+	normalizedCampaignID := NormalizeCampaignID(userEvent.Impression.CampaignID, userEvent.Impression.ExperimentID)
+
 	decision := Decision{}
-	decision.CampaignID = userEvent.Impression.CampaignID
+	decision.CampaignID = normalizedCampaignID
 	decision.ExperimentID = userEvent.Impression.ExperimentID
-	decision.VariationID = userEvent.Impression.VariationID
+	decision.VariationID = NormalizeVariationID(userEvent.Impression.VariationID)
 	decision.Metadata = userEvent.Impression.Metadata
 
 	dispatchEvent := SnapshotEvent{}
 	dispatchEvent.Timestamp = userEvent.Timestamp
 	dispatchEvent.Key = userEvent.Impression.Key
-	dispatchEvent.EntityID = userEvent.Impression.EntityID
+	// FR-009: entity_id for impression events must equal decisions[].campaign_id
+	// byte-for-byte. Reuse the normalized value rather than re-reading
+	// userEvent.Impression.EntityID so the two fields cannot drift apart.
+	dispatchEvent.EntityID = normalizedCampaignID
 	dispatchEvent.UUID = guuid.New().String()
 	dispatchEvent.Tags = make(map[string]interface{})
 

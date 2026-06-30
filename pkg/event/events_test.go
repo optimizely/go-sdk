@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2020, Optimizely, Inc. and contributors                        *
+ * Copyright 2020, 2026, Optimizely, Inc. and contributors                  *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -24,10 +24,13 @@ import (
 )
 
 func TestSnapshotHasOptionalDecisions(t *testing.T) {
+	// Decision.VariationID is *string so that an empty / non-numeric
+	// upstream value can serialize as JSON null. Pass &v with a numeric ID.
+	v := "1"
 	snapshot := Snapshot{
 		Decisions: []Decision{
 			Decision{
-				VariationID: "1",
+				VariationID: &v,
 			},
 		},
 	}

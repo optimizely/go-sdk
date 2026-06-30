@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019,2022 Optimizely, Inc. and contributors                    *
+ * Copyright 2019,2022,2026 Optimizely, Inc. and contributors               *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -339,15 +339,18 @@ func TestCreateImpressionUserEventWithCmabUUID(t *testing.T) {
 func TestCreateImpressionUserEventForHoldout(t *testing.T) {
 	tc := TestConfig{}
 
+	// Use numeric IDs in fixtures so the assertions below exercise the
+	// variation_id pass-through and the empty-LayerID fallback for
+	// campaign_id without entanglement.
 	testHoldout := entities.Experiment{
 		Key:     "test_holdout",
 		LayerID: "",
-		ID:      "holdout_123",
+		ID:      "9876543210",
 	}
 
 	testHoldoutVariation := entities.Variation{
 		Key: "holdout_variation",
-		ID:  "holdout_var_123",
+		ID:  "1234567890",
 	}
 
 	// Test 1: Holdout with variation should ALWAYS send impression event
@@ -440,6 +443,9 @@ func TestCreateImpressionUserEventForHoldout(t *testing.T) {
 		// Verify IDs are set correctly
 		assert.Equal(t, testHoldoutVariation.ID, impression.VariationID)
 		assert.Equal(t, testHoldout.ID, impression.ExperimentID)
-		assert.Equal(t, "", impression.CampaignID) // Empty for holdouts (no layer)
+		// Holdouts have no LayerID, so the impression's CampaignID is
+		// normalized to ExperimentID. EntityID mirrors CampaignID.
+		assert.Equal(t, testHoldout.ID, impression.CampaignID)
+		assert.Equal(t, testHoldout.ID, impression.EntityID)
 	})
 }
