@@ -359,8 +359,12 @@ func (s *CmabServiceTestSuite) TestGetDecisionWithCache() {
 	// Setup cache key
 	cacheKey := s.cmabService.getCacheKey(s.testUserID, s.testRuleID)
 
-	// Calculate attributes hash using murmur3 as in your implementation
-	attributesJSON, _ := s.cmabService.getAttributesJSON(s.testAttributes)
+	// Calculate attributes hash using the ID-keyed filtered attributes (matching service behavior)
+	filteredByID := map[string]interface{}{
+		"attr1": 30,
+		"attr2": "San Francisco",
+	}
+	attributesJSON, _ := s.cmabService.getAttributesJSON(filteredByID)
 	hasher := murmur3.SeedNew32(1)
 	hasher.Write([]byte(attributesJSON))
 	attributesHash := strconv.FormatUint(uint64(hasher.Sum32()), 10)
@@ -624,11 +628,11 @@ func (s *CmabServiceTestSuite) TestFilterAttributes() {
 	// Call filterAttributes directly
 	filteredAttrs := s.cmabService.filterAttributes(s.mockConfig, userContext, s.testRuleID)
 
-	// Verify only the configured attributes are included
+	// Verify only the configured attributes are included, keyed by attribute ID
 	s.Equal(2, len(filteredAttrs))
-	s.Equal(30, filteredAttrs["age"])
-	s.Equal("San Francisco", filteredAttrs["location"])
-	s.NotContains(filteredAttrs, "extra_key")
+	s.Equal(30, filteredAttrs["attr1"])
+	s.Equal("San Francisco", filteredAttrs["attr2"])
+	s.NotContains(filteredAttrs, "attr3")
 }
 
 func (s *CmabServiceTestSuite) TestOnlyFilteredAttributesPassedToClient() {
@@ -663,10 +667,10 @@ func (s *CmabServiceTestSuite) TestOnlyFilteredAttributesPassedToClient() {
 		},
 	}
 
-	// Expected filtered attributes
+	// Expected filtered attributes keyed by attribute ID
 	expectedFilteredAttrs := map[string]interface{}{
-		"age":      30,
-		"location": "San Francisco",
+		"attr1": 30,
+		"attr2": "San Francisco",
 	}
 
 	// Setup cache key
@@ -678,14 +682,13 @@ func (s *CmabServiceTestSuite) TestOnlyFilteredAttributesPassedToClient() {
 	// Setup mock API response with attribute verification
 	expectedVariationID := "variant-1"
 	s.mockClient.On("FetchDecision", s.testRuleID, s.testUserID, mock.MatchedBy(func(attrs map[string]interface{}) bool {
-		// Verify only the filtered attributes are passed
 		if len(attrs) != 2 {
 			return false
 		}
-		if attrs["age"] != 30 {
+		if attrs["attr1"] != 30 {
 			return false
 		}
-		if attrs["location"] != "San Francisco" {
+		if attrs["attr2"] != "San Francisco" {
 			return false
 		}
 		if _, exists := attrs["extra_key"]; exists {

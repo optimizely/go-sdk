@@ -233,7 +233,7 @@ func (s *DefaultCmabService) filterAttributes(
 		}
 
 		if value, exists := userContext.Attributes[attributeKey]; exists {
-			filteredAttributes[attributeKey] = value
+			filteredAttributes[attributeID] = value
 		}
 	}
 
