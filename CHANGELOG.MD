@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### New Features
+- **Custom Headers for Polling Datafile Manager**: Added `WithCustomHeaders` option to allow users to pass custom headers that will be included in HTTP requests when fetching the datafile. Custom headers with the same name as SDK internal headers will override the internal values. ([FSSDK-12273])
+
 [2.3.1] - January 22, 2026
 
 ## What's Changed
