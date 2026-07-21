@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2025, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2026, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -70,6 +70,7 @@ type FeatureDecision struct {
 	Source     Source
 	Experiment entities.Experiment
 	Variation  *entities.Variation
+	Holdout    *entities.Holdout
 	CmabUUID   *string
 }
 

@@ -561,6 +561,49 @@ func TestMapHoldoutsIsGlobalProperty(t *testing.T) {
 	assert.False(t, localHoldoutWithRules.IsGlobal(), "non-nil IncludedRules with rules should NOT be global")
 }
 
+func TestMapHoldoutsExcludeTargetedDeliveriesMapped(t *testing.T) {
+	rawGlobal := []datafileEntities.Holdout{
+		{
+			ID:                        "holdout_etd",
+			Key:                       "holdout_with_etd",
+			Status:                    "Running",
+			ExcludeTargetedDeliveries: true,
+			Variations: []datafileEntities.Variation{
+				{ID: "var_1", Key: "variation_1"},
+			},
+			TrafficAllocation: []datafileEntities.TrafficAllocation{
+				{EntityID: "var_1", EndOfRange: 10000},
+			},
+		},
+	}
+
+	holdoutList, _, _, _ := MapHoldouts(rawGlobal, nil, &captureLogger{})
+
+	assert.Len(t, holdoutList, 1)
+	assert.True(t, holdoutList[0].ExcludeTargetedDeliveries)
+}
+
+func TestMapHoldoutsExcludeTargetedDeliveriesDefaultsFalse(t *testing.T) {
+	rawGlobal := []datafileEntities.Holdout{
+		{
+			ID:     "holdout_no_etd",
+			Key:    "holdout_without_etd",
+			Status: "Running",
+			Variations: []datafileEntities.Variation{
+				{ID: "var_1", Key: "variation_1"},
+			},
+			TrafficAllocation: []datafileEntities.TrafficAllocation{
+				{EntityID: "var_1", EndOfRange: 10000},
+			},
+		},
+	}
+
+	holdoutList, _, _, _ := MapHoldouts(rawGlobal, nil, &captureLogger{})
+
+	assert.Len(t, holdoutList, 1)
+	assert.False(t, holdoutList[0].ExcludeTargetedDeliveries)
+}
+
 func TestMapHoldoutsDuplicateIDsAcrossSectionsLogsWarning(t *testing.T) {
 	// If the same holdout ID appears in both sections, a warning must be logged
 	// and the later (local) entry overwrites the earlier (global) one in the ID map.

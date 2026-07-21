@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2025, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2026, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -52,6 +52,9 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 		holdoutDecision, holdoutReasons, _ := f.holdoutService.GetGlobalDecision(decisionContext, userContext, options)
 		reasons.Append(holdoutReasons)
 		if holdoutDecision.Variation != nil {
+			if holdoutDecision.Holdout != nil && holdoutDecision.Holdout.ExcludeTargetedDeliveries {
+				return f.getDecisionWithExcludedTD(holdoutDecision, decisionContext, userContext, options, reasons)
+			}
 			return holdoutDecision, reasons, nil
 		}
 	}
@@ -65,7 +68,6 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 		if err != nil {
 			f.logger.Debug(err.Error())
 			reasons.AddError(err.Error())
-			// Return the error to let the caller handle it properly
 			return FeatureDecision{}, reasons, err
 		}
 
@@ -74,4 +76,39 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 		}
 	}
 	return featureDecision, reasons, err
+}
+
+// getDecisionWithExcludedTD handles the exclude_targeted_deliveries holdout logic.
+// When a holdout has ExcludeTargetedDeliveries set, AB/MAB/CMAB experiments are
+// blocked (holdout returned) but targeted delivery rules are allowed through.
+func (f CompositeFeatureService) getDecisionWithExcludedTD(holdoutDecision FeatureDecision, decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (FeatureDecision, decide.DecisionReasons, error) {
+	// Check feature experiment service (AB/MAB/CMAB) — if matched, block with holdout
+	if len(f.featureServices) > 0 {
+		expDecision, expReasons, err := f.featureServices[0].GetDecision(decisionContext, userContext, options)
+		reasons.Append(expReasons)
+		if err != nil {
+			f.logger.Debug(err.Error())
+			reasons.AddError(err.Error())
+			return FeatureDecision{}, reasons, err
+		}
+		if expDecision.Variation != nil {
+			return holdoutDecision, reasons, nil
+		}
+	}
+
+	// Check rollout service (targeted deliveries) — if matched, allow through
+	if len(f.featureServices) > 1 {
+		rolloutDecision, rolloutReasons, err := f.featureServices[1].GetDecision(decisionContext, userContext, options)
+		reasons.Append(rolloutReasons)
+		if err != nil {
+			f.logger.Debug(err.Error())
+			reasons.AddError(err.Error())
+			return FeatureDecision{}, reasons, err
+		}
+		if rolloutDecision.Variation != nil {
+			return rolloutDecision, reasons, nil
+		}
+	}
+
+	return holdoutDecision, reasons, nil
 }

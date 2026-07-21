@@ -25,6 +25,8 @@ import (
 	"github.com/optimizely/go-sdk/v2/pkg/entities"
 	"github.com/optimizely/go-sdk/v2/pkg/logging"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -196,6 +198,263 @@ func (s *CompositeFeatureServiceTestSuite) TestGetDecisionWithCmabError() {
 	s.mockFeatureService.AssertExpectations(s.T())
 	// Verify that the rollout service was NOT called
 	s.mockFeatureService2.AssertNotCalled(s.T(), "GetDecision")
+}
+
+func TestExcludeTDFalseBlocksEverything(t *testing.T) {
+	mockConfig := new(mockProjectConfig)
+	mockBucketer := new(MockExperimentBucketer)
+	mockAudienceEval := new(MockAudienceTreeEvaluator)
+	mockLogger := new(MockLogger)
+
+	holdoutVar := entities.Variation{ID: "holdout_var", Key: "holdout_variation"}
+	holdout := entities.Holdout{
+		ID:                        "holdout_etd_false",
+		Key:                       "holdout_exclude_td_false",
+		Status:                    entities.HoldoutStatusRunning,
+		ExcludeTargetedDeliveries: false,
+		Variations:                map[string]entities.Variation{"holdout_var": holdoutVar},
+		TrafficAllocation:         []entities.Range{{EntityID: "holdout_var", EndOfRange: 10000}},
+	}
+
+	mockConfig.On("GetGlobalHoldouts").Return([]entities.Holdout{holdout})
+	mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
+	mockBucketer.On("Bucket", "test_user", mock.AnythingOfType("entities.Experiment"), entities.Group{}).Return(&holdoutVar, reasons.Reason(""), nil)
+	mockLogger.On("Debug", mock.Anything).Return()
+	mockLogger.On("Info", mock.Anything).Return()
+
+	holdoutService := &HoldoutService{
+		audienceTreeEvaluator: mockAudienceEval,
+		bucketer:              mockBucketer,
+		logger:                mockLogger,
+	}
+
+	mockFeatureService := new(MockFeatureDecisionService)
+	mockRolloutService := new(MockFeatureDecisionService)
+
+	compositeFeatureService := &CompositeFeatureService{
+		holdoutService:  holdoutService,
+		featureServices: []FeatureService{mockFeatureService, mockRolloutService},
+		logger:          logging.GetLogger("", "CompositeFeatureService"),
+	}
+
+	feature := entities.Feature{ID: "feat_1", Key: "test_feature"}
+	decisionContext := FeatureDecisionContext{
+		Feature:       &feature,
+		ProjectConfig: mockConfig,
+	}
+	userContext := entities.UserContext{ID: "test_user"}
+	options := &decide.Options{}
+
+	decision, _, err := compositeFeatureService.GetDecision(decisionContext, userContext, options)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, decision.Variation)
+	assert.Equal(t, holdoutVar.ID, decision.Variation.ID)
+	assert.Equal(t, Holdout, decision.Source)
+	mockFeatureService.AssertNotCalled(t, "GetDecision")
+	mockRolloutService.AssertNotCalled(t, "GetDecision")
+}
+
+func TestExcludeTDTrueBlocksABExperiment(t *testing.T) {
+	mockConfig := new(mockProjectConfig)
+	mockBucketer := new(MockExperimentBucketer)
+	mockAudienceEval := new(MockAudienceTreeEvaluator)
+	mockLogger := new(MockLogger)
+
+	holdoutVar := entities.Variation{ID: "holdout_var", Key: "holdout_variation"}
+	holdout := entities.Holdout{
+		ID:                        "holdout_etd_true",
+		Key:                       "holdout_exclude_td_true",
+		Status:                    entities.HoldoutStatusRunning,
+		ExcludeTargetedDeliveries: true,
+		Variations:                map[string]entities.Variation{"holdout_var": holdoutVar},
+		TrafficAllocation:         []entities.Range{{EntityID: "holdout_var", EndOfRange: 10000}},
+	}
+
+	mockConfig.On("GetGlobalHoldouts").Return([]entities.Holdout{holdout})
+	mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
+	mockBucketer.On("Bucket", "test_user", mock.AnythingOfType("entities.Experiment"), entities.Group{}).Return(&holdoutVar, reasons.Reason(""), nil)
+	mockLogger.On("Debug", mock.Anything).Return()
+	mockLogger.On("Info", mock.Anything).Return()
+
+	holdoutService := &HoldoutService{
+		audienceTreeEvaluator: mockAudienceEval,
+		bucketer:              mockBucketer,
+		logger:                mockLogger,
+	}
+
+	abVar := entities.Variation{ID: "ab_var", Key: "ab_variation"}
+	abDecision := FeatureDecision{
+		Variation:  &abVar,
+		Source:     FeatureTest,
+		Experiment: entities.Experiment{ID: "exp_1", Key: "ab_experiment"},
+	}
+
+	mockFeatureService := new(MockFeatureDecisionService)
+	mockRolloutService := new(MockFeatureDecisionService)
+
+	feature := entities.Feature{ID: "feat_1", Key: "test_feature"}
+	decisionContext := FeatureDecisionContext{
+		Feature:       &feature,
+		ProjectConfig: mockConfig,
+	}
+	userContext := entities.UserContext{ID: "test_user"}
+	options := &decide.Options{}
+	decisionReasons := decide.NewDecisionReasons(options)
+
+	mockFeatureService.On("GetDecision", decisionContext, userContext, options).Return(abDecision, decisionReasons, nil)
+
+	compositeFeatureService := &CompositeFeatureService{
+		holdoutService:  holdoutService,
+		featureServices: []FeatureService{mockFeatureService, mockRolloutService},
+		logger:          logging.GetLogger("", "CompositeFeatureService"),
+	}
+
+	decision, _, err := compositeFeatureService.GetDecision(decisionContext, userContext, options)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, decision.Variation)
+	assert.Equal(t, holdoutVar.ID, decision.Variation.ID)
+	assert.Equal(t, Holdout, decision.Source)
+	mockFeatureService.AssertExpectations(t)
+	mockRolloutService.AssertNotCalled(t, "GetDecision")
+}
+
+func TestExcludeTDTrueAllowsTDRollout(t *testing.T) {
+	mockConfig := new(mockProjectConfig)
+	mockBucketer := new(MockExperimentBucketer)
+	mockAudienceEval := new(MockAudienceTreeEvaluator)
+	mockLogger := new(MockLogger)
+
+	holdoutVar := entities.Variation{ID: "holdout_var", Key: "holdout_variation"}
+	holdout := entities.Holdout{
+		ID:                        "holdout_etd_true",
+		Key:                       "holdout_exclude_td_true",
+		Status:                    entities.HoldoutStatusRunning,
+		ExcludeTargetedDeliveries: true,
+		Variations:                map[string]entities.Variation{"holdout_var": holdoutVar},
+		TrafficAllocation:         []entities.Range{{EntityID: "holdout_var", EndOfRange: 10000}},
+	}
+
+	mockConfig.On("GetGlobalHoldouts").Return([]entities.Holdout{holdout})
+	mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
+	mockBucketer.On("Bucket", "test_user", mock.AnythingOfType("entities.Experiment"), entities.Group{}).Return(&holdoutVar, reasons.Reason(""), nil)
+	mockLogger.On("Debug", mock.Anything).Return()
+	mockLogger.On("Info", mock.Anything).Return()
+
+	holdoutService := &HoldoutService{
+		audienceTreeEvaluator: mockAudienceEval,
+		bucketer:              mockBucketer,
+		logger:                mockLogger,
+	}
+
+	rolloutVar := entities.Variation{ID: "rollout_var", Key: "rollout_variation"}
+	rolloutDecision := FeatureDecision{
+		Variation:  &rolloutVar,
+		Source:     Rollout,
+		Experiment: entities.Experiment{ID: "rollout_1", Key: "rollout_rule"},
+	}
+
+	mockFeatureService := new(MockFeatureDecisionService)
+	mockRolloutService := new(MockFeatureDecisionService)
+
+	feature := entities.Feature{ID: "feat_1", Key: "test_feature"}
+	decisionContext := FeatureDecisionContext{
+		Feature:       &feature,
+		ProjectConfig: mockConfig,
+	}
+	userContext := entities.UserContext{ID: "test_user"}
+	options := &decide.Options{}
+	decisionReasons := decide.NewDecisionReasons(options)
+
+	emptyDecision := FeatureDecision{}
+	mockFeatureService.On("GetDecision", decisionContext, userContext, options).Return(emptyDecision, decisionReasons, nil)
+	mockRolloutService.On("GetDecision", decisionContext, userContext, options).Return(rolloutDecision, decisionReasons, nil)
+
+	compositeFeatureService := &CompositeFeatureService{
+		holdoutService:  holdoutService,
+		featureServices: []FeatureService{mockFeatureService, mockRolloutService},
+		logger:          logging.GetLogger("", "CompositeFeatureService"),
+	}
+
+	decision, _, err := compositeFeatureService.GetDecision(decisionContext, userContext, options)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, decision.Variation)
+	assert.Equal(t, rolloutVar.ID, decision.Variation.ID)
+	assert.Equal(t, Rollout, decision.Source)
+	mockFeatureService.AssertExpectations(t)
+	mockRolloutService.AssertExpectations(t)
+}
+
+func TestExcludeTDTrueNoDownstreamMatchReturnsHoldout(t *testing.T) {
+	mockConfig := new(mockProjectConfig)
+	mockBucketer := new(MockExperimentBucketer)
+	mockAudienceEval := new(MockAudienceTreeEvaluator)
+	mockLogger := new(MockLogger)
+
+	holdoutVar := entities.Variation{ID: "holdout_var", Key: "holdout_variation"}
+	holdout := entities.Holdout{
+		ID:                        "holdout_etd_true",
+		Key:                       "holdout_exclude_td_true",
+		Status:                    entities.HoldoutStatusRunning,
+		ExcludeTargetedDeliveries: true,
+		Variations:                map[string]entities.Variation{"holdout_var": holdoutVar},
+		TrafficAllocation:         []entities.Range{{EntityID: "holdout_var", EndOfRange: 10000}},
+	}
+
+	mockConfig.On("GetGlobalHoldouts").Return([]entities.Holdout{holdout})
+	mockConfig.On("GetAudienceMap").Return(map[string]entities.Audience{})
+	mockBucketer.On("Bucket", "test_user", mock.AnythingOfType("entities.Experiment"), entities.Group{}).Return(&holdoutVar, reasons.Reason(""), nil)
+	mockLogger.On("Debug", mock.Anything).Return()
+	mockLogger.On("Info", mock.Anything).Return()
+
+	holdoutService := &HoldoutService{
+		audienceTreeEvaluator: mockAudienceEval,
+		bucketer:              mockBucketer,
+		logger:                mockLogger,
+	}
+
+	mockFeatureService := new(MockFeatureDecisionService)
+	mockRolloutService := new(MockFeatureDecisionService)
+
+	feature := entities.Feature{ID: "feat_1", Key: "test_feature"}
+	decisionContext := FeatureDecisionContext{
+		Feature:       &feature,
+		ProjectConfig: mockConfig,
+	}
+	userContext := entities.UserContext{ID: "test_user"}
+	options := &decide.Options{}
+	decisionReasons := decide.NewDecisionReasons(options)
+
+	emptyDecision := FeatureDecision{}
+	mockFeatureService.On("GetDecision", decisionContext, userContext, options).Return(emptyDecision, decisionReasons, nil)
+	mockRolloutService.On("GetDecision", decisionContext, userContext, options).Return(emptyDecision, decisionReasons, nil)
+
+	compositeFeatureService := &CompositeFeatureService{
+		holdoutService:  holdoutService,
+		featureServices: []FeatureService{mockFeatureService, mockRolloutService},
+		logger:          logging.GetLogger("", "CompositeFeatureService"),
+	}
+
+	decision, _, err := compositeFeatureService.GetDecision(decisionContext, userContext, options)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, decision.Variation)
+	assert.Equal(t, holdoutVar.ID, decision.Variation.ID)
+	assert.Equal(t, Holdout, decision.Source)
+	mockFeatureService.AssertExpectations(t)
+	mockRolloutService.AssertExpectations(t)
+}
+
+func TestExcludeTDMissingFieldDefaultsFalse(t *testing.T) {
+	holdout := entities.Holdout{
+		ID:     "holdout_no_etd",
+		Key:    "holdout_missing_field",
+		Status: entities.HoldoutStatusRunning,
+	}
+
+	assert.False(t, holdout.ExcludeTargetedDeliveries)
 }
 
 func (s *CompositeFeatureServiceTestSuite) TestNewCompositeFeatureService() {

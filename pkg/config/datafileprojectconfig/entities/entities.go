@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019,2021-2025, Optimizely, Inc. and contributors              *
+ * Copyright 2019,2021-2026, Optimizely, Inc. and contributors              *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -128,7 +128,8 @@ type Holdout struct {
 	TrafficAllocation  []TrafficAllocation `json:"trafficAllocation"`
 	// IncludedRules carries per-rule targeting for local holdouts. Required on
 	// `localHoldouts` entries; ignored/stripped on `holdouts` entries at parse time.
-	IncludedRules *[]string `json:"includedRules,omitempty"`
+	IncludedRules              *[]string `json:"includedRules,omitempty"`
+	ExcludeTargetedDeliveries bool      `json:"excludeTargetedDeliveries"`
 }
 
 // Integration represents a integration from the Optimizely datafile
