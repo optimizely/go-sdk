@@ -223,6 +223,13 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 			o.EventProcessor.ProcessEvent(ue)
 			eventSent = true
 		}
+		// Send holdout impression when holdout is bypassed for targeted delivery
+		if featureDecision.HoldoutExperiment != nil && featureDecision.HoldoutVariation != nil {
+			if hue, hok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *featureDecision.HoldoutExperiment,
+				featureDecision.HoldoutVariation, usrContext, key, featureDecision.HoldoutExperiment.Key, decision.Holdout, flagEnabled, nil); hok {
+				o.EventProcessor.ProcessEvent(hue)
+			}
+		}
 	}
 
 	variableMap := map[string]interface{}{}
@@ -521,6 +528,13 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 	if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
 		featureDecision.Variation, userContext, featureKey, featureDecision.Experiment.Key, featureDecision.Source, result, featureDecision.CmabUUID); ok && featureDecision.Source != "" {
 		o.EventProcessor.ProcessEvent(ue)
+	}
+	// Send holdout impression when holdout is bypassed for targeted delivery
+	if featureDecision.HoldoutExperiment != nil && featureDecision.HoldoutVariation != nil {
+		if hue, hok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *featureDecision.HoldoutExperiment,
+			featureDecision.HoldoutVariation, userContext, featureKey, featureDecision.HoldoutExperiment.Key, decision.Holdout, result, nil); hok {
+			o.EventProcessor.ProcessEvent(hue)
+		}
 	}
 
 	return result, err
@@ -886,6 +900,13 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 			if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
 				featureDecision.Variation, userContext, featureKey, featureDecision.Experiment.Key, featureDecision.Source, decisionInfo.Enabled, featureDecision.CmabUUID); ok {
 				o.EventProcessor.ProcessEvent(ue)
+			}
+			// Send holdout impression when holdout is bypassed for targeted delivery
+			if featureDecision.HoldoutExperiment != nil && featureDecision.HoldoutVariation != nil {
+				if hue, hok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *featureDecision.HoldoutExperiment,
+					featureDecision.HoldoutVariation, userContext, featureKey, featureDecision.HoldoutExperiment.Key, decision.Holdout, decisionInfo.Enabled, nil); hok {
+					o.EventProcessor.ProcessEvent(hue)
+				}
 			}
 		}
 	}

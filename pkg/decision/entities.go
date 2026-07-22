@@ -71,7 +71,9 @@ type FeatureDecision struct {
 	Experiment entities.Experiment
 	Variation  *entities.Variation
 	Holdout    *entities.Holdout
-	CmabUUID   *string
+	CmabUUID           *string
+	HoldoutExperiment  *entities.Experiment
+	HoldoutVariation   *entities.Variation
 }
 
 // ExperimentDecision contains the decision information about an experiment
