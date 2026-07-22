@@ -228,6 +228,7 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 			if hue, hok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *featureDecision.HoldoutExperiment,
 				featureDecision.HoldoutVariation, usrContext, key, featureDecision.HoldoutExperiment.Key, decision.Holdout, flagEnabled, nil); hok {
 				o.EventProcessor.ProcessEvent(hue)
+				eventSent = true
 			}
 		}
 	}
