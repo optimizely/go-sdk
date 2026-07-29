@@ -320,7 +320,7 @@ func TestExcludeTDTrueBlocksABExperiment(t *testing.T) {
 	mockRolloutService.AssertNotCalled(t, "GetDecision")
 
 	reportedReasons := decisionReasons.ToReport()
-	assert.Contains(t, reportedReasons, "Holdout 'holdout_exclude_td_true' has excludeTargetedDeliveries enabled, continuing to rollout evaluation.")
+	assert.Contains(t, reportedReasons, "Holdout \"holdout_exclude_td_true\" has excludeTargetedDeliveries enabled, continuing to rollout evaluation.")
 }
 
 func TestExcludeTDTrueAllowsTDRollout(t *testing.T) {
@@ -393,7 +393,7 @@ func TestExcludeTDTrueAllowsTDRollout(t *testing.T) {
 	mockRolloutService.AssertExpectations(t)
 
 	reportedReasons := decisionReasons.ToReport()
-	assert.Contains(t, reportedReasons, "Holdout 'holdout_exclude_td_true' has excludeTargetedDeliveries enabled, continuing to rollout evaluation.")
+	assert.Contains(t, reportedReasons, "Holdout \"holdout_exclude_td_true\" has excludeTargetedDeliveries enabled, continuing to rollout evaluation.")
 }
 
 func TestExcludeTDTrueNoDownstreamMatchReturnsEmpty(t *testing.T) {
@@ -458,7 +458,7 @@ func TestExcludeTDTrueNoDownstreamMatchReturnsEmpty(t *testing.T) {
 	mockRolloutService.AssertExpectations(t)
 
 	reportedReasons := resultReasons.ToReport()
-	assert.Contains(t, reportedReasons, "Holdout 'holdout_exclude_td_true' has excludeTargetedDeliveries enabled, continuing to rollout evaluation.")
+	assert.Contains(t, reportedReasons, "Holdout \"holdout_exclude_td_true\" has excludeTargetedDeliveries enabled, continuing to rollout evaluation.")
 }
 
 func TestExcludeTDMissingFieldDefaultsFalse(t *testing.T) {

@@ -99,7 +99,7 @@ func (f CompositeFeatureService) getDecisionWithExcludedTD(holdoutDecision Featu
 		}
 	}
 
-	reasons.AddInfo("Holdout '%s' has excludeTargetedDeliveries enabled, continuing to rollout evaluation.", holdoutDecision.Holdout.Key)
+	reasons.AddInfo("Holdout \"%s\" has excludeTargetedDeliveries enabled, continuing to rollout evaluation.", holdoutDecision.Holdout.Key)
 
 	// Check rollout service (targeted deliveries) — if matched, allow through
 	if len(f.featureServices) > 1 {
