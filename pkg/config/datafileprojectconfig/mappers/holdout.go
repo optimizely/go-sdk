@@ -168,15 +168,15 @@ func mapHoldout(datafileHoldout datafileEntities.Holdout) entities.Holdout {
 	}
 
 	return entities.Holdout{
-		ID:                    datafileHoldout.ID,
-		Key:                   datafileHoldout.Key,
-		Status:                entities.HoldoutStatus(datafileHoldout.Status),
-		AudienceIds:           datafileHoldout.AudienceIds,
-		AudienceConditions:    datafileHoldout.AudienceConditions,
-		Variations:            variations,
-		TrafficAllocation:     trafficAllocation,
-		AudienceConditionTree: audienceConditionTree,
-		IncludedRules:              datafileHoldout.IncludedRules,
+		ID:                        datafileHoldout.ID,
+		Key:                       datafileHoldout.Key,
+		Status:                    entities.HoldoutStatus(datafileHoldout.Status),
+		AudienceIds:               datafileHoldout.AudienceIds,
+		AudienceConditions:        datafileHoldout.AudienceConditions,
+		Variations:                variations,
+		TrafficAllocation:         trafficAllocation,
+		AudienceConditionTree:     audienceConditionTree,
+		IncludedRules:             datafileHoldout.IncludedRules,
 		ExcludeTargetedDeliveries: datafileHoldout.ExcludeTargetedDeliveries,
 	}
 }

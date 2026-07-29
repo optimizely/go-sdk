@@ -93,7 +93,7 @@ type Holdout struct {
 	// IncludedRules carries per-rule targeting for local holdouts. The datafile
 	// section determines scope; `DatafileProjectConfig` strips `IncludedRules` on
 	// entries from the `holdouts` section, so nil here is equivalent to global.
-	IncludedRules              *[]string
+	IncludedRules             *[]string
 	ExcludeTargetedDeliveries bool
 }
 

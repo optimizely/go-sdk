@@ -128,7 +128,7 @@ type Holdout struct {
 	TrafficAllocation  []TrafficAllocation `json:"trafficAllocation"`
 	// IncludedRules carries per-rule targeting for local holdouts. Required on
 	// `localHoldouts` entries; ignored/stripped on `holdouts` entries at parse time.
-	IncludedRules              *[]string `json:"includedRules,omitempty"`
+	IncludedRules             *[]string `json:"includedRules,omitempty"`
 	ExcludeTargetedDeliveries bool      `json:"excludeTargetedDeliveries"`
 }
 

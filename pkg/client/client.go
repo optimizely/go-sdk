@@ -218,19 +218,7 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 	}
 
 	if !allOptions.DisableDecisionEvent {
-		if ue, ok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, featureDecision.Experiment,
-			featureDecision.Variation, usrContext, key, featureDecision.Experiment.Key, featureDecision.Source, flagEnabled, featureDecision.CmabUUID); ok {
-			o.EventProcessor.ProcessEvent(ue)
-			eventSent = true
-		}
-		// Send holdout impression when holdout is bypassed for targeted delivery
-		if featureDecision.HoldoutExperiment != nil && featureDecision.HoldoutVariation != nil {
-			if hue, hok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *featureDecision.HoldoutExperiment,
-				featureDecision.HoldoutVariation, usrContext, key, featureDecision.HoldoutExperiment.Key, decision.Holdout, flagEnabled, nil); hok {
-				o.EventProcessor.ProcessEvent(hue)
-				eventSent = true
-			}
-		}
+		eventSent = o.dispatchDecisionEvents(decisionContext.ProjectConfig, featureDecision, usrContext, key, flagEnabled)
 	}
 
 	variableMap := map[string]interface{}{}
@@ -251,6 +239,23 @@ func (o *OptimizelyClient) decide(userContext *OptimizelyUserContext, key string
 	}
 
 	return NewOptimizelyDecision(variationKey, ruleKey, key, flagEnabled, optimizelyJSON, *userContext, reasonsToReport)
+}
+
+func (o *OptimizelyClient) dispatchDecisionEvents(projectConfig config.ProjectConfig, featureDecision decision.FeatureDecision, usrContext entities.UserContext, key string, flagEnabled bool) bool {
+	eventSent := false
+	if ue, ok := event.CreateImpressionUserEvent(projectConfig, featureDecision.Experiment,
+		featureDecision.Variation, usrContext, key, featureDecision.Experiment.Key, featureDecision.Source, flagEnabled, featureDecision.CmabUUID); ok {
+		o.EventProcessor.ProcessEvent(ue)
+		eventSent = true
+	}
+	if featureDecision.HoldoutExperiment != nil && featureDecision.HoldoutVariation != nil {
+		if hue, hok := event.CreateImpressionUserEvent(projectConfig, *featureDecision.HoldoutExperiment,
+			featureDecision.HoldoutVariation, usrContext, key, featureDecision.HoldoutExperiment.Key, decision.Holdout, featureDecision.HoldoutVariation.FeatureEnabled, nil); hok {
+			o.EventProcessor.ProcessEvent(hue)
+			eventSent = true
+		}
+	}
+	return eventSent
 }
 
 func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options *decide.Options) map[string]OptimizelyDecision {
@@ -533,7 +538,7 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 	// Send holdout impression when holdout is bypassed for targeted delivery
 	if featureDecision.HoldoutExperiment != nil && featureDecision.HoldoutVariation != nil {
 		if hue, hok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *featureDecision.HoldoutExperiment,
-			featureDecision.HoldoutVariation, userContext, featureKey, featureDecision.HoldoutExperiment.Key, decision.Holdout, result, nil); hok {
+			featureDecision.HoldoutVariation, userContext, featureKey, featureDecision.HoldoutExperiment.Key, decision.Holdout, featureDecision.HoldoutVariation.FeatureEnabled, nil); hok {
 			o.EventProcessor.ProcessEvent(hue)
 		}
 	}
@@ -905,7 +910,7 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 			// Send holdout impression when holdout is bypassed for targeted delivery
 			if featureDecision.HoldoutExperiment != nil && featureDecision.HoldoutVariation != nil {
 				if hue, hok := event.CreateImpressionUserEvent(decisionContext.ProjectConfig, *featureDecision.HoldoutExperiment,
-					featureDecision.HoldoutVariation, userContext, featureKey, featureDecision.HoldoutExperiment.Key, decision.Holdout, decisionInfo.Enabled, nil); hok {
+					featureDecision.HoldoutVariation, userContext, featureKey, featureDecision.HoldoutExperiment.Key, decision.Holdout, featureDecision.HoldoutVariation.FeatureEnabled, nil); hok {
 					o.EventProcessor.ProcessEvent(hue)
 				}
 			}
