@@ -85,23 +85,10 @@ func (f CompositeFeatureService) getDecisionWithExcludedTD(holdoutDecision Featu
 	holdoutExp := holdoutDecision.Experiment
 	holdoutVar := holdoutDecision.Variation
 
-	// Check feature experiment service (AB/MAB/CMAB) — if matched, block with holdout
-	if len(f.featureServices) > 0 {
-		expDecision, expReasons, err := f.featureServices[0].GetDecision(decisionContext, userContext, options)
-		reasons.Append(expReasons)
-		if err != nil {
-			f.logger.Debug(err.Error())
-			reasons.AddError(err.Error())
-			return FeatureDecision{}, reasons, err
-		}
-		if expDecision.Variation != nil {
-			return holdoutDecision, reasons, nil
-		}
-	}
-
 	reasons.AddInfo("Holdout \"%s\" has excludeTargetedDeliveries enabled, continuing to rollout evaluation.", holdoutDecision.Holdout.Key)
 
-	// Check rollout service (targeted deliveries) — if matched, allow through
+	// Skip experiment evaluation entirely (A/B/MAB/CMAB are blocked by holdout).
+	// Evaluate rollout service only (targeted deliveries are excluded from holdout blocking).
 	if len(f.featureServices) > 1 {
 		rolloutDecision, rolloutReasons, err := f.featureServices[1].GetDecision(decisionContext, userContext, options)
 		reasons.Append(rolloutReasons)

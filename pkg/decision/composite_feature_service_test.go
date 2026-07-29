@@ -283,13 +283,6 @@ func TestExcludeTDTrueBlocksABExperiment(t *testing.T) {
 		logger:                mockLogger,
 	}
 
-	abVar := entities.Variation{ID: "ab_var", Key: "ab_variation"}
-	abDecision := FeatureDecision{
-		Variation:  &abVar,
-		Source:     FeatureTest,
-		Experiment: entities.Experiment{ID: "exp_1", Key: "ab_experiment"},
-	}
-
 	mockFeatureService := new(MockFeatureDecisionService)
 	mockRolloutService := new(MockFeatureDecisionService)
 
@@ -302,7 +295,8 @@ func TestExcludeTDTrueBlocksABExperiment(t *testing.T) {
 	options := &decide.Options{IncludeReasons: true}
 	decisionReasons := decide.NewDecisionReasons(options)
 
-	mockFeatureService.On("GetDecision", decisionContext, userContext, options).Return(abDecision, decisionReasons, nil)
+	emptyDecision := FeatureDecision{}
+	mockRolloutService.On("GetDecision", decisionContext, userContext, options).Return(emptyDecision, decisionReasons, nil)
 
 	compositeFeatureService := &CompositeFeatureService{
 		holdoutService:  holdoutService,
@@ -313,11 +307,12 @@ func TestExcludeTDTrueBlocksABExperiment(t *testing.T) {
 	decision, decisionReasons, err := compositeFeatureService.GetDecision(decisionContext, userContext, options)
 
 	assert.NoError(t, err)
-	assert.NotNil(t, decision.Variation)
-	assert.Equal(t, holdoutVar.ID, decision.Variation.ID)
-	assert.Equal(t, Holdout, decision.Source)
-	mockFeatureService.AssertExpectations(t)
-	mockRolloutService.AssertNotCalled(t, "GetDecision")
+	assert.Nil(t, decision.Variation)
+	assert.NotNil(t, decision.HoldoutExperiment)
+	assert.NotNil(t, decision.HoldoutVariation)
+	assert.Equal(t, holdoutVar.ID, decision.HoldoutVariation.ID)
+	mockFeatureService.AssertNotCalled(t, "GetDecision")
+	mockRolloutService.AssertExpectations(t)
 
 	reportedReasons := decisionReasons.ToReport()
 	assert.Contains(t, reportedReasons, "Holdout \"holdout_exclude_td_true\" has excludeTargetedDeliveries enabled, continuing to rollout evaluation.")
@@ -370,8 +365,6 @@ func TestExcludeTDTrueAllowsTDRollout(t *testing.T) {
 	options := &decide.Options{IncludeReasons: true}
 	decisionReasons := decide.NewDecisionReasons(options)
 
-	emptyDecision := FeatureDecision{}
-	mockFeatureService.On("GetDecision", decisionContext, userContext, options).Return(emptyDecision, decisionReasons, nil)
 	mockRolloutService.On("GetDecision", decisionContext, userContext, options).Return(rolloutDecision, decisionReasons, nil)
 
 	compositeFeatureService := &CompositeFeatureService{
@@ -389,7 +382,7 @@ func TestExcludeTDTrueAllowsTDRollout(t *testing.T) {
 	assert.NotNil(t, decision.HoldoutExperiment)
 	assert.NotNil(t, decision.HoldoutVariation)
 	assert.Equal(t, holdoutVar.ID, decision.HoldoutVariation.ID)
-	mockFeatureService.AssertExpectations(t)
+	mockFeatureService.AssertNotCalled(t, "GetDecision")
 	mockRolloutService.AssertExpectations(t)
 
 	reportedReasons := decisionReasons.ToReport()
@@ -437,7 +430,6 @@ func TestExcludeTDTrueNoDownstreamMatchReturnsEmpty(t *testing.T) {
 	decisionReasons := decide.NewDecisionReasons(options)
 
 	emptyDecision := FeatureDecision{}
-	mockFeatureService.On("GetDecision", decisionContext, userContext, options).Return(emptyDecision, decisionReasons, nil)
 	mockRolloutService.On("GetDecision", decisionContext, userContext, options).Return(emptyDecision, decisionReasons, nil)
 
 	compositeFeatureService := &CompositeFeatureService{
@@ -454,7 +446,7 @@ func TestExcludeTDTrueNoDownstreamMatchReturnsEmpty(t *testing.T) {
 	assert.NotNil(t, decision.HoldoutExperiment)
 	assert.NotNil(t, decision.HoldoutVariation)
 	assert.Equal(t, holdoutVar.ID, decision.HoldoutVariation.ID)
-	mockFeatureService.AssertExpectations(t)
+	mockFeatureService.AssertNotCalled(t, "GetDecision")
 	mockRolloutService.AssertExpectations(t)
 
 	reportedReasons := resultReasons.ToReport()
