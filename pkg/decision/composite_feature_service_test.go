@@ -234,6 +234,7 @@ func TestExcludeTDFalseBlocksEverything(t *testing.T) {
 	compositeFeatureService := &CompositeFeatureService{
 		holdoutService:  holdoutService,
 		featureServices: []FeatureService{mockFeatureService, mockRolloutService},
+		rolloutService:  mockRolloutService,
 		logger:          logging.GetLogger("", "CompositeFeatureService"),
 	}
 
@@ -301,6 +302,7 @@ func TestExcludeTDTrueBlocksABExperiment(t *testing.T) {
 	compositeFeatureService := &CompositeFeatureService{
 		holdoutService:  holdoutService,
 		featureServices: []FeatureService{mockFeatureService, mockRolloutService},
+		rolloutService:  mockRolloutService,
 		logger:          logging.GetLogger("", "CompositeFeatureService"),
 	}
 
@@ -370,6 +372,7 @@ func TestExcludeTDTrueAllowsTDRollout(t *testing.T) {
 	compositeFeatureService := &CompositeFeatureService{
 		holdoutService:  holdoutService,
 		featureServices: []FeatureService{mockFeatureService, mockRolloutService},
+		rolloutService:  mockRolloutService,
 		logger:          logging.GetLogger("", "CompositeFeatureService"),
 	}
 
@@ -435,6 +438,7 @@ func TestExcludeTDTrueNoDownstreamMatchReturnsEmpty(t *testing.T) {
 	compositeFeatureService := &CompositeFeatureService{
 		holdoutService:  holdoutService,
 		featureServices: []FeatureService{mockFeatureService, mockRolloutService},
+		rolloutService:  mockRolloutService,
 		logger:          logging.GetLogger("", "CompositeFeatureService"),
 	}
 

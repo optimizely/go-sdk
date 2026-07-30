@@ -27,19 +27,25 @@ import (
 type CompositeFeatureService struct {
 	holdoutService  *HoldoutService
 	featureServices []FeatureService
-	logger          logging.OptimizelyLogProducer
+	// rolloutService is the same instance held in featureServices; it is referenced directly
+	// (rather than by slice index) for the ExcludeTargetedDeliveries path, so the logic does not
+	// depend on the ordering of featureServices.
+	rolloutService FeatureService
+	logger         logging.OptimizelyLogProducer
 }
 
 // NewCompositeFeatureService returns a new instance of the CompositeFeatureService
 func NewCompositeFeatureService(sdkKey string, compositeExperimentService ExperimentService) *CompositeFeatureService {
 	holdoutService := NewHoldoutService(sdkKey)
+	rolloutService := NewRolloutService(sdkKey)
 	return &CompositeFeatureService{
 		holdoutService: holdoutService,
 		logger:         logging.GetLogger(sdkKey, "CompositeFeatureService"),
 		featureServices: []FeatureService{
 			NewFeatureExperimentService(logging.GetLogger(sdkKey, "FeatureExperimentService"), compositeExperimentService, holdoutService),
-			NewRolloutService(sdkKey),
+			rolloutService,
 		},
+		rolloutService: rolloutService,
 	}
 }
 
@@ -89,8 +95,8 @@ func (f CompositeFeatureService) getDecisionWithExcludedTD(holdoutDecision Featu
 
 	// Skip experiment evaluation entirely (A/B/MAB/CMAB are blocked by holdout).
 	// Evaluate rollout service only (targeted deliveries are excluded from holdout blocking).
-	if len(f.featureServices) > 1 {
-		rolloutDecision, rolloutReasons, err := f.featureServices[1].GetDecision(decisionContext, userContext, options)
+	if f.rolloutService != nil {
+		rolloutDecision, rolloutReasons, err := f.rolloutService.GetDecision(decisionContext, userContext, options)
 		reasons.Append(rolloutReasons)
 		if err != nil {
 			f.logger.Debug(err.Error())

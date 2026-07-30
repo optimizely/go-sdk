@@ -70,10 +70,15 @@ type FeatureDecision struct {
 	Source     Source
 	Experiment entities.Experiment
 	Variation  *entities.Variation
-	Holdout    *entities.Holdout
-	CmabUUID           *string
-	HoldoutExperiment  *entities.Experiment
-	HoldoutVariation   *entities.Variation
+	CmabUUID   *string
+	// Holdout is the holdout the user was bucketed into, set by HoldoutService so the
+	// composite service can inspect holdout properties (e.g. ExcludeTargetedDeliveries).
+	Holdout *entities.Holdout
+	// HoldoutExperiment and HoldoutVariation are set by CompositeFeatureService only when a
+	// holdout with ExcludeTargetedDeliveries is bypassed for a targeted delivery rule. They let
+	// the client emit a holdout impression alongside the served rollout decision.
+	HoldoutExperiment *entities.Experiment
+	HoldoutVariation  *entities.Variation
 }
 
 // ExperimentDecision contains the decision information about an experiment
