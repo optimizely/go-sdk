@@ -111,6 +111,10 @@ func (f CompositeFeatureService) getDecisionWithExcludedTD(holdoutDecision Featu
 	}
 
 	emptyDecision := FeatureDecision{
+		// Match the rollout service's no-match behavior (see RolloutService.GetDecision),
+		// so a served impression under sendFlagDecisions carries ruleType "rollout" rather
+		// than a blank value.
+		Source:            Rollout,
 		HoldoutExperiment: &holdoutExp,
 		HoldoutVariation:  holdoutVar,
 	}

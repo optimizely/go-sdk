@@ -446,7 +446,9 @@ func TestExcludeTDTrueNoDownstreamMatchReturnsEmpty(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Nil(t, decision.Variation)
-	assert.Equal(t, "", decision.Source)
+	// No downstream match still reports the rollout source, matching RolloutService's
+	// own no-match behavior, so a served impression carries ruleType "rollout".
+	assert.Equal(t, Rollout, decision.Source)
 	assert.NotNil(t, decision.HoldoutExperiment)
 	assert.NotNil(t, decision.HoldoutVariation)
 	assert.Equal(t, holdoutVar.ID, decision.HoldoutVariation.ID)
