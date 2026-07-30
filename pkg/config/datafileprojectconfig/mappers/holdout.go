@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2025, Optimizely, Inc. and contributors                        *
+ * Copyright 2025-2026, Optimizely, Inc. and contributors                        *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -168,14 +168,15 @@ func mapHoldout(datafileHoldout datafileEntities.Holdout) entities.Holdout {
 	}
 
 	return entities.Holdout{
-		ID:                    datafileHoldout.ID,
-		Key:                   datafileHoldout.Key,
-		Status:                entities.HoldoutStatus(datafileHoldout.Status),
-		AudienceIds:           datafileHoldout.AudienceIds,
-		AudienceConditions:    datafileHoldout.AudienceConditions,
-		Variations:            variations,
-		TrafficAllocation:     trafficAllocation,
-		AudienceConditionTree: audienceConditionTree,
-		IncludedRules:         datafileHoldout.IncludedRules,
+		ID:                        datafileHoldout.ID,
+		Key:                       datafileHoldout.Key,
+		Status:                    entities.HoldoutStatus(datafileHoldout.Status),
+		AudienceIds:               datafileHoldout.AudienceIds,
+		AudienceConditions:        datafileHoldout.AudienceConditions,
+		Variations:                variations,
+		TrafficAllocation:         trafficAllocation,
+		AudienceConditionTree:     audienceConditionTree,
+		IncludedRules:             datafileHoldout.IncludedRules,
+		ExcludeTargetedDeliveries: datafileHoldout.ExcludeTargetedDeliveries,
 	}
 }

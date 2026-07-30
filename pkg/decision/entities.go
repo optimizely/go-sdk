@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2025, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2026, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -71,6 +71,14 @@ type FeatureDecision struct {
 	Experiment entities.Experiment
 	Variation  *entities.Variation
 	CmabUUID   *string
+	// Holdout is the holdout the user was bucketed into, set by HoldoutService so the
+	// composite service can inspect holdout properties (e.g. ExcludeTargetedDeliveries).
+	Holdout *entities.Holdout
+	// HoldoutExperiment and HoldoutVariation are set by CompositeFeatureService only when a
+	// holdout with ExcludeTargetedDeliveries is bypassed for a targeted delivery rule. They let
+	// the client emit a holdout impression alongside the served rollout decision.
+	HoldoutExperiment *entities.Experiment
+	HoldoutVariation  *entities.Variation
 }
 
 // ExperimentDecision contains the decision information about an experiment

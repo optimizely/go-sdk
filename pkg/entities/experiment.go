@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019,2021-2025 Optimizely, Inc. and contributors                   *
+ * Copyright 2019,2021-2026 Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -93,7 +93,8 @@ type Holdout struct {
 	// IncludedRules carries per-rule targeting for local holdouts. The datafile
 	// section determines scope; `DatafileProjectConfig` strips `IncludedRules` on
 	// entries from the `holdouts` section, so nil here is equivalent to global.
-	IncludedRules *[]string
+	IncludedRules             *[]string
+	ExcludeTargetedDeliveries bool
 }
 
 // IsGlobal returns true if this holdout is global (applies to all rules across all flags).

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2025, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2026, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -27,19 +27,25 @@ import (
 type CompositeFeatureService struct {
 	holdoutService  *HoldoutService
 	featureServices []FeatureService
-	logger          logging.OptimizelyLogProducer
+	// rolloutService is the same instance held in featureServices; it is referenced directly
+	// (rather than by slice index) for the ExcludeTargetedDeliveries path, so the logic does not
+	// depend on the ordering of featureServices.
+	rolloutService FeatureService
+	logger         logging.OptimizelyLogProducer
 }
 
 // NewCompositeFeatureService returns a new instance of the CompositeFeatureService
 func NewCompositeFeatureService(sdkKey string, compositeExperimentService ExperimentService) *CompositeFeatureService {
 	holdoutService := NewHoldoutService(sdkKey)
+	rolloutService := NewRolloutService(sdkKey)
 	return &CompositeFeatureService{
 		holdoutService: holdoutService,
 		logger:         logging.GetLogger(sdkKey, "CompositeFeatureService"),
 		featureServices: []FeatureService{
 			NewFeatureExperimentService(logging.GetLogger(sdkKey, "FeatureExperimentService"), compositeExperimentService, holdoutService),
-			NewRolloutService(sdkKey),
+			rolloutService,
 		},
+		rolloutService: rolloutService,
 	}
 }
 
@@ -52,6 +58,9 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 		holdoutDecision, holdoutReasons, _ := f.holdoutService.GetGlobalDecision(decisionContext, userContext, options)
 		reasons.Append(holdoutReasons)
 		if holdoutDecision.Variation != nil {
+			if holdoutDecision.Holdout != nil && holdoutDecision.Holdout.ExcludeTargetedDeliveries {
+				return f.getDecisionWithExcludedTD(holdoutDecision, decisionContext, userContext, options, reasons)
+			}
 			return holdoutDecision, reasons, nil
 		}
 	}
@@ -65,7 +74,6 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 		if err != nil {
 			f.logger.Debug(err.Error())
 			reasons.AddError(err.Error())
-			// Return the error to let the caller handle it properly
 			return FeatureDecision{}, reasons, err
 		}
 
@@ -74,4 +82,41 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 		}
 	}
 	return featureDecision, reasons, err
+}
+
+// getDecisionWithExcludedTD handles the exclude_targeted_deliveries holdout logic.
+// When a holdout has ExcludeTargetedDeliveries set, AB/MAB/CMAB experiments are
+// blocked (holdout returned) but targeted delivery rules are allowed through.
+func (f CompositeFeatureService) getDecisionWithExcludedTD(holdoutDecision FeatureDecision, decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (FeatureDecision, decide.DecisionReasons, error) {
+	holdoutExp := holdoutDecision.Experiment
+	holdoutVar := holdoutDecision.Variation
+
+	reasons.AddInfo("Holdout \"%s\" has excludeTargetedDeliveries enabled, continuing to rollout evaluation.", holdoutDecision.Holdout.Key)
+
+	// Skip experiment evaluation entirely (A/B/MAB/CMAB are blocked by holdout).
+	// Evaluate rollout service only (targeted deliveries are excluded from holdout blocking).
+	if f.rolloutService != nil {
+		rolloutDecision, rolloutReasons, err := f.rolloutService.GetDecision(decisionContext, userContext, options)
+		reasons.Append(rolloutReasons)
+		if err != nil {
+			f.logger.Debug(err.Error())
+			reasons.AddError(err.Error())
+			return FeatureDecision{}, reasons, err
+		}
+		if rolloutDecision.Variation != nil {
+			rolloutDecision.HoldoutExperiment = &holdoutExp
+			rolloutDecision.HoldoutVariation = holdoutVar
+			return rolloutDecision, reasons, nil
+		}
+	}
+
+	emptyDecision := FeatureDecision{
+		// Match the rollout service's no-match behavior (see RolloutService.GetDecision),
+		// so a served impression under sendFlagDecisions carries ruleType "rollout" rather
+		// than a blank value.
+		Source:            Rollout,
+		HoldoutExperiment: &holdoutExp,
+		HoldoutVariation:  holdoutVar,
+	}
+	return emptyDecision, reasons, nil
 }
