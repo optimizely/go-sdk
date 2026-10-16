@@ -79,6 +79,9 @@ type FeatureDecision struct {
 	// the client emit a holdout impression alongside the served rollout decision.
 	HoldoutExperiment *entities.Experiment
 	HoldoutVariation  *entities.Variation
+	// LocalHoldoutDecisions holds local holdout hits for rules that were skipped; the decide
+	// path sends one holdout impression per entry.
+	LocalHoldoutDecisions []FeatureDecision
 }
 
 // ExperimentDecision contains the decision information about an experiment

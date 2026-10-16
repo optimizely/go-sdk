@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2025, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2026, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -350,9 +350,10 @@ func TestExcludeTDTrueAllowsTDRollout(t *testing.T) {
 
 	rolloutVar := entities.Variation{ID: "rollout_var", Key: "rollout_variation"}
 	rolloutDecision := FeatureDecision{
-		Variation:  &rolloutVar,
-		Source:     Rollout,
-		Experiment: entities.Experiment{ID: "rollout_1", Key: "rollout_rule"},
+		Variation:             &rolloutVar,
+		Source:                Rollout,
+		Experiment:            entities.Experiment{ID: "rollout_1", Key: "rollout_rule"},
+		LocalHoldoutDecisions: []FeatureDecision{{Source: Holdout, Experiment: entities.Experiment{Key: "local_holdout"}}},
 	}
 
 	mockFeatureService := new(MockFeatureDecisionService)
@@ -385,6 +386,7 @@ func TestExcludeTDTrueAllowsTDRollout(t *testing.T) {
 	assert.NotNil(t, decision.HoldoutExperiment)
 	assert.NotNil(t, decision.HoldoutVariation)
 	assert.Equal(t, holdoutVar.ID, decision.HoldoutVariation.ID)
+	assert.Equal(t, rolloutDecision.LocalHoldoutDecisions, decision.LocalHoldoutDecisions)
 	mockFeatureService.AssertNotCalled(t, "GetDecision")
 	mockRolloutService.AssertExpectations(t)
 
@@ -432,7 +434,7 @@ func TestExcludeTDTrueNoDownstreamMatchReturnsEmpty(t *testing.T) {
 	options := &decide.Options{IncludeReasons: true}
 	decisionReasons := decide.NewDecisionReasons(options)
 
-	emptyDecision := FeatureDecision{}
+	emptyDecision := FeatureDecision{LocalHoldoutDecisions: []FeatureDecision{{Source: Holdout, Experiment: entities.Experiment{Key: "local_holdout"}}}}
 	mockRolloutService.On("GetDecision", decisionContext, userContext, options).Return(emptyDecision, decisionReasons, nil)
 
 	compositeFeatureService := &CompositeFeatureService{
@@ -452,6 +454,7 @@ func TestExcludeTDTrueNoDownstreamMatchReturnsEmpty(t *testing.T) {
 	assert.NotNil(t, decision.HoldoutExperiment)
 	assert.NotNil(t, decision.HoldoutVariation)
 	assert.Equal(t, holdoutVar.ID, decision.HoldoutVariation.ID)
+	assert.Equal(t, emptyDecision.LocalHoldoutDecisions, decision.LocalHoldoutDecisions)
 	mockFeatureService.AssertNotCalled(t, "GetDecision")
 	mockRolloutService.AssertExpectations(t)
 
@@ -507,6 +510,37 @@ func TestLocalHoldoutIgnoresExcludeTargetedDeliveries(t *testing.T) {
 	assert.NotNil(t, decision.Variation)
 	assert.Equal(t, holdoutVar.ID, decision.Variation.ID)
 	assert.Equal(t, Holdout, decision.Source)
+}
+
+func (s *CompositeFeatureServiceTestSuite) TestGetDecisionAccumulatesLocalHoldoutDecisions() {
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	expHoldout := FeatureDecision{Source: Holdout, Experiment: entities.Experiment{Key: "exp_holdout"}, Variation: &entities.Variation{Key: "hv"}}
+	rolloutHoldout := FeatureDecision{Source: Holdout, Experiment: entities.Experiment{Key: "rollout_holdout"}, Variation: &entities.Variation{Key: "hv"}}
+
+	s.mockFeatureService.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options).Return(
+		FeatureDecision{LocalHoldoutDecisions: []FeatureDecision{expHoldout}}, s.reasons, nil)
+	s.mockFeatureService2.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options).Return(
+		FeatureDecision{Source: Rollout, Variation: &testExp1113Var2223, LocalHoldoutDecisions: []FeatureDecision{rolloutHoldout}}, s.reasons, nil)
+
+	compositeFeatureService := &CompositeFeatureService{
+		featureServices: []FeatureService{s.mockFeatureService, s.mockFeatureService2},
+		logger:          logging.GetLogger("sdkKey", "CompositeFeatureService"),
+	}
+	decision, _, err := compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options)
+
+	s.NoError(err)
+	s.Equal(&testExp1113Var2223, decision.Variation)
+	s.Equal([]FeatureDecision{expHoldout, rolloutHoldout}, decision.LocalHoldoutDecisions)
+
+	// No rule serves: the final empty decision still carries every hit.
+	s.mockFeatureService2.ExpectedCalls = nil
+	s.mockFeatureService2.On("GetDecision", s.testFeatureDecisionContext, testUserContext, s.options).Return(
+		FeatureDecision{Source: Rollout, LocalHoldoutDecisions: []FeatureDecision{rolloutHoldout}}, s.reasons, nil)
+	decision, _, err = compositeFeatureService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options)
+
+	s.NoError(err)
+	s.Nil(decision.Variation)
+	s.Equal([]FeatureDecision{expHoldout, rolloutHoldout}, decision.LocalHoldoutDecisions)
 }
 
 func (s *CompositeFeatureServiceTestSuite) TestNewCompositeFeatureService() {
