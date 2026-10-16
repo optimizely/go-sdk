@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2025, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2026, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -250,6 +250,15 @@ func (o *OptimizelyClient) dispatchDecisionEvents(projectConfig config.ProjectCo
 	}
 	if o.sendHoldoutImpression(projectConfig, featureDecision, usrContext, key) {
 		eventSent = true
+	}
+	for _, hd := range featureDecision.LocalHoldoutDecisions {
+		if hd.Variation == nil {
+			continue
+		}
+		if hue, ok := event.CreateImpressionUserEvent(projectConfig, hd.Experiment, hd.Variation, usrContext, key, hd.Experiment.Key, decision.Holdout, hd.Variation.FeatureEnabled, nil); ok {
+			o.EventProcessor.ProcessEvent(hue)
+			eventSent = true
+		}
 	}
 	return eventSent
 }

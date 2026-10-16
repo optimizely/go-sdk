@@ -66,6 +66,7 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 	}
 
 	var featureDecision FeatureDecision
+	var localHoldoutDecisions []FeatureDecision
 	var err error
 	for _, featureDecisionService := range f.featureServices {
 		var decisionReasons decide.DecisionReasons
@@ -77,6 +78,8 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 			return FeatureDecision{}, reasons, err
 		}
 
+		localHoldoutDecisions = append(localHoldoutDecisions, featureDecision.LocalHoldoutDecisions...)
+		featureDecision.LocalHoldoutDecisions = localHoldoutDecisions
 		if featureDecision.Variation != nil {
 			return featureDecision, reasons, err
 		}
@@ -95,6 +98,7 @@ func (f CompositeFeatureService) getDecisionWithExcludedTD(holdoutDecision Featu
 
 	// Skip experiment evaluation entirely (A/B/MAB/CMAB are blocked by holdout).
 	// Evaluate rollout service only (targeted deliveries are excluded from holdout blocking).
+	var localHoldoutDecisions []FeatureDecision
 	if f.rolloutService != nil {
 		rolloutDecision, rolloutReasons, err := f.rolloutService.GetDecision(decisionContext, userContext, options)
 		reasons.Append(rolloutReasons)
@@ -108,15 +112,17 @@ func (f CompositeFeatureService) getDecisionWithExcludedTD(holdoutDecision Featu
 			rolloutDecision.HoldoutVariation = holdoutVar
 			return rolloutDecision, reasons, nil
 		}
+		localHoldoutDecisions = rolloutDecision.LocalHoldoutDecisions
 	}
 
 	emptyDecision := FeatureDecision{
 		// Match the rollout service's no-match behavior (see RolloutService.GetDecision),
 		// so a served impression under sendFlagDecisions carries ruleType "rollout" rather
 		// than a blank value.
-		Source:            Rollout,
-		HoldoutExperiment: &holdoutExp,
-		HoldoutVariation:  holdoutVar,
+		Source:                Rollout,
+		HoldoutExperiment:     &holdoutExp,
+		HoldoutVariation:      holdoutVar,
+		LocalHoldoutDecisions: localHoldoutDecisions,
 	}
 	return emptyDecision, reasons, nil
 }
