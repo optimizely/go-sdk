@@ -431,6 +431,42 @@ func (s *FeatureExperimentServiceTestSuite) TestLocalHoldoutHitThenForcedDecisio
 	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision")
 }
 
+func (s *FeatureExperimentServiceTestSuite) TestLocalHoldoutHitThenCmabErrorOnLaterRule() {
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	localHoldout := entities.Holdout{
+		ID:                "local_holdout",
+		Key:               "local_holdout",
+		Status:            entities.HoldoutStatusRunning,
+		Variations:        map[string]entities.Variation{"ho_var": {ID: "ho_var", Key: "ho_var"}},
+		TrafficAllocation: []entities.Range{{EntityID: "ho_var", EndOfRange: 10000}},
+	}
+	cmabExperiment := testExp1114
+	cmabExperiment.Cmab = &entities.Cmab{AttributeIds: []string{"attr1"}, TrafficAllocation: 10000}
+	s.mockConfig.On("GetHoldoutsForRule", testExp1113.ID).Return([]entities.Holdout{localHoldout})
+	s.mockConfig.On("GetHoldoutsForRule", cmabExperiment.ID).Return([]entities.Holdout{})
+
+	cmabContext := ExperimentDecisionContext{Experiment: &cmabExperiment, ProjectConfig: s.mockConfig}
+	cmabError := errors.New("Failed to fetch CMAB data for experiment " + cmabExperiment.Key + ".")
+	s.mockExperimentService.On("GetDecision", cmabContext, testUserContext, s.options).Return(ExperimentDecision{}, s.reasons, cmabError)
+
+	feature := testFeat3335
+	feature.FeatureExperiments = []entities.Experiment{testExp1113, cmabExperiment}
+	s.testFeatureDecisionContext.Feature = &feature
+
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		holdoutService:             NewHoldoutService("test_sdk_key"),
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	decision, _, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options)
+
+	s.ErrorIs(err, cmabError)
+	s.Nil(decision.Variation)
+	s.Empty(decision.LocalHoldoutDecisions)
+	s.mockExperimentService.AssertExpectations(s.T())
+}
+
 func TestFeatureExperimentServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(FeatureExperimentServiceTestSuite))
 }

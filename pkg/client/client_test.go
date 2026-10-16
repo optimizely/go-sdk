@@ -3398,6 +3398,27 @@ func TestDecideDisableDecisionEventSuppressesLocalHoldoutEvents(t *testing.T) {
 	f.eventProcessor.AssertNotCalled(t, "ProcessEvent", mock.Anything)
 }
 
+func TestDecideDecisionErrorSuppressesLocalHoldoutEvents(t *testing.T) {
+	holdoutDecision := decision.FeatureDecision{
+		Source:                decision.FeatureTest,
+		LocalHoldoutDecisions: []decision.FeatureDecision{makeLocalHoldoutDecision("local_holdout")},
+	}
+	f := newLocalHoldoutClientFixture(holdoutDecision)
+	cmabErrorMessage := "Failed to fetch CMAB data for experiment exp_1."
+	mockDecisionService := f.client.DecisionService.(*MockDecisionService)
+	mockDecisionService.ExpectedCalls = nil
+	mockDecisionService.On("GetFeatureDecision", mock.Anything, mock.Anything, mock.Anything).Return(holdoutDecision, decide.NewDecisionReasons(nil), errors.New(cmabErrorMessage))
+	userContext := newOptimizelyUserContext(f.client, "test_user_1", nil, nil, nil)
+
+	d := f.client.decide(&userContext, f.feature.Key, &decide.Options{})
+
+	assert.Equal(t, "", d.VariationKey)
+	assert.Equal(t, "", d.RuleKey)
+	assert.False(t, d.Enabled)
+	assert.Contains(t, d.Reasons, cmabErrorMessage)
+	f.eventProcessor.AssertNotCalled(t, "ProcessEvent", mock.Anything)
+}
+
 func TestIsFeatureEnabledSendsNoLocalHoldoutEvent(t *testing.T) {
 	servedVariation := makeTestVariation("on", true)
 	f := newLocalHoldoutClientFixture(decision.FeatureDecision{
