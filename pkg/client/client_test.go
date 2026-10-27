@@ -3274,6 +3274,7 @@ func TestClientTestSuiteTrackNotification(t *testing.T) {
 
 type localHoldoutClientFixture struct {
 	client         *OptimizelyClient
+	config         *MockProjectConfig
 	feature        entities.Feature
 	eventProcessor *MockEventProcessor
 }
@@ -3299,6 +3300,7 @@ func newLocalHoldoutClientFixture(featureDecision decision.FeatureDecision) loca
 			logger:               logging.GetLogger("", ""),
 			tracer:               &MockTracer{},
 		},
+		config:         mockConfig,
 		feature:        feature,
 		eventProcessor: mockEventProcessor,
 	}
@@ -3331,10 +3333,10 @@ func TestDecideLocalHoldoutHitThenLaterRuleServes(t *testing.T) {
 	servedVariation := makeTestVariation("on", true)
 	servedExperiment := makeTestExperimentWithVariations("exp_2", []entities.Variation{servedVariation})
 	f := newLocalHoldoutClientFixture(decision.FeatureDecision{
-		Experiment:            servedExperiment,
-		Variation:             &servedVariation,
-		Source:                decision.FeatureTest,
-		LocalHoldoutDecisions: []decision.FeatureDecision{makeLocalHoldoutDecision("local_holdout")},
+		Experiment:       servedExperiment,
+		Variation:        &servedVariation,
+		Source:           decision.FeatureTest,
+		HoldoutDecisions: []decision.FeatureDecision{makeLocalHoldoutDecision("local_holdout")},
 	})
 	userContext := newOptimizelyUserContext(f.client, "test_user_1", nil, nil, nil)
 
@@ -3353,7 +3355,7 @@ func TestDecideLocalHoldoutHitThenLaterRuleServes(t *testing.T) {
 func TestDecideLocalHoldoutHitsOnSeveralRulesSendSeveralEvents(t *testing.T) {
 	f := newLocalHoldoutClientFixture(decision.FeatureDecision{
 		Source: decision.Rollout,
-		LocalHoldoutDecisions: []decision.FeatureDecision{
+		HoldoutDecisions: []decision.FeatureDecision{
 			makeLocalHoldoutDecision("local_holdout"),
 			makeLocalHoldoutDecision("local_holdout"),
 		},
@@ -3372,10 +3374,10 @@ func TestDecideLocalHoldoutHitsOnSeveralRulesSendSeveralEvents(t *testing.T) {
 func TestDecideLocalHoldoutOnDeliveryRuleSendsEventWithSendFlagDecisionsOff(t *testing.T) {
 	servedVariation := makeTestVariation("on", true)
 	f := newLocalHoldoutClientFixture(decision.FeatureDecision{
-		Experiment:            makeTestExperimentWithVariations("rollout_2", []entities.Variation{servedVariation}),
-		Variation:             &servedVariation,
-		Source:                decision.Rollout,
-		LocalHoldoutDecisions: []decision.FeatureDecision{makeLocalHoldoutDecision("delivery_holdout")},
+		Experiment:       makeTestExperimentWithVariations("rollout_2", []entities.Variation{servedVariation}),
+		Variation:        &servedVariation,
+		Source:           decision.Rollout,
+		HoldoutDecisions: []decision.FeatureDecision{makeLocalHoldoutDecision("delivery_holdout")},
 	})
 	userContext := newOptimizelyUserContext(f.client, "test_user_1", nil, nil, nil)
 
@@ -3388,8 +3390,8 @@ func TestDecideLocalHoldoutOnDeliveryRuleSendsEventWithSendFlagDecisionsOff(t *t
 
 func TestDecideDisableDecisionEventSuppressesLocalHoldoutEvents(t *testing.T) {
 	f := newLocalHoldoutClientFixture(decision.FeatureDecision{
-		Source:                decision.Rollout,
-		LocalHoldoutDecisions: []decision.FeatureDecision{makeLocalHoldoutDecision("local_holdout")},
+		Source:           decision.Rollout,
+		HoldoutDecisions: []decision.FeatureDecision{makeLocalHoldoutDecision("local_holdout")},
 	})
 	userContext := newOptimizelyUserContext(f.client, "test_user_1", nil, nil, nil)
 
@@ -3400,8 +3402,8 @@ func TestDecideDisableDecisionEventSuppressesLocalHoldoutEvents(t *testing.T) {
 
 func TestDecideDecisionErrorSuppressesLocalHoldoutEvents(t *testing.T) {
 	holdoutDecision := decision.FeatureDecision{
-		Source:                decision.FeatureTest,
-		LocalHoldoutDecisions: []decision.FeatureDecision{makeLocalHoldoutDecision("local_holdout")},
+		Source:           decision.FeatureTest,
+		HoldoutDecisions: []decision.FeatureDecision{makeLocalHoldoutDecision("local_holdout")},
 	}
 	f := newLocalHoldoutClientFixture(holdoutDecision)
 	cmabErrorMessage := "Failed to fetch CMAB data for experiment exp_1."
@@ -3419,19 +3421,73 @@ func TestDecideDecisionErrorSuppressesLocalHoldoutEvents(t *testing.T) {
 	f.eventProcessor.AssertNotCalled(t, "ProcessEvent", mock.Anything)
 }
 
-func TestIsFeatureEnabledSendsNoLocalHoldoutEvent(t *testing.T) {
+func makeExcludeTDBypassDecision(localHits ...decision.FeatureDecision) decision.FeatureDecision {
 	servedVariation := makeTestVariation("on", true)
-	f := newLocalHoldoutClientFixture(decision.FeatureDecision{
-		Experiment:            makeTestExperimentWithVariations("exp_2", []entities.Variation{servedVariation}),
-		Variation:             &servedVariation,
-		Source:                decision.FeatureTest,
-		LocalHoldoutDecisions: []decision.FeatureDecision{makeLocalHoldoutDecision("local_holdout")},
-	})
+	globalHit := makeLocalHoldoutDecision("global_holdout")
+	return decision.FeatureDecision{
+		Experiment:        makeTestExperimentWithVariations("rollout_1", []entities.Variation{servedVariation}),
+		Variation:         &servedVariation,
+		Source:            decision.Rollout,
+		HoldoutExperiment: &globalHit.Experiment,
+		HoldoutVariation:  globalHit.Variation,
+		HoldoutDecisions:  append([]decision.FeatureDecision{globalHit}, localHits...),
+	}
+}
 
-	enabled, err := f.client.IsFeatureEnabled(f.feature.Key, entities.UserContext{ID: "test_user_1"})
+func TestLegacyAPIsSendNoHoldoutImpression(t *testing.T) {
+	servedVariation := makeTestVariation("on", true)
+	localHit := decision.FeatureDecision{
+		Experiment:       makeTestExperimentWithVariations("exp_2", []entities.Variation{servedVariation}),
+		Variation:        &servedVariation,
+		Source:           decision.FeatureTest,
+		HoldoutDecisions: []decision.FeatureDecision{makeLocalHoldoutDecision("local_holdout")},
+	}
+	decisions := map[string]decision.FeatureDecision{
+		"local holdout hit":         localHit,
+		"global excludeTD bypassed": makeExcludeTDBypassDecision(),
+	}
+	userContext := entities.UserContext{ID: "test_user_1"}
 
-	assert.NoError(t, err)
-	assert.True(t, enabled)
-	assert.Empty(t, processedImpressions(f.eventProcessor, decision.Holdout))
-	assert.Len(t, processedImpressions(f.eventProcessor, decision.FeatureTest), 1)
+	for name, featureDecision := range decisions {
+		t.Run(name+"/IsFeatureEnabled", func(t *testing.T) {
+			f := newLocalHoldoutClientFixture(featureDecision)
+			enabled, err := f.client.IsFeatureEnabled(f.feature.Key, userContext)
+			assert.NoError(t, err)
+			assert.True(t, enabled)
+			assert.Empty(t, processedImpressions(f.eventProcessor, decision.Holdout))
+		})
+		t.Run(name+"/GetFeatureVariable", func(t *testing.T) {
+			f := newLocalHoldoutClientFixture(featureDecision)
+			f.client.notificationCenter = notification.NewNotificationCenter()
+			f.config.On("GetVariableByKey", f.feature.Key, "var_1").Return(entities.Variable{Key: "var_1", DefaultValue: "x", Type: entities.String}, nil)
+			_, _, err := f.client.GetFeatureVariable(f.feature.Key, "var_1", userContext)
+			assert.NoError(t, err)
+			assert.Empty(t, processedImpressions(f.eventProcessor, decision.Holdout))
+		})
+		t.Run(name+"/GetDetailedFeatureDecisionUnsafe", func(t *testing.T) {
+			f := newLocalHoldoutClientFixture(featureDecision)
+			_, err := f.client.GetDetailedFeatureDecisionUnsafe(f.feature.Key, userContext, false)
+			assert.NoError(t, err)
+			assert.Empty(t, processedImpressions(f.eventProcessor, decision.Holdout))
+		})
+	}
+}
+
+func TestDecideSendsGlobalExcludeTDHoldoutFirstThenLocalHits(t *testing.T) {
+	f := newLocalHoldoutClientFixture(makeExcludeTDBypassDecision(
+		makeLocalHoldoutDecision("experiment_holdout"),
+		makeLocalHoldoutDecision("delivery_holdout"),
+	))
+	userContext := newOptimizelyUserContext(f.client, "test_user_1", nil, nil, nil)
+
+	d := f.client.decide(&userContext, f.feature.Key, &decide.Options{})
+
+	assert.Equal(t, "rollout_1", d.RuleKey)
+	holdoutEvents := processedImpressions(f.eventProcessor, decision.Holdout)
+	var ruleKeys []string
+	for _, e := range holdoutEvents {
+		ruleKeys = append(ruleKeys, e.Impression.Metadata.RuleKey)
+	}
+	assert.Equal(t, []string{"global_holdout", "experiment_holdout", "delivery_holdout"}, ruleKeys)
+	assert.Len(t, f.eventProcessor.Calls, 3)
 }

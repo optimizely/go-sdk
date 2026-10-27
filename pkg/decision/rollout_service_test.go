@@ -421,9 +421,9 @@ func (s *RolloutServiceTestSuite) TestGetDecisionLocalHoldout_RegularRule_UserBu
 	s.Equal(&expectedVariation, decision.Variation)
 	s.Equal(testExp1117.Key, decision.Experiment.Key)
 	s.Equal(Rollout, decision.Source)
-	s.Require().Len(decision.LocalHoldoutDecisions, 1)
-	s.Equal(Holdout, decision.LocalHoldoutDecisions[0].Source)
-	s.Equal(holdoutVar.Key, decision.LocalHoldoutDecisions[0].Variation.Key)
+	s.Require().Len(decision.HoldoutDecisions, 1)
+	s.Equal(Holdout, decision.HoldoutDecisions[0].Source)
+	s.Equal(holdoutVar.Key, decision.HoldoutDecisions[0].Variation.Key)
 	// Rule 1112 is skipped entirely: no audience evaluation or bucketing for it
 	s.mockAudienceTreeEvaluator.AssertNotCalled(s.T(), "Evaluate", testExp1112.AudienceConditionTree, mock.Anything, mock.Anything)
 	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision", s.testExperiment1112DecisionContext, mock.Anything, mock.Anything)
@@ -460,7 +460,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionLocalHoldout_AllRulesHeldOut() 
 	s.NoError(err)
 	s.Nil(decision.Variation)
 	s.Equal(Rollout, decision.Source)
-	s.Len(decision.LocalHoldoutDecisions, 3)
+	s.Len(decision.HoldoutDecisions, 3)
 	s.mockAudienceTreeEvaluator.AssertNotCalled(s.T(), "Evaluate")
 	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision")
 }
@@ -557,8 +557,8 @@ func (s *RolloutServiceTestSuite) TestGetDecisionLocalHoldout_FallbackRule_UserB
 	s.NoError(err)
 	s.Nil(decision.Variation)
 	s.Equal(Rollout, decision.Source)
-	s.Require().Len(decision.LocalHoldoutDecisions, 1)
-	s.Equal(holdoutHit.Key, decision.LocalHoldoutDecisions[0].Experiment.Key)
+	s.Require().Len(decision.HoldoutDecisions, 1)
+	s.Equal(holdoutHit.Key, decision.HoldoutDecisions[0].Experiment.Key)
 	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision")
 	s.mockConfig.AssertExpectations(s.T())
 }
@@ -624,8 +624,8 @@ func (s *RolloutServiceTestSuite) TestGetDecisionLocalHoldoutHitThenForcedDecisi
 	s.NoError(err)
 	s.Equal(testExp1117Var2223.Key, decision.Variation.Key)
 	s.Equal(reasons.ForcedDecisionFound, decision.Reason)
-	s.Require().Len(decision.LocalHoldoutDecisions, 1)
-	s.Equal(localHoldout.Key, decision.LocalHoldoutDecisions[0].Experiment.Key)
+	s.Require().Len(decision.HoldoutDecisions, 1)
+	s.Equal(localHoldout.Key, decision.HoldoutDecisions[0].Experiment.Key)
 	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision")
 }
 

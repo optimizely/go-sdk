@@ -45,7 +45,7 @@ func NewFeatureExperimentService(logger logging.OptimizelyLogProducer, composite
 func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options) (FeatureDecision, decide.DecisionReasons, error) {
 	feature := decisionContext.Feature
 	reasons := decide.NewDecisionReasons(options)
-	var localHoldoutDecisions []FeatureDecision
+	var holdoutDecisions []FeatureDecision
 	// @TODO this can be improved by getting group ID first and determining experiment and then bucketing in experiment
 	for _, featureExperiment := range feature.FeatureExperiments {
 
@@ -55,10 +55,10 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 			reasons.Append(_reasons)
 			if err == nil {
 				featureDecision := FeatureDecision{
-					Experiment:            featureExperiment,
-					Variation:             forcedDecision,
-					Source:                FeatureTest,
-					LocalHoldoutDecisions: localHoldoutDecisions,
+					Experiment:       featureExperiment,
+					Variation:        forcedDecision,
+					Source:           FeatureTest,
+					HoldoutDecisions: holdoutDecisions,
 				}
 				return featureDecision, reasons, nil
 			}
@@ -69,7 +69,7 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 			holdoutDecision, holdoutReasons, _ := f.holdoutService.GetLocalDecisionForRule(featureExperiment.ID, decisionContext.ProjectConfig, userContext, options)
 			reasons.Append(holdoutReasons)
 			if holdoutDecision.Variation != nil {
-				localHoldoutDecisions = append(localHoldoutDecisions, holdoutDecision)
+				holdoutDecisions = append(holdoutDecisions, holdoutDecision)
 				continue
 			}
 		}
@@ -100,17 +100,17 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 		// Variation not nil means we got a decision and should return it
 		if experimentDecision.Variation != nil {
 			featureDecision := FeatureDecision{
-				Experiment:            experiment,
-				Decision:              experimentDecision.Decision,
-				Variation:             experimentDecision.Variation,
-				Source:                FeatureTest,
-				CmabUUID:              experimentDecision.CmabUUID,
-				LocalHoldoutDecisions: localHoldoutDecisions,
+				Experiment:       experiment,
+				Decision:         experimentDecision.Decision,
+				Variation:        experimentDecision.Variation,
+				Source:           FeatureTest,
+				CmabUUID:         experimentDecision.CmabUUID,
+				HoldoutDecisions: holdoutDecisions,
 			}
 
 			return featureDecision, reasons, err
 		}
 	}
 
-	return FeatureDecision{LocalHoldoutDecisions: localHoldoutDecisions}, reasons, nil
+	return FeatureDecision{HoldoutDecisions: holdoutDecisions}, reasons, nil
 }

@@ -112,7 +112,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		// Local holdouts are evaluated after forced decisions but before audience/traffic checks.
 		if holdoutDecision, holdoutReasons := r.getLocalHoldoutDecision(experiment, decisionContext, userContext, options); holdoutDecision != nil {
 			reasons.Append(holdoutReasons)
-			featureDecision.LocalHoldoutDecisions = append(featureDecision.LocalHoldoutDecisions, *holdoutDecision)
+			featureDecision.HoldoutDecisions = append(featureDecision.HoldoutDecisions, *holdoutDecision)
 			continue
 		}
 
@@ -148,7 +148,7 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 
 	if holdoutDecision, holdoutReasons := r.getLocalHoldoutDecision(experiment, decisionContext, userContext, options); holdoutDecision != nil {
 		reasons.Append(holdoutReasons)
-		featureDecision.LocalHoldoutDecisions = append(featureDecision.LocalHoldoutDecisions, *holdoutDecision)
+		featureDecision.HoldoutDecisions = append(featureDecision.HoldoutDecisions, *holdoutDecision)
 		return featureDecision, reasons, nil
 	}
 

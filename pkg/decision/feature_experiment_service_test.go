@@ -363,9 +363,9 @@ func (s *FeatureExperimentServiceTestSuite) TestLocalHoldoutHitSkipsRuleAndNextR
 	s.Equal(&expectedVariation, decision.Variation)
 	s.Equal(testExp1114.Key, decision.Experiment.Key)
 	s.Equal(FeatureTest, decision.Source)
-	s.Require().Len(decision.LocalHoldoutDecisions, 1)
-	s.Equal(localHoldout.Key, decision.LocalHoldoutDecisions[0].Experiment.Key)
-	s.Equal(Holdout, decision.LocalHoldoutDecisions[0].Source)
+	s.Require().Len(decision.HoldoutDecisions, 1)
+	s.Equal(localHoldout.Key, decision.HoldoutDecisions[0].Experiment.Key)
+	s.Equal(Holdout, decision.HoldoutDecisions[0].Source)
 	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision", ExperimentDecisionContext{Experiment: &testExp1113, ProjectConfig: s.mockConfig}, testUserContext, s.options)
 	s.mockExperimentService.AssertExpectations(s.T())
 }
@@ -392,7 +392,7 @@ func (s *FeatureExperimentServiceTestSuite) TestLocalHoldoutOnAllRulesNoRuleServ
 
 	s.NoError(err)
 	s.Nil(decision.Variation)
-	s.Len(decision.LocalHoldoutDecisions, 2)
+	s.Len(decision.HoldoutDecisions, 2)
 	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision")
 }
 
@@ -426,8 +426,8 @@ func (s *FeatureExperimentServiceTestSuite) TestLocalHoldoutHitThenForcedDecisio
 	s.NoError(err)
 	s.Equal(forcedVariation.Key, decision.Variation.Key)
 	s.Equal(testExp1114.Key, decision.Experiment.Key)
-	s.Require().Len(decision.LocalHoldoutDecisions, 1)
-	s.Equal(localHoldout.Key, decision.LocalHoldoutDecisions[0].Experiment.Key)
+	s.Require().Len(decision.HoldoutDecisions, 1)
+	s.Equal(localHoldout.Key, decision.HoldoutDecisions[0].Experiment.Key)
 	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision")
 }
 
@@ -463,7 +463,7 @@ func (s *FeatureExperimentServiceTestSuite) TestLocalHoldoutHitThenCmabErrorOnLa
 
 	s.ErrorIs(err, cmabError)
 	s.Nil(decision.Variation)
-	s.Empty(decision.LocalHoldoutDecisions)
+	s.Empty(decision.HoldoutDecisions)
 	s.mockExperimentService.AssertExpectations(s.T())
 }
 

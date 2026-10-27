@@ -66,7 +66,7 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 	}
 
 	var featureDecision FeatureDecision
-	var localHoldoutDecisions []FeatureDecision
+	var holdoutDecisions []FeatureDecision
 	var err error
 	for _, featureDecisionService := range f.featureServices {
 		var decisionReasons decide.DecisionReasons
@@ -78,27 +78,34 @@ func (f CompositeFeatureService) GetDecision(decisionContext FeatureDecisionCont
 			return FeatureDecision{}, reasons, err
 		}
 
-		localHoldoutDecisions = append(localHoldoutDecisions, featureDecision.LocalHoldoutDecisions...)
-		featureDecision.LocalHoldoutDecisions = localHoldoutDecisions
+		holdoutDecisions = append(holdoutDecisions, featureDecision.HoldoutDecisions...)
+		featureDecision.HoldoutDecisions = holdoutDecisions
 		if featureDecision.Variation != nil {
-			return featureDecision, reasons, err
+			return withFirstHoldout(featureDecision), reasons, err
 		}
 	}
-	return featureDecision, reasons, err
+	return withFirstHoldout(featureDecision), reasons, err
+}
+
+// withFirstHoldout populates the deprecated HoldoutExperiment/HoldoutVariation fields from the first holdout hit.
+func withFirstHoldout(featureDecision FeatureDecision) FeatureDecision {
+	if len(featureDecision.HoldoutDecisions) > 0 {
+		first := featureDecision.HoldoutDecisions[0]
+		featureDecision.HoldoutExperiment = &first.Experiment
+		featureDecision.HoldoutVariation = first.Variation
+	}
+	return featureDecision
 }
 
 // getDecisionWithExcludedTD handles the exclude_targeted_deliveries holdout logic.
 // When a holdout has ExcludeTargetedDeliveries set, AB/MAB/CMAB experiments are
 // blocked (holdout returned) but targeted delivery rules are allowed through.
 func (f CompositeFeatureService) getDecisionWithExcludedTD(holdoutDecision FeatureDecision, decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options, reasons decide.DecisionReasons) (FeatureDecision, decide.DecisionReasons, error) {
-	holdoutExp := holdoutDecision.Experiment
-	holdoutVar := holdoutDecision.Variation
-
 	reasons.AddInfo("Holdout \"%s\" has excludeTargetedDeliveries enabled, continuing to rollout evaluation.", holdoutDecision.Holdout.Key)
 
 	// Skip experiment evaluation entirely (A/B/MAB/CMAB are blocked by holdout).
 	// Evaluate rollout service only (targeted deliveries are excluded from holdout blocking).
-	var localHoldoutDecisions []FeatureDecision
+	holdoutDecisions := []FeatureDecision{holdoutDecision}
 	if f.rolloutService != nil {
 		rolloutDecision, rolloutReasons, err := f.rolloutService.GetDecision(decisionContext, userContext, options)
 		reasons.Append(rolloutReasons)
@@ -107,22 +114,19 @@ func (f CompositeFeatureService) getDecisionWithExcludedTD(holdoutDecision Featu
 			reasons.AddError(err.Error())
 			return FeatureDecision{}, reasons, err
 		}
+		holdoutDecisions = append(holdoutDecisions, rolloutDecision.HoldoutDecisions...)
 		if rolloutDecision.Variation != nil {
-			rolloutDecision.HoldoutExperiment = &holdoutExp
-			rolloutDecision.HoldoutVariation = holdoutVar
-			return rolloutDecision, reasons, nil
+			rolloutDecision.HoldoutDecisions = holdoutDecisions
+			return withFirstHoldout(rolloutDecision), reasons, nil
 		}
-		localHoldoutDecisions = rolloutDecision.LocalHoldoutDecisions
 	}
 
 	emptyDecision := FeatureDecision{
 		// Match the rollout service's no-match behavior (see RolloutService.GetDecision),
 		// so a served impression under sendFlagDecisions carries ruleType "rollout" rather
 		// than a blank value.
-		Source:                Rollout,
-		HoldoutExperiment:     &holdoutExp,
-		HoldoutVariation:      holdoutVar,
-		LocalHoldoutDecisions: localHoldoutDecisions,
+		Source:           Rollout,
+		HoldoutDecisions: holdoutDecisions,
 	}
-	return emptyDecision, reasons, nil
+	return withFirstHoldout(emptyDecision), reasons, nil
 }
