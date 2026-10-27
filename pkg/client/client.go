@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2025, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2026, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -248,25 +248,16 @@ func (o *OptimizelyClient) dispatchDecisionEvents(projectConfig config.ProjectCo
 		o.EventProcessor.ProcessEvent(ue)
 		eventSent = true
 	}
-	if o.sendHoldoutImpression(projectConfig, featureDecision, usrContext, key) {
-		eventSent = true
+	for _, hd := range featureDecision.HoldoutDecisions {
+		if hd.Variation == nil {
+			continue
+		}
+		if hue, ok := event.CreateImpressionUserEvent(projectConfig, hd.Experiment, hd.Variation, usrContext, key, hd.Experiment.Key, decision.Holdout, hd.Variation.FeatureEnabled, nil); ok {
+			o.EventProcessor.ProcessEvent(hue)
+			eventSent = true
+		}
 	}
 	return eventSent
-}
-
-// sendHoldoutImpression emits a holdout impression event when a holdout was bypassed for a
-// targeted delivery rule (the decision carries the bucketed holdout experiment/variation).
-// It returns true if an event was dispatched.
-func (o *OptimizelyClient) sendHoldoutImpression(projectConfig config.ProjectConfig, featureDecision decision.FeatureDecision, userContext entities.UserContext, key string) bool {
-	if featureDecision.HoldoutExperiment == nil || featureDecision.HoldoutVariation == nil {
-		return false
-	}
-	if hue, hok := event.CreateImpressionUserEvent(projectConfig, *featureDecision.HoldoutExperiment,
-		featureDecision.HoldoutVariation, userContext, key, featureDecision.HoldoutExperiment.Key, decision.Holdout, featureDecision.HoldoutVariation.FeatureEnabled, nil); hok {
-		o.EventProcessor.ProcessEvent(hue)
-		return true
-	}
-	return false
 }
 
 func (o *OptimizelyClient) decideForKeys(userContext OptimizelyUserContext, keys []string, options *decide.Options) map[string]OptimizelyDecision {
@@ -546,8 +537,6 @@ func (o *OptimizelyClient) IsFeatureEnabled(featureKey string, userContext entit
 		featureDecision.Variation, userContext, featureKey, featureDecision.Experiment.Key, featureDecision.Source, result, featureDecision.CmabUUID); ok && featureDecision.Source != "" {
 		o.EventProcessor.ProcessEvent(ue)
 	}
-	// Send holdout impression when holdout is bypassed for targeted delivery
-	o.sendHoldoutImpression(decisionContext.ProjectConfig, featureDecision, userContext, featureKey)
 
 	return result, err
 }
@@ -913,8 +902,6 @@ func (o *OptimizelyClient) GetDetailedFeatureDecisionUnsafe(featureKey string, u
 				featureDecision.Variation, userContext, featureKey, featureDecision.Experiment.Key, featureDecision.Source, decisionInfo.Enabled, featureDecision.CmabUUID); ok {
 				o.EventProcessor.ProcessEvent(ue)
 			}
-			// Send holdout impression when holdout is bypassed for targeted delivery
-			o.sendHoldoutImpression(decisionContext.ProjectConfig, featureDecision, userContext, featureKey)
 		}
 	}
 

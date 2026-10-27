@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, 2026, Optimizely, Inc. and contributors             *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -109,11 +109,11 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 			return *forcedDecision, reasons, nil
 		}
 
-		// [FSSDK-12369] Check local holdouts targeting this rollout rule.
 		// Local holdouts are evaluated after forced decisions but before audience/traffic checks.
 		if holdoutDecision, holdoutReasons := r.getLocalHoldoutDecision(experiment, decisionContext, userContext, options); holdoutDecision != nil {
 			reasons.Append(holdoutReasons)
-			return *holdoutDecision, reasons, nil
+			featureDecision.HoldoutDecisions = append(featureDecision.HoldoutDecisions, *holdoutDecision)
+			continue
 		}
 
 		experimentDecisionContext := getExperimentDecisionContext(experiment)
@@ -146,10 +146,10 @@ func (r RolloutService) GetDecision(decisionContext FeatureDecisionContext, user
 		return *forcedDecision, reasons, nil
 	}
 
-	// [FSSDK-12369] Check local holdouts for the fallback/everyone else rule
 	if holdoutDecision, holdoutReasons := r.getLocalHoldoutDecision(experiment, decisionContext, userContext, options); holdoutDecision != nil {
 		reasons.Append(holdoutReasons)
-		return *holdoutDecision, reasons, nil
+		featureDecision.HoldoutDecisions = append(featureDecision.HoldoutDecisions, *holdoutDecision)
+		return featureDecision, reasons, nil
 	}
 
 	experimentDecisionContext := getExperimentDecisionContext(experiment)

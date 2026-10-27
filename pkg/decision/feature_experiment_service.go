@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, 2026, Optimizely, Inc. and contributors             *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -45,6 +45,7 @@ func NewFeatureExperimentService(logger logging.OptimizelyLogProducer, composite
 func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionContext, userContext entities.UserContext, options *decide.Options) (FeatureDecision, decide.DecisionReasons, error) {
 	feature := decisionContext.Feature
 	reasons := decide.NewDecisionReasons(options)
+	var holdoutDecisions []FeatureDecision
 	// @TODO this can be improved by getting group ID first and determining experiment and then bucketing in experiment
 	for _, featureExperiment := range feature.FeatureExperiments {
 
@@ -54,22 +55,22 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 			reasons.Append(_reasons)
 			if err == nil {
 				featureDecision := FeatureDecision{
-					Experiment: featureExperiment,
-					Variation:  forcedDecision,
-					Source:     FeatureTest,
+					Experiment:       featureExperiment,
+					Variation:        forcedDecision,
+					Source:           FeatureTest,
+					HoldoutDecisions: holdoutDecisions,
 				}
 				return featureDecision, reasons, nil
 			}
 		}
 
-		// [FSSDK-12369] Check local holdouts targeting this experiment rule.
 		// Local holdouts are evaluated after forced decisions but before audience/traffic checks.
 		if f.holdoutService != nil {
 			holdoutDecision, holdoutReasons, _ := f.holdoutService.GetLocalDecisionForRule(featureExperiment.ID, decisionContext.ProjectConfig, userContext, options)
 			reasons.Append(holdoutReasons)
 			if holdoutDecision.Variation != nil {
-				// User is in a local holdout — return holdout decision, skip rule evaluation
-				return holdoutDecision, reasons, nil
+				holdoutDecisions = append(holdoutDecisions, holdoutDecision)
+				continue
 			}
 		}
 
@@ -99,16 +100,17 @@ func (f FeatureExperimentService) GetDecision(decisionContext FeatureDecisionCon
 		// Variation not nil means we got a decision and should return it
 		if experimentDecision.Variation != nil {
 			featureDecision := FeatureDecision{
-				Experiment: experiment,
-				Decision:   experimentDecision.Decision,
-				Variation:  experimentDecision.Variation,
-				Source:     FeatureTest,
-				CmabUUID:   experimentDecision.CmabUUID,
+				Experiment:       experiment,
+				Decision:         experimentDecision.Decision,
+				Variation:        experimentDecision.Variation,
+				Source:           FeatureTest,
+				CmabUUID:         experimentDecision.CmabUUID,
+				HoldoutDecisions: holdoutDecisions,
 			}
 
 			return featureDecision, reasons, err
 		}
 	}
 
-	return FeatureDecision{}, reasons, nil
+	return FeatureDecision{HoldoutDecisions: holdoutDecisions}, reasons, nil
 }

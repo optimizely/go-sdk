@@ -74,11 +74,15 @@ type FeatureDecision struct {
 	// Holdout is the holdout the user was bucketed into, set by HoldoutService so the
 	// composite service can inspect holdout properties (e.g. ExcludeTargetedDeliveries).
 	Holdout *entities.Holdout
-	// HoldoutExperiment and HoldoutVariation are set by CompositeFeatureService only when a
-	// holdout with ExcludeTargetedDeliveries is bypassed for a targeted delivery rule. They let
-	// the client emit a holdout impression alongside the served rollout decision.
+	// HoldoutExperiment and HoldoutVariation mirror the first entry of HoldoutDecisions.
+	//
+	// Deprecated: use HoldoutDecisions, which carries every holdout hit for the flag.
 	HoldoutExperiment *entities.Experiment
-	HoldoutVariation  *entities.Variation
+	// Deprecated: use HoldoutDecisions.
+	HoldoutVariation *entities.Variation
+	// HoldoutDecisions holds every holdout hit for the flag in dispatch order: a global holdout
+	// bypassed by ExcludeTargetedDeliveries first, then experiment-rule hits, then delivery-rule hits.
+	HoldoutDecisions []FeatureDecision
 }
 
 // ExperimentDecision contains the decision information about an experiment

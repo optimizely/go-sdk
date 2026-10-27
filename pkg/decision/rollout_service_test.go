@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2021, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2021, 2026, Optimizely, Inc. and contributors             *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -381,9 +381,8 @@ func (s *RolloutServiceTestSuite) TestGetDecisionFailsTargeting() {
 	s.mockLogger.AssertExpectations(s.T())
 }
 
-// TestGetDecisionLocalHoldout_RegularRule_UserBucketed verifies that when a user is bucketed
-// into a local holdout targeting a regular rollout rule, the holdout decision is returned
-// immediately — audience and traffic checks for the rule are skipped.
+// TestGetDecisionLocalHoldout_RegularRule_UserBucketed verifies that a local holdout hit on a
+// regular rollout rule skips only that rule; the next rule serves and the hit is recorded.
 func (s *RolloutServiceTestSuite) TestGetDecisionLocalHoldout_RegularRule_UserBucketed() {
 	holdoutVar := entities.Variation{ID: "ho_var_1", Key: "holdout_variation"}
 	localHoldout := entities.Holdout{
@@ -398,6 +397,14 @@ func (s *RolloutServiceTestSuite) TestGetDecisionLocalHoldout_RegularRule_UserBu
 		},
 	}
 	s.mockConfig.On("GetHoldoutsForRule", testExp1112.ID).Return([]entities.Holdout{localHoldout})
+	s.mockConfig.On("GetHoldoutsForRule", testExp1117.ID).Return([]entities.Holdout{})
+	s.mockAudienceTreeEvaluator.On("Evaluate", testExp1117.AudienceConditionTree, s.testConditionTreeParams, mock.Anything).Return(true, true, s.reasons)
+	expectedVariation := testExp1117Var2223
+	exp1117DecisionContext := ExperimentDecisionContext{Experiment: &testExp1117, ProjectConfig: s.mockConfig}
+	s.mockExperimentService.On("GetDecision", exp1117DecisionContext, s.testUserContext, s.options).Return(ExperimentDecision{
+		Variation: &expectedVariation,
+		Decision:  Decision{Reason: reasons.BucketedIntoVariation},
+	}, s.reasons, nil)
 	s.mockLogger.On("Debug", mock.Anything).Return()
 	s.mockLogger.On("Info", mock.Anything).Return()
 
@@ -411,9 +418,49 @@ func (s *RolloutServiceTestSuite) TestGetDecisionLocalHoldout_RegularRule_UserBu
 	decision, _, err := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
 
 	s.NoError(err)
-	s.NotNil(decision.Variation)
-	s.Equal(Holdout, decision.Source)
-	// Audience and experiment bucketer must not be called — holdout returned early
+	s.Equal(&expectedVariation, decision.Variation)
+	s.Equal(testExp1117.Key, decision.Experiment.Key)
+	s.Equal(Rollout, decision.Source)
+	s.Require().Len(decision.HoldoutDecisions, 1)
+	s.Equal(Holdout, decision.HoldoutDecisions[0].Source)
+	s.Equal(holdoutVar.Key, decision.HoldoutDecisions[0].Variation.Key)
+	// Rule 1112 is skipped entirely: no audience evaluation or bucketing for it
+	s.mockAudienceTreeEvaluator.AssertNotCalled(s.T(), "Evaluate", testExp1112.AudienceConditionTree, mock.Anything, mock.Anything)
+	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision", s.testExperiment1112DecisionContext, mock.Anything, mock.Anything)
+	s.mockExperimentService.AssertExpectations(s.T())
+}
+
+// TestGetDecisionLocalHoldout_AllRulesHeldOut verifies that hits on every rule each get recorded
+// and no rule serves.
+func (s *RolloutServiceTestSuite) TestGetDecisionLocalHoldout_AllRulesHeldOut() {
+	localHoldout := entities.Holdout{
+		ID:     "local_holdout_rule",
+		Key:    "local_holdout_for_rule",
+		Status: entities.HoldoutStatusRunning,
+		Variations: map[string]entities.Variation{
+			"ho_var_1": {ID: "ho_var_1", Key: "holdout_variation"},
+		},
+		TrafficAllocation: []entities.Range{
+			{EntityID: "ho_var_1", EndOfRange: 10000},
+		},
+	}
+	s.mockConfig.On("GetHoldoutsForRule", mock.Anything).Return([]entities.Holdout{localHoldout})
+	s.mockLogger.On("Debug", mock.Anything).Return()
+	s.mockLogger.On("Info", mock.Anything).Return()
+
+	testRolloutService := RolloutService{
+		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
+		experimentBucketerService: s.mockExperimentService,
+		holdoutService:            NewHoldoutService("test_sdk_key"),
+		logger:                    s.mockLogger,
+	}
+
+	decision, _, err := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
+
+	s.NoError(err)
+	s.Nil(decision.Variation)
+	s.Equal(Rollout, decision.Source)
+	s.Len(decision.HoldoutDecisions, 3)
 	s.mockAudienceTreeEvaluator.AssertNotCalled(s.T(), "Evaluate")
 	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision")
 }
@@ -461,8 +508,7 @@ func (s *RolloutServiceTestSuite) TestGetDecisionLocalHoldout_RegularRule_UserMi
 }
 
 // TestGetDecisionLocalHoldout_FallbackRule_UserBucketed verifies that a local holdout
-// targeting the everyone-else (fallback) rule is evaluated and returns a holdout decision
-// when the user is bucketed into it.
+// targeting the everyone-else (fallback) rule skips it and records the hit.
 func (s *RolloutServiceTestSuite) TestGetDecisionLocalHoldout_FallbackRule_UserBucketed() {
 	holdoutVar := entities.Variation{ID: "ho_var_1", Key: "holdout_variation"}
 	holdoutMiss := entities.Holdout{
@@ -509,8 +555,10 @@ func (s *RolloutServiceTestSuite) TestGetDecisionLocalHoldout_FallbackRule_UserB
 	decision, _, err := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
 
 	s.NoError(err)
-	s.NotNil(decision.Variation)
-	s.Equal(Holdout, decision.Source)
+	s.Nil(decision.Variation)
+	s.Equal(Rollout, decision.Source)
+	s.Require().Len(decision.HoldoutDecisions, 1)
+	s.Equal(holdoutHit.Key, decision.HoldoutDecisions[0].Experiment.Key)
 	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision")
 	s.mockConfig.AssertExpectations(s.T())
 }
@@ -543,6 +591,42 @@ func (s *RolloutServiceTestSuite) TestForcedDecisionBeatsLocalHoldout_Rollout() 
 	s.Equal(reasons.ForcedDecisionFound, decision.Reason)
 	// GetHoldoutsForRule must not be called — forced decision wins before local HO check
 	s.mockConfig.AssertNotCalled(s.T(), "GetHoldoutsForRule")
+}
+
+func (s *RolloutServiceTestSuite) TestGetDecisionLocalHoldoutHitThenForcedDecisionOnLaterRule() {
+	localHoldout := entities.Holdout{
+		ID:                "local_holdout_rule",
+		Key:               "local_holdout_for_rule",
+		Status:            entities.HoldoutStatusRunning,
+		Variations:        map[string]entities.Variation{"ho_var_1": {ID: "ho_var_1", Key: "holdout_variation"}},
+		TrafficAllocation: []entities.Range{{EntityID: "ho_var_1", EndOfRange: 10000}},
+	}
+	s.mockConfig.On("GetHoldoutsForRule", testExp1112.ID).Return([]entities.Holdout{localHoldout})
+	s.mockConfig.On("GetFlagVariationsMap").Return(map[string][]entities.Variation{
+		s.testFeatureDecisionContext.Feature.Key: {testExp1117Var2223},
+	})
+	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(
+		OptimizelyDecisionContext{FlagKey: s.testFeatureDecisionContext.Feature.Key, RuleKey: testExp1117.Key},
+		OptimizelyForcedDecision{VariationKey: testExp1117Var2223.Key},
+	)
+	s.mockLogger.On("Debug", mock.Anything).Return()
+	s.mockLogger.On("Info", mock.Anything).Return()
+
+	testRolloutService := RolloutService{
+		audienceTreeEvaluator:     s.mockAudienceTreeEvaluator,
+		experimentBucketerService: s.mockExperimentService,
+		holdoutService:            NewHoldoutService("test_sdk_key"),
+		logger:                    s.mockLogger,
+	}
+
+	decision, _, err := testRolloutService.GetDecision(s.testFeatureDecisionContext, s.testUserContext, s.options)
+
+	s.NoError(err)
+	s.Equal(testExp1117Var2223.Key, decision.Variation.Key)
+	s.Equal(reasons.ForcedDecisionFound, decision.Reason)
+	s.Require().Len(decision.HoldoutDecisions, 1)
+	s.Equal(localHoldout.Key, decision.HoldoutDecisions[0].Experiment.Key)
+	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision")
 }
 
 func TestNewRolloutService(t *testing.T) {

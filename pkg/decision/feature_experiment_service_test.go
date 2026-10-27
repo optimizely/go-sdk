@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright 2019-2025, Optimizely, Inc. and contributors                   *
+ * Copyright 2019-2026, Optimizely, Inc. and contributors                   *
  *                                                                          *
  * Licensed under the Apache License, Version 2.0 (the "License");          *
  * you may not use this file except in compliance with the License.         *
@@ -333,6 +333,138 @@ func (s *FeatureExperimentServiceTestSuite) TestForcedDecisionBeats100PercentLoc
 	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision")
 	// GetHoldoutsForRule must not be called — FD wins before local HO check
 	s.mockConfig.AssertNotCalled(s.T(), "GetHoldoutsForRule")
+}
+
+func (s *FeatureExperimentServiceTestSuite) TestLocalHoldoutHitSkipsRuleAndNextRuleServes() {
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	localHoldout := entities.Holdout{
+		ID:                "local_holdout",
+		Key:               "local_holdout",
+		Status:            entities.HoldoutStatusRunning,
+		Variations:        map[string]entities.Variation{"ho_var": {ID: "ho_var", Key: "ho_var"}},
+		TrafficAllocation: []entities.Range{{EntityID: "ho_var", EndOfRange: 10000}},
+	}
+	s.mockConfig.On("GetHoldoutsForRule", testExp1113.ID).Return([]entities.Holdout{localHoldout})
+	s.mockConfig.On("GetHoldoutsForRule", testExp1114.ID).Return([]entities.Holdout{})
+
+	expectedVariation := testExp1114.Variations["2225"]
+	exp1114Context := ExperimentDecisionContext{Experiment: &testExp1114, ProjectConfig: s.mockConfig}
+	s.mockExperimentService.On("GetDecision", exp1114Context, testUserContext, s.options).Return(ExperimentDecision{Variation: &expectedVariation}, s.reasons, nil)
+
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		holdoutService:             NewHoldoutService("test_sdk_key"),
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	decision, _, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options)
+
+	s.NoError(err)
+	s.Equal(&expectedVariation, decision.Variation)
+	s.Equal(testExp1114.Key, decision.Experiment.Key)
+	s.Equal(FeatureTest, decision.Source)
+	s.Require().Len(decision.HoldoutDecisions, 1)
+	s.Equal(localHoldout.Key, decision.HoldoutDecisions[0].Experiment.Key)
+	s.Equal(Holdout, decision.HoldoutDecisions[0].Source)
+	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision", ExperimentDecisionContext{Experiment: &testExp1113, ProjectConfig: s.mockConfig}, testUserContext, s.options)
+	s.mockExperimentService.AssertExpectations(s.T())
+}
+
+func (s *FeatureExperimentServiceTestSuite) TestLocalHoldoutOnAllRulesNoRuleServes() {
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	localHoldout := entities.Holdout{
+		ID:                "local_holdout",
+		Key:               "local_holdout",
+		Status:            entities.HoldoutStatusRunning,
+		Variations:        map[string]entities.Variation{"ho_var": {ID: "ho_var", Key: "ho_var"}},
+		TrafficAllocation: []entities.Range{{EntityID: "ho_var", EndOfRange: 10000}},
+	}
+	s.mockConfig.On("GetHoldoutsForRule", testExp1113.ID).Return([]entities.Holdout{localHoldout})
+	s.mockConfig.On("GetHoldoutsForRule", testExp1114.ID).Return([]entities.Holdout{localHoldout})
+
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		holdoutService:             NewHoldoutService("test_sdk_key"),
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	decision, _, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options)
+
+	s.NoError(err)
+	s.Nil(decision.Variation)
+	s.Len(decision.HoldoutDecisions, 2)
+	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision")
+}
+
+func (s *FeatureExperimentServiceTestSuite) TestLocalHoldoutHitThenForcedDecisionOnLaterRule() {
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	localHoldout := entities.Holdout{
+		ID:                "local_holdout",
+		Key:               "local_holdout",
+		Status:            entities.HoldoutStatusRunning,
+		Variations:        map[string]entities.Variation{"ho_var": {ID: "ho_var", Key: "ho_var"}},
+		TrafficAllocation: []entities.Range{{EntityID: "ho_var", EndOfRange: 10000}},
+	}
+	s.mockConfig.On("GetHoldoutsForRule", testExp1113.ID).Return([]entities.Holdout{localHoldout})
+	forcedVariation := testExp1114.Variations["2225"]
+	s.mockConfig.On("GetFlagVariationsMap").Return(map[string][]entities.Variation{
+		s.testFeatureDecisionContext.Feature.Key: {forcedVariation},
+	})
+	s.testFeatureDecisionContext.ForcedDecisionService.SetForcedDecision(
+		OptimizelyDecisionContext{FlagKey: s.testFeatureDecisionContext.Feature.Key, RuleKey: testExp1114.Key},
+		OptimizelyForcedDecision{VariationKey: forcedVariation.Key},
+	)
+
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		holdoutService:             NewHoldoutService("test_sdk_key"),
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	decision, _, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options)
+
+	s.NoError(err)
+	s.Equal(forcedVariation.Key, decision.Variation.Key)
+	s.Equal(testExp1114.Key, decision.Experiment.Key)
+	s.Require().Len(decision.HoldoutDecisions, 1)
+	s.Equal(localHoldout.Key, decision.HoldoutDecisions[0].Experiment.Key)
+	s.mockExperimentService.AssertNotCalled(s.T(), "GetDecision")
+}
+
+func (s *FeatureExperimentServiceTestSuite) TestLocalHoldoutHitThenCmabErrorOnLaterRule() {
+	testUserContext := entities.UserContext{ID: "test_user_1"}
+	localHoldout := entities.Holdout{
+		ID:                "local_holdout",
+		Key:               "local_holdout",
+		Status:            entities.HoldoutStatusRunning,
+		Variations:        map[string]entities.Variation{"ho_var": {ID: "ho_var", Key: "ho_var"}},
+		TrafficAllocation: []entities.Range{{EntityID: "ho_var", EndOfRange: 10000}},
+	}
+	cmabExperiment := testExp1114
+	cmabExperiment.Cmab = &entities.Cmab{AttributeIds: []string{"attr1"}, TrafficAllocation: 10000}
+	s.mockConfig.On("GetHoldoutsForRule", testExp1113.ID).Return([]entities.Holdout{localHoldout})
+	s.mockConfig.On("GetHoldoutsForRule", cmabExperiment.ID).Return([]entities.Holdout{})
+
+	cmabContext := ExperimentDecisionContext{Experiment: &cmabExperiment, ProjectConfig: s.mockConfig}
+	cmabError := errors.New("Failed to fetch CMAB data for experiment " + cmabExperiment.Key + ".")
+	s.mockExperimentService.On("GetDecision", cmabContext, testUserContext, s.options).Return(ExperimentDecision{}, s.reasons, cmabError)
+
+	feature := testFeat3335
+	feature.FeatureExperiments = []entities.Experiment{testExp1113, cmabExperiment}
+	s.testFeatureDecisionContext.Feature = &feature
+
+	featureExperimentService := &FeatureExperimentService{
+		compositeExperimentService: s.mockExperimentService,
+		holdoutService:             NewHoldoutService("test_sdk_key"),
+		logger:                     logging.GetLogger("sdkKey", "FeatureExperimentService"),
+	}
+
+	decision, _, err := featureExperimentService.GetDecision(s.testFeatureDecisionContext, testUserContext, s.options)
+
+	s.ErrorIs(err, cmabError)
+	s.Nil(decision.Variation)
+	s.Empty(decision.HoldoutDecisions)
+	s.mockExperimentService.AssertExpectations(s.T())
 }
 
 func TestFeatureExperimentServiceTestSuite(t *testing.T) {
