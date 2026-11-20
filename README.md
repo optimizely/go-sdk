@@ -184,8 +184,10 @@ errwrap (dependency of go-multierror)
 Copyright IBM Corp. 2014, 2025
 License (MPL-2.0): https://github.com/hashicorp/errwrap/blob/master/LICENSE
 
-The MPL-2.0 licensed packages above are used unmodified as Go module dependencies. MPL-2.0 is a file-level (weak) copyleft license,
-so it applies only to those packages' own source files and does not change the Apache-2.0 license of this SDK.
+The MPL-2.0 licensed packages above are used unmodified as Go module dependencies. MPL-2.0 is a file-level (weak) copyleft license:
+its terms apply to those packages' own source files and do not change the Apache-2.0 license of this SDK's code.
+If you distribute a compiled binary that includes these packages, MPL-2.0 (section 3.2) requires you to make the source code of those
+packages available and to tell recipients how to obtain it. The source is published at the links above. See the MPL-2.0 license text for the full terms.
 
 ### Other Optimizely SDKs
 
