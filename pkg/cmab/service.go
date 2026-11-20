@@ -158,8 +158,10 @@ func (s *DefaultCmabService) GetDecision(
 	// Fetch new decision
 	decision, err := s.fetchDecision(ruleID, userContext.ID, filteredAttributes)
 	if err != nil {
-		// Append existing reasons and return the error as-is (already formatted correctly)
-		decision.Reasons = append(reasons, decision.Reasons...)
+		// Append existing reasons and return the error as-is (already formatted correctly).
+		// fetchDecision returns a Decision value (never a nil pointer), so reading decision.Reasons here is safe.
+		reasons = append(reasons, decision.Reasons...)
+		decision.Reasons = reasons
 		return decision, err
 	}
 

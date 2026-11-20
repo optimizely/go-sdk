@@ -176,6 +176,17 @@ opentelemetry-go
 Copyright The OpenTelemetry Authors
 License (Apache-2.0): https://github.com/open-telemetry/opentelemetry-go/blob/main/LICENSE
 
+go-multierror
+Copyright IBM Corp. 2014, 2025
+License (MPL-2.0): https://github.com/hashicorp/go-multierror/blob/master/LICENSE
+
+errwrap (dependency of go-multierror)
+Copyright IBM Corp. 2014, 2025
+License (MPL-2.0): https://github.com/hashicorp/errwrap/blob/master/LICENSE
+
+The MPL-2.0 licensed packages above are used unmodified as Go module dependencies. MPL-2.0 is a file-level (weak) copyleft license,
+so it applies only to those packages' own source files and does not change the Apache-2.0 license of this SDK.
+
 ### Other Optimizely SDKs
 
 - Agent - https://github.com/optimizely/agent
